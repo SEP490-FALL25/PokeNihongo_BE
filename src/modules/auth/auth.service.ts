@@ -516,7 +516,7 @@ export class AuthService {
       return {
         statusCode: HttpStatus.UNAUTHORIZED,
         data: {
-          type: TypeOfVerificationCode.REGISTER
+          type: TypeOfVerificationCode.LOGIN
         },
         message:
           'Đây là lần đăng nhập đầu tiên từ thiết bị này. Vui lòng kiểm tra email để xác thực.'
@@ -527,7 +527,7 @@ export class AuthService {
     return {
       statusCode: HttpStatus.CREATED,
       data: {
-        type: TypeOfVerificationCode.REGISTER
+        type: TypeOfVerificationCode.LOGIN
       },
       message: 'Thiết bị đã được xác thực trước đó.'
     }

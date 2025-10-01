@@ -1,6 +1,8 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { IsPublic } from '@/common/decorators/auth.decorator'
+import { RateLimit } from '@/common/decorators/rate-limit.decorator'
 import { UserAgent } from '@/common/decorators/user-agent.decorator'
+import { RateLimitGuard } from '@/common/guards/rate-limit.guard'
 import envConfig from '@/config/env.config'
 import {
   ChangePasswordBodyDTO,
@@ -28,6 +30,7 @@ import {
   Post,
   Query,
   Res,
+  UseGuards,
   UseInterceptors
 } from '@nestjs/common'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
@@ -109,8 +112,15 @@ export class AuthController {
   }
 
   // gui otp qua email
+
   @Post('forgot-password')
   @IsPublic()
+  @UseGuards(RateLimitGuard)
+  @RateLimit({
+    windowMs: 60 * 1000, // 1 phút
+    max: 3, // tối đa 3 lần
+    keyGenerator: (req) => `forgot_password:${req.ip}:${req.body.email}` // rate limit theo IP + email
+  })
   @ZodSerializerDto(MessageResDTO)
   forgotPassword(@Body() body: ForgotPasswordBodyDTO) {
     return this.authService.forgotPassword(body)
@@ -145,6 +155,12 @@ export class AuthController {
   // neu mail ton tai la login, khong thi la register
   @Get('check-email/:email')
   @IsPublic()
+  @UseGuards(RateLimitGuard)
+  @RateLimit({
+    windowMs: 60 * 1000, // 1 phút
+    max: 3, // tối đa 3 lần
+    keyGenerator: (req) => `check_email:${req.ip}:${req.params.email}` // rate limit theo IP + email
+  })
   checkEmailExist(
     @Param('email') email: string,
     @UserAgent() userAgent: string,
@@ -155,6 +171,12 @@ export class AuthController {
 
   @Post('resend-verified-email/:email')
   @IsPublic()
+  @UseGuards(RateLimitGuard)
+  @RateLimit({
+    windowMs: 60 * 1000, // 1 phút
+    max: 3, // tối đa 3 lần
+    keyGenerator: (req) => `resend_email:${req.ip}:${req.params.email}` // rate limit theo IP + email
+  })
   @ZodSerializerDto(MessageResDTO)
   resendVerifiedEmail(@Param('email') email: string) {
     return this.authService.resendVerifiedEmail(email)
