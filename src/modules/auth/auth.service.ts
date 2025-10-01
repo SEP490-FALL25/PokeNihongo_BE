@@ -1,15 +1,13 @@
 import { BullQueueService } from '@/3rdService/bull/bull-queue.service'
 import { MailService } from '@/3rdService/mail/mail.service'
-import { TypeOfVerificationCodeType, UserStatus } from '@/common/constants/auth.constant'
+import { UserStatus } from '@/common/constants/auth.constant'
 import { AUTH_MESSAGE } from '@/common/constants/message'
 import { AuthRepository } from '@/modules/auth/auth.repo'
 import {
   EmailAlreadyExistsException,
   EmailNotFoundException,
   FailToLoginException,
-  InvalidOTPException,
   InvalidOTPExceptionForEmail,
-  OTPExpiredException,
   RefreshTokenAlreadyUsedException,
   UnauthorizedAccessException,
   UnVeryfiedAccountException
@@ -38,7 +36,7 @@ import { AccessTokenPayloadCreate } from '@/shared/types/jwt.type'
 import { InjectQueue } from '@nestjs/bull'
 import { HttpException, Injectable, Logger } from '@nestjs/common'
 import { Queue } from 'bull'
-
+import { v4 as uuidv4 } from 'uuid'
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name)
@@ -53,31 +51,6 @@ export class AuthService {
     @InjectQueue('user-deletion') private readonly deletionQueue: Queue,
     private readonly tokenService: TokenService
   ) {}
-
-  async validateVerificationCode({
-    email,
-    code,
-    type
-  }: {
-    email: string
-    code: string
-    type: TypeOfVerificationCodeType
-  }) {
-    const vevificationCode = await this.authRepository.findUniqueVerificationCode({
-      email_code_type: {
-        email,
-        code,
-        type
-      }
-    })
-    if (!vevificationCode) {
-      throw InvalidOTPException
-    }
-    if (vevificationCode.expiresAt < new Date()) {
-      throw OTPExpiredException
-    }
-    return vevificationCode
-  }
 
   async login(body: LoginBodyType & { userAgent: string; ip: string }) {
     // 1. Lấy thông tin user, kiểm tra user có tồn tại hay không, mật khẩu có đúng không
@@ -106,6 +79,7 @@ export class AuthService {
     const device = await this.authRepository.createDevice({
       userId: user.id,
       userAgent: body.userAgent,
+      deviceToken: uuidv4(),
       ip: body.ip
     })
 
@@ -339,7 +313,9 @@ export class AuthService {
     const device = await this.authRepository.createDevice({
       userId: user.id,
       userAgent: userAgent,
-      ip: ip
+
+      ip: ip,
+      deviceToken: uuidv4()
     })
     const accessToken = await this.tokenService.signAccessToken({
       userId: user.id,

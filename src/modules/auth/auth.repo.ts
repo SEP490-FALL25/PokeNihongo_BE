@@ -1,9 +1,5 @@
-import { TypeOfVerificationCodeType, UserStatus } from '@/common/constants/auth.constant'
-import {
-  DeviceType,
-  RefreshTokenType,
-  VerificationCodeType
-} from '@/modules/auth/entities/auth.entities'
+import { UserStatus } from '@/common/constants/auth.constant'
+import { DeviceType, RefreshTokenType } from '@/modules/auth/entities/auth.entities'
 import { Injectable } from '@nestjs/common'
 import { RoleType } from 'src/shared/models/shared-role.model'
 import { UserType } from 'src/shared/models/shared-user.model'
@@ -77,40 +73,40 @@ export class AuthRepository {
     return result as Omit<UserType, 'password'>
   }
 
-  async createVerificationCode(
-    payload: Pick<VerificationCodeType, 'email' | 'type' | 'code' | 'expiresAt'>
-  ): Promise<VerificationCodeType> {
-    return this.prismaService.verificationCode.upsert({
-      where: {
-        email_code_type: {
-          email: payload.email,
-          code: payload.code,
-          type: payload.type
-        }
-      },
-      create: payload,
-      update: {
-        code: payload.code,
-        expiresAt: payload.expiresAt
-      }
-    })
-  }
+  // async createVerificationCode(
+  //   payload: Pick<VerificationCodeType, 'email' | 'type' | 'code' | 'expiresAt'>
+  // ): Promise<VerificationCodeType> {
+  //   return this.prismaService.verificationCode.upsert({
+  //     where: {
+  //       email_code_type: {
+  //         email: payload.email,
+  //         code: payload.code,
+  //         type: payload.type
+  //       }
+  //     },
+  //     create: payload,
+  //     update: {
+  //       code: payload.code,
+  //       expiresAt: payload.expiresAt
+  //     }
+  //   })
+  // }
 
-  async findUniqueVerificationCode(
-    uniqueValue:
-      | { id: number }
-      | {
-          email_code_type: {
-            email: string
-            code: string
-            type: TypeOfVerificationCodeType
-          }
-        }
-  ): Promise<VerificationCodeType | null> {
-    return this.prismaService.verificationCode.findUnique({
-      where: uniqueValue
-    })
-  }
+  // async findUniqueVerificationCode(
+  //   uniqueValue:
+  //     | { id: number }
+  //     | {
+  //         email_code_type: {
+  //           email: string
+  //           code: string
+  //           type: TypeOfVerificationCodeType
+  //         }
+  //       }
+  // ): Promise<VerificationCodeType | null> {
+  //   return this.prismaService.verificationCode.findUnique({
+  //     where: uniqueValue
+  //   })
+  // }
 
   createRefreshToken(data: {
     token: string
@@ -124,7 +120,7 @@ export class AuthRepository {
   }
 
   createDevice(
-    data: Pick<DeviceType, 'userId' | 'userAgent' | 'ip'> &
+    data: Pick<DeviceType, 'userId' | 'userAgent' | 'ip' | 'deviceToken'> &
       Partial<Pick<DeviceType, 'lastActive' | 'isActive'>>
   ) {
     return this.prismaService.device.create({
@@ -176,21 +172,21 @@ export class AuthRepository {
     })
   }
 
-  deleteVerificationCode(
-    uniqueValue:
-      | { id: number }
-      | {
-          email_code_type: {
-            email: string
-            code: string
-            type: TypeOfVerificationCodeType
-          }
-        }
-  ): Promise<VerificationCodeType> {
-    return this.prismaService.verificationCode.delete({
-      where: uniqueValue
-    })
-  }
+  // deleteVerificationCode(
+  //   uniqueValue:
+  //     | { id: number }
+  //     | {
+  //         email_code_type: {
+  //           email: string
+  //           code: string
+  //           type: TypeOfVerificationCodeType
+  //         }
+  //       }
+  // ): Promise<VerificationCodeType> {
+  //   return this.prismaService.verificationCode.delete({
+  //     where: uniqueValue
+  //   })
+  // }
 
   verifyEmail(email: string): Promise<UserType> {
     return this.prismaService.user.update({
