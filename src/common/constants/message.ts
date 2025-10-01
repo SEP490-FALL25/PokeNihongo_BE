@@ -23,3 +23,24 @@ export const AUTH_MESSAGE = {
   VERIFY_OTP_FORGOT_PASSWORD_SUCCESS: 'Xác thực OTP thành công',
   CHANGE_PASSWORD_SUCCESS: 'Đổi mật khẩu thành công'
 }
+
+
+export const VOCABULARY_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo từ vựng thành công',
+  UPDATE_SUCCESS: 'Cập nhật từ vựng thành công',
+  DELETE_SUCCESS: 'Xóa từ vựng thành công',
+  GET_SUCCESS: 'Lấy thông tin từ vựng thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách từ vựng thành công',
+  SEARCH_SUCCESS: 'Tìm kiếm từ vựng thành công',
+  NOT_FOUND: 'Không tìm thấy từ vựng',
+  ALREADY_EXISTS: 'Từ vựng đã tồn tại',
+  INVALID_DATA: 'Dữ liệu từ vựng không hợp lệ',
+  WORD_JP_REQUIRED: 'Từ tiếng Nhật không được để trống',
+  READING_REQUIRED: 'Cách đọc không được để trống',
+  WORD_JP_TOO_LONG: 'Từ tiếng Nhật quá dài (tối đa 500 ký tự)',
+  READING_TOO_LONG: 'Cách đọc quá dài (tối đa 500 ký tự)',
+  IMAGE_URL_INVALID: 'URL hình ảnh không hợp lệ',
+  AUDIO_URL_INVALID: 'URL âm thanh không hợp lệ',
+  WORD_JP_INVALID_FORMAT: 'Phải là văn bản tiếng Nhật thuần túy (CHỈ chứa Hiragana, Katakana, hoặc Kanji - không cho phép số hoặc ký tự Latin)',
+  READING_INVALID_FORMAT: 'Phải là văn bản romaji (chỉ chứa chữ cái Latin, số và dấu câu cơ bản)'
+}
