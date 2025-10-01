@@ -7,6 +7,17 @@ import { z } from 'zod'
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
 
+export const DeviceSchema = z.object({
+  id: z.number(),
+  userId: z.number(),
+  userAgent: z.string(),
+  deviceToken: z.string(), // UUID để định danh thiết bị
+  ip: z.string(),
+  lastActive: z.date(),
+  createdAt: z.date(),
+  isActive: z.boolean()
+})
+
 export const VerificationCodeSchema = z.object({
   id: z.number(),
   email: z.string().email(),
@@ -61,7 +72,13 @@ export const LoginResSchema = z
         roleId: true,
         avatar: true
       }).shape,
-      role: RoleSchema
+      role: RoleSchema,
+      device: z.object({
+        ...DeviceSchema.pick({
+          id: true,
+          deviceToken: true
+        }).shape
+      })
     }),
 
     message: z.string()
@@ -98,17 +115,6 @@ export const RefreshTokenBodySchema = z
   .strict()
 
 export const RefreshTokenResSchema = LoginResSchema
-
-export const DeviceSchema = z.object({
-  id: z.number(),
-  userId: z.number(),
-  userAgent: z.string(),
-  deviceToken: z.string(), // UUID để định danh thiết bị
-  ip: z.string(),
-  lastActive: z.date(),
-  createdAt: z.date(),
-  isActive: z.boolean()
-})
 
 export const RefreshTokenSchema = z.object({
   token: z.string(),
