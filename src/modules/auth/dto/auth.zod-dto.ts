@@ -15,7 +15,9 @@ import {
   UpdateMeBodySchema,
   VerifyEmailBodySchema,
   verifyForgotPasswordBodySchema,
-  verifyForgotPasswordResSchema
+  verifyForgotPasswordResSchema,
+  VerifyOTPBodySchema,
+  VerifyOTPResSchema
 } from '@/modules/auth/entities/auth.entities'
 import { createZodDto } from 'nestjs-zod'
 
@@ -53,3 +55,6 @@ export class ResetPasswordBodyDTO extends createZodDto(ResetPasswordBodySchema) 
 export class UpdateMeBodyDTO extends createZodDto(UpdateMeBodySchema) {}
 export class AccountResDTO extends createZodDto(AccountResSchema) {}
 export class VerifyEmailBodyDTO extends createZodDto(VerifyEmailBodySchema) {}
+
+export class VerifyOTPBodyDTO extends createZodDto(VerifyOTPBodySchema) {}
+export class VerifyOTPResDTO extends createZodDto(VerifyOTPResSchema) {}

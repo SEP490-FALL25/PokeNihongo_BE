@@ -50,4 +50,13 @@ export class SharedRoleRepository {
     this.clientRoleId = role.id
     return role.id
   }
+
+  async getRoleById(roleId: number) {
+    return this.prismaService.role.findFirst({
+      where: {
+        id: roleId,
+        deletedAt: null
+      }
+    })
+  }
 }

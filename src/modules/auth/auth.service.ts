@@ -1,13 +1,15 @@
 import { BullQueueService } from '@/3rdService/bull/bull-queue.service'
 import { MailService } from '@/3rdService/mail/mail.service'
-import { UserStatus } from '@/common/constants/auth.constant'
+import { TypeOfVerificationCode, UserStatus } from '@/common/constants/auth.constant'
 import { AUTH_MESSAGE } from '@/common/constants/message'
+import { RoleName } from '@/common/constants/role.constant'
 import { AuthRepository } from '@/modules/auth/auth.repo'
 import {
   EmailAlreadyExistsException,
   EmailNotFoundException,
   FailToLoginException,
   InvalidOTPExceptionForEmail,
+  NeedToVerifyWithFirstLogin,
   RefreshTokenAlreadyUsedException,
   UnauthorizedAccessException,
   UnVeryfiedAccountException
@@ -34,8 +36,16 @@ import { HashingService } from '@/shared/services/hashing.service'
 import { TokenService } from '@/shared/services/token.service'
 import { AccessTokenPayloadCreate } from '@/shared/types/jwt.type'
 import { InjectQueue } from '@nestjs/bull'
-import { HttpException, Injectable, Logger } from '@nestjs/common'
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger
+} from '@nestjs/common'
 import { Queue } from 'bull'
+import Redis from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 @Injectable()
 export class AuthService {
@@ -49,6 +59,7 @@ export class AuthService {
 
     private readonly bullQueueService: BullQueueService,
     @InjectQueue('user-deletion') private readonly deletionQueue: Queue,
+    @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
     private readonly tokenService: TokenService
   ) {}
 
@@ -70,13 +81,25 @@ export class AuthService {
       throw FailToLoginException
     }
 
-    // usser verify chua ?
+    // user verify chua ?
     if (user.status === UserStatus.INACTIVE) {
       this.resendVerifiedEmail(user.email)
       throw UnVeryfiedAccountException
     }
-    // 3. Tạo mới device
-    const device = await this.authRepository.createDevice({
+
+    // Kiểm tra xem device đã tồn tại chưa
+    const existingDevice = await this.authRepository.findDeviceByUserAndAgent(
+      user.id,
+      body.userAgent,
+      body.ip
+    )
+
+    if (!existingDevice) {
+      throw NeedToVerifyWithFirstLogin
+    }
+
+    // 3. Kiểm tra và tạo/cập nhật device
+    const device = await this.authRepository.createOrUpdateDevice({
       userId: user.id,
       userAgent: body.userAgent,
       deviceToken: uuidv4(),
@@ -115,39 +138,27 @@ export class AuthService {
           phoneNumber: body.phoneNumber
         })
       ])
-      //Todo: sửa lại thành 30 ngày sau khi hoàn thiện chức năng
-      // xóa những nhừng user không active sau 5 phút
-      // Thêm tác vụ xóa vào hàng đợi
-      const jobAdded = await this.bullQueueService.addJob(
-        this.deletionQueue,
-        'delete-inactive-user',
-        { userId: user.id },
-        {
-          delay: 5 * 60 * 1000,
-          attempts: 3,
-          backoff: { type: 'fixed', delay: 1000 },
-          removeOnComplete: true,
-          removeOnFail: true
-        }
-      )
+      // tao device
+      const device = await this.createUserDevice(user.id, userAgent, ip)
+      // nhan role
+      const role = await this.sharedRoleRepository.getRoleById(roleId)
+      // 4. Tạo mới accessToken và refreshToken
+      const tokens = await this.generateTokens({
+        userId: user.id,
+        deviceId: device.id,
+        roleId: user.roleId,
+        roleName: role?.name || RoleName.Customer
+      })
 
-      if (jobAdded) {
-        this.logger.log(`Đã tạo người dùng ID ${user.id} và lập lịch xóa sau 5 phút`)
-      } else {
-        this.logger.warn(
-          `Đã tạo người dùng ID ${user.id} nhưng không thể lập lịch xóa do lỗi Redis`
-        )
+      const { ...userWithoutPassword } = user
+      const data = {
+        ...userWithoutPassword,
+        ...tokens
       }
 
-      // 2. send mail de xác thực
-      const emailLower = body.email.toLowerCase()
-      const template = 'otp'
-      const content = 'XÁC THỰC MAIL CỦA BẠN: '
-      const bodyContent = 'Vui lòng nhập nhấn nút XÁC THỰC để xác thực tài khoản của bạn.'
-      this.mailService.generateAndSendOtp(emailLower, template, content, bodyContent)
-
       return {
-        data: null,
+        statusCode: HttpStatus.CREATED,
+        data: data,
         message: AUTH_MESSAGE.REGISTER_SUCCESS
       }
     } catch (error) {
@@ -279,7 +290,7 @@ export class AuthService {
     const registerEmailLowerCase = user.email.toLowerCase()
     const template = 'otp'
     const content = 'Mã OTP của bạn là: '
-    const bodyContent = 'Vui lòng nhập mã OTP để xác thực tài khoản của bạn.'
+    const bodyContent = 'Vui lòng nhập mã OTP để làm bước tiếp theo.'
     this.mailService.generateAndSendOtp(
       registerEmailLowerCase,
       template,
@@ -287,7 +298,10 @@ export class AuthService {
       bodyContent
     )
     return {
-      data: null,
+      statusCode: HttpStatus.OK,
+      data: {
+        type: TypeOfVerificationCode.FORGOT_PASSWORD
+      },
       message: AUTH_MESSAGE.SEND_OTP_SUCCESS
     }
   }
@@ -309,14 +323,21 @@ export class AuthService {
     // Verify OTP
     await this.mailService.verifyOtpStrict(email, code)
 
-    // thành công hết thì: send token va gui mail
+    // 2. Xóa tất cả refreshToken và device cũ của user
+    await Promise.all([
+      this.authRepository.deleteManyRefreshTokenByUserId({ userId: user.id }),
+      this.authRepository.deleteManyDeviceByUserId({ userId: user.id })
+    ])
+
+    // 3. Tạo device mới sau khi xóa hết device cũ
     const device = await this.authRepository.createDevice({
       userId: user.id,
       userAgent: userAgent,
-
       ip: ip,
       deviceToken: uuidv4()
     })
+
+    // 4. Tạo accessToken cho device mới
     const accessToken = await this.tokenService.signAccessToken({
       userId: user.id,
       deviceId: device.id,
@@ -341,11 +362,6 @@ export class AuthService {
 
     if (!user || user.id !== userId) {
       throw EmailNotFoundException
-    }
-
-    //check password == password cu
-    if (newPassword !== confirmNewPassword) {
-      throw InValidNewPasswordAndConfirmPasswordException
     }
 
     // tới đây đổi mật khẩu cho nó
@@ -455,6 +471,149 @@ export class AuthService {
     return {
       data: null,
       message: 'Gửi lại email xác thực thành công'
+    }
+  }
+
+  async checkMailToAction(email: string, userAgent: string, ip: string) {
+    const user = await this.authRepository.existEmail(email)
+    if (!user) {
+      // neu khong co -> register
+      //send otp mail
+      // 2. send mail de xác thực
+      const emailLower = email.toLowerCase()
+      const template = 'otp'
+      const content = 'MÃ OTP MAIL ĐĂNG KÝ CỦA BẠN: '
+      const bodyContent = 'Vui lòng nhập mã OTP để tiếp tục bước tiếp theo.'
+      this.mailService.generateAndSendOtp(emailLower, template, content, bodyContent)
+      return {
+        statusCode: 201,
+        data: {
+          type: TypeOfVerificationCode.REGISTER
+        },
+        message: 'Email hợp lệ, bạn có thể tiếp tục đăng ký'
+      }
+    }
+
+    // neu user ton tai -> login
+
+    // check xem la thiet bi moi hay cu
+    // Kiểm tra xem device đã tồn tại chưa
+    const existingDevice = await this.authRepository.findDeviceByUserAndAgent(
+      user.id,
+      userAgent,
+      ip
+    )
+
+    if (!existingDevice) {
+      // Đây là lần đăng nhập đầu tiên từ thiết bị này, gửi email thông báo
+      const template = 'otp'
+      const content = 'XÁC THỰC ĐĂNG NHẬP TỪ THIẾT BỊ MỚI: '
+      const bodyContent = `Chúng tôi phát hiện lần đăng nhập đầu tiên từ thiết bị mới
+      Vui lòng nhập mã OTP để xác thực thiết bị này.`
+
+      this.mailService.generateAndSendOtp(email, template, content, bodyContent)
+
+      return {
+        statusCode: HttpStatus.UNAUTHORIZED,
+        data: {
+          type: TypeOfVerificationCode.REGISTER
+        },
+        message:
+          'Đây là lần đăng nhập đầu tiên từ thiết bị này. Vui lòng kiểm tra email để xác thực.'
+      }
+    }
+    // neu la thiet bi da co
+    //thi thoi
+    return {
+      statusCode: HttpStatus.CREATED,
+      data: {
+        type: TypeOfVerificationCode.REGISTER
+      },
+      message: 'Thiết bị đã được xác thực trước đó.'
+    }
+  }
+
+  async verifyOTP(
+    body: { email: string; code: string; type: string },
+    userAgent: string,
+    ip: string
+  ) {
+    try {
+      const { email, code, type } = body
+      const storedOtp = await this.redisClient.get(email)
+      console.log(type)
+
+      if (storedOtp === code) {
+        // Xóa OTP sau khi xác thực thành công
+        await this.redisClient.del(email)
+        this.logger.log(`OTP verified and deleted for ${email}`)
+
+        // neu type === 'login' thi tao device
+        if (type === TypeOfVerificationCode.LOGIN) {
+          const user = await this.sharedUserRepository.findUnique({ email })
+          if (!user) {
+            throw EmailNotFoundException
+          }
+          await this.createUserDevice(user.id, userAgent, ip)
+        } else if (type === TypeOfVerificationCode.FORGOT_PASSWORD) {
+          return await this.verifyForgotPasswordByAction(email, userAgent, ip)
+        } else if (type === TypeOfVerificationCode.CHANGE_PASSWORD) {
+        }
+        return {
+          data: null,
+          message: 'Xác thực OTP thành công'
+        }
+      }
+      //
+
+      throw new BadRequestException('Mã OTP không hợp lệ hoặc đã hết hạn')
+    } catch (error) {
+      this.logger.error(`Failed to verify OTP for ${body.email}: ${error.message}`)
+      throw error
+    }
+  }
+
+  async createUserDevice(userId: number, userAgent: string, ip: string) {
+    const device = await this.authRepository.createDevice({
+      userId,
+      userAgent,
+      ip,
+      deviceToken: uuidv4()
+    })
+    return device
+  }
+
+  async verifyForgotPasswordByAction(email: string, userAgent: string, ip: string) {
+    // 1. Kiểm tra email đã tồn tại trong database chưa
+    const user = await this.sharedUserRepository.findUniqueIncludeRole({
+      email
+    })
+    if (!user) {
+      throw InvalidOTPExceptionForEmail
+    }
+
+    // thành công hết thì: send token va gui mail
+    const device = await this.authRepository.createDevice({
+      userId: user.id,
+      userAgent: userAgent,
+
+      ip: ip,
+      deviceToken: uuidv4()
+    })
+    const accessToken = await this.tokenService.signAccessToken({
+      userId: user.id,
+      deviceId: device.id,
+      roleId: user.roleId,
+      roleName: user.role.name
+    })
+
+    const data = {
+      accessToken
+    }
+
+    return {
+      data,
+      message: AUTH_MESSAGE.VERIFY_OTP_FORGOT_PASSWORD_SUCCESS
     }
   }
 }

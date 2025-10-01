@@ -68,6 +68,7 @@ export class MailService {
         this.logger.log(`OTP verified and deleted for ${email}`)
         return true
       }
+      //
 
       throw new BadRequestException('Mã OTP không hợp lệ hoặc đã hết hạn')
     } catch (error) {

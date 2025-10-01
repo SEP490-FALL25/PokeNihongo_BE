@@ -12,9 +12,9 @@ import {
   RefreshTokenBodyDTO,
   RefreshTokenResDTO,
   RegisterBodyDTO,
+  RegisterResDTO,
   ResetPasswordBodyDTO,
-  verifyForgotPasswordBodyDTO,
-  verifyForgotPasswordResDTO
+  VerifyOTPBodyDTO
 } from '@/modules/auth/dto/auth.zod-dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -35,7 +35,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { Response } from 'express'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthService } from './auth.service'
-import { RegisterMultipartSwaggerDTO } from './dto/auth.dto'
+import { LoginBodySwaggerDTO, RegisterMultipartSwaggerDTO } from './dto/auth.dto'
 import { GoogleService } from './google.service'
 
 @Controller('auth')
@@ -45,14 +45,19 @@ export class AuthController {
     private readonly googleService: GoogleService
   ) {}
 
-  // @Post('otp')
-  // @IsPublic()
-  // @ZodSerializerDto(MessageResDTO)
-  // sendOTP(@Body() body: SendOTPBodyDTO) {
-  //   return this.authService.sendOTP(body)
-  // }
+  @Post('verify-otp')
+  @IsPublic()
+  @ZodSerializerDto(MessageResDTO)
+  sendOTP(
+    @Body() body: VerifyOTPBodyDTO,
+    @UserAgent() userAgent: string,
+    @Ip() ip: string
+  ) {
+    return this.authService.verifyOTP(body, userAgent, ip)
+  }
 
   @Post('login')
+  @ApiBody({ type: LoginBodySwaggerDTO })
   @HttpCode(HttpStatus.OK)
   @IsPublic()
   @ZodSerializerDto(LoginResDTO)
@@ -66,7 +71,7 @@ export class AuthController {
 
   @Post('register')
   @IsPublic()
-  @ZodSerializerDto(MessageResDTO)
+  @ZodSerializerDto(RegisterResDTO)
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: RegisterMultipartSwaggerDTO }) // dùng class để render form đẹp
@@ -111,18 +116,6 @@ export class AuthController {
     return this.authService.forgotPassword(body)
   }
 
-  @Post('verify-forgot-password')
-  @IsPublic()
-  @HttpCode(HttpStatus.OK)
-  @ZodSerializerDto(verifyForgotPasswordResDTO)
-  verifyForgotPassword(
-    @Body() body: verifyForgotPasswordBodyDTO,
-    @UserAgent() userAgent: string,
-    @Ip() ip: string
-  ) {
-    return this.authService.verifyForgotPassword(body, userAgent, ip)
-  }
-
   @Post('reset-password')
   @ZodSerializerDto(MessageResDTO)
   resetPassword(
@@ -147,8 +140,17 @@ export class AuthController {
   async verifiedEmail(@Param('email') email: string, @Res() res: Response) {
     const data = await this.authService.verifiedEmail(email)
     return res.redirect(`${envConfig.FE_URL}/auth/login?message=${data.message}`)
+  }
 
-    //TODO-Kumo: để data sau khi có front-end
+  // neu mail ton tai la login, khong thi la register
+  @Get('check-email/:email')
+  @IsPublic()
+  checkEmailExist(
+    @Param('email') email: string,
+    @UserAgent() userAgent: string,
+    @Ip() ip: string
+  ) {
+    return this.authService.checkMailToAction(email, userAgent, ip)
   }
 
   @Post('resend-verified-email/:email')
