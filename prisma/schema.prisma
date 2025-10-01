@@ -141,3 +141,16 @@ enum MediaType {
   IMAGE
   VIDEO
 }
+
+model Vocabulary {
+  id        Int      @id @default(autoincrement())
+  wordJp    String   @db.VarChar(500)
+  reading   String   @db.VarChar(500)
+  imageUrl  String?  @db.VarChar(1000)
+  audioUrl  String?  @db.VarChar(1000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([wordJp])
+  @@index([reading])
+}

@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@anatine/zod-openapi": "^2.2.8",
+    "@google-cloud/speech": "^7.2.0",
     "@google/generative-ai": "^0.24.1",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/axios": "^4.0.1",
