@@ -116,7 +116,11 @@ export class AuthService {
     const { password, ...userWithoutPassword } = user
     const data = {
       ...userWithoutPassword,
-      ...tokens
+      ...tokens,
+      device: {
+        id: device.id,
+        deviceToken: device.deviceToken
+      }
     }
     return {
       data,
@@ -153,7 +157,11 @@ export class AuthService {
       const { ...userWithoutPassword } = user
       const data = {
         ...userWithoutPassword,
-        ...tokens
+        ...tokens,
+        device: {
+          id: device.id,
+          deviceToken: device.deviceToken
+        }
       }
 
       return {
@@ -591,6 +599,12 @@ export class AuthService {
     if (!user) {
       throw InvalidOTPExceptionForEmail
     }
+
+    // 2. Xóa tất cả refreshToken và device cũ của user
+    await Promise.all([
+      this.authRepository.deleteManyRefreshTokenByUserId({ userId: user.id }),
+      this.authRepository.deleteManyDeviceByUserId({ userId: user.id })
+    ])
 
     // thành công hết thì: send token va gui mail
     const device = await this.authRepository.createDevice({
