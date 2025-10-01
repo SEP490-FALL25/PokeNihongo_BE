@@ -63,7 +63,10 @@ export class AuthRepository {
   ): Promise<Omit<UserType, 'password'>> {
     const { password, ...userData } = user
     const createdUser = await this.prismaService.user.create({
-      data: user,
+      data: {
+        ...user,
+        status: UserStatus.ACTIVE
+      },
       include: {
         role: true
       }
@@ -126,6 +129,40 @@ export class AuthRepository {
     return this.prismaService.device.create({
       data
     })
+  }
+
+  findDeviceByUserAndAgent(userId: number, userAgent: string, ip: string) {
+    return this.prismaService.device.findFirst({
+      where: {
+        userId,
+        userAgent,
+        ip
+      }
+    })
+  }
+
+  async createOrUpdateDevice(
+    data: Pick<DeviceType, 'userId' | 'userAgent' | 'ip' | 'deviceToken'> &
+      Partial<Pick<DeviceType, 'lastActive' | 'isActive'>>
+  ) {
+    // Kiểm tra device đã tồn tại chưa
+    const existingDevice = await this.findDeviceByUserAndAgent(
+      data.userId,
+      data.userAgent,
+      data.ip
+    )
+
+    if (existingDevice) {
+      // Nếu device đã tồn tại, update thông tin
+      return this.updateDevice(existingDevice.id, {
+        ip: data.ip,
+        lastActive: new Date(),
+        isActive: true
+      })
+    }
+
+    // Nếu chưa tồn tại, tạo mới
+    return this.createDevice(data)
   }
 
   async findUniqueUserIncludeRole(
@@ -198,6 +235,21 @@ export class AuthRepository {
   deleteManyRefreshTokenByUserId(where: { userId: number }): Promise<{ count: number }> {
     return this.prismaService.refreshToken.deleteMany({
       where
+    })
+  }
+
+  deleteManyDeviceByUserId(where: { userId: number }): Promise<{ count: number }> {
+    return this.prismaService.device.deleteMany({
+      where
+    })
+  }
+
+  existEmail(email: string): Promise<UserType | null> {
+    return this.prismaService.user.findFirst({
+      where: {
+        email,
+        deletedAt: null
+      }
     })
   }
 }

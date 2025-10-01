@@ -11,7 +11,11 @@ export const VerificationCodeSchema = z.object({
   id: z.number(),
   email: z.string().email(),
   code: z.string().length(6),
-  type: z.enum([TypeOfVerificationCode.REGISTER, TypeOfVerificationCode.FORGOT_PASSWORD]),
+  type: z.enum([
+    TypeOfVerificationCode.REGISTER,
+    TypeOfVerificationCode.FORGOT_PASSWORD,
+    TypeOfVerificationCode.LOGIN
+  ]),
   expiresAt: z.date(),
   createdAt: z.date()
 })
@@ -20,6 +24,22 @@ export const SendOTPBodySchema = VerificationCodeSchema.pick({
   email: true,
   type: true
 }).strict()
+
+export const VerifyOTPBodySchema = VerificationCodeSchema.pick({
+  email: true,
+  code: true,
+  type: true
+}).strict()
+
+export const VerifyOTPResSchema = z
+  .object({
+    statusCode: z.number(),
+    data: z.object({
+      message: z.string()
+    }),
+    message: z.string()
+  })
+  .strict()
 
 export const LoginBodySchema = UserSchema.pick({
   email: true,
@@ -116,20 +136,8 @@ export const GetAuthorizationUrlResSchema = z.object({
 export const ForgotPasswordBodySchema = z
   .object({
     email: z.string().email()
-    // code: z.string().length(6),
-    // newPassword: z.string().min(6).max(100),
-    // confirmNewPassword: z.string().min(6).max(100)
   })
   .strict()
-// .superRefine(({ confirmNewPassword, newPassword }, ctx) => {
-//   if (confirmNewPassword !== newPassword) {
-//     ctx.addIssue({
-//       code: 'custom',
-//       message: 'Mật khẩu và mật khẩu xác nhận phải giống nhau',
-//       path: ['confirmNewPassword']
-//     })
-//   }
-// })
 
 export const verifyForgotPasswordBodySchema = z
   .object({
@@ -156,6 +164,15 @@ export const ResetPasswordBodySchema = z
     confirmNewPassword: z.string().min(6).max(100)
   })
   .strict()
+  .superRefine(({ confirmNewPassword, newPassword }, ctx) => {
+    if (confirmNewPassword !== newPassword) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Mật khẩu mới và mật khẩu xác nhận phải giống nhau',
+        path: ['confirmNewPassword']
+      })
+    }
+  })
 
 export const ChangePasswordBodySchema = z
   .object({
@@ -164,6 +181,15 @@ export const ChangePasswordBodySchema = z
     confirmNewPassword: z.string().min(6).max(100)
   })
   .strict()
+  .superRefine(({ confirmNewPassword, newPassword }, ctx) => {
+    if (confirmNewPassword !== newPassword) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Mật khẩu mới và mật khẩu xác nhận phải giống nhau',
+        path: ['confirmNewPassword']
+      })
+    }
+  })
 
 export const UpdateMeBodySchema = z
   .object({
@@ -204,3 +230,5 @@ export type ResetPasswordBodyType = z.infer<typeof ResetPasswordBodySchema>
 export type ChangePasswordBodyType = z.infer<typeof ChangePasswordBodySchema>
 export type UpdateMeBodyType = z.infer<typeof UpdateMeBodySchema>
 export type AccountResType = z.infer<typeof AccountResSchema>
+
+export type VerifyOTPBodyType = z.infer<typeof VerifyOTPBodySchema>
