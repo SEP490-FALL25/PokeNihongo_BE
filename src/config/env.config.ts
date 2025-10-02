@@ -1,15 +1,9 @@
 import { config } from 'dotenv'
-import fs from 'fs'
-import path from 'path'
 import { z } from 'zod'
 
-config({
-  path: '.env'
-})
-
-if (!fs.existsSync(path.resolve('.env'))) {
-  console.error('Not found .env file')
-  process.exit(1)
+if (process.env.NODE_ENV !== 'production') {
+  console.log('Running in development mode, loading .env file...');
+  config({ path: '.env' }); 
 }
 
 const configSchema = z.object({

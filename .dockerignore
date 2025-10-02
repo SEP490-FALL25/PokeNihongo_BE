@@ -1,0 +1,14 @@
+# Dependencies: Cài mới trong container, không copy từ máy local
+node_modules
+.pnpm-store
+
+# Build artifacts: Build mới trong container
+dist
+build
+
+# Version control: Không cần thiết cho ứng dụng chạy
+.git
+
+# Docker files: Không cần có bên trong container
+Dockerfile
+docker-compose.yml
