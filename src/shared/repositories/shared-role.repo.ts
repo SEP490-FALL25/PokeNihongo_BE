@@ -46,7 +46,7 @@ export class SharedRoleRepository {
     if (this.clientRoleId) {
       return this.clientRoleId
     }
-    const role = await this.getRole(RoleName.Customer)
+    const role = await this.getRole(RoleName.Learner)
     this.clientRoleId = role.id
     return role.id
   }
