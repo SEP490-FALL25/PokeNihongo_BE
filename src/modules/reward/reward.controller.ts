@@ -7,47 +7,49 @@ import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreatedRewardBodyDTO,
+  CreateRewardResDTO,
   GetRewardDetailResDTO,
   GetRewardParamsDTO,
-  UpdateRewardBodyDTO
+  UpdateRewardBodyDTO,
+  UpdateRewardResDTO
 } from './dto/reward.zod-dto'
 import { RewardService } from './reward.service'
 
 @Controller('reward')
 export class RewardController {
-  constructor(private readonly categoryService: RewardService) {}
+  constructor(private readonly rewardService: RewardService) {}
 
   @Get()
   @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
   list(@Query() query: PaginationQueryDTO) {
-    return this.categoryService.list(query)
+    return this.rewardService.list(query)
   }
 
   @Get(':rewardId')
   @IsPublic()
   @ZodSerializerDto(GetRewardDetailResDTO)
   findById(@Param() params: GetRewardParamsDTO) {
-    return this.categoryService.findById(params.rewardId)
+    return this.rewardService.findById(params.rewardId)
   }
 
   @Post()
-  @ZodSerializerDto(GetRewardDetailResDTO)
+  @ZodSerializerDto(CreateRewardResDTO)
   create(@Body() body: CreatedRewardBodyDTO, @ActiveUser('userId') userId: number) {
-    return this.categoryService.create({
+    return this.rewardService.create({
       data: body,
       createdById: userId
     })
   }
 
   @Put(':rewardId')
-  @ZodSerializerDto(GetRewardDetailResDTO)
+  @ZodSerializerDto(UpdateRewardResDTO)
   update(
     @Body() body: UpdateRewardBodyDTO,
     @Param() params: GetRewardParamsDTO,
     @ActiveUser('userId') userId: number
   ) {
-    return this.categoryService.update({
+    return this.rewardService.update({
       data: body,
       id: params.rewardId,
       updatedById: userId
@@ -57,7 +59,7 @@ export class RewardController {
   @Delete(':rewardId')
   @ZodSerializerDto(MessageResDTO)
   delete(@Param() params: GetRewardParamsDTO, @ActiveUser('userId') userId: number) {
-    return this.categoryService.delete({
+    return this.rewardService.delete({
       id: params.rewardId,
       deletedById: userId
     })

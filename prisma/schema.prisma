@@ -169,7 +169,6 @@ model Level {
   levelNumber Int
   requiredExp Int
   levelType   LevelType
-  isDeleted   Boolean   @default(false)
 
   // Self relation: next level
   nextLevelId Int?
@@ -193,6 +192,7 @@ model Level {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@unique([levelNumber, levelType])
   @@index([deletedAt])
 }
 

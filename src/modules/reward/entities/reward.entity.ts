@@ -48,6 +48,8 @@ export const CreateRewardResSchema = z.object({
 
 export const UpdateRewardBodySchema = CreateRewardBodySchema
 
+export const UpdateRewardResSchema = CreateRewardResSchema
+
 export const GetRewardParamsSchema = z
   .object({
     rewardId: checkIdSchema(REWARD_MESSAGE.INVALID_DATA)

@@ -47,6 +47,7 @@ import {
 import { Queue } from 'bull'
 import Redis from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
+import { LevelRepo } from '../level/level.repo'
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name)
@@ -56,7 +57,7 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly sharedUserRepository: SharedUserRepository,
     private readonly mailService: MailService,
-
+    private readonly levelRepo: LevelRepo,
     private readonly bullQueueService: BullQueueService,
     @InjectQueue('user-deletion') private readonly deletionQueue: Queue,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
@@ -132,12 +133,14 @@ export class AuthService {
     try {
       const hashedPassword = await this.hashingService.hash(body.password)
 
+      const firstLevel = await this.levelRepo.getFirstLevelUser()
       const roleId = await this.sharedRoleRepository.getCustomerRoleId()
       const [user] = await Promise.all([
         this.authRepository.registerUser({
           email: body.email.toLowerCase(),
           password: hashedPassword,
           roleId,
+          levelId: firstLevel?.id || null,
           name: body.name,
           phoneNumber: body.phoneNumber
         })
