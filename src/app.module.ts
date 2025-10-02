@@ -14,6 +14,7 @@ import { PermissionModule } from './modules/permission/permission.module'
 import { RoleModule } from './modules/role/role.module'
 import { VocabularyModule } from './modules/vocabulary/vocabulary.module'
 import { SharedModule } from './shared/shared.module'
+import { RewardModule } from './modules/reward/reward.module';
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { SharedModule } from './shared/shared.module'
     AuthModule,
     RoleModule,
     PermissionModule,
-    VocabularyModule
+    VocabularyModule,
+    RewardModule
   ],
 
   controllers: [],

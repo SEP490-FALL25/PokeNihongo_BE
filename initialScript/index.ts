@@ -55,7 +55,8 @@ const main = async () => {
         name: envConfig.ADMIN_NAME,
         phoneNumber: envConfig.PHONE_NUMBER,
         roleId: roleMap[RoleName.Admin].id,
-        levelId: levelMap[1].id
+        levelId: levelMap[1].id,
+        status: 'ACTIVE'
       }
       // {
       //   email: envConfig.MANAGER_EMAIL,

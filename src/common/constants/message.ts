@@ -24,7 +24,6 @@ export const AUTH_MESSAGE = {
   CHANGE_PASSWORD_SUCCESS: 'Đổi mật khẩu thành công'
 }
 
-
 export const VOCABULARY_MESSAGE = {
   CREATE_SUCCESS: 'Tạo từ vựng thành công',
   UPDATE_SUCCESS: 'Cập nhật từ vựng thành công',
@@ -41,6 +40,27 @@ export const VOCABULARY_MESSAGE = {
   READING_TOO_LONG: 'Cách đọc quá dài (tối đa 500 ký tự)',
   IMAGE_URL_INVALID: 'URL hình ảnh không hợp lệ',
   AUDIO_URL_INVALID: 'URL âm thanh không hợp lệ',
-  WORD_JP_INVALID_FORMAT: 'Phải là văn bản tiếng Nhật thuần túy (CHỈ chứa Hiragana, Katakana, hoặc Kanji - không cho phép số hoặc ký tự Latin)',
-  READING_INVALID_FORMAT: 'Phải là văn bản romaji (chỉ chứa chữ cái Latin, số và dấu câu cơ bản)'
+  WORD_JP_INVALID_FORMAT:
+    'Phải là văn bản tiếng Nhật thuần túy (CHỈ chứa Hiragana, Katakana, hoặc Kanji - không cho phép số hoặc ký tự Latin)',
+  READING_INVALID_FORMAT:
+    'Phải là văn bản romaji (chỉ chứa chữ cái Latin, số và dấu câu cơ bản)'
+}
+
+export const REWARD_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo phần thưởng thành công',
+  UPDATE_SUCCESS: 'Cập nhật phần thưởng thành công',
+  DELETE_SUCCESS: 'Xóa phần thưởng thành công',
+  GET_SUCCESS: 'Lấy thông tin phần thưởng thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách phần thưởng thành công',
+  NOT_FOUND: 'Không tìm thấy phần thưởng',
+  ALREADY_EXISTS: 'Phần thưởng đã tồn tại',
+  INVALID_DATA: 'Dữ liệu phần thưởng không hợp lệ',
+  NAME_REQUIRED: 'Tên phần thưởng không được để trống'
+}
+
+export const SYSTEM_MESSAGE = {
+  NOT_FOUND: 'Không tìm thấy bản ghi',
+  INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'Mật khẩu mới và mật khẩu xác nhận không khớp',
+  INVALID_PASSWORD: 'Sai mật khẩu',
+  INVALID_OLD_PASSWORD: 'Mật khẩu cũ không đúng'
 }
