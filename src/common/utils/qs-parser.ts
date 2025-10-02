@@ -24,7 +24,9 @@ export function parseQs(
       const field = rawField.startsWith('-') ? rawField.slice(1) : rawField
 
       if (validFields && !validFields.includes(field)) {
-        throw new BadRequestException(`Sai thuộc tính: ${field}`)
+        throw new BadRequestException(
+          `Not valid field: ${field}. All field need in: ${validFields.join(', ')}`
+        )
       }
 
       orderBy = rawField.startsWith('-') ? { [field]: 'desc' } : { [field]: 'asc' }
@@ -39,7 +41,9 @@ export function parseQs(
     const field = tokens[0]
 
     if (validFields && !validFields.includes(field)) {
-      throw new Error(`Invalid filter field: ${field}`)
+      throw new BadRequestException(
+        `Not valid field: ${field}. All field need in: ${validFields.join(', ')}`
+      )
     }
 
     if (tokens.length === 1) {

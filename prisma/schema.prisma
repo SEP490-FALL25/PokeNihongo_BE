@@ -143,7 +143,7 @@ model Reward {
   id           Int          @id @default(autoincrement())
   name         String
   rewardType   RewardType   @default(LESSON)
-  rewardItem   RewardItem   @default(ADD_EXP)
+  rewardItem   Int
   rewardTarget RewardTarget @default(EXP)
 
   // Quan hệ với Level
@@ -158,8 +158,9 @@ model Reward {
   deletedBy   User? @relation("RewardDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Level {
@@ -179,6 +180,8 @@ model Level {
   rewardId Int?
   reward   Reward? @relation(fields: [rewardId], references: [id])
 
+  users User[]
+
   createdById Int?
   createdBy   User? @relation("LevelCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
   updatedById Int?
@@ -189,7 +192,6 @@ model Level {
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  users     User[]
 
   @@index([deletedAt])
 }
@@ -230,13 +232,6 @@ enum RewardType {
   EVENT
   ACHIEVEMENT
   LEVEL
-}
-
-enum RewardItem {
-  ADD_EXP
-  ADD_POINT
-  GIVE_POKEMON
-  UNLOCK_FEATURE
 }
 
 enum RewardTarget {
