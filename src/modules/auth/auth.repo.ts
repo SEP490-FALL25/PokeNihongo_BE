@@ -56,7 +56,7 @@ export class AuthRepository {
   }
 
   async registerUser(
-    user: Pick<UserType, 'email' | 'roleId' | 'password'> & {
+    user: Pick<UserType, 'email' | 'roleId' | 'password' | 'levelId'> & {
       name: string
       phoneNumber: string
     }
@@ -68,49 +68,14 @@ export class AuthRepository {
         status: UserStatus.ACTIVE
       },
       include: {
-        role: true
+        role: true,
+        level: true
       }
     })
     // Loại bỏ password khỏi kết quả trả về
     const { password: _, ...result } = createdUser
     return result as Omit<UserType, 'password'>
   }
-
-  // async createVerificationCode(
-  //   payload: Pick<VerificationCodeType, 'email' | 'type' | 'code' | 'expiresAt'>
-  // ): Promise<VerificationCodeType> {
-  //   return this.prismaService.verificationCode.upsert({
-  //     where: {
-  //       email_code_type: {
-  //         email: payload.email,
-  //         code: payload.code,
-  //         type: payload.type
-  //       }
-  //     },
-  //     create: payload,
-  //     update: {
-  //       code: payload.code,
-  //       expiresAt: payload.expiresAt
-  //     }
-  //   })
-  // }
-
-  // async findUniqueVerificationCode(
-  //   uniqueValue:
-  //     | { id: number }
-  //     | {
-  //         email_code_type: {
-  //           email: string
-  //           code: string
-  //           type: TypeOfVerificationCodeType
-  //         }
-  //       }
-  // ): Promise<VerificationCodeType | null> {
-  //   return this.prismaService.verificationCode.findUnique({
-  //     where: uniqueValue
-  //   })
-  // }
-
   createRefreshToken(data: {
     token: string
     userId: number
@@ -174,7 +139,8 @@ export class AuthRepository {
         deletedAt: null
       },
       include: {
-        role: true
+        role: true,
+        level: true
       }
     })
   }

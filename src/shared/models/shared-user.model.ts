@@ -12,6 +12,7 @@ export const UserSchema = z.object({
   phoneNumber: z.string().min(9, AUTH_MESSAGE.PHONE_IS_INVALID).max(15),
   avatar: z.string().nullable(),
   status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]),
+  levelId: z.number().min(1).optional().nullable(),
   roleId: z.number().positive(),
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),

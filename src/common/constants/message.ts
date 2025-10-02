@@ -64,3 +64,23 @@ export const SYSTEM_MESSAGE = {
   INVALID_PASSWORD: 'Sai mật khẩu',
   INVALID_OLD_PASSWORD: 'Mật khẩu cũ không đúng'
 }
+
+export const LEVEL_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo cấp độ thành công',
+  UPDATE_SUCCESS: 'Cập nhật cấp độ thành công',
+  DELETE_SUCCESS: 'Xóa cấp độ thành công',
+  GET_SUCCESS: 'Lấy thông tin cấp độ thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách cấp độ thành công',
+  NOT_FOUND: 'Không tìm thấy cấp độ',
+  ALREADY_EXISTS: 'Cấp độ đã tồn tại',
+
+  INVALID_DATA: 'Dữ liệu cấp độ không hợp lệ',
+  LEVEL_NUMBER_REQUIRED: 'Số cấp độ không được để trống',
+  LEVEL_NUMBER_MIN: 'Số cấp độ phải lớn hơn hoặc bằng 1',
+  REQUIRED_EXP_REQUIRED: 'Kinh nghiệm yêu cầu không được để trống',
+  LEVEL_TYPE_REQUIRED: 'Loại cấp độ không được để trống',
+  NEXT_LEVEL_ID_REQUIRED: 'ID cấp độ tiếp theo không được để trống',
+  REWARD_ID_REQUIRED: 'ID phần thưởng không được để trống',
+  CONFLICT_TYPE_NEXT_LEVEL:
+    'Cấp độ tiếp theo không hợp lệ (phải cùng loại và số cấp độ phải là số liền kề)'
+}

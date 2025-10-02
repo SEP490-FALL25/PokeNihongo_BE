@@ -1,4 +1,5 @@
 import { TypeOfVerificationCode } from '@/common/constants/auth.constant'
+import { LevelSchema } from '@/modules/level/entities/level.entity'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { RoleSchema } from 'src/shared/models/shared-role.model'
@@ -78,7 +79,8 @@ export const LoginResSchema = z
           id: true,
           deviceToken: true
         }).shape
-      })
+      }),
+      level: LevelSchema.optional().nullable()
     }),
 
     message: z.string()
