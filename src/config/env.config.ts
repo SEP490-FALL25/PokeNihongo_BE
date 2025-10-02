@@ -1,16 +1,4 @@
-import { config } from 'dotenv'
-import fs from 'fs'
-import path from 'path'
 import { z } from 'zod'
-
-config({
-  path: '.env'
-})
-
-if (!fs.existsSync(path.resolve('.env'))) {
-  console.error('Not found .env file')
-  process.exit(1)
-}
 
 const configSchema = z.object({
   //Application
