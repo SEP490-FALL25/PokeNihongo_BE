@@ -18,6 +18,8 @@ model User {
   status             UserStatus     @default(INACTIVE)
   roleId             Int
   role               Role           @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  levelId            Int?
+  level              Level?         @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   devices            Device[] // Liên kết 1-n với Device
   refreshTokens      RefreshToken[]
   createdPermissions Permission[]   @relation("PermissionCreatedBy")
@@ -26,6 +28,12 @@ model User {
   createdRoles       Role[]         @relation("RoleCreatedBy")
   updatedRoles       Role[]         @relation("RoleUpdatedBy")
   deletedRoles       Role[]         @relation("RoleDeletedBy")
+  createdLevels      Level[]        @relation("LevelCreatedBy")
+  updatedLevels      Level[]        @relation("LevelUpdatedBy")
+  deletedLevels      Level[]        @relation("LevelDeletedBy")
+  createdRewards     Reward[]       @relation("RewardCreatedBy")
+  updatedRewards     Reward[]       @relation("RewardUpdatedBy")
+  deletedRewards     Reward[]       @relation("RewardDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -118,6 +126,74 @@ model Role {
   @@index([deletedAt])
 }
 
+model Vocabulary {
+  id        Int      @id @default(autoincrement())
+  wordJp    String   @db.VarChar(500)
+  reading   String   @db.VarChar(500)
+  imageUrl  String?  @db.VarChar(1000)
+  audioUrl  String?  @db.VarChar(1000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([wordJp])
+  @@index([reading])
+}
+
+model Reward {
+  id           Int          @id @default(autoincrement())
+  name         String
+  rewardType   RewardType   @default(LESSON)
+  rewardItem   RewardItem   @default(ADD_EXP)
+  rewardTarget RewardTarget @default(EXP)
+
+  // Quan hệ với Level
+  levels Level[]
+
+  // Audit fields
+  createdById Int?
+  createdBy   User? @relation("RewardCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("RewardUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("RewardDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Level {
+  id Int @id @default(autoincrement())
+
+  levelNumber Int
+  requiredExp Int
+  levelType   LevelType
+  isDeleted   Boolean   @default(false)
+
+  // Self relation: next level
+  nextLevelId Int?
+  nextLevel   Level?  @relation("NextLevel", fields: [nextLevelId], references: [id])
+  prevLevels  Level[] @relation("NextLevel")
+
+  // Reward relation
+  rewardId Int?
+  reward   Reward? @relation(fields: [rewardId], references: [id])
+
+  createdById Int?
+  createdBy   User? @relation("LevelCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("LevelUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("LevelDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  users     User[]
+
+  @@index([deletedAt])
+}
+
 enum VerificationCodeType {
   REGISTER
   FORGOT_PASSWORD
@@ -143,15 +219,30 @@ enum MediaType {
   VIDEO
 }
 
-model Vocabulary {
-  id        Int      @id @default(autoincrement())
-  wordJp    String   @db.VarChar(500)
-  reading   String   @db.VarChar(500)
-  imageUrl  String?  @db.VarChar(1000)
-  audioUrl  String?  @db.VarChar(1000)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum LevelType {
+  USER
+  POKEMON
+}
 
-  @@index([wordJp])
-  @@index([reading])
+enum RewardType {
+  LESSON
+  DAILY_REQUEST
+  EVENT
+  ACHIEVEMENT
+  LEVEL
+}
+
+enum RewardItem {
+  ADD_EXP
+  ADD_POINT
+  GIVE_POKEMON
+  UNLOCK_FEATURE
+}
+
+enum RewardTarget {
+  EXP
+  POINT
+  POKEMON
+  BADGE
+  VOUCHER
 }

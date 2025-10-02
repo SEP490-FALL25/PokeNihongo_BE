@@ -151,7 +151,7 @@ export class AuthService {
         userId: user.id,
         deviceId: device.id,
         roleId: user.roleId,
-        roleName: role?.name || RoleName.Customer
+        roleName: role?.name || RoleName.Learner
       })
 
       const { ...userWithoutPassword } = user
