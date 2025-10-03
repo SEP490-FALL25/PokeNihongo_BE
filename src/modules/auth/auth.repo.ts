@@ -58,7 +58,6 @@ export class AuthRepository {
   async registerUser(
     user: Pick<UserType, 'email' | 'roleId' | 'password' | 'levelId'> & {
       name: string
-      phoneNumber: string
     }
   ): Promise<Omit<UserType, 'password'>> {
     const { password, ...userData } = user
