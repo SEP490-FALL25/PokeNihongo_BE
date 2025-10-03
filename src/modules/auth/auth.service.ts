@@ -141,8 +141,7 @@ export class AuthService {
           password: hashedPassword,
           roleId,
           levelId: firstLevel?.id || null,
-          name: body.name,
-          phoneNumber: body?.phoneNumber ?? ''
+          name: body.name
         })
       ])
       // tao device

@@ -90,8 +90,7 @@ export const LoginResSchema = z
 export const RegisterBodySchema = UserSchema.pick({
   name: true,
   email: true,
-  password: true,
-  phoneNumber: true
+  password: true
 })
   // .extend({
   //   confirmPassword: z.string().min(6).max(100)
