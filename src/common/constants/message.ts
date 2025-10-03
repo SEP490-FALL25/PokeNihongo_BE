@@ -62,7 +62,9 @@ export const SYSTEM_MESSAGE = {
   NOT_FOUND: 'Không tìm thấy bản ghi',
   INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'Mật khẩu mới và mật khẩu xác nhận không khớp',
   INVALID_PASSWORD: 'Sai mật khẩu',
-  INVALID_OLD_PASSWORD: 'Mật khẩu cũ không đúng'
+  INVALID_OLD_PASSWORD: 'Mật khẩu cũ không đúng',
+  SESSION_EXPIRED: 'Phiên đã hết hạn, vui lòng đăng nhập lại',
+  UNAUTHTHORIZED: 'Không có quyền truy cập'
 }
 
 export const LEVEL_MESSAGE = {

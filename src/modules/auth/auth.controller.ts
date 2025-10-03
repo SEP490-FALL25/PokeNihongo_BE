@@ -127,6 +127,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @ApiBearerAuth()
   @ZodSerializerDto(MessageResDTO)
   resetPassword(
     @Body() body: ResetPasswordBodyDTO,
