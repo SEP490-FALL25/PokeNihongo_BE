@@ -6,6 +6,7 @@ import { CloudinaryImageMulterConfig, CloudinaryAudioMulterConfig, CloudinaryMul
 
 @Controller('upload')
 @ApiBearerAuth('access-token')
+@ApiBearerAuth()
 export class UploadController {
     constructor(private readonly uploadService: UploadService) { }
 

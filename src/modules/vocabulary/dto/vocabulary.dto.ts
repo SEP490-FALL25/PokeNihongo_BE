@@ -124,7 +124,7 @@ export class GetVocabularyListQuerySwaggerDTO {
 // Multipart DTOs for file uploads
 export class CreateVocabularyMultipartSwaggerDTO {
     @ApiProperty({
-        example: 'こんにちは',
+        example: '日本語',
         description: 'Từ tiếng Nhật (CHỈ chứa Hiragana, Katakana, hoặc Kanji - không cho phép số hoặc ký tự Latin)',
         minLength: 1,
         maxLength: 500
@@ -132,8 +132,8 @@ export class CreateVocabularyMultipartSwaggerDTO {
     wordJp: string
 
     @ApiProperty({
-        example: 'konnichiwa',
-        description: 'Cách đọc từ tiếng Nhật (romaji - chỉ chữ cái Latin, số và dấu câu cơ bản)',
+        example: 'にほんご',
+        description: 'Cách đọc của từ tiếng Nhật (Hiragana - chỉ chứa ký tự Hiragana và dấu câu cơ bản)',
         minLength: 1,
         maxLength: 500
     })
@@ -143,24 +143,22 @@ export class CreateVocabularyMultipartSwaggerDTO {
         type: 'string',
         format: 'binary',
         description: 'Hình ảnh minh họa từ vựng (jpg, png, gif) - tối đa 5MB',
-        required: false,
-        name: 'imageUrl'
+        required: false
     })
     imageUrl?: Express.Multer.File
 
     @ApiProperty({
         type: 'string',
         format: 'binary',
-        description: 'File âm thanh của từ vựng (mp3, wav, ogg) - tối đa 10MB',
-        required: false,
-        name: 'audioUrl'
+        description: 'File âm thanh của từ vựng (mp3, wav, ogg) - tối đa 10MB. Nếu không có, hệ thống sẽ tự động tạo bằng Text-to-Speech',
+        required: false
     })
     audioUrl?: Express.Multer.File
 }
 
 export class UpdateVocabularyMultipartSwaggerDTO {
     @ApiProperty({
-        example: 'こんにちは',
+        example: '日本語',
         description: 'Từ tiếng Nhật (CHỈ chứa Hiragana, Katakana, hoặc Kanji - không cho phép số hoặc ký tự Latin)',
         required: false,
         minLength: 1,
@@ -169,8 +167,8 @@ export class UpdateVocabularyMultipartSwaggerDTO {
     wordJp?: string
 
     @ApiProperty({
-        example: 'konnichiwa',
-        description: 'Cách đọc từ tiếng Nhật (romaji - chỉ chữ cái Latin, số và dấu câu cơ bản)',
+        example: 'にほんご',
+        description: 'Cách đọc của từ tiếng Nhật (Hiragana - chỉ chứa ký tự Hiragana và dấu câu cơ bản)',
         required: false,
         minLength: 1,
         maxLength: 500
@@ -181,8 +179,7 @@ export class UpdateVocabularyMultipartSwaggerDTO {
         type: 'string',
         format: 'binary',
         description: 'Hình ảnh minh họa từ vựng (jpg, png, gif) - tối đa 5MB',
-        required: false,
-        name: 'imageUrl'
+        required: false
     })
     imageUrl?: Express.Multer.File
 
@@ -190,8 +187,64 @@ export class UpdateVocabularyMultipartSwaggerDTO {
         type: 'string',
         format: 'binary',
         description: 'File âm thanh của từ vựng (mp3, wav, ogg) - tối đa 10MB',
-        required: false,
-        name: 'audioUrl'
+        required: false
     })
     audioUrl?: Express.Multer.File
+}
+
+// Advanced Vocabulary Creation DTOs
+export class MeaningDTO {
+    @ApiProperty({ example: 'vi', description: 'Mã ngôn ngữ' })
+    language_code: string
+
+    @ApiProperty({ example: 'Xin chào', description: 'Nghĩa của từ' })
+    meaning_text: string
+}
+
+export class CreateVocabularyAdvancedDTO {
+    @ApiProperty({ example: '日本語', description: 'Từ tiếng Nhật (Kanji)' })
+    word_jp: string
+
+    @ApiProperty({ example: 'にほんご', description: 'Cách đọc (Hiragana)' })
+    reading: string
+
+    @ApiProperty({ example: 5, description: 'Cấp độ JLPT (N5-N1)', required: false })
+    level_n?: number
+
+    @ApiProperty({ example: 1, description: 'ID loại từ', required: false })
+    word_type_id?: number
+
+    @ApiProperty({
+        type: [MeaningDTO],
+        description: 'Danh sách nghĩa của từ theo từng ngôn ngữ'
+    })
+    meanings: MeaningDTO[]
+
+    @ApiProperty({
+        example: 'https://example.com/audio.mp3',
+        description: 'URL file audio (tùy chọn)',
+        required: false
+    })
+    audio_url?: string
+}
+
+export class VocabularyAdvancedResponseDTO {
+    @ApiProperty({ example: 1, description: 'ID của từ vựng' })
+    vocabulary_id: number
+
+    @ApiProperty({
+        example: ['語'],
+        description: 'Danh sách Kanji chưa có trong hệ thống',
+        required: false
+    })
+    missing_kanji?: string[]
+
+    @ApiProperty({ example: '日本語', description: 'Từ tiếng Nhật' })
+    word_jp: string
+
+    @ApiProperty({ example: 'にほんご', description: 'Cách đọc' })
+    reading: string
+
+    @ApiProperty({ example: [{ language_code: 'vi', meaning_text: 'Tiếng Nhật' }], description: 'Các nghĩa' })
+    meanings: MeaningDTO[]
 }

@@ -1,9 +1,12 @@
 import { config } from 'dotenv'
 import { z } from 'zod'
 
-// Always try to load .env file, regardless of NODE_ENV
-console.log('Loading environment variables from .env file...');
-config({ path: '.env' });
+
+if (process.env.NODE_ENV !== 'production') {
+  console.log('Running in development mode, loading .env file...');
+  config({ path: '.env' });
+}
+
 
 const configSchema = z.object({
   //Application
@@ -27,16 +30,25 @@ const configSchema = z.object({
   //Redis
   REDIS_URI: z.string(),
   // RESEND_API_KEY: z.string(),
+
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REDIRECT_URI: z.string().optional(),
   GOOGLE_CLIENT_REDIRECT_URI: z.string().optional(),
   FE_URL: z.string().url().optional(),
+  
+  //Google Cloud Text-to-Speech (Optional)
+  GOOGLE_CLOUD_PROJECT_ID: z.string().optional(),
+  GOOGLE_CLOUD_CLIENT_EMAIL: z.string().optional(),
+  GOOGLE_CLOUD_PRIVATE_KEY: z.string().optional(),
+
+
   // Mail
   MAIL_HOST: z.string().optional(),
   MAIL_PORT: z.coerce.number().optional(),
   MAIL_USER: z.string().optional(),
   MAIL_PASSWORD: z.string().optional()
+
 })
 
 const configServer = configSchema.safeParse(process.env)

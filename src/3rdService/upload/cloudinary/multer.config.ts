@@ -47,22 +47,9 @@ export const CloudinaryAudioMulterConfig = {
   }
 }
 
-// Multer config chung cho multiple files
+// Multer config chung cho multiple files - sử dụng memory storage để xử lý
 export const CloudinaryMultiMulterConfig = {
-  storage: new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: async (req, file) => {
-      const folder = file.mimetype.startsWith('image/') ? 'vocabulary/images' : 'vocabulary/audio'
-      const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'video'
-
-      return {
-        folder,
-        resource_type: resourceType,
-        format: file.mimetype.startsWith('image/') ? 'png' : 'mp3',
-        public_id: file.originalname.split('.')[0]
-      }
-    }
-  }),
+  storage: require('multer').memoryStorage(),
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('audio/')) {
       cb(null, true)
