@@ -614,6 +614,7 @@ export class AuthService {
     }
 
     return {
+      statusCode: HttpStatus.OK,
       data,
       message: AUTH_MESSAGE.VERIFY_OTP_FORGOT_PASSWORD_SUCCESS
     }
