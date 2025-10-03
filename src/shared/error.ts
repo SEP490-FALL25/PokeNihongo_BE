@@ -16,3 +16,6 @@ export const InvalidOldPasswordException = new UnauthorizedException(
 )
 export const InValidNewPasswordAndConfirmPasswordException =
   new UnprocessableEntityException(SYSTEM_MESSAGE.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD)
+
+export const InValidNewPasswordAndConfirmPasswordRegisterException =
+  new UnprocessableEntityException(SYSTEM_MESSAGE.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD_REGISTER)
