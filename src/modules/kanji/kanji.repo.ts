@@ -114,7 +114,8 @@ export class KanjiRepository {
                 character: data.character,
                 meaningKey: data.meaningKey,
                 strokeCount: data.strokeCount,
-                jlptLevel: data.jlptLevel
+                jlptLevel: data.jlptLevel,
+                img: data.img
             },
             include: {
                 _count: {
@@ -135,7 +136,29 @@ export class KanjiRepository {
                 character: data.character,
                 meaningKey: data.meaningKey,
                 strokeCount: data.strokeCount,
-                jlptLevel: data.jlptLevel
+                jlptLevel: data.jlptLevel,
+                img: data.img
+            },
+            include: {
+                _count: {
+                    select: {
+                        vocabularies: true
+                    }
+                }
+            }
+        })
+
+        return this.transformKanji(result)
+    }
+
+    // Method riêng cho updateWithMeanings (không cần character và meaningKey)
+    async updatePartial(id: number, data: Partial<UpdateKanjiBodyType>): Promise<Kanji> {
+        const result = await this.prismaService.kanji.update({
+            where: { id },
+            data: {
+                strokeCount: data.strokeCount,
+                jlptLevel: data.jlptLevel,
+                img: data.img
             },
             include: {
                 _count: {
@@ -205,6 +228,7 @@ export class KanjiRepository {
             meaningKey: kanji.meaningKey,
             strokeCount: kanji.strokeCount,
             jlptLevel: kanji.jlptLevel,
+            img: kanji.img,
             createdAt: kanji.createdAt,
             updatedAt: kanji.updatedAt
         }

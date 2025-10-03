@@ -159,6 +159,17 @@ export class KanjiReadingRepository {
         return count > 0
     }
 
+    async existsByKanjiTypeAndReading(kanjiId: number, readingType: string, reading: string): Promise<boolean> {
+        const count = await this.prismaService.kanji_Reading.count({
+            where: {
+                kanjiId,
+                readingType,
+                reading
+            }
+        })
+        return count > 0
+    }
+
     async existsByKanjiId(kanjiId: number): Promise<boolean> {
         const count = await this.prismaService.kanji_Reading.count({
             where: { kanjiId }

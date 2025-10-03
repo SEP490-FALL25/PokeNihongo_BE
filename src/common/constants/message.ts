@@ -104,6 +104,7 @@ export const LANGUAGES_MESSAGE = {
 
 export const KANJI_MESSAGE = {
   CREATE_SUCCESS: 'Tạo kanji thành công',
+  CREATE_WITH_READINGS_SUCCESS: 'Tạo Kanji cùng với cách đọc thành công',
   UPDATE_SUCCESS: 'Cập nhật kanji thành công',
   DELETE_SUCCESS: 'Xóa kanji thành công',
   GET_SUCCESS: 'Lấy thông tin kanji thành công',

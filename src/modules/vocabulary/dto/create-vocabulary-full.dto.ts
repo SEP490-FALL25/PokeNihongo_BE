@@ -32,13 +32,16 @@ export const CreateVocabularyFullSchema = z.object({
     translations: TranslationsSchema
 })
 
-// Schema for multipart/form-data (translations as JSON string)
+// Schema for multipart/form-data (translations as string or object)
 export const CreateVocabularyFullMultipartSchema = z.object({
     word_jp: z.string().min(1, 'Từ tiếng Nhật không được để trống'),
     reading: z.string().min(1, 'Cách đọc không được để trống'),
     level_n: z.string().transform((val) => parseInt(val, 10)).optional(),
     word_type_id: z.string().transform((val) => parseInt(val, 10)).optional(),
-    translations: z.string().transform((val) => JSON.parse(val)) // JSON string → object
+    translations: z.union([
+        z.string().transform((val) => JSON.parse(val)), // JSON string → object
+        TranslationsSchema // Object trực tiếp
+    ])
 })
 
 // Zod DTOs
@@ -137,10 +140,13 @@ export class CreateVocabularyFullSwaggerDTO {
     image_url?: string
 
     @ApiProperty({
-        type: TranslationsSwaggerDTO,
-        description: 'Các bản dịch nghĩa và ví dụ'
+        oneOf: [
+            { type: 'string', example: '{"meaning":[{"language_code":"vi","value":"Tiếng Nhật"}],"examples":[]}' },
+            { type: 'object', $ref: '#/components/schemas/TranslationsSwaggerDTO' }
+        ],
+        description: 'Các bản dịch nghĩa và ví dụ (có thể là JSON string hoặc object)'
     })
-    translations: TranslationsSwaggerDTO
+    translations: string | TranslationsSwaggerDTO
 }
 
 // Swagger DTO for multipart/form-data with file uploads
@@ -189,22 +195,13 @@ export class CreateVocabularyFullMultipartSwaggerDTO {
     imageFile?: Express.Multer.File
 
     @ApiProperty({
-        example: JSON.stringify({
-            meaning: [
-                { language_code: 'vi', value: 'Tiếng Nhật' },
-                { language_code: 'en', value: 'Japanese language' }
-            ],
-            examples: [
-                {
-                    language_code: 'vi',
-                    sentence: 'Tôi đang học tiếng Nhật.',
-                    original_sentence: '私は日本語を勉強しています。'
-                }
-            ]
-        }),
-        description: 'JSON string chứa các bản dịch nghĩa và ví dụ'
+        oneOf: [
+            { type: 'string', example: '{"meaning":[{"language_code":"vi","value":"Tiếng Nhật"}],"examples":[]}' },
+            { type: 'object', $ref: '#/components/schemas/TranslationsSwaggerDTO' }
+        ],
+        description: 'Các bản dịch nghĩa và ví dụ (có thể là JSON string hoặc object)'
     })
-    translations: string
+    translations: string | TranslationsSwaggerDTO
 }
 
 // Type exports
