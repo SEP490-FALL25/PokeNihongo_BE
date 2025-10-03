@@ -52,8 +52,7 @@ export class MeaningRepository {
                     wordType: {
                         select: {
                             id: true,
-                            nameKey: true,
-                            tag: true
+                            nameKey: true
                         }
                     }
                 }
@@ -84,8 +83,7 @@ export class MeaningRepository {
                 wordType: {
                     select: {
                         id: true,
-                        nameKey: true,
-                        tag: true
+                        nameKey: true
                     }
                 }
             }
@@ -106,8 +104,7 @@ export class MeaningRepository {
                 wordType: {
                     select: {
                         id: true,
-                        nameKey: true,
-                        tag: true
+                        nameKey: true
                     }
                 }
             }
@@ -137,8 +134,7 @@ export class MeaningRepository {
                 wordType: {
                     select: {
                         id: true,
-                        nameKey: true,
-                        tag: true
+                        nameKey: true
                     }
                 }
             }
@@ -169,8 +165,7 @@ export class MeaningRepository {
                 wordType: {
                     select: {
                         id: true,
-                        nameKey: true,
-                        tag: true
+                        nameKey: true
                     }
                 }
             }

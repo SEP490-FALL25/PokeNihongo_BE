@@ -19,49 +19,12 @@ export const WordTypeSchema = z.object({
         .refine(isValidTranslationKey, {
             message: TRANSLATION_KEY_ERROR
         }),
-    tag: z
-        .string()
-        .max(50, 'Tag quá dài (tối đa 50 ký tự)')
-        .nullable()
-        .optional(),
     createdAt: z.date(),
     updatedAt: z.date()
 })
 
-// Create WordType schema (API layer - không có nameKey)
+// Create WordType schema (cần nameKey)
 export const CreateWordTypeSchema = z.object({
-    tag: z
-        .string()
-        .min(1, 'Tag không được để trống')
-        .max(50, 'Tag quá dài (tối đa 50 ký tự)')
-})
-
-// Create WordType service schema (bao gồm auto-generated nameKey)
-export const CreateWordTypeServiceSchema = z.object({
-    nameKey: z
-        .string()
-        .min(1, 'Name key không được để trống')
-        .max(100, 'Name key quá dài (tối đa 100 ký tự)')
-        .refine(isValidTranslationKey, {
-            message: TRANSLATION_KEY_ERROR
-        }),
-    tag: z
-        .string()
-        .min(1, 'Tag không được để trống')
-        .max(50, 'Tag quá dài (tối đa 50 ký tự)')
-})
-
-// Update WordType schema (API layer - không có nameKey)
-export const UpdateWordTypeSchema = z.object({
-    tag: z
-        .string()
-        .min(1, 'Tag không được để trống')
-        .max(50, 'Tag quá dài (tối đa 50 ký tự)')
-        .optional()
-})
-
-// Update WordType service schema (bao gồm auto-generated nameKey)
-export const UpdateWordTypeServiceSchema = z.object({
     nameKey: z
         .string()
         .min(1, 'Name key không được để trống')
@@ -69,11 +32,17 @@ export const UpdateWordTypeServiceSchema = z.object({
         .refine(isValidTranslationKey, {
             message: TRANSLATION_KEY_ERROR
         })
-        .optional(),
-    tag: z
+})
+
+// Update WordType schema
+export const UpdateWordTypeSchema = z.object({
+    nameKey: z
         .string()
-        .min(1, 'Tag không được để trống')
-        .max(50, 'Tag quá dài (tối đa 50 ký tự)')
+        .min(1, 'Name key không được để trống')
+        .max(100, 'Name key quá dài (tối đa 100 ký tự)')
+        .refine(isValidTranslationKey, {
+            message: TRANSLATION_KEY_ERROR
+        })
         .optional()
 })
 
@@ -86,22 +55,20 @@ export const GetWordTypeByIdParamsSchema = z.object({
 export const GetWordTypeListQuerySchema = z.object({
     page: z.string().transform((val) => parseInt(val, 10)).optional(),
     limit: z.string().transform((val) => parseInt(val, 10)).optional(),
-    sortBy: z.enum(['id', 'nameKey', 'tag', 'createdAt', 'updatedAt']).optional(),
+    sortBy: z.enum(['id', 'nameKey', 'createdAt', 'updatedAt']).optional(),
     sortOrder: z.enum(['asc', 'desc']).optional(),
-    search: z.string().optional(),
-    tag: z.string().optional()
+    search: z.string().optional()
 })
 
-// Get WordType by tag params schema
-export const GetWordTypeByTagParamsSchema = z.object({
-    tag: z.string().min(1, 'Tag không được để trống')
+// Get WordType by nameKey params schema
+export const GetWordTypeByNameKeyParamsSchema = z.object({
+    nameKey: z.string().min(1, 'Name key không được để trống')
 })
 
 // Type exports
 export type WordType = z.infer<typeof WordTypeSchema>
 export type CreateWordTypeBodyType = z.infer<typeof CreateWordTypeSchema>
-export type CreateWordTypeServiceType = z.infer<typeof CreateWordTypeServiceSchema>
 export type UpdateWordTypeBodyType = z.infer<typeof UpdateWordTypeSchema>
-export type UpdateWordTypeServiceType = z.infer<typeof UpdateWordTypeServiceSchema>
 export type GetWordTypeByIdParamsType = z.infer<typeof GetWordTypeByIdParamsSchema>
 export type GetWordTypeListQueryType = z.infer<typeof GetWordTypeListQuerySchema>
+export type GetWordTypeByNameKeyParamsType = z.infer<typeof GetWordTypeByNameKeyParamsSchema>

@@ -6,7 +6,10 @@ import {
     GetTranslationListQuerySchema,
     GetTranslationsByKeyQuerySchema,
     GetTranslationsByLanguageQuerySchema,
-    TranslationSchema
+    TranslationSchema,
+    TranslationListResponseSchema,
+    TranslationResSchema,
+    TranslationListResSchema
 } from '../../entities/translation.entities'
 
 // Zod DTOs - automatically validated
@@ -17,4 +20,7 @@ export class GetTranslationListQueryDTO extends createZodDto(GetTranslationListQ
 export class GetTranslationsByKeyQueryDTO extends createZodDto(GetTranslationsByKeyQuerySchema) { }
 export class GetTranslationsByLanguageQueryDTO extends createZodDto(GetTranslationsByLanguageQuerySchema) { }
 export class TranslationResponseDTO extends createZodDto(TranslationSchema) { }
+export class TranslationListResponseDTO extends createZodDto(TranslationListResponseSchema) { }
+export class TranslationResDTO extends createZodDto(TranslationResSchema) { }
+export class TranslationListResDTO extends createZodDto(TranslationListResSchema) { }
 

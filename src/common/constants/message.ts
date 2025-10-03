@@ -161,7 +161,8 @@ export const TRANSLATION_MESSAGE = {
   VALUE_REQUIRED: 'Nội dung dịch không được để trống',
   LANGUAGE_CODE_INVALID: 'Mã ngôn ngữ không hợp lệ',
   KEY_INVALID: 'Key dịch không đúng định dạng',
-  VALUE_TOO_LONG: 'Nội dung dịch quá dài (tối đa 2000 ký tự)'
+  VALUE_TOO_LONG: 'Nội dung dịch quá dài (tối đa 2000 ký tự)',
+  BULK_CREATE_SUCCESS: 'Tạo nhiều bản dịch thành công'
 }
 
 export const WORDTYPE_MESSAGE = {

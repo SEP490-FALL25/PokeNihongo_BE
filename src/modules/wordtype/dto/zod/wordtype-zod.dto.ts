@@ -4,7 +4,7 @@ import {
     UpdateWordTypeSchema,
     GetWordTypeByIdParamsSchema,
     GetWordTypeListQuerySchema,
-    GetWordTypeByTagParamsSchema,
+    GetWordTypeByNameKeyParamsSchema,
     WordTypeSchema
 } from '../../entities/wordtype.entities'
 
@@ -13,5 +13,5 @@ export class CreateWordTypeBodyDTO extends createZodDto(CreateWordTypeSchema) { 
 export class UpdateWordTypeBodyDTO extends createZodDto(UpdateWordTypeSchema) { }
 export class GetWordTypeByIdParamsDTO extends createZodDto(GetWordTypeByIdParamsSchema) { }
 export class GetWordTypeListQueryDTO extends createZodDto(GetWordTypeListQuerySchema) { }
-export class GetWordTypeByTagParamsDTO extends createZodDto(GetWordTypeByTagParamsSchema) { }
+export class GetWordTypeByNameKeyParamsDTO extends createZodDto(GetWordTypeByNameKeyParamsSchema) { }
 export class WordTypeResponseDTO extends createZodDto(WordTypeSchema) { }

@@ -10,10 +10,10 @@ export class TranslationRepository {
         page: number
         limit: number
         search?: string
-        languageCode?: string
+        languageId?: number
         key?: string
     }) {
-        const { page, limit, search, languageCode, key } = params
+        const { page, limit, search, languageId, key } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -25,8 +25,8 @@ export class TranslationRepository {
             ]
         }
 
-        if (languageCode) {
-            where.languageCode = languageCode
+        if (languageId) {
+            where.languageId = languageId
         }
 
         if (key) {
@@ -40,7 +40,7 @@ export class TranslationRepository {
                 take: limit,
                 orderBy: [
                     { key: 'asc' },
-                    { languageCode: 'asc' }
+                    { languageId: 'asc' }
                 ]
             }),
             this.prismaService.translation.count({ where })
@@ -67,11 +67,11 @@ export class TranslationRepository {
         return this.transformTranslation(translation)
     }
 
-    async findByKeyAndLanguage(key: string, languageCode: string): Promise<TranslationType | null> {
+    async findByKeyAndLanguage(key: string, languageId: number): Promise<TranslationType | null> {
         const translation = await this.prismaService.translation.findUnique({
             where: {
-                languageCode_key: {
-                    languageCode,
+                languageId_key: {
+                    languageId,
                     key
                 }
             }
@@ -87,13 +87,13 @@ export class TranslationRepository {
     async findByKey(key: string) {
         const translations = await this.prismaService.translation.findMany({
             where: { key },
-            orderBy: { languageCode: 'asc' }
+            orderBy: { languageId: 'asc' }
         })
 
         return translations.map(item => this.transformTranslation(item))
     }
 
-    async findByLanguage(languageCode: string, params: {
+    async findByLanguage(languageId: number, params: {
         page: number
         limit: number
     }) {
@@ -102,13 +102,13 @@ export class TranslationRepository {
 
         const [data, total] = await Promise.all([
             this.prismaService.translation.findMany({
-                where: { languageCode },
+                where: { languageId },
                 skip,
                 take: limit,
                 orderBy: { key: 'asc' }
             }),
             this.prismaService.translation.count({
-                where: { languageCode }
+                where: { languageId }
             })
         ])
 
@@ -124,7 +124,7 @@ export class TranslationRepository {
     async create(data: CreateTranslationBodyType): Promise<TranslationType> {
         const result = await this.prismaService.translation.create({
             data: {
-                languageCode: data.languageCode,
+                languageId: data.languageId,
                 key: data.key,
                 value: data.value
             }
@@ -136,7 +136,7 @@ export class TranslationRepository {
     async createMany(data: CreateTranslationBodyType[]): Promise<{ count: number }> {
         return await this.prismaService.translation.createMany({
             data: data.map(item => ({
-                languageCode: item.languageCode,
+                languageId: item.languageId,
                 key: item.key,
                 value: item.value
             }))
@@ -147,9 +147,9 @@ export class TranslationRepository {
         const result = await this.prismaService.translation.update({
             where: { id },
             data: {
-                languageCode: data.languageCode,
-                key: data.key,
-                value: data.value
+                ...(data.languageId && { languageId: data.languageId }),
+                ...(data.key && { key: data.key }),
+                ...(data.value && { value: data.value })
             }
         })
 
@@ -158,20 +158,20 @@ export class TranslationRepository {
 
     async updateByKeyAndLanguage(
         key: string,
-        languageCode: string,
+        languageId: number,
         data: UpdateTranslationBodyType
     ): Promise<TranslationType> {
         const result = await this.prismaService.translation.update({
             where: {
-                languageCode_key: {
-                    languageCode,
+                languageId_key: {
+                    languageId,
                     key
                 }
             },
             data: {
-                languageCode: data.languageCode,
-                key: data.key,
-                value: data.value
+                ...(data.languageId && { languageId: data.languageId }),
+                ...(data.key && { key: data.key }),
+                ...(data.value && { value: data.value })
             }
         })
 
@@ -184,11 +184,11 @@ export class TranslationRepository {
         })
     }
 
-    async deleteByKeyAndLanguage(key: string, languageCode: string): Promise<void> {
+    async deleteByKeyAndLanguage(key: string, languageId: number): Promise<void> {
         await this.prismaService.translation.delete({
             where: {
-                languageCode_key: {
-                    languageCode,
+                languageId_key: {
+                    languageId,
                     key
                 }
             }

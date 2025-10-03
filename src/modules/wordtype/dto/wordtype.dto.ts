@@ -74,7 +74,7 @@ export {
     UpdateWordTypeBodyDTO,
     GetWordTypeByIdParamsDTO,
     GetWordTypeListQueryDTO,
-    GetWordTypeByTagParamsDTO,
+    GetWordTypeByNameKeyParamsDTO,
     WordTypeResponseDTO
 } from './zod/wordtype-zod.dto'
 

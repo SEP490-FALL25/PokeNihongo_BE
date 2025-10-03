@@ -1,8 +1,6 @@
 import {
     CreateWordTypeBodyType,
-    CreateWordTypeServiceType,
     UpdateWordTypeBodyType,
-    UpdateWordTypeServiceType,
     GetWordTypeListQueryType,
     WordType
 } from './entities/wordtype.entities'
@@ -30,8 +28,7 @@ export class WordTypeService {
                 page: params.page || 1,
                 limit: params.limit || 10,
                 search: params.search,
-                tag: params.tag,
-                sortBy: params.sortBy as 'id' | 'createdAt' | 'updatedAt' | 'nameKey' | 'tag' | undefined,
+                sortBy: params.sortBy as 'id' | 'createdAt' | 'updatedAt' | 'nameKey' | undefined,
                 sortOrder: params.sortOrder
             }
 
@@ -74,35 +71,19 @@ export class WordTypeService {
         }
     }
 
-    async findByTag(tag: string): Promise<WordType | null> {
-        try {
-            this.logger.log(`Finding word type by tag: ${tag}`)
-            return await this.wordTypeRepository.findByTag(tag)
-        } catch (error) {
-            this.logger.error('Error finding word type by tag:', error)
-            throw error
-        }
-    }
+    // Removed findByTag - use findByNameKey instead
 
     async create(data: CreateWordTypeBodyType): Promise<WordType> {
         try {
-            this.logger.log(`Creating word type with tag: ${data.tag}`)
-
-            // Tự động generate nameKey
-            const nameKey = this.generateNameKey(data.tag)
+            this.logger.log(`Creating word type with nameKey: ${data.nameKey}`)
 
             // Kiểm tra nameKey đã tồn tại chưa
-            const existingWordType = await this.wordTypeRepository.findByNameKey(nameKey)
+            const existingWordType = await this.wordTypeRepository.findByNameKey(data.nameKey)
             if (existingWordType) {
                 throw WordTypeAlreadyExistsException
             }
 
-            const serviceData: CreateWordTypeServiceType = {
-                nameKey,
-                tag: data.tag
-            }
-
-            const wordType = await this.wordTypeRepository.create(serviceData)
+            const wordType = await this.wordTypeRepository.create(data)
             this.logger.log(`Word type created successfully: ${wordType.id}`)
             return wordType
         } catch (error) {
@@ -124,24 +105,15 @@ export class WordTypeService {
                 throw WordTypeNotFoundException
             }
 
-            // Tự động generate nameKey nếu có thay đổi tag
-            let nameKey = existingWordType.nameKey
-            if (data.tag && data.tag !== existingWordType.tag) {
-                nameKey = this.generateNameKey(data.tag)
-
-                // Kiểm tra nameKey mới đã tồn tại chưa
-                const nameKeyExists = await this.wordTypeRepository.existsByNameKey(nameKey, id)
+            // Nếu có nameKey mới, kiểm tra đã tồn tại chưa
+            if (data.nameKey && data.nameKey !== existingWordType.nameKey) {
+                const nameKeyExists = await this.wordTypeRepository.existsByNameKey(data.nameKey, id)
                 if (nameKeyExists) {
                     throw WordTypeAlreadyExistsException
                 }
             }
 
-            const serviceData: UpdateWordTypeServiceType = {
-                nameKey: data.tag ? nameKey : undefined,
-                tag: data.tag
-            }
-
-            const wordType = await this.wordTypeRepository.update(id, serviceData)
+            const wordType = await this.wordTypeRepository.update(id, data)
             this.logger.log(`Word type updated successfully: ${wordType.id}`)
             return wordType
         } catch (error) {
@@ -197,14 +169,10 @@ export class WordTypeService {
             ]
 
             for (const tag of defaultTags) {
-                const nameKey = this.generateNameKey(tag)
+                const nameKey = `wordtype.${tag}.name`
                 const existing = await this.wordTypeRepository.findByNameKey(nameKey)
                 if (!existing) {
-                    const serviceData: CreateWordTypeServiceType = {
-                        nameKey,
-                        tag
-                    }
-                    await this.wordTypeRepository.create(serviceData)
+                    await this.wordTypeRepository.create({ nameKey })
                     this.logger.log(`Created default word type: ${nameKey}`)
                 }
             }
@@ -214,13 +182,6 @@ export class WordTypeService {
             this.logger.error('Error creating default word types:', error)
             throw InvalidWordTypeDataException
         }
-    }
-
-    /**
-     * Tự động generate nameKey từ tag
-     */
-    private generateNameKey(tag: string): string {
-        return `wordtype.${tag}.name`
     }
 }
 

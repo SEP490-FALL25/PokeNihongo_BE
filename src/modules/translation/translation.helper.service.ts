@@ -1,11 +1,26 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { TranslationService } from './translation.service'
+import { LanguagesRepository } from '@/modules/languages/languages.repo'
 
 @Injectable()
 export class TranslationHelperService {
     private readonly logger = new Logger(TranslationHelperService.name)
 
-    constructor(private readonly translationService: TranslationService) { }
+    constructor(
+        private readonly translationService: TranslationService,
+        private readonly languagesRepository: LanguagesRepository
+    ) { }
+
+    /**
+     * Convert languageCode to languageId
+     */
+    private async getLanguageId(languageCode: string): Promise<number> {
+        const language = await this.languagesRepository.findByCode(languageCode)
+        if (!language) {
+            throw new Error(`Language with code '${languageCode}' not found`)
+        }
+        return language.id
+    }
 
     /**
      * Tạo translations cho một key với nhiều ngôn ngữ
@@ -22,11 +37,14 @@ export class TranslationHelperService {
         try {
             this.logger.log(`Creating translations for key: ${key}`)
 
-            const translationData = Object.entries(translations).map(([languageCode, value]) => ({
-                languageCode,
-                key,
-                value
-            }))
+            // Convert languageCode → languageId
+            const translationData = await Promise.all(
+                Object.entries(translations).map(async ([languageCode, value]) => ({
+                    languageId: await this.getLanguageId(languageCode),
+                    key,
+                    value
+                }))
+            )
 
             const result = await this.translationService.createMany(translationData)
             this.logger.log(`Created ${result.count} translations for key: ${key}`)
@@ -45,7 +63,8 @@ export class TranslationHelperService {
      */
     async getTranslation(key: string, languageCode: string): Promise<string | null> {
         try {
-            const translation = await this.translationService.findByKeyAndLanguage(key, languageCode)
+            const languageId = await this.getLanguageId(languageCode)
+            const translation = await this.translationService.findByKeyAndLanguage(key, languageId)
             return translation?.value || null
         } catch (error) {
             this.logger.error(`Error getting translation for key ${key} and language ${languageCode}:`, error)
@@ -63,9 +82,13 @@ export class TranslationHelperService {
             const result = await this.translationService.findByKey({ key })
             const translations: Record<string, string> = {}
 
-            result.translations.forEach(translation => {
-                translations[translation.languageCode] = translation.value
-            })
+            // Cần load language relation để lấy code
+            for (const translation of result.translations) {
+                const language = await this.languagesRepository.findById(translation.languageId)
+                if (language) {
+                    translations[language.code] = translation.value
+                }
+            }
 
             return translations
         } catch (error) {
@@ -84,14 +107,16 @@ export class TranslationHelperService {
         try {
             this.logger.log(`Updating translation for key: ${key}, language: ${languageCode}`)
 
+            const languageId = await this.getLanguageId(languageCode)
+
             // Kiểm tra translation có tồn tại không
-            const existingTranslation = await this.translationService.findByKeyAndLanguage(key, languageCode)
+            const existingTranslation = await this.translationService.findByKeyAndLanguage(key, languageId)
             if (existingTranslation) {
                 // Cập nhật translation hiện có
-                await this.translationService.updateByKeyAndLanguage(key, languageCode, { value })
+                await this.translationService.updateByKeyAndLanguage(key, languageId, { value })
             } else {
                 // Tạo translation mới
-                await this.translationService.create({ languageCode, key, value })
+                await this.translationService.create({ languageId, key, value })
             }
 
             this.logger.log(`Translation updated successfully for key: ${key}, language: ${languageCode}`)

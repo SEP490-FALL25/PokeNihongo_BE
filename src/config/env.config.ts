@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 if (process.env.NODE_ENV !== 'production') {
   console.log('Running in development mode, loading .env file...');
-  config({ path: '.env' }); 
+  config({ path: '.env' });
 }
 
 const configSchema = z.object({
@@ -32,7 +32,11 @@ const configSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string(),
   GOOGLE_REDIRECT_URI: z.string(),
   GOOGLE_CLIENT_REDIRECT_URI: z.string(),
-  FE_URL: z.string().url()
+  FE_URL: z.string().url(),
+  //Google Cloud Text-to-Speech (Optional)
+  GOOGLE_CLOUD_PROJECT_ID: z.string().optional(),
+  GOOGLE_CLOUD_CLIENT_EMAIL: z.string().optional(),
+  GOOGLE_CLOUD_PRIVATE_KEY: z.string().optional()
 })
 
 const configServer = configSchema.safeParse(process.env)

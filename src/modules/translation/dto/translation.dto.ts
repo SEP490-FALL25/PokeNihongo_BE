@@ -8,7 +8,10 @@ export {
     GetTranslationListQueryDTO,
     GetTranslationsByKeyQueryDTO,
     GetTranslationsByLanguageQueryDTO,
-    TranslationResponseDTO
+    TranslationResponseDTO,
+    TranslationListResponseDTO,
+    TranslationResDTO,
+    TranslationListResDTO
 } from './zod/translation.zod-dto'
 
 // Swagger DTOs - for API documentation only
@@ -82,6 +85,5 @@ export class TranslationByKeySwaggerResponseDTO {
     translations: Record<string, string>
 }
 
-// Export for controller
-export { TranslationListSwaggerResponseDTO as TranslationListResponseDTO }
+// Export for controller (aliases for backward compatibility)
 export { TranslationByKeySwaggerResponseDTO as TranslationByKeyResponseDTO }

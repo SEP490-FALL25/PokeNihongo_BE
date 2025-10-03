@@ -61,12 +61,7 @@ export class WordTypeController {
         description: 'Không có quyền truy cập'
     })
     findMany(@Query() query: GetWordTypeListQueryDTO) {
-        // Transform query to match service expectations
-        const transformedQuery = {
-            ...query,
-            sortBy: query.sortBy as 'id' | 'createdAt' | 'updatedAt' | 'nameKey' | 'tag' | undefined
-        }
-        return this.wordTypeService.findMany(transformedQuery)
+        return this.wordTypeService.findMany(query)
     }
 
     @Get('stats')
@@ -86,34 +81,10 @@ export class WordTypeController {
         return this.wordTypeService.getStats()
     }
 
-    @Get('tag/:tag')
-    @ApiOperation({
-        summary: 'Lấy loại từ theo tag',
-        description: 'Lấy danh sách loại từ theo tag cụ thể'
-    })
-    @ApiParam({
-        name: 'tag',
-        description: 'Tag của loại từ',
-        example: 'noun'
-    })
-    @ApiResponse({
-        status: 200,
-        description: 'Lấy loại từ theo tag thành công',
-        type: [WordTypeSwaggerResponseDTO]
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
-    @ZodSerializerDto(WordTypeResponseDTO)
-    findByTag(@Param('tag') tag: string) {
-        return this.wordTypeService.findByTag(tag)
-    }
-
     @Get('name-key/:nameKey')
     @ApiOperation({
-        summary: 'Lấy loại từ theo name key',
-        description: 'Lấy loại từ theo name key cụ thể'
+        summary: 'Lấy loại từ theo nameKey',
+        description: 'Lấy loại từ theo nameKey cụ thể'
     })
     @ApiParam({
         name: 'nameKey',
@@ -122,12 +93,8 @@ export class WordTypeController {
     })
     @ApiResponse({
         status: 200,
-        description: 'Lấy loại từ thành công',
+        description: 'Lấy loại từ theo nameKey thành công',
         type: WordTypeSwaggerResponseDTO
-    })
-    @ApiResponse({
-        status: 404,
-        description: 'Loại từ không tồn tại'
     })
     @ApiResponse({
         status: 401,
@@ -137,6 +104,7 @@ export class WordTypeController {
     findByNameKey(@Param('nameKey') nameKey: string) {
         return this.wordTypeService.findByNameKey(nameKey)
     }
+
 
     @Get(':id')
     @ApiOperation({

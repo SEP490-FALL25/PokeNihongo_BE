@@ -1,4 +1,4 @@
-import { WordType, CreateWordTypeServiceType, UpdateWordTypeServiceType } from './entities/wordtype.entities'
+import { WordType, CreateWordTypeBodyType, UpdateWordTypeBodyType } from './entities/wordtype.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
 
@@ -10,24 +10,16 @@ export class WordTypeRepository {
         page: number
         limit: number
         search?: string
-        tag?: string
         sortBy?: string
         sortOrder?: 'asc' | 'desc'
     }) {
-        const { page, limit, search, tag, sortBy = 'id', sortOrder = 'asc' } = params
+        const { page, limit, search, sortBy = 'id', sortOrder = 'asc' } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
 
         if (search) {
-            where.OR = [
-                { nameKey: { contains: search, mode: 'insensitive' } },
-                { tag: { contains: search, mode: 'insensitive' } }
-            ]
-        }
-
-        if (tag) {
-            where.tag = { contains: tag, mode: 'insensitive' }
+            where.nameKey = { contains: search, mode: 'insensitive' }
         }
 
         const [data, total] = await Promise.all([
@@ -59,15 +51,7 @@ export class WordTypeRepository {
         return this.transformWordType(result)
     }
 
-    async findByTag(tag: string): Promise<WordType | null> {
-        const result = await this.prismaService.wordType.findFirst({
-            where: { tag }
-        })
-
-        if (!result) return null
-
-        return this.transformWordType(result)
-    }
+    // Removed findByTag - use findByNameKey instead
 
     async findByNameKey(nameKey: string): Promise<WordType | null> {
         const result = await this.prismaService.wordType.findUnique({
@@ -79,23 +63,21 @@ export class WordTypeRepository {
         return this.transformWordType(result)
     }
 
-    async create(data: CreateWordTypeServiceType): Promise<WordType> {
+    async create(data: CreateWordTypeBodyType): Promise<WordType> {
         const result = await this.prismaService.wordType.create({
             data: {
-                nameKey: data.nameKey,
-                tag: data.tag
+                nameKey: data.nameKey
             }
         })
 
         return this.transformWordType(result)
     }
 
-    async update(id: number, data: UpdateWordTypeServiceType): Promise<WordType> {
+    async update(id: number, data: UpdateWordTypeBodyType): Promise<WordType> {
         const result = await this.prismaService.wordType.update({
             where: { id },
             data: {
-                ...(data.nameKey && { nameKey: data.nameKey }),
-                ...(data.tag && { tag: data.tag })
+                ...(data.nameKey && { nameKey: data.nameKey })
             }
         })
 
@@ -134,7 +116,6 @@ export class WordTypeRepository {
         return {
             id: wordType.id,
             nameKey: wordType.nameKey,
-            tag: wordType.tag,
             createdAt: wordType.createdAt,
             updatedAt: wordType.updatedAt
         }

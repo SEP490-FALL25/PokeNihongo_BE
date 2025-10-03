@@ -144,19 +144,19 @@ model Languages {
 
 // Model Translation (Hệ thống đa ngôn ngữ tập trung)
 model Translation {
-  id           Int    @id @default(autoincrement())
-  languageCode String @db.VarChar(10) // Mã ngôn ngữ (vi, en, ja, etc.)
-  key          String @db.VarChar(500) // Key định danh duy nhất
-  value        String @db.VarChar(2000) // Nội dung đã dịch
+  id         Int    @id @default(autoincrement())
+  languageId Int // Foreign key đến Languages.id
+  key        String @db.VarChar(500) // Key định danh duy nhất
+  value      String @db.VarChar(2000) // Nội dung đã dịch
 
   // Quan hệ với Languages
-  language Languages? @relation(fields: [languageCode], references: [code], onDelete: Cascade, onUpdate: NoAction)
+  language Languages @relation(fields: [languageId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([languageCode, key]) // Cặp (languageCode, key) phải duy nhất
-  @@index([languageCode])
+  @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
+  @@index([languageId])
   @@index([key])
 }
 
@@ -164,7 +164,6 @@ model Translation {
 model WordType {
   id           Int          @id @default(autoincrement())
   nameKey      String       @unique @db.VarChar(100) // Key để dịch tên loại từ
-  tag          String?      @db.VarChar(50) // Tag để phân loại (noun, verb, adjective, etc.)
   vocabularies Vocabulary[] // Quan hệ Một-Nhiều với Vocabulary
   meanings     Meaning[] // Quan hệ Một-Nhiều với Meaning
 
@@ -172,7 +171,6 @@ model WordType {
   updatedAt DateTime @updatedAt
 
   @@index([nameKey])
-  @@index([tag])
 }
 
 // Model Kanji (Thư viện Kanji)

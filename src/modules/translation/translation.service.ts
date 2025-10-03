@@ -46,10 +46,10 @@ export class TranslationService {
         }
     }
 
-    async findByKeyAndLanguage(key: string, languageCode: string): Promise<TranslationType | null> {
+    async findByKeyAndLanguage(key: string, languageId: number): Promise<TranslationType | null> {
         try {
-            this.logger.log(`Finding translation by key: ${key} and language: ${languageCode}`)
-            return await this.translationRepository.findByKeyAndLanguage(key, languageCode)
+            this.logger.log(`Finding translation by key: ${key} and languageId: ${languageId}`)
+            return await this.translationRepository.findByKeyAndLanguage(key, languageId)
         } catch (error) {
             this.logger.error('Error finding translation by key and language:', error)
             throw error
@@ -73,8 +73,8 @@ export class TranslationService {
 
     async findByLanguage(params: GetTranslationsByLanguageQueryType) {
         try {
-            this.logger.log(`Finding translations by language: ${params.languageCode}`)
-            return await this.translationRepository.findByLanguage(params.languageCode, {
+            this.logger.log(`Finding translations by languageId: ${params.languageId}`)
+            return await this.translationRepository.findByLanguage(params.languageId, {
                 page: params.page,
                 limit: params.limit
             })
@@ -86,12 +86,12 @@ export class TranslationService {
 
     async create(data: CreateTranslationBodyType): Promise<TranslationType> {
         try {
-            this.logger.log(`Creating translation: ${data.key} - ${data.languageCode}`)
+            this.logger.log(`Creating translation: ${data.key} - languageId: ${data.languageId}`)
 
             // Kiểm tra bản dịch đã tồn tại chưa
             const existingTranslation = await this.translationRepository.findByKeyAndLanguage(
                 data.key,
-                data.languageCode
+                data.languageId
             )
             if (existingTranslation) {
                 throw TranslationAlreadyExistsException
@@ -114,7 +114,7 @@ export class TranslationService {
             for (const item of data) {
                 const existingTranslation = await this.translationRepository.findByKeyAndLanguage(
                     item.key,
-                    item.languageCode
+                    item.languageId
                 )
                 if (existingTranslation) {
                     throw TranslationAlreadyExistsException
@@ -140,12 +140,12 @@ export class TranslationService {
                 throw TranslationNotFoundException
             }
 
-            // Nếu thay đổi key hoặc languageCode, kiểm tra trùng lặp
+            // Nếu thay đổi key hoặc languageId, kiểm tra trùng lặp
             if ((data.key && data.key !== existingTranslation.key) ||
-                (data.languageCode && data.languageCode !== existingTranslation.languageCode)) {
+                (data.languageId && data.languageId !== existingTranslation.languageId)) {
                 const duplicateTranslation = await this.translationRepository.findByKeyAndLanguage(
                     data.key || existingTranslation.key,
-                    data.languageCode || existingTranslation.languageCode
+                    data.languageId || existingTranslation.languageId
                 )
                 if (duplicateTranslation && duplicateTranslation.id !== id) {
                     throw TranslationAlreadyExistsException
@@ -163,19 +163,19 @@ export class TranslationService {
 
     async updateByKeyAndLanguage(
         key: string,
-        languageCode: string,
+        languageId: number,
         data: UpdateTranslationBodyType
     ): Promise<TranslationType> {
         try {
-            this.logger.log(`Updating translation by key: ${key} and language: ${languageCode}`)
+            this.logger.log(`Updating translation by key: ${key} and languageId: ${languageId}`)
 
             // Kiểm tra bản dịch có tồn tại không
-            const existingTranslation = await this.translationRepository.findByKeyAndLanguage(key, languageCode)
+            const existingTranslation = await this.translationRepository.findByKeyAndLanguage(key, languageId)
             if (!existingTranslation) {
                 throw TranslationNotFoundException
             }
 
-            const translation = await this.translationRepository.updateByKeyAndLanguage(key, languageCode, data)
+            const translation = await this.translationRepository.updateByKeyAndLanguage(key, languageId, data)
             this.logger.log(`Translation updated successfully: ${translation.id}`)
             return translation
         } catch (error) {
@@ -202,18 +202,18 @@ export class TranslationService {
         }
     }
 
-    async deleteByKeyAndLanguage(key: string, languageCode: string): Promise<void> {
+    async deleteByKeyAndLanguage(key: string, languageId: number): Promise<void> {
         try {
-            this.logger.log(`Deleting translation by key: ${key} and language: ${languageCode}`)
+            this.logger.log(`Deleting translation by key: ${key} and languageId: ${languageId}`)
 
             // Kiểm tra bản dịch có tồn tại không
-            const existingTranslation = await this.translationRepository.findByKeyAndLanguage(key, languageCode)
+            const existingTranslation = await this.translationRepository.findByKeyAndLanguage(key, languageId)
             if (!existingTranslation) {
                 throw TranslationNotFoundException
             }
 
-            await this.translationRepository.deleteByKeyAndLanguage(key, languageCode)
-            this.logger.log(`Translation deleted successfully: ${key} - ${languageCode}`)
+            await this.translationRepository.deleteByKeyAndLanguage(key, languageId)
+            this.logger.log(`Translation deleted successfully: ${key} - languageId: ${languageId}`)
         } catch (error) {
             this.logger.error('Error deleting translation by key and language:', error)
             throw InvalidTranslationDataException

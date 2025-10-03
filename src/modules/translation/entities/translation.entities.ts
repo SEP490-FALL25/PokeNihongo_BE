@@ -24,13 +24,7 @@ const TRANSLATION_KEY_ERROR = 'Key dịch phải theo định dạng: module.id.
 
 export const TranslationSchema = z.object({
     id: z.number(),
-    languageCode: z
-        .string()
-        .min(2, 'Mã ngôn ngữ phải có ít nhất 2 ký tự')
-        .max(10, 'Mã ngôn ngữ quá dài (tối đa 10 ký tự)')
-        .refine(isValidLanguageCode, {
-            message: LANGUAGE_CODE_ERROR
-        }),
+    languageId: z.number().min(1, 'Language ID phải lớn hơn 0'),
     key: z
         .string()
         .min(1, 'Key dịch không được để trống')
@@ -47,13 +41,7 @@ export const TranslationSchema = z.object({
 })
 
 export const CreateTranslationSchema = z.object({
-    languageCode: z
-        .string()
-        .min(2, 'Mã ngôn ngữ phải có ít nhất 2 ký tự')
-        .max(10, 'Mã ngôn ngữ quá dài (tối đa 10 ký tự)')
-        .refine(isValidLanguageCode, {
-            message: LANGUAGE_CODE_ERROR
-        }),
+    languageId: z.number().min(1, 'Language ID phải lớn hơn 0'),
     key: z
         .string()
         .min(1, 'Key dịch không được để trống')
@@ -68,14 +56,7 @@ export const CreateTranslationSchema = z.object({
 })
 
 export const UpdateTranslationSchema = z.object({
-    languageCode: z
-        .string()
-        .min(2, 'Mã ngôn ngữ phải có ít nhất 2 ký tự')
-        .max(10, 'Mã ngôn ngữ quá dài (tối đa 10 ký tự)')
-        .refine(isValidLanguageCode, {
-            message: LANGUAGE_CODE_ERROR
-        })
-        .optional(),
+    languageId: z.number().min(1, 'Language ID phải lớn hơn 0').optional(),
     key: z
         .string()
         .min(1, 'Key dịch không được để trống')
@@ -99,7 +80,7 @@ export const GetTranslationListQuerySchema = z.object({
     page: z.string().transform((val) => parseInt(val, 10)).default('1'),
     limit: z.string().transform((val) => parseInt(val, 10)).default('10'),
     search: z.string().optional(),
-    languageCode: z.string().optional(),
+    languageId: z.string().transform((val) => parseInt(val, 10)).optional(),
     key: z.string().optional()
 })
 
@@ -108,10 +89,41 @@ export const GetTranslationsByKeyQuerySchema = z.object({
 })
 
 export const GetTranslationsByLanguageQuerySchema = z.object({
-    languageCode: z.string().min(2, 'Mã ngôn ngữ không được để trống'),
+    languageId: z.string().transform((val) => parseInt(val, 10)),
     page: z.string().transform((val) => parseInt(val, 10)).default('1'),
     limit: z.string().transform((val) => parseInt(val, 10)).default('10')
 })
+
+// List Response Schema (internal use)
+export const TranslationListResponseSchema = z.object({
+    data: z.array(TranslationSchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+    totalPages: z.number()
+})
+
+// Standard Response Schemas (like vocabulary pattern)
+export const TranslationResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: TranslationSchema,
+        message: z.string()
+    })
+    .strict()
+
+export const TranslationListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            items: z.array(TranslationSchema),
+            total: z.number(),
+            page: z.number(),
+            limit: z.number()
+        }),
+        message: z.string()
+    })
+    .strict()
 
 // Type exports
 export type TranslationType = z.infer<typeof TranslationSchema>
@@ -121,3 +133,5 @@ export type GetTranslationByIdParamsType = z.infer<typeof GetTranslationByIdPara
 export type GetTranslationListQueryType = z.infer<typeof GetTranslationListQuerySchema>
 export type GetTranslationsByKeyQueryType = z.infer<typeof GetTranslationsByKeyQuerySchema>
 export type GetTranslationsByLanguageQueryType = z.infer<typeof GetTranslationsByLanguageQuerySchema>
+export type TranslationResType = z.infer<typeof TranslationResSchema>
+export type TranslationListResType = z.infer<typeof TranslationListResSchema>

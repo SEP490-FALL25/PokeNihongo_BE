@@ -12,6 +12,7 @@ import {
     VocabularyNotFoundException
 } from '@/modules/vocabulary/dto/vocabulary.error'
 import { VocabularyRepository } from '@/modules/vocabulary/vocabulary.repo'
+import { VocabularyHelperService } from '@/modules/vocabulary/vocabulary.helper.service'
 import { VOCABULARY_MESSAGE } from '@/common/constants/message'
 import { UploadService } from '@/3rdService/upload/upload.service'
 import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
@@ -25,90 +26,11 @@ export class VocabularyService {
     constructor(
         private readonly vocabularyRepository: VocabularyRepository,
         private readonly uploadService: UploadService,
-        private readonly textToSpeechService: TextToSpeechService
+        private readonly textToSpeechService: TextToSpeechService,
+        private readonly vocabularyHelperService: VocabularyHelperService
     ) { }
 
-    //#region Create
-    async create(body: CreateVocabularyBodyType, imageFile?: Express.Multer.File, audioFile?: Express.Multer.File, createdById?: number) {
-        try {
-            // Check if vocabulary already exists FIRST
-            const existingVocabulary = await this.vocabularyRepository.findFirst({
-                wordJp: body.wordJp
-            })
-
-            if (existingVocabulary) {
-                throw VocabularyAlreadyExistsException
-            }
-
-            let finalAudioFile = audioFile
-
-            // If no audio file provided, generate audio using text-to-speech
-            if (!audioFile && body.wordJp) {
-                try {
-                    this.logger.log('No audio file provided, generating audio using text-to-speech for word: ' + body.wordJp)
-
-                    // Generate audio from Japanese text
-                    const audioResult = await this.textToSpeechService.convertTextToSpeech(body.wordJp, {
-                        languageCode: 'ja-JP',
-                        voiceName: 'ja-JP-Wavenet-A',
-                        audioEncoding: 'MP3'
-                    })
-
-                    // Create a temporary file object for the generated audio
-                    const generatedAudioFile: Express.Multer.File = {
-                        fieldname: 'audioUrl',
-                        originalname: `${body.wordJp}_generated.mp3`,
-                        encoding: '7bit',
-                        mimetype: 'audio/mpeg',
-                        buffer: audioResult.audioContent,
-                        size: audioResult.audioContent.length
-                    } as Express.Multer.File
-
-                    finalAudioFile = generatedAudioFile
-                    this.logger.log('Successfully generated audio from text using text-to-speech')
-                } catch (error) {
-                    this.logger.warn('Text-to-Speech service not available, continuing without audio:', error.message)
-                    // Continue without audio if generation fails
-                    finalAudioFile = undefined
-                }
-            }
-
-            // Upload files only if vocabulary doesn't exist
-            const uploadResults = await this.uploadVocabularyFiles(imageFile, finalAudioFile)
-
-            // Create vocabulary with uploaded URLs and creator info
-            const vocabularyData = {
-                ...body,
-                imageUrl: uploadResults.data.imageUrl,
-                audioUrl: uploadResults.data.audioUrl,
-                createdById: createdById || null
-            }
-
-            const vocabulary = await this.vocabularyRepository.create({
-                ...vocabularyData,
-                imageUrl: vocabularyData.imageUrl || undefined,
-                audioUrl: vocabularyData.audioUrl || undefined,
-                createdById: vocabularyData.createdById
-            })
-
-            return {
-                data: vocabulary,
-                message: VOCABULARY_MESSAGE.CREATE_SUCCESS
-            }
-        } catch (error) {
-            // If it's our custom exception, re-throw it
-            if (error === VocabularyAlreadyExistsException) {
-                throw error
-            }
-            // Handle database unique constraint errors
-            if (isUniqueConstraintPrismaError(error)) {
-                throw VocabularyAlreadyExistsException
-            }
-            this.logger.error('Error creating vocabulary:', error)
-            throw InvalidVocabularyDataException
-        }
-    }
-    //#endregion
+    // Removed old create method - use createFullVocabularyWithFiles instead
 
     //#region Find All
     async findAll(query: GetVocabularyListQueryType) {
@@ -144,10 +66,31 @@ export class VocabularyService {
             message: VOCABULARY_MESSAGE.GET_SUCCESS
         }
     }
+
+    async findByWordJp(wordJp: string) {
+        const vocabulary = await this.vocabularyRepository.findFirst({
+            wordJp
+        })
+
+        if (!vocabulary) {
+            return null
+        }
+
+        return {
+            data: vocabulary,
+            message: VOCABULARY_MESSAGE.GET_SUCCESS
+        }
+    }
     //#endregion
 
     //#region Update
-    async update(id: number, body: UpdateVocabularyBodyType, imageFile?: Express.Multer.File, audioFile?: Express.Multer.File) {
+    async update(
+        id: number,
+        body: UpdateVocabularyBodyType,
+        imageFile?: Express.Multer.File,
+        audioFile?: Express.Multer.File,
+        regenerateAudio?: boolean
+    ) {
         try {
             // Get existing vocabulary to get old URLs
             const existingVocabulary = await this.vocabularyRepository.findUnique({ id })
@@ -163,11 +106,46 @@ export class VocabularyService {
                 existingVocabulary.audioUrl || undefined
             )
 
+            let finalAudioUrl = uploadResults.data.audioUrl || existingVocabulary.audioUrl
+
+            // If no audio file uploaded AND regenerateAudio=true → Gen new audio using TTS
+            if (!audioFile && regenerateAudio && body.wordJp) {
+                this.logger.log('Regenerating audio using TTS...')
+                try {
+                    const ttsResult = await this.textToSpeechService.convertTextToSpeech(
+                        body.wordJp,
+                        { languageCode: 'ja-JP', audioEncoding: 'MP3' }
+                    )
+
+                    const audioBuffer = ttsResult.audioContent
+                    const fileName = `vocabulary_${body.wordJp}_${Date.now()}.mp3`
+
+                    const generatedAudioFile: Express.Multer.File = {
+                        buffer: audioBuffer,
+                        originalname: fileName,
+                        mimetype: 'audio/mpeg',
+                        fieldname: 'audioFile',
+                        encoding: '7bit',
+                        size: audioBuffer.length,
+                        stream: null as any,
+                        destination: '',
+                        filename: fileName,
+                        path: ''
+                    }
+
+                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile)
+                    finalAudioUrl = uploadResult.url
+                    this.logger.log(`Audio regenerated via TTS: ${finalAudioUrl}`)
+                } catch (ttsError) {
+                    this.logger.warn('Failed to regenerate audio using TTS:', ttsError)
+                }
+            }
+
             // Update vocabulary with new URLs
             const updateData = {
                 ...body,
                 imageUrl: uploadResults.data.imageUrl || existingVocabulary.imageUrl,
-                audioUrl: uploadResults.data.audioUrl || existingVocabulary.audioUrl
+                audioUrl: finalAudioUrl
             }
 
             // If wordJp is being updated, check for duplicates
@@ -415,6 +393,188 @@ export class VocabularyService {
         return matches ? [...new Set(matches)] : [] // Loại bỏ trùng lặp
     }
 
+    //#endregion
+
+    //#region Add Meaning to Existing Vocabulary
+    /**
+     * Thêm nghĩa mới cho từ vựng đã tồn tại
+     */
+    async addMeaningToExistingVocabulary(
+        vocabularyId: number,
+        meaningData: {
+            wordTypeId?: number
+            exampleSentenceJp?: string
+        }
+    ) {
+        try {
+            this.logger.log(`Adding new meaning to vocabulary ${vocabularyId}`)
+
+            // Kiểm tra vocabulary có tồn tại không
+            const vocabulary = await this.vocabularyRepository.findUnique({ id: vocabularyId })
+            if (!vocabulary) {
+                throw VocabularyNotFoundException
+            }
+
+            // Thêm meaning mới
+            const meaning = await this.vocabularyHelperService.addMeaningToVocabulary(
+                vocabularyId,
+                meaningData
+            )
+
+            return {
+                data: meaning,
+                message: 'Thêm nghĩa mới thành công'
+            }
+        } catch (error) {
+            this.logger.error(`Error adding meaning to vocabulary ${vocabularyId}:`, error)
+            if (error === VocabularyNotFoundException) {
+                throw error
+            }
+            throw new Error('Không thể thêm nghĩa mới')
+        }
+    }
+
+    // Removed createOrAddMeaning - use createFullVocabularyWithFiles instead
+    //#endregion
+
+    //#region Create Full Vocabulary with Translations
+    /**
+     * Tạo vocabulary hoàn chỉnh với file uploads (audio + image)
+     */
+    async createFullVocabularyWithFiles(
+        data: {
+            word_jp: string
+            reading: string
+            level_n?: number
+            word_type_id?: number
+            translations: {
+                meaning: Array<{ language_code: string; value: string }>
+                examples?: Array<{ language_code: string; sentence: string; original_sentence: string }>
+            }
+        },
+        audioFile?: Express.Multer.File,
+        imageFile?: Express.Multer.File,
+        createdById?: number
+    ) {
+        try {
+            this.logger.log('Creating full vocabulary with file uploads')
+
+            // 1. Upload files if provided, or generate audio using TTS
+            let audioUrl: string | undefined
+            let imageUrl: string | undefined
+
+            if (audioFile) {
+                this.logger.log('Uploading audio file...')
+                const audioResult = await this.uploadService.uploadFile(audioFile)
+                audioUrl = audioResult.url
+                this.logger.log(`Audio uploaded: ${audioUrl}`)
+            } else {
+                // Generate audio using text-to-speech if no audio file provided
+                this.logger.log('No audio file provided, generating audio using TTS...')
+                try {
+                    // 1. Generate audio using TTS
+                    const ttsResult = await this.textToSpeechService.convertTextToSpeech(
+                        data.word_jp,
+                        { languageCode: 'ja-JP', audioEncoding: 'MP3' }
+                    )
+
+                    // 2. Create a buffer file to upload
+                    const audioBuffer = ttsResult.audioContent
+                    const fileName = `vocabulary_${data.word_jp}_${Date.now()}.mp3`
+
+                    // Convert buffer to Multer file-like object
+                    const generatedAudioFile: Express.Multer.File = {
+                        buffer: audioBuffer,
+                        originalname: fileName,
+                        mimetype: 'audio/mpeg',
+                        fieldname: 'audioFile',
+                        encoding: '7bit',
+                        size: audioBuffer.length,
+                        stream: null as any,
+                        destination: '',
+                        filename: fileName,
+                        path: ''
+                    }
+
+                    // 3. Upload to Cloudinary
+                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile)
+                    audioUrl = uploadResult.url
+                    this.logger.log(`Audio generated via TTS and uploaded: ${audioUrl}`)
+                } catch (ttsError) {
+                    this.logger.warn('Failed to generate audio using TTS:', ttsError)
+                    // Continue without audio if TTS fails
+                }
+            }
+
+            if (imageFile) {
+                this.logger.log('Uploading image file...')
+                const imageResult = await this.uploadService.uploadFile(imageFile)
+                imageUrl = imageResult.url
+                this.logger.log(`Image uploaded: ${imageUrl}`)
+            }
+
+            // 2. Check vocabulary exists
+            const existingCheck = await this.vocabularyHelperService.checkVocabularyExists(
+                data.word_jp,
+                data.reading
+            )
+
+            if (existingCheck.exists && existingCheck.vocabularyId) {
+                // Vocabulary exists → Add new meaning with translations
+                this.logger.log(`Vocabulary already exists (ID: ${existingCheck.vocabularyId}), adding new meaning with translations`)
+
+                const result = await this.vocabularyHelperService.addMeaningWithTranslations(
+                    existingCheck.vocabularyId,
+                    data.translations,
+                    data.word_type_id
+                )
+
+                return {
+                    data: {
+                        vocabularyId: existingCheck.vocabularyId,
+                        meaningId: result.meaning.id,
+                        translationsCreated: result.translationsCreated,
+                        isNew: false,
+                        audioUrl,
+                        imageUrl
+                    },
+                    message: 'Từ vựng đã tồn tại. Đã thêm nghĩa mới với translations.'
+                }
+            } else {
+                // Vocabulary doesn't exist → Create new
+                this.logger.log('Creating new vocabulary with full translations and uploaded files')
+
+                const result = await this.vocabularyHelperService.createVocabularyWithTranslations(
+                    {
+                        wordJp: data.word_jp,
+                        reading: data.reading,
+                        levelN: data.level_n,
+                        audioUrl,
+                        imageUrl,
+                        createdById
+                    },
+                    data.translations,
+                    data.word_type_id
+                )
+
+                return {
+                    data: {
+                        vocabularyId: result.vocabulary.id,
+                        meaningId: result.meaning.id,
+                        translationsCreated: result.translationsCreated,
+                        isNew: true,
+                        vocabulary: result.vocabulary,
+                        audioUrl,
+                        imageUrl
+                    },
+                    message: VOCABULARY_MESSAGE.CREATE_SUCCESS
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error creating full vocabulary with files:', error)
+            throw InvalidVocabularyDataException
+        }
+    }
     //#endregion
 
 }

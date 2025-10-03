@@ -51,9 +51,11 @@ export class VocabularyRepository {
         }
     }
 
-    async findUnique(where: { id: number }): Promise<VocabularyType | null> {
+    async findUnique(where: { id?: number }): Promise<VocabularyType | null> {
+        if (!where.id) return null
+
         const result = await this.prismaService.vocabulary.findUnique({
-            where
+            where: { id: where.id }
         })
         return result ? this.transformVocabulary(result) : null
     }
