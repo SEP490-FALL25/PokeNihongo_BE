@@ -13,6 +13,7 @@ import {
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { TokenService } from 'src/shared/services/token.service'
 import { AccessTokenPayload } from 'src/shared/types/jwt.type'
+import { SYSTEM_MESSAGE } from '../constants/message'
 
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
@@ -39,14 +40,14 @@ export class AccessTokenGuard implements CanActivate {
       request[REQUEST_USER_KEY] = decodedAccessToken
       return decodedAccessToken
     } catch {
-      throw new UnauthorizedException('AccessToken không hợp lệ')
+      throw new UnauthorizedException(SYSTEM_MESSAGE.SESSION_EXPIRED)
     }
   }
 
   private extractAccessTokenFromHeader(request: any): string {
     const accessToken = request.headers.authorization?.split(' ')[1]
     if (!accessToken) {
-      throw new UnauthorizedException('Thiếu AccessToken')
+      throw new UnauthorizedException(SYSTEM_MESSAGE.SESSION_EXPIRED)
     }
     return accessToken
   }
@@ -76,11 +77,11 @@ export class AccessTokenGuard implements CanActivate {
         }
       })
       .catch(() => {
-        throw new ForbiddenException('Bạn không có quyền truy cập tác vụ này')
+        throw new ForbiddenException(SYSTEM_MESSAGE.UNAUTHTHORIZED)
       })
     const canAccess = role.permissions.length > 0
     if (!canAccess) {
-      throw new ForbiddenException('Bạn không có quyền truy cập tác vụ này')
+      throw new ForbiddenException(SYSTEM_MESSAGE.UNAUTHTHORIZED)
     }
     request[REQUEST_ROLE_PERMISSIONS] = role
   }
