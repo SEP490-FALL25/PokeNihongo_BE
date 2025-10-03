@@ -94,7 +94,6 @@ export class GoogleService {
       const device = await this.authRepository.createDevice({
         userId: user.id,
         userAgent: userAgent,
-        deviceToken: uuidv4(), // Generate a unique device token
         ip: ip
       })
       const authTokens = await this.authService.generateTokens({

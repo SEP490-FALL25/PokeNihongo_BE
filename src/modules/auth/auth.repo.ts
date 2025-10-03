@@ -56,7 +56,7 @@ export class AuthRepository {
   }
 
   async registerUser(
-    user: Pick<UserType, 'email' | 'roleId' | 'password' | 'levelId'> & {
+    user: Pick<UserType, 'email' | 'roleId' | 'password'> & {
       name: string
     }
   ): Promise<Omit<UserType, 'password'>> {
@@ -87,7 +87,7 @@ export class AuthRepository {
   }
 
   createDevice(
-    data: Pick<DeviceType, 'userId' | 'userAgent' | 'ip' | 'deviceToken'> &
+    data: Pick<DeviceType, 'userId' | 'userAgent' | 'ip'> &
       Partial<Pick<DeviceType, 'lastActive' | 'isActive'>>
   ) {
     return this.prismaService.device.create({
@@ -106,7 +106,7 @@ export class AuthRepository {
   }
 
   async createOrUpdateDevice(
-    data: Pick<DeviceType, 'userId' | 'userAgent' | 'ip' | 'deviceToken'> &
+    data: Pick<DeviceType, 'userId' | 'userAgent' | 'ip'> &
       Partial<Pick<DeviceType, 'lastActive' | 'isActive'>>
   ) {
     // Kiểm tra device đã tồn tại chưa

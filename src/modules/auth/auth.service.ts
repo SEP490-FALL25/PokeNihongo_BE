@@ -46,7 +46,6 @@ import {
 } from '@nestjs/common'
 import { Queue } from 'bull'
 import Redis from 'ioredis'
-import { v4 as uuidv4 } from 'uuid'
 import { LevelRepo } from '../level/level.repo'
 @Injectable()
 export class AuthService {
@@ -103,7 +102,6 @@ export class AuthService {
     const device = await this.authRepository.createOrUpdateDevice({
       userId: user.id,
       userAgent: body.userAgent,
-      deviceToken: uuidv4(),
       ip: body.ip
     })
 
@@ -117,11 +115,7 @@ export class AuthService {
     const { password, ...userWithoutPassword } = user
     const data = {
       ...userWithoutPassword,
-      ...tokens,
-      device: {
-        id: device.id,
-        deviceToken: device.deviceToken
-      }
+      ...tokens
     }
     return {
       data,
@@ -133,14 +127,13 @@ export class AuthService {
     try {
       const hashedPassword = await this.hashingService.hash(body.password)
 
-      const firstLevel = await this.levelRepo.getFirstLevelUser()
+      // const firstLevel = await this.levelRepo.getFirstLevelUser()
       const roleId = await this.sharedRoleRepository.getCustomerRoleId()
       const [user] = await Promise.all([
         this.authRepository.registerUser({
           email: body.email.toLowerCase(),
           password: hashedPassword,
           roleId,
-          levelId: firstLevel?.id || null,
           name: body.name
         })
       ])
@@ -159,11 +152,7 @@ export class AuthService {
       const { ...userWithoutPassword } = user
       const data = {
         ...userWithoutPassword,
-        ...tokens,
-        device: {
-          id: device.id,
-          deviceToken: device.deviceToken
-        }
+        ...tokens
       }
 
       return {
@@ -343,8 +332,7 @@ export class AuthService {
     const device = await this.authRepository.createDevice({
       userId: user.id,
       userAgent: userAgent,
-      ip: ip,
-      deviceToken: uuidv4()
+      ip: ip
     })
 
     // 4. Tạo accessToken cho device mới
@@ -587,8 +575,7 @@ export class AuthService {
     const device = await this.authRepository.createDevice({
       userId,
       userAgent,
-      ip,
-      deviceToken: uuidv4()
+      ip
     })
     return device
   }
@@ -613,8 +600,7 @@ export class AuthService {
       userId: user.id,
       userAgent: userAgent,
 
-      ip: ip,
-      deviceToken: uuidv4()
+      ip: ip
     })
     const accessToken = await this.tokenService.signAccessToken({
       userId: user.id,
