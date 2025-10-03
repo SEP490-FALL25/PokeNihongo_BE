@@ -489,7 +489,7 @@ export class AuthService {
       const bodyContent = 'Vui lòng nhập mã OTP để tiếp tục bước tiếp theo.'
       this.mailService.generateAndSendOtp(emailLower, template, content, bodyContent)
       return {
-        statusCode: 201,
+        statusCode: HttpStatus.OK,
         data: {
           type: TypeOfVerificationCode.REGISTER
         },
