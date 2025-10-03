@@ -1,18 +1,20 @@
 import { config } from 'dotenv'
 import { z } from 'zod'
 
+
 if (process.env.NODE_ENV !== 'production') {
   console.log('Running in development mode, loading .env file...');
   config({ path: '.env' });
 }
 
+
 const configSchema = z.object({
   //Application
   APP_NAME: z.string().default('My App'),
-  APP_URL: z.string(),
-  APP_PORT: z.coerce.number(),
-  API_PREFIX: z.string(),
-  APP_CORS_ORIGIN: z.string(),
+  APP_URL: z.string().optional(),
+  APP_PORT: z.coerce.number().default(4000),
+  API_PREFIX: z.string().optional(),
+  APP_CORS_ORIGIN: z.string().default('*'),
   //Database
   DATABASE_URL: z.string(),
   ACCESS_TOKEN_SECRET: z.string(),
@@ -28,15 +30,25 @@ const configSchema = z.object({
   //Redis
   REDIS_URI: z.string(),
   // RESEND_API_KEY: z.string(),
-  GOOGLE_CLIENT_ID: z.string(),
-  GOOGLE_CLIENT_SECRET: z.string(),
-  GOOGLE_REDIRECT_URI: z.string(),
-  GOOGLE_CLIENT_REDIRECT_URI: z.string(),
-  FE_URL: z.string().url(),
+
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().optional(),
+  GOOGLE_CLIENT_REDIRECT_URI: z.string().optional(),
+  FE_URL: z.string().url().optional(),
+  
   //Google Cloud Text-to-Speech (Optional)
   GOOGLE_CLOUD_PROJECT_ID: z.string().optional(),
   GOOGLE_CLOUD_CLIENT_EMAIL: z.string().optional(),
   GOOGLE_CLOUD_PRIVATE_KEY: z.string().optional()
+
+
+  // Mail
+  MAIL_HOST: z.string().optional(),
+  MAIL_PORT: z.coerce.number().optional(),
+  MAIL_USER: z.string().optional(),
+  MAIL_PASSWORD: z.string().optional()
+
 })
 
 const configServer = configSchema.safeParse(process.env)
