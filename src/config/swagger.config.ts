@@ -12,9 +12,13 @@ function setupSwagger(app: INestApplication) {
     .setVersion('1.0')
     .addBearerAuth()
     // .addApiKey({ type: 'apiKey', name: 'Api-Key', in: 'header' }, 'Api-Key')
-    .addServer(url)
-    .build()
-  const document = SwaggerModule.createDocument(app, config)
+  
+  if (url) {
+    config.addServer(url)
+  }
+  
+  const configBuilt = config.build()
+  const document = SwaggerModule.createDocument(app, configBuilt)
   SwaggerModule.setup('api-docs', app, document, {
     customSiteTitle: appName,
     swaggerOptions: {

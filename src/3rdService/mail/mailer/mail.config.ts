@@ -6,8 +6,8 @@ import * as moment from 'moment'
 import { join } from 'path'
 
 export const templateDir =
-  process.env.NODE_ENV === 'Production'
-    ? './dist/3rdService/mail/templates'
+  process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'Production'
+    ? join(process.cwd(), 'dist/3rdService/mail/templates')
     : join(process.cwd(), 'src/3rdService/mail/templates')
 
 export function registerHandlebarsHelpers() {
