@@ -26,6 +26,7 @@ import {
 } from '@/modules/auth/entities/auth.entities'
 import {
   InValidNewPasswordAndConfirmPasswordException,
+  InValidNewPasswordAndConfirmPasswordRegisterException,
   InvalidOldPasswordException,
   NotFoundRecordException
 } from '@/shared/error'
@@ -62,7 +63,7 @@ export class AuthService {
     @InjectQueue('user-deletion') private readonly deletionQueue: Queue,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
     private readonly tokenService: TokenService
-  ) {}
+  ) { }
 
   async login(body: LoginBodyType & { userAgent: string; ip: string }) {
     // 1. Lấy thông tin user, kiểm tra user có tồn tại hay không, mật khẩu có đúng không
@@ -131,6 +132,10 @@ export class AuthService {
 
   async register(body: RegisterBodyType, userAgent: string, ip: string) {
     try {
+      if (body.password !== body.confirmPassword) {
+        throw InValidNewPasswordAndConfirmPasswordRegisterException
+      }
+      
       const hashedPassword = await this.hashingService.hash(body.password)
 
       const firstLevel = await this.levelRepo.getFirstLevelUser()

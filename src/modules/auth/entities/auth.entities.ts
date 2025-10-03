@@ -90,12 +90,11 @@ export const LoginResSchema = z
 export const RegisterBodySchema = UserSchema.pick({
   name: true,
   email: true,
-  password: true
+  password: true,
 })
-  // .extend({
-  //   confirmPassword: z.string().min(6).max(100)
-  //   // code: z.string().length(6)
-  // })
+  .extend({
+    confirmPassword: z.string().min(6).max(100)
+  })
   .strict()
 // .superRefine(({ confirmPassword, password }, ctx) => {
 //   if (confirmPassword !== password) {

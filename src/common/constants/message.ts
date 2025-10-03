@@ -61,6 +61,7 @@ export const REWARD_MESSAGE = {
 export const SYSTEM_MESSAGE = {
   NOT_FOUND: 'Không tìm thấy bản ghi',
   INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'Mật khẩu mới và mật khẩu xác nhận không khớp',
+  INVALID_NEW_PASSWORD_CONFIRM_PASSWORD_REGISTER: 'Mật khẩu và mật khẩu xác nhận không khớp',
   INVALID_PASSWORD: 'Sai mật khẩu',
   INVALID_OLD_PASSWORD: 'Mật khẩu cũ không đúng'
 }
