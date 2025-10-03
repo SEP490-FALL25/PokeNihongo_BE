@@ -1,4 +1,4 @@
-import envConfig from '@/config/env.config'
+import envConfig from './config/env.config'
 import { RequestMethod, VersioningType } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -20,12 +20,14 @@ async function bootstrap() {
   patchNestJsSwagger()
 
   // Use global prefix if you don't have subdomain
-  app.setGlobalPrefix(envConfig.API_PREFIX, {
-    exclude: [
-      { method: RequestMethod.GET, path: '/' },
-      { method: RequestMethod.GET, path: 'health' }
-    ]
-  })
+  if (envConfig.API_PREFIX) {
+    app.setGlobalPrefix(envConfig.API_PREFIX, {
+      exclude: [
+        { method: RequestMethod.GET, path: '/' },
+        { method: RequestMethod.GET, path: 'health' }
+      ]
+    })
+  }
 
   //version
   app.enableVersioning({

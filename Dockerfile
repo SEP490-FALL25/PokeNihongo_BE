@@ -35,6 +35,15 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json ./package.json
 
+# Copy file .env để có environment variables
+COPY .env .env
+
+# Copy email templates cho production
+COPY src/3rdService/mail/templates ./dist/3rdService/mail/templates
+
+# Set environment variable for production
+ENV NODE_ENV=production
+
 EXPOSE 3000
 
 # Lệnh khởi chạy ứng dụng
