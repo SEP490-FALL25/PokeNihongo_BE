@@ -142,7 +142,7 @@ export class AuthService {
           roleId,
           levelId: firstLevel?.id || null,
           name: body.name,
-          phoneNumber: body.phoneNumber
+          phoneNumber: body?.phoneNumber ?? ''
         })
       ])
       // tao device

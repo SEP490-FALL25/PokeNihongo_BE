@@ -13,7 +13,7 @@ model User {
   email              String         @unique @db.VarChar(500)
   name               String         @db.VarChar(500)
   password           String         @db.VarChar(500)
-  phoneNumber        String         @db.VarChar(50)
+  phoneNumber        String?        @db.VarChar(50)
   avatar             String?        @db.VarChar(1000)
   status             UserStatus     @default(INACTIVE)
   roleId             Int
