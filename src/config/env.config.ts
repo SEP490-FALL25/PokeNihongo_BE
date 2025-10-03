@@ -40,7 +40,7 @@ const configSchema = z.object({
   //Google Cloud Text-to-Speech (Optional)
   GOOGLE_CLOUD_PROJECT_ID: z.string().optional(),
   GOOGLE_CLOUD_CLIENT_EMAIL: z.string().optional(),
-  GOOGLE_CLOUD_PRIVATE_KEY: z.string().optional()
+  GOOGLE_CLOUD_PRIVATE_KEY: z.string().optional(),
 
 
   // Mail
