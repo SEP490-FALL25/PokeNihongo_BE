@@ -7,13 +7,20 @@ import {
     VocabularyListResDTO,
     VocabularyResDTO
 } from '@/modules/vocabulary/dto/vocabulary.zod-dto'
+import { VocabularyNotFoundException } from '@/modules/vocabulary/dto/vocabulary.error'
 import {
     VocabularyResponseSwaggerDTO,
     VocabularyListResponseSwaggerDTO,
     GetVocabularyListQuerySwaggerDTO,
-    CreateVocabularyMultipartSwaggerDTO,
-    UpdateVocabularyMultipartSwaggerDTO
+    UpdateVocabularyMultipartSwaggerDTO,
+    CreateVocabularyAdvancedDTO,
+    VocabularyAdvancedResponseDTO
 } from '@/modules/vocabulary/dto/vocabulary.dto'
+import { AddMeaningToVocabularyDTO, AddMeaningSwaggerDTO } from '@/modules/vocabulary/dto/add-meaning.dto'
+import {
+    CreateVocabularyFullMultipartDTO,
+    CreateVocabularyFullMultipartSwaggerDTO
+} from '@/modules/vocabulary/dto/create-vocabulary-full.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { VOCABULARY_MESSAGE } from '@/common/constants/message'
 import {
@@ -31,7 +38,7 @@ import {
     UploadedFiles,
     UseInterceptors
 } from '@nestjs/common'
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
+import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiConsumes } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { CloudinaryMultiMulterConfig } from '@/3rdService/upload/cloudinary/multer.config'
@@ -43,73 +50,61 @@ export class VocabularyController {
     constructor(private readonly vocabularyService: VocabularyService) { }
 
 
-    @Post()
+    @Put('by-word/:wordJp')
+    @UseInterceptors(FileFieldsInterceptor([
+        { name: 'imageUrl', maxCount: 1 },
+        { name: 'audioUrl', maxCount: 1 }
+    ], CloudinaryMultiMulterConfig))
     @ApiBearerAuth()
-    @UseInterceptors(FilesInterceptor('files', 2, CloudinaryMultiMulterConfig))
-    @ApiOperation({ summary: 'Tạo từ vựng mới với upload files (hình ảnh và âm thanh)' })
-    @ApiConsumes('multipart/form-data')
-    @ApiBody({ type: CreateVocabularyMultipartSwaggerDTO })
-    @ApiResponse({
-        status: 201,
-        description: 'Tạo từ vựng thành công',
-        type: VocabularyResponseSwaggerDTO
+    @ApiOperation({
+        summary: 'Cập nhật từ vựng theo wordJp với upload files',
+        description: 'Cập nhật từ vựng bằng wordJp. Nếu không upload audioUrl và regenerateAudio=true → Tự động gen audio mới bằng TTS.'
     })
-    @ZodSerializerDto(VocabularyResDTO)
-    create(
-        @Body() body: CreateVocabularyMultipartSwaggerDTO,
-        @UploadedFiles() files?: Express.Multer.File[],
-        @ActiveUser('userId') userId?: number
-    ) {
-        const imageFile = files?.find(file => file.fieldname === 'imageUrl')
-        const audioFile = files?.find(file => file.fieldname === 'audioUrl')
-
-        return this.vocabularyService.create(
-            {
-                wordJp: body.wordJp,
-                reading: body.reading
-            },
-            imageFile,
-            audioFile
-        )
-    }
-
-    @Put(':id')
-    @UseInterceptors(FilesInterceptor('files', 2, CloudinaryMultiMulterConfig))
-    @ApiBearerAuth()
-    @ApiOperation({ summary: 'Cập nhật từ vựng với upload files (hình ảnh và âm thanh)' })
     @ApiConsumes('multipart/form-data')
-    @ApiBody({ type: UpdateVocabularyMultipartSwaggerDTO })
+    @ApiQuery({
+        name: 'regenerateAudio',
+        required: false,
+        type: Boolean,
+        description: 'Set true để tự động gen lại audio bằng TTS (nếu không upload audioUrl)'
+    })
+    @ApiBody({
+        type: UpdateVocabularyMultipartSwaggerDTO,
+        description: 'Form data với reading, imageUrl và audioUrl (optional)'
+    })
     @ApiResponse({
         status: 200,
         description: 'Cập nhật từ vựng thành công',
         type: VocabularyResponseSwaggerDTO
     })
-    @ApiResponse({
-        status: 400,
-        description: 'Dữ liệu từ vựng không hợp lệ'
-    })
     @ZodSerializerDto(VocabularyResDTO)
-    update(
-        @Param() params: GetVocabularyByIdParamsDTO,
+    async updateByWordJp(
+        @Param('wordJp') wordJp: string,
         @Body() body: UpdateVocabularyMultipartSwaggerDTO,
-        @UploadedFiles() files?: Express.Multer.File[],
+        @UploadedFiles() files?: { imageUrl?: Express.Multer.File[], audioUrl?: Express.Multer.File[] },
+        @Query('regenerateAudio') regenerateAudio?: boolean,
         @ActiveUser('userId') userId?: number
     ) {
-        const imageFile = files?.find(file => file.fieldname === 'imageUrl')
-        const audioFile = files?.find(file => file.fieldname === 'audioUrl')
+        const imageFile = files?.imageUrl?.[0]
+        const audioFile = files?.audioUrl?.[0]
+
+        // Tìm vocabulary theo wordJp
+        const vocabulary = await this.vocabularyService.findByWordJp(wordJp)
+        if (!vocabulary) {
+            throw VocabularyNotFoundException
+        }
 
         const updateData: any = {}
         if (body.wordJp) updateData.wordJp = body.wordJp
         if (body.reading) updateData.reading = body.reading
 
         return this.vocabularyService.update(
-            params.id,
+            vocabulary.data.id,
             updateData,
             imageFile,
-            audioFile
+            audioFile,
+            regenerateAudio
         )
     }
-
 
     @Get()
     @ApiBearerAuth()
@@ -159,10 +154,6 @@ export class VocabularyController {
         description: 'Xóa từ vựng thành công',
         type: VocabularyResponseSwaggerDTO
     })
-    @ApiResponse({
-        status: 404,
-        description: 'Không tìm thấy từ vựng'
-    })
     @ZodSerializerDto(VocabularyResDTO)
     remove(
         @Param() params: GetVocabularyByIdParamsDTO,
@@ -170,4 +161,107 @@ export class VocabularyController {
     ) {
         return this.vocabularyService.remove(params.id)
     }
+
+    //#region Advanced Vocabulary API
+
+    @Post('advanced')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Tạo từ vựng nâng cao với Meaning, WordType và Kanji',
+        description: 'Tạo từ vựng mới với nghĩa đa ngôn ngữ, loại từ và xử lý Kanji thông minh'
+    })
+    @ApiBody({
+        type: CreateVocabularyAdvancedDTO,
+        description: 'Dữ liệu từ vựng nâng cao'
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo từ vựng thành công',
+        type: VocabularyAdvancedResponseDTO
+    })
+    @ApiResponse({
+        status: 202,
+        description: 'Tạo từ vựng thành công nhưng có Kanji chưa được định nghĩa',
+        type: VocabularyAdvancedResponseDTO
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Dữ liệu từ vựng không hợp lệ'
+    })
+    createAdvanced(
+        @Body() body: CreateVocabularyAdvancedDTO,
+        @ActiveUser('userId') userId?: number
+    ) {
+        return this.vocabularyService.createAdvanced(body, userId)
+    }
+
+    @Post('add-meaning')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Thêm nghĩa mới cho từ vựng đã tồn tại',
+        description: 'Thêm một nghĩa mới (meaning) cho từ vựng đã có trong hệ thống'
+    })
+    @ApiBody({
+        type: AddMeaningSwaggerDTO,
+        description: 'Dữ liệu nghĩa mới cần thêm'
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Thêm nghĩa mới thành công'
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Không tìm thấy từ vựng'
+    })
+    addMeaning(@Body() body: AddMeaningToVocabularyDTO) {
+        const { vocabularyId, ...meaningData } = body
+        return this.vocabularyService.addMeaningToExistingVocabulary(vocabularyId, meaningData)
+    }
+
+    @Post('full')
+    @ApiBearerAuth()
+    @UseInterceptors(
+        FileFieldsInterceptor([
+            { name: 'audioFile', maxCount: 1 },
+            { name: 'imageFile', maxCount: 1 }
+        ])
+    )
+    @ApiOperation({
+        summary: 'Tạo từ vựng hoàn chỉnh với translations',
+        description: 'Tạo vocabulary với file upload (audio/image optional). Tự động: gen audio nếu không có → upload files → phát hiện Kanji → tạo meaning → tạo translations. Nếu từ đã tồn tại, chỉ thêm nghĩa mới.'
+    })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        type: CreateVocabularyFullMultipartSwaggerDTO,
+        description: 'Form data với audio/image files'
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo từ vựng thành công'
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Dữ liệu không hợp lệ'
+    })
+    createFull(
+        @Body() body: CreateVocabularyFullMultipartDTO,
+        @UploadedFiles() files: { audioFile?: Express.Multer.File[], imageFile?: Express.Multer.File[] },
+        @ActiveUser('userId') userId?: number
+    ) {
+        const audioFile = files?.audioFile?.[0]
+        const imageFile = files?.imageFile?.[0]
+
+        // Convert multipart data to standard format
+        const data = {
+            word_jp: body.word_jp,
+            reading: body.reading,
+            level_n: body.level_n,
+            word_type_id: body.word_type_id,
+            translations: body.translations as any // Already parsed by Zod transform
+        }
+
+        return this.vocabularyService.createFullVocabularyWithFiles(data, audioFile, imageFile, userId)
+    }
+
+    //#endregion
 }

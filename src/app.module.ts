@@ -13,9 +13,15 @@ import { AuthModule } from './modules/auth/auth.module'
 import { PermissionModule } from './modules/permission/permission.module'
 import { RoleModule } from './modules/role/role.module'
 import { VocabularyModule } from './modules/vocabulary/vocabulary.module'
+import { TranslationModule } from './modules/translation/translation.module'
+
+import { LanguagesModule } from './modules/languages/languages.module'
+import { MeaningModule } from './modules/meaning/meaning.module'
+import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { RewardModule } from './modules/reward/reward.module';
 import { LevelModule } from './modules/level/level.module';
+import { KanjiModule } from './modules/kanji/kanji.module'
 
 @Module({
   imports: [
@@ -32,6 +38,11 @@ import { LevelModule } from './modules/level/level.module';
     RoleModule,
     PermissionModule,
     VocabularyModule,
+    TranslationModule,
+    KanjiModule,
+    LanguagesModule,
+    MeaningModule,
+    WordTypeModule,
     RewardModule,
     LevelModule
   ],

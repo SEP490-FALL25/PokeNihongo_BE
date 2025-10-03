@@ -10,6 +10,7 @@ export interface SpeechConfig {
 export const createSpeechClient = (configService: ConfigService): SpeechClient => {
     const credentials = configService.get<string>('GOOGLE_CLOUD_CREDENTIALS')
     const projectId = configService.get<string>('GOOGLE_CLOUD_PROJECT_ID')
+    const credentialsPath = configService.get<string>('GOOGLE_APPLICATION_CREDENTIALS')
     const useDefaultCredentials = configService.get<boolean>('GOOGLE_USE_DEFAULT_CREDENTIALS', true)
 
     if (credentials) {
