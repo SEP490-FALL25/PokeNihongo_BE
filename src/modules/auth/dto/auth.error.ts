@@ -80,3 +80,7 @@ export const InvalidTOTPAndCodeException = new UnprocessableEntityException([
     path: 'code'
   }
 ])
+
+export const NeedToVerifyWithFirstLogin = new UnauthorizedException(
+  'Đây là lần đăng nhập đầu tiên từ thiết bị này. Vui lòng kiểm tra email để xác thực.'
+)

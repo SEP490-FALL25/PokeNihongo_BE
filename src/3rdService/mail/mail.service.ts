@@ -63,11 +63,13 @@ export class MailService {
     try {
       const storedOtp = await this.redisClient.get(email)
       if (storedOtp === otp) {
+
         // Xóa OTP sau khi xác thực thành công
         await this.redisClient.del(email)
         this.logger.log(`OTP verified and deleted for ${email}`)
         return true
       }
+      //
 
       throw new BadRequestException('Mã OTP không hợp lệ hoặc đã hết hạn')
     } catch (error) {

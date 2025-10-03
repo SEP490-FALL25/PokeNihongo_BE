@@ -1,6 +1,8 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { IsPublic } from '@/common/decorators/auth.decorator'
+import { RateLimit } from '@/common/decorators/rate-limit.decorator'
 import { UserAgent } from '@/common/decorators/user-agent.decorator'
+import { RateLimitGuard } from '@/common/guards/rate-limit.guard'
 import envConfig from '@/config/env.config'
 import {
   ChangePasswordBodyDTO,
@@ -12,9 +14,9 @@ import {
   RefreshTokenBodyDTO,
   RefreshTokenResDTO,
   RegisterBodyDTO,
+  RegisterResDTO,
   ResetPasswordBodyDTO,
-  verifyForgotPasswordBodyDTO,
-  verifyForgotPasswordResDTO
+  VerifyOTPBodyDTO
 } from '@/modules/auth/dto/auth.zod-dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -28,6 +30,7 @@ import {
   Post,
   Query,
   Res,
+  UseGuards,
   UseInterceptors
 } from '@nestjs/common'
 import { AnyFilesInterceptor } from '@nestjs/platform-express'
@@ -35,7 +38,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { Response } from 'express'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthService } from './auth.service'
-import { RegisterMultipartSwaggerDTO } from './dto/auth.dto'
+import { LoginBodySwaggerDTO, RegisterMultipartSwaggerDTO } from './dto/auth.dto'
 import { GoogleService } from './google.service'
 
 @Controller('auth')
@@ -45,14 +48,19 @@ export class AuthController {
     private readonly googleService: GoogleService
   ) {}
 
-  // @Post('otp')
-  // @IsPublic()
-  // @ZodSerializerDto(MessageResDTO)
-  // sendOTP(@Body() body: SendOTPBodyDTO) {
-  //   return this.authService.sendOTP(body)
-  // }
+  @Post('verify-otp')
+  @IsPublic()
+  @ZodSerializerDto(MessageResDTO)
+  sendOTP(
+    @Body() body: VerifyOTPBodyDTO,
+    @UserAgent() userAgent: string,
+    @Ip() ip: string
+  ) {
+    return this.authService.verifyOTP(body, userAgent, ip)
+  }
 
   @Post('login')
+  @ApiBody({ type: LoginBodySwaggerDTO })
   @HttpCode(HttpStatus.OK)
   @IsPublic()
   @ZodSerializerDto(LoginResDTO)
@@ -66,7 +74,7 @@ export class AuthController {
 
   @Post('register')
   @IsPublic()
-  @ZodSerializerDto(MessageResDTO)
+  @ZodSerializerDto(RegisterResDTO)
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: RegisterMultipartSwaggerDTO }) // dùng class để render form đẹp
@@ -104,26 +112,22 @@ export class AuthController {
   }
 
   // gui otp qua email
+
   @Post('forgot-password')
   @IsPublic()
+  @UseGuards(RateLimitGuard)
+  @RateLimit({
+    windowMs: 60 * 1000, // 1 phút
+    max: 3, // tối đa 3 lần
+    keyGenerator: (req) => `forgot_password:${req.ip}:${req.body.email}` // rate limit theo IP + email
+  })
   @ZodSerializerDto(MessageResDTO)
   forgotPassword(@Body() body: ForgotPasswordBodyDTO) {
     return this.authService.forgotPassword(body)
   }
 
-  @Post('verify-forgot-password')
-  @IsPublic()
-  @HttpCode(HttpStatus.OK)
-  @ZodSerializerDto(verifyForgotPasswordResDTO)
-  verifyForgotPassword(
-    @Body() body: verifyForgotPasswordBodyDTO,
-    @UserAgent() userAgent: string,
-    @Ip() ip: string
-  ) {
-    return this.authService.verifyForgotPassword(body, userAgent, ip)
-  }
-
   @Post('reset-password')
+  @ApiBearerAuth()
   @ZodSerializerDto(MessageResDTO)
   resetPassword(
     @Body() body: ResetPasswordBodyDTO,
@@ -147,12 +151,33 @@ export class AuthController {
   async verifiedEmail(@Param('email') email: string, @Res() res: Response) {
     const data = await this.authService.verifiedEmail(email)
     return res.redirect(`${envConfig.FE_URL}/auth/login?message=${data.message}`)
+  }
 
-    //TODO-Kumo: để data sau khi có front-end
+  // neu mail ton tai la login, khong thi la register
+  @Get('check-email/:email')
+  @IsPublic()
+  @UseGuards(RateLimitGuard)
+  @RateLimit({
+    windowMs: 60 * 1000, // 1 phút
+    max: 3, // tối đa 3 lần
+    keyGenerator: (req) => `check_email:${req.ip}:${req.params.email}` // rate limit theo IP + email
+  })
+  checkEmailExist(
+    @Param('email') email: string,
+    @UserAgent() userAgent: string,
+    @Ip() ip: string
+  ) {
+    return this.authService.checkMailToAction(email, userAgent, ip)
   }
 
   @Post('resend-verified-email/:email')
   @IsPublic()
+  @UseGuards(RateLimitGuard)
+  @RateLimit({
+    windowMs: 60 * 1000, // 1 phút
+    max: 3, // tối đa 3 lần
+    keyGenerator: (req) => `resend_email:${req.ip}:${req.params.email}` // rate limit theo IP + email
+  })
   @ZodSerializerDto(MessageResDTO)
   resendVerifiedEmail(@Param('email') email: string) {
     return this.authService.resendVerifiedEmail(email)

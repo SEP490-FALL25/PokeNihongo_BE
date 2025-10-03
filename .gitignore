@@ -42,6 +42,17 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# Google Cloud credentials
+google-credentials.json
+*.json
+!package.json
+!tsconfig.json
+!tsconfig.build.json
+!nest-cli.json
+!commitlint.config.mjs
+!lint-staged.config.mjs
+!eslint.config.js
+
 # temp directory
 .temp
 .tmp

@@ -23,7 +23,9 @@ export const UserStatus = {
 
 export const TypeOfVerificationCode = {
   REGISTER: 'REGISTER',
-  FORGOT_PASSWORD: 'FORGOT_PASSWORD'
+  FORGOT_PASSWORD: 'FORGOT_PASSWORD',
+  LOGIN: 'LOGIN',
+  CHANGE_PASSWORD: 'CHANGE_PASSWORD'
 } as const
 
 export type TypeOfVerificationCodeType =

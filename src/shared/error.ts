@@ -1,15 +1,21 @@
+import { SYSTEM_MESSAGE } from '@/common/constants/message'
 import {
   NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException
 } from '@nestjs/common'
 
-export const NotFoundRecordException = new NotFoundException('Error.NotFound')
+export const NotFoundRecordException = new NotFoundException(SYSTEM_MESSAGE.NOT_FOUND)
 
-export const InvalidPasswordException = new UnauthorizedException('Sai mật khẩu')
+export const InvalidPasswordException = new UnauthorizedException(
+  SYSTEM_MESSAGE.INVALID_PASSWORD
+)
 
 export const InvalidOldPasswordException = new UnauthorizedException(
-  'Mật khẩu cũ không đúng'
+  SYSTEM_MESSAGE.INVALID_OLD_PASSWORD
 )
 export const InValidNewPasswordAndConfirmPasswordException =
-  new UnprocessableEntityException('Mật khẩu mới và mật khẩu xác nhận không khớp')
+  new UnprocessableEntityException(SYSTEM_MESSAGE.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD)
+
+export const InValidNewPasswordAndConfirmPasswordRegisterException =
+  new UnprocessableEntityException(SYSTEM_MESSAGE.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD_REGISTER)

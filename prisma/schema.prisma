@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -8,23 +9,32 @@ datasource db {
 }
 
 model User {
-  id                 Int            @id @default(autoincrement())
-  email              String         @unique @db.VarChar(500)
-  name               String         @db.VarChar(500)
-  password           String         @db.VarChar(500)
-  phoneNumber        String         @db.VarChar(50)
-  avatar             String?        @db.VarChar(1000)
-  status             UserStatus     @default(INACTIVE)
-  roleId             Int
-  role               Role           @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  devices            Device[] // Liên kết 1-n với Device
-  refreshTokens      RefreshToken[]
-  createdPermissions Permission[]   @relation("PermissionCreatedBy")
-  updatedPermissions Permission[]   @relation("PermissionUpdatedBy")
-  deletedPermissions Permission[]   @relation("PermissionDeletedBy")
-  createdRoles       Role[]         @relation("RoleCreatedBy")
-  updatedRoles       Role[]         @relation("RoleUpdatedBy")
-  deletedRoles       Role[]         @relation("RoleDeletedBy")
+  id                  Int            @id @default(autoincrement())
+  email               String         @unique @db.VarChar(500)
+  name                String         @db.VarChar(500)
+  password            String         @db.VarChar(500)
+  phoneNumber         String?        @db.VarChar(11)
+  avatar              String?        @db.VarChar(1000)
+  status              UserStatus     @default(INACTIVE)
+  roleId              Int
+  role                Role           @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  levelId             Int?
+  level               Level?         @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  devices             Device[] // Liên kết 1-n với Device
+  refreshTokens       RefreshToken[]
+  createdPermissions  Permission[]   @relation("PermissionCreatedBy")
+  updatedPermissions  Permission[]   @relation("PermissionUpdatedBy")
+  deletedPermissions  Permission[]   @relation("PermissionDeletedBy")
+  createdRoles        Role[]         @relation("RoleCreatedBy")
+  updatedRoles        Role[]         @relation("RoleUpdatedBy")
+  deletedRoles        Role[]         @relation("RoleDeletedBy")
+  createdLevels       Level[]        @relation("LevelCreatedBy")
+  updatedLevels       Level[]        @relation("LevelUpdatedBy")
+  deletedLevels       Level[]        @relation("LevelDeletedBy")
+  createdRewards      Reward[]       @relation("RewardCreatedBy")
+  updatedRewards      Reward[]       @relation("RewardUpdatedBy")
+  deletedRewards      Reward[]       @relation("RewardDeletedBy")
+  createdVocabularies Vocabulary[]   @relation("VocabularyCreatedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -45,19 +55,6 @@ model User {
   updatedAt DateTime  @updatedAt
 
   @@index([deletedAt])
-}
-
-model VerificationCode {
-  id    Int                  @id @default(autoincrement())
-  email String               @db.VarChar(500)
-  code  String               @db.VarChar(50)
-  type  VerificationCodeType
-
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@unique([email, code, type])
-  @@index([expiresAt])
 }
 
 model Device {
@@ -129,6 +126,212 @@ model Role {
   @@index([deletedAt])
 }
 
+// Model Languages (Quản lý các ngôn ngữ được hỗ trợ)
+model Languages {
+  id   Int    @id @default(autoincrement())
+  code String @unique @db.VarChar(10) // Mã ngôn ngữ (vi, en, ja, etc.)
+  name String @db.VarChar(100) // Tên ngôn ngữ (Vietnamese, English, Japanese, etc.)
+
+  // Quan hệ với Translation
+  translations Translation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+}
+
+// Model Translation (Hệ thống đa ngôn ngữ tập trung)
+model Translation {
+  id         Int    @id @default(autoincrement())
+  languageId Int // Foreign key đến Languages.id
+  key        String @db.VarChar(500) // Key định danh duy nhất
+  value      String @db.VarChar(2000) // Nội dung đã dịch
+
+  // Quan hệ với Languages
+  language Languages @relation(fields: [languageId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
+  @@index([languageId])
+  @@index([key])
+}
+
+// Model WordType (Loại từ)
+model WordType {
+  id           Int          @id @default(autoincrement())
+  nameKey      String       @unique @db.VarChar(100) // Key để dịch tên loại từ
+  vocabularies Vocabulary[] // Quan hệ Một-Nhiều với Vocabulary
+  meanings     Meaning[] // Quan hệ Một-Nhiều với Meaning
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([nameKey])
+}
+
+// Model Kanji (Thư viện Kanji)
+model Kanji {
+  id           Int                @id @default(autoincrement())
+  character    String             @unique @db.VarChar(10) // Một ký tự Kanji duy nhất
+  meaningKey   String             @db.VarChar(200) // Key để dịch nghĩa của Kanji
+  strokeCount  Int? // Số nét vẽ
+  jlptLevel    Int? // Cấp độ JLPT (1-5)
+  vocabularies Vocabulary_Kanji[] // Quan hệ Nhiều-Nhiều với Vocabulary
+  readings     Kanji_Reading[] // Quan hệ Một-Nhiều với Kanji_Reading
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([character])
+  @@index([meaningKey])
+  @@index([jlptLevel])
+}
+
+// Model Kanji_Reading (Cách đọc Kanji)
+model Kanji_Reading {
+  id          Int    @id @default(autoincrement())
+  kanjiId     Int // Khóa ngoại, liên kết đến Kanji
+  kanji       Kanji  @relation(fields: [kanjiId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  readingType String @db.VarChar(20) // Loại cách đọc (onyomi, kunyomi, nanori, etc.)
+  reading     String @db.VarChar(100) // Cách đọc cụ thể
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kanjiId])
+  @@index([readingType])
+  @@index([reading])
+}
+
+// Model Meaning (Nghĩa của từ)
+model Meaning {
+  id           Int        @id @default(autoincrement())
+  vocabularyId Int // Khóa ngoại, liên kết đến Vocabulary
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  wordTypeId   Int? // Khóa ngoại, liên kết đến WordType
+  wordType     WordType?  @relation(fields: [wordTypeId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  // Translation keys
+  meaningKey         String? @db.VarChar(500) // Key để dịch nghĩa
+  exampleSentenceKey String? @db.VarChar(500) // Key để dịch câu ví dụ
+  explanationKey     String? @db.VarChar(500) // Key để dịch giải thích
+
+  exampleSentenceJp String? @db.VarChar(1000) // Câu ví dụ tiếng Nhật
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vocabularyId])
+  @@index([wordTypeId])
+  @@index([meaningKey])
+  @@index([exampleSentenceKey])
+  @@index([explanationKey])
+}
+
+// Model Vocabulary_Kanji (Bảng nối)
+model Vocabulary_Kanji {
+  vocabularyId Int // Khóa ngoại, liên kết đến Vocabulary
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  kanjiId      Int // Khóa ngoại, liên kết đến Kanji
+  kanji        Kanji      @relation(fields: [kanjiId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  displayOrder Int // Thứ tự xuất hiện của Kanji trong từ vựng
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([vocabularyId, kanjiId])
+  @@index([vocabularyId])
+  @@index([kanjiId])
+}
+
+// Model Vocabulary (Cập nhật)
+model Vocabulary {
+  id         Int       @id @default(autoincrement())
+  wordJp     String    @db.VarChar(500) // Từ vựng viết bằng Kanji
+  reading    String    @db.VarChar(500) // Cách đọc bằng Hiragana
+  imageUrl   String?   @db.VarChar(1000)
+  audioUrl   String?   @db.VarChar(1000)
+  levelN     Int? // Cấp độ JLPT của từ
+  wordTypeId Int? // Khóa ngoại, liên kết đến WordType
+  wordType   WordType? @relation(fields: [wordTypeId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  // Quan hệ với các model mới
+  meanings Meaning[] // Quan hệ Một-Nhiều với Meaning
+  kanji    Vocabulary_Kanji[] // Quan hệ Một-Nhiều với bảng nối Vocabulary_Kanji
+
+  // Audit fields
+  createdById Int?
+  createdBy   User? @relation("VocabularyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([wordJp])
+  @@index([reading])
+  @@index([levelN])
+  @@index([wordTypeId])
+}
+
+model Reward {
+  id           Int          @id @default(autoincrement())
+  name         String
+  rewardType   RewardType   @default(LESSON)
+  rewardItem   Int
+  rewardTarget RewardTarget @default(EXP)
+
+  // Quan hệ với Level
+  levels Level[]
+
+  // Audit fields
+  createdById Int?
+  createdBy   User? @relation("RewardCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("RewardUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("RewardDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  // Timestamps
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Level {
+  id Int @id @default(autoincrement())
+
+  levelNumber Int
+  requiredExp Int
+  levelType   LevelType
+
+  // Self relation: next level
+  nextLevelId Int?
+  nextLevel   Level?  @relation("NextLevel", fields: [nextLevelId], references: [id])
+  prevLevels  Level[] @relation("NextLevel")
+
+  // Reward relation
+  rewardId Int?
+  reward   Reward? @relation(fields: [rewardId], references: [id])
+
+  users User[]
+
+  createdById Int?
+  createdBy   User? @relation("LevelCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("LevelUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("LevelDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([levelNumber, levelType])
+  @@index([deletedAt])
+}
+
 enum VerificationCodeType {
   REGISTER
   FORGOT_PASSWORD
@@ -152,4 +355,25 @@ enum HTTPMethod {
 enum MediaType {
   IMAGE
   VIDEO
+}
+
+enum LevelType {
+  USER
+  POKEMON
+}
+
+enum RewardType {
+  LESSON
+  DAILY_REQUEST
+  EVENT
+  ACHIEVEMENT
+  LEVEL
+}
+
+enum RewardTarget {
+  EXP
+  POINT
+  POKEMON
+  BADGE
+  VOUCHER
 }

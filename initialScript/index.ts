@@ -17,15 +17,34 @@ const main = async () => {
         name: RoleName.Admin,
         description: 'Admin role'
       },
+      { name: RoleName.Manager, description: 'Manager role' },
+
       {
-        name: RoleName.Customer,
-        description: 'Customer role'
+        name: RoleName.Learner,
+        description: 'Learner role'
       }
     ]
   })
-
+  const levels = await prisma.level.createMany({
+    data: [
+      {
+        levelNumber: 1,
+        requiredExp: 0,
+        levelType: 'USER'
+      },
+      {
+        levelNumber: 2,
+        requiredExp: 100,
+        levelType: 'USER'
+      }
+    ]
+  })
   const allRoles = await prisma.role.findMany()
   const roleMap = Object.fromEntries(allRoles.map((role) => [role.name, role]))
+  const allLevels = await prisma.level.findMany()
+  const levelMap = Object.fromEntries(
+    allLevels.map((level) => [level.levelNumber, level])
+  )
 
   const hashedPassword = await hashingService.hash(envConfig.ADMIN_PASSWORD)
   const accounts = await prisma.user.createMany({
@@ -35,7 +54,9 @@ const main = async () => {
         password: hashedPassword,
         name: envConfig.ADMIN_NAME,
         phoneNumber: envConfig.PHONE_NUMBER,
-        roleId: roleMap[RoleName.Admin].id
+        roleId: roleMap[RoleName.Admin].id,
+        levelId: levelMap[1].id,
+        status: 'ACTIVE'
       }
       // {
       //   email: envConfig.MANAGER_EMAIL,

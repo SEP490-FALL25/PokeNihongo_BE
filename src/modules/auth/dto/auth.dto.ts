@@ -25,3 +25,17 @@ export class RegisterMultipartSwaggerDTO {
   })
   phoneNumber: string
 }
+
+export class LoginBodySwaggerDTO {
+  @ApiProperty({
+    example: 'admin2025@gmail.com',
+    description: 'Địa chỉ email của người dùng'
+  })
+  email: string
+
+  @ApiProperty({
+    example: '123456',
+    description: 'Mật khẩu'
+  })
+  password: string
+}
