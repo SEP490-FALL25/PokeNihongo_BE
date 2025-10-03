@@ -17,22 +17,22 @@ const isJapaneseText = (text: string): boolean => {
         return false
     }
 
-    // Must contain at least one Japanese character
+    // Must contain at least one Japanese character (Hiragana, Katakana, Kanji)
     const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF\uF900-\uFAFF\u2F800-\u2FA1F]/
     const hasJapanese = japaneseRegex.test(text)
 
     return hasJapanese
 }
 
-const isRomajiText = (text: string): boolean => {
-    // Romaji contains basic Latin characters, numbers, and some punctuation
-    const romajiRegex = /^[a-zA-Z0-9\s\-\.\,\!\?\'\"]+$/
-    return romajiRegex.test(text)
+const isHiraganaText = (text: string): boolean => {
+    // Hiragana contains only Hiragana characters and some punctuation
+    const hiraganaRegex = /^[\u3040-\u309F\s\-\.\,\!\?\'\"]+$/
+    return hiraganaRegex.test(text)
 }
 
 // Custom error messages
 const JAPANESE_TEXT_ERROR = 'Phải là văn bản tiếng Nhật thuần túy (CHỈ chứa Hiragana, Katakana, hoặc Kanji - không cho phép số hoặc ký tự Latin)'
-const ROMAJI_TEXT_ERROR = 'Phải là văn bản romaji (chỉ chứa chữ cái Latin, số và dấu câu cơ bản)'
+const HIRAGANA_TEXT_ERROR = 'Phải là cách đọc Hiragana (chỉ chứa ký tự Hiragana và dấu câu cơ bản)'
 
 export const VocabularySchema = z.object({
     id: z.number(),
@@ -47,11 +47,12 @@ export const VocabularySchema = z.object({
         .string()
         .min(1, 'Cách đọc không được để trống')
         .max(500, 'Cách đọc quá dài (tối đa 500 ký tự)')
-        .refine(isRomajiText, {
-            message: ROMAJI_TEXT_ERROR
+        .refine(isHiraganaText, {
+            message: HIRAGANA_TEXT_ERROR
         }),
     imageUrl: z.string().url().nullable().optional(),
     audioUrl: z.string().url().nullable().optional(),
+    createdById: z.number().nullable().optional(),
     createdAt: z.date(),
     updatedAt: z.date()
 })

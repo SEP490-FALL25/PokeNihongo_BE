@@ -70,6 +70,7 @@ export class VocabularyRepository {
         reading: string
         imageUrl?: string
         audioUrl?: string
+        createdById?: number | null
     }): Promise<VocabularyType> {
         const result = await this.prismaService.vocabulary.create({
             data
@@ -108,7 +109,98 @@ export class VocabularyRepository {
         return {
             ...vocabulary,
             imageUrl: vocabulary.imageUrl || undefined,
-            audioUrl: vocabulary.audioUrl || undefined
+            audioUrl: vocabulary.audioUrl || undefined,
+            createdById: vocabulary.createdById || undefined
         }
     }
+
+    //#region Advanced Methods for Meaning, WordType and Kanji
+
+    /**
+     * Tạo từ vựng nâng cao với các trường mới
+     */
+    async createAdvanced(data: {
+        wordJp: string
+        reading: string
+        levelN?: number
+        wordTypeId?: number
+        audioUrl?: string
+        createdById?: number
+    }) {
+        return await this.prismaService.vocabulary.create({
+            data: {
+                wordJp: data.wordJp,
+                reading: data.reading,
+                levelN: data.levelN,
+                wordTypeId: data.wordTypeId,
+                audioUrl: data.audioUrl,
+                createdById: data.createdById
+            }
+        })
+    }
+
+    /**
+     * Tạo các nghĩa cho từ vựng
+     */
+    async createMeanings(vocabularyId: number, meanings: Array<{ languageCode: string, meaningText: string }>) {
+        const meaningData = meanings.map(meaning => ({
+            vocabularyId,
+            languageCode: meaning.languageCode,
+            meaningText: meaning.meaningText
+        }))
+
+        return await this.prismaService.meaning.createMany({
+            data: meaningData
+        })
+    }
+
+    /**
+     * Tìm Kanji theo ký tự
+     */
+    async findKanjiByCharacter(character: string) {
+        return await this.prismaService.kanji.findUnique({
+            where: { character }
+        })
+    }
+
+    /**
+     * Tạo liên kết Vocabulary_Kanji
+     */
+    async createVocabularyKanjiMappings(
+        vocabularyId: number,
+        mappings: Array<{ kanjiId: number, displayOrder: number }>
+    ) {
+        const mappingData = mappings.map(mapping => ({
+            vocabularyId,
+            kanjiId: mapping.kanjiId,
+            displayOrder: mapping.displayOrder
+        }))
+
+        return await this.prismaService.vocabulary_Kanji.createMany({
+            data: mappingData
+        })
+    }
+
+    /**
+     * Tìm từ vựng với tất cả quan hệ
+     */
+    async findByIdWithRelations(id: number) {
+        return await this.prismaService.vocabulary.findUnique({
+            where: { id },
+            include: {
+                meanings: true,
+                wordType: true,
+                kanji: {
+                    include: {
+                        kanji: true
+                    },
+                    orderBy: {
+                        displayOrder: 'asc'
+                    }
+                }
+            }
+        })
+    }
+
+    //#endregion
 }

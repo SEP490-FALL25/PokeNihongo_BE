@@ -1,0 +1,234 @@
+import {
+    CreateTranslationBodyType,
+    UpdateTranslationBodyType,
+    GetTranslationListQueryType,
+    GetTranslationsByKeyQueryType,
+    GetTranslationsByLanguageQueryType,
+    TranslationType
+} from './entities/translation.entities'
+import { TranslationRepository } from './translation.repo'
+import { Injectable, Logger } from '@nestjs/common'
+import {
+    TranslationNotFoundException,
+    TranslationAlreadyExistsException,
+    InvalidTranslationDataException
+} from './dto/translation.error'
+
+@Injectable()
+export class TranslationService {
+    private readonly logger = new Logger(TranslationService.name)
+
+    constructor(private readonly translationRepository: TranslationRepository) { }
+
+    async findMany(params: GetTranslationListQueryType) {
+        try {
+            this.logger.log(`Finding translations with params: ${JSON.stringify(params)}`)
+            return await this.translationRepository.findMany(params)
+        } catch (error) {
+            this.logger.error('Error finding translations:', error)
+            throw error
+        }
+    }
+
+    async findById(id: number): Promise<TranslationType> {
+        try {
+            this.logger.log(`Finding translation by id: ${id}`)
+            const translation = await this.translationRepository.findById(id)
+
+            if (!translation) {
+                throw TranslationNotFoundException
+            }
+
+            return translation
+        } catch (error) {
+            this.logger.error('Error finding translation by id:', error)
+            throw error
+        }
+    }
+
+    async findByKeyAndLanguage(key: string, languageCode: string): Promise<TranslationType | null> {
+        try {
+            this.logger.log(`Finding translation by key: ${key} and language: ${languageCode}`)
+            return await this.translationRepository.findByKeyAndLanguage(key, languageCode)
+        } catch (error) {
+            this.logger.error('Error finding translation by key and language:', error)
+            throw error
+        }
+    }
+
+    async findByKey(params: GetTranslationsByKeyQueryType) {
+        try {
+            this.logger.log(`Finding translations by key: ${params.key}`)
+            const translations = await this.translationRepository.findByKey(params.key)
+
+            return {
+                key: params.key,
+                translations
+            }
+        } catch (error) {
+            this.logger.error('Error finding translations by key:', error)
+            throw error
+        }
+    }
+
+    async findByLanguage(params: GetTranslationsByLanguageQueryType) {
+        try {
+            this.logger.log(`Finding translations by language: ${params.languageCode}`)
+            return await this.translationRepository.findByLanguage(params.languageCode, {
+                page: params.page,
+                limit: params.limit
+            })
+        } catch (error) {
+            this.logger.error('Error finding translations by language:', error)
+            throw error
+        }
+    }
+
+    async create(data: CreateTranslationBodyType): Promise<TranslationType> {
+        try {
+            this.logger.log(`Creating translation: ${data.key} - ${data.languageCode}`)
+
+            // Kiểm tra bản dịch đã tồn tại chưa
+            const existingTranslation = await this.translationRepository.findByKeyAndLanguage(
+                data.key,
+                data.languageCode
+            )
+            if (existingTranslation) {
+                throw TranslationAlreadyExistsException
+            }
+
+            const translation = await this.translationRepository.create(data)
+            this.logger.log(`Translation created successfully: ${translation.id}`)
+            return translation
+        } catch (error) {
+            this.logger.error('Error creating translation:', error)
+            throw InvalidTranslationDataException
+        }
+    }
+
+    async createMany(data: CreateTranslationBodyType[]): Promise<{ count: number }> {
+        try {
+            this.logger.log(`Creating ${data.length} translations`)
+
+            // Kiểm tra từng bản dịch có trùng không
+            for (const item of data) {
+                const existingTranslation = await this.translationRepository.findByKeyAndLanguage(
+                    item.key,
+                    item.languageCode
+                )
+                if (existingTranslation) {
+                    throw TranslationAlreadyExistsException
+                }
+            }
+
+            const result = await this.translationRepository.createMany(data)
+            this.logger.log(`${result.count} translations created successfully`)
+            return result
+        } catch (error) {
+            this.logger.error('Error creating multiple translations:', error)
+            throw InvalidTranslationDataException
+        }
+    }
+
+    async update(id: number, data: UpdateTranslationBodyType): Promise<TranslationType> {
+        try {
+            this.logger.log(`Updating translation: ${id}`)
+
+            // Kiểm tra bản dịch có tồn tại không
+            const existingTranslation = await this.translationRepository.findById(id)
+            if (!existingTranslation) {
+                throw TranslationNotFoundException
+            }
+
+            // Nếu thay đổi key hoặc languageCode, kiểm tra trùng lặp
+            if ((data.key && data.key !== existingTranslation.key) ||
+                (data.languageCode && data.languageCode !== existingTranslation.languageCode)) {
+                const duplicateTranslation = await this.translationRepository.findByKeyAndLanguage(
+                    data.key || existingTranslation.key,
+                    data.languageCode || existingTranslation.languageCode
+                )
+                if (duplicateTranslation && duplicateTranslation.id !== id) {
+                    throw TranslationAlreadyExistsException
+                }
+            }
+
+            const translation = await this.translationRepository.update(id, data)
+            this.logger.log(`Translation updated successfully: ${translation.id}`)
+            return translation
+        } catch (error) {
+            this.logger.error('Error updating translation:', error)
+            throw InvalidTranslationDataException
+        }
+    }
+
+    async updateByKeyAndLanguage(
+        key: string,
+        languageCode: string,
+        data: UpdateTranslationBodyType
+    ): Promise<TranslationType> {
+        try {
+            this.logger.log(`Updating translation by key: ${key} and language: ${languageCode}`)
+
+            // Kiểm tra bản dịch có tồn tại không
+            const existingTranslation = await this.translationRepository.findByKeyAndLanguage(key, languageCode)
+            if (!existingTranslation) {
+                throw TranslationNotFoundException
+            }
+
+            const translation = await this.translationRepository.updateByKeyAndLanguage(key, languageCode, data)
+            this.logger.log(`Translation updated successfully: ${translation.id}`)
+            return translation
+        } catch (error) {
+            this.logger.error('Error updating translation by key and language:', error)
+            throw InvalidTranslationDataException
+        }
+    }
+
+    async delete(id: number): Promise<void> {
+        try {
+            this.logger.log(`Deleting translation: ${id}`)
+
+            // Kiểm tra bản dịch có tồn tại không
+            const existingTranslation = await this.translationRepository.findById(id)
+            if (!existingTranslation) {
+                throw TranslationNotFoundException
+            }
+
+            await this.translationRepository.delete(id)
+            this.logger.log(`Translation deleted successfully: ${id}`)
+        } catch (error) {
+            this.logger.error('Error deleting translation:', error)
+            throw InvalidTranslationDataException
+        }
+    }
+
+    async deleteByKeyAndLanguage(key: string, languageCode: string): Promise<void> {
+        try {
+            this.logger.log(`Deleting translation by key: ${key} and language: ${languageCode}`)
+
+            // Kiểm tra bản dịch có tồn tại không
+            const existingTranslation = await this.translationRepository.findByKeyAndLanguage(key, languageCode)
+            if (!existingTranslation) {
+                throw TranslationNotFoundException
+            }
+
+            await this.translationRepository.deleteByKeyAndLanguage(key, languageCode)
+            this.logger.log(`Translation deleted successfully: ${key} - ${languageCode}`)
+        } catch (error) {
+            this.logger.error('Error deleting translation by key and language:', error)
+            throw InvalidTranslationDataException
+        }
+    }
+
+    async deleteByKey(key: string): Promise<{ count: number }> {
+        try {
+            this.logger.log(`Deleting all translations by key: ${key}`)
+            const result = await this.translationRepository.deleteByKey(key)
+            this.logger.log(`${result.count} translations deleted successfully for key: ${key}`)
+            return result
+        } catch (error) {
+            this.logger.error('Error deleting translations by key:', error)
+            throw InvalidTranslationDataException
+        }
+    }
+}

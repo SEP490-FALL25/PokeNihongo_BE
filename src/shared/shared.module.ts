@@ -38,6 +38,10 @@ const sharedServices = [
       useClass: AuthenticationGuard
     }
   ],
-  exports: sharedServices
+  exports: [
+    ...sharedServices,
+    AccessTokenGuard,
+    APIKeyGuard
+  ]
 })
-export class SharedModule {}
+export class SharedModule { }

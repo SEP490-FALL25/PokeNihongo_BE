@@ -5,6 +5,7 @@ import {
     UpdateVocabularyBodyType,
     VocabularyType
 } from '@/modules/vocabulary/entities/vocabulary.entities'
+import { CreateVocabularyAdvancedDTO, VocabularyAdvancedResponseDTO } from '@/modules/vocabulary/dto/vocabulary.dto'
 import {
     InvalidVocabularyDataException,
     VocabularyAlreadyExistsException,
@@ -13,6 +14,7 @@ import {
 import { VocabularyRepository } from '@/modules/vocabulary/vocabulary.repo'
 import { VOCABULARY_MESSAGE } from '@/common/constants/message'
 import { UploadService } from '@/3rdService/upload/upload.service'
+import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 import { Injectable, Logger } from '@nestjs/common'
 
@@ -22,11 +24,12 @@ export class VocabularyService {
 
     constructor(
         private readonly vocabularyRepository: VocabularyRepository,
-        private readonly uploadService: UploadService
+        private readonly uploadService: UploadService,
+        private readonly textToSpeechService: TextToSpeechService
     ) { }
 
     //#region Create
-    async create(body: CreateVocabularyBodyType, imageFile?: Express.Multer.File, audioFile?: Express.Multer.File) {
+    async create(body: CreateVocabularyBodyType, imageFile?: Express.Multer.File, audioFile?: Express.Multer.File, createdById?: number) {
         try {
             // Check if vocabulary already exists FIRST
             const existingVocabulary = await this.vocabularyRepository.findFirst({
@@ -37,20 +40,55 @@ export class VocabularyService {
                 throw VocabularyAlreadyExistsException
             }
 
-            // Upload files only if vocabulary doesn't exist
-            const uploadResults = await this.uploadVocabularyFiles(imageFile, audioFile)
+            let finalAudioFile = audioFile
 
-            // Create vocabulary with uploaded URLs
+            // If no audio file provided, generate audio using text-to-speech
+            if (!audioFile && body.wordJp) {
+                try {
+                    this.logger.log('No audio file provided, generating audio using text-to-speech for word: ' + body.wordJp)
+
+                    // Generate audio from Japanese text
+                    const audioResult = await this.textToSpeechService.convertTextToSpeech(body.wordJp, {
+                        languageCode: 'ja-JP',
+                        voiceName: 'ja-JP-Wavenet-A',
+                        audioEncoding: 'MP3'
+                    })
+
+                    // Create a temporary file object for the generated audio
+                    const generatedAudioFile: Express.Multer.File = {
+                        fieldname: 'audioUrl',
+                        originalname: `${body.wordJp}_generated.mp3`,
+                        encoding: '7bit',
+                        mimetype: 'audio/mpeg',
+                        buffer: audioResult.audioContent,
+                        size: audioResult.audioContent.length
+                    } as Express.Multer.File
+
+                    finalAudioFile = generatedAudioFile
+                    this.logger.log('Successfully generated audio from text using text-to-speech')
+                } catch (error) {
+                    this.logger.warn('Text-to-Speech service not available, continuing without audio:', error.message)
+                    // Continue without audio if generation fails
+                    finalAudioFile = undefined
+                }
+            }
+
+            // Upload files only if vocabulary doesn't exist
+            const uploadResults = await this.uploadVocabularyFiles(imageFile, finalAudioFile)
+
+            // Create vocabulary with uploaded URLs and creator info
             const vocabularyData = {
                 ...body,
                 imageUrl: uploadResults.data.imageUrl,
-                audioUrl: uploadResults.data.audioUrl
+                audioUrl: uploadResults.data.audioUrl,
+                createdById: createdById || null
             }
 
             const vocabulary = await this.vocabularyRepository.create({
                 ...vocabularyData,
                 imageUrl: vocabularyData.imageUrl || undefined,
-                audioUrl: vocabularyData.audioUrl || undefined
+                audioUrl: vocabularyData.audioUrl || undefined,
+                createdById: vocabularyData.createdById
             })
 
             return {
@@ -252,6 +290,129 @@ export class VocabularyService {
             this.logger.error('Error uploading vocabulary files:', error)
             throw new Error('Upload files thất bại')
         }
+    }
+
+    //#endregion
+
+    //#region Advanced Create with Meaning, WordType and Kanji
+
+    /**
+     * Tạo từ vựng mới với Meaning, WordType và xử lý Kanji thông minh
+     */
+    async createAdvanced(
+        data: CreateVocabularyAdvancedDTO,
+        createdById?: number
+    ): Promise<VocabularyAdvancedResponseDTO> {
+        try {
+            this.logger.log(`Creating advanced vocabulary: ${data.word_jp}`)
+
+            // Bước 1: Tạo bản ghi Vocabulary gốc
+            const vocabularyData = {
+                wordJp: data.word_jp,
+                reading: data.reading,
+                levelN: data.level_n,
+                wordTypeId: data.word_type_id,
+                audioUrl: data.audio_url,
+                createdById: createdById
+            }
+
+            const vocabulary = await this.vocabularyRepository.createAdvanced(vocabularyData)
+
+            // Bước 2: Xử lý và tạo các bản ghi Meaning
+            if (data.meanings && data.meanings.length > 0) {
+                const transformedMeanings = data.meanings.map(m => ({
+                    languageCode: m.language_code,
+                    meaningText: m.meaning_text
+                }))
+                await this.vocabularyRepository.createMeanings(vocabulary.id, transformedMeanings)
+            }
+
+            // Bước 3: Xử lý Kanji một cách thông minh
+            const kanjiResult = await this.processKanjiIntelligently(data.word_jp, vocabulary.id)
+
+            // Bước 4: Lấy thông tin đầy đủ của từ vựng vừa tạo
+            const fullVocabulary = await this.vocabularyRepository.findByIdWithRelations(vocabulary.id)
+
+            if (!fullVocabulary) {
+                throw new Error('Không thể lấy thông tin từ vựng vừa tạo')
+            }
+
+            // Transform meanings to match DTO structure
+            const transformedMeanings = fullVocabulary.meanings?.map(meaning => ({
+                language_code: 'vi', // Default language code
+                meaning_text: meaning.meaningKey || 'Nghĩa chưa được dịch'
+            })) || []
+
+            const response: VocabularyAdvancedResponseDTO = {
+                vocabulary_id: fullVocabulary.id,
+                word_jp: fullVocabulary.wordJp,
+                reading: fullVocabulary.reading,
+                meanings: transformedMeanings
+            }
+
+            this.logger.log(`Advanced vocabulary created successfully: ${vocabulary.id}`)
+            return response
+
+        } catch (error) {
+            this.logger.error('Error creating advanced vocabulary:', error)
+            throw new Error('Tạo từ vựng nâng cao thất bại')
+        }
+    }
+
+    /**
+     * Xử lý Kanji một cách thông minh
+     */
+    private async processKanjiIntelligently(
+        wordJp: string,
+        vocabularyId: number
+    ): Promise<{ kanjiCharacters: string[], missingKanji: string[] }> {
+        try {
+            // Phân tích chuỗi word_jp để lọc ra các ký tự Kanji
+            const kanjiCharacters = this.extractKanjiCharacters(wordJp)
+
+            if (kanjiCharacters.length === 0) {
+                return { kanjiCharacters: [], missingKanji: [] }
+            }
+
+            const missingKanji: string[] = []
+            const kanjiMappings: { kanjiId: number, displayOrder: number }[] = []
+
+            // Đối chiếu Kanji với database
+            for (let i = 0; i < kanjiCharacters.length; i++) {
+                const character = kanjiCharacters[i]
+                const kanji = await this.vocabularyRepository.findKanjiByCharacter(character)
+
+                if (kanji) {
+                    kanjiMappings.push({
+                        kanjiId: kanji.id,
+                        displayOrder: i
+                    })
+                } else {
+                    missingKanji.push(character)
+                }
+            }
+
+            // Tạo liên kết Vocabulary_Kanji cho các Kanji đã tồn tại
+            if (kanjiMappings.length > 0) {
+                await this.vocabularyRepository.createVocabularyKanjiMappings(vocabularyId, kanjiMappings)
+            }
+
+            return { kanjiCharacters, missingKanji }
+
+        } catch (error) {
+            this.logger.error('Error processing Kanji intelligently:', error)
+            throw new Error('Xử lý Kanji thất bại')
+        }
+    }
+
+    /**
+     * Trích xuất các ký tự Kanji từ chuỗi tiếng Nhật
+     */
+    private extractKanjiCharacters(wordJp: string): string[] {
+        // Regex để tìm các ký tự Kanji (Unicode ranges: 4E00-9FAF, 3400-4DBF, etc.)
+        const kanjiRegex = /[\u4E00-\u9FAF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF\uF900-\uFAFF\u2F800-\u2FA1F]/g
+        const matches = wordJp.match(kanjiRegex)
+        return matches ? [...new Set(matches)] : [] // Loại bỏ trùng lặp
     }
 
     //#endregion

@@ -23,9 +23,29 @@ export class UploadService {
     }
 
     async resizeImage(file: Express.Multer.File): Promise<Buffer> {
-        return sharp(file.buffer)
-            .resize({ width: 800, height: 800, fit: 'inside' }) // Resize về 800x800, giữ tỷ lệ
-            .toBuffer();
+        try {
+            // Validate file buffer
+            if (!file.buffer || file.buffer.length === 0) {
+                this.logger.warn(`File buffer is empty for ${file.originalname}, skipping resize`);
+                return file.buffer;
+            }
+
+            // Check if it's a valid image format
+            const supportedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!supportedFormats.includes(file.mimetype)) {
+                this.logger.warn(`Unsupported image format: ${file.mimetype}, skipping resize`);
+                return file.buffer;
+            }
+
+            this.logger.log(`Resizing image: ${file.originalname}, size: ${file.buffer.length} bytes, mimetype: ${file.mimetype}`);
+
+            return await sharp(file.buffer)
+                .resize({ width: 800, height: 800, fit: 'inside' }) // Resize về 800x800, giữ tỷ lệ
+                .toBuffer();
+        } catch (error) {
+            this.logger.warn(`Error resizing image ${file.originalname}, using original: ${error.message}`);
+            return file.buffer; // Return original buffer if resize fails
+        }
     }
 
     async uploadFile(file: Express.Multer.File, folder: string = 'uploads'): Promise<UploadResult> {
@@ -38,7 +58,12 @@ export class UploadService {
 
             // Xử lý hình ảnh
             if (this.isImageFile(file.mimetype)) {
-                uploadBuffer = await this.resizeImage(file);
+                try {
+                    uploadBuffer = await this.resizeImage(file);
+                } catch (error) {
+                    this.logger.warn(`Failed to resize image, using original: ${error.message}`);
+                    uploadBuffer = file.buffer; // Fallback to original buffer
+                }
                 resourceType = 'image';
             }
             // Xử lý audio
@@ -85,7 +110,23 @@ export class UploadService {
             throw new Error('File must be an image');
         }
 
-        const resizedBuffer = await this.resizeImage(file);
+        // Check if original file buffer is valid first
+        if (!file.buffer || file.buffer.length === 0) {
+            throw new Error(`Original file buffer is empty for ${file.originalname}`);
+        }
+
+        let resizedBuffer: Buffer;
+        try {
+            resizedBuffer = await this.resizeImage(file);
+        } catch (error) {
+            this.logger.warn(`Failed to resize image ${file.originalname}, using original: ${error.message}`);
+            resizedBuffer = file.buffer; // Use original buffer as fallback
+        }
+
+        // Check if buffer is valid
+        if (!resizedBuffer || resizedBuffer.length === 0) {
+            throw new Error('Empty file');
+        }
 
         return new Promise((resolve, reject) => {
             const uploadNewImage = () => {
@@ -224,8 +265,8 @@ export class UploadService {
 
             return results;
         } catch (error) {
-            this.logger.error(`Error uploading vocabulary files: ${error.message}`);
-            throw error;
+            this.logger.error('Error uploading vocabulary files:', error);
+            throw new Error('Upload files thất bại');
         }
     }
 }
