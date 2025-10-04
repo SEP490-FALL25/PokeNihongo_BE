@@ -342,26 +342,23 @@ model Level {
 }
 
 model Pokemon {
-  id                Int      @id @default(autoincrement())
-  pokedex_number    Int
-  name_jp           String?
-  name_translations Json // {"en": "...", "ja": "...", "vi": "..."}
-  description       String?
-  condition_level   Int?
-  next_pokemon_id   Int?
-  is_started        Boolean  @default(false)
-  image_url         String?
-  rarity            String?
-  base_exp          Int?
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  id               Int           @id @default(autoincrement())
+  pokedex_number   Int
+  nameJp           String
+  nameTranslations Json // {"en": "...", "ja": "...", "vi": "..."}
+  description      String?
+  conditionLevel   Int?
+  nextPokemonId    Int?
+  isStarted        Boolean       @default(false)
+  imageUrl         String?
+  rarity           RarityPokemon @default(COMMON)
 
   // Quan hệ nhiều-nhiều với hệ
   types ElementalType[]
 
   // Self relation: tiến hóa
-  next_pokemon      Pokemon?  @relation("Evolution", fields: [next_pokemon_id], references: [id])
-  previous_pokemons Pokemon[] @relation("Evolution")
+  nextPokemon      Pokemon?  @relation("Evolution", fields: [nextPokemonId], references: [id])
+  previousPokemons Pokemon[] @relation("Evolution")
 
   //
   createdById Int?
@@ -472,4 +469,12 @@ enum RewardTarget {
   POKEMON
   BADGE
   VOUCHER
+}
+
+enum RarityPokemon {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
 }
