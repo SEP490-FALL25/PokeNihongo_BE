@@ -95,7 +95,7 @@ export class AuthService {
       body.ip
     )
 
-    if (!existingDevice) {
+    if (!existingDevice && user.role.name !== RoleName.Admin) {
       throw NeedToVerifyWithFirstLogin
     }
 
@@ -129,7 +129,7 @@ export class AuthService {
       if (body.password !== body.confirmPassword) {
         throw InValidNewPasswordAndConfirmPasswordRegisterException
       }
-      
+
       const hashedPassword = await this.hashingService.hash(body.password)
 
       // const firstLevel = await this.levelRepo.getFirstLevelUser()
