@@ -48,6 +48,8 @@ model User {
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
   // Tự quan hệ 1-n
+  userPokemons UserPokemon[]
+
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
   createdUsers User[] @relation("CreatorUsers")
@@ -324,7 +326,8 @@ model Level {
   rewardId Int?
   reward   Reward? @relation(fields: [rewardId], references: [id])
 
-  users User[]
+  users        User[]
+  userPokemons UserPokemon[]
 
   createdById Int?
   createdBy   User? @relation("LevelCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -360,6 +363,8 @@ model Pokemon {
   nextPokemon      Pokemon?  @relation("Evolution", fields: [nextPokemonId], references: [id])
   previousPokemons Pokemon[] @relation("Evolution")
 
+  userPokemons UserPokemon[]
+
   //
   createdById Int?
   createdBy   User? @relation("PokemonCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -371,6 +376,33 @@ model Pokemon {
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+model UserPokemon {
+  id Int @id @default(autoincrement())
+
+  // Quan hệ
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  pokemonId Int
+  pokemon   Pokemon @relation(fields: [pokemonId], references: [id], onDelete: NoAction)
+
+  levelId Int
+  level   Level @relation(fields: [levelId], references: [id], onDelete: NoAction)
+
+  // Thông tin cá nhân hóa
+  nickname String? // tên user đặt cho con này
+  exp      Int     @default(0) // exp hiện tại trên con này
+
+  // Timestamps
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, nickname]) // optional: mỗi user không có 2 con trùng nickname (NULL cho phép)
+  @@index([userId])
+  @@index([pokemonId])
 }
 
 model ElementalType {
