@@ -133,7 +133,7 @@ export class VocabularyService {
                         path: ''
                     }
 
-                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile)
+                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile, 'vocabulary/audio')
                     finalAudioUrl = uploadResult.url
                     this.logger.log(`Audio regenerated via TTS: ${finalAudioUrl}`)
                 } catch (ttsError) {
@@ -447,7 +447,7 @@ export class VocabularyService {
             reading: string
             level_n?: number
             word_type_id?: number
-            translations: {
+            translations: string | {
                 meaning: Array<{ language_code: string; value: string }>
                 examples?: Array<{ language_code: string; sentence: string; original_sentence: string }>
             }
@@ -459,13 +459,28 @@ export class VocabularyService {
         try {
             this.logger.log('Creating full vocabulary with file uploads')
 
+            // Parse translations if it's a string (from multipart/form-data)
+            let parsedTranslations: {
+                meaning: Array<{ language_code: string; value: string }>
+                examples?: Array<{ language_code: string; sentence: string; original_sentence: string }>
+            }
+
+            if (typeof data.translations === 'string') {
+                this.logger.log('Parsing translations from JSON string')
+                parsedTranslations = JSON.parse(data.translations)
+            } else {
+                parsedTranslations = data.translations
+            }
+
+            this.logger.log('Parsed translations:', parsedTranslations)
+
             // 1. Upload files if provided, or generate audio using TTS
             let audioUrl: string | undefined
             let imageUrl: string | undefined
 
             if (audioFile) {
                 this.logger.log('Uploading audio file...')
-                const audioResult = await this.uploadService.uploadFile(audioFile)
+                const audioResult = await this.uploadService.uploadFile(audioFile, 'vocabulary/audio')
                 audioUrl = audioResult.url
                 this.logger.log(`Audio uploaded: ${audioUrl}`)
             } else {
@@ -497,7 +512,7 @@ export class VocabularyService {
                     }
 
                     // 3. Upload to Cloudinary
-                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile)
+                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile, 'vocabulary/audio')
                     audioUrl = uploadResult.url
                     this.logger.log(`Audio generated via TTS and uploaded: ${audioUrl}`)
                 } catch (ttsError) {
@@ -508,7 +523,7 @@ export class VocabularyService {
 
             if (imageFile) {
                 this.logger.log('Uploading image file...')
-                const imageResult = await this.uploadService.uploadFile(imageFile)
+                const imageResult = await this.uploadService.uploadFile(imageFile, 'vocabulary/images')
                 imageUrl = imageResult.url
                 this.logger.log(`Image uploaded: ${imageUrl}`)
             }
@@ -525,7 +540,7 @@ export class VocabularyService {
 
                 const result = await this.vocabularyHelperService.addMeaningWithTranslations(
                     existingCheck.vocabularyId,
-                    data.translations,
+                    parsedTranslations,
                     data.word_type_id
                 )
 
@@ -551,9 +566,9 @@ export class VocabularyService {
                         levelN: data.level_n,
                         audioUrl,
                         imageUrl,
-                        createdById
+                        createdById: createdById || undefined
                     },
-                    data.translations,
+                    parsedTranslations,
                     data.word_type_id
                 )
 
