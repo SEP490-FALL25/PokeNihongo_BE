@@ -61,7 +61,8 @@ export const REWARD_MESSAGE = {
 export const SYSTEM_MESSAGE = {
   NOT_FOUND: 'Không tìm thấy bản ghi',
   INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'Mật khẩu mới và mật khẩu xác nhận không khớp',
-  INVALID_NEW_PASSWORD_CONFIRM_PASSWORD_REGISTER: 'Mật khẩu và mật khẩu xác nhận không khớp',
+  INVALID_NEW_PASSWORD_CONFIRM_PASSWORD_REGISTER:
+    'Mật khẩu và mật khẩu xác nhận không khớp',
   INVALID_PASSWORD: 'Sai mật khẩu',
   INVALID_OLD_PASSWORD: 'Mật khẩu cũ không đúng',
   SESSION_EXPIRED: 'Phiên đã hết hạn, vui lòng đăng nhập lại',
@@ -180,4 +181,19 @@ export const WORDTYPE_MESSAGE = {
   TAG_REQUIRED: 'Tag không được để trống',
   TAG_TOO_LONG: 'Tag quá dài (tối đa 50 ký tự)',
   NAME_KEY_INVALID: 'Name key không đúng định dạng'
+}
+
+export const ELEMENTAL_TYPE_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo loại hệ thành công',
+  UPDATE_SUCCESS: 'Cập nhật loại hệ thành công',
+  DELETE_SUCCESS: 'Xóa loại hệ thành công',
+  GET_SUCCESS: 'Lấy thông tin loại hệ thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách loại hệ thành công',
+  NOT_FOUND: 'Không tìm thấy loại hệ',
+  ALREADY_EXISTS: 'Loại hệ đã tồn tại',
+  INVALID_DATA: 'Dữ liệu loại hệ không hợp lệ',
+  TYPE_NAME_REQUIRED: 'Tên loại hệ không được để trống',
+  TYPE_NAME_MAX_LENGTH: 'Tên loại hệ quá dài (tối đa 20 ký tự)',
+  DISPLAY_NAME_REQUIRED: 'Tên hiển thị không được để trống',
+  INVALID_COLOR_HEX: 'Mã màu hex không hợp lệ (ví dụ: #FF0000)'
 }
