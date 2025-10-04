@@ -109,14 +109,20 @@ export class KanjiRepository {
     }
 
     async create(data: CreateKanjiBodyType): Promise<Kanji> {
+        const createData: any = {
+            character: data.character,
+            meaningKey: data.meaningKey,
+            strokeCount: data.strokeCount,
+            jlptLevel: data.jlptLevel
+        }
+
+        // Only add img if it exists in the data
+        if (data.img) {
+            createData.img = data.img
+        }
+
         const result = await this.prismaService.kanji.create({
-            data: {
-                character: data.character,
-                meaningKey: data.meaningKey,
-                strokeCount: data.strokeCount,
-                jlptLevel: data.jlptLevel,
-                img: data.img
-            },
+            data: createData,
             include: {
                 _count: {
                     select: {
@@ -130,15 +136,21 @@ export class KanjiRepository {
     }
 
     async update(id: number, data: UpdateKanjiBodyType): Promise<Kanji> {
+        const updateData: any = {
+            character: data.character,
+            meaningKey: data.meaningKey,
+            strokeCount: data.strokeCount,
+            jlptLevel: data.jlptLevel
+        }
+
+        // Only add img if it exists in the data
+        if (data.img) {
+            updateData.img = data.img
+        }
+
         const result = await this.prismaService.kanji.update({
             where: { id },
-            data: {
-                character: data.character,
-                meaningKey: data.meaningKey,
-                strokeCount: data.strokeCount,
-                jlptLevel: data.jlptLevel,
-                img: data.img
-            },
+            data: updateData,
             include: {
                 _count: {
                     select: {
@@ -153,13 +165,19 @@ export class KanjiRepository {
 
     // Method riêng cho updateWithMeanings (không cần character và meaningKey)
     async updatePartial(id: number, data: Partial<UpdateKanjiBodyType>): Promise<Kanji> {
+        const updateData: any = {
+            strokeCount: data.strokeCount,
+            jlptLevel: data.jlptLevel
+        }
+
+        // Only add img if it exists in the data
+        if (data.img) {
+            updateData.img = data.img
+        }
+
         const result = await this.prismaService.kanji.update({
             where: { id },
-            data: {
-                strokeCount: data.strokeCount,
-                jlptLevel: data.jlptLevel,
-                img: data.img
-            },
+            data: updateData,
             include: {
                 _count: {
                     select: {
@@ -228,7 +246,7 @@ export class KanjiRepository {
             meaningKey: kanji.meaningKey,
             strokeCount: kanji.strokeCount,
             jlptLevel: kanji.jlptLevel,
-            img: kanji.img,
+            img: kanji.img || null, // Handle case where img column doesn't exist
             createdAt: kanji.createdAt,
             updatedAt: kanji.updatedAt
         }

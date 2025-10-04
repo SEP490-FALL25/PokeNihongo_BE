@@ -27,3 +27,12 @@ export const InvalidVocabularyDataException = new HttpException(
     },
     HttpStatus.BAD_REQUEST
 )
+
+export const MeaningAlreadyExistsException = new HttpException(
+    {
+        statusCode: HttpStatus.CONFLICT,
+        message: VOCABULARY_MESSAGE.MEANING_ALREADY_EXISTS,
+        error: 'MEANING_ALREADY_EXISTS'
+    },
+    HttpStatus.CONFLICT
+)
