@@ -48,6 +48,12 @@ export class TranslationService {
 
     async findByKeyAndLanguage(key: string, languageId: number): Promise<TranslationType | null> {
         try {
+            // Kiểm tra key có tồn tại không
+            if (!key || key.trim() === '') {
+                this.logger.warn(`Translation key is empty or undefined: ${key}`)
+                return null
+            }
+
             this.logger.log(`Finding translation by key: ${key} and languageId: ${languageId}`)
             return await this.translationRepository.findByKeyAndLanguage(key, languageId)
         } catch (error) {

@@ -56,14 +56,6 @@ export class KanjiReadingController {
         description: 'Lấy danh sách cách đọc thành công',
         type: KanjiReadingListSwaggerResponseDTO
     })
-    @ApiResponse({
-        status: 400,
-        description: 'Dữ liệu truy vấn không hợp lệ'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
     findMany(@Query() query: GetKanjiReadingListQueryDTO) {
         return this.kanjiReadingService.findMany(query)
     }
@@ -76,10 +68,6 @@ export class KanjiReadingController {
     @ApiResponse({
         status: 200,
         description: 'Lấy thống kê thành công'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
     })
     getStats() {
         return this.kanjiReadingService.getStats()
@@ -99,10 +87,6 @@ export class KanjiReadingController {
         status: 200,
         description: 'Lấy cách đọc thành công',
         type: [KanjiReadingSwaggerResponseDTO]
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
     })
     findByKanjiId(@Param() params: GetKanjiReadingsByKanjiIdParamsDTO) {
         return this.kanjiReadingService.findByKanjiId(params.kanjiId)
@@ -124,10 +108,6 @@ export class KanjiReadingController {
         description: 'Lấy cách đọc thành công',
         type: [KanjiReadingSwaggerResponseDTO]
     })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
     findByReadingType(@Param() params: GetKanjiReadingsByTypeParamsDTO) {
         return this.kanjiReadingService.findByReadingType(params.readingType)
     }
@@ -147,14 +127,6 @@ export class KanjiReadingController {
         description: 'Lấy cách đọc thành công',
         type: KanjiReadingSwaggerResponseDTO
     })
-    @ApiResponse({
-        status: 404,
-        description: 'Cách đọc không tồn tại'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
     @ZodSerializerDto(KanjiReadingResponseDTO)
     findById(@Param() params: GetKanjiReadingByIdParamsDTO) {
         return this.kanjiReadingService.findById(params.id)
@@ -173,18 +145,6 @@ export class KanjiReadingController {
         status: 201,
         description: 'Tạo cách đọc thành công',
         type: KanjiReadingSwaggerResponseDTO
-    })
-    @ApiResponse({
-        status: 400,
-        description: 'Dữ liệu cách đọc không hợp lệ'
-    })
-    @ApiResponse({
-        status: 409,
-        description: 'Cách đọc này đã tồn tại cho Kanji này'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
     })
     @ZodSerializerDto(KanjiReadingResponseDTO)
     create(@Body() body: CreateKanjiReadingBodyDTO) {
@@ -210,22 +170,6 @@ export class KanjiReadingController {
         description: 'Cập nhật cách đọc thành công',
         type: KanjiReadingSwaggerResponseDTO
     })
-    @ApiResponse({
-        status: 400,
-        description: 'Dữ liệu cách đọc không hợp lệ'
-    })
-    @ApiResponse({
-        status: 404,
-        description: 'Cách đọc không tồn tại'
-    })
-    @ApiResponse({
-        status: 409,
-        description: 'Cách đọc này đã tồn tại cho Kanji này'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
     @ZodSerializerDto(KanjiReadingResponseDTO)
     update(
         @Param() params: GetKanjiReadingByIdParamsDTO,
@@ -248,14 +192,6 @@ export class KanjiReadingController {
         status: 200,
         description: 'Xóa cách đọc thành công'
     })
-    @ApiResponse({
-        status: 404,
-        description: 'Cách đọc không tồn tại'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
     @HttpCode(HttpStatus.OK)
     delete(@Param() params: GetKanjiReadingByIdParamsDTO) {
         return this.kanjiReadingService.delete(params.id)
@@ -275,10 +211,6 @@ export class KanjiReadingController {
         status: 200,
         description: 'Xóa cách đọc thành công'
     })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
     @HttpCode(HttpStatus.OK)
     deleteByKanjiId(@Param() params: GetKanjiReadingsByKanjiIdParamsDTO) {
         return this.kanjiReadingService.deleteByKanjiId(params.kanjiId)
@@ -292,10 +224,6 @@ export class KanjiReadingController {
     @ApiResponse({
         status: 200,
         description: 'Lấy thống kê loại cách đọc thành công'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
     })
     getReadingTypeStats() {
         return this.kanjiReadingService.getReadingTypeStats()

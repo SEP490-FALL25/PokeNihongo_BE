@@ -64,10 +64,17 @@ export class WordTypeRepository {
     }
 
     async create(data: CreateWordTypeBodyType): Promise<WordType> {
+        const createData: any = {
+            nameKey: data.nameKey
+        }
+
+        // Nếu có ID, thêm vào data
+        if (data.id) {
+            createData.id = data.id
+        }
+
         const result = await this.prismaService.wordType.create({
-            data: {
-                nameKey: data.nameKey
-            }
+            data: createData
         })
 
         return this.transformWordType(result)

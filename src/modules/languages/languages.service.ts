@@ -257,4 +257,41 @@ export class LanguagesService {
             return false
         }
     }
+
+    /**
+     * Tạo các ngôn ngữ mặc định nếu chưa có
+     */
+    async createDefaultLanguages(): Promise<void> {
+        try {
+            this.logger.log('Creating default languages')
+
+            const defaultLanguages = [
+                { id: 1, name: 'Tiếng Việt', code: 'vi', flag: '🇻🇳' },
+                { id: 2, name: 'English', code: 'en', flag: '🇺🇸' },
+                { id: 3, name: '日本語', code: 'ja', flag: '🇯🇵' }
+            ]
+
+            for (const language of defaultLanguages) {
+                const existing = await this.languagesRepository.findByCode(language.code)
+
+                if (!existing) {
+                    // Tạo language với ID cụ thể
+                    await this.languagesRepository.create({
+                        id: language.id,
+                        name: language.name,
+                        code: language.code,
+                        flag: language.flag
+                    })
+                    this.logger.log(`Created default language with ID ${language.id}: ${language.name} (${language.code})`)
+                } else {
+                    this.logger.log(`Language ${language.code} already exists`)
+                }
+            }
+
+            this.logger.log('Default languages creation completed')
+        } catch (error) {
+            this.logger.error('Error creating default languages:', error)
+            throw error
+        }
+    }
 }

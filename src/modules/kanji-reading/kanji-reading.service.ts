@@ -83,10 +83,11 @@ export class KanjiReadingService {
         try {
             this.logger.log(`Creating kanji reading for kanji: ${data.kanjiId}`)
 
-            // Kiểm tra cách đọc đã tồn tại chưa
-            const readingExists = await this.kanjiReadingRepository.existsByKanjiAndType(
+            // Kiểm tra cách đọc đã tồn tại chưa (kiểm tra cả reading cụ thể)
+            const readingExists = await this.kanjiReadingRepository.existsByKanjiTypeAndReading(
                 data.kanjiId,
-                data.readingType
+                data.readingType,
+                data.reading
             )
             if (readingExists) {
                 throw KanjiReadingAlreadyExistsException
@@ -117,9 +118,10 @@ export class KanjiReadingService {
             // Kiểm tra cách đọc mới đã tồn tại chưa (nếu có thay đổi)
             if ((data.readingType || data.reading) &&
                 (data.readingType !== existingReading.readingType || data.reading !== existingReading.reading)) {
-                const readingExists = await this.kanjiReadingRepository.existsByKanjiAndType(
+                const readingExists = await this.kanjiReadingRepository.existsByKanjiTypeAndReading(
                     existingReading.kanjiId,
-                    data.readingType || existingReading.readingType
+                    data.readingType || existingReading.readingType,
+                    data.reading || existingReading.reading
                 )
                 if (readingExists) {
                     throw KanjiReadingAlreadyExistsException

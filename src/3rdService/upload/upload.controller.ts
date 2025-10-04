@@ -39,7 +39,7 @@ export class UploadController {
         }
     })
     async uploadFile(@UploadedFile() file: Express.Multer.File): Promise<UploadResult> {
-        return this.uploadService.uploadFile(file);
+        return this.uploadService.uploadFile(file, 'uploads');
     }
 
     @Post('vocabulary/image')

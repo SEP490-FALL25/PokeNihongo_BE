@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { KanjiRepository } from '@/modules/kanji/kanji.repo'
-import { MeaningRepository } from '@/modules/meaning/meaning.repo'
-import { TranslationRepository } from '@/modules/translation/translation.repo'
-import { LanguagesRepository } from '@/modules/languages/languages.repo'
+import { KanjiService } from '@/modules/kanji/kanji.service'
+import { MeaningService } from '@/modules/meaning/meaning.service'
+import { TranslationService } from '@/modules/translation/translation.service'
+import { LanguagesService } from '@/modules/languages/languages.service'
 import { TRANSLATION_MESSAGE } from '@/common/constants/message'
+import { MeaningAlreadyExistsException } from '@/modules/vocabulary/dto/vocabulary.error'
 import type { TranslationItemType, ExampleTranslationType, TranslationsType } from './dto/create-vocabulary-full.dto'
 
 @Injectable()
@@ -13,10 +14,10 @@ export class VocabularyHelperService {
 
     constructor(
         private readonly prismaService: PrismaService,
-        private readonly kanjiRepository: KanjiRepository,
-        private readonly meaningRepository: MeaningRepository,
-        private readonly translationRepository: TranslationRepository,
-        private readonly languagesRepository: LanguagesRepository
+        private readonly kanjiService: KanjiService,
+        private readonly meaningService: MeaningService,
+        private readonly translationService: TranslationService,
+        private readonly languagesService: LanguagesService
     ) { }
 
     /**
@@ -39,25 +40,61 @@ export class VocabularyHelperService {
     async findOrCreateKanji(character: string): Promise<{ id: number; character: string }> {
         try {
             // Kiểm tra Kanji đã tồn tại chưa
-            let kanji = await this.kanjiRepository.findByCharacter(character)
+            let kanjiResponse = await this.kanjiService.findByCharacter(character)
+            let kanji = kanjiResponse?.data
 
             if (!kanji) {
                 // Tạo Kanji mới với meaningKey tự động
                 const meaningKey = `kanji.${character}.meaning`
 
                 this.logger.log(`Creating new Kanji: ${character}`)
-                kanji = await this.kanjiRepository.create({
-                    character,
-                    meaningKey,
-                    // Có thể thêm logic để tự động lấy strokeCount và jlptLevel từ API bên ngoài
+                kanji = await this.prismaService.kanji.create({
+                    data: {
+                        character,
+                        meaningKey
+                    }
                 })
 
                 this.logger.log(`Kanji created successfully: ${character} with id ${kanji.id}`)
             }
 
-            return kanji
+            return { id: kanji.id, character: kanji.character }
         } catch (error) {
             this.logger.error(`Error finding or creating Kanji ${character}:`, error)
+            throw error
+        }
+    }
+
+    /**
+     * Tìm hoặc tạo Kanji trong transaction
+     * @param prisma - Prisma transaction client
+     * @param character - Ký tự Kanji
+     */
+    async findOrCreateKanjiInTransaction(prisma: any, character: string): Promise<{ id: number; character: string }> {
+        try {
+            // Kiểm tra Kanji đã tồn tại chưa trong transaction
+            let kanji = await prisma.kanji.findUnique({
+                where: { character }
+            })
+
+            if (!kanji) {
+                // Tạo Kanji mới với meaningKey tự động trong transaction
+                const meaningKey = `kanji.${character}.meaning`
+
+                this.logger.log(`Creating new Kanji in transaction: ${character}`)
+                kanji = await prisma.kanji.create({
+                    data: {
+                        character,
+                        meaningKey
+                    }
+                })
+
+                this.logger.log(`Kanji created successfully in transaction: ${character} with id ${kanji.id}`)
+            }
+
+            return kanji
+        } catch (error) {
+            this.logger.error(`Error finding or creating Kanji ${character} in transaction:`, error)
             throw error
         }
     }
@@ -109,6 +146,53 @@ export class VocabularyHelperService {
     }
 
     /**
+     * Liên kết Vocabulary với Kanji trong transaction
+     * @param prisma - Prisma transaction client
+     * @param vocabularyId - ID của vocabulary
+     * @param kanjiCharacters - Danh sách ký tự Kanji
+     */
+    async linkVocabularyWithKanjiInTransaction(prisma: any, vocabularyId: number, kanjiCharacters: string[]): Promise<void> {
+        try {
+            if (kanjiCharacters.length === 0) {
+                this.logger.log(`No Kanji characters found in vocabulary ${vocabularyId}`)
+                return
+            }
+
+            this.logger.log(`Linking vocabulary ${vocabularyId} with ${kanjiCharacters.length} Kanji characters in transaction`)
+
+            // Tạo hoặc lấy tất cả Kanji
+            const kanjiPromises = kanjiCharacters.map(char => this.findOrCreateKanjiInTransaction(prisma, char))
+            const kanjis = await Promise.all(kanjiPromises)
+
+            // Tạo các liên kết trong bảng Vocabulary_Kanji
+            const linkPromises = kanjis.map((kanji, index) => {
+                return prisma.vocabulary_Kanji.upsert({
+                    where: {
+                        vocabularyId_kanjiId: {
+                            vocabularyId,
+                            kanjiId: kanji.id
+                        }
+                    },
+                    create: {
+                        vocabularyId,
+                        kanjiId: kanji.id,
+                        displayOrder: index + 1 // Thứ tự xuất hiện của Kanji
+                    },
+                    update: {
+                        displayOrder: index + 1 // Cập nhật displayOrder nếu đã tồn tại
+                    }
+                })
+            })
+
+            await Promise.all(linkPromises)
+            this.logger.log(`Successfully linked vocabulary ${vocabularyId} with ${kanjis.length} Kanji in transaction`)
+        } catch (error) {
+            this.logger.error(`Error linking vocabulary with Kanji in transaction:`, error)
+            throw error
+        }
+    }
+
+    /**
      * Xử lý toàn bộ quy trình: phát hiện Kanji và liên kết với Vocabulary
      * @param vocabularyId - ID của vocabulary
      * @param wordJp - Từ tiếng Nhật
@@ -130,6 +214,33 @@ export class VocabularyHelperService {
             await this.linkVocabularyWithKanji(vocabularyId, kanjiCharacters)
         } catch (error) {
             this.logger.error(`Error processing vocabulary Kanji:`, error)
+            throw error
+        }
+    }
+
+    /**
+     * Xử lý Kanji trong transaction (version cho transaction)
+     * @param prisma - Prisma transaction client
+     * @param vocabularyId - ID của vocabulary
+     * @param wordJp - Từ tiếng Nhật
+     */
+    async processVocabularyKanjiInTransaction(prisma: any, vocabularyId: number, wordJp: string): Promise<void> {
+        try {
+            // 1. Trích xuất các ký tự Kanji
+            const kanjiCharacters = this.extractKanjiCharacters(wordJp)
+
+            if (kanjiCharacters.length === 0) {
+                this.logger.log(`No Kanji found in word: ${wordJp}`)
+                return
+            }
+
+            this.logger.log(`Found ${kanjiCharacters.length} Kanji characters in word: ${wordJp}`)
+            this.logger.log(`Kanji characters: ${kanjiCharacters.join(', ')}`)
+
+            // 2. Liên kết Vocabulary với các Kanji trong transaction
+            await this.linkVocabularyWithKanjiInTransaction(prisma, vocabularyId, kanjiCharacters)
+        } catch (error) {
+            this.logger.error(`Error processing vocabulary Kanji in transaction:`, error)
             throw error
         }
     }
@@ -167,11 +278,9 @@ export class VocabularyHelperService {
                 : undefined
 
             // Tạo meaning mới
-            const meaning = await this.meaningRepository.create({
+            const meaning = await this.meaningService.create({
                 vocabularyId,
                 wordTypeId: meaningData.wordTypeId,
-                meaningKey,
-                exampleSentenceKey,
                 exampleSentenceJp: meaningData.exampleSentenceJp
             })
 
@@ -209,14 +318,98 @@ export class VocabularyHelperService {
     }
 
     /**
+     * Kiểm tra xem đã có meaning tương tự chưa
+     */
+    private async checkDuplicateMeaning(prisma: any, vocabularyId: number, translations: TranslationsType) {
+        try {
+            this.logger.log(`Checking duplicate meaning for vocabulary ${vocabularyId}`)
+            this.logger.log(`New translations:`, JSON.stringify(translations.meaning))
+
+            // Lấy tất cả meanings của vocabulary này
+            const existingMeanings = await prisma.meaning.findMany({
+                where: { vocabularyId }
+            })
+
+            this.logger.log(`Found ${existingMeanings.length} existing meanings`)
+
+            // Kiểm tra từng meaning xem có trùng không
+            for (const meaning of existingMeanings) {
+                // Lấy tất cả translations cho meaning này (không giới hạn theo meaning ID cụ thể)
+                // Vì có thể translations được lưu với key khác nhau
+                const meaningTranslations = await prisma.translation.findMany({
+                    where: {
+                        key: {
+                            startsWith: `vocabulary.${vocabularyId}.meaning.`
+                        },
+                        language: {
+                            code: {
+                                in: translations.meaning.map(t => t.language_code)
+                            }
+                        }
+                    },
+                    include: {
+                        language: true
+                    }
+                })
+
+                // Filter translations that belong to this specific meaning
+                // We need to check all possible meaning IDs for this vocabulary
+                const possibleMeaningTranslations = meaningTranslations.filter(t => {
+                    const keyParts = t.key.split('.')
+                    const meaningIdFromKey = parseInt(keyParts[keyParts.length - 1])
+                    return meaningIdFromKey === meaning.id
+                })
+
+                this.logger.log(`Meaning ${meaning.id} has ${possibleMeaningTranslations.length} translations`)
+                this.logger.log(`Existing translations:`, JSON.stringify(possibleMeaningTranslations.map(t => ({
+                    language_code: t.language.code,
+                    value: t.value
+                }))))
+
+                // So sánh số lượng translations
+                if (possibleMeaningTranslations.length !== translations.meaning.length) {
+                    this.logger.log(`Meaning ${meaning.id}: Translation count mismatch (${possibleMeaningTranslations.length} vs ${translations.meaning.length})`)
+                    continue
+                }
+
+                // So sánh nội dung translations
+                let isDuplicate = true
+                for (const newTranslation of translations.meaning) {
+                    const existingTranslation = possibleMeaningTranslations.find(t =>
+                        t.language.code === newTranslation.language_code
+                    )
+
+                    this.logger.log(`Comparing ${newTranslation.language_code}: "${newTranslation.value}" vs "${existingTranslation?.value || 'NOT_FOUND'}"`)
+
+                    if (!existingTranslation || existingTranslation.value !== newTranslation.value) {
+                        isDuplicate = false
+                        break
+                    }
+                }
+
+                // Nếu tìm thấy duplicate, return meaning đó
+                if (isDuplicate) {
+                    this.logger.log(`Found duplicate meaning with ID: ${meaning.id}`)
+                    return meaning
+                } else {
+                    this.logger.log(`Meaning ${meaning.id} is not a duplicate`)
+                }
+            }
+
+            this.logger.log(`No duplicate meaning found`)
+            return null
+        } catch (error) {
+            this.logger.error(`Error checking duplicate meaning:`, error)
+            throw error
+        }
+    }
+
+    /**
      * Lấy languageId từ language_code
      */
     private async getLanguageId(languageCode: string): Promise<number> {
-        const language = await this.languagesRepository.findByCode(languageCode)
-        if (!language) {
-            throw new Error(`Language with code '${languageCode}' not found. Please create it first.`)
-        }
-        return language.id
+        const language = await this.languagesService.findByCode({ code: languageCode })
+        return language.data.id
     }
 
     /**
@@ -237,93 +430,100 @@ export class VocabularyHelperService {
         translations: TranslationsType,
         wordTypeId?: number
     ) {
-        try {
-            this.logger.log('Creating vocabulary with full translations')
-
-            // 1. Tạo vocabulary
-            const vocabulary = await this.prismaService.vocabulary.create({
-                data: {
-                    wordJp: vocabularyData.wordJp,
-                    reading: vocabularyData.reading,
-                    levelN: vocabularyData.levelN,
-                    audioUrl: vocabularyData.audioUrl,
-                    imageUrl: vocabularyData.imageUrl,
-                    wordTypeId: wordTypeId || undefined, // Chỉ set nếu có giá trị
-                    createdById: vocabularyData.createdById
-                }
-            })
-
-            this.logger.log(`Vocabulary created with ID: ${vocabulary.id}`)
-
-            // 2. Xử lý Kanji tự động
+        // Sử dụng transaction để đảm bảo rollback nếu có lỗi
+        return await this.prismaService.$transaction(async (prisma) => {
             try {
-                await this.processVocabularyKanji(vocabulary.id, vocabulary.wordJp)
-            } catch (kanjiError) {
-                this.logger.warn(`Failed to process Kanji:`, kanjiError)
-            }
+                this.logger.log('Starting transaction: Creating vocabulary with full translations')
 
-            // 3. Tạo meaning với translations
-            const meaningKey = `vocabulary.${vocabulary.id}.meaning.1`
-            const exampleSentenceKey = translations.examples && translations.examples.length > 0
-                ? `vocabulary.${vocabulary.id}.example.1`
-                : undefined
+                // 1. Tạo vocabulary
+                const vocabulary = await prisma.vocabulary.create({
+                    data: {
+                        wordJp: vocabularyData.wordJp,
+                        reading: vocabularyData.reading,
+                        levelN: vocabularyData.levelN,
+                        audioUrl: vocabularyData.audioUrl,
+                        imageUrl: vocabularyData.imageUrl,
+                        wordTypeId: wordTypeId || undefined, // Chỉ set nếu có giá trị
+                        createdById: vocabularyData.createdById
+                    }
+                })
 
-            // Lấy câu ví dụ tiếng Nhật đầu tiên (nếu có)
-            const exampleSentenceJp = translations.examples && translations.examples.length > 0
-                ? translations.examples[0].original_sentence
-                : undefined
+                this.logger.log(`Vocabulary created with ID: ${vocabulary.id}`)
 
-            const meaning = await this.meaningRepository.create({
-                vocabularyId: vocabulary.id,
-                wordTypeId: wordTypeId || undefined, // Chỉ set nếu có giá trị
-                meaningKey,
-                exampleSentenceKey,
-                exampleSentenceJp
-            })
+                // 2. Xử lý Kanji tự động (không rollback nếu lỗi Kanji)
+                try {
+                    await this.processVocabularyKanjiInTransaction(prisma, vocabulary.id, vocabulary.wordJp)
+                } catch (kanjiError) {
+                    this.logger.warn(`Failed to process Kanji (continuing without rollback):`, kanjiError)
+                }
 
-            this.logger.log(`Meaning created with ID: ${meaning.id}`)
+                // 3. Tạo meaning với translations
+                const meaningKey = `vocabulary.${vocabulary.id}.meaning.1`
+                const exampleSentenceKey = translations.examples && translations.examples.length > 0
+                    ? `vocabulary.${vocabulary.id}.example.1`
+                    : undefined
 
-            // 4. Tạo translations cho meaning (convert language_code → languageId)
-            const meaningTranslations = await Promise.all(
-                translations.meaning.map(async item => ({
-                    languageId: await this.getLanguageId(item.language_code),
-                    key: meaningKey,
-                    value: item.value
-                }))
-            )
+                // Lấy câu ví dụ tiếng Nhật đầu tiên (nếu có)
+                const exampleSentenceJp = translations.examples && translations.examples.length > 0
+                    ? translations.examples[0].original_sentence
+                    : undefined
 
-            // 5. Tạo translations cho examples (nếu có)
-            const exampleTranslations = translations.examples && exampleSentenceKey
-                ? await Promise.all(
-                    translations.examples.map(async item => ({
+                const meaning = await prisma.meaning.create({
+                    data: {
+                        vocabularyId: vocabulary.id,
+                        wordTypeId: wordTypeId || undefined,
+                        meaningKey,
+                        exampleSentenceKey,
+                        exampleSentenceJp
+                    }
+                })
+
+                this.logger.log(`Meaning created with ID: ${meaning.id}`)
+
+                // 4. Tạo translations cho meaning (convert language_code → languageId)
+                const meaningTranslations = await Promise.all(
+                    translations.meaning.map(async item => ({
                         languageId: await this.getLanguageId(item.language_code),
-                        key: exampleSentenceKey,
-                        value: item.sentence
+                        key: meaningKey,
+                        value: item.value
                     }))
                 )
-                : []
 
-            // 6. Bulk create tất cả translations
-            const allTranslations = [...meaningTranslations, ...exampleTranslations]
+                // 5. Tạo translations cho examples (nếu có)
+                const exampleTranslations = translations.examples && exampleSentenceKey
+                    ? await Promise.all(
+                        translations.examples.map(async item => ({
+                            languageId: await this.getLanguageId(item.language_code),
+                            key: exampleSentenceKey,
+                            value: item.sentence
+                        }))
+                    )
+                    : []
 
-            if (allTranslations.length > 0) {
-                await this.prismaService.translation.createMany({
-                    data: allTranslations,
-                    skipDuplicates: true // Tránh lỗi nếu translation đã tồn tại
-                })
-                this.logger.log(`${TRANSLATION_MESSAGE.BULK_CREATE_SUCCESS}: ${allTranslations.length} records`)
+                // 6. Bulk create tất cả translations
+                const allTranslations = [...meaningTranslations, ...exampleTranslations]
+
+                if (allTranslations.length > 0) {
+                    await prisma.translation.createMany({
+                        data: allTranslations,
+                        skipDuplicates: true // Tránh lỗi nếu translation đã tồn tại
+                    })
+                    this.logger.log(`Bulk create translations successful: ${allTranslations.length} records`)
+                }
+
+                // 7. Trả về vocabulary với thông tin đầy đủ
+                this.logger.log('Transaction completed successfully')
+                return {
+                    vocabulary,
+                    meaning,
+                    translationsCreated: allTranslations.length
+                }
+
+            } catch (error) {
+                this.logger.error('Error in transaction - rolling back:', error)
+                throw error // Transaction sẽ tự động rollback
             }
-
-            // 7. Trả về vocabulary với thông tin đầy đủ
-            return {
-                vocabulary,
-                meaning,
-                translationsCreated: allTranslations.length
-            }
-        } catch (error) {
-            this.logger.error('Error creating vocabulary with translations:', error)
-            throw error
-        }
+        })
     }
 
     /**
@@ -334,81 +534,99 @@ export class VocabularyHelperService {
         translations: TranslationsType,
         wordTypeId?: number
     ) {
-        try {
-            this.logger.log(`Adding new meaning with translations to vocabulary ${vocabularyId}`)
+        // Sử dụng transaction để đảm bảo rollback nếu có lỗi
+        return await this.prismaService.$transaction(async (prisma) => {
+            try {
+                this.logger.log(`Starting transaction: Adding new meaning with translations to vocabulary ${vocabularyId}`)
 
-            // Kiểm tra vocabulary có tồn tại không
-            const vocabulary = await this.prismaService.vocabulary.findUnique({
-                where: { id: vocabularyId }
-            })
+                // Kiểm tra vocabulary có tồn tại không
+                const vocabulary = await prisma.vocabulary.findUnique({
+                    where: { id: vocabularyId }
+                })
 
-            if (!vocabulary) {
-                throw new Error(`Vocabulary with id ${vocabularyId} not found`)
-            }
+                if (!vocabulary) {
+                    throw new Error(`Vocabulary with id ${vocabularyId} not found`)
+                }
 
-            // Đếm số meanings hiện có
-            const existingMeaningsCount = await this.prismaService.meaning.count({
-                where: { vocabularyId }
-            })
+                // Kiểm tra xem đã có meaning tương tự chưa
+                this.logger.log(`About to check duplicate meaning...`)
+                const existingMeaning = await this.checkDuplicateMeaning(prisma, vocabularyId, translations)
+                if (existingMeaning) {
+                    this.logger.log(`Duplicate meaning found with ID: ${existingMeaning.id}, throwing error`)
+                    throw MeaningAlreadyExistsException
+                }
+                this.logger.log(`No duplicate found, proceeding to create new meaning`)
 
-            const meaningIndex = existingMeaningsCount + 1
-            const meaningKey = `vocabulary.${vocabularyId}.meaning.${meaningIndex}`
-            const exampleSentenceKey = translations.examples && translations.examples.length > 0
-                ? `vocabulary.${vocabularyId}.example.${meaningIndex}`
-                : undefined
+                // Đếm số meanings hiện có
+                const existingMeaningsCount = await prisma.meaning.count({
+                    where: { vocabularyId }
+                })
 
-            const exampleSentenceJp = translations.examples && translations.examples.length > 0
-                ? translations.examples[0].original_sentence
-                : undefined
+                const meaningIndex = existingMeaningsCount + 1
+                const meaningKey = `vocabulary.${vocabularyId}.meaning.${meaningIndex}`
+                const exampleSentenceKey = translations.examples && translations.examples.length > 0
+                    ? `vocabulary.${vocabularyId}.example.${meaningIndex}`
+                    : undefined
 
-            // Tạo meaning mới
-            const meaning = await this.meaningRepository.create({
-                vocabularyId,
-                wordTypeId: wordTypeId || undefined, // Chỉ set nếu có giá trị
-                meaningKey,
-                exampleSentenceKey,
-                exampleSentenceJp
-            })
+                const exampleSentenceJp = translations.examples && translations.examples.length > 0
+                    ? translations.examples[0].original_sentence
+                    : undefined
 
-            // Tạo translations cho meaning (convert language_code → languageId)
-            const meaningTranslations = await Promise.all(
-                translations.meaning.map(async item => ({
-                    languageId: await this.getLanguageId(item.language_code),
-                    key: meaningKey,
-                    value: item.value
-                }))
-            )
+                // Tạo meaning mới
+                const meaning = await prisma.meaning.create({
+                    data: {
+                        vocabularyId,
+                        wordTypeId: wordTypeId || undefined, // Chỉ set nếu có giá trị
+                        meaningKey,
+                        exampleSentenceKey,
+                        exampleSentenceJp
+                    }
+                })
 
-            // Tạo translations cho examples (nếu có)
-            const exampleTranslations = translations.examples && exampleSentenceKey
-                ? await Promise.all(
-                    translations.examples.map(async item => ({
+                this.logger.log(`Meaning created with ID: ${meaning.id}`)
+
+                // Tạo translations cho meaning (convert language_code → languageId)
+                const meaningTranslations = await Promise.all(
+                    translations.meaning.map(async item => ({
                         languageId: await this.getLanguageId(item.language_code),
-                        key: exampleSentenceKey,
-                        value: item.sentence
+                        key: meaningKey,
+                        value: item.value
                     }))
                 )
-                : []
 
-            // Bulk create translations
-            const allTranslations = [...meaningTranslations, ...exampleTranslations]
+                // Tạo translations cho examples (nếu có)
+                const exampleTranslations = translations.examples && exampleSentenceKey
+                    ? await Promise.all(
+                        translations.examples.map(async item => ({
+                            languageId: await this.getLanguageId(item.language_code),
+                            key: exampleSentenceKey,
+                            value: item.sentence
+                        }))
+                    )
+                    : []
 
-            if (allTranslations.length > 0) {
-                await this.prismaService.translation.createMany({
-                    data: allTranslations,
-                    skipDuplicates: true
-                })
-                this.logger.log(`${TRANSLATION_MESSAGE.BULK_CREATE_SUCCESS} for new meaning: ${allTranslations.length} records`)
+                // Bulk create translations
+                const allTranslations = [...meaningTranslations, ...exampleTranslations]
+
+                if (allTranslations.length > 0) {
+                    await prisma.translation.createMany({
+                        data: allTranslations,
+                        skipDuplicates: true
+                    })
+                    this.logger.log(`Bulk create translations successful for new meaning: ${allTranslations.length} records`)
+                }
+
+                this.logger.log('Transaction completed successfully for adding meaning')
+                return {
+                    meaning,
+                    translationsCreated: allTranslations.length
+                }
+
+            } catch (error) {
+                this.logger.error('Error in transaction - rolling back:', error)
+                throw error // Transaction sẽ tự động rollback
             }
-
-            return {
-                meaning,
-                translationsCreated: allTranslations.length
-            }
-        } catch (error) {
-            this.logger.error('Error adding meaning with translations:', error)
-            throw error
-        }
+        })
     }
 }
 

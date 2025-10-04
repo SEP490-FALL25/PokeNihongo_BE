@@ -48,7 +48,7 @@ export class UploadService {
         }
     }
 
-    async uploadFile(file: Express.Multer.File, folder: string = 'uploads'): Promise<UploadResult> {
+    async uploadFile(file: Express.Multer.File, folder: string): Promise<UploadResult> {
         const startTime = Date.now();
         this.logger.log(`Starting upload for file: ${file.originalname} to folder: ${folder}`);
 
