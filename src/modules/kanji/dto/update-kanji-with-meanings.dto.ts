@@ -18,7 +18,7 @@ export const TranslationForMeaningUpdateSchema = z.object({
 
 export const MeaningForKanjiUpdateSchema = z.object({
     id: z.number().optional(), // Nếu có id thì update, không có thì tạo mới
-    meaningKey: z.string().min(1).max(500),
+    meaningKey: z.string().min(1).max(500).optional(), // Optional - sẽ tự động generate nếu không có
     translations: z.record(z.string(), z.string()).optional() // { "vi": "nghĩa", "en": "meaning" }
 })
 
@@ -26,7 +26,6 @@ export const UpdateKanjiWithMeaningsSchema = z.object({
     // meaningKey removed - tự động generate từ ID
     strokeCount: z.number().min(1).max(50).optional(),
     jlptLevel: z.number().min(1).max(5).optional(),
-    img: z.string().max(500).url().optional(),
     readings: z.array(z.object({
         id: z.number().optional(), // Nếu có id thì update, không có thì tạo mới
         readingType: z.string().min(1).max(20),
@@ -36,7 +35,7 @@ export const UpdateKanjiWithMeaningsSchema = z.object({
 })
 
 export const UpdateKanjiWithMeaningsResponseSchema = z.object({
-    kanji: KanjiSchema,
+    kanji: KanjiSchema.optional(),
     readings: z.array(KanjiReadingSchema).optional(),
     meanings: z.array(z.object({
         id: z.number().optional(),
@@ -68,8 +67,8 @@ class MeaningForKanjiUpdateSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của meaning (nếu có thì update, không có thì tạo mới)', required: false })
     id?: number
 
-    @ApiProperty({ example: 'kanji.day.meaning', description: 'Key dịch nghĩa' })
-    meaningKey: string
+    @ApiProperty({ example: 'kanji.day.meaning', description: 'Key dịch nghĩa (optional - sẽ tự động generate nếu không có)', required: false })
+    meaningKey?: string
 
     @ApiProperty({
         example: { "vi": "rừng", "en": "forest", "ja": "森" },
@@ -87,13 +86,6 @@ export class UpdateKanjiWithMeaningsSwaggerDTO {
 
     @ApiProperty({ example: 3, description: 'Cấp độ JLPT (N5-N1)', required: false })
     jlptLevel?: number
-
-    @ApiProperty({
-        example: 'https://example.com/images/kanji/sun.png',
-        description: 'URL hình ảnh hiện có của Kanji (optional)',
-        required: false
-    })
-    img?: string
 
     @ApiProperty({
         type: 'string',
