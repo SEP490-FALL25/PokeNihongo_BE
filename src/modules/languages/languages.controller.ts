@@ -332,4 +332,18 @@ export class LanguagesController {
     deleteByCode(@Param() params: GetLanguagesByCodeParamsDTO) {
         return this.languagesService.deleteByCode(params.code)
     }
+
+    @Post('create-default')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Tạo các ngôn ngữ mặc định',
+        description: 'Tạo các ngôn ngữ cơ bản: Tiếng Việt, English, 日本語'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Tạo ngôn ngữ mặc định thành công'
+    })
+    createDefaultLanguages() {
+        return this.languagesService.createDefaultLanguages()
+    }
 }

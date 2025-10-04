@@ -52,7 +52,8 @@ export class CreateVocabularyFullMultipartDTO extends createZodDto(CreateVocabul
 export class TranslationItemSwaggerDTO {
     @ApiProperty({
         example: 'vi',
-        description: 'Mã ngôn ngữ (ISO 639-1)'
+        description: 'Mã ngôn ngữ (ISO 639-1)',
+        enum: ['vi', 'en']
     })
     language_code: string
 
@@ -66,7 +67,8 @@ export class TranslationItemSwaggerDTO {
 export class ExampleTranslationSwaggerDTO {
     @ApiProperty({
         example: 'vi',
-        description: 'Mã ngôn ngữ (ISO 639-1)'
+        description: 'Mã ngôn ngữ (ISO 639-1)',
+        enum: ['vi', 'en', 'ja']
     })
     language_code: string
 
@@ -120,7 +122,8 @@ export class CreateVocabularyFullSwaggerDTO {
 
     @ApiProperty({
         example: 1,
-        description: 'ID của loại từ (noun, verb, etc.)',
+        description: 'ID loại từ: 1=noun, 2=pronoun, 3=particle, 4=adverb, 5=conjunction, 6=interjection, 7=numeral, 8=counter, 9=prefix, 10=suffix, 11=i_adjective, 12=na_adjective, 13=no_adjective, 14=verb_ichidan, 15=verb_godan, 16=verb_irregular, 17=verb_suru, 18=verb_kuru, 19-31=verb_forms, 32=onomatopoeia, 33=mimetic_word, 34=honorific, 35=humble, 36=polite, 37=casual',
+        enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37],
         required: false
     })
     word_type_id?: number
@@ -141,7 +144,10 @@ export class CreateVocabularyFullSwaggerDTO {
 
     @ApiProperty({
         oneOf: [
-            { type: 'string', example: '{"meaning":[{"language_code":"vi","value":"Tiếng Nhật"}],"examples":[]}' },
+            {
+                type: 'string',
+                example: '{"meaning":[{"language_code":"vi","value":"Tiếng Nhật"},{"language_code":"en","value":"Japanese language"}],"examples":[{"language_code":"vi","sentence":"Tôi đang học tiếng Nhật","original_sentence":"私は日本語を勉強しています"},{"language_code":"en","sentence":"I am studying Japanese","original_sentence":"私は日本語を勉強しています"}]}'
+            },
             { type: 'object', $ref: '#/components/schemas/TranslationsSwaggerDTO' }
         ],
         description: 'Các bản dịch nghĩa và ví dụ (có thể là JSON string hoặc object)'
@@ -172,9 +178,9 @@ export class CreateVocabularyFullMultipartSwaggerDTO {
 
     @ApiProperty({
         example: '1',
-        description: 'ID của loại từ: 1=noun, 2=pronoun, 3=verb, 4=i_adjective, 5=na_adjective, 6=adverb, 7=particle, 8=conjunction',
+        description: 'ID loại từ: 1=noun, 2=pronoun, 3=particle, 4=adverb, 5=conjunction, 6=interjection, 7=numeral, 8=counter, 9=prefix, 10=suffix, 11=i_adjective, 12=na_adjective, 13=no_adjective, 14=verb_ichidan, 15=verb_godan, 16=verb_irregular, 17=verb_suru, 18=verb_kuru, 19-31=verb_forms, 32=onomatopoeia, 33=mimetic_word, 34=honorific, 35=humble, 36=polite, 37=casual',
         required: false,
-        enum: ['1', '2', '3', '4', '5', '6', '7', '8']
+        enum: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37']
     })
     word_type_id?: string
 
@@ -196,7 +202,10 @@ export class CreateVocabularyFullMultipartSwaggerDTO {
 
     @ApiProperty({
         oneOf: [
-            { type: 'string', example: '{"meaning":[{"language_code":"vi","value":"Tiếng Nhật"}],"examples":[]}' },
+            {
+                type: 'string',
+                example: '{"meaning":[{"language_code":"vi","value":"Tiếng Nhật"},{"language_code":"en","value":"Japanese language"}],"examples":[{"language_code":"vi","sentence":"Tôi đang học tiếng Nhật","original_sentence":"私は日本語を勉強しています"},{"language_code":"en","sentence":"I am studying Japanese","original_sentence":"私は日本語を勉強しています"}]}'
+            },
             { type: 'object', $ref: '#/components/schemas/TranslationsSwaggerDTO' }
         ],
         description: 'Các bản dịch nghĩa và ví dụ (có thể là JSON string hoặc object)'
@@ -204,9 +213,174 @@ export class CreateVocabularyFullMultipartSwaggerDTO {
     translations: string | TranslationsSwaggerDTO
 }
 
+// Response DTOs for the redesigned structure
+export class VocabularyDataSwaggerDTO {
+    @ApiProperty({
+        example: 6,
+        description: 'ID của từ vựng'
+    })
+    id: number
+
+    @ApiProperty({
+        example: '日本語',
+        description: 'Từ tiếng Nhật'
+    })
+    wordJp: string
+
+    @ApiProperty({
+        example: 'にほんご',
+        description: 'Cách đọc (Hiragana)'
+    })
+    reading: string
+
+    @ApiProperty({
+        example: 5,
+        description: 'Cấp độ JLPT (N5-N1)',
+        required: false
+    })
+    levelN?: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID loại từ',
+        required: false
+    })
+    wordTypeId?: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID người tạo',
+        required: false
+    })
+    createdById?: number
+
+    @ApiProperty({
+        example: 'https://res.cloudinary.com/dodtzdovx/image/upload/v1759606962/vocabulary/images/file_ghkhw2.webp',
+        description: 'URL hình ảnh',
+        required: false
+    })
+    imageUrl?: string
+
+    @ApiProperty({
+        example: 'https://res.cloudinary.com/dodtzdovx/video/upload/v1759606961/vocabulary/audio/file_yco4a0.mp3',
+        description: 'URL âm thanh',
+        required: false
+    })
+    audioUrl?: string
+
+    @ApiProperty({
+        example: '2025-10-04T19:42:43.416Z',
+        description: 'Thời gian tạo'
+    })
+    createdAt: Date
+
+    @ApiProperty({
+        example: '2025-10-04T19:42:43.416Z',
+        description: 'Thời gian cập nhật'
+    })
+    updatedAt: Date
+}
+
+export class MeaningDataSwaggerDTO {
+    @ApiProperty({
+        example: 4,
+        description: 'ID của meaning'
+    })
+    id: number
+
+    @ApiProperty({
+        type: [TranslationItemSwaggerDTO],
+        description: 'Danh sách nghĩa theo ngôn ngữ'
+    })
+    translations: TranslationItemSwaggerDTO[]
+
+    @ApiProperty({
+        type: [ExampleTranslationSwaggerDTO],
+        description: 'Danh sách ví dụ theo ngôn ngữ',
+        required: false
+    })
+    examples?: ExampleTranslationSwaggerDTO[]
+}
+
+export class CreateVocabularyFullDataSwaggerDTO {
+    @ApiProperty({
+        type: VocabularyDataSwaggerDTO,
+        description: 'Thông tin từ vựng'
+    })
+    vocabulary: VocabularyDataSwaggerDTO
+
+    @ApiProperty({
+        type: MeaningDataSwaggerDTO,
+        description: 'Thông tin nghĩa và bản dịch'
+    })
+    meaning: MeaningDataSwaggerDTO
+
+    @ApiProperty({
+        example: 4,
+        description: 'Số lượng translations đã tạo'
+    })
+    translationsCreated: number
+
+    @ApiProperty({
+        example: true,
+        description: 'Có phải từ vựng mới tạo hay không'
+    })
+    isNew: boolean
+}
+
+export class CreateVocabularyFullResponseSwaggerDTO {
+    @ApiProperty({
+        type: CreateVocabularyFullDataSwaggerDTO,
+        description: 'Dữ liệu response'
+    })
+    data: CreateVocabularyFullDataSwaggerDTO
+
+    @ApiProperty({
+        example: 'Tạo từ vựng thành công',
+        description: 'Thông báo kết quả'
+    })
+    message: string
+}
+
+// Zod schemas for response
+const VocabularyDataResponseSchema = z.object({
+    id: z.number(),
+    wordJp: z.string(),
+    reading: z.string(),
+    levelN: z.number().optional(),
+    wordTypeId: z.number().optional(),
+    createdById: z.number().optional(),
+    imageUrl: z.string().optional(),
+    audioUrl: z.string().optional(),
+    createdAt: z.date(),
+    updatedAt: z.date()
+})
+
+const MeaningDataResponseSchema = z.object({
+    id: z.number(),
+    translations: z.array(TranslationItemSchema),
+    examples: z.array(ExampleTranslationSchema).optional()
+})
+
+const CreateVocabularyFullResponseSchema = z.object({
+    data: z.object({
+        vocabulary: VocabularyDataResponseSchema,
+        meaning: MeaningDataResponseSchema,
+        translationsCreated: z.number(),
+        isNew: z.boolean()
+    }),
+    message: z.string()
+})
+
+// Zod DTOs for response
+export class VocabularyDataResponseDTO extends createZodDto(VocabularyDataResponseSchema) { }
+export class MeaningDataResponseDTO extends createZodDto(MeaningDataResponseSchema) { }
+export class CreateVocabularyFullResponseDTO extends createZodDto(CreateVocabularyFullResponseSchema) { }
+
 // Type exports
 export type CreateVocabularyFullType = z.infer<typeof CreateVocabularyFullSchema>
 export type TranslationItemType = z.infer<typeof TranslationItemSchema>
 export type ExampleTranslationType = z.infer<typeof ExampleTranslationSchema>
 export type TranslationsType = z.infer<typeof TranslationsSchema>
+export type CreateVocabularyFullResponseType = z.infer<typeof CreateVocabularyFullResponseSchema>
 
