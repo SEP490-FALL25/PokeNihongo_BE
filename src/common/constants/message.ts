@@ -197,3 +197,22 @@ export const ELEMENTAL_TYPE_MESSAGE = {
   DISPLAY_NAME_REQUIRED: 'Tên hiển thị không được để trống',
   INVALID_COLOR_HEX: 'Mã màu hex không hợp lệ (ví dụ: #FF0000)'
 }
+
+export const TYPE_EFFECTIVENESS_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo hiệu quả hệ thành công',
+  UPDATE_SUCCESS: 'Cập nhật hiệu quả hệ thành công',
+  DELETE_SUCCESS: 'Xóa hiệu quả hệ thành công',
+  GET_SUCCESS: 'Lấy thông tin hiệu quả hệ thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách hiệu quả hệ thành công',
+  NOT_FOUND: 'Không tìm thấy hiệu quả hệ',
+  ALREADY_EXISTS: 'Hiệu quả hệ đã tồn tại',
+  INVALID_DATA: 'Dữ liệu hiệu quả hệ không hợp lệ',
+  INVALID_MULTIPLIER: 'Multiplier không hợp lệ',
+  INVALID_ID: 'ID không hợp lệ',
+  ATTACK_TYPE_ID_REQUIRED: 'Attack Type ID không được để trống',
+  DEFENSE_TYPE_ID_REQUIRED: 'Defense Type ID không được để trống',
+  MULTIPLIER_REQUIRED: 'Multiplier không được để trống',
+  MULTIPLIER_MIN: 'Multiplier phải lớn hơn 0',
+  MULTIPLIER_MAX: 'Multiplier phải nhỏ hơn hoặc bằng 10',
+  CONFLICT_ATTACK_DEFENSE_TYPE: 'Attack Type và Defense Type không được giống nhau'
+}

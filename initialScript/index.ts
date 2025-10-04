@@ -2,6 +2,7 @@ import { RoleName } from '@/common/constants/role.constant'
 import envConfig from '@/config/env.config'
 import { HashingService } from 'src/shared/services/hashing.service'
 import { PrismaService } from 'src/shared/services/prisma.service'
+import { importElementalTypes } from './import-elemental-types'
 const prisma = new PrismaService()
 const hashingService = new HashingService()
 const main = async () => {
@@ -84,14 +85,25 @@ const main = async () => {
 
   return {
     createdRoleCount: roles.count,
-    createdAccountCount: accounts.count
+    createdAccountCount: accounts.count,
+    createdLevelCount: levels.count
   }
 }
 
 main()
-  .then(({ createdAccountCount, createdRoleCount }) => {
+  .then(async ({ createdAccountCount, createdRoleCount, createdLevelCount }) => {
     console.log(`Created ${createdRoleCount} roles`)
+    console.log(`Created ${createdLevelCount} levels`)
     console.log(`Created ${createdAccountCount} accounts`)
     console.log('🚀 Initial setup completed successfully.')
+
+    // Import elemental types
+    console.log('\n🔥 Starting elemental types import...')
+    try {
+      await importElementalTypes()
+      console.log('✅ Elemental types import completed successfully!')
+    } catch (error) {
+      console.error('❌ Failed to import elemental types:', error)
+    }
   })
   .catch(console.error)
