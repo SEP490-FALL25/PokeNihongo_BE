@@ -23,6 +23,7 @@ import { RewardModule } from './modules/reward/reward.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { ElementalTypeModule } from './modules/elemental-type/elemental-type.module';
+import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module';
 
 @Module({
   imports: [
@@ -46,7 +47,8 @@ import { ElementalTypeModule } from './modules/elemental-type/elemental-type.mod
     WordTypeModule,
     RewardModule,
     LevelModule,
-    ElementalTypeModule
+    ElementalTypeModule,
+    TypeEffectivenessModule
   ],
 
   controllers: [],
