@@ -385,6 +385,53 @@ export class PokemonRepo {
     })
   }
 
+  getPokemonsByType(typeName: string): Promise<any[]> {
+    return this.prismaService.pokemon.findMany({
+      where: {
+        deletedAt: null,
+        types: {
+          some: {
+            type_name: typeName,
+            deletedAt: null
+          }
+        }
+      },
+      include: {
+        types: {
+          select: {
+            id: true,
+            type_name: true,
+            display_name: true,
+            color_hex: true
+          }
+        },
+        nextPokemons: {
+          select: {
+            id: true,
+            pokedex_number: true,
+            nameJp: true,
+            nameTranslations: true,
+            imageUrl: true,
+            rarity: true
+          }
+        },
+        previousPokemons: {
+          select: {
+            id: true,
+            pokedex_number: true,
+            nameJp: true,
+            nameTranslations: true,
+            imageUrl: true,
+            rarity: true
+          },
+          where: {
+            deletedAt: null
+          }
+        }
+      }
+    })
+  }
+
   // Helper methods for evolution relations
   async addToPreviousPokemons(
     nextPokemonId: number,

@@ -193,6 +193,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @ApiBearerAuth()
   @ZodSerializerDto(GetAccountProfileResDTO)
   me(@ActiveUser('userId') userId: number) {
     return this.authService.getMe(userId)
@@ -200,6 +201,7 @@ export class AuthController {
 
   @Put('me')
   @ZodSerializerDto(AccountResDTO)
+  @ApiBearerAuth()
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: UpdateMeMultipartSwaggerDTO })
