@@ -21,6 +21,17 @@ type PokemonWithRelations = PokemonType & {
   previousPokemons?: PokemonType[]
 }
 
+type PokemonWithTypesOnly = PokemonType & {
+  types?: Array<{
+    id: number
+    type_name: string
+    display_name: any
+    color_hex: string
+  }>
+}
+
+type PokemonBasic = PokemonType
+
 @Injectable()
 export class PokemonRepo {
   constructor(private prismaService: PrismaService) {}

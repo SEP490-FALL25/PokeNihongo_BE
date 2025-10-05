@@ -3,6 +3,8 @@ import {
   AddExpBodySchema,
   CreateUserPokemonBodySchema,
   CreateUserPokemonResSchema,
+  EvolvePokemonBodySchema,
+  EvolvePokemonResSchema,
   GetUserPokemonDetailResSchema,
   GetUserPokemonParamsSchema,
   UpdateUserPokemonBodySchema,
@@ -14,6 +16,7 @@ export class CreateUserPokemonBodyDTO extends createZodDto(CreateUserPokemonBody
 export class UpdateUserPokemonBodyDTO extends createZodDto(UpdateUserPokemonBodySchema) {}
 export class GetUserPokemonParamsDTO extends createZodDto(GetUserPokemonParamsSchema) {}
 export class AddExpBodyDTO extends createZodDto(AddExpBodySchema) {}
+export class EvolvePokemonBodyDTO extends createZodDto(EvolvePokemonBodySchema) {}
 
 // Response DTOs
 export class CreateUserPokemonResDTO extends createZodDto(CreateUserPokemonResSchema) {}
@@ -21,3 +24,4 @@ export class UpdateUserPokemonResDTO extends createZodDto(UpdateUserPokemonResSc
 export class GetUserPokemonDetailResDTO extends createZodDto(
   GetUserPokemonDetailResSchema
 ) {}
+export class EvolvePokemonResDTO extends createZodDto(EvolvePokemonResSchema) {}

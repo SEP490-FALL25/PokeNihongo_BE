@@ -104,4 +104,16 @@ export class SharedUserRepository {
       data
     })
   }
+
+  addLevelForUser(userId: number, levelId: number) {
+    return this.prismaService.user.update({
+      where: {
+        id: userId,
+        deletedAt: null
+      },
+      data: {
+        levelId
+      }
+    })
+  }
 }

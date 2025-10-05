@@ -8,6 +8,8 @@ import {
   AddExpBodyDTO,
   CreateUserPokemonBodyDTO,
   CreateUserPokemonResDTO,
+  EvolvePokemonBodyDTO,
+  EvolvePokemonResDTO,
   GetUserPokemonDetailResDTO,
   GetUserPokemonParamsDTO,
   UpdateUserPokemonBodyDTO,
@@ -28,6 +30,16 @@ export class UserPokemonController {
   @Get('my-pokemons')
   getMyPokemons(@ActiveUser('userId') userId: number) {
     return this.userPokemonService.getUserPokemons(userId)
+  }
+
+  @Post(':userPokemonId/evolve')
+  @ZodSerializerDto(EvolvePokemonResDTO)
+  evolvePokemon(
+    @Param() params: GetUserPokemonParamsDTO,
+    @Body() body: EvolvePokemonBodyDTO,
+    @ActiveUser('userId') userId: number
+  ) {
+    return this.userPokemonService.evolvePokemon(params.userPokemonId, body, userId)
   }
 
   @Get(':userPokemonId')
@@ -72,7 +84,7 @@ export class UserPokemonController {
   }
 
   @Post(':userPokemonId/add-exp')
-  @ZodSerializerDto(MessageResDTO)
+  @ZodSerializerDto(GetUserPokemonDetailResDTO)
   addExp(
     @Param() params: GetUserPokemonParamsDTO,
     @Body() body: AddExpBodyDTO,

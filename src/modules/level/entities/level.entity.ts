@@ -37,7 +37,7 @@ export const CreateLevelResSchema = z.object({
   message: z.string()
 })
 
-export const UpdateLevelBodySchema = CreateLevelBodySchema
+export const UpdateLevelBodySchema = CreateLevelBodySchema.partial().strict()
 
 export const UpdateLevelResSchema = CreateLevelResSchema
 
