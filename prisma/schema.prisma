@@ -9,36 +9,47 @@ datasource db {
 }
 
 model User {
-  id                  Int            @id @default(autoincrement())
-  email               String         @unique @db.VarChar(500)
-  name                String         @db.VarChar(500)
-  password            String         @db.VarChar(500)
-  phoneNumber         String?        @db.VarChar(11)
-  avatar              String?        @db.VarChar(1000)
-  status              UserStatus     @default(INACTIVE)
-  roleId              Int
-  role                Role           @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  levelId             Int?
-  level               Level?         @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  devices             Device[] // Liên kết 1-n với Device
-  refreshTokens       RefreshToken[]
-  createdPermissions  Permission[]   @relation("PermissionCreatedBy")
-  updatedPermissions  Permission[]   @relation("PermissionUpdatedBy")
-  deletedPermissions  Permission[]   @relation("PermissionDeletedBy")
-  createdRoles        Role[]         @relation("RoleCreatedBy")
-  updatedRoles        Role[]         @relation("RoleUpdatedBy")
-  deletedRoles        Role[]         @relation("RoleDeletedBy")
-  createdLevels       Level[]        @relation("LevelCreatedBy")
-  updatedLevels       Level[]        @relation("LevelUpdatedBy")
-  deletedLevels       Level[]        @relation("LevelDeletedBy")
-  createdRewards      Reward[]       @relation("RewardCreatedBy")
-  updatedRewards      Reward[]       @relation("RewardUpdatedBy")
-  deletedRewards      Reward[]       @relation("RewardDeletedBy")
-  createdVocabularies Vocabulary[]   @relation("VocabularyCreatedBy")
+  id                         Int                 @id @default(autoincrement())
+  email                      String              @unique @db.VarChar(500)
+  name                       String              @db.VarChar(500)
+  password                   String              @db.VarChar(500)
+  phoneNumber                String?             @db.VarChar(11)
+  avatar                     String?             @db.VarChar(1000)
+  status                     UserStatus          @default(INACTIVE)
+  roleId                     Int
+  role                       Role                @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  levelId                    Int?
+  level                      Level?              @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  devices                    Device[] // Liên kết 1-n với Device
+  refreshTokens              RefreshToken[]
+  createdPermissions         Permission[]        @relation("PermissionCreatedBy")
+  updatedPermissions         Permission[]        @relation("PermissionUpdatedBy")
+  deletedPermissions         Permission[]        @relation("PermissionDeletedBy")
+  createdRoles               Role[]              @relation("RoleCreatedBy")
+  updatedRoles               Role[]              @relation("RoleUpdatedBy")
+  deletedRoles               Role[]              @relation("RoleDeletedBy")
+  createdLevels              Level[]             @relation("LevelCreatedBy")
+  updatedLevels              Level[]             @relation("LevelUpdatedBy")
+  deletedLevels              Level[]             @relation("LevelDeletedBy")
+  createdRewards             Reward[]            @relation("RewardCreatedBy")
+  updatedRewards             Reward[]            @relation("RewardUpdatedBy")
+  deletedRewards             Reward[]            @relation("RewardDeletedBy")
+  createdVocabularies        Vocabulary[]        @relation("VocabularyCreatedBy")
+  createdPokemons            Pokemon[]           @relation("PokemonCreatedBy")
+  updatedPokemons            Pokemon[]           @relation("PokemonUpdatedBy")
+  deletedPokemons            Pokemon[]           @relation("PokemonDeletedBy")
+  createdElementalTypes      ElementalType[]     @relation("ElementalTypeCreatedBy")
+  updatedElementalTypes      ElementalType[]     @relation("ElementalTypeUpdatedBy")
+  deletedElementalTypes      ElementalType[]     @relation("ElementalTypeDeletedBy")
+  createdTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessCreatedBy")
+  updatedTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessUpdatedBy")
+  deletedTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
   // Tự quan hệ 1-n
+  userPokemons UserPokemon[]
+
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
   createdUsers User[] @relation("CreatorUsers")
@@ -179,6 +190,7 @@ model Kanji {
   meaningKey   String             @db.VarChar(200) // Key để dịch nghĩa của Kanji
   strokeCount  Int? // Số nét vẽ
   jlptLevel    Int? // Cấp độ JLPT (1-5)
+  img          String?            @db.VarChar(500) // URL hình ảnh của Kanji
   vocabularies Vocabulary_Kanji[] // Quan hệ Nhiều-Nhiều với Vocabulary
   readings     Kanji_Reading[] // Quan hệ Một-Nhiều với Kanji_Reading
 
@@ -315,7 +327,8 @@ model Level {
   rewardId Int?
   reward   Reward? @relation(fields: [rewardId], references: [id])
 
-  users User[]
+  users        User[]
+  userPokemons UserPokemon[]
 
   createdById Int?
   createdBy   User? @relation("LevelCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -330,6 +343,119 @@ model Level {
 
   @@unique([levelNumber, levelType])
   @@index([deletedAt])
+}
+
+model Pokemon {
+  id               Int           @id @default(autoincrement())
+  pokedex_number   Int
+  nameJp           String
+  nameTranslations Json // {"en": "...", "ja": "...", "vi": "..."}
+  description      String?
+  conditionLevel   Int?
+  nextPokemonId    Int?
+  isStarted        Boolean       @default(false)
+  imageUrl         String?
+  rarity           RarityPokemon @default(COMMON)
+
+  // Quan hệ nhiều-nhiều với hệ
+  types ElementalType[]
+
+  // Self relation: tiến hóa
+  nextPokemon      Pokemon?  @relation("Evolution", fields: [nextPokemonId], references: [id])
+  previousPokemons Pokemon[] @relation("Evolution")
+
+  userPokemons UserPokemon[]
+
+  //
+  createdById Int?
+  createdBy   User? @relation("PokemonCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("PokemonUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("PokemonDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model UserPokemon {
+  id Int @id @default(autoincrement())
+
+  // Quan hệ
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  pokemonId Int
+  pokemon   Pokemon @relation(fields: [pokemonId], references: [id], onDelete: NoAction)
+
+  levelId Int
+  level   Level @relation(fields: [levelId], references: [id], onDelete: NoAction)
+
+  // Thông tin cá nhân hóa
+  nickname String? // tên user đặt cho con này
+  exp      Int     @default(0) // exp hiện tại trên con này
+
+  // Timestamps
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, nickname]) // optional: mỗi user không có 2 con trùng nickname (NULL cho phép)
+  @@index([userId])
+  @@index([pokemonId])
+}
+
+model ElementalType {
+  id           Int      @id @default(autoincrement())
+  type_name    String   @unique @db.VarChar(20) // Fire, Water...
+  display_name Json // {"en": "Fire", "vi": "Lửa", "ja": "ほのお"}
+  color_hex    String   @db.VarChar(7) // #EE8130
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Quan hệ nhiều-nhiều với Pokémon
+  pokemons Pokemon[]
+
+  // Quan hệ tấn công / phòng thủ
+  attacking_relations TypeEffectiveness[] @relation("Attacker")
+  defending_relations TypeEffectiveness[] @relation("Defender")
+
+  //
+  createdById Int?
+  createdBy   User? @relation("ElementalTypeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("ElementalTypeUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("ElementalTypeDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model TypeEffectiveness {
+  id         Int   @id @default(autoincrement())
+  attackerId Int
+  defenderId Int
+  multiplier Float // 0, 0.5, 1, 2
+
+  attacker ElementalType @relation("Attacker", fields: [attackerId], references: [id])
+  defender ElementalType @relation("Defender", fields: [defenderId], references: [id])
+
+  //
+  createdById Int?
+  createdBy   User? @relation("TypeEffectivenessCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("TypeEffectivenessUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("TypeEffectivenessDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([attackerId, defenderId]) // tránh trùng
 }
 
 enum VerificationCodeType {
@@ -376,4 +502,12 @@ enum RewardTarget {
   POKEMON
   BADGE
   VOUCHER
+}
+
+enum RarityPokemon {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
 }

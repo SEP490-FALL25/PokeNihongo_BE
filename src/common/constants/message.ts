@@ -26,6 +26,9 @@ export const AUTH_MESSAGE = {
 
 export const VOCABULARY_MESSAGE = {
   CREATE_SUCCESS: 'Tạo từ vựng thành công',
+  CREATE_FULL_SUCCESS: 'Tạo từ vựng mới thành công với nghĩa và translations',
+  ADD_MEANING_SUCCESS: 'Từ vựng đã tồn tại. Đã thêm nghĩa mới với translations',
+  MEANING_ALREADY_EXISTS: 'Nghĩa này đã tồn tại trong hệ thống',
   UPDATE_SUCCESS: 'Cập nhật từ vựng thành công',
   DELETE_SUCCESS: 'Xóa từ vựng thành công',
   GET_SUCCESS: 'Lấy thông tin từ vựng thành công',
@@ -61,7 +64,8 @@ export const REWARD_MESSAGE = {
 export const SYSTEM_MESSAGE = {
   NOT_FOUND: 'Không tìm thấy bản ghi',
   INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'Mật khẩu mới và mật khẩu xác nhận không khớp',
-  INVALID_NEW_PASSWORD_CONFIRM_PASSWORD_REGISTER: 'Mật khẩu và mật khẩu xác nhận không khớp',
+  INVALID_NEW_PASSWORD_CONFIRM_PASSWORD_REGISTER:
+    'Mật khẩu và mật khẩu xác nhận không khớp',
   INVALID_PASSWORD: 'Sai mật khẩu',
   INVALID_OLD_PASSWORD: 'Mật khẩu cũ không đúng',
   SESSION_EXPIRED: 'Phiên đã hết hạn, vui lòng đăng nhập lại',
@@ -107,6 +111,7 @@ export const LANGUAGES_MESSAGE = {
 
 export const KANJI_MESSAGE = {
   CREATE_SUCCESS: 'Tạo kanji thành công',
+  CREATE_WITH_READINGS_SUCCESS: 'Tạo Kanji cùng với cách đọc thành công',
   UPDATE_SUCCESS: 'Cập nhật kanji thành công',
   DELETE_SUCCESS: 'Xóa kanji thành công',
   GET_SUCCESS: 'Lấy thông tin kanji thành công',
@@ -180,4 +185,38 @@ export const WORDTYPE_MESSAGE = {
   TAG_REQUIRED: 'Tag không được để trống',
   TAG_TOO_LONG: 'Tag quá dài (tối đa 50 ký tự)',
   NAME_KEY_INVALID: 'Name key không đúng định dạng'
+}
+
+export const ELEMENTAL_TYPE_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo loại hệ thành công',
+  UPDATE_SUCCESS: 'Cập nhật loại hệ thành công',
+  DELETE_SUCCESS: 'Xóa loại hệ thành công',
+  GET_SUCCESS: 'Lấy thông tin loại hệ thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách loại hệ thành công',
+  NOT_FOUND: 'Không tìm thấy loại hệ',
+  ALREADY_EXISTS: 'Loại hệ đã tồn tại',
+  INVALID_DATA: 'Dữ liệu loại hệ không hợp lệ',
+  TYPE_NAME_REQUIRED: 'Tên loại hệ không được để trống',
+  TYPE_NAME_MAX_LENGTH: 'Tên loại hệ quá dài (tối đa 20 ký tự)',
+  DISPLAY_NAME_REQUIRED: 'Tên hiển thị không được để trống',
+  INVALID_COLOR_HEX: 'Mã màu hex không hợp lệ (ví dụ: #FF0000)'
+}
+
+export const TYPE_EFFECTIVENESS_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo hiệu quả hệ thành công',
+  UPDATE_SUCCESS: 'Cập nhật hiệu quả hệ thành công',
+  DELETE_SUCCESS: 'Xóa hiệu quả hệ thành công',
+  GET_SUCCESS: 'Lấy thông tin hiệu quả hệ thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách hiệu quả hệ thành công',
+  NOT_FOUND: 'Không tìm thấy hiệu quả hệ',
+  ALREADY_EXISTS: 'Hiệu quả hệ đã tồn tại',
+  INVALID_DATA: 'Dữ liệu hiệu quả hệ không hợp lệ',
+  INVALID_MULTIPLIER: 'Multiplier không hợp lệ',
+  INVALID_ID: 'ID không hợp lệ',
+  ATTACK_TYPE_ID_REQUIRED: 'Attack Type ID không được để trống',
+  DEFENSE_TYPE_ID_REQUIRED: 'Defense Type ID không được để trống',
+  MULTIPLIER_REQUIRED: 'Multiplier không được để trống',
+  MULTIPLIER_MIN: 'Multiplier phải lớn hơn 0',
+  MULTIPLIER_MAX: 'Multiplier phải nhỏ hơn hoặc bằng 10',
+  CONFLICT_ATTACK_DEFENSE_TYPE: 'Attack Type và Defense Type không được giống nhau'
 }

@@ -43,6 +43,7 @@ export const LanguagesSchema = z.object({
 })
 
 export const CreateLanguagesSchema = z.object({
+    id: z.number().optional(),
     code: z
         .string()
         .min(2, 'Mã ngôn ngữ phải có ít nhất 2 ký tự')
@@ -56,7 +57,8 @@ export const CreateLanguagesSchema = z.object({
         .max(100, 'Tên ngôn ngữ quá dài (tối đa 100 ký tự)')
         .refine(isValidLanguageName, {
             message: LANGUAGE_NAME_ERROR
-        })
+        }),
+    flag: z.string().optional()
 })
 
 export const UpdateLanguagesSchema = z.object({

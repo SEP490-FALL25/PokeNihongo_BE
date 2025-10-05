@@ -23,8 +23,9 @@ export const WordTypeSchema = z.object({
     updatedAt: z.date()
 })
 
-// Create WordType schema (cần nameKey)
+// Create WordType schema (cần nameKey, ID tùy chọn)
 export const CreateWordTypeSchema = z.object({
+    id: z.number().optional(),
     nameKey: z
         .string()
         .min(1, 'Name key không được để trống')

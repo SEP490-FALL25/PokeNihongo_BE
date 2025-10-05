@@ -53,6 +53,11 @@ export const KanjiSchema = z.object({
         .max(5, 'Cấp độ JLPT phải từ 1-5')
         .nullable()
         .optional(),
+    img: z
+        .string()
+        .max(500, 'URL hình ảnh quá dài (tối đa 500 ký tự)')
+        .nullable()
+        .optional(),
     createdAt: z.date(),
     updatedAt: z.date()
 })
@@ -80,6 +85,10 @@ export const CreateKanjiSchema = z.object({
         .min(1, 'Cấp độ JLPT phải từ 1-5')
         .max(5, 'Cấp độ JLPT phải từ 1-5')
         .optional(),
+    img: z
+        .string()
+        .max(500, 'URL hình ảnh quá dài (tối đa 500 ký tự)')
+        .optional(),
 })
 
 export const UpdateKanjiSchema = z.object({
@@ -105,6 +114,10 @@ export const UpdateKanjiSchema = z.object({
         .number()
         .min(1, 'Cấp độ JLPT phải từ 1-5')
         .max(5, 'Cấp độ JLPT phải từ 1-5')
+        .optional(),
+    img: z
+        .string()
+        .max(500, 'URL hình ảnh quá dài (tối đa 500 ký tự)')
         .optional()
 })
 

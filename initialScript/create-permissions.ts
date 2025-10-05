@@ -88,13 +88,27 @@ async function bootstrap() {
       deletedAt: null
     }
   })
-  // Cập nhật lại các permissions trong Admin Role
-  const adminRole = await prisma.role.findFirstOrThrow({
+
+  // Tạo hoặc cập nhật Admin Role
+  let adminRole = await prisma.role.findFirst({
     where: {
       name: RoleName.Admin,
       deletedAt: null
     }
   })
+
+  if (!adminRole) {
+    console.log('Creating Admin role...')
+    adminRole = await prisma.role.create({
+      data: {
+        name: RoleName.Admin,
+        description: 'Administrator role with full permissions'
+      }
+    })
+    console.log('Admin role created')
+  }
+
+  // Cập nhật lại các permissions trong Admin Role
   await prisma.role.update({
     where: {
       id: adminRole.id
@@ -105,6 +119,7 @@ async function bootstrap() {
       }
     }
   })
+  console.log('Admin role permissions updated')
 
   process.exit(0)
 }
