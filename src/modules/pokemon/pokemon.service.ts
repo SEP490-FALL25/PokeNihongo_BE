@@ -1,3 +1,4 @@
+import { FolderName } from '@/common/constants/media.constant'
 import { POKEMON_MESSAGE } from '@/common/constants/message'
 import { NotFoundRecordException } from '@/shared/error'
 import {
@@ -6,7 +7,7 @@ import {
   isUniqueConstraintPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { UploadService } from 'src/3rdService/upload/upload.service'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
@@ -16,14 +17,14 @@ import {
 import {
   AssignPokemonTypesBodyType,
   CreatePokemonBodyType,
-  UpdatePokemonBodyType
+  CreatePokemonFormDataType,
+  UpdatePokemonBodyType,
+  UpdatePokemonFormDataType
 } from './entities/pokemon.entity'
 import { PokemonRepo } from './pokemon.repo'
 
 @Injectable()
 export class PokemonService {
-  private readonly logger = new Logger(PokemonService.name)
-
   constructor(
     private pokemonRepo: PokemonRepo,
     private uploadService: UploadService,
@@ -31,7 +32,9 @@ export class PokemonService {
   ) {}
 
   // Helper function to normalize form-data to standard format
-  private normalizeCreateData(data: CreatePokemonBodyType): CreatePokemonBodyType {
+  private normalizeCreateData(
+    data: CreatePokemonBodyType | CreatePokemonFormDataType
+  ): CreatePokemonBodyType {
     return {
       pokedex_number: data.pokedex_number,
       nameJp: data.nameJp,
@@ -47,7 +50,9 @@ export class PokemonService {
   }
 
   // Helper function to normalize update data
-  private normalizeUpdateData(data: UpdatePokemonBodyType): UpdatePokemonBodyType {
+  private normalizeUpdateData(
+    data: UpdatePokemonBodyType | UpdatePokemonFormDataType
+  ): UpdatePokemonBodyType {
     return {
       ...data,
       description: data.description === undefined ? undefined : (data.description ?? null)
@@ -149,11 +154,13 @@ export class PokemonService {
   async update({
     id,
     data,
-    updatedById
+    updatedById,
+    imageFile
   }: {
     id: number
-    data: UpdatePokemonBodyType
+    data: UpdatePokemonBodyType | UpdatePokemonFormDataType
     updatedById: number
+    imageFile?: Express.Multer.File
   }) {
     try {
       // Normalize data
@@ -164,20 +171,6 @@ export class PokemonService {
         throw PokemonNotFoundException
       }
 
-      // Handle image URL change
-      if (pokemonData.imageUrl && pokemonData.imageUrl !== existPokemon.imageUrl) {
-        // Delete old image from Cloudinary if exists
-        if (existPokemon.imageUrl) {
-          try {
-            await this.uploadService.deleteFile(existPokemon.imageUrl, 'pokemon/images')
-            this.logger.log(`Deleted old Pokemon image: ${existPokemon.imageUrl}`)
-          } catch (error) {
-            // Log warning but don't fail the update
-            this.logger.warn(`Failed to delete old Pokemon image: ${error.message}`)
-          }
-        }
-      }
-
       // Check if updating pokedex number to existing one
       if (pokemonData.pokedex_number) {
         const existingWithPokedex = await this.pokemonRepo.findByPokedexNumber(
@@ -185,6 +178,25 @@ export class PokemonService {
         )
         if (existingWithPokedex && existingWithPokedex.id !== id) {
           throw PokemonAlreadyExistsException
+        }
+      }
+
+      // Upload new image if provided
+      if (imageFile) {
+        const uploadResult = await this.uploadService.uploadFileByType(
+          imageFile,
+          FolderName.POKEMON
+        )
+        pokemonData.imageUrl = uploadResult.url
+
+        // Delete old image if exists
+        if (existPokemon.imageUrl) {
+          try {
+            await this.uploadService.deleteFile(existPokemon.imageUrl, FolderName.POKEMON)
+          } catch (error) {
+            // Log warning but don't fail the update
+            console.warn('Failed to delete old Pokemon image:', error)
+          }
         }
       }
 
@@ -201,19 +213,26 @@ export class PokemonService {
 
       // Remove from old next Pokemons' previousPokemons
       for (const nextPokemonId of toRemove) {
-        try {
-          await this.pokemonRepo.removeFromPreviousPokemons(nextPokemonId, id)
-        } catch (error) {
-          console.warn('Failed to remove from old next Pokemon previousPokemons:', error)
+        if (nextPokemonId !== undefined) {
+          try {
+            await this.pokemonRepo.removeFromPreviousPokemons(nextPokemonId, id)
+          } catch (error) {
+            console.warn(
+              'Failed to remove from old next Pokemon previousPokemons:',
+              error
+            )
+          }
         }
       }
 
       // Add to new next Pokemons' previousPokemons
       for (const nextPokemonId of toAdd) {
-        try {
-          await this.pokemonRepo.addToPreviousPokemons(nextPokemonId, id)
-        } catch (error) {
-          console.warn('Failed to add to new next Pokemon previousPokemons:', error)
+        if (nextPokemonId !== undefined) {
+          try {
+            await this.pokemonRepo.addToPreviousPokemons(nextPokemonId, id)
+          } catch (error) {
+            console.warn('Failed to add to new next Pokemon previousPokemons:', error)
+          }
         }
       }
 
@@ -251,13 +270,15 @@ export class PokemonService {
       // Remove from next Pokemons' previousPokemons if this Pokemon has evolutions
       if (existPokemon.nextPokemons && existPokemon.nextPokemons.length > 0) {
         for (const nextPokemon of existPokemon.nextPokemons) {
-          try {
-            await this.pokemonRepo.removeFromPreviousPokemons(nextPokemon.id, id)
-          } catch (error) {
-            console.warn(
-              'Failed to remove from next Pokemon previousPokemons on delete:',
-              error
-            )
+          if (nextPokemon.id !== undefined) {
+            try {
+              await this.pokemonRepo.removeFromPreviousPokemons(nextPokemon.id, id)
+            } catch (error) {
+              console.warn(
+                'Failed to remove from next Pokemon previousPokemons on delete:',
+                error
+              )
+            }
           }
         }
       }
@@ -506,7 +527,7 @@ export class PokemonService {
   }
 
   // Helper method to calculate weaknesses for a Pokemon (for internal use)
-  async getWeaknessesForPokemon(pokemonTypes: any[]) {
+  async getWeaknessesForPokemon(pokemonTypes: any[] | undefined) {
     if (!pokemonTypes || pokemonTypes.length === 0) {
       return []
     }
@@ -571,9 +592,7 @@ export class PokemonService {
         ...w.type,
         effectiveness_multiplier: w.multiplier
       }))
-  }
-
-  /**
+  } /**
    * Get available evolution options for a Pokemon
    */
   async getEvolutionOptions(pokemonId: number) {
