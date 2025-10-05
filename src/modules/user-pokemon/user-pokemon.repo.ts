@@ -231,7 +231,7 @@ export class UserPokemonRepo {
   }
 
   // Get user's Pokemon by user ID
-  getUserPokemons(userId: number): Promise<any[]> {
+  getUserPokemons(userId: number): Promise<UserPokemonType[]> {
     return this.prismaService.userPokemon.findMany({
       where: {
         userId,

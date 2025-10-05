@@ -27,11 +27,6 @@ export class UserPokemonController {
     return this.userPokemonService.list(query, userId)
   }
 
-  @Get('my-pokemons')
-  getMyPokemons(@ActiveUser('userId') userId: number) {
-    return this.userPokemonService.getUserPokemons(userId)
-  }
-
   @Post(':userPokemonId/evolve')
   @ZodSerializerDto(EvolvePokemonResDTO)
   evolvePokemon(

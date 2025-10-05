@@ -262,6 +262,7 @@ export class UserPokemonService {
     let currentExp = newExp
     let leveledUp = false
     let levelsGained = 0
+    let expUpdated = false // Flag to track if EXP was already updated
 
     // Get Pokemon condition level for level cap
     const pokemonConditionLevel = userPokemon.pokemon?.conditionLevel
@@ -275,6 +276,7 @@ export class UserPokemonService {
           id: userPokemon.id,
           data: { exp: currentExp }
         })
+        expUpdated = true
         break
       }
 
@@ -285,13 +287,11 @@ export class UserPokemonService {
       )
 
       if (!nextLevel) {
-        // No more levels available, keep remaining EXP but don't exceed current level's requiredExp
-        const finalExp = Math.min(currentExp, currentLevel.requiredExp)
         await this.userPokemonRepo.update({
           id: userPokemon.id,
-          data: { exp: finalExp }
+          data: { exp: currentExp }
         })
-        currentExp = finalExp
+        expUpdated = true
         break
       }
 
@@ -306,12 +306,12 @@ export class UserPokemonService {
     }
 
     // If there's remaining EXP but no level up happened, just update EXP
-    if (!leveledUp) {
+    if (!leveledUp && !expUpdated) {
       await this.userPokemonRepo.update({
         id: userPokemon.id,
         data: { exp: currentExp }
       })
-    } else if (currentExp > 0 && currentLevel) {
+    } else if (leveledUp && currentExp > 0 && currentLevel && !expUpdated) {
       // If leveled up but still has remaining EXP, ensure it doesn't exceed current level's requiredExp
       const finalExp = Math.min(currentExp, currentLevel.requiredExp)
       await this.userPokemonRepo.update({
@@ -415,6 +415,8 @@ export class UserPokemonService {
       const reloadedNewPokemon = await this.userPokemonRepo.findById(newUserPokemon.id)
 
       // Handle level ups based on transferred EXP
+      console.log('Transferred EXP:', currentExp)
+
       const levelUpResult = await this.handleLevelUp(reloadedNewPokemon, currentExp)
 
       // Reset original Pokemon's EXP to 0
