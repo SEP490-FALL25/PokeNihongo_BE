@@ -2,7 +2,6 @@ import { BullQueueService } from '@/3rdService/bull/bull-queue.service'
 import { MailService } from '@/3rdService/mail/mail.service'
 import { UploadService } from '@/3rdService/upload/upload.service'
 import { TypeOfVerificationCode, UserStatus } from '@/common/constants/auth.constant'
-import { FolderName } from '@/common/constants/media.constant'
 import { AUTH_MESSAGE } from '@/common/constants/message'
 import { RoleName } from '@/common/constants/role.constant'
 import { AuthRepository } from '@/modules/auth/auth.repo'
@@ -441,15 +440,7 @@ export class AuthService {
     }
   }
 
-  async updateMe({
-    data,
-    userId,
-    avatarFile
-  }: {
-    data: UpdateMeBodyType
-    userId: number
-    avatarFile?: Express.Multer.File
-  }) {
+  async updateMe({ data, userId }: { data: UpdateMeBodyType; userId: number }) {
     const user = await this.sharedUserRepository.findUnique({
       id: userId
     })
@@ -457,38 +448,15 @@ export class AuthService {
       throw NotFoundRecordException
     }
 
-    // Handle avatar upload if provided
-    let avatarUrl: string | undefined
-    if (avatarFile) {
-      // Validate that the file is an image
-      const allowedImageTypes = [
-        'image/jpeg',
-        'image/jpg',
-        'image/png',
-        'image/webp',
-        'image/gif'
-      ]
-      if (!allowedImageTypes.includes(avatarFile.mimetype)) {
-        throw new BadRequestException('Chỉ chấp nhận file ảnh (JPEG, PNG, WEBP, GIF)')
-      }
-
-      // Validate file size (5MB max)
-      const maxSize = 5 * 1024 * 1024 // 5MB
-      if (avatarFile.size > maxSize) {
-        throw new BadRequestException('Kích thước file ảnh không được vượt quá 5MB')
-      }
-
-      const uploadResult = await this.uploadService.uploadFileByType(
-        avatarFile,
-        FolderName.AVATAR
-      )
-      avatarUrl = uploadResult.url
-
-      // Delete old avatar if exists
+    // Handle avatar URL change
+    if (data.avatar && data.avatar !== user.avatar) {
+      // Delete old avatar from Cloudinary if exists
       if (user.avatar) {
         try {
-          await this.uploadService.deleteFile(user.avatar, FolderName.AVATAR)
+          await this.uploadService.deleteFile(user.avatar, 'users/avatars')
+          this.logger.log(`Deleted old avatar: ${user.avatar}`)
         } catch (error) {
+          // Log warning but don't fail the update
           this.logger.warn(`Failed to delete old avatar: ${error.message}`)
         }
       }
@@ -498,7 +466,6 @@ export class AuthService {
       { id: userId },
       {
         ...data,
-        ...(avatarUrl && { avatar: avatarUrl }),
         updatedById: userId
       }
     )

@@ -34,7 +34,6 @@ import {
   Put,
   Query,
   Res,
-  UploadedFiles,
   UseGuards,
   UseInterceptors
 } from '@nestjs/common'
@@ -43,11 +42,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { Response } from 'express'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthService } from './auth.service'
-import {
-  LoginBodySwaggerDTO,
-  RegisterMultipartSwaggerDTO,
-  UpdateMeMultipartSwaggerDTO
-} from './dto/auth.dto'
+import { LoginBodySwaggerDTO, RegisterMultipartSwaggerDTO } from './dto/auth.dto'
 import { GoogleService } from './google.service'
 
 @Controller('auth')
@@ -202,20 +197,11 @@ export class AuthController {
   @Put('me')
   @ZodSerializerDto(AccountResDTO)
   @ApiBearerAuth()
-  @UseInterceptors(AnyFilesInterceptor())
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: UpdateMeMultipartSwaggerDTO })
-  updateMe(
-    @Body() body: UpdateMeBodyDTO,
-    @ActiveUser('userId') userId: number,
-    @UploadedFiles() files: Express.Multer.File[]
-  ) {
-    const avatarFile = files?.find((file) => file.fieldname === 'avatar')
-
+  @ApiBody({ type: UpdateMeBodyDTO })
+  updateMe(@Body() body: UpdateMeBodyDTO, @ActiveUser('userId') userId: number) {
     return this.authService.updateMe({
       userId,
-      data: body,
-      avatarFile
+      data: body
     })
   }
 

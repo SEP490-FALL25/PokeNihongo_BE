@@ -2,28 +2,16 @@ import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { IsPublic } from '@/common/decorators/auth.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  UploadedFile,
-  UseInterceptors
-} from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   AssignPokemonTypesBodyDTO,
-  CreatePokemonFormDataDTO,
+  CreatePokemonBodyDTO,
   CreatePokemonResDTO,
   GetPokemonDetailResDTO,
   GetPokemonParamsDTO,
   GetPokemonWeaknessResDTO,
-  UpdatePokemonFormDataDTO,
+  UpdatePokemonBodyDTO,
   UpdatePokemonResDTO
 } from './dto/pokemon.dto'
 import { PokemonService } from './pokemon.service'
@@ -72,34 +60,25 @@ export class PokemonController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('image'))
   @ZodSerializerDto(CreatePokemonResDTO)
-  create(
-    @Body() body: CreatePokemonFormDataDTO,
-    @UploadedFile() image: Express.Multer.File,
-    @ActiveUser('userId') userId: number
-  ) {
+  create(@Body() body: CreatePokemonBodyDTO, @ActiveUser('userId') userId: number) {
     return this.pokemonService.create({
       data: body,
-      createdById: userId,
-      imageFile: image
+      createdById: userId
     })
   }
 
   @Put(':pokemonId')
-  @UseInterceptors(FileInterceptor('image'))
   @ZodSerializerDto(UpdatePokemonResDTO)
   update(
-    @Body() body: UpdatePokemonFormDataDTO,
-    @UploadedFile() image: Express.Multer.File,
+    @Body() body: UpdatePokemonBodyDTO,
     @Param() params: GetPokemonParamsDTO,
     @ActiveUser('userId') userId: number
   ) {
     return this.pokemonService.update({
       data: body,
       id: params.pokemonId,
-      updatedById: userId,
-      imageFile: image
+      updatedById: userId
     })
   }
 

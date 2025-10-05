@@ -1,6 +1,7 @@
-import { Inject, Injectable, Logger } from '@nestjs/common'
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common'
 import { UploadApiResponse } from 'cloudinary'
 import sharp from 'sharp'
+import { GenerateUploadUrlBodyType } from './dto/upload-presigned.dto'
 
 export interface UploadResult {
   message: string
@@ -522,6 +523,105 @@ export class UploadService {
       type: mimetype,
       category,
       folder
+    }
+  }
+
+  /**
+   * Generate pre-signed upload URL for direct client upload to Cloudinary
+   */
+  async generateUploadUrl(data: GenerateUploadUrlBodyType) {
+    const { fileName, fileType, folderName, mimeType, fileSize } = data
+
+    // Validate file type matches MIME type
+    const typeValidation = {
+      image: (mime: string) => mime.startsWith('image/'),
+      audio: (mime: string) => mime.startsWith('audio/'),
+      video: (mime: string) => mime.startsWith('video/'),
+      document: (mime: string) => {
+        const documentTypes = [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'text/plain',
+          'text/csv'
+        ]
+        return documentTypes.includes(mime)
+      }
+    }
+
+    if (!typeValidation[fileType]?.(mimeType)) {
+      const typeMessages = {
+        image: 'hình ảnh (JPEG, PNG, WEBP, GIF)',
+        audio: 'âm thanh (MP3, WAV, OGG)',
+        video: 'video (MP4, AVI, MOV)',
+        document: 'tài liệu (PDF, DOC, DOCX, XLS, XLSX, TXT, CSV)'
+      }
+      throw new BadRequestException(
+        `File type "${fileType}" không khớp với MIME type "${mimeType}". Chỉ chấp nhận ${typeMessages[fileType]}`
+      )
+    }
+
+    // Validate file size based on type
+    const fileSizeLimits = {
+      image: 5 * 1024 * 1024, // 5MB
+      audio: 10 * 1024 * 1024, // 10MB
+      video: 50 * 1024 * 1024, // 50MB
+      document: 5 * 1024 * 1024 // 5MB
+    }
+
+    const maxSize = fileSizeLimits[fileType]
+    if (fileSize > maxSize) {
+      const maxSizeMB = Math.round(maxSize / (1024 * 1024))
+      throw new BadRequestException(`File ${fileType} không được vượt quá ${maxSizeMB}MB`)
+    }
+
+    // Generate unique public ID
+    const timestamp = Date.now()
+    const randomString = Math.random().toString(36).substring(2, 8)
+    const fileExtension = fileName.split('.').pop()
+    const fileNameWithoutExt = fileName.replace(/\.[^/.]+$/, '')
+    const publicId = `${folderName}/${fileNameWithoutExt}_${timestamp}_${randomString}`
+
+    // Determine resource type for Cloudinary
+    let resourceType: 'image' | 'video' | 'raw' = 'raw'
+    if (fileType === 'image') resourceType = 'image'
+    else if (fileType === 'video' || fileType === 'audio') resourceType = 'video'
+
+    // Generate Cloudinary signature
+    const uploadParams = {
+      timestamp,
+      public_id: publicId,
+      folder: folderName,
+      resource_type: resourceType,
+      // Add format transformation for images
+      ...(fileType === 'image' && { format: 'auto', quality: 'auto:good' })
+    }
+
+    const signature = this.cloudinary.utils.api_sign_request(
+      uploadParams,
+      this.cloudinary.config().api_secret
+    )
+
+    // Construct upload URL
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudinary.config().cloud_name}/${resourceType}/upload`
+
+    // Construct final file URL (what will be the URL after upload)
+    const fileUrl = this.cloudinary.url(publicId, {
+      resource_type: resourceType,
+      secure: true,
+      ...(fileType === 'image' && { format: 'auto', quality: 'auto:good' })
+    })
+
+    // Set expiration time (15 minutes from now)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
+
+    return {
+      uploadUrl,
+      fileUrl,
+      publicId,
+      expiresAt
     }
   }
 }
