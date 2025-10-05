@@ -22,6 +22,7 @@ import {
   CreatePokemonResDTO,
   GetPokemonDetailResDTO,
   GetPokemonParamsDTO,
+  GetPokemonWeaknessResDTO,
   UpdatePokemonFormDataDTO,
   UpdatePokemonResDTO
 } from './dto/pokemon.dto'
@@ -48,6 +49,13 @@ export class PokemonController {
   @IsPublic()
   getByRarity(@Param('rarity') rarity: string) {
     return this.pokemonService.getPokemonsByRarity(rarity)
+  }
+
+  @Get(':pokemonId/weaknesses')
+  @IsPublic()
+  @ZodSerializerDto(GetPokemonWeaknessResDTO)
+  getWeaknesses(@Param() params: GetPokemonParamsDTO) {
+    return this.pokemonService.calculatePokemonWeaknesses(params.pokemonId)
   }
 
   @Get(':pokemonId')

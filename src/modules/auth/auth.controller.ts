@@ -5,8 +5,10 @@ import { UserAgent } from '@/common/decorators/user-agent.decorator'
 import { RateLimitGuard } from '@/common/guards/rate-limit.guard'
 import envConfig from '@/config/env.config'
 import {
+  AccountResDTO,
   ChangePasswordBodyDTO,
   ForgotPasswordBodyDTO,
+  GetAccountProfileResDTO,
   GetAuthorizationUrlResDTO,
   LoginBodyDTO,
   LoginResDTO,
@@ -16,6 +18,7 @@ import {
   RegisterBodyDTO,
   RegisterResDTO,
   ResetPasswordBodyDTO,
+  UpdateMeBodyDTO,
   VerifyOTPBodyDTO
 } from '@/modules/auth/dto/auth.zod-dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
@@ -28,8 +31,10 @@ import {
   Ip,
   Param,
   Post,
+  Put,
   Query,
   Res,
+  UploadedFiles,
   UseGuards,
   UseInterceptors
 } from '@nestjs/common'
@@ -38,7 +43,11 @@ import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { Response } from 'express'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthService } from './auth.service'
-import { LoginBodySwaggerDTO, RegisterMultipartSwaggerDTO } from './dto/auth.dto'
+import {
+  LoginBodySwaggerDTO,
+  RegisterMultipartSwaggerDTO,
+  UpdateMeMultipartSwaggerDTO
+} from './dto/auth.dto'
 import { GoogleService } from './google.service'
 
 @Controller('auth')
@@ -183,20 +192,30 @@ export class AuthController {
     return this.authService.resendVerifiedEmail(email)
   }
 
-  // @Get('me')
-  // @ZodSerializerDto(GetAccountProfileResDTO)
-  // me(@ActiveUser('userId') userId: number) {
-  //   return this.authService.getMe(userId)
-  // }
+  @Get('me')
+  @ZodSerializerDto(GetAccountProfileResDTO)
+  me(@ActiveUser('userId') userId: number) {
+    return this.authService.getMe(userId)
+  }
 
-  // @Put('me')
-  // @ZodSerializerDto(AccountResDTO)
-  // updateMe(@Body() body: UpdateMeBodyDTO, @ActiveUser('userId') userId: number) {
-  //   return this.authService.updateMe({
-  //     userId,
-  //     data: body
-  //   })
-  // }
+  @Put('me')
+  @ZodSerializerDto(AccountResDTO)
+  @UseInterceptors(AnyFilesInterceptor())
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdateMeMultipartSwaggerDTO })
+  updateMe(
+    @Body() body: UpdateMeBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @UploadedFiles() files: Express.Multer.File[]
+  ) {
+    const avatarFile = files?.find((file) => file.fieldname === 'avatar')
+
+    return this.authService.updateMe({
+      userId,
+      data: body,
+      avatarFile
+    })
+  }
 
   //oauth
   @Get('google-link')

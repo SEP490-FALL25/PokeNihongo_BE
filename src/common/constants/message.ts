@@ -4,6 +4,7 @@ export const AUTH_MESSAGE = {
   LOGOUT_SUCCESS: 'Đăng xuất thành công',
   FORGOT_PASSWORD_SUCCESS: 'Đặt lại mật khẩu thành công',
   UPDATE_PROFILE_SUCCESS: 'Cập nhật thông tin cá nhân thành công',
+  GET_PROFILE_SUCCESS: 'Lấy thông tin cá nhân thành công',
   PHONE_IS_INVALID: 'Số điện thoại không hợp lệ',
   NAME_IS_REQUIRED: 'Tên không được để trống',
   REFRESH_TOKEN_SUCCESS: 'Làm mới token thành công',
