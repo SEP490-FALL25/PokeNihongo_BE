@@ -1,4 +1,3 @@
-import { FolderName } from '@/common/constants/media.constant'
 import { POKEMON_MESSAGE } from '@/common/constants/message'
 import { NotFoundRecordException } from '@/shared/error'
 import {
@@ -7,7 +6,7 @@ import {
   isUniqueConstraintPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { UploadService } from 'src/3rdService/upload/upload.service'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
@@ -17,14 +16,14 @@ import {
 import {
   AssignPokemonTypesBodyType,
   CreatePokemonBodyType,
-  CreatePokemonFormDataType,
-  UpdatePokemonBodyType,
-  UpdatePokemonFormDataType
+  UpdatePokemonBodyType
 } from './entities/pokemon.entity'
 import { PokemonRepo } from './pokemon.repo'
 
 @Injectable()
 export class PokemonService {
+  private readonly logger = new Logger(PokemonService.name)
+
   constructor(
     private pokemonRepo: PokemonRepo,
     private uploadService: UploadService,
@@ -32,9 +31,7 @@ export class PokemonService {
   ) {}
 
   // Helper function to normalize form-data to standard format
-  private normalizeCreateData(
-    data: CreatePokemonBodyType | CreatePokemonFormDataType
-  ): CreatePokemonBodyType {
+  private normalizeCreateData(data: CreatePokemonBodyType): CreatePokemonBodyType {
     return {
       pokedex_number: data.pokedex_number,
       nameJp: data.nameJp,
@@ -50,9 +47,7 @@ export class PokemonService {
   }
 
   // Helper function to normalize update data
-  private normalizeUpdateData(
-    data: UpdatePokemonBodyType | UpdatePokemonFormDataType
-  ): UpdatePokemonBodyType {
+  private normalizeUpdateData(data: UpdatePokemonBodyType): UpdatePokemonBodyType {
     return {
       ...data,
       description: data.description === undefined ? undefined : (data.description ?? null)
@@ -105,12 +100,10 @@ export class PokemonService {
 
   async create({
     data,
-    createdById,
-    imageFile
+    createdById
   }: {
-    data: CreatePokemonBodyType | CreatePokemonFormDataType
+    data: CreatePokemonBodyType
     createdById: number
-    imageFile?: Express.Multer.File
   }) {
     try {
       // Normalize data to standard format
@@ -122,15 +115,6 @@ export class PokemonService {
       )
       if (existingPokemon) {
         throw PokemonAlreadyExistsException
-      }
-
-      // Upload image if provided
-      if (imageFile) {
-        const uploadResult = await this.uploadService.uploadFileByType(
-          imageFile,
-          FolderName.POKEMON
-        )
-        pokemonData.imageUrl = uploadResult.url
       }
 
       // Create Pokemon first
@@ -165,13 +149,11 @@ export class PokemonService {
   async update({
     id,
     data,
-    updatedById,
-    imageFile
+    updatedById
   }: {
     id: number
-    data: UpdatePokemonBodyType | UpdatePokemonFormDataType
+    data: UpdatePokemonBodyType
     updatedById: number
-    imageFile?: Express.Multer.File
   }) {
     try {
       // Normalize data
@@ -182,6 +164,20 @@ export class PokemonService {
         throw PokemonNotFoundException
       }
 
+      // Handle image URL change
+      if (pokemonData.imageUrl && pokemonData.imageUrl !== existPokemon.imageUrl) {
+        // Delete old image from Cloudinary if exists
+        if (existPokemon.imageUrl) {
+          try {
+            await this.uploadService.deleteFile(existPokemon.imageUrl, 'pokemon/images')
+            this.logger.log(`Deleted old Pokemon image: ${existPokemon.imageUrl}`)
+          } catch (error) {
+            // Log warning but don't fail the update
+            this.logger.warn(`Failed to delete old Pokemon image: ${error.message}`)
+          }
+        }
+      }
+
       // Check if updating pokedex number to existing one
       if (pokemonData.pokedex_number) {
         const existingWithPokedex = await this.pokemonRepo.findByPokedexNumber(
@@ -189,25 +185,6 @@ export class PokemonService {
         )
         if (existingWithPokedex && existingWithPokedex.id !== id) {
           throw PokemonAlreadyExistsException
-        }
-      }
-
-      // Upload new image if provided
-      if (imageFile) {
-        const uploadResult = await this.uploadService.uploadFileByType(
-          imageFile,
-          FolderName.POKEMON
-        )
-        pokemonData.imageUrl = uploadResult.url
-
-        // Delete old image if exists
-        if (existPokemon.imageUrl) {
-          try {
-            await this.uploadService.deleteFile(existPokemon.imageUrl, FolderName.POKEMON)
-          } catch (error) {
-            // Log warning but don't fail the update
-            console.warn('Failed to delete old Pokemon image:', error)
-          }
         }
       }
 

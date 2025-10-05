@@ -193,8 +193,9 @@ export const ChangePasswordBodySchema = z
 
 export const UpdateMeBodySchema = z
   .object({
-    name: z.string().trim().min(2).max(256),
-    phoneNumber: z.string().min(9).max(15)
+    name: z.string().trim().min(2).max(256).optional(),
+    phoneNumber: z.string().min(9).max(15).optional(),
+    avatar: z.string().url().optional() // Thêm avatar như URL optional
   })
   .strict()
 
