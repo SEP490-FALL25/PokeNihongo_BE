@@ -352,7 +352,6 @@ model Pokemon {
   nameTranslations Json // {"en": "...", "ja": "...", "vi": "..."}
   description      String?
   conditionLevel   Int?
-  nextPokemonId    Int?
   isStarted        Boolean       @default(false)
   imageUrl         String?
   rarity           RarityPokemon @default(COMMON)
@@ -361,8 +360,8 @@ model Pokemon {
   types ElementalType[]
 
   // Self relation: tiến hóa
-  nextPokemon      Pokemon?  @relation("Evolution", fields: [nextPokemonId], references: [id])
-  previousPokemons Pokemon[] @relation("Evolution")
+  nextPokemons     Pokemon[] @relation("PokemonEvolutions")
+  previousPokemons Pokemon[] @relation("PokemonEvolutions")
 
   userPokemons UserPokemon[]
 

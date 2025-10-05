@@ -220,3 +220,28 @@ export const TYPE_EFFECTIVENESS_MESSAGE = {
   MULTIPLIER_MAX: 'Multiplier phải nhỏ hơn hoặc bằng 10',
   CONFLICT_ATTACK_DEFENSE_TYPE: 'Attack Type và Defense Type không được giống nhau'
 }
+
+export const POKEMON_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo Pokemon thành công',
+  UPDATE_SUCCESS: 'Cập nhật Pokemon thành công',
+  DELETE_SUCCESS: 'Xóa Pokemon thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách Pokemon thành công',
+  GET_DETAIL_SUCCESS: 'Lấy thông tin Pokemon thành công',
+  INVALID_ID: 'ID Pokemon không hợp lệ',
+  NOT_FOUND: 'Không tìm thấy Pokemon',
+  ALREADY_EXISTS: 'Pokemon đã tồn tại',
+  POKEDEX_NUMBER_REQUIRED: 'Pokedex number không được để trống',
+  NAME_JP_REQUIRED: 'Tên tiếng Nhật không được để trống',
+  ASSIGN_TYPES_SUCCESS: 'Gán types cho Pokemon thành công'
+}
+
+export const USER_POKEMON_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo User Pokemon thành công',
+  UPDATE_SUCCESS: 'Cập nhật User Pokemon thành công',
+  DELETE_SUCCESS: 'Xóa User Pokemon thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách User Pokemon thành công',
+  GET_DETAIL_SUCCESS: 'Lấy thông tin User Pokemon thành công',
+  INVALID_ID: 'ID User Pokemon không hợp lệ',
+  NOT_FOUND: 'Không tìm thấy User Pokemon',
+  NICKNAME_ALREADY_EXISTS: 'Nickname đã tồn tại'
+}

@@ -24,6 +24,8 @@ import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { ElementalTypeModule } from './modules/elemental-type/elemental-type.module';
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module';
+import { PokemonModule } from './modules/pokemon/pokemon.module';
+import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module';
 
 @Module({
   imports: [
@@ -48,7 +50,9 @@ import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effec
     RewardModule,
     LevelModule,
     ElementalTypeModule,
-    TypeEffectivenessModule
+    TypeEffectivenessModule,
+    PokemonModule,
+    UserPokemonModule
   ],
 
   controllers: [],
