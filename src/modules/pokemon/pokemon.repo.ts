@@ -17,8 +17,8 @@ type PokemonWithRelations = PokemonType & {
     display_name: any
     color_hex: string
   }>
-  nextPokemons?: PokemonType[]
-  previousPokemons?: PokemonType[]
+  nextPokemons?: Partial<PokemonType>[]
+  previousPokemons?: Partial<PokemonType>[]
 }
 
 type PokemonWithTypesOnly = PokemonType & {
@@ -42,7 +42,7 @@ export class PokemonRepo {
   }: {
     createdById: number | null
     data: CreatePokemonBodyType
-  }): Promise<any> {
+  }): Promise<PokemonType> {
     const { typeIds, nextPokemonsId, ...pokemonData } = data
     return this.prismaService.pokemon.create({
       data: {
@@ -92,7 +92,7 @@ export class PokemonRepo {
     id: number
     updatedById: number
     data: UpdatePokemonBodyType
-  }): Promise<any> {
+  }): Promise<PokemonType> {
     const { typeIds, nextPokemonsId, ...pokemonData } = data
     return this.prismaService.pokemon.update({
       where: {
@@ -149,7 +149,7 @@ export class PokemonRepo {
       deletedById: number
     },
     isHard?: boolean
-  ): Promise<any> {
+  ): Promise<PokemonType | null> {
     return isHard
       ? this.prismaService.pokemon.delete({
           where: {
@@ -230,7 +230,7 @@ export class PokemonRepo {
     }
   }
 
-  findById(id: number): Promise<any> {
+  findById(id: number): Promise<PokemonWithRelations | null> {
     return this.prismaService.pokemon.findUnique({
       where: {
         id,
@@ -278,7 +278,7 @@ export class PokemonRepo {
     })
   }
 
-  findByPokedexNumber(pokedex_number: number): Promise<any> {
+  findByPokedexNumber(pokedex_number: number): Promise<PokemonType | null> {
     return this.prismaService.pokemon.findFirst({
       where: {
         pokedex_number,
@@ -311,7 +311,7 @@ export class PokemonRepo {
   }
 
   // Get starter Pokemons
-  getStarterPokemons(): Promise<any[]> {
+  getStarterPokemons(): Promise<PokemonWithRelations[]> {
     return this.prismaService.pokemon.findMany({
       where: {
         isStarted: true,
@@ -354,7 +354,7 @@ export class PokemonRepo {
   }
 
   // Get Pokemons by rarity
-  getPokemonsByRarity(rarity: string): Promise<any[]> {
+  getPokemonsByRarity(rarity: string): Promise<PokemonWithRelations[]> {
     return this.prismaService.pokemon.findMany({
       where: {
         rarity: rarity as any,
@@ -396,7 +396,7 @@ export class PokemonRepo {
     })
   }
 
-  getPokemonsByType(typeName: string): Promise<any[]> {
+  getPokemonsByType(typeName: string): Promise<PokemonWithRelations[]> {
     return this.prismaService.pokemon.findMany({
       where: {
         deletedAt: null,

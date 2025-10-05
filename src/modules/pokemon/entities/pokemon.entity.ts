@@ -21,7 +21,7 @@ export const PokemonSchema = z.object({
     ),
   description: z.string().nullable(),
   conditionLevel: z.number().min(1).nullable(),
-  nextPokemonsId: z.array(z.number()).default([]),
+  nextPokemonsId: z.array(z.number()).default([]).optional(),
   isStarted: z.boolean().default(false),
   imageUrl: z.string().url().nullable(),
   rarity: z

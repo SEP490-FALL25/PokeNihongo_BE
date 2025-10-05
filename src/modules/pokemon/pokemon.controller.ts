@@ -5,7 +5,6 @@ import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
-  AssignPokemonTypesBodyDTO,
   CreatePokemonBodyDTO,
   CreatePokemonResDTO,
   GetEvolutionOptionsResDTO,
@@ -28,23 +27,23 @@ export class PokemonController {
     return this.pokemonService.list(query)
   }
 
-  @Get('starters')
-  @IsPublic()
-  getStarters() {
-    return this.pokemonService.getStarterPokemons()
-  }
+  // @Get('starters')
+  // @IsPublic()
+  // getStarters() {
+  //   return this.pokemonService.getStarterPokemons()
+  // }
 
-  @Get('rarity/:rarity')
-  @IsPublic()
-  getByRarity(@Param('rarity') rarity: string) {
-    return this.pokemonService.getPokemonsByRarity(rarity)
-  }
+  // @Get('rarity/:rarity')
+  // @IsPublic()
+  // getByRarity(@Param('rarity') rarity: string) {
+  //   return this.pokemonService.getPokemonsByRarity(rarity)
+  // }
 
-  @Get('type/:typeName')
-  @IsPublic()
-  getByType(@Param('typeName') typeName: string) {
-    return this.pokemonService.getPokemonsByType(typeName)
-  }
+  // @Get('type/:typeName')
+  // @IsPublic()
+  // getByType(@Param('typeName') typeName: string) {
+  //   return this.pokemonService.getPokemonsByType(typeName)
+  // }
 
   @Get(':pokemonId/weaknesses')
   @IsPublic()
@@ -99,12 +98,12 @@ export class PokemonController {
     })
   }
 
-  @Post(':pokemonId/assign-types')
-  @ZodSerializerDto(MessageResDTO)
-  assignTypes(
-    @Param() params: GetPokemonParamsDTO,
-    @Body() body: AssignPokemonTypesBodyDTO
-  ) {
-    return this.pokemonService.assignTypes(params.pokemonId, body)
-  }
+  // @Post(':pokemonId/assign-types')
+  // @ZodSerializerDto(MessageResDTO)
+  // assignTypes(
+  //   @Param() params: GetPokemonParamsDTO,
+  //   @Body() body: AssignPokemonTypesBodyDTO
+  // ) {
+  //   return this.pokemonService.assignTypes(params.pokemonId, body)
+  // }
 }
