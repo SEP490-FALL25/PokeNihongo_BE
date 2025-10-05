@@ -1,3 +1,4 @@
+import { LevelTypeType } from '@/common/constants/level.constant'
 import { LEVEL_MESSAGE } from '@/common/constants/message'
 import { NotFoundRecordException } from '@/shared/error'
 import {
@@ -45,20 +46,15 @@ export class LevelService {
     createdById: number
   }) {
     try {
-      // check xem level o user hay pokemon da ton tai chua
-      // const isExist = await this.levelRepo.findByLevelAndType(
-      //   data.levelNumber,
-      //   data.levelType
-      // )
-      // //ton tai thi throw ko thi tao
-      // if (isExist) {
-      //   throw LevelAlreadyExistsException
-      // }
-
+      // Tạo level trước
       const result = await this.levelRepo.create({
         createdById,
         data
       })
+
+      // Sau khi tạo thành công, tự động liên kết với các level liền kề
+      await this.autoLinkLevels(result.id, data.levelNumber, data.levelType)
+
       return {
         data: result,
         message: LEVEL_MESSAGE.CREATE_SUCCESS
@@ -106,6 +102,14 @@ export class LevelService {
         updatedById,
         data
       })
+
+      // Nếu có thay đổi levelNumber hoặc levelType, tự động liên kết lại
+      if (data.levelNumber !== undefined || data.levelType !== undefined) {
+        const newLevelNumber = data.levelNumber ?? existLevel.levelNumber
+        const newLevelType = data.levelType ?? existLevel.levelType
+        await this.autoLinkLevels(id, newLevelNumber, newLevelType)
+      }
+
       return {
         data: level,
         message: LEVEL_MESSAGE.UPDATE_SUCCESS
@@ -139,6 +143,38 @@ export class LevelService {
         throw NotFoundRecordException
       }
       throw error
+    }
+  }
+
+  /**
+   * Tự động liên kết level với các level liền kề
+   * - Tìm level có levelNumber + 1 cùng type → set làm nextLevel
+   * - Tìm level có levelNumber - 1 cùng type → cập nhật level đó để trỏ đến level hiện tại
+   */
+  private async autoLinkLevels(
+    levelId: number,
+    levelNumber: number,
+    levelType: LevelTypeType
+  ) {
+    try {
+      // 1. Tìm level kế tiếp (levelNumber + 1)
+      const nextLevel = await this.levelRepo.findNextLevelByNumber(levelNumber, levelType)
+
+      // 2. Tìm level trước đó (levelNumber - 1)
+      const prevLevel = await this.levelRepo.findPrevLevelByNumber(levelNumber, levelType)
+
+      // 3. Cập nhật nextLevel cho level hiện tại
+      if (nextLevel) {
+        await this.levelRepo.updateNextLevel(levelId, nextLevel.id)
+      }
+
+      // 4. Cập nhật nextLevel cho level trước đó (trỏ đến level hiện tại)
+      if (prevLevel) {
+        await this.levelRepo.updateNextLevel(prevLevel.id, levelId)
+      }
+    } catch (error) {
+      console.error('Error in autoLinkLevels:', error)
+      // Không throw error để không ảnh hưởng đến việc tạo/update level chính
     }
   }
 }

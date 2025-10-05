@@ -157,4 +157,40 @@ export class LevelRepo {
       }
     })
   }
+
+  // Tìm level kế tiếp dựa trên levelNumber + 1
+  findNextLevelByNumber(
+    levelNumber: number,
+    levelType: LevelTypeType
+  ): Promise<LevelType | null> {
+    return this.prismaService.level.findFirst({
+      where: {
+        levelNumber: levelNumber + 1,
+        levelType,
+        deletedAt: null
+      }
+    })
+  }
+
+  // Tìm level trước đó dựa trên levelNumber - 1
+  findPrevLevelByNumber(
+    levelNumber: number,
+    levelType: LevelTypeType
+  ): Promise<LevelType | null> {
+    return this.prismaService.level.findFirst({
+      where: {
+        levelNumber: levelNumber - 1,
+        levelType,
+        deletedAt: null
+      }
+    })
+  }
+
+  // Cập nhật nextLevelId cho một level
+  updateNextLevel(levelId: number, nextLevelId: number | null): Promise<LevelType> {
+    return this.prismaService.level.update({
+      where: { id: levelId },
+      data: { nextLevelId }
+    })
+  }
 }
