@@ -384,6 +384,35 @@ export class PokemonService {
     }
   }
 
+  async getPokemonsByType(typeName: string) {
+    const data = await this.pokemonRepo.getPokemonsByType(typeName)
+
+    // Calculate weaknesses for each Pokemon by type
+    if (data && data.length > 0) {
+      const pokemonWithWeaknesses = await Promise.all(
+        data.map(async (pokemon: any) => {
+          const weaknesses = await this.getWeaknessesForPokemon(pokemon.types)
+          return {
+            ...pokemon,
+            weaknesses
+          }
+        })
+      )
+
+      return {
+        statusCode: 200,
+        data: pokemonWithWeaknesses,
+        message: `Lấy danh sách Pokemon hệ ${typeName} thành công`
+      }
+    }
+
+    return {
+      statusCode: 200,
+      data,
+      message: `Lấy danh sách Pokemon hệ ${typeName} thành công`
+    }
+  }
+
   // Calculate Pokemon weaknesses based on its types
   async calculatePokemonWeaknesses(pokemonId: number) {
     // Get Pokemon with its types

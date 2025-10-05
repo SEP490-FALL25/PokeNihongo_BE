@@ -51,6 +51,12 @@ export class PokemonController {
     return this.pokemonService.getPokemonsByRarity(rarity)
   }
 
+  @Get('type/:typeName')
+  @IsPublic()
+  getByType(@Param('typeName') typeName: string) {
+    return this.pokemonService.getPokemonsByType(typeName)
+  }
+
   @Get(':pokemonId/weaknesses')
   @IsPublic()
   @ZodSerializerDto(GetPokemonWeaknessResDTO)
