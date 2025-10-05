@@ -9,6 +9,7 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 import { UploadService } from 'src/3rdService/upload/upload.service'
+import { PrismaService } from 'src/shared/services/prisma.service'
 import {
   PokemonAlreadyExistsException,
   PokemonNotFoundException
@@ -26,7 +27,8 @@ import { PokemonRepo } from './pokemon.repo'
 export class PokemonService {
   constructor(
     private pokemonRepo: PokemonRepo,
-    private uploadService: UploadService
+    private uploadService: UploadService,
+    private prismaService: PrismaService
   ) {}
 
   // Helper function to normalize form-data to standard format
@@ -59,6 +61,22 @@ export class PokemonService {
 
   async list(pagination: PaginationQueryType) {
     const data = await this.pokemonRepo.list(pagination)
+
+    // Calculate weaknesses for each Pokemon in the list
+    if (data.results && data.results.length > 0) {
+      const pokemonWithWeaknesses = await Promise.all(
+        data.results.map(async (pokemon: any) => {
+          const weaknesses = await this.getWeaknessesForPokemon(pokemon.types)
+          return {
+            ...pokemon,
+            weaknesses
+          }
+        })
+      )
+
+      data.results = pokemonWithWeaknesses
+    }
+
     return {
       statusCode: 200,
       data,
@@ -71,9 +89,16 @@ export class PokemonService {
     if (!pokemon) {
       throw PokemonNotFoundException
     }
+
+    // Calculate weaknesses for this Pokemon
+    const weaknesses = await this.getWeaknessesForPokemon(pokemon.types)
+
     return {
       statusCode: 200,
-      data: pokemon,
+      data: {
+        ...pokemon,
+        weaknesses
+      },
       message: POKEMON_MESSAGE.GET_DETAIL_SUCCESS
     }
   }
@@ -303,6 +328,26 @@ export class PokemonService {
 
   async getStarterPokemons() {
     const data = await this.pokemonRepo.getStarterPokemons()
+
+    // Calculate weaknesses for each starter Pokemon
+    if (data && data.length > 0) {
+      const pokemonWithWeaknesses = await Promise.all(
+        data.map(async (pokemon: any) => {
+          const weaknesses = await this.getWeaknessesForPokemon(pokemon.types)
+          return {
+            ...pokemon,
+            weaknesses
+          }
+        })
+      )
+
+      return {
+        statusCode: 200,
+        data: pokemonWithWeaknesses,
+        message: 'Lấy danh sách Pokemon khởi đầu thành công'
+      }
+    }
+
     return {
       statusCode: 200,
       data,
@@ -312,10 +357,213 @@ export class PokemonService {
 
   async getPokemonsByRarity(rarity: string) {
     const data = await this.pokemonRepo.getPokemonsByRarity(rarity)
+
+    // Calculate weaknesses for each Pokemon by rarity
+    if (data && data.length > 0) {
+      const pokemonWithWeaknesses = await Promise.all(
+        data.map(async (pokemon: any) => {
+          const weaknesses = await this.getWeaknessesForPokemon(pokemon.types)
+          return {
+            ...pokemon,
+            weaknesses
+          }
+        })
+      )
+
+      return {
+        statusCode: 200,
+        data: pokemonWithWeaknesses,
+        message: `Lấy danh sách Pokemon ${rarity} thành công`
+      }
+    }
+
     return {
       statusCode: 200,
       data,
       message: `Lấy danh sách Pokemon ${rarity} thành công`
     }
+  }
+
+  // Calculate Pokemon weaknesses based on its types
+  async calculatePokemonWeaknesses(pokemonId: number) {
+    // Get Pokemon with its types
+    const pokemon = await this.pokemonRepo.findById(pokemonId)
+    if (!pokemon) {
+      throw PokemonNotFoundException
+    }
+
+    if (!pokemon.types || pokemon.types.length === 0) {
+      return {
+        statusCode: 200,
+        data: {
+          pokemon: {
+            id: pokemon.id,
+            nameJp: pokemon.nameJp,
+            nameTranslations: pokemon.nameTranslations
+          },
+          weaknesses: []
+        },
+        message: 'Pokemon không có hệ nào'
+      }
+    }
+
+    // Get all type effectiveness where Pokemon's types are defenders
+    const typeIds = pokemon.types.map((type) => type.id)
+
+    // Get all attacking types and their effectiveness against Pokemon's types
+    const typeEffectiveness = await this.prismaService.typeEffectiveness.findMany({
+      where: {
+        defenderId: {
+          in: typeIds
+        },
+        deletedAt: null
+      },
+      include: {
+        attacker: {
+          select: {
+            id: true,
+            type_name: true,
+            display_name: true,
+            color_hex: true
+          }
+        },
+        defender: {
+          select: {
+            id: true,
+            type_name: true,
+            display_name: true,
+            color_hex: true
+          }
+        }
+      }
+    })
+
+    // Calculate combined effectiveness for each attacking type
+    const weaknessMap = new Map<
+      number,
+      {
+        type: any
+        multiplier: number
+      }
+    >()
+
+    // Group by attacker type
+    const attackerGroups = new Map<number, any[]>()
+    for (const effectiveness of typeEffectiveness) {
+      const attackerId = effectiveness.attackerId
+      if (!attackerGroups.has(attackerId)) {
+        attackerGroups.set(attackerId, [])
+      }
+      attackerGroups.get(attackerId)!.push(effectiveness)
+    }
+
+    // Calculate final multiplier for each attacking type
+    for (const [attackerId, effectivenesses] of attackerGroups) {
+      let finalMultiplier = 1
+      const attackerType = effectivenesses[0].attacker
+
+      // Multiply effectiveness against each defending type
+      for (const effectiveness of effectivenesses) {
+        finalMultiplier *= effectiveness.multiplier
+      }
+
+      // Only include if it's a weakness (multiplier > 1)
+      if (finalMultiplier > 1) {
+        weaknessMap.set(attackerId, {
+          type: attackerType,
+          multiplier: finalMultiplier
+        })
+      }
+    }
+
+    // Convert to array and sort by multiplier (highest first)
+    const weaknesses = Array.from(weaknessMap.values()).sort(
+      (a, b) => b.multiplier - a.multiplier
+    )
+
+    return {
+      statusCode: 200,
+      data: {
+        pokemon: {
+          id: pokemon.id,
+          nameJp: pokemon.nameJp,
+          nameTranslations: pokemon.nameTranslations,
+          types: pokemon.types
+        },
+        weaknesses: weaknesses.map((w) => ({
+          ...w.type,
+          effectiveness_multiplier: w.multiplier
+        }))
+      },
+      message: 'Lấy điểm yếu Pokemon thành công'
+    }
+  }
+
+  // Helper method to calculate weaknesses for a Pokemon (for internal use)
+  async getWeaknessesForPokemon(pokemonTypes: any[]) {
+    if (!pokemonTypes || pokemonTypes.length === 0) {
+      return []
+    }
+
+    const typeIds = pokemonTypes.map((type) => type.id)
+
+    const typeEffectiveness = await this.prismaService.typeEffectiveness.findMany({
+      where: {
+        defenderId: {
+          in: typeIds
+        },
+        deletedAt: null
+      },
+      include: {
+        attacker: {
+          select: {
+            id: true,
+            type_name: true,
+            display_name: true,
+            color_hex: true
+          }
+        }
+      }
+    })
+
+    const weaknessMap = new Map<
+      number,
+      {
+        type: any
+        multiplier: number
+      }
+    >()
+
+    const attackerGroups = new Map<number, any[]>()
+    for (const effectiveness of typeEffectiveness) {
+      const attackerId = effectiveness.attackerId
+      if (!attackerGroups.has(attackerId)) {
+        attackerGroups.set(attackerId, [])
+      }
+      attackerGroups.get(attackerId)!.push(effectiveness)
+    }
+
+    for (const [attackerId, effectivenesses] of attackerGroups) {
+      let finalMultiplier = 1
+      const attackerType = effectivenesses[0].attacker
+
+      for (const effectiveness of effectivenesses) {
+        finalMultiplier *= effectiveness.multiplier
+      }
+
+      if (finalMultiplier > 1) {
+        weaknessMap.set(attackerId, {
+          type: attackerType,
+          multiplier: finalMultiplier
+        })
+      }
+    }
+
+    return Array.from(weaknessMap.values())
+      .sort((a, b) => b.multiplier - a.multiplier)
+      .map((w) => ({
+        ...w.type,
+        effectiveness_multiplier: w.multiplier
+      }))
   }
 }

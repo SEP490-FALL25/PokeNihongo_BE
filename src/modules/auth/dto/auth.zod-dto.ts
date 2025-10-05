@@ -2,6 +2,7 @@ import {
   AccountResSchema,
   ChangePasswordBodySchema,
   ForgotPasswordBodySchema,
+  GetAccountProfileResSchema,
   GetAuthorizationUrlResSchema,
   LoginBodySchema,
   LoginResSchema,
@@ -58,3 +59,5 @@ export class VerifyEmailBodyDTO extends createZodDto(VerifyEmailBodySchema) {}
 
 export class VerifyOTPBodyDTO extends createZodDto(VerifyOTPBodySchema) {}
 export class VerifyOTPResDTO extends createZodDto(VerifyOTPResSchema) {}
+
+export class GetAccountProfileResDTO extends createZodDto(GetAccountProfileResSchema) {}

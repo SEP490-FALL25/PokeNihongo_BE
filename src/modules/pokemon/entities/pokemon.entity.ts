@@ -346,7 +346,50 @@ export const GetPokemonDetailResSchema = z.object({
           deletedAt: true
         })
       )
+      .optional(),
+    weaknesses: z
+      .array(
+        z.object({
+          id: z.number(),
+          type_name: z.string(),
+          display_name: z.any(),
+          color_hex: z.string(),
+          effectiveness_multiplier: z.number()
+        })
+      )
       .optional()
+  }),
+  message: z.string()
+})
+
+// Pokemon Weakness Response Schema
+export const GetPokemonWeaknessResSchema = z.object({
+  statusCode: z.number(),
+  data: z.object({
+    pokemon: z.object({
+      id: z.number(),
+      nameJp: z.string(),
+      nameTranslations: z.any(),
+      types: z
+        .array(
+          z.object({
+            id: z.number(),
+            type_name: z.string(),
+            display_name: z.any(),
+            color_hex: z.string()
+          })
+        )
+        .optional()
+    }),
+    weaknesses: z.array(
+      z.object({
+        id: z.number(),
+        type_name: z.string(),
+        display_name: z.any(),
+        color_hex: z.string(),
+        effectiveness_multiplier: z.number()
+      })
+    )
   }),
   message: z.string()
 })
@@ -369,6 +412,7 @@ export type UpdatePokemonBodyType = z.infer<typeof UpdatePokemonBodySchema>
 export type UpdatePokemonFormDataType = z.infer<typeof UpdatePokemonFormDataSchema>
 export type GetPokemonParamsType = z.infer<typeof GetPokemonParamsSchema>
 export type GetPokemonDetailResType = z.infer<typeof GetPokemonDetailResSchema>
+export type GetPokemonWeaknessResType = z.infer<typeof GetPokemonWeaknessResSchema>
 export type AssignPokemonTypesBodyType = z.infer<typeof AssignPokemonTypesBodySchema>
 
 // Field for query
