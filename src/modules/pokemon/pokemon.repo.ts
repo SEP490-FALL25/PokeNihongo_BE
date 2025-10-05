@@ -17,7 +17,7 @@ type PokemonWithRelations = PokemonType & {
     display_name: any
     color_hex: string
   }>
-  nextPokemon?: PokemonType | null
+  nextPokemons?: PokemonType[]
   previousPokemons?: PokemonType[]
 }
 
@@ -32,7 +32,7 @@ export class PokemonRepo {
     createdById: number | null
     data: CreatePokemonBodyType
   }): Promise<any> {
-    const { typeIds, ...pokemonData } = data
+    const { typeIds, nextPokemonsId, ...pokemonData } = data
     return this.prismaService.pokemon.create({
       data: {
         ...pokemonData,
@@ -41,11 +41,27 @@ export class PokemonRepo {
         // Connect elemental types
         types: {
           connect: typeIds.map((id) => ({ id }))
-        }
+        },
+        // Connect next Pokemons for evolution
+        ...(nextPokemonsId &&
+          nextPokemonsId.length > 0 && {
+            nextPokemons: {
+              connect: nextPokemonsId.map((id) => ({ id }))
+            }
+          })
       },
       include: {
         types: true,
-        nextPokemon: true,
+        nextPokemons: {
+          select: {
+            id: true,
+            pokedex_number: true,
+            nameJp: true,
+            nameTranslations: true,
+            imageUrl: true,
+            rarity: true
+          }
+        },
         previousPokemons: true,
         createdBy: {
           select: { id: true, name: true }
@@ -66,7 +82,7 @@ export class PokemonRepo {
     updatedById: number
     data: UpdatePokemonBodyType
   }): Promise<any> {
-    const { typeIds, ...pokemonData } = data
+    const { typeIds, nextPokemonsId, ...pokemonData } = data
     return this.prismaService.pokemon.update({
       where: {
         id,
@@ -81,11 +97,27 @@ export class PokemonRepo {
             set: [], // Clear existing connections
             connect: typeIds.map((id) => ({ id })) // Connect new types
           }
+        }),
+        // Update next Pokemons nếu có
+        ...(nextPokemonsId !== undefined && {
+          nextPokemons: {
+            set: [], // Clear existing evolution connections
+            connect: nextPokemonsId.map((id) => ({ id })) // Connect new evolutions
+          }
         })
       },
       include: {
         types: true,
-        nextPokemon: true,
+        nextPokemons: {
+          select: {
+            id: true,
+            pokedex_number: true,
+            nameJp: true,
+            nameTranslations: true,
+            imageUrl: true,
+            rarity: true
+          }
+        },
         previousPokemons: true,
         createdBy: {
           select: { id: true, name: true }
@@ -146,7 +178,7 @@ export class PokemonRepo {
               color_hex: true
             }
           },
-          nextPokemon: {
+          nextPokemons: {
             select: {
               id: true,
               pokedex_number: true,
@@ -202,7 +234,7 @@ export class PokemonRepo {
             color_hex: true
           }
         },
-        nextPokemon: {
+        nextPokemons: {
           select: {
             id: true,
             pokedex_number: true,
@@ -283,7 +315,7 @@ export class PokemonRepo {
             color_hex: true
           }
         },
-        nextPokemon: {
+        nextPokemons: {
           select: {
             id: true,
             pokedex_number: true,
@@ -326,7 +358,7 @@ export class PokemonRepo {
             color_hex: true
           }
         },
-        nextPokemon: {
+        nextPokemons: {
           select: {
             id: true,
             pokedex_number: true,

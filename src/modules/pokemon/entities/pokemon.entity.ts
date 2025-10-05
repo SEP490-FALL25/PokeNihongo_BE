@@ -21,7 +21,7 @@ export const PokemonSchema = z.object({
     ),
   description: z.string().nullable(),
   conditionLevel: z.number().min(1).nullable(),
-  nextPokemonId: z.number().nullable(),
+  nextPokemonsId: z.array(z.number()).default([]),
   isStarted: z.boolean().default(false),
   imageUrl: z.string().url().nullable(),
   rarity: z
@@ -50,14 +50,13 @@ export const CreatePokemonBodySchema = PokemonSchema.pick({
   nameTranslations: true,
   description: true,
   conditionLevel: true,
-  nextPokemonId: true,
+  nextPokemonsId: true,
   isStarted: true,
   imageUrl: true,
   rarity: true
 })
   .extend({
     conditionLevel: PokemonSchema.shape.conditionLevel.optional(),
-    nextPokemonId: PokemonSchema.shape.nextPokemonId.optional(),
     imageUrl: PokemonSchema.shape.imageUrl.optional(),
     // Thêm field cho elemental types
     typeIds: z
@@ -68,8 +67,8 @@ export const CreatePokemonBodySchema = PokemonSchema.pick({
   .strict()
   .refine(
     (data) => {
-      // Nếu có nextPokemonId thì phải có conditionLevel
-      if (data.nextPokemonId && !data.conditionLevel) {
+      // Nếu có nextPokemonsId thì phải có conditionLevel
+      if (data.nextPokemonsId && data.nextPokemonsId.length > 0 && !data.conditionLevel) {
         return false
       }
       return true
@@ -104,9 +103,20 @@ export const CreatePokemonFormDataSchema = z
       .string()
       .transform((val) => (val ? parseInt(val, 10) : null))
       .optional(),
-    nextPokemonId: z
+    nextPokemonsId: z
       .string()
-      .transform((val) => (val ? parseInt(val, 10) : null))
+      .transform((val) => {
+        if (!val) return []
+        try {
+          const parsed = JSON.parse(val)
+          if (Array.isArray(parsed) && parsed.every((id) => typeof id === 'number')) {
+            return parsed
+          }
+          throw new Error('Invalid format')
+        } catch {
+          throw new Error('nextPokemons phải là array số nguyên')
+        }
+      })
       .optional(),
     isStarted: z
       .string()
@@ -140,8 +150,8 @@ export const CreatePokemonFormDataSchema = z
   .strict()
   .refine(
     (data) => {
-      // Nếu có nextPokemonId thì phải có conditionLevel
-      if (data.nextPokemonId && !data.conditionLevel) {
+      // Nếu có nextPokemons thì phải có conditionLevel
+      if (data.nextPokemonsId && data.nextPokemonsId.length > 0 && !data.conditionLevel) {
         return false
       }
       return true
@@ -154,7 +164,7 @@ export const CreatePokemonFormDataSchema = z
 
 export const CreatePokemonResSchema = z.object({
   statusCode: z.number(),
-  data: PokemonSchema,
+  data: PokemonSchema.omit({ nextPokemonsId: true }),
   message: z.string()
 })
 
@@ -165,7 +175,7 @@ export const UpdatePokemonBodySchema = PokemonSchema.pick({
   nameTranslations: true,
   description: true,
   conditionLevel: true,
-  nextPokemonId: true,
+  nextPokemonsId: true,
   isStarted: true,
   imageUrl: true,
   rarity: true
@@ -182,7 +192,7 @@ export const UpdatePokemonBodySchema = PokemonSchema.pick({
   .strict()
   .refine(
     (data) => {
-      if (data.nextPokemonId && !data.conditionLevel) {
+      if (data.nextPokemonsId && data.nextPokemonsId.length > 0 && !data.conditionLevel) {
         return false
       }
       return true
@@ -229,9 +239,20 @@ export const UpdatePokemonFormDataSchema = z
       .string()
       .transform((val) => (val ? parseInt(val, 10) : null))
       .optional(),
-    nextPokemonId: z
+    nextPokemonsId: z
       .string()
-      .transform((val) => (val ? parseInt(val, 10) : null))
+      .transform((val) => {
+        if (!val) return []
+        try {
+          const parsed = JSON.parse(val)
+          if (Array.isArray(parsed) && parsed.every((id) => typeof id === 'number')) {
+            return parsed
+          }
+          throw new Error('Invalid format')
+        } catch {
+          throw new Error('nextPokemons phải là array số nguyên')
+        }
+      })
       .optional(),
     isStarted: z
       .string()
@@ -268,8 +289,8 @@ export const UpdatePokemonFormDataSchema = z
   .strict()
   .refine(
     (data) => {
-      // Nếu có nextPokemonId thì phải có conditionLevel
-      if (data.nextPokemonId && !data.conditionLevel) {
+      // Nếu có nextPokemons thì phải có conditionLevel
+      if (data.nextPokemonsId && data.nextPokemonsId.length > 0 && !data.conditionLevel) {
         return false
       }
       return true
@@ -289,8 +310,7 @@ export const GetPokemonParamsSchema = z.object({
 
 export const GetPokemonDetailResSchema = z.object({
   statusCode: z.number(),
-  data: z.object({
-    ...PokemonSchema.shape,
+  data: PokemonSchema.omit({ nextPokemonsId: true }).extend({
     types: z
       .array(
         z.object({
@@ -301,19 +321,23 @@ export const GetPokemonDetailResSchema = z.object({
         })
       )
       .optional(),
-    nextPokemon: PokemonSchema.omit({
-      nextPokemonId: true,
-      createdById: true,
-      updatedById: true,
-      deletedById: true,
-      createdAt: true,
-      updatedAt: true,
-      deletedAt: true
-    }).nullable(),
+    nextPokemons: z
+      .array(
+        PokemonSchema.omit({
+          nextPokemonsId: true,
+          createdById: true,
+          updatedById: true,
+          deletedById: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true
+        })
+      )
+      .optional(),
     previousPokemons: z
       .array(
         PokemonSchema.omit({
-          nextPokemonId: true,
+          nextPokemonsId: true,
           createdById: true,
           updatedById: true,
           deletedById: true,

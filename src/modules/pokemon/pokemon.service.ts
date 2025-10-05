@@ -39,7 +39,7 @@ export class PokemonService {
       nameTranslations: data.nameTranslations,
       description: data.description ?? null,
       conditionLevel: data.conditionLevel ?? null,
-      nextPokemonId: data.nextPokemonId ?? null,
+      nextPokemonsId: data.nextPokemonsId ?? [],
       isStarted: data.isStarted,
       imageUrl: data.imageUrl ?? null,
       rarity: data.rarity,
@@ -114,9 +114,11 @@ export class PokemonService {
         data: pokemonData
       })
 
-      // If has nextPokemonId, update the next Pokemon's previousPokemons relation
-      if (pokemonData.nextPokemonId) {
-        await this.pokemonRepo.addToPreviousPokemons(pokemonData.nextPokemonId, result.id)
+      // If has nextPokemons, update each next Pokemon's previousPokemons relation
+      if (pokemonData.nextPokemonsId && pokemonData.nextPokemonsId.length > 0) {
+        for (const nextPokemonId of pokemonData.nextPokemonsId) {
+          await this.pokemonRepo.addToPreviousPokemons(nextPokemonId, result.id)
+        }
       }
 
       return {
@@ -185,33 +187,31 @@ export class PokemonService {
       }
 
       // Handle evolution relation changes
-      const oldNextPokemonId = existPokemon.nextPokemonId
-      const newNextPokemonId =
-        pokemonData.nextPokemonId !== undefined
-          ? pokemonData.nextPokemonId
-          : oldNextPokemonId // Keep old value if not provided in update
+      const oldNextPokemonIds = existPokemon.nextPokemons?.map((p) => p.id) || []
+      const newNextPokemonIds =
+        pokemonData.nextPokemonsId !== undefined
+          ? pokemonData.nextPokemonsId
+          : oldNextPokemonIds // Keep old value if not provided in update
 
-      // If nextPokemonId changed
-      if (oldNextPokemonId !== newNextPokemonId) {
-        // Remove from old next Pokemon's previousPokemons if exists
-        if (oldNextPokemonId) {
-          try {
-            await this.pokemonRepo.removeFromPreviousPokemons(oldNextPokemonId, id)
-          } catch (error) {
-            console.warn(
-              'Failed to remove from old next Pokemon previousPokemons:',
-              error
-            )
-          }
+      // Find IDs to remove and add
+      const toRemove = oldNextPokemonIds.filter((id) => !newNextPokemonIds.includes(id))
+      const toAdd = newNextPokemonIds.filter((id) => !oldNextPokemonIds.includes(id))
+
+      // Remove from old next Pokemons' previousPokemons
+      for (const nextPokemonId of toRemove) {
+        try {
+          await this.pokemonRepo.removeFromPreviousPokemons(nextPokemonId, id)
+        } catch (error) {
+          console.warn('Failed to remove from old next Pokemon previousPokemons:', error)
         }
+      }
 
-        // Add to new next Pokemon's previousPokemons if exists
-        if (newNextPokemonId) {
-          try {
-            await this.pokemonRepo.addToPreviousPokemons(newNextPokemonId, id)
-          } catch (error) {
-            console.warn('Failed to add to new next Pokemon previousPokemons:', error)
-          }
+      // Add to new next Pokemons' previousPokemons
+      for (const nextPokemonId of toAdd) {
+        try {
+          await this.pokemonRepo.addToPreviousPokemons(nextPokemonId, id)
+        } catch (error) {
+          console.warn('Failed to add to new next Pokemon previousPokemons:', error)
         }
       }
 
@@ -246,18 +246,17 @@ export class PokemonService {
         throw PokemonNotFoundException
       }
 
-      // Remove from next Pokemon's previousPokemons if this Pokemon has evolution
-      if (existPokemon.nextPokemonId) {
-        try {
-          await this.pokemonRepo.removeFromPreviousPokemons(
-            existPokemon.nextPokemonId,
-            id
-          )
-        } catch (error) {
-          console.warn(
-            'Failed to remove from next Pokemon previousPokemons on delete:',
-            error
-          )
+      // Remove from next Pokemons' previousPokemons if this Pokemon has evolutions
+      if (existPokemon.nextPokemons && existPokemon.nextPokemons.length > 0) {
+        for (const nextPokemon of existPokemon.nextPokemons) {
+          try {
+            await this.pokemonRepo.removeFromPreviousPokemons(nextPokemon.id, id)
+          } catch (error) {
+            console.warn(
+              'Failed to remove from next Pokemon previousPokemons on delete:',
+              error
+            )
+          }
         }
       }
 

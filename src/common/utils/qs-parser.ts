@@ -20,7 +20,7 @@ export function parseQs(
   for (const part of parts) {
     // --- SORT ---
     if (part.startsWith('sort:')) {
-      const rawField = part.slice(5) // bỏ "sort:"
+      const rawField = part.slice(5)
       const field = rawField.startsWith('-') ? rawField.slice(1) : rawField
 
       if (validFields && !validFields.includes(field)) {
@@ -46,18 +46,18 @@ export function parseQs(
       )
     }
 
+    // Parse kiểu dữ liệu
+    let parsedValue: any = value
+    if (value === 'true') parsedValue = true
+    else if (value === 'false') parsedValue = false
+    else if (!isNaN(Number(value))) parsedValue = Number(value)
+
     if (tokens.length === 1) {
-      // field=value
-      where[field] = isNaN(Number(value)) ? value : Number(value)
+      where[field] = parsedValue
     } else if (tokens.length === 2) {
-      // field:op=value
       const op = tokens[1]
-      if (op === 'eq') {
-        where[field] = isNaN(Number(value)) ? value : Number(value)
-      }
-      if (op === 'like') {
-        where[field] = { contains: value, mode: 'insensitive' }
-      }
+      if (op === 'eq') where[field] = parsedValue
+      if (op === 'like') where[field] = { contains: value, mode: 'insensitive' }
     }
   }
 
