@@ -72,11 +72,23 @@ export class LanguagesRepository {
     }
 
     async create(data: CreateLanguagesBodyType): Promise<LanguagesType> {
+        const createData: any = {
+            code: data.code,
+            name: data.name
+        }
+
+        // Nếu có ID, thêm vào data
+        if (data.id) {
+            createData.id = data.id
+        }
+
+        // Nếu có flag, thêm vào data
+        if (data.flag) {
+            createData.flag = data.flag
+        }
+
         const result = await this.prismaService.languages.create({
-            data: {
-                code: data.code,
-                name: data.name
-            }
+            data: createData
         })
 
         return this.transformLanguages(result)

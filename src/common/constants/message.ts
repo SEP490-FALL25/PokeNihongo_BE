@@ -26,6 +26,9 @@ export const AUTH_MESSAGE = {
 
 export const VOCABULARY_MESSAGE = {
   CREATE_SUCCESS: 'Tạo từ vựng thành công',
+  CREATE_FULL_SUCCESS: 'Tạo từ vựng mới thành công với nghĩa và translations',
+  ADD_MEANING_SUCCESS: 'Từ vựng đã tồn tại. Đã thêm nghĩa mới với translations',
+  MEANING_ALREADY_EXISTS: 'Nghĩa này đã tồn tại trong hệ thống',
   UPDATE_SUCCESS: 'Cập nhật từ vựng thành công',
   DELETE_SUCCESS: 'Xóa từ vựng thành công',
   GET_SUCCESS: 'Lấy thông tin từ vựng thành công',
@@ -108,6 +111,7 @@ export const LANGUAGES_MESSAGE = {
 
 export const KANJI_MESSAGE = {
   CREATE_SUCCESS: 'Tạo kanji thành công',
+  CREATE_WITH_READINGS_SUCCESS: 'Tạo Kanji cùng với cách đọc thành công',
   UPDATE_SUCCESS: 'Cập nhật kanji thành công',
   DELETE_SUCCESS: 'Xóa kanji thành công',
   GET_SUCCESS: 'Lấy thông tin kanji thành công',

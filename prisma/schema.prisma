@@ -190,6 +190,7 @@ model Kanji {
   meaningKey   String             @db.VarChar(200) // Key để dịch nghĩa của Kanji
   strokeCount  Int? // Số nét vẽ
   jlptLevel    Int? // Cấp độ JLPT (1-5)
+  img          String?            @db.VarChar(500) // URL hình ảnh của Kanji
   vocabularies Vocabulary_Kanji[] // Quan hệ Nhiều-Nhiều với Vocabulary
   readings     Kanji_Reading[] // Quan hệ Một-Nhiều với Kanji_Reading
 

@@ -1,4 +1,7 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
+import { UploadedFile, UseInterceptors } from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { ApiConsumes } from '@nestjs/swagger'
 import {
     CreateKanjiBodyDTO,
     UpdateKanjiBodyDTO,
@@ -9,6 +12,23 @@ import {
     KanjiResDTO,
     KanjiListResDTO
 } from './dto/kanji.dto'
+import {
+    CreateKanjiWithMeaningsBodyDTO,
+    CreateKanjiWithMeaningsBodyType,
+    KanjiWithMeaningsResponseDTO,
+    KanjiWithMeaningsResDTO,
+    CreateKanjiWithMeaningsSwaggerDTO,
+    KanjiWithMeaningsResponseSwaggerDTO
+} from './dto/kanji-with-meanings.dto'
+import {
+    UpdateKanjiWithMeaningsBodyType,
+    UpdateKanjiWithMeaningsResponseType,
+    UpdateKanjiWithMeaningsSwaggerDTO,
+    UpdateKanjiWithMeaningsResponseSwaggerDTO
+} from './dto/update-kanji-with-meanings.dto'
+import {
+    UpdateKanjiWithMeaningsResDTO
+} from './dto/zod/update-kanji.zod-dto'
 import {
     CreateKanjiSwaggerDTO,
     UpdateKanjiSwaggerDTO,
@@ -56,14 +76,6 @@ export class KanjiController {
         description: 'Lấy danh sách Kanji thành công',
         type: KanjiListSwaggerResponseDTO
     })
-    @ApiResponse({
-        status: 400,
-        description: 'Dữ liệu truy vấn không hợp lệ'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
     @ZodSerializerDto(KanjiListResDTO)
     findMany(@Query() query: GetKanjiListQueryDTO) {
         // Transform query to match service expectations
@@ -83,10 +95,6 @@ export class KanjiController {
         status: 200,
         description: 'Lấy thống kê thành công'
     })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
     getStats() {
         return this.kanjiService.getStats()
     }
@@ -105,14 +113,6 @@ export class KanjiController {
         status: 200,
         description: 'Lấy Kanji thành công',
         type: KanjiSwaggerResponseDTO
-    })
-    @ApiResponse({
-        status: 404,
-        description: 'Kanji không tồn tại'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
     })
     @ZodSerializerDto(KanjiResDTO)
     findByCharacter(@Param('character') character: string) {
@@ -134,91 +134,94 @@ export class KanjiController {
         description: 'Lấy Kanji thành công',
         type: KanjiSwaggerResponseDTO
     })
-    @ApiResponse({
-        status: 404,
-        description: 'Kanji không tồn tại'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
     @ZodSerializerDto(KanjiResDTO)
     findById(@Param() params: GetKanjiByIdParamsDTO) {
         return this.kanjiService.findById(params.id)
     }
 
-    @Post()
+
+
+    @Post('with-meanings')
+    @UseInterceptors(FileInterceptor('image'))
     @ApiOperation({
-        summary: 'Tạo Kanji mới',
-        description: 'Tạo một Kanji mới trong hệ thống'
+        summary: 'Tạo Kanji mới cùng với nghĩa và translations',
+        description: 'Tạo một Kanji mới cùng với các nghĩa và translations trong nhiều ngôn ngữ trong một lần gọi API. Có thể upload hình ảnh cùng lúc.'
     })
+    @ApiConsumes('multipart/form-data')
     @ApiBody({
-        type: CreateKanjiSwaggerDTO,
-        description: 'Dữ liệu Kanji mới'
+        schema: {
+            type: 'object',
+            properties: {
+                character: { type: 'string', example: '森', description: 'Ký tự Kanji' },
+                strokeCount: { type: 'string', example: '12', description: 'Số nét vẽ (có thể là số hoặc string)' },
+                jlptLevel: { type: 'string', example: '5', description: 'Cấp độ JLPT (1-5)' },
+                image: { type: 'string', format: 'binary', description: 'Hình ảnh của Kanji (JPG, PNG, GIF, WebP)' },
+                readings: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            readingType: { type: 'string', example: 'onyomi' },
+                            reading: { type: 'string', example: 'しん' }
+                        }
+                    },
+                    description: 'Danh sách cách đọc của Kanji'
+                },
+                meanings: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            translations: {
+                                type: 'object',
+                                example: { "vi": "rừng", "en": "forest" },
+                                description: 'Translations theo ngôn ngữ (vi, en)'
+                            }
+                        }
+                    },
+                    description: 'Danh sách nghĩa của Kanji với translations'
+                }
+            }
+        }
     })
     @ApiResponse({
         status: 201,
-        description: 'Tạo Kanji thành công',
-        type: KanjiSwaggerResponseDTO
+        description: 'Tạo Kanji cùng với nghĩa thành công',
+        type: KanjiWithMeaningsResponseSwaggerDTO
     })
-    @ApiResponse({
-        status: 400,
-        description: 'Dữ liệu Kanji không hợp lệ'
-    })
-    @ApiResponse({
-        status: 409,
-        description: 'Kanji với ký tự này đã tồn tại'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
-    @ZodSerializerDto(KanjiResDTO)
-    create(@Body() body: CreateKanjiBodyDTO) {
-        return this.kanjiService.create(body)
+    @ZodSerializerDto(KanjiWithMeaningsResDTO)
+    createWithMeanings(
+        @Body() body: CreateKanjiWithMeaningsBodyType,
+        @UploadedFile() image?: Express.Multer.File
+    ) {
+        return this.kanjiService.createWithMeanings(body, image)
     }
 
-    @Put(':id')
+
+
+    @Put(':identifier/with-meanings')
+    @UseInterceptors(FileInterceptor('image'))
     @ApiOperation({
-        summary: 'Cập nhật Kanji',
-        description: 'Cập nhật thông tin của một Kanji'
+        summary: 'Cập nhật Kanji cùng với nghĩa và translations',
+        description: 'Cập nhật thông tin Kanji cùng với các nghĩa và translations trong nhiều ngôn ngữ trong một lần gọi API. Có thể sử dụng ID (số) hoặc Character (chữ Kanji) để cập nhập'
     })
-    @ApiParam({
-        name: 'id',
-        description: 'ID của Kanji',
-        example: 1
-    })
+    @ApiConsumes('multipart/form-data')
     @ApiBody({
-        type: UpdateKanjiSwaggerDTO,
-        description: 'Dữ liệu cập nhật Kanji'
+        type: UpdateKanjiWithMeaningsSwaggerDTO,
+        description: 'Dữ liệu cập nhật Kanji cùng với danh sách nghĩa và translations'
     })
     @ApiResponse({
         status: 200,
-        description: 'Cập nhật Kanji thành công',
-        type: KanjiSwaggerResponseDTO
+        description: 'Cập nhật Kanji cùng với nghĩa thành công',
+        type: UpdateKanjiWithMeaningsResponseSwaggerDTO
     })
-    @ApiResponse({
-        status: 400,
-        description: 'Dữ liệu Kanji không hợp lệ'
-    })
-    @ApiResponse({
-        status: 404,
-        description: 'Kanji không tồn tại'
-    })
-    @ApiResponse({
-        status: 409,
-        description: 'Kanji với ký tự này đã tồn tại'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
-    @ZodSerializerDto(KanjiResDTO)
-    update(
-        @Param() params: GetKanjiByIdParamsDTO,
-        @Body() body: UpdateKanjiBodyDTO
+    @ZodSerializerDto(UpdateKanjiWithMeaningsResDTO)
+    updateWithMeanings(
+        @Param('identifier') identifier: string,
+        @Body() body: UpdateKanjiWithMeaningsBodyType,
+        @UploadedFile() image?: Express.Multer.File
     ) {
-        return this.kanjiService.update(params.id, body)
+        return this.kanjiService.updateWithMeanings(identifier, body, image)
     }
 
     @Delete(':id')
@@ -235,16 +238,9 @@ export class KanjiController {
         status: 200,
         description: 'Xóa Kanji thành công'
     })
-    @ApiResponse({
-        status: 404,
-        description: 'Kanji không tồn tại'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
     @HttpCode(HttpStatus.OK)
     delete(@Param() params: GetKanjiByIdParamsDTO) {
         return this.kanjiService.delete(params.id)
     }
+
 }

@@ -47,7 +47,7 @@ import {
 } from '@nestjs/common'
 import { Queue } from 'bull'
 import Redis from 'ioredis'
-import { LevelRepo } from '../level/level.repo'
+import { LevelService } from '../level/level.service'
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name)
@@ -57,7 +57,7 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly sharedUserRepository: SharedUserRepository,
     private readonly mailService: MailService,
-    private readonly levelRepo: LevelRepo,
+    private readonly levelService: LevelService,
     private readonly bullQueueService: BullQueueService,
     @InjectQueue('user-deletion') private readonly deletionQueue: Queue,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
@@ -95,7 +95,7 @@ export class AuthService {
       body.ip
     )
 
-    if (!existingDevice) {
+    if (!existingDevice && user.role.name !== RoleName.Admin) {
       throw NeedToVerifyWithFirstLogin
     }
 
@@ -129,7 +129,7 @@ export class AuthService {
       if (body.password !== body.confirmPassword) {
         throw InValidNewPasswordAndConfirmPasswordRegisterException
       }
-      
+
       const hashedPassword = await this.hashingService.hash(body.password)
 
       // const firstLevel = await this.levelRepo.getFirstLevelUser()

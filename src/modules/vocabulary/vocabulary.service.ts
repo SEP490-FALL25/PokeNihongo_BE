@@ -5,11 +5,11 @@ import {
     UpdateVocabularyBodyType,
     VocabularyType
 } from '@/modules/vocabulary/entities/vocabulary.entities'
-import { CreateVocabularyAdvancedDTO, VocabularyAdvancedResponseDTO } from '@/modules/vocabulary/dto/vocabulary.dto'
 import {
     InvalidVocabularyDataException,
     VocabularyAlreadyExistsException,
-    VocabularyNotFoundException
+    VocabularyNotFoundException,
+    MeaningAlreadyExistsException
 } from '@/modules/vocabulary/dto/vocabulary.error'
 import { VocabularyRepository } from '@/modules/vocabulary/vocabulary.repo'
 import { VocabularyHelperService } from '@/modules/vocabulary/vocabulary.helper.service'
@@ -133,7 +133,7 @@ export class VocabularyService {
                         path: ''
                     }
 
-                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile)
+                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile, 'vocabulary/audio')
                     finalAudioUrl = uploadResult.url
                     this.logger.log(`Audio regenerated via TTS: ${finalAudioUrl}`)
                 } catch (ttsError) {
@@ -272,128 +272,6 @@ export class VocabularyService {
 
     //#endregion
 
-    //#region Advanced Create with Meaning, WordType and Kanji
-
-    /**
-     * Tạo từ vựng mới với Meaning, WordType và xử lý Kanji thông minh
-     */
-    async createAdvanced(
-        data: CreateVocabularyAdvancedDTO,
-        createdById?: number
-    ): Promise<VocabularyAdvancedResponseDTO> {
-        try {
-            this.logger.log(`Creating advanced vocabulary: ${data.word_jp}`)
-
-            // Bước 1: Tạo bản ghi Vocabulary gốc
-            const vocabularyData = {
-                wordJp: data.word_jp,
-                reading: data.reading,
-                levelN: data.level_n,
-                wordTypeId: data.word_type_id,
-                audioUrl: data.audio_url,
-                createdById: createdById
-            }
-
-            const vocabulary = await this.vocabularyRepository.createAdvanced(vocabularyData)
-
-            // Bước 2: Xử lý và tạo các bản ghi Meaning
-            if (data.meanings && data.meanings.length > 0) {
-                const transformedMeanings = data.meanings.map(m => ({
-                    languageCode: m.language_code,
-                    meaningText: m.meaning_text
-                }))
-                await this.vocabularyRepository.createMeanings(vocabulary.id, transformedMeanings)
-            }
-
-            // Bước 3: Xử lý Kanji một cách thông minh
-            const kanjiResult = await this.processKanjiIntelligently(data.word_jp, vocabulary.id)
-
-            // Bước 4: Lấy thông tin đầy đủ của từ vựng vừa tạo
-            const fullVocabulary = await this.vocabularyRepository.findByIdWithRelations(vocabulary.id)
-
-            if (!fullVocabulary) {
-                throw new Error('Không thể lấy thông tin từ vựng vừa tạo')
-            }
-
-            // Transform meanings to match DTO structure
-            const transformedMeanings = fullVocabulary.meanings?.map(meaning => ({
-                language_code: 'vi', // Default language code
-                meaning_text: meaning.meaningKey || 'Nghĩa chưa được dịch'
-            })) || []
-
-            const response: VocabularyAdvancedResponseDTO = {
-                vocabulary_id: fullVocabulary.id,
-                word_jp: fullVocabulary.wordJp,
-                reading: fullVocabulary.reading,
-                meanings: transformedMeanings
-            }
-
-            this.logger.log(`Advanced vocabulary created successfully: ${vocabulary.id}`)
-            return response
-
-        } catch (error) {
-            this.logger.error('Error creating advanced vocabulary:', error)
-            throw new Error('Tạo từ vựng nâng cao thất bại')
-        }
-    }
-
-    /**
-     * Xử lý Kanji một cách thông minh
-     */
-    private async processKanjiIntelligently(
-        wordJp: string,
-        vocabularyId: number
-    ): Promise<{ kanjiCharacters: string[], missingKanji: string[] }> {
-        try {
-            // Phân tích chuỗi word_jp để lọc ra các ký tự Kanji
-            const kanjiCharacters = this.extractKanjiCharacters(wordJp)
-
-            if (kanjiCharacters.length === 0) {
-                return { kanjiCharacters: [], missingKanji: [] }
-            }
-
-            const missingKanji: string[] = []
-            const kanjiMappings: { kanjiId: number, displayOrder: number }[] = []
-
-            // Đối chiếu Kanji với database
-            for (let i = 0; i < kanjiCharacters.length; i++) {
-                const character = kanjiCharacters[i]
-                const kanji = await this.vocabularyRepository.findKanjiByCharacter(character)
-
-                if (kanji) {
-                    kanjiMappings.push({
-                        kanjiId: kanji.id,
-                        displayOrder: i
-                    })
-                } else {
-                    missingKanji.push(character)
-                }
-            }
-
-            // Tạo liên kết Vocabulary_Kanji cho các Kanji đã tồn tại
-            if (kanjiMappings.length > 0) {
-                await this.vocabularyRepository.createVocabularyKanjiMappings(vocabularyId, kanjiMappings)
-            }
-
-            return { kanjiCharacters, missingKanji }
-
-        } catch (error) {
-            this.logger.error('Error processing Kanji intelligently:', error)
-            throw new Error('Xử lý Kanji thất bại')
-        }
-    }
-
-    /**
-     * Trích xuất các ký tự Kanji từ chuỗi tiếng Nhật
-     */
-    private extractKanjiCharacters(wordJp: string): string[] {
-        // Regex để tìm các ký tự Kanji (Unicode ranges: 4E00-9FAF, 3400-4DBF, etc.)
-        const kanjiRegex = /[\u4E00-\u9FAF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF\uF900-\uFAFF\u2F800-\u2FA1F]/g
-        const matches = wordJp.match(kanjiRegex)
-        return matches ? [...new Set(matches)] : [] // Loại bỏ trùng lặp
-    }
-
-    //#endregion
 
     //#region Add Meaning to Existing Vocabulary
     /**
@@ -447,7 +325,7 @@ export class VocabularyService {
             reading: string
             level_n?: number
             word_type_id?: number
-            translations: {
+            translations: string | {
                 meaning: Array<{ language_code: string; value: string }>
                 examples?: Array<{ language_code: string; sentence: string; original_sentence: string }>
             }
@@ -459,13 +337,28 @@ export class VocabularyService {
         try {
             this.logger.log('Creating full vocabulary with file uploads')
 
+            // Parse translations if it's a string (from multipart/form-data)
+            let parsedTranslations: {
+                meaning: Array<{ language_code: string; value: string }>
+                examples?: Array<{ language_code: string; sentence: string; original_sentence: string }>
+            }
+
+            if (typeof data.translations === 'string') {
+                this.logger.log('Parsing translations from JSON string')
+                parsedTranslations = JSON.parse(data.translations)
+            } else {
+                parsedTranslations = data.translations
+            }
+
+            this.logger.log('Parsed translations:', parsedTranslations)
+
             // 1. Upload files if provided, or generate audio using TTS
             let audioUrl: string | undefined
             let imageUrl: string | undefined
 
             if (audioFile) {
                 this.logger.log('Uploading audio file...')
-                const audioResult = await this.uploadService.uploadFile(audioFile)
+                const audioResult = await this.uploadService.uploadFile(audioFile, 'vocabulary/audio')
                 audioUrl = audioResult.url
                 this.logger.log(`Audio uploaded: ${audioUrl}`)
             } else {
@@ -497,7 +390,7 @@ export class VocabularyService {
                     }
 
                     // 3. Upload to Cloudinary
-                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile)
+                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile, 'vocabulary/audio')
                     audioUrl = uploadResult.url
                     this.logger.log(`Audio generated via TTS and uploaded: ${audioUrl}`)
                 } catch (ttsError) {
@@ -508,7 +401,7 @@ export class VocabularyService {
 
             if (imageFile) {
                 this.logger.log('Uploading image file...')
-                const imageResult = await this.uploadService.uploadFile(imageFile)
+                const imageResult = await this.uploadService.uploadFile(imageFile, 'vocabulary/images')
                 imageUrl = imageResult.url
                 this.logger.log(`Image uploaded: ${imageUrl}`)
             }
@@ -525,20 +418,44 @@ export class VocabularyService {
 
                 const result = await this.vocabularyHelperService.addMeaningWithTranslations(
                     existingCheck.vocabularyId,
-                    data.translations,
+                    parsedTranslations,
                     data.word_type_id
                 )
 
+                // Get full vocabulary information
+                const vocabulary = await this.vocabularyRepository.findUnique({ id: existingCheck.vocabularyId })
+                if (!vocabulary) {
+                    throw VocabularyNotFoundException
+                }
+
+                // Tạo response với meaning và examples cho trường hợp vocabulary đã tồn tại
+                const meaning = parsedTranslations.meaning.map(m => ({
+                    language_code: m.language_code,
+                    value: m.value
+                }))
+
+                const examples = parsedTranslations.examples ? parsedTranslations.examples.map(e => ({
+                    language_code: e.language_code,
+                    sentence: e.sentence,
+                    original_sentence: e.original_sentence
+                })) : []
+
                 return {
                     data: {
-                        vocabularyId: existingCheck.vocabularyId,
-                        meaningId: result.meaning.id,
+                        vocabulary: {
+                            ...vocabulary,
+                            imageUrl: imageUrl || vocabulary.imageUrl,
+                            audioUrl: audioUrl || vocabulary.audioUrl
+                        },
+                        meaning: {
+                            id: result.meaning.id,
+                            translations: meaning,
+                            examples: examples
+                        },
                         translationsCreated: result.translationsCreated,
-                        isNew: false,
-                        audioUrl,
-                        imageUrl
+                        isNew: false
                     },
-                    message: 'Từ vựng đã tồn tại. Đã thêm nghĩa mới với translations.'
+                    message: VOCABULARY_MESSAGE.ADD_MEANING_SUCCESS
                 }
             } else {
                 // Vocabulary doesn't exist → Create new
@@ -551,27 +468,48 @@ export class VocabularyService {
                         levelN: data.level_n,
                         audioUrl,
                         imageUrl,
-                        createdById
+                        createdById: createdById || undefined
                     },
-                    data.translations,
+                    parsedTranslations,
                     data.word_type_id
                 )
 
+                // Tạo response với meaning và examples
+                const meaning = parsedTranslations.meaning.map(m => ({
+                    language_code: m.language_code,
+                    value: m.value
+                }))
+
+                const examples = parsedTranslations.examples ? parsedTranslations.examples.map(e => ({
+                    language_code: e.language_code,
+                    sentence: e.sentence,
+                    original_sentence: e.original_sentence
+                })) : []
+
                 return {
                     data: {
-                        vocabularyId: result.vocabulary.id,
-                        meaningId: result.meaning.id,
+                        vocabulary: {
+                            ...result.vocabulary,
+                            imageUrl,
+                            audioUrl
+                        },
+                        meaning: {
+                            id: result.meaning.id,
+                            translations: meaning,
+                            examples: examples
+                        },
                         translationsCreated: result.translationsCreated,
-                        isNew: true,
-                        vocabulary: result.vocabulary,
-                        audioUrl,
-                        imageUrl
+                        isNew: true
                     },
-                    message: VOCABULARY_MESSAGE.CREATE_SUCCESS
+                    message: VOCABULARY_MESSAGE.CREATE_FULL_SUCCESS
                 }
             }
         } catch (error) {
             this.logger.error('Error creating full vocabulary with files:', error)
+            // Let MeaningAlreadyExistsException bubble up, only catch other errors
+            if (error && error.status === 409 && error.response?.error === 'MEANING_ALREADY_EXISTS') {
+                throw error
+            }
             throw InvalidVocabularyDataException
         }
     }

@@ -13,13 +13,13 @@ import {
     VocabularyListResponseSwaggerDTO,
     GetVocabularyListQuerySwaggerDTO,
     UpdateVocabularyMultipartSwaggerDTO,
-    CreateVocabularyAdvancedDTO,
-    VocabularyAdvancedResponseDTO
 } from '@/modules/vocabulary/dto/vocabulary.dto'
 import { AddMeaningToVocabularyDTO, AddMeaningSwaggerDTO } from '@/modules/vocabulary/dto/add-meaning.dto'
 import {
     CreateVocabularyFullMultipartDTO,
-    CreateVocabularyFullMultipartSwaggerDTO
+    CreateVocabularyFullMultipartSwaggerDTO,
+    CreateVocabularyFullResponseSwaggerDTO,
+    CreateVocabularyFullResponseDTO
 } from '@/modules/vocabulary/dto/create-vocabulary-full.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { VOCABULARY_MESSAGE } from '@/common/constants/message'
@@ -162,38 +162,6 @@ export class VocabularyController {
         return this.vocabularyService.remove(params.id)
     }
 
-    //#region Advanced Vocabulary API
-
-    @Post('advanced')
-    @ApiBearerAuth()
-    @ApiOperation({
-        summary: 'Tạo từ vựng nâng cao với Meaning, WordType và Kanji',
-        description: 'Tạo từ vựng mới với nghĩa đa ngôn ngữ, loại từ và xử lý Kanji thông minh'
-    })
-    @ApiBody({
-        type: CreateVocabularyAdvancedDTO,
-        description: 'Dữ liệu từ vựng nâng cao'
-    })
-    @ApiResponse({
-        status: 201,
-        description: 'Tạo từ vựng thành công',
-        type: VocabularyAdvancedResponseDTO
-    })
-    @ApiResponse({
-        status: 202,
-        description: 'Tạo từ vựng thành công nhưng có Kanji chưa được định nghĩa',
-        type: VocabularyAdvancedResponseDTO
-    })
-    @ApiResponse({
-        status: 400,
-        description: 'Dữ liệu từ vựng không hợp lệ'
-    })
-    createAdvanced(
-        @Body() body: CreateVocabularyAdvancedDTO,
-        @ActiveUser('userId') userId?: number
-    ) {
-        return this.vocabularyService.createAdvanced(body, userId)
-    }
 
     @Post('add-meaning')
     @ApiBearerAuth()
@@ -237,12 +205,10 @@ export class VocabularyController {
     })
     @ApiResponse({
         status: 201,
-        description: 'Tạo từ vựng thành công'
+        description: 'Tạo từ vựng thành công',
+        type: CreateVocabularyFullResponseSwaggerDTO
     })
-    @ApiResponse({
-        status: 400,
-        description: 'Dữ liệu không hợp lệ'
-    })
+    @ZodSerializerDto(CreateVocabularyFullResponseDTO)
     createFull(
         @Body() body: CreateVocabularyFullMultipartDTO,
         @UploadedFiles() files: { audioFile?: Express.Multer.File[], imageFile?: Express.Multer.File[] },
