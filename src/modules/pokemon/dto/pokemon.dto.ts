@@ -4,6 +4,7 @@ import {
   CreatePokemonBodySchema,
   CreatePokemonFormDataSchema,
   CreatePokemonResSchema,
+  GetEvolutionOptionsResSchema,
   GetPokemonDetailResSchema,
   GetPokemonParamsSchema,
   GetPokemonWeaknessResSchema,
@@ -27,3 +28,6 @@ export class CreatePokemonResDTO extends createZodDto(CreatePokemonResSchema) {}
 export class UpdatePokemonResDTO extends createZodDto(UpdatePokemonResSchema) {}
 export class GetPokemonDetailResDTO extends createZodDto(GetPokemonDetailResSchema) {}
 export class GetPokemonWeaknessResDTO extends createZodDto(GetPokemonWeaknessResSchema) {}
+export class GetEvolutionOptionsResDTO extends createZodDto(
+  GetEvolutionOptionsResSchema
+) {}

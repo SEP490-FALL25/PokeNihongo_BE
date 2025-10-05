@@ -404,6 +404,23 @@ export const AssignPokemonTypesBodySchema = z
   })
   .strict()
 
+// Evolution Schema
+export const GetEvolutionOptionsResSchema = z.object({
+  statusCode: z.number(),
+  data: z.array(
+    z.object({
+      id: z.number(),
+      pokedex_number: z.number(),
+      nameJp: z.string(),
+      nameTranslations: z.any(),
+      description: z.string().nullable(),
+      imageUrl: z.string().nullable(),
+      rarity: z.string()
+    })
+  ),
+  message: z.string()
+})
+
 // Type exports
 export type PokemonType = z.infer<typeof PokemonSchema>
 export type CreatePokemonBodyType = z.infer<typeof CreatePokemonBodySchema>
@@ -414,6 +431,7 @@ export type GetPokemonParamsType = z.infer<typeof GetPokemonParamsSchema>
 export type GetPokemonDetailResType = z.infer<typeof GetPokemonDetailResSchema>
 export type GetPokemonWeaknessResType = z.infer<typeof GetPokemonWeaknessResSchema>
 export type AssignPokemonTypesBodyType = z.infer<typeof AssignPokemonTypesBodySchema>
+export type GetEvolutionOptionsResType = z.infer<typeof GetEvolutionOptionsResSchema>
 
 // Field for query
 export type PokemonFieldType = keyof z.infer<typeof PokemonSchema>

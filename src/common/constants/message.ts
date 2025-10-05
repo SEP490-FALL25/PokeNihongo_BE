@@ -244,5 +244,9 @@ export const USER_POKEMON_MESSAGE = {
   GET_DETAIL_SUCCESS: 'Lấy thông tin User Pokemon thành công',
   INVALID_ID: 'ID User Pokemon không hợp lệ',
   NOT_FOUND: 'Không tìm thấy User Pokemon',
-  NICKNAME_ALREADY_EXISTS: 'Nickname đã tồn tại'
+  NICKNAME_ALREADY_EXISTS: 'Nickname đã tồn tại',
+  ERROR_INIT_LEVEL: 'Lỗi khi khởi tạo level cho User Pokemon',
+  INVALID_ACCESS_POKEMON: 'Bạn không có quyền thao tác Pokemon này',
+  INVALID_NEXT_POKEMON: 'Pokemon này không thể tiến hóa thành Pokemon đã chọn',
+  CANNOT_EVOLVE: 'Pokemon này không thể tiến hóa thêm nữa'
 }

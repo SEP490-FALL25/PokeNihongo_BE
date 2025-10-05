@@ -5,8 +5,41 @@ import { PrismaService } from 'src/shared/services/prisma.service'
 import {
   CreateUserPokemonBodyType,
   UpdateUserPokemonBodyType,
-  USER_POKEMON_FIELDS
+  USER_POKEMON_FIELDS,
+  UserPokemonType
 } from './entities/user-pokemon.entity'
+
+type UserPokemonWithRelations = UserPokemonType & {
+  user?: {
+    id: number
+    name: string
+    email: string
+  }
+  pokemon?: {
+    id: number
+    pokedex_number: number
+    nameJp: string
+    nameTranslations: any
+    description: string | null
+    conditionLevel: number | null
+    imageUrl: string | null
+    rarity: string
+    types?: Array<{
+      id: number
+      type_name: string
+      display_name: any
+      color_hex: string
+    }>
+  }
+  level?: {
+    id: number
+    levelNumber: number
+    requiredExp: number
+    levelType: string
+  }
+}
+
+type UserPokemonBasic = UserPokemonType
 
 @Injectable()
 export class UserPokemonRepo {
@@ -17,8 +50,8 @@ export class UserPokemonRepo {
     data
   }: {
     userId: number
-    data: CreateUserPokemonBodyType
-  }): Promise<any> {
+    data: CreateUserPokemonBodyType & { levelId?: number }
+  }): Promise<UserPokemonBasic> {
     return this.prismaService.userPokemon.create({
       data: {
         ...data,
@@ -29,7 +62,13 @@ export class UserPokemonRepo {
     })
   }
 
-  update({ id, data }: { id: number; data: UpdateUserPokemonBodyType }): Promise<any> {
+  update({
+    id,
+    data
+  }: {
+    id: number
+    data: UpdateUserPokemonBodyType
+  }): Promise<UserPokemonBasic> {
     return this.prismaService.userPokemon.update({
       where: {
         id,
@@ -39,7 +78,7 @@ export class UserPokemonRepo {
     })
   }
 
-  delete(id: number, isHard?: boolean): Promise<any> {
+  delete(id: number, isHard?: boolean): Promise<UserPokemonBasic> {
     return isHard
       ? this.prismaService.userPokemon.delete({
           where: { id }
@@ -119,7 +158,7 @@ export class UserPokemonRepo {
     }
   }
 
-  findById(id: number): Promise<any> {
+  findById(id: number): Promise<UserPokemonWithRelations | null> {
     return this.prismaService.userPokemon.findUnique({
       where: {
         id,
@@ -140,6 +179,7 @@ export class UserPokemonRepo {
             nameJp: true,
             nameTranslations: true,
             description: true,
+            conditionLevel: true,
             imageUrl: true,
             rarity: true,
             types: {
@@ -164,7 +204,10 @@ export class UserPokemonRepo {
     })
   }
 
-  findByUserAndPokemon(userId: number, pokemonId: number): Promise<any> {
+  findByUserAndPokemon(
+    userId: number,
+    pokemonId: number
+  ): Promise<UserPokemonBasic | null> {
     return this.prismaService.userPokemon.findFirst({
       where: {
         userId,
@@ -174,7 +217,10 @@ export class UserPokemonRepo {
     })
   }
 
-  findByUserAndNickname(userId: number, nickname: string): Promise<any> {
+  findByUserAndNickname(
+    userId: number,
+    nickname: string
+  ): Promise<UserPokemonBasic | null> {
     return this.prismaService.userPokemon.findFirst({
       where: {
         userId,
@@ -225,7 +271,7 @@ export class UserPokemonRepo {
   }
 
   // Add EXP to UserPokemon
-  async addExp(id: number, expAmount: number): Promise<any> {
+  async addExp(id: number, expAmount: number): Promise<UserPokemonBasic> {
     return this.prismaService.userPokemon.update({
       where: {
         id,
@@ -240,7 +286,7 @@ export class UserPokemonRepo {
   }
 
   // Level up Pokemon
-  async levelUp(id: number, newLevelId: number): Promise<any> {
+  async levelUp(id: number, newLevelId: number): Promise<UserPokemonBasic> {
     return this.prismaService.userPokemon.update({
       where: {
         id,

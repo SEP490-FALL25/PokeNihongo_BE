@@ -15,7 +15,7 @@ export const UserPokemonSchema = z.object({
   levelId: z.number(),
   nickname: z.string().max(50, 'Nickname không được quá 50 ký tự').nullable(),
   exp: z.number().min(0, 'EXP không được âm').default(0),
-
+  isEvolved: z.boolean().default(false),
   createdAt: z.date(),
   updatedAt: z.date(),
   deletedAt: z.date().nullable()
@@ -25,13 +25,7 @@ export const UserPokemonSchema = z.object({
 export const CreateUserPokemonBodySchema = z
   .object({
     pokemonId: z.number().min(1, 'Pokemon ID không hợp lệ'),
-    levelId: z.number().min(1, 'Level ID không hợp lệ').optional(),
-    nickname: z
-      .string()
-      .max(50, 'Nickname không được quá 50 ký tự')
-      .nullable()
-      .optional(),
-    exp: z.number().min(0, 'EXP không được âm').default(0).optional()
+    nickname: z.string().max(50, 'Nickname không được quá 50 ký tự').nullable().optional()
   })
   .strict()
 
@@ -44,13 +38,9 @@ export const CreateUserPokemonResSchema = z.object({
 // Update Schema
 export const UpdateUserPokemonBodySchema = z
   .object({
-    levelId: z.number().min(1, 'Level ID không hợp lệ').optional(),
-    nickname: z
-      .string()
-      .max(50, 'Nickname không được quá 50 ký tự')
-      .nullable()
-      .optional(),
-    exp: z.number().min(0, 'EXP không được âm').optional()
+    isEvolved: z.boolean().optional(),
+    exp: z.number().min(0, 'EXP không được âm').optional(),
+    nickname: z.string().max(50, 'Nickname không được quá 50 ký tự').nullable().optional()
   })
   .strict()
 
@@ -108,9 +98,26 @@ export const GetUserPokemonDetailResSchema = z.object({
 // Add EXP Schema
 export const AddExpBodySchema = z
   .object({
-    expAmount: z.number().min(1, 'EXP amount phải lớn hơn 0')
+    expAmount: z.number().min(0, 'EXP amount phải lớn hơn hoặc bằng 0')
   })
   .strict()
+
+// Evolution Schema
+export const EvolvePokemonBodySchema = z
+  .object({
+    nextPokemonId: z.number().min(1, 'Next Pokemon ID không hợp lệ')
+  })
+  .strict()
+
+export const EvolvePokemonResSchema = z.object({
+  statusCode: z.number(),
+  data: z.object({
+    newUserPokemon: UserPokemonSchema,
+    transferredExp: z.number(),
+    message: z.string()
+  }),
+  message: z.string()
+})
 
 // Type exports
 export type UserPokemonType = z.infer<typeof UserPokemonSchema>
@@ -119,6 +126,8 @@ export type UpdateUserPokemonBodyType = z.infer<typeof UpdateUserPokemonBodySche
 export type GetUserPokemonParamsType = z.infer<typeof GetUserPokemonParamsSchema>
 export type GetUserPokemonDetailResType = z.infer<typeof GetUserPokemonDetailResSchema>
 export type AddExpBodyType = z.infer<typeof AddExpBodySchema>
+export type EvolvePokemonBodyType = z.infer<typeof EvolvePokemonBodySchema>
+export type EvolvePokemonResType = z.infer<typeof EvolvePokemonResSchema>
 
 // Field for query
 export type UserPokemonFieldType = keyof z.infer<typeof UserPokemonSchema>

@@ -8,6 +8,7 @@ import {
   AssignPokemonTypesBodyDTO,
   CreatePokemonBodyDTO,
   CreatePokemonResDTO,
+  GetEvolutionOptionsResDTO,
   GetPokemonDetailResDTO,
   GetPokemonParamsDTO,
   GetPokemonWeaknessResDTO,
@@ -50,6 +51,13 @@ export class PokemonController {
   @ZodSerializerDto(GetPokemonWeaknessResDTO)
   getWeaknesses(@Param() params: GetPokemonParamsDTO) {
     return this.pokemonService.calculatePokemonWeaknesses(params.pokemonId)
+  }
+
+  @Get(':pokemonId/evolution-options')
+  @IsPublic()
+  @ZodSerializerDto(GetEvolutionOptionsResDTO)
+  getEvolutionOptions(@Param() params: GetPokemonParamsDTO) {
+    return this.pokemonService.getEvolutionOptions(params.pokemonId)
   }
 
   @Get(':pokemonId')

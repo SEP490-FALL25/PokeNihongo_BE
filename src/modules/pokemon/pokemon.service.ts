@@ -572,4 +572,30 @@ export class PokemonService {
         effectiveness_multiplier: w.multiplier
       }))
   }
+
+  /**
+   * Get available evolution options for a Pokemon
+   */
+  async getEvolutionOptions(pokemonId: number) {
+    try {
+      const pokemon = await this.pokemonRepo.findById(pokemonId)
+      if (!pokemon) {
+        throw PokemonNotFoundException
+      }
+
+      // Get evolution options (nextPokemons)
+      const evolutionOptions = pokemon.nextPokemons || []
+
+      return {
+        statusCode: 200,
+        data: evolutionOptions,
+        message: 'Lấy danh sách tiến hóa thành công'
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw PokemonNotFoundException
+      }
+      throw error
+    }
+  }
 }

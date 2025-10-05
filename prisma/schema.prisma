@@ -392,8 +392,9 @@ model UserPokemon {
   level   Level @relation(fields: [levelId], references: [id], onDelete: NoAction)
 
   // Thông tin cá nhân hóa
-  nickname String? // tên user đặt cho con này
-  exp      Int     @default(0) // exp hiện tại trên con này
+  nickname  String? // tên user đặt cho con này
+  exp       Int     @default(0) // exp hiện tại trên con này
+  isEvolved Boolean @default(false) // đã tiến hóa chưa
 
   // Timestamps
   deletedAt DateTime?
