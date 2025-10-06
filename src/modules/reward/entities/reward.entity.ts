@@ -1,6 +1,6 @@
-import { REWARD_MESSAGE } from '@/common/constants/message'
 import { RewardTarget, RewardType } from '@/common/constants/reward.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
+import { RewardMessage } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
@@ -9,7 +9,7 @@ patchNestJsSwagger()
 
 export const RewardSchema = z.object({
   id: z.number(),
-  name: z.string().nonempty(REWARD_MESSAGE.NAME_REQUIRED),
+  name: z.string().nonempty(RewardMessage.NAME_REQUIRED),
   rewardType: z.enum([
     RewardType.LESSON,
     RewardType.DAILY_REQUEST,
@@ -52,7 +52,7 @@ export const UpdateRewardResSchema = CreateRewardResSchema
 
 export const GetRewardParamsSchema = z
   .object({
-    rewardId: checkIdSchema(REWARD_MESSAGE.INVALID_DATA)
+    rewardId: checkIdSchema(RewardMessage.INVALID_DATA)
   })
   .strict()
 

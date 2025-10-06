@@ -1,9 +1,10 @@
-import { POKEMON_MESSAGE } from '@/common/constants/message'
 import { RarityPokemon } from '@/common/constants/pokemon.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
+import { PokemonMessage } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { InvalidFormatException, NeedAtLeastOneTypeException } from '../dto/pokemon.error'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -11,13 +12,13 @@ patchNestJsSwagger()
 // Base Pokemon Schema
 export const PokemonSchema = z.object({
   id: z.number(),
-  pokedex_number: z.number().min(1, 'Pokedex number phải lớn hơn 0'),
-  nameJp: z.string().min(1, 'Tên tiếng Nhật không được để trống'),
+  pokedex_number: z.number().min(1, PokemonMessage.POKEDEX_INVALID),
+  nameJp: z.string().min(1, PokemonMessage.NAME_JP_INVALID),
   nameTranslations: z
     .any()
     .refine(
       (data) => data && typeof data === 'object' && data.en && data.ja && data.vi,
-      'Name translations phải có đầy đủ en, ja, vi'
+      PokemonMessage.NAME_TRANSLATIONS_INVALID
     ),
   description: z.string().nullable(),
   conditionLevel: z.number().min(1).nullable(),
@@ -59,10 +60,7 @@ export const CreatePokemonBodySchema = PokemonSchema.pick({
     conditionLevel: PokemonSchema.shape.conditionLevel.optional(),
     imageUrl: PokemonSchema.shape.imageUrl.optional(),
     // Thêm field cho elemental types
-    typeIds: z
-      .array(z.number())
-      .min(1, 'Pokemon phải có ít nhất 1 type')
-      .max(2, 'Pokemon tối đa 2 types')
+    typeIds: z.array(z.number()).min(1, PokemonMessage.NEED_AT_LEAST_ONE_TYPE)
   })
   .strict()
   .refine(
@@ -74,7 +72,7 @@ export const CreatePokemonBodySchema = PokemonSchema.pick({
       return true
     },
     {
-      message: 'Nếu có evolution thì phải có condition level',
+      message: PokemonMessage.NEED_EVOLUTION,
       path: ['conditionLevel']
     }
   )
@@ -83,16 +81,16 @@ export const CreatePokemonBodySchema = PokemonSchema.pick({
 export const CreatePokemonFormDataSchema = z
   .object({
     pokedex_number: z.string().transform((val) => parseInt(val, 10)),
-    nameJp: z.string().min(1, 'Tên tiếng Nhật không được để trống'),
+    nameJp: z.string().min(1, PokemonMessage.NAME_JP_REQUIRED),
     nameTranslations: z.string().transform((val) => {
       try {
         const parsed = JSON.parse(val)
         if (parsed && typeof parsed === 'object' && parsed.en && parsed.ja && parsed.vi) {
           return parsed
         }
-        throw new Error('Invalid format')
+        throw new InvalidFormatException()
       } catch {
-        throw new Error('Name translations phải có đầy đủ en, ja, vi')
+        throw new InvalidFormatException()
       }
     }),
     description: z
@@ -112,9 +110,9 @@ export const CreatePokemonFormDataSchema = z
           if (Array.isArray(parsed) && parsed.every((id) => typeof id === 'number')) {
             return parsed
           }
-          throw new Error('Invalid format')
+          throw new InvalidFormatException()
         } catch {
-          throw new Error('nextPokemons phải là array số nguyên')
+          throw new InvalidFormatException()
         }
       })
       .optional(),
@@ -137,13 +135,12 @@ export const CreatePokemonFormDataSchema = z
       try {
         const parsed = JSON.parse(val)
         if (Array.isArray(parsed) && parsed.every((id) => typeof id === 'number')) {
-          if (parsed.length < 1) throw new Error('Pokemon phải có ít nhất 1 type')
-          if (parsed.length > 2) throw new Error('Pokemon tối đa 2 types')
+          if (parsed.length < 1) throw new NeedAtLeastOneTypeException()
           return parsed
         }
-        throw new Error('Invalid format')
+        throw new InvalidFormatException()
       } catch {
-        throw new Error('typeIds phải là array số nguyên với 1-2 phần tử')
+        throw new InvalidFormatException()
       }
     })
   })
@@ -157,7 +154,7 @@ export const CreatePokemonFormDataSchema = z
       return true
     },
     {
-      message: 'Nếu có evolution thì phải có condition level',
+      message: PokemonMessage.NEED_EVOLUTION,
       path: ['conditionLevel']
     }
   )
@@ -182,11 +179,7 @@ export const UpdatePokemonBodySchema = PokemonSchema.pick({
 })
   .extend({
     // Thêm field cho elemental types
-    typeIds: z
-      .array(z.number())
-      .min(1, 'Pokemon phải có ít nhất 1 type')
-      .max(2, 'Pokemon tối đa 2 types')
-      .optional()
+    typeIds: z.array(z.number()).min(1, PokemonMessage.NEED_AT_LEAST_ONE_TYPE).optional()
   })
   .partial()
   .strict()
@@ -198,7 +191,7 @@ export const UpdatePokemonBodySchema = PokemonSchema.pick({
       return true
     },
     {
-      message: 'Nếu có evolution thì phải có condition level',
+      message: PokemonMessage.NEED_EVOLUTION,
       path: ['conditionLevel']
     }
   )
@@ -210,7 +203,7 @@ export const UpdatePokemonFormDataSchema = z
       .string()
       .transform((val) => parseInt(val, 10))
       .optional(),
-    nameJp: z.string().min(1, 'Tên tiếng Nhật không được để trống').optional(),
+    nameJp: z.string().min(1, PokemonMessage.NAME_JP_REQUIRED).optional(),
     nameTranslations: z
       .string()
       .transform((val) => {
@@ -225,9 +218,9 @@ export const UpdatePokemonFormDataSchema = z
           ) {
             return parsed
           }
-          throw new Error('Invalid format')
+          throw new InvalidFormatException()
         } catch {
-          throw new Error('Name translations phải có đầy đủ en, ja, vi')
+          throw new InvalidFormatException()
         }
       })
       .optional(),
@@ -248,9 +241,9 @@ export const UpdatePokemonFormDataSchema = z
           if (Array.isArray(parsed) && parsed.every((id) => typeof id === 'number')) {
             return parsed
           }
-          throw new Error('Invalid format')
+          throw new InvalidFormatException()
         } catch {
-          throw new Error('nextPokemons phải là array số nguyên')
+          throw new InvalidFormatException()
         }
       })
       .optional(),
@@ -275,13 +268,12 @@ export const UpdatePokemonFormDataSchema = z
         try {
           const parsed = JSON.parse(val)
           if (Array.isArray(parsed) && parsed.every((id) => typeof id === 'number')) {
-            if (parsed.length < 1) throw new Error('Pokemon phải có ít nhất 1 type')
-            if (parsed.length > 2) throw new Error('Pokemon tối đa 2 types')
+            if (parsed.length < 1) throw new NeedAtLeastOneTypeException()
             return parsed
           }
-          throw new Error('Invalid format')
+          throw new InvalidFormatException()
         } catch {
-          throw new Error('typeIds phải là array số nguyên với 1-2 phần tử')
+          throw new InvalidFormatException()
         }
       })
       .optional()
@@ -296,7 +288,7 @@ export const UpdatePokemonFormDataSchema = z
       return true
     },
     {
-      message: 'Nếu có evolution thì phải có condition level',
+      message: PokemonMessage.NEED_EVOLUTION,
       path: ['conditionLevel']
     }
   )
@@ -305,7 +297,7 @@ export const UpdatePokemonResSchema = CreatePokemonResSchema
 
 // Query Schema
 export const GetPokemonParamsSchema = z.object({
-  pokemonId: checkIdSchema(POKEMON_MESSAGE.INVALID_ID)
+  pokemonId: checkIdSchema(PokemonMessage.INVALID_ID)
 })
 
 export const GetPokemonDetailResSchema = z.object({
@@ -397,10 +389,7 @@ export const GetPokemonWeaknessResSchema = z.object({
 // Assign Types Schema
 export const AssignPokemonTypesBodySchema = z
   .object({
-    typeIds: z
-      .array(z.number().min(1))
-      .min(1, 'Phải có ít nhất 1 type')
-      .max(2, 'Tối đa 2 types')
+    typeIds: z.array(z.number().min(1)).min(1, PokemonMessage.NEED_AT_LEAST_ONE_TYPE)
   })
   .strict()
 

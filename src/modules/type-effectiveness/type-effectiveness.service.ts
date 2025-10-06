@@ -1,4 +1,5 @@
-import { TYPE_EFFECTIVENESS_MESSAGE } from '@/common/constants/message'
+import { I18nService } from '@/i18n/i18n.service'
+import { TypeEffectivenessMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -19,37 +20,41 @@ import { TypeEffectivenessRepo } from './type-effectiveness.repo'
 export class TypeEffectivenessService {
   constructor(
     private typeEffectivenessRepo: TypeEffectivenessRepo,
-    private prismaService: PrismaService
+    private prismaService: PrismaService,
+    private readonly i18nService: I18nService
   ) {}
 
-  async list(pagination: PaginationQueryType) {
+  async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.typeEffectivenessRepo.list(pagination)
     return {
       statusCode: HttpStatus.OK,
       data,
-      message: TYPE_EFFECTIVENESS_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(TypeEffectivenessMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number) {
+  async findById(id: number, lang: string = 'vi') {
     const typeEffectiveness = await this.typeEffectivenessRepo.findById(id)
     if (!typeEffectiveness) {
-      throw NotFoundRecordException
+      throw new NotFoundRecordException()
     }
     return {
       statusCode: HttpStatus.OK,
       data: typeEffectiveness,
-      message: TYPE_EFFECTIVENESS_MESSAGE.GET_SUCCESS
+      message: this.i18nService.translate(TypeEffectivenessMessage.GET_SUCCESS, lang)
     }
   }
 
-  async create({
-    data,
-    createdById
-  }: {
-    data: CreateTypeEffectivenessBodyType
-    createdById: number
-  }) {
+  async create(
+    {
+      data,
+      createdById
+    }: {
+      data: CreateTypeEffectivenessBodyType
+      createdById: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       // Kiểm tra xem đã tồn tại effectiveness cho cặp attacker-defender này chưa
       const existingTypeEffectiveness =
@@ -58,7 +63,7 @@ export class TypeEffectivenessService {
           data.defenderId
         )
       if (existingTypeEffectiveness) {
-        throw TypeEffectivenessAlreadyExistsException
+        throw new TypeEffectivenessAlreadyExistsException()
       }
 
       const result = await this.typeEffectivenessRepo.create({
@@ -68,35 +73,38 @@ export class TypeEffectivenessService {
       return {
         statusCode: HttpStatus.CREATED,
         data: result,
-        message: TYPE_EFFECTIVENESS_MESSAGE.CREATE_SUCCESS
+        message: this.i18nService.translate(TypeEffectivenessMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
-        throw TypeEffectivenessAlreadyExistsException
+        throw new TypeEffectivenessAlreadyExistsException()
       }
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       if (isForeignKeyConstraintPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async update({
-    id,
-    data,
-    updatedById
-  }: {
-    id: number
-    data: UpdateTypeEffectivenessBodyType
-    updatedById: number
-  }) {
+  async update(
+    {
+      id,
+      data,
+      updatedById
+    }: {
+      id: number
+      data: UpdateTypeEffectivenessBodyType
+      updatedById: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       const existTypeEffectiveness = await this.typeEffectivenessRepo.findById(id)
       if (!existTypeEffectiveness) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
 
       // Nếu update attackerId hoặc defenderId, kiểm tra xem có trùng với type effectiveness khác không
@@ -110,7 +118,7 @@ export class TypeEffectivenessService {
         const existingTypeEffectiveness =
           await this.typeEffectivenessRepo.findByAttackerDefender(attackerId, defenderId)
         if (existingTypeEffectiveness && existingTypeEffectiveness.id !== id) {
-          throw TypeEffectivenessAlreadyExistsException
+          throw new TypeEffectivenessAlreadyExistsException()
         }
       }
 
@@ -122,79 +130,82 @@ export class TypeEffectivenessService {
       return {
         statusCode: HttpStatus.OK,
         data: typeEffectiveness,
-        message: TYPE_EFFECTIVENESS_MESSAGE.UPDATE_SUCCESS
+        message: this.i18nService.translate(TypeEffectivenessMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
-        throw TypeEffectivenessAlreadyExistsException
+        throw new TypeEffectivenessAlreadyExistsException()
       }
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async delete({ id, deletedById }: { id: number; deletedById: number }) {
+  async delete(
+    { id, deletedById }: { id: number; deletedById: number },
+    lang: string = 'vi'
+  ) {
     try {
       const existTypeEffectiveness = await this.typeEffectivenessRepo.findById(id)
       if (!existTypeEffectiveness) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
 
       await this.typeEffectivenessRepo.delete({ id, deletedById })
       return {
         statusCode: HttpStatus.OK,
-        message: TYPE_EFFECTIVENESS_MESSAGE.DELETE_SUCCESS
+        message: this.i18nService.translate(TypeEffectivenessMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       if (isForeignKeyConstraintPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async getAllActiveEffectiveness() {
+  async getAllActiveEffectiveness(lang: string = 'vi') {
     const data = await this.typeEffectivenessRepo.getAllActiveEffectiveness()
     return {
       statusCode: HttpStatus.OK,
       data,
-      message: TYPE_EFFECTIVENESS_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(TypeEffectivenessMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async getEffectivenessMatrix() {
+  async getEffectivenessMatrix(lang: string = 'vi') {
     const data = await this.typeEffectivenessRepo.getEffectivenessMatrix()
     return {
       statusCode: HttpStatus.OK,
       data,
-      message: TYPE_EFFECTIVENESS_MESSAGE.GET_SUCCESS
+      message: this.i18nService.translate(TypeEffectivenessMessage.GET_SUCCESS, lang)
     }
   }
 
-  async getWeaknessesForDefender(defenderId: number) {
+  async getWeaknessesForDefender(defenderId: number, lang: string = 'vi') {
     const data = await this.typeEffectivenessRepo.getWeaknessesForDefender(defenderId)
     return {
       statusCode: HttpStatus.OK,
       data,
-      message: TYPE_EFFECTIVENESS_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(TypeEffectivenessMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async getResistancesForDefender(defenderId: number) {
+  async getResistancesForDefender(defenderId: number, lang: string = 'vi') {
     const data = await this.typeEffectivenessRepo.getResistancesForDefender(defenderId)
     return {
       statusCode: HttpStatus.OK,
       data,
-      message: TYPE_EFFECTIVENESS_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(TypeEffectivenessMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async calculateMultiTypeEffectiveness(defenderTypeIds: number[]) {
+  async calculateMultiTypeEffectiveness(defenderTypeIds: number[], lang: string = 'vi') {
     // Tính toán weakness/resistance cho Pokémon có nhiều type
     const matrix = await this.typeEffectivenessRepo.getEffectivenessMatrix()
     const result = {
@@ -238,7 +249,7 @@ export class TypeEffectivenessService {
     return {
       statusCode: HttpStatus.OK,
       data: result,
-      message: TYPE_EFFECTIVENESS_MESSAGE.GET_SUCCESS
+      message: this.i18nService.translate(TypeEffectivenessMessage.GET_SUCCESS, lang)
     }
   }
 }

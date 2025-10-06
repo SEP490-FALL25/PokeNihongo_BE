@@ -1,6 +1,8 @@
+import { I18nHttpExceptionFilter } from '@/common/filters/i18n-http-exception.filter'
+import { RequestContextMiddleware } from '@/common/middleware/request-context.middleware'
 import CustomZodValidationPipe from '@/common/pipes/custom-zod-validation.pipe'
-import { HttpExceptionFilter } from '@/shared/filters/http-exception.filter'
-import { Module } from '@nestjs/common'
+import { I18nModule } from '@/i18n/i18n.module'
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { ScheduleModule } from '@nestjs/schedule'
@@ -15,18 +17,18 @@ import { RoleModule } from './modules/role/role.module'
 import { TranslationModule } from './modules/translation/translation.module'
 import { VocabularyModule } from './modules/vocabulary/vocabulary.module'
 
+import { ElementalTypeModule } from './modules/elemental-type/elemental-type.module'
 import { KanjiModule } from './modules/kanji/kanji.module'
 import { LanguagesModule } from './modules/languages/languages.module'
 import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
+import { PokemonModule } from './modules/pokemon/pokemon.module'
 import { RewardModule } from './modules/reward/reward.module'
+import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module'
+import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
+import { UserModule } from './modules/user/user.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
-import { ElementalTypeModule } from './modules/elemental-type/elemental-type.module';
-import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module';
-import { PokemonModule } from './modules/pokemon/pokemon.module';
-import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module';
-import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -34,6 +36,7 @@ import { UserModule } from './modules/user/user.module';
       isGlobal: true // Cho phép dùng process.env ở mọi nơi
     }),
     ScheduleModule.forRoot(),
+    I18nModule, // Add I18n module
 
     MailModule,
     UploadModule,
@@ -67,8 +70,12 @@ import { UserModule } from './modules/user/user.module';
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     {
       provide: APP_FILTER,
-      useClass: HttpExceptionFilter
+      useClass: I18nHttpExceptionFilter
     }
   ]
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestContextMiddleware).forRoutes('*')
+  }
+}

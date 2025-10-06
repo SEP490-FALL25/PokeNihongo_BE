@@ -1,5 +1,5 @@
-import { ELEMENTAL_TYPE_MESSAGE } from '@/common/constants/message'
 import { checkIdSchema } from '@/common/utils/id.validation'
+import { ElementalTypeMessage } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
@@ -9,18 +9,18 @@ patchNestJsSwagger()
 
 // Schema cho display_name JSON
 const DisplayNameSchema = z.object({
-  en: z.string().min(1, 'English name is required'),
-  vi: z.string().min(1, 'Vietnamese name is required'),
-  ja: z.string().min(1, 'Japanese name is required')
+  en: z.string().min(1, ElementalTypeMessage.DISPLAY_NAME_REQUIRED),
+  vi: z.string().min(1, ElementalTypeMessage.DISPLAY_NAME_REQUIRED),
+  ja: z.string().min(1, ElementalTypeMessage.DISPLAY_NAME_REQUIRED)
 })
 
 export const ElementalTypeSchema = z.object({
   id: z.number(),
-  type_name: z.string().min(1, ELEMENTAL_TYPE_MESSAGE.TYPE_NAME_REQUIRED),
+  type_name: z.string().min(1, ElementalTypeMessage.TYPE_NAME_REQUIRED),
   display_name: DisplayNameSchema,
   color_hex: z
     .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, ELEMENTAL_TYPE_MESSAGE.INVALID_COLOR_HEX),
+    .regex(/^#[0-9A-Fa-f]{6}$/, ElementalTypeMessage.INVALID_COLOR_HEX),
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
   deletedById: z.number().nullable(),
@@ -47,7 +47,7 @@ export const UpdateElementalTypeResSchema = CreateElementalTypeResSchema
 
 export const GetElementalTypeParamsSchema = z
   .object({
-    elementId: checkIdSchema(ELEMENTAL_TYPE_MESSAGE.INVALID_DATA)
+    elementId: checkIdSchema(ElementalTypeMessage.INVALID_DATA)
   })
   .strict()
 

@@ -1,5 +1,6 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { IsPublic } from '@/common/decorators/auth.decorator'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { PaginationResponseSchema } from '@/shared/models/response.model'
@@ -22,31 +23,38 @@ export class ElementalTypeController {
   @Get()
   @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
-  list(@Query() query: PaginationQueryDTO) {
-    return this.elementalTypeService.list(query)
+  list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
+    return this.elementalTypeService.list(query, lang)
   }
 
   @Get('active')
   @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
-  getAllActiveTypes() {
-    return this.elementalTypeService.getAllActiveTypes()
+  getAllActiveTypes(@I18nLang() lang: string) {
+    return this.elementalTypeService.getAllActiveTypes(lang)
   }
 
   @Get(':elementId')
   @IsPublic()
   @ZodSerializerDto(GetElementalTypeDetailResDTO)
-  findById(@Param() params: GetElementalTypeParamsDTO) {
-    return this.elementalTypeService.findById(params.elementId)
+  findById(@Param() params: GetElementalTypeParamsDTO, @I18nLang() lang: string) {
+    return this.elementalTypeService.findById(params.elementId, lang)
   }
 
   @Post()
   @ZodSerializerDto(CreateElementalTypeResDTO)
-  create(@Body() body: CreateElementalTypeBodyDTO, @ActiveUser('userId') userId: number) {
-    return this.elementalTypeService.create({
-      data: body,
-      createdById: userId
-    })
+  create(
+    @Body() body: CreateElementalTypeBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.elementalTypeService.create(
+      {
+        data: body,
+        createdById: userId
+      },
+      lang
+    )
   }
 
   @Put(':elementId')
@@ -54,24 +62,32 @@ export class ElementalTypeController {
   update(
     @Body() body: UpdateElementalTypeBodyDTO,
     @Param() params: GetElementalTypeParamsDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.elementalTypeService.update({
-      data: body,
-      id: params.elementId,
-      updatedById: userId
-    })
+    return this.elementalTypeService.update(
+      {
+        data: body,
+        id: params.elementId,
+        updatedById: userId
+      },
+      lang
+    )
   }
 
   @Delete(':elementId')
   @ZodSerializerDto(MessageResDTO)
   delete(
     @Param() params: GetElementalTypeParamsDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.elementalTypeService.delete({
-      id: params.elementId,
-      deletedById: userId
-    })
+    return this.elementalTypeService.delete(
+      {
+        id: params.elementId,
+        deletedById: userId
+      },
+      lang
+    )
   }
 }

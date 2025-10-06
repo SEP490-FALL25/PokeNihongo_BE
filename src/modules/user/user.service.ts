@@ -1,5 +1,6 @@
 import { MailService } from '@/3rdService/mail/mail.service'
-import { USER_MESSAGE } from '@/common/constants/message'
+import { I18nService } from '@/i18n/i18n.service'
+import { UserMessage } from '@/i18n/message-keys'
 import { UserPokemonRepo } from '@/modules/user-pokemon/user-pokemon.repo'
 import { NotFoundRecordException } from '@/shared/error'
 import {
@@ -25,7 +26,8 @@ export class UserService {
   constructor(
     private userRepo: UserRepo,
     private mailService: MailService,
-    private userPokemonRepo: UserPokemonRepo
+    private userPokemonRepo: UserPokemonRepo,
+    private i18nService: I18nService
   ) {}
 
   /**
@@ -40,33 +42,36 @@ export class UserService {
     return password
   }
 
-  async list(pagination: PaginationQueryType) {
+  async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.userRepo.list(pagination)
     return {
       statusCode: 200,
       data,
-      message: USER_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(UserMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number) {
+  async findById(id: number, lang: string = 'vi') {
     const user = await this.userRepo.findById(id)
     if (!user) {
-      throw UserNotFoundException
+      throw new UserNotFoundException()
     }
     return {
       statusCode: 200,
       data: user,
-      message: USER_MESSAGE.GET_DETAIL_SUCCESS
+      message: this.i18nService.translate(UserMessage.GET_DETAIL_SUCCESS, lang)
     }
   }
 
-  async create({ data, createdById }: { data: CreateUserBodyType; createdById: number }) {
+  async create(
+    { data, createdById }: { data: CreateUserBodyType; createdById: number },
+    lang: string = 'vi'
+  ) {
     try {
       // Check if email already exists
       const existingUser = await this.userRepo.findByEmail(data.email)
       if (existingUser) {
-        throw EmailAlreadyExistsException
+        throw new EmailAlreadyExistsException()
       }
 
       // Generate random password
@@ -105,32 +110,35 @@ export class UserService {
       return {
         statusCode: 201,
         data: userWithoutPassword,
-        message: USER_MESSAGE.CREATE_SUCCESS
+        message: this.i18nService.translate(UserMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
-        throw EmailAlreadyExistsException
+        throw new EmailAlreadyExistsException()
       }
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async update({
-    id,
-    data,
-    updatedById
-  }: {
-    id: number
-    data: UpdateUserBodyType
-    updatedById: number
-  }) {
+  async update(
+    {
+      id,
+      data,
+      updatedById
+    }: {
+      id: number
+      data: UpdateUserBodyType
+      updatedById: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       const existUser = await this.userRepo.findById(id)
       if (!existUser) {
-        throw UserNotFoundException
+        throw new UserNotFoundException()
       }
 
       let updateData = { ...data }
@@ -163,27 +171,30 @@ export class UserService {
       return {
         statusCode: 200,
         data: userWithoutPassword,
-        message: USER_MESSAGE.UPDATE_SUCCESS
+        message: this.i18nService.translate(UserMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw UserNotFoundException
+        throw new UserNotFoundException()
       }
       if (isUniqueConstraintPrismaError(error)) {
-        throw EmailAlreadyExistsException
+        throw new EmailAlreadyExistsException()
       }
       if (isForeignKeyConstraintPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async delete({ id, deletedById }: { id: number; deletedById: number }) {
+  async delete(
+    { id, deletedById }: { id: number; deletedById: number },
+    lang: string = 'vi'
+  ) {
     try {
       const existUser = await this.userRepo.findById(id)
       if (!existUser) {
-        throw UserNotFoundException
+        throw new UserNotFoundException()
       }
 
       await this.userRepo.delete({
@@ -194,22 +205,26 @@ export class UserService {
       return {
         statusCode: 200,
         data: null,
-        message: USER_MESSAGE.DELETE_SUCCESS
+        message: this.i18nService.translate(UserMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw UserNotFoundException
+        throw new UserNotFoundException()
       }
       throw error
     }
   }
 
-  async setMainPokemon(userId: number, data: SetMainPokemonBodyType) {
+  async setMainPokemon(
+    userId: number,
+    data: SetMainPokemonBodyType,
+    lang: string = 'vi'
+  ) {
     try {
       // Check if user exists
       const user = await this.userRepo.findById(userId)
       if (!user) {
-        throw UserNotFoundException
+        throw new UserNotFoundException()
       }
 
       // Check if user owns this Pokemon
@@ -218,7 +233,7 @@ export class UserService {
         data.pokemonId
       )
       if (!userPokemon) {
-        throw UserPokemonNotFoundException
+        throw new UserPokemonNotFoundException()
       }
 
       // Unset main for all user's pokemon first
@@ -233,11 +248,11 @@ export class UserService {
       return {
         statusCode: HttpStatus.OK,
         data: null,
-        message: USER_MESSAGE.SET_MAIN_POKEMON_SUCCESS
+        message: this.i18nService.translate(UserMessage.SET_MAIN_POKEMON_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw UserNotFoundException
+        throw new UserNotFoundException()
       }
       throw error
     }

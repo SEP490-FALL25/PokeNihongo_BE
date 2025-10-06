@@ -1,5 +1,5 @@
-import { USER_POKEMON_MESSAGE } from '@/common/constants/message'
 import { checkIdSchema } from '@/common/utils/id.validation'
+import { UserPokemonMessage } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
@@ -13,8 +13,8 @@ export const UserPokemonSchema = z.object({
   userId: z.number(),
   pokemonId: z.number(),
   levelId: z.number(),
-  nickname: z.string().max(50, 'Nickname không được quá 50 ký tự').nullable(),
-  exp: z.number().min(0, 'EXP không được âm').default(0),
+  nickname: z.string().max(50, UserPokemonMessage.INVALID_NICKNAME).nullable(),
+  exp: z.number().min(0, UserPokemonMessage.INVALID_EXP).default(0),
   isEvolved: z.boolean().default(false),
   isMain: z.boolean().default(false),
   createdAt: z.date(),
@@ -25,10 +25,10 @@ export const UserPokemonSchema = z.object({
 // Create Schema
 export const CreateUserPokemonBodySchema = z
   .object({
-    pokemonId: z.number().min(1, 'Pokemon ID không hợp lệ'),
+    pokemonId: z.number().min(1, UserPokemonMessage.INVALID_ID),
     nickname: z
       .string()
-      .max(50, 'Nickname không được quá 50 ký tự')
+      .max(50, UserPokemonMessage.INVALID_NICKNAME)
       .nullable()
       .optional(),
     isMain: z.boolean().optional()
@@ -45,10 +45,10 @@ export const CreateUserPokemonResSchema = z.object({
 export const UpdateUserPokemonBodySchema = z
   .object({
     isEvolved: z.boolean().optional(),
-    exp: z.number().min(0, 'EXP không được âm').optional(),
+    exp: z.number().min(0, UserPokemonMessage.INVALID_EXP).optional(),
     nickname: z
       .string()
-      .max(50, 'Nickname không được quá 50 ký tự')
+      .max(50, UserPokemonMessage.INVALID_NICKNAME)
       .nullable()
       .optional(),
     isMain: z.boolean().optional()
@@ -59,7 +59,7 @@ export const UpdateUserPokemonResSchema = CreateUserPokemonResSchema
 
 // Query Schema
 export const GetUserPokemonParamsSchema = z.object({
-  userPokemonId: checkIdSchema(USER_POKEMON_MESSAGE.INVALID_ID)
+  userPokemonId: checkIdSchema(UserPokemonMessage.INVALID_ID)
 })
 
 export const GetUserPokemonDetailResSchema = z.object({
@@ -109,14 +109,14 @@ export const GetUserPokemonDetailResSchema = z.object({
 // Add EXP Schema
 export const AddExpBodySchema = z
   .object({
-    expAmount: z.number().min(0, 'EXP amount phải lớn hơn hoặc bằng 0')
+    expAmount: z.number().min(0, UserPokemonMessage.INVALID_EXP)
   })
   .strict()
 
 // Evolution Schema
 export const EvolvePokemonBodySchema = z
   .object({
-    nextPokemonId: z.number().min(1, 'Next Pokemon ID không hợp lệ')
+    nextPokemonId: z.number().min(1, UserPokemonMessage.INVALID_ID)
   })
   .strict()
 

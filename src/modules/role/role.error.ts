@@ -1,12 +1,20 @@
 import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common'
+import { RoleMessage } from 'src/i18n/message-keys'
 
-export const RoleAlreadyExistsException = new UnprocessableEntityException([
-  {
-    message: 'Error.RoleAlreadyExists',
-    path: 'name'
+export class RoleAlreadyExistsException extends UnprocessableEntityException {
+  constructor() {
+    super({
+      message: 'Role already exists',
+      errorKey: RoleMessage.ALREADY_EXISTS
+    })
   }
-])
+}
 
-export const ProhibitedActionOnBaseRoleException = new ForbiddenException(
-  'Error.ProhibitedActionOnBaseRole'
-)
+export class ProhibitedActionOnBaseRoleException extends ForbiddenException {
+  constructor() {
+    super({
+      message: 'Cannot perform this action on base role',
+      errorKey: RoleMessage.PROHIBITED_ACTION_ON_BASE_ROLE
+    })
+  }
+}

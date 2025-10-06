@@ -6,7 +6,7 @@ import { google } from 'googleapis'
 import { AuthService } from 'src/modules/auth/auth.service'
 import { HashingService } from 'src/shared/services/hashing.service'
 import { v4 as uuidv4 } from 'uuid'
-import { GoogleUserInfoError } from './dto/auth.error'
+import { GoogleUserInfoException } from './dto/auth.error'
 import { GoogleAuthStateType } from './entities/auth.entities'
 @Injectable()
 export class GoogleService {
@@ -66,7 +66,7 @@ export class GoogleService {
       })
       const { data } = await oauth2.userinfo.get()
       if (!data.email) {
-        throw GoogleUserInfoError
+        throw new GoogleUserInfoException()
       }
 
       let user = await this.authRepository.findUniqueUserIncludeRole({
