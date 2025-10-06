@@ -16,6 +16,7 @@ export const UserPokemonSchema = z.object({
   nickname: z.string().max(50, 'Nickname không được quá 50 ký tự').nullable(),
   exp: z.number().min(0, 'EXP không được âm').default(0),
   isEvolved: z.boolean().default(false),
+  isMain: z.boolean().default(false),
   createdAt: z.date(),
   updatedAt: z.date(),
   deletedAt: z.date().nullable()
@@ -25,7 +26,12 @@ export const UserPokemonSchema = z.object({
 export const CreateUserPokemonBodySchema = z
   .object({
     pokemonId: z.number().min(1, 'Pokemon ID không hợp lệ'),
-    nickname: z.string().max(50, 'Nickname không được quá 50 ký tự').nullable().optional()
+    nickname: z
+      .string()
+      .max(50, 'Nickname không được quá 50 ký tự')
+      .nullable()
+      .optional(),
+    isMain: z.boolean().optional()
   })
   .strict()
 
@@ -40,7 +46,12 @@ export const UpdateUserPokemonBodySchema = z
   .object({
     isEvolved: z.boolean().optional(),
     exp: z.number().min(0, 'EXP không được âm').optional(),
-    nickname: z.string().max(50, 'Nickname không được quá 50 ký tự').nullable().optional()
+    nickname: z
+      .string()
+      .max(50, 'Nickname không được quá 50 ký tự')
+      .nullable()
+      .optional(),
+    isMain: z.boolean().optional()
   })
   .strict()
 

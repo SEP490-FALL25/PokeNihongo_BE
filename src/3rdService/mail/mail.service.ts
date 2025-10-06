@@ -63,7 +63,6 @@ export class MailService {
     try {
       const storedOtp = await this.redisClient.get(email)
       if (storedOtp === otp) {
-
         // Xóa OTP sau khi xác thực thành công
         await this.redisClient.del(email)
         this.logger.log(`OTP verified and deleted for ${email}`)
@@ -218,5 +217,24 @@ export class MailService {
       supportEmail: 'support@photogo.id.vn'
     }
     await this.sendMail(email, subject, 'subscription-success-vendor', context)
+  }
+
+  async sendEmailPasswordAccount(
+    to: string,
+    template: string,
+    content: string,
+    bodyContent: string,
+    email: string,
+    password: string
+  ): Promise<void> {
+    const subject = 'Tài khoản của bạn đã được tạo'
+    const context = {
+      content,
+      bodyContent,
+      email,
+      password,
+      supportEmail: 'support@pokenihongo.com'
+    }
+    await this.sendMail(to, subject, template, context)
   }
 }
