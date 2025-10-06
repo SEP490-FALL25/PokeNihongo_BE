@@ -1,5 +1,6 @@
 import { LevelTypeType } from '@/common/constants/level.constant'
-import { LEVEL_MESSAGE } from '@/common/constants/message'
+import { I18nService } from '@/i18n/i18n.service'
+import { LevelMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -17,34 +18,40 @@ import { LevelRepo } from './level.repo'
 
 @Injectable()
 export class LevelService {
-  constructor(private levelRepo: LevelRepo) {}
+  constructor(
+    private levelRepo: LevelRepo,
+    private readonly i18nService: I18nService
+  ) {}
 
-  async list(pagination: PaginationQueryType) {
+  async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.levelRepo.list(pagination)
     return {
       data,
-      message: LEVEL_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(LevelMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number) {
+  async findById(id: number, lang: string = 'vi') {
     const level = await this.levelRepo.findById(id)
     if (!level) {
-      throw NotFoundRecordException
+      throw new NotFoundRecordException()
     }
     return {
       data: level,
-      message: 'Lấy danh mục thành công'
+      message: this.i18nService.translate(LevelMessage.GET_SUCCESS, lang)
     }
   }
 
-  async create({
-    data,
-    createdById
-  }: {
-    data: CreateLevelBodyType
-    createdById: number
-  }) {
+  async create(
+    {
+      data,
+      createdById
+    }: {
+      data: CreateLevelBodyType
+      createdById: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       // Tạo level trước
       const result = await this.levelRepo.create({
@@ -57,32 +64,35 @@ export class LevelService {
 
       return {
         data: result,
-        message: LEVEL_MESSAGE.CREATE_SUCCESS
+        message: this.i18nService.translate(LevelMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
-        throw LevelAlreadyExistsException
+        throw new LevelAlreadyExistsException()
       }
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async update({
-    id,
-    data,
-    updatedById
-  }: {
-    id: number
-    data: UpdateLevelBodyType
-    updatedById: number
-  }) {
+  async update(
+    {
+      id,
+      data,
+      updatedById
+    }: {
+      id: number
+      data: UpdateLevelBodyType
+      updatedById: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       const existLevel = await this.levelRepo.findById(id)
       if (!existLevel) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
 
       // neu update de lien ket level voi level ke tiep, phai giong type va level number phai hop le
@@ -93,7 +103,7 @@ export class LevelService {
           nextLevel.levelType !== existLevel.levelType ||
           nextLevel.levelNumber !== existLevel.levelNumber + 1
         ) {
-          throw ConflictTypeNextLevelException
+          throw new ConflictTypeNextLevelException()
         }
       }
 
@@ -112,23 +122,26 @@ export class LevelService {
 
       return {
         data: level,
-        message: LEVEL_MESSAGE.UPDATE_SUCCESS
+        message: this.i18nService.translate(LevelMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       if (isUniqueConstraintPrismaError(error)) {
-        throw LevelAlreadyExistsException
+        throw new LevelAlreadyExistsException()
       }
       if (isForeignKeyConstraintPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async delete({ id, deletedById }: { id: number; deletedById: number }) {
+  async delete(
+    { id, deletedById }: { id: number; deletedById: number },
+    lang: string = 'vi'
+  ) {
     try {
       await this.levelRepo.delete({
         id,
@@ -136,11 +149,11 @@ export class LevelService {
       })
       return {
         data: null,
-        message: LEVEL_MESSAGE.DELETE_SUCCESS
+        message: this.i18nService.translate(LevelMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }

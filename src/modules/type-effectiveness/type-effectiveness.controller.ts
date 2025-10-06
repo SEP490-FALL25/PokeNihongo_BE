@@ -1,5 +1,6 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { IsPublic } from '@/common/decorators/auth.decorator'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
@@ -27,47 +28,55 @@ export class TypeEffectivenessController {
 
   @Get('matrix')
   @IsPublic()
-  getMatrix() {
-    return this.typeEffectivenessService.getEffectivenessMatrix()
+  getMatrix(@I18nLang() lang: string) {
+    return this.typeEffectivenessService.getEffectivenessMatrix(lang)
   }
 
   @Get('weaknesses/:defenderId')
   @IsPublic()
-  getWeaknesses(@Param('defenderId') defenderId: string) {
-    return this.typeEffectivenessService.getWeaknessesForDefender(+defenderId)
+  getWeaknesses(@Param('defenderId') defenderId: string, @I18nLang() lang: string) {
+    return this.typeEffectivenessService.getWeaknessesForDefender(+defenderId, lang)
   }
 
   @Get('resistances/:defenderId')
   @IsPublic()
-  getResistances(@Param('defenderId') defenderId: string) {
-    return this.typeEffectivenessService.getResistancesForDefender(+defenderId)
+  getResistances(@Param('defenderId') defenderId: string, @I18nLang() lang: string) {
+    return this.typeEffectivenessService.getResistancesForDefender(+defenderId, lang)
   }
 
   @Post('calculate-multi-type')
   @IsPublic()
-  calculateMultiType(@Body() body: { defenderTypeIds: number[] }) {
+  calculateMultiType(
+    @Body() body: { defenderTypeIds: number[] },
+    @I18nLang() lang: string
+  ) {
     return this.typeEffectivenessService.calculateMultiTypeEffectiveness(
-      body.defenderTypeIds
+      body.defenderTypeIds,
+      lang
     )
   }
 
   @Get(':typeEffectivenessId')
   @IsPublic()
   @ZodSerializerDto(GetTypeEffectivenessDetailResDTO)
-  findById(@Param() params: GetTypeEffectivenessParamsDTO) {
-    return this.typeEffectivenessService.findById(params.typeEffectivenessId)
+  findById(@Param() params: GetTypeEffectivenessParamsDTO, @I18nLang() lang: string) {
+    return this.typeEffectivenessService.findById(params.typeEffectivenessId, lang)
   }
 
   @Post()
   @ZodSerializerDto(CreateTypeEffectivenessResDTO)
   create(
     @Body() body: CreateTypeEffectivenessBodyDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.typeEffectivenessService.create({
-      data: body,
-      createdById: userId
-    })
+    return this.typeEffectivenessService.create(
+      {
+        data: body,
+        createdById: userId
+      },
+      lang
+    )
   }
 
   @Put(':typeEffectivenessId')
@@ -75,24 +84,32 @@ export class TypeEffectivenessController {
   update(
     @Body() body: UpdateTypeEffectivenessBodyDTO,
     @Param() params: GetTypeEffectivenessParamsDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.typeEffectivenessService.update({
-      data: body,
-      id: params.typeEffectivenessId,
-      updatedById: userId
-    })
+    return this.typeEffectivenessService.update(
+      {
+        data: body,
+        id: params.typeEffectivenessId,
+        updatedById: userId
+      },
+      lang
+    )
   }
 
   @Delete(':typeEffectivenessId')
   @ZodSerializerDto(MessageResDTO)
   delete(
     @Param() params: GetTypeEffectivenessParamsDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.typeEffectivenessService.delete({
-      id: params.typeEffectivenessId,
-      deletedById: userId
-    })
+    return this.typeEffectivenessService.delete(
+      {
+        id: params.typeEffectivenessId,
+        deletedById: userId
+      },
+      lang
+    )
   }
 }

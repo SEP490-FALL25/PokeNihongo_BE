@@ -1,4 +1,5 @@
-import { USER_POKEMON_MESSAGE } from '@/common/constants/message'
+import { I18nService } from '@/i18n/i18n.service'
+import { UserPokemonMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -33,31 +34,35 @@ export class UserPokemonService {
     private userPokemonRepo: UserPokemonRepo,
     private levelRepo: LevelRepo,
     private pokemonRepo: PokemonRepo,
-    private readonly sharedUserRepository: SharedUserRepository
+    private readonly sharedUserRepository: SharedUserRepository,
+    private readonly i18nService: I18nService
   ) {}
 
-  async list(pagination: PaginationQueryType, userId?: number) {
+  async list(pagination: PaginationQueryType, userId?: number, lang: string = 'vi') {
     const data = await this.userPokemonRepo.list(pagination, userId)
     return {
       statusCode: 200,
       data,
-      message: USER_POKEMON_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(UserPokemonMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number) {
+  async findById(id: number, lang: string = 'vi') {
     const userPokemon = await this.userPokemonRepo.findById(id)
     if (!userPokemon) {
-      throw UserPokemonNotFoundException
+      throw new UserPokemonNotFoundException()
     }
     return {
       statusCode: 200,
       data: userPokemon,
-      message: USER_POKEMON_MESSAGE.GET_DETAIL_SUCCESS
+      message: this.i18nService.translate(UserPokemonMessage.GET_DETAIL_SUCCESS, lang)
     }
   }
 
-  async create({ userId, data }: { userId: number; data: CreateUserPokemonBodyType }) {
+  async create(
+    { userId, data }: { userId: number; data: CreateUserPokemonBodyType },
+    lang: string = 'vi'
+  ) {
     try {
       // Get user check is first pokemon
       const user = await this.sharedUserRepository.findUnique({ id: userId })
@@ -66,7 +71,7 @@ export class UserPokemonService {
       if (user?.levelId === null) {
         const firstLevelUser = await this.levelRepo.getFirstLevelUser()
         if (!firstLevelUser) {
-          throw ErrorInitLevelPokemonException
+          throw new ErrorInitLevelPokemonException()
         }
         await this.sharedUserRepository.addLevelForUser(userId, firstLevelUser.id)
         isFirstPokemon = true
@@ -78,7 +83,7 @@ export class UserPokemonService {
         data.pokemonId
       )
       if (existingUserPokemon) {
-        throw UserHasPokemonException
+        throw new UserHasPokemonException()
       }
 
       // Check if nickname is already used by this user
@@ -88,14 +93,14 @@ export class UserPokemonService {
           data.nickname
         )
         if (existingNickname) {
-          throw NicknameAlreadyExistsException
+          throw new NicknameAlreadyExistsException()
         }
       }
 
       // If no levelId provided, get the first Pokemon level
       const firstPokemonLevel = await this.levelRepo.getFirstLevelPokemon()
       if (!firstPokemonLevel) {
-        throw ErrorInitLevelPokemonException
+        throw new ErrorInitLevelPokemonException()
       }
 
       const result = await this.userPokemonRepo.create({
@@ -109,37 +114,40 @@ export class UserPokemonService {
       return {
         statusCode: 201,
         data: result,
-        message: USER_POKEMON_MESSAGE.CREATE_SUCCESS
+        message: this.i18nService.translate(UserPokemonMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
-        throw NicknameAlreadyExistsException
+        throw new NicknameAlreadyExistsException()
       }
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async update({
-    id,
-    data,
-    userId
-  }: {
-    id: number
-    data: UpdateUserPokemonBodyType
-    userId?: number
-  }) {
+  async update(
+    {
+      id,
+      data,
+      userId
+    }: {
+      id: number
+      data: UpdateUserPokemonBodyType
+      userId?: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       const existUserPokemon = await this.userPokemonRepo.findById(id)
       if (!existUserPokemon) {
-        throw UserPokemonNotFoundException
+        throw new UserPokemonNotFoundException()
       }
 
       // Check if user owns this Pokemon (optional security check)
       if (userId && existUserPokemon.userId !== userId) {
-        throw InvalidUserAccessPokemonException
+        throw new InvalidUserAccessPokemonException()
       }
 
       // Check if nickname is already used by this user
@@ -149,7 +157,7 @@ export class UserPokemonService {
           data.nickname
         )
         if (existingNickname && existingNickname.id !== id) {
-          throw NicknameAlreadyExistsException
+          throw new NicknameAlreadyExistsException()
         }
       }
 
@@ -167,43 +175,43 @@ export class UserPokemonService {
       return {
         statusCode: 200,
         data: userPokemon,
-        message: USER_POKEMON_MESSAGE.UPDATE_SUCCESS
+        message: this.i18nService.translate(UserPokemonMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw UserPokemonNotFoundException
+        throw new UserPokemonNotFoundException()
       }
       if (isUniqueConstraintPrismaError(error)) {
-        throw NicknameAlreadyExistsException
+        throw new NicknameAlreadyExistsException()
       }
       if (isForeignKeyConstraintPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async delete({ id, userId }: { id: number; userId?: number }) {
+  async delete({ id, userId }: { id: number; userId?: number }, lang: string = 'vi') {
     try {
       const existUserPokemon = await this.userPokemonRepo.findById(id)
       if (!existUserPokemon) {
-        throw UserPokemonNotFoundException
+        throw new UserPokemonNotFoundException()
       }
 
       // Check if user owns this Pokemon (optional security check)
       if (userId && existUserPokemon.userId !== userId) {
-        throw new Error('Bạn không có quyền xóa Pokemon này')
+        throw new InvalidUserAccessPokemonException()
       }
 
       await this.userPokemonRepo.delete(id)
       return {
         statusCode: 200,
         data: null,
-        message: USER_POKEMON_MESSAGE.DELETE_SUCCESS
+        message: this.i18nService.translate(UserPokemonMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw UserPokemonNotFoundException
+        throw new UserPokemonNotFoundException()
       }
       throw error
     }
@@ -218,16 +226,16 @@ export class UserPokemonService {
     }
   }
 
-  async addExp(id: number, data: AddExpBodyType, userId?: number) {
+  async addExp(id: number, data: AddExpBodyType, userId?: number, lang: string = 'vi') {
     try {
       const existUserPokemon = await this.userPokemonRepo.findById(id)
       if (!existUserPokemon) {
-        throw UserPokemonNotFoundException
+        throw new UserPokemonNotFoundException()
       }
 
       // Check if user owns this Pokemon (optional security check)
       if (userId && existUserPokemon.userId !== userId) {
-        throw new Error('Bạn không có quyền cập nhật Pokemon này')
+        throw new InvalidUserAccessPokemonException()
       }
 
       // Calculate new EXP
@@ -239,11 +247,16 @@ export class UserPokemonService {
       return {
         statusCode: 200,
         data: levelUpResult,
-        message: levelUpResult.leveledUp ? 'Pokemon đã lên cấp!' : 'Thêm EXP thành công'
+        message: this.i18nService.translate(
+          levelUpResult.leveledUp
+            ? UserPokemonMessage.LEVEL_UP_SUCCESS
+            : UserPokemonMessage.ADD_EXP_SUCCESS,
+          lang
+        )
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw UserPokemonNotFoundException
+        throw new UserPokemonNotFoundException()
       }
       throw error
     }
@@ -350,29 +363,30 @@ export class UserPokemonService {
   async evolvePokemon(
     userPokemonId: number,
     data: EvolvePokemonBodyType,
-    userId: number
+    userId: number,
+    lang: string = 'vi'
   ) {
     try {
       // Get current user pokemon
       const currentUserPokemon = await this.userPokemonRepo.findById(userPokemonId)
       if (!currentUserPokemon) {
-        throw UserPokemonNotFoundException
+        throw new UserPokemonNotFoundException()
       }
 
       // Check ownership
       if (currentUserPokemon.userId !== userId) {
-        throw InvalidUserAccessPokemonException
+        throw new InvalidUserAccessPokemonException()
       }
 
       // Check if Pokemon has already evolved
       if (currentUserPokemon.isEvolved) {
-        throw CannotEvolveException
+        throw new CannotEvolveException()
       }
 
       // Verify evolution is possible
       const currentPokemon = await this.pokemonRepo.findById(currentUserPokemon.pokemonId)
       if (!currentPokemon || !currentPokemon.nextPokemons) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
 
       // Check if nextPokemonId is valid evolution option
@@ -380,7 +394,7 @@ export class UserPokemonService {
         (nextPokemon: any) => nextPokemon.id === data.nextPokemonId
       )
       if (!isValidEvolution) {
-        throw InvalidNextPokemonException
+        throw new InvalidNextPokemonException()
       }
 
       // Check if user already has this evolved Pokemon
@@ -389,7 +403,7 @@ export class UserPokemonService {
         data.nextPokemonId
       )
       if (existingEvolvedPokemon) {
-        throw InvalidNextPokemonException
+        throw new InvalidNextPokemonException()
       }
 
       // Get current EXP to transfer
@@ -399,7 +413,7 @@ export class UserPokemonService {
       // Create new evolved Pokemon with level 1
       const firstPokemonLevel = await this.levelRepo.getFirstLevelPokemon()
       if (!firstPokemonLevel) {
-        throw ErrorInitLevelPokemonException
+        throw new ErrorInitLevelPokemonException()
       }
 
       const newUserPokemon = await this.userPokemonRepo.create({
@@ -442,13 +456,13 @@ export class UserPokemonService {
         data: {
           newUserPokemon: levelUpResult,
           transferredExp: currentExp,
-          message: `Pokemon đã tiến hóa thành công! EXP đã được chuyển: ${currentExp}`
+          message: this.i18nService.translate(UserPokemonMessage.EVOLVE_SUCCESS, lang)
         },
-        message: 'Tiến hóa Pokemon thành công!'
+        message: this.i18nService.translate(UserPokemonMessage.EVOLVE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw UserPokemonNotFoundException
+        throw new UserPokemonNotFoundException()
       }
       throw error
     }

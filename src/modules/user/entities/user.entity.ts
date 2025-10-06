@@ -1,5 +1,5 @@
-import { USER_MESSAGE } from '@/common/constants/message'
 import { checkIdSchema } from '@/common/utils/id.validation'
+import { ValidationMessage } from '@/i18n/message-keys'
 import { LevelSchema } from '@/modules/level/entities/level.entity'
 import { RoleSchema } from '@/shared/models/shared-role.model'
 import { UserSchema } from '@/shared/models/shared-user.model'
@@ -43,7 +43,7 @@ export const UpdateUserResSchema = CreateUserResSchema
 
 export const GetUserParamsSchema = z
   .object({
-    userId: checkIdSchema(USER_MESSAGE.INVALID_DATA)
+    userId: checkIdSchema(ValidationMessage.INVALID_USER_ID)
   })
   .strict()
 

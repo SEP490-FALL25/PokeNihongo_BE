@@ -1,5 +1,5 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
-import { IsPublic } from '@/common/decorators/auth.decorator'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
@@ -23,8 +23,12 @@ export class UserPokemonController {
 
   @Get()
   @ZodSerializerDto(PaginationResponseDTO)
-  list(@Query() query: PaginationQueryDTO, @ActiveUser('userId') userId: number) {
-    return this.userPokemonService.list(query, userId)
+  list(
+    @Query() query: PaginationQueryDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userPokemonService.list(query, userId, lang)
   }
 
   @Post(':userPokemonId/evolve')
@@ -32,27 +36,36 @@ export class UserPokemonController {
   evolvePokemon(
     @Param() params: GetUserPokemonParamsDTO,
     @Body() body: EvolvePokemonBodyDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.userPokemonService.evolvePokemon(params.userPokemonId, body, userId)
+    return this.userPokemonService.evolvePokemon(params.userPokemonId, body, userId, lang)
   }
 
   @Get(':userPokemonId')
   @ZodSerializerDto(GetUserPokemonDetailResDTO)
   findById(
     @Param() params: GetUserPokemonParamsDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.userPokemonService.findById(params.userPokemonId)
+    return this.userPokemonService.findById(params.userPokemonId, lang)
   }
 
   @Post()
   @ZodSerializerDto(CreateUserPokemonResDTO)
-  create(@Body() body: CreateUserPokemonBodyDTO, @ActiveUser('userId') userId: number) {
-    return this.userPokemonService.create({
-      userId,
-      data: body
-    })
+  create(
+    @Body() body: CreateUserPokemonBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userPokemonService.create(
+      {
+        userId,
+        data: body
+      },
+      lang
+    )
   }
 
   @Put(':userPokemonId')
@@ -60,22 +73,33 @@ export class UserPokemonController {
   update(
     @Body() body: UpdateUserPokemonBodyDTO,
     @Param() params: GetUserPokemonParamsDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.userPokemonService.update({
-      data: body,
-      id: params.userPokemonId,
-      userId
-    })
+    return this.userPokemonService.update(
+      {
+        data: body,
+        id: params.userPokemonId,
+        userId
+      },
+      lang
+    )
   }
 
   @Delete(':userPokemonId')
   @ZodSerializerDto(MessageResDTO)
-  delete(@Param() params: GetUserPokemonParamsDTO, @ActiveUser('userId') userId: number) {
-    return this.userPokemonService.delete({
-      id: params.userPokemonId,
-      userId
-    })
+  delete(
+    @Param() params: GetUserPokemonParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userPokemonService.delete(
+      {
+        id: params.userPokemonId,
+        userId
+      },
+      lang
+    )
   }
 
   @Post(':userPokemonId/add-exp')
@@ -83,16 +107,17 @@ export class UserPokemonController {
   addExp(
     @Param() params: GetUserPokemonParamsDTO,
     @Body() body: AddExpBodyDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.userPokemonService.addExp(params.userPokemonId, body, userId)
+    return this.userPokemonService.addExp(params.userPokemonId, body, userId, lang)
   }
 
   // Admin endpoints
-  @Get('admin/all')
-  @IsPublic() // Remove this in production, add admin guard
-  @ZodSerializerDto(PaginationResponseDTO)
-  adminList(@Query() query: PaginationQueryDTO) {
-    return this.userPokemonService.list(query)
-  }
+  // @Get('admin/all')
+  // @IsPublic() // Remove this in production, add admin guard
+  // @ZodSerializerDto(PaginationResponseDTO)
+  // adminList(@Query() query: PaginationQueryDTO) {
+  //   return this.userPokemonService.list(query)
+  // }
 }
