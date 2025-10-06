@@ -24,3 +24,7 @@ export const InvalidNextPokemonException = new BadRequestException(
 export const CannotEvolveException = new BadRequestException(
   USER_POKEMON_MESSAGE.CANNOT_EVOLVE
 )
+
+export const UserHasPokemonException = new ConflictException(
+  USER_POKEMON_MESSAGE.USER_HAS_POKEMON
+)

@@ -97,7 +97,7 @@ export class AuthService {
       body.ip
     )
 
-    if (!existingDevice && user.role.name !== RoleName.Admin) {
+    if (!existingDevice && user.role.name === RoleName.Learner) {
       throw NeedToVerifyWithFirstLogin
     }
 

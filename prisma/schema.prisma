@@ -395,6 +395,7 @@ model UserPokemon {
   nickname  String? // tên user đặt cho con này
   exp       Int     @default(0) // exp hiện tại trên con này
   isEvolved Boolean @default(false) // đã tiến hóa chưa
+  isMain    Boolean @default(false) // có phải con chính không
 
   // Timestamps
   deletedAt DateTime?

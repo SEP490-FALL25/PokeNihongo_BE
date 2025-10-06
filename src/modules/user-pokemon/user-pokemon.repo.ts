@@ -298,4 +298,17 @@ export class UserPokemonRepo {
       }
     })
   }
+
+  // Unset main pokemon for a user (set all isMain to false)
+  async unsetMainPokemon(userId: number): Promise<void> {
+    await this.prismaService.userPokemon.updateMany({
+      where: {
+        userId,
+        deletedAt: null
+      },
+      data: {
+        isMain: false
+      }
+    })
+  }
 }

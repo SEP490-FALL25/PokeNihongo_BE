@@ -26,7 +26,7 @@ export const PaginationResponseSchema = z.object({
   data: PaginationDataSchema
 })
 export type PaginationMeta = z.infer<typeof PaginationMetaSchema>
-export type PaginationResponse<T = any> = {
+export type PaginationResponseType<T = any> = {
   results: T[]
   pagination: PaginationMeta
 }

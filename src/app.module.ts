@@ -26,6 +26,7 @@ import { ElementalTypeModule } from './modules/elemental-type/elemental-type.mod
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module';
 import { PokemonModule } from './modules/pokemon/pokemon.module';
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -52,7 +53,8 @@ import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module';
     ElementalTypeModule,
     TypeEffectivenessModule,
     PokemonModule,
-    UserPokemonModule
+    UserPokemonModule,
+    UserModule
   ],
 
   controllers: [],

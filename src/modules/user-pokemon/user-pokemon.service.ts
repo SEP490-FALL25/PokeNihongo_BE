@@ -16,6 +16,7 @@ import {
   InvalidNextPokemonException,
   InvalidUserAccessPokemonException,
   NicknameAlreadyExistsException,
+  UserHasPokemonException,
   UserPokemonNotFoundException
 } from './dto/user-pokemon.error'
 import {
@@ -60,20 +61,24 @@ export class UserPokemonService {
     try {
       // Get user check is first pokemon
       const user = await this.sharedUserRepository.findUnique({ id: userId })
+      let isFirstPokemon = false
+
       if (user?.levelId === null) {
         const firstLevelUser = await this.levelRepo.getFirstLevelUser()
         if (!firstLevelUser) {
           throw ErrorInitLevelPokemonException
         }
         await this.sharedUserRepository.addLevelForUser(userId, firstLevelUser.id)
+        isFirstPokemon = true
       }
+
       // Check if user already has this Pokemon
       const existingUserPokemon = await this.userPokemonRepo.findByUserAndPokemon(
         userId,
         data.pokemonId
       )
       if (existingUserPokemon) {
-        throw new Error('User đã sở hữu Pokemon này')
+        throw UserHasPokemonException
       }
 
       // Check if nickname is already used by this user
@@ -88,7 +93,6 @@ export class UserPokemonService {
       }
 
       // If no levelId provided, get the first Pokemon level
-
       const firstPokemonLevel = await this.levelRepo.getFirstLevelPokemon()
       if (!firstPokemonLevel) {
         throw ErrorInitLevelPokemonException
@@ -98,7 +102,8 @@ export class UserPokemonService {
         userId,
         data: {
           ...data,
-          levelId: firstPokemonLevel.id
+          levelId: firstPokemonLevel.id,
+          isMain: isFirstPokemon // Set isMain = true nếu là Pokemon đầu tiên
         }
       })
       return {
@@ -147,6 +152,13 @@ export class UserPokemonService {
           throw NicknameAlreadyExistsException
         }
       }
+
+      // Check if isMain is set to true
+      if (data.isMain === true) {
+        // Unset isMain for all other user's pokemon
+        await this.userPokemonRepo.unsetMainPokemon(existUserPokemon.userId)
+      }
+
       const { exp, ...updateData } = data
       const userPokemon = await this.userPokemonRepo.update({
         id,
