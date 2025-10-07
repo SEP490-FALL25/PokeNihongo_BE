@@ -10,7 +10,8 @@ import {
     KanjiResponseDTO,
     KanjiListResponseDTO,
     KanjiResDTO,
-    KanjiListResDTO
+    KanjiListResDTO,
+    KanjiManagementListResDTO
 } from './dto/zod/kanji.zod-dto'
 import {
     CreateKanjiWithMeaningsBodyDTO,
@@ -86,6 +87,22 @@ export class KanjiController {
             sortBy: query.sortBy as 'id' | 'character' | 'meaningKey' | 'strokeCount' | 'jlptLevel' | 'createdAt' | 'updatedAt' | undefined
         }
         return this.kanjiService.findMany(transformedQuery)
+    }
+
+    @Get('management')
+    @ApiOperation({
+        summary: 'Lấy danh sách Kanji cho quản lý',
+        description: 'Lấy danh sách Kanji được format phù hợp cho giao diện quản lý (có tách riêng Onyomi và Kunyomi)'
+    })
+    @ApiQuery({ type: GetKanjiListQuerySwaggerDTO })
+    @ZodSerializerDto(KanjiManagementListResDTO)
+    getKanjiManagementList(@Query() query: GetKanjiListQueryDTO) {
+        // Transform query to match service expectations
+        const transformedQuery = {
+            ...query,
+            sortBy: query.sortBy as 'id' | 'character' | 'meaningKey' | 'strokeCount' | 'jlptLevel' | 'createdAt' | 'updatedAt' | undefined
+        }
+        return this.kanjiService.getKanjiManagementList(transformedQuery)
     }
 
     @Get('stats')

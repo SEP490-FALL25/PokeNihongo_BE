@@ -50,6 +50,16 @@ export class KanjiRepository {
                 take: limit,
                 orderBy,
                 include: {
+                    readings: {
+                        select: {
+                            id: true,
+                            kanjiId: true,
+                            readingType: true,
+                            reading: true,
+                            createdAt: true,
+                            updatedAt: true
+                        }
+                    },
                     _count: {
                         select: {
                             vocabularies: true,
@@ -248,7 +258,8 @@ export class KanjiRepository {
             jlptLevel: kanji.jlptLevel,
             img: kanji.img || null, // Handle case where img column doesn't exist
             createdAt: kanji.createdAt,
-            updatedAt: kanji.updatedAt
+            updatedAt: kanji.updatedAt,
+            readings: kanji.readings || []
         }
     }
 

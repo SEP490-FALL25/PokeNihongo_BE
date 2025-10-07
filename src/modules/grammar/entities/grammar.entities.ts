@@ -51,6 +51,23 @@ export const GetGrammarListQueryType = z.object({
     search: z.string().optional(),
 })
 
+// Response schemas
+export const GrammarListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(GrammarType),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
 // Type exports
 export type GrammarType = z.infer<typeof GrammarType>
 export type CreateGrammarBodyType = z.infer<typeof CreateGrammarBodyType>
@@ -58,3 +75,4 @@ export type UpdateGrammarBodyType = z.infer<typeof UpdateGrammarBodyType>
 export type CreateGrammarBasicBodyType = z.infer<typeof CreateGrammarBasicBodyType>
 export type GetGrammarByIdParamsType = z.infer<typeof GetGrammarByIdParamsType>
 export type GetGrammarListQueryType = z.infer<typeof GetGrammarListQueryType>
+export type GrammarListResType = z.infer<typeof GrammarListResSchema>
