@@ -193,6 +193,7 @@ export class UploadController {
   }
 
   @Post('file')
+  @IsPublic()
   @UseInterceptors(FileInterceptor('file', CloudinaryFlexibleUploadConfig))
   @ZodSerializerDto(UploadFileResponseDTO)
   @ApiOperation({

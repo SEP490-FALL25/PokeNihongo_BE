@@ -216,10 +216,12 @@ export const GetAccountProfileResSchema = z
       ...UserSchema.omit({ password: true }).shape,
       role: RoleSchema.pick({ id: true, name: true, description: true }),
 
-      level: z.object({
-        ...LevelSchema.shape,
-        nextLevel: LevelSchema.omit({ nextLevelId: true, rewardId: true }).nullable()
-      }),
+      level: z
+        .object({
+          ...LevelSchema.shape,
+          nextLevel: LevelSchema.omit({ nextLevelId: true, rewardId: true }).nullable()
+        })
+        .nullable(),
       pokemonCount: z.number()
     }),
     message: z.string()
