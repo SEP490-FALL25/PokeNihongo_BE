@@ -4,7 +4,9 @@ import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
+import { ApiQuery } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
+import { PaginationQueryDto } from './dto/pokemon.dto'
 import {
   CreatePokemonBodyDTO,
   CreatePokemonResDTO,
@@ -14,15 +16,15 @@ import {
   GetPokemonWeaknessResDTO,
   UpdatePokemonBodyDTO,
   UpdatePokemonResDTO
-} from './dto/pokemon.dto'
+} from './dto/pokemon.zod-dto'
 import { PokemonService } from './pokemon.service'
-
 @Controller('pokemon')
 export class PokemonController {
   constructor(private readonly pokemonService: PokemonService) {}
 
   @Get()
   @IsPublic()
+  @ApiQuery({ type: PaginationQueryDto })
   @ZodSerializerDto(PaginationResponseDTO)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.pokemonService.list(query, lang)
