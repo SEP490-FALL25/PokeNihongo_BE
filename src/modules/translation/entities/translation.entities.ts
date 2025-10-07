@@ -116,10 +116,13 @@ export const TranslationListResSchema = z
     .object({
         statusCode: z.number(),
         data: z.object({
-            items: z.array(TranslationSchema),
-            total: z.number(),
-            page: z.number(),
-            limit: z.number()
+            results: z.array(TranslationSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
         }),
         message: z.string()
     })

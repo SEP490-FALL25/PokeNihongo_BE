@@ -23,7 +23,21 @@ export class TranslationService {
     async findMany(params: GetTranslationListQueryType) {
         try {
             this.logger.log(`Finding translations with params: ${JSON.stringify(params)}`)
-            return await this.translationRepository.findMany(params)
+            const result = await this.translationRepository.findMany(params)
+
+            return {
+                statusCode: 200,
+                message: 'Lấy danh sách bản dịch thành công',
+                data: {
+                    results: result.data,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
+            }
         } catch (error) {
             this.logger.error('Error finding translations:', error)
             throw error

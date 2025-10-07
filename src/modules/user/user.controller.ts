@@ -14,10 +14,11 @@ import {
   UpdateUserResDTO
 } from './dto/user.zod-dto'
 import { UserService } from './user.service'
+import { ApiQuery } from '@nestjs/swagger'
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   @Get()
   @ZodSerializerDto(PaginationResponseDTO)

@@ -23,7 +23,21 @@ export class MeaningService {
     async findMany(params: GetMeaningListQueryType) {
         try {
             this.logger.log(`Finding meanings with params: ${JSON.stringify(params)}`)
-            return await this.meaningRepository.findMany(params)
+            const result = await this.meaningRepository.findMany(params)
+
+            return {
+                statusCode: 200,
+                message: 'Lấy danh sách nghĩa thành công',
+                data: {
+                    results: result.data,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
+            }
         } catch (error) {
             this.logger.error('Error finding meanings:', error)
             throw error

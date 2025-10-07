@@ -561,6 +561,9 @@ model Lesson {
   // Quan hệ với LessonContents
   lessonContents LessonContents[]
 
+  // Quan hệ với Exercises
+  exercises Exercises[]
+
   @@index([slug])
   @@index([titleKey])
   @@index([levelJlpt])
@@ -591,6 +594,71 @@ model LessonContents {
   @@index([contentId])
   @@index([contentType])
   @@index([contentOrder])
+}
+
+// Model Exercises (Bài tập)
+model Exercises {
+  id           Int      @id @default(autoincrement())
+  titleJp      String   @db.VarChar(500) // Tiêu đề bài tập bằng tiếng Nhật
+  exerciseType String   @db.VarChar(100) // Loại bài tập (multiple_choice, fill_blank, etc.)
+  titleKey     String   @db.VarChar(200) // Key để dịch tiêu đề bài tập
+  content      String?  @db.Text // Nội dung mô tả bài tập
+  audioUrl     String?  @db.VarChar(1000) // URL file âm thanh
+  isBlocked    Boolean  @default(false) // Trạng thái bị chặn
+  price        Decimal? @db.Decimal(10, 2) // Giá bài tập (nếu có)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Quan hệ với Lesson
+  lessonId Int
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Quan hệ với Question
+  questions Question[]
+
+  @@index([lessonId])
+  @@index([exerciseType])
+  @@index([titleKey])
+  @@index([isBlocked])
+}
+
+// Model Question (Câu hỏi)
+model Question {
+  id            Int      @id @default(autoincrement())
+  questionJp    String   @db.VarChar(1000) // Nội dung câu hỏi bằng tiếng Nhật
+  questionOrder Int      @default(0) // Thứ tự câu hỏi trong bài tập
+  questionKey   String   @db.VarChar(200) // Key để dịch câu hỏi
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Quan hệ với Exercises
+  exercisesId Int
+  exercises   Exercises @relation(fields: [exercisesId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Quan hệ với Answer
+  answers Answer[]
+
+  @@index([exercisesId])
+  @@index([questionOrder])
+  @@index([questionKey])
+}
+
+// Model Answer (Câu trả lời)
+model Answer {
+  id        Int      @id @default(autoincrement())
+  answerJp  String   @db.VarChar(1000) // Nội dung câu trả lời bằng tiếng Nhật
+  answerKey String   @db.VarChar(200) // Key để dịch câu trả lời
+  isCorrect Boolean  @default(false) // Đánh dấu câu trả lời đúng
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan hệ với Question
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([questionId])
+  @@index([answerKey])
+  @@index([isCorrect])
 }
 
 model Grammar {

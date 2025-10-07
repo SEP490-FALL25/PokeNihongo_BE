@@ -58,7 +58,7 @@ export class AuthService {
     @InjectQueue('user-deletion') private readonly deletionQueue: Queue,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
     private readonly tokenService: TokenService
-  ) {}
+  ) { }
 
   async login(
     body: LoginBodyType & { userAgent: string; ip: string },
@@ -328,7 +328,7 @@ export class AuthService {
       email
     })
     if (!user) {
-      throw InvalidOTPExceptionForEmail
+      throw new InvalidOTPExceptionForEmail()
     }
 
     // Verify OTP
@@ -636,7 +636,7 @@ export class AuthService {
       email
     })
     if (!user) {
-      throw InvalidOTPExceptionForEmail
+      throw new InvalidOTPExceptionForEmail()
     }
 
     // 2. Xóa tất cả refreshToken và device cũ của user

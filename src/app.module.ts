@@ -35,6 +35,9 @@ import { LessonCategoryModule } from './modules/lesson-category/lesson-category.
 import { LessonContentModule } from './modules/lesson-content/lesson-content.module';
 import { GrammarModule } from './modules/grammar/grammar.module';
 import { GrammarUsageModule } from './modules/grammar-usage/grammar-usage.module';
+import { ExercisesModule } from './modules/exercises/exercises.module';
+import { QuestionModule } from './modules/question/question.module';
+import { AnswerModule } from './modules/answer/answer.module';
 
 
 @Module({
@@ -69,6 +72,9 @@ import { GrammarUsageModule } from './modules/grammar-usage/grammar-usage.module
     LessonContentModule,
     GrammarModule,
     GrammarUsageModule,
+    ExercisesModule,
+    QuestionModule,
+    AnswerModule,
     UserModule
   ],
 
