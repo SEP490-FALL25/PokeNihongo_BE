@@ -1,0 +1,307 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+
+export class LessonResponseSwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'ID của bài học'
+    })
+    id: number
+
+    @ApiProperty({
+        example: 'aisatsu-no-kihon',
+        description: 'URL slug của bài học'
+    })
+    slug: string
+
+    @ApiProperty({
+        example: 'lesson.1.title',
+        description: 'Key để dịch tiêu đề bài học'
+    })
+    titleKey: string
+
+    @ApiProperty({
+        example: 5,
+        description: 'Cấp độ JLPT (1-5)',
+        required: false
+    })
+    levelJlpt?: number
+
+    @ApiProperty({
+        example: 45,
+        description: 'Thời gian ước tính hoàn thành (phút)'
+    })
+    estimatedTimeMinutes: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'Thứ tự bài học trong danh mục'
+    })
+    lessonOrder: number
+
+    @ApiProperty({
+        example: true,
+        description: 'Trạng thái xuất bản'
+    })
+    isPublished: boolean
+
+    @ApiProperty({
+        example: '2024-01-01T00:00:00.000Z',
+        description: 'Thời gian xuất bản',
+        required: false
+    })
+    publishedAt?: Date
+
+    @ApiProperty({
+        example: '1.0.0',
+        description: 'Phiên bản bài học'
+    })
+    version: string
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID danh mục bài học'
+    })
+    lessonCategoryId: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID phần thưởng',
+        required: false
+    })
+    rewardId?: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID người tạo'
+    })
+    createdById: number
+
+    @ApiProperty({
+        example: '2024-01-01T00:00:00.000Z',
+        description: 'Thời gian tạo'
+    })
+    createdAt: Date
+
+    @ApiProperty({
+        example: '2024-01-01T00:00:00.000Z',
+        description: 'Thời gian cập nhật'
+    })
+    updatedAt: Date
+}
+
+export class LessonListResponseSwaggerDTO {
+    @ApiProperty({
+        type: [LessonResponseSwaggerDTO],
+        description: 'Danh sách bài học'
+    })
+    items: LessonResponseSwaggerDTO[]
+
+    @ApiProperty({
+        example: 100,
+        description: 'Tổng số bài học'
+    })
+    total: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'Trang hiện tại'
+    })
+    page: number
+
+    @ApiProperty({
+        example: 10,
+        description: 'Số lượng bài học mỗi trang'
+    })
+    limit: number
+}
+
+// Request DTOs
+export class CreateLessonSwaggerDTO {
+    @ApiPropertyOptional({
+        example: 'aisatsu-no-kihon',
+        description: 'URL slug của bài học (tự động tạo nếu không cung cấp)'
+    })
+    slug?: string
+
+    @ApiProperty({
+        example: '挨拶の基本',
+        description: 'Tiêu đề bài học bằng tiếng Nhật'
+    })
+    titleJp: string
+
+    @ApiProperty({
+        example: 5,
+        description: 'Cấp độ JLPT (1-5)',
+        required: false
+    })
+    levelJlpt?: number
+
+    @ApiProperty({
+        example: 45,
+        description: 'Thời gian ước tính hoàn thành (phút)',
+        required: false
+    })
+    estimatedTimeMinutes?: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'Thứ tự bài học trong danh mục',
+        required: false
+    })
+    lessonOrder?: number
+
+    @ApiProperty({
+        example: false,
+        description: 'Trạng thái xuất bản',
+        required: false
+    })
+    isPublished?: boolean
+
+    @ApiProperty({
+        example: '1.0.0',
+        description: 'Phiên bản bài học',
+        required: false
+    })
+    version?: string
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID danh mục bài học'
+    })
+    lessonCategoryId: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID phần thưởng',
+        required: false
+    })
+    rewardId?: number
+
+    @ApiPropertyOptional({
+        description: 'Bản dịch cho tiêu đề bài học (Minna no Nihongo Lesson 1)',
+        example: {
+            meaning: [
+                { language_code: 'vi', value: 'Cách chào hỏi cơ bản' },
+                { language_code: 'en', value: 'Basic Greetings' }
+            ]
+        }
+    })
+    translations?: {
+        meaning: Array<{ language_code: string; value: string }>
+    }
+}
+
+export class UpdateLessonSwaggerDTO {
+    @ApiProperty({
+        example: 'aisatsu-no-kihon',
+        description: 'URL slug của bài học',
+        required: false
+    })
+    slug?: string
+
+    @ApiProperty({
+        example: 'lesson.1.title',
+        description: 'Key để dịch tiêu đề bài học',
+        required: false
+    })
+    titleKey?: string
+
+    @ApiProperty({
+        example: 5,
+        description: 'Cấp độ JLPT (1-5)',
+        required: false
+    })
+    levelJlpt?: number
+
+    @ApiProperty({
+        example: 30,
+        description: 'Thời gian ước tính hoàn thành (phút)',
+        required: false
+    })
+    estimatedTimeMinutes?: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'Thứ tự bài học trong danh mục',
+        required: false
+    })
+    lessonOrder?: number
+
+    @ApiProperty({
+        example: true,
+        description: 'Trạng thái xuất bản',
+        required: false
+    })
+    isPublished?: boolean
+
+    @ApiProperty({
+        example: '1.1.0',
+        description: 'Phiên bản bài học',
+        required: false
+    })
+    version?: string
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID danh mục bài học',
+        required: false
+    })
+    lessonCategoryId?: number
+
+    @ApiProperty({
+        example: 2,
+        description: 'ID phần thưởng',
+        required: false
+    })
+    rewardId?: number
+}
+
+export class GetLessonListQuerySwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'Số trang',
+        required: false,
+        default: 1,
+        minimum: 1
+    })
+    page?: number
+
+    @ApiProperty({
+        example: 10,
+        description: 'Số lượng bài học mỗi trang',
+        required: false,
+        default: 10,
+        minimum: 1,
+        maximum: 100
+    })
+    limit?: number
+
+    @ApiProperty({
+        example: 'greetings',
+        description: 'Từ khóa tìm kiếm',
+        required: false,
+        maxLength: 100
+    })
+    search?: string
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID danh mục bài học',
+        required: false
+    })
+    lessonCategoryId?: number
+
+    @ApiProperty({
+        example: 5,
+        description: 'Cấp độ JLPT (1-5)',
+        required: false
+    })
+    levelJlpt?: number
+
+    @ApiProperty({
+        example: true,
+        description: 'Trạng thái xuất bản',
+        required: false
+    })
+    isPublished?: boolean
+}

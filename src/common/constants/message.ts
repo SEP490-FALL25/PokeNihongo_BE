@@ -4,6 +4,7 @@ export const AUTH_MESSAGE = {
   LOGOUT_SUCCESS: 'Đăng xuất thành công',
   FORGOT_PASSWORD_SUCCESS: 'Đặt lại mật khẩu thành công',
   UPDATE_PROFILE_SUCCESS: 'Cập nhật thông tin cá nhân thành công',
+  GET_PROFILE_SUCCESS: 'Lấy thông tin cá nhân thành công',
   PHONE_IS_INVALID: 'Số điện thoại không hợp lệ',
   NAME_IS_REQUIRED: 'Tên không được để trống',
   REFRESH_TOKEN_SUCCESS: 'Làm mới token thành công',
@@ -219,4 +220,71 @@ export const TYPE_EFFECTIVENESS_MESSAGE = {
   MULTIPLIER_MIN: 'Multiplier phải lớn hơn 0',
   MULTIPLIER_MAX: 'Multiplier phải nhỏ hơn hoặc bằng 10',
   CONFLICT_ATTACK_DEFENSE_TYPE: 'Attack Type và Defense Type không được giống nhau'
+}
+
+export const POKEMON_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo Pokemon thành công',
+  UPDATE_SUCCESS: 'Cập nhật Pokemon thành công',
+  DELETE_SUCCESS: 'Xóa Pokemon thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách Pokemon thành công',
+  GET_DETAIL_SUCCESS: 'Lấy thông tin Pokemon thành công',
+  INVALID_ID: 'ID Pokemon không hợp lệ',
+  NOT_FOUND: 'Không tìm thấy Pokemon',
+  ALREADY_EXISTS: 'Pokemon đã tồn tại',
+  POKEDEX_NUMBER_REQUIRED: 'Pokedex number không được để trống',
+  NAME_JP_REQUIRED: 'Tên tiếng Nhật không được để trống',
+  ASSIGN_TYPES_SUCCESS: 'Gán types cho Pokemon thành công'
+}
+
+export const USER_POKEMON_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo User Pokemon thành công',
+  UPDATE_SUCCESS: 'Cập nhật User Pokemon thành công',
+  DELETE_SUCCESS: 'Xóa User Pokemon thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách User Pokemon thành công',
+  GET_DETAIL_SUCCESS: 'Lấy thông tin User Pokemon thành công',
+  INVALID_ID: 'ID User Pokemon không hợp lệ',
+  NOT_FOUND: 'Không tìm thấy User Pokemon',
+  NICKNAME_ALREADY_EXISTS: 'Nickname đã tồn tại',
+  ERROR_INIT_LEVEL: 'Lỗi khi khởi tạo level cho User Pokemon',
+  INVALID_ACCESS_POKEMON: 'Bạn không có quyền thao tác Pokemon này',
+  INVALID_NEXT_POKEMON: 'Pokemon này không thể tiến hóa thành Pokemon đã chọn',
+  CANNOT_EVOLVE: 'Pokemon này không thể tiến hóa thêm nữa',
+  USER_HAS_POKEMON: 'Người dùng đã có Pokemon này'
+}
+
+export const USER_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo người dùng thành công',
+  UPDATE_SUCCESS: 'Cập nhật người dùng thành công',
+  DELETE_SUCCESS: 'Xóa người dùng thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách người dùng thành công',
+  GET_DETAIL_SUCCESS: 'Lấy thông tin người dùng thành công',
+  INVALID_DATA: 'Dữ liệu người dùng không hợp lệ',
+  NOT_FOUND: 'Không tìm thấy người dùng',
+  EMAIL_ALREADY_EXISTS: 'Email đã tồn tại',
+  INVALID_EMAIL: 'Email không hợp lệ',
+  NAME_REQUIRED: 'Tên không được để trống',
+  PASSWORD_MIN: 'Mật khẩu phải có ít nhất 6 ký tự',
+  PHONE_INVALID: 'Số điện thoại không hợp lệ',
+  SET_MAIN_POKEMON_SUCCESS: 'Đặt Pokemon chính thành công'
+}
+
+export const LESSON_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo bài học thành công',
+  UPDATE_SUCCESS: 'Cập nhật bài học thành công',
+  DELETE_SUCCESS: 'Xóa bài học thành công',
+  GET_BY_ID_SUCCESS: 'Lấy thông tin bài học thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách bài học thành công',
+  PUBLISH_SUCCESS: 'Xuất bản bài học thành công',
+  UNPUBLISH_SUCCESS: 'Hủy xuất bản bài học thành công',
+  NOT_FOUND: 'Không tìm thấy bài học',
+  ALREADY_EXISTS: 'Bài học đã tồn tại',
+  INVALID_DATA: 'Dữ liệu bài học không hợp lệ',
+  SLUG_REQUIRED: 'Slug không được để trống',
+  TITLE_KEY_REQUIRED: 'Title key không được để trống',
+  LESSON_CATEGORY_ID_REQUIRED: 'Lesson category ID không được để trống',
+  SLUG_TOO_LONG: 'Slug quá dài (tối đa 200 ký tự)',
+  TITLE_KEY_TOO_LONG: 'Title key quá dài (tối đa 500 ký tự)',
+  LEVEL_JLPT_INVALID: 'Cấp độ JLPT không hợp lệ (1-5)',
+  ESTIMATED_TIME_INVALID: 'Thời gian ước tính không hợp lệ (1-480 phút)',
+  VERSION_INVALID: 'Phiên bản không hợp lệ'
 }

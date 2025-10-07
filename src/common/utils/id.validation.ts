@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
-export const checkIdSchema = (message: string) =>
+export const checkIdSchema = (messageKey: string) =>
   z.coerce
     .number({
-      invalid_type_error: message,
-      required_error: message
+      invalid_type_error: messageKey,
+      required_error: messageKey
     })
-    .int({ message })
-    .positive({ message })
+    .int({ message: messageKey })
+    .positive({ message: messageKey })

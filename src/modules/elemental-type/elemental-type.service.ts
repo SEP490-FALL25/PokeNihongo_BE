@@ -1,4 +1,5 @@
-import { ELEMENTAL_TYPE_MESSAGE } from '@/common/constants/message'
+import { I18nService } from '@/i18n/i18n.service'
+import { ElementalTypeMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -16,40 +17,46 @@ import {
 
 @Injectable()
 export class ElementalTypeService {
-  constructor(private elementalTypeRepo: ElementalTypeRepo) {}
+  constructor(
+    private elementalTypeRepo: ElementalTypeRepo,
+    private readonly i18nService: I18nService
+  ) {}
 
-  async list(pagination: PaginationQueryType) {
+  async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.elementalTypeRepo.list(pagination)
     return {
       statusCode: HttpStatus.OK,
       data,
-      message: ELEMENTAL_TYPE_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(ElementalTypeMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number) {
+  async findById(id: number, lang: string = 'vi') {
     const elementalType = await this.elementalTypeRepo.findById(id)
     if (!elementalType) {
-      throw NotFoundRecordException
+      throw new NotFoundRecordException()
     }
     return {
       data: elementalType,
-      message: ELEMENTAL_TYPE_MESSAGE.GET_SUCCESS
+      message: this.i18nService.translate(ElementalTypeMessage.GET_SUCCESS, lang)
     }
   }
 
-  async create({
-    data,
-    createdById
-  }: {
-    data: CreateElementalTypeBodyType
-    createdById: number
-  }) {
+  async create(
+    {
+      data,
+      createdById
+    }: {
+      data: CreateElementalTypeBodyType
+      createdById: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       // Kiểm tra xem type_name đã tồn tại chưa
       const existingType = await this.elementalTypeRepo.findByTypeName(data.type_name)
       if (existingType) {
-        throw ElementalTypeAlreadyExistsException
+        throw new ElementalTypeAlreadyExistsException()
       }
 
       const result = await this.elementalTypeRepo.create({
@@ -59,39 +66,42 @@ export class ElementalTypeService {
       return {
         statusCode: HttpStatus.CREATED,
         data: result,
-        message: ELEMENTAL_TYPE_MESSAGE.CREATE_SUCCESS
+        message: this.i18nService.translate(ElementalTypeMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
-        throw ElementalTypeAlreadyExistsException
+        throw new ElementalTypeAlreadyExistsException()
       }
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async update({
-    id,
-    data,
-    updatedById
-  }: {
-    id: number
-    data: UpdateElementalTypeBodyType
-    updatedById: number
-  }) {
+  async update(
+    {
+      id,
+      data,
+      updatedById
+    }: {
+      id: number
+      data: UpdateElementalTypeBodyType
+      updatedById: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       const existElementalType = await this.elementalTypeRepo.findById(id)
       if (!existElementalType) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
 
       // Nếu update type_name, kiểm tra xem có trùng với type khác không
       if (data.type_name && data.type_name !== existElementalType.type_name) {
         const existingType = await this.elementalTypeRepo.findByTypeName(data.type_name)
         if (existingType) {
-          throw ElementalTypeAlreadyExistsException
+          throw new ElementalTypeAlreadyExistsException()
         }
       }
 
@@ -103,23 +113,26 @@ export class ElementalTypeService {
       return {
         statusCode: HttpStatus.OK,
         data: elementalType,
-        message: ELEMENTAL_TYPE_MESSAGE.UPDATE_SUCCESS
+        message: this.i18nService.translate(ElementalTypeMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       if (isUniqueConstraintPrismaError(error)) {
-        throw ElementalTypeAlreadyExistsException
+        throw new ElementalTypeAlreadyExistsException()
       }
       if (isForeignKeyConstraintPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async delete({ id, deletedById }: { id: number; deletedById: number }) {
+  async delete(
+    { id, deletedById }: { id: number; deletedById: number },
+    lang: string = 'vi'
+  ) {
     try {
       await this.elementalTypeRepo.delete({
         id,
@@ -128,22 +141,22 @@ export class ElementalTypeService {
       return {
         statusCode: HttpStatus.OK,
         data: null,
-        message: ELEMENTAL_TYPE_MESSAGE.DELETE_SUCCESS
+        message: this.i18nService.translate(ElementalTypeMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async getAllActiveTypes() {
+  async getAllActiveTypes(lang: string = 'vi') {
     const data = await this.elementalTypeRepo.getAllActiveTypes()
     return {
       statusCode: HttpStatus.OK,
       data,
-      message: ELEMENTAL_TYPE_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(ElementalTypeMessage.GET_LIST_SUCCESS, lang)
     }
   }
 }

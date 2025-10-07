@@ -1,12 +1,16 @@
 import { BadRequestException } from '@nestjs/common'
 
-export function parseQs(
-  qs?: string,
-  validFields?: string[]
-): {
+type QSResult = {
   where?: Record<string, any>
   orderBy?: Record<string, 'asc' | 'desc'>
-} {
+}
+
+export function parseQs(
+  qs?: string,
+  validFields?: string[],
+  relationFields: string[] = [], // relation array fields
+  arrayFields: string[] = [] // scalar array fields
+): QSResult {
   if (!qs) return {}
 
   const where: Record<string, any> = {}
@@ -20,7 +24,7 @@ export function parseQs(
   for (const part of parts) {
     // --- SORT ---
     if (part.startsWith('sort:')) {
-      const rawField = part.slice(5) // bỏ "sort:"
+      const rawField = part.slice(5)
       const field = rawField.startsWith('-') ? rawField.slice(1) : rawField
 
       if (validFields && !validFields.includes(field)) {
@@ -46,18 +50,49 @@ export function parseQs(
       )
     }
 
+    // --- Parse giá trị ---
+    let parsedValue: any
+    if (value.includes('|')) {
+      parsedValue = value.split('|').map((v) => {
+        if (v === 'true') return true
+        if (v === 'false') return false
+        if (!isNaN(Number(v))) return Number(v)
+        return v
+      })
+    } else {
+      if (value === 'true') parsedValue = true
+      else if (value === 'false') parsedValue = false
+      else if (!isNaN(Number(value))) parsedValue = Number(value)
+      else parsedValue = value
+    }
+
+    // --- Relation array field (Prisma "some") ---
+    if (relationFields.includes(field)) {
+      if (Array.isArray(parsedValue)) {
+        where[field] = { some: { type_name: { in: parsedValue } } }
+      } else {
+        where[field] = { some: { type_name: parsedValue } }
+      }
+      continue
+    }
+
+    // --- Scalar array field ---
+    if (arrayFields.includes(field)) {
+      if (Array.isArray(parsedValue)) {
+        where[field] = { hasSome: parsedValue } // Prisma array filter
+      } else {
+        where[field] = { has: parsedValue }
+      }
+      continue
+    }
+
+    // --- Scalar normal field ---
     if (tokens.length === 1) {
-      // field=value
-      where[field] = isNaN(Number(value)) ? value : Number(value)
+      where[field] = parsedValue
     } else if (tokens.length === 2) {
-      // field:op=value
       const op = tokens[1]
-      if (op === 'eq') {
-        where[field] = isNaN(Number(value)) ? value : Number(value)
-      }
-      if (op === 'like') {
-        where[field] = { contains: value, mode: 'insensitive' }
-      }
+      if (op === 'eq') where[field] = parsedValue
+      else if (op === 'like') where[field] = { contains: value, mode: 'insensitive' }
     }
   }
 

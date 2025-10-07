@@ -1,5 +1,5 @@
-import { TYPE_EFFECTIVENESS_MESSAGE } from '@/common/constants/message'
 import { checkIdSchema } from '@/common/utils/id.validation'
+import { TypeEffectivenessMessage } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
@@ -14,10 +14,10 @@ export const TypeEffectivenessSchema = z.object({
   defenderId: z.number(),
   multiplier: z
     .number()
-    .min(0, 'Multiplier phải lớn hơn hoặc bằng 0')
-    .max(4, 'Multiplier phải nhỏ hơn hoặc bằng 4')
+    .min(0, TypeEffectivenessMessage.MULTIPLIER_MIN)
+    .max(4, TypeEffectivenessMessage.MULTIPLIER_MAX)
     .refine((val) => [0, 0.25, 0.5, 1, 2, 4].includes(val), {
-      message: 'Multiplier chỉ được phép là 0, 0.25, 0.5, 1, 2, hoặc 4'
+      message: TypeEffectivenessMessage.MULTIPLIER_INVALID
     }),
 
   // Audit fields
@@ -38,7 +38,7 @@ export const CreateTypeEffectivenessBodySchema = TypeEffectivenessSchema.pick({
 })
   .strict()
   .refine((data) => data.attackerId !== data.defenderId, {
-    message: 'Attacker và Defender không thể giống nhau',
+    message: TypeEffectivenessMessage.CONFLICT_ATTACK_DEFENSE_TYPE,
     path: ['attackerId']
   })
 
@@ -57,7 +57,7 @@ export const UpdateTypeEffectivenessBodySchema = TypeEffectivenessSchema.pick({
   .partial()
   .strict()
   .refine((data) => data.attackerId !== data.defenderId, {
-    message: 'Attacker và Defender không thể giống nhau',
+    message: TypeEffectivenessMessage.CONFLICT_ATTACK_DEFENSE_TYPE,
     path: ['attackerId']
   })
 
@@ -65,7 +65,7 @@ export const UpdateTypeEffectivenessResSchema = CreateTypeEffectivenessResSchema
 
 // Query Schema cho filtering
 export const GetTypeEffectivenessParamsSchema = z.object({
-  typeEffectivenessId: checkIdSchema(TYPE_EFFECTIVENESS_MESSAGE.INVALID_ID)
+  typeEffectivenessId: checkIdSchema(TypeEffectivenessMessage.INVALID_ID)
 })
 
 export const GetTypeEffectivenessDetailResSchema = z.object({

@@ -11,6 +11,14 @@ type UserIncludeRoleType = UserType & {
   role: RoleType
 }
 
+type UserProfileWithStatsType = UserType & {
+  role: RoleType
+  level: any | null
+  _count: {
+    userPokemons: number
+  }
+}
+
 export type WhereUniqueUserType = { id: number } | { email: string }
 
 @Injectable()
@@ -59,6 +67,34 @@ export class SharedUserRepository {
     })
   }
 
+  findUniqueProfileWithStats(
+    where: WhereUniqueUserType
+  ): Promise<UserProfileWithStatsType | null> {
+    return this.prismaService.user.findFirst({
+      where: {
+        ...where,
+        deletedAt: null
+      },
+      include: {
+        role: true,
+        level: {
+          include: {
+            nextLevel: true
+          }
+        },
+        _count: {
+          select: {
+            userPokemons: {
+              where: {
+                deletedAt: null
+              }
+            }
+          }
+        }
+      }
+    })
+  }
+
   update(where: { id: number }, data: Partial<UserType>): Promise<UserType | null> {
     return this.prismaService.user.update({
       where: {
@@ -66,6 +102,18 @@ export class SharedUserRepository {
         deletedAt: null
       },
       data
+    })
+  }
+
+  addLevelForUser(userId: number, levelId: number) {
+    return this.prismaService.user.update({
+      where: {
+        id: userId,
+        deletedAt: null
+      },
+      data: {
+        levelId
+      }
     })
   }
 }

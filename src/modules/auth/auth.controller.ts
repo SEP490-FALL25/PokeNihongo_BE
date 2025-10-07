@@ -4,9 +4,12 @@ import { RateLimit } from '@/common/decorators/rate-limit.decorator'
 import { UserAgent } from '@/common/decorators/user-agent.decorator'
 import { RateLimitGuard } from '@/common/guards/rate-limit.guard'
 import envConfig from '@/config/env.config'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import {
+  AccountResDTO,
   ChangePasswordBodyDTO,
   ForgotPasswordBodyDTO,
+  GetAccountProfileResDTO,
   GetAuthorizationUrlResDTO,
   LoginBodyDTO,
   LoginResDTO,
@@ -16,6 +19,7 @@ import {
   RegisterBodyDTO,
   RegisterResDTO,
   ResetPasswordBodyDTO,
+  UpdateMeBodyDTO,
   VerifyOTPBodyDTO
 } from '@/modules/auth/dto/auth.zod-dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
@@ -28,6 +32,7 @@ import {
   Ip,
   Param,
   Post,
+  Put,
   Query,
   Res,
   UseGuards,
@@ -54,9 +59,10 @@ export class AuthController {
   sendOTP(
     @Body() body: VerifyOTPBodyDTO,
     @UserAgent() userAgent: string,
-    @Ip() ip: string
+    @Ip() ip: string,
+    @I18nLang() lang: string
   ) {
-    return this.authService.verifyOTP(body, userAgent, ip)
+    return this.authService.verifyOTP(body, userAgent, ip, lang)
   }
 
   @Post('login')
@@ -64,12 +70,20 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @IsPublic()
   @ZodSerializerDto(LoginResDTO)
-  login(@Body() body: LoginBodyDTO, @UserAgent() userAgent: string, @Ip() ip: string) {
-    return this.authService.login({
-      ...body,
-      userAgent,
-      ip
-    })
+  login(
+    @Body() body: LoginBodyDTO,
+    @UserAgent() userAgent: string,
+    @Ip() ip: string,
+    @I18nLang() lang: string
+  ) {
+    return this.authService.login(
+      {
+        ...body,
+        userAgent,
+        ip
+      },
+      lang
+    )
   }
 
   @Post('register')
@@ -81,9 +95,10 @@ export class AuthController {
   register(
     @Body() body: RegisterBodyDTO,
     @UserAgent() userAgent: string,
-    @Ip() ip: string
+    @Ip() ip: string,
+    @I18nLang() lang: string
   ) {
-    return this.authService.register(body, userAgent, ip)
+    return this.authService.register(body, userAgent, ip, lang)
   }
 
   @Post('refresh-token')
@@ -107,8 +122,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ZodSerializerDto(MessageResDTO)
-  logout(@Body() body: LogoutBodyDTO) {
-    return this.authService.logout(body.refreshToken)
+  logout(@Body() body: LogoutBodyDTO, @I18nLang() lang: string) {
+    return this.authService.logout(body.refreshToken, lang)
   }
 
   // gui otp qua email
@@ -122,8 +137,8 @@ export class AuthController {
     keyGenerator: (req) => `forgot_password:${req.ip}:${req.body.email}` // rate limit theo IP + email
   })
   @ZodSerializerDto(MessageResDTO)
-  forgotPassword(@Body() body: ForgotPasswordBodyDTO) {
-    return this.authService.forgotPassword(body)
+  forgotPassword(@Body() body: ForgotPasswordBodyDTO, @I18nLang() lang: string) {
+    return this.authService.forgotPassword(body, lang)
   }
 
   @Post('reset-password')
@@ -131,9 +146,10 @@ export class AuthController {
   @ZodSerializerDto(MessageResDTO)
   resetPassword(
     @Body() body: ResetPasswordBodyDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.authService.resetPassword(body, userId)
+    return this.authService.resetPassword(body, userId, lang)
   }
 
   // change-password
@@ -141,17 +157,18 @@ export class AuthController {
   @ZodSerializerDto(MessageResDTO)
   changePassword(
     @Body() body: ChangePasswordBodyDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.authService.changePassword(body, userId)
+    return this.authService.changePassword(body, userId, lang)
   }
 
-  @Get('verified-email/:email')
-  @IsPublic()
-  async verifiedEmail(@Param('email') email: string, @Res() res: Response) {
-    const data = await this.authService.verifiedEmail(email)
-    return res.redirect(`${envConfig.FE_URL}/auth/login?message=${data.message}`)
-  }
+  // @Get('verified-email/:email')
+  // @IsPublic()
+  // async verifiedEmail(@Param('email') email: string, @Res() res: Response) {
+  //   const data = await this.authService.verifiedEmail(email)
+  //   return res.redirect(`${envConfig.FE_URL}/auth/login?message=${data.message}`)
+  // }
 
   // neu mail ton tai la login, khong thi la register
   @Get('check-email/:email')
@@ -165,38 +182,49 @@ export class AuthController {
   checkEmailExist(
     @Param('email') email: string,
     @UserAgent() userAgent: string,
-    @Ip() ip: string
+    @Ip() ip: string,
+    @I18nLang() lang: string
   ) {
-    return this.authService.checkMailToAction(email, userAgent, ip)
+    return this.authService.checkMailToAction(email, userAgent, ip, lang)
   }
 
-  @Post('resend-verified-email/:email')
-  @IsPublic()
-  @UseGuards(RateLimitGuard)
-  @RateLimit({
-    windowMs: 60 * 1000, // 1 phút
-    max: 3, // tối đa 3 lần
-    keyGenerator: (req) => `resend_email:${req.ip}:${req.params.email}` // rate limit theo IP + email
-  })
-  @ZodSerializerDto(MessageResDTO)
-  resendVerifiedEmail(@Param('email') email: string) {
-    return this.authService.resendVerifiedEmail(email)
+  // @Post('resend-verified-email/:email')
+  // @IsPublic()
+  // @UseGuards(RateLimitGuard)
+  // @RateLimit({
+  //   windowMs: 60 * 1000, // 1 phút
+  //   max: 3, // tối đa 3 lần
+  //   keyGenerator: (req) => `resend_email:${req.ip}:${req.params.email}` // rate limit theo IP + email
+  // })
+  // @ZodSerializerDto(MessageResDTO)
+  // resendVerifiedEmail(@Param('email') email: string, @I18nLang() lang: string) {
+  //   return this.authService.resendVerifiedEmail(email)
+  // }
+
+  @Get('me')
+  @ApiBearerAuth()
+  @ZodSerializerDto(GetAccountProfileResDTO)
+  me(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
+    return this.authService.getMe(userId, lang)
   }
 
-  // @Get('me')
-  // @ZodSerializerDto(GetAccountProfileResDTO)
-  // me(@ActiveUser('userId') userId: number) {
-  //   return this.authService.getMe(userId)
-  // }
-
-  // @Put('me')
-  // @ZodSerializerDto(AccountResDTO)
-  // updateMe(@Body() body: UpdateMeBodyDTO, @ActiveUser('userId') userId: number) {
-  //   return this.authService.updateMe({
-  //     userId,
-  //     data: body
-  //   })
-  // }
+  @Put('me')
+  @ZodSerializerDto(AccountResDTO)
+  @ApiBearerAuth()
+  @ApiBody({ type: UpdateMeBodyDTO })
+  updateMe(
+    @Body() body: UpdateMeBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.authService.updateMe(
+      {
+        userId,
+        data: body
+      },
+      lang
+    )
+  }
 
   //oauth
   @Get('google-link')

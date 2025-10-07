@@ -1,4 +1,5 @@
 import { TypeOfVerificationCode } from '@/common/constants/auth.constant'
+import { AuthMessage } from '@/i18n/message-keys'
 import { LevelSchema } from '@/modules/level/entities/level.entity'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -84,7 +85,7 @@ export const LoginResSchema = z
 export const RegisterBodySchema = UserSchema.pick({
   name: true,
   email: true,
-  password: true,
+  password: true
 })
   .extend({
     confirmPassword: z.string().min(6).max(100)
@@ -168,7 +169,7 @@ export const ResetPasswordBodySchema = z
     if (confirmNewPassword !== newPassword) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Mật khẩu mới và mật khẩu xác nhận phải giống nhau',
+        message: AuthMessage.PASSWORD_MUST_BE_MATCH,
         path: ['confirmNewPassword']
       })
     }
@@ -185,7 +186,7 @@ export const ChangePasswordBodySchema = z
     if (confirmNewPassword !== newPassword) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Mật khẩu mới và mật khẩu xác nhận phải giống nhau',
+        message: AuthMessage.PASSWORD_MUST_BE_MATCH,
         path: ['confirmNewPassword']
       })
     }
@@ -193,9 +194,9 @@ export const ChangePasswordBodySchema = z
 
 export const UpdateMeBodySchema = z
   .object({
-    name: z.string().trim().min(2).max(256),
-    phoneNumber: z.string().min(9).max(15),
-    avatar: z.string().url().optional()
+    name: z.string().trim().min(2).max(256).optional(),
+    phoneNumber: z.string().min(9).max(15).optional(),
+    avatar: z.string().url().optional() // Thêm avatar như URL optional
   })
   .strict()
 
@@ -207,6 +208,23 @@ export const AccountResSchema = z.object({
 export const VerifyEmailBodySchema = UserSchema.pick({
   email: true
 }).strict()
+
+export const GetAccountProfileResSchema = z
+  .object({
+    statusCode: z.number(),
+    data: z.object({
+      ...UserSchema.omit({ password: true }).shape,
+      role: RoleSchema.pick({ id: true, name: true, description: true }),
+
+      level: z.object({
+        ...LevelSchema.shape,
+        nextLevel: LevelSchema.omit({ nextLevelId: true, rewardId: true }).nullable()
+      }),
+      pokemonCount: z.number()
+    }),
+    message: z.string()
+  })
+  .strict()
 
 //type
 export type VerifyEmailBodyType = z.infer<typeof VerifyEmailBodySchema>
@@ -230,5 +248,6 @@ export type ResetPasswordBodyType = z.infer<typeof ResetPasswordBodySchema>
 export type ChangePasswordBodyType = z.infer<typeof ChangePasswordBodySchema>
 export type UpdateMeBodyType = z.infer<typeof UpdateMeBodySchema>
 export type AccountResType = z.infer<typeof AccountResSchema>
+export type GetAccountProfileResType = z.infer<typeof GetAccountProfileResSchema>
 
 export type VerifyOTPBodyType = z.infer<typeof VerifyOTPBodySchema>

@@ -1,6 +1,6 @@
 import { LEVEL_TYPE } from '@/common/constants/level.constant'
-import { LEVEL_MESSAGE } from '@/common/constants/message'
 import { checkIdSchema } from '@/common/utils/id.validation'
+import { LevelMessage } from '@/i18n/message-keys'
 import { RewardSchema } from '@/modules/reward/entities/reward.entity'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -10,8 +10,8 @@ patchNestJsSwagger()
 
 export const LevelSchema = z.object({
   id: z.number(),
-  levelNumber: z.number().min(1, LEVEL_MESSAGE.LEVEL_NUMBER_MIN),
-  requiredExp: z.number().min(0, LEVEL_MESSAGE.REQUIRED_EXP_REQUIRED),
+  levelNumber: z.number().min(1, LevelMessage.LEVEL_NUMBER_MIN),
+  requiredExp: z.number().min(0, LevelMessage.REQUIRED_EXP_REQUIRED),
   levelType: z.enum([LEVEL_TYPE.USER, LEVEL_TYPE.POKEMON]),
   nextLevelId: z.number().optional().nullable(),
   rewardId: z.number().optional().nullable(),
@@ -37,13 +37,13 @@ export const CreateLevelResSchema = z.object({
   message: z.string()
 })
 
-export const UpdateLevelBodySchema = CreateLevelBodySchema
+export const UpdateLevelBodySchema = CreateLevelBodySchema.partial().strict()
 
 export const UpdateLevelResSchema = CreateLevelResSchema
 
 export const GetLevelParamsSchema = z
   .object({
-    levelId: checkIdSchema(LEVEL_MESSAGE.INVALID_DATA)
+    levelId: checkIdSchema(LevelMessage.INVALID_DATA)
   })
   .strict()
 
