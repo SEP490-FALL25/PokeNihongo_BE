@@ -35,6 +35,7 @@ model User {
   updatedRewards             Reward[]            @relation("RewardUpdatedBy")
   deletedRewards             Reward[]            @relation("RewardDeletedBy")
   createdVocabularies        Vocabulary[]        @relation("VocabularyCreatedBy")
+  createdLessons             Lesson[]            @relation("LessonCreatedBy")
   createdPokemons            Pokemon[]           @relation("PokemonCreatedBy")
   updatedPokemons            Pokemon[]           @relation("PokemonUpdatedBy")
   deletedPokemons            Pokemon[]           @relation("PokemonDeletedBy")
@@ -297,6 +298,9 @@ model Reward {
   // Quan hệ với Level
   levels Level[]
 
+  // Quan hệ với Lesson
+  lessons Lesson[]
+
   // Audit fields
   createdById Int?
   createdBy   User? @relation("RewardCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -511,4 +515,81 @@ enum RarityPokemon {
   RARE
   EPIC
   LEGENDARY
+}
+
+// Model LessonCategory (Danh mục bài học)
+model LessonCategory {
+  id        Int      @id @default(autoincrement())
+  nameKey   String   @unique @db.VarChar(200) // Key để dịch tên danh mục
+  slug      String   @unique @db.VarChar(200) // URL slug cho danh mục
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan hệ với Lesson
+  lessons Lesson[]
+
+  @@index([nameKey])
+  @@index([slug])
+}
+
+// Model Lesson (Bài học)
+model Lesson {
+  id                   Int       @id @default(autoincrement())
+  slug                 String    @unique @db.VarChar(200) // URL slug cho bài học
+  titleJp              String    @db.VarChar(500) // Tiêu đề bài học bằng tiếng Nhật
+  titleKey             String    @db.VarChar(500) // Key để dịch tiêu đề bài học
+  levelJlpt            Int? // Cấp độ JLPT (1-5)
+  estimatedTimeMinutes Int       @default(30) // Thời gian ước tính hoàn thành (phút)
+  lessonOrder          Int       @default(0) // Thứ tự bài học trong danh mục
+  isPublished          Boolean   @default(false) // Trạng thái xuất bản
+  publishedAt          DateTime? // Thời gian xuất bản
+  version              String    @default("1.0.0") @db.VarChar(20) // Phiên bản bài học
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Quan hệ với LessonCategory
+  lessonCategoryId Int
+  lessonCategory   LessonCategory @relation(fields: [lessonCategoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  // Quan hệ với Reward
+  rewardId Int?
+  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  // Quan hệ với User (created_by)
+  createdById Int
+  createdBy   User @relation("LessonCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  // Quan hệ với LessonContents
+  lessonContents LessonContents[]
+
+  @@index([slug])
+  @@index([titleKey])
+  @@index([levelJlpt])
+  @@index([lessonCategoryId])
+  @@index([lessonOrder])
+  @@index([isPublished])
+  @@index([publishedAt])
+}
+
+// Model LessonContents (Nội dung bài học)
+model LessonContents {
+  id           Int      @id @default(autoincrement())
+  lessonId     Int // Foreign key đến Lesson
+  contentId    Int // Polymorphic foreign key
+  contentType  String   @db.VarChar(50) // Loại nội dung (vocabulary, grammar, kanji, etc.)
+  contentOrder Int      @default(0) // Thứ tự nội dung trong bài học
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Quan hệ với Lesson
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Polymorphic relationships (sẽ được xử lý trong service layer)
+  // contentId có thể trỏ đến Vocabulary.ID, Grammar.ID, hoặc Kanji.ID
+  // tùy thuộc vào giá trị của contentType
+
+  @@index([lessonId])
+  @@index([contentId])
+  @@index([contentType])
+  @@index([contentOrder])
 }

@@ -29,6 +29,14 @@ import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserModule } from './modules/user/user.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
+import { ElementalTypeModule } from './modules/elemental-type/elemental-type.module';
+import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module';
+import { PokemonModule } from './modules/pokemon/pokemon.module';
+import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module';
+import { LessonModule } from './modules/lesson/lesson.module';
+import { LessonCategoryModule } from './modules/lesson-category/lesson-category.module';
+import { LessonContentModule } from './modules/lesson-content/lesson-content.module';
+
 
 @Module({
   imports: [
@@ -57,6 +65,9 @@ import { SharedModule } from './shared/shared.module'
     TypeEffectivenessModule,
     PokemonModule,
     UserPokemonModule,
+    LessonModule,
+    LessonCategoryModule,
+    LessonContentModule,
     UserModule
   ],
 
@@ -74,8 +85,10 @@ import { SharedModule } from './shared/shared.module'
     }
   ]
 })
+
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(RequestContextMiddleware).forRoutes('*')
   }
 }
+
