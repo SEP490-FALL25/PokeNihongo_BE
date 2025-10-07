@@ -33,6 +33,8 @@ import { PokemonModule } from './modules/pokemon/pokemon.module';
 import { LessonModule } from './modules/lesson/lesson.module';
 import { LessonCategoryModule } from './modules/lesson-category/lesson-category.module';
 import { LessonContentModule } from './modules/lesson-content/lesson-content.module';
+import { GrammarModule } from './modules/grammar/grammar.module';
+import { GrammarUsageModule } from './modules/grammar-usage/grammar-usage.module';
 
 
 @Module({
@@ -65,6 +67,8 @@ import { LessonContentModule } from './modules/lesson-content/lesson-content.mod
     LessonModule,
     LessonCategoryModule,
     LessonContentModule,
+    GrammarModule,
+    GrammarUsageModule,
     UserModule
   ],
 
