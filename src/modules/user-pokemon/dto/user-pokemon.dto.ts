@@ -5,6 +5,7 @@ import {
   CreateUserPokemonResSchema,
   EvolvePokemonBodySchema,
   EvolvePokemonResSchema,
+  GetUserPokemonAddExpDetailResSchema,
   GetUserPokemonDetailResSchema,
   GetUserPokemonParamsSchema,
   UpdateUserPokemonBodySchema,
@@ -25,3 +26,7 @@ export class GetUserPokemonDetailResDTO extends createZodDto(
   GetUserPokemonDetailResSchema
 ) {}
 export class EvolvePokemonResDTO extends createZodDto(EvolvePokemonResSchema) {}
+
+export class GetUserPokemonAddExpDetailResDTO extends createZodDto(
+  GetUserPokemonAddExpDetailResSchema
+) {}

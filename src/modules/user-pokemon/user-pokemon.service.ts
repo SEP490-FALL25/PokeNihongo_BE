@@ -9,6 +9,7 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { Injectable } from '@nestjs/common'
+import { PrismaService } from 'src/shared/services/prisma.service'
 import { LevelRepo } from '../level/level.repo'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
 import {
@@ -35,7 +36,8 @@ export class UserPokemonService {
     private levelRepo: LevelRepo,
     private pokemonRepo: PokemonRepo,
     private readonly sharedUserRepository: SharedUserRepository,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private prismaService: PrismaService
   ) {}
 
   async list(pagination: PaginationQueryType, userId?: number, lang: string = 'vi') {
@@ -47,14 +49,150 @@ export class UserPokemonService {
     }
   }
 
+  // Helper method to calculate weaknesses for a Pokemon (copied from PokemonService)
+  private async getWeaknessesForPokemon(pokemonTypes: any[] | undefined) {
+    if (!pokemonTypes || pokemonTypes.length === 0) {
+      return []
+    }
+
+    const typeIds = pokemonTypes.map((type) => type.id)
+
+    const typeEffectiveness = await this.prismaService.typeEffectiveness.findMany({
+      where: {
+        defenderId: {
+          in: typeIds
+        },
+        deletedAt: null
+      },
+      include: {
+        attacker: {
+          select: {
+            id: true,
+            type_name: true,
+            display_name: true,
+            color_hex: true
+          }
+        }
+      }
+    })
+
+    const weaknessMap = new Map<
+      number,
+      {
+        type: any
+        multiplier: number
+      }
+    >()
+
+    const attackerGroups = new Map<number, any[]>()
+    for (const effectiveness of typeEffectiveness) {
+      const attackerId = effectiveness.attackerId
+      if (!attackerGroups.has(attackerId)) {
+        attackerGroups.set(attackerId, [])
+      }
+      attackerGroups.get(attackerId)!.push(effectiveness)
+    }
+
+    for (const [attackerId, effectivenesses] of attackerGroups) {
+      let finalMultiplier = 1
+      const attackerType = effectivenesses[0].attacker
+
+      for (const effectiveness of effectivenesses) {
+        finalMultiplier *= effectiveness.multiplier
+      }
+
+      if (finalMultiplier > 1) {
+        weaknessMap.set(attackerId, {
+          type: attackerType,
+          multiplier: finalMultiplier
+        })
+      }
+    }
+
+    return Array.from(weaknessMap.values())
+      .sort((a, b) => b.multiplier - a.multiplier)
+      .map((w) => ({
+        ...w.type,
+        effectiveness_multiplier: w.multiplier
+      }))
+  }
+
   async findById(id: number, lang: string = 'vi') {
     const userPokemon = await this.userPokemonRepo.findById(id)
     if (!userPokemon) {
       throw new UserPokemonNotFoundException()
     }
+
+    // Calculate weaknesses for the Pokemon
+    let weaknesses: any[] = []
+    if (userPokemon.pokemon?.types) {
+      weaknesses = await this.getWeaknessesForPokemon(userPokemon.pokemon.types)
+    }
+
+    // Process nextPokemons with their weaknesses, nextPokemons, and level info
+    const nextPokemonsWithDetails = await Promise.all(
+      (userPokemon.pokemon?.nextPokemons || []).map(async (nextPokemon: any) => {
+        const nextWeaknesses = await this.getWeaknessesForPokemon(nextPokemon.types)
+
+        // Get level info for this pokemon if user owns it
+        let userLevel: any = null
+        const userOwnedPokemon = await this.userPokemonRepo.findByUserAndPokemon(
+          userPokemon.userId,
+          nextPokemon.id
+        )
+        if (userOwnedPokemon) {
+          const userPokemonDetail = await this.userPokemonRepo.findById(
+            userOwnedPokemon.id
+          )
+          userLevel = userPokemonDetail?.level || null
+        }
+
+        // Process nested nextPokemons
+        const nestedNextPokemons = await Promise.all(
+          (nextPokemon.nextPokemons || []).map(async (nestedNext: any) => {
+            const nestedWeaknesses = await this.getWeaknessesForPokemon(nestedNext.types)
+            return {
+              ...nestedNext,
+              weaknesses: nestedWeaknesses
+            }
+          })
+        )
+
+        return {
+          ...nextPokemon,
+          weaknesses: nextWeaknesses,
+          nextPokemons: nestedNextPokemons,
+          level: userLevel
+        }
+      })
+    )
+
+    // Calculate weaknesses for each previousPokemon
+    const previousPokemonsWithWeaknesses = await Promise.all(
+      (userPokemon.pokemon?.previousPokemons || []).map(async (prevPokemon: any) => {
+        const prevWeaknesses = await this.getWeaknessesForPokemon(prevPokemon.types)
+        return {
+          ...prevPokemon,
+          weaknesses: prevWeaknesses
+        }
+      })
+    )
+
+    const enrichedUserPokemon = {
+      ...userPokemon,
+      pokemon: userPokemon.pokemon
+        ? {
+            ...userPokemon.pokemon,
+            weaknesses,
+            nextPokemons: nextPokemonsWithDetails,
+            previousPokemons: previousPokemonsWithWeaknesses
+          }
+        : userPokemon.pokemon
+    }
+
     return {
       statusCode: 200,
-      data: userPokemon,
+      data: enrichedUserPokemon,
       message: this.i18nService.translate(UserPokemonMessage.GET_DETAIL_SUCCESS, lang)
     }
   }
@@ -64,6 +202,18 @@ export class UserPokemonService {
     lang: string = 'vi'
   ) {
     try {
+      // Get Pokemon info to use nameJp as nickname if not provided
+      const pokemon = await this.pokemonRepo.findById(data.pokemonId)
+      if (!pokemon) {
+        throw new NotFoundRecordException()
+      }
+
+      // If no nickname provided, use Pokemon's nameJp
+      let nickname = data.nickname
+      if (!nickname) {
+        nickname = pokemon.nameJp
+      }
+
       // Get user check is first pokemon
       const user = await this.sharedUserRepository.findUnique({ id: userId })
       let isFirstPokemon = false
@@ -87,10 +237,10 @@ export class UserPokemonService {
       }
 
       // Check if nickname is already used by this user
-      if (data.nickname) {
+      if (nickname) {
         const existingNickname = await this.userPokemonRepo.findByUserAndNickname(
           userId,
-          data.nickname
+          nickname
         )
         if (existingNickname) {
           throw new NicknameAlreadyExistsException()
@@ -107,6 +257,7 @@ export class UserPokemonService {
         userId,
         data: {
           ...data,
+          nickname,
           levelId: firstPokemonLevel.id,
           isMain: isFirstPokemon // Set isMain = true nếu là Pokemon đầu tiên
         }

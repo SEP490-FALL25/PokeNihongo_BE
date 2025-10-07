@@ -80,6 +80,188 @@ export const GetUserPokemonDetailResSchema = z.object({
         nameJp: z.string(),
         nameTranslations: z.any(),
         description: z.string().nullable(),
+        conditionLevel: z.number().nullable(),
+        imageUrl: z.string().nullable(),
+        rarity: z.string(),
+        types: z
+          .array(
+            z.object({
+              id: z.number(),
+              type_name: z.string(),
+              display_name: z.any(),
+              color_hex: z.string()
+            })
+          )
+          .optional(),
+        weaknesses: z
+          .array(
+            z.object({
+              id: z.number(),
+              type_name: z.string(),
+              display_name: z.any(),
+              color_hex: z.string(),
+              effectiveness_multiplier: z.number()
+            })
+          )
+          .optional()
+          .nullable(),
+        nextPokemons: z
+          .array(
+            z.object({
+              id: z.number(),
+              pokedex_number: z.number(),
+              nameJp: z.string(),
+              nameTranslations: z.any(),
+              description: z.string().nullable(),
+              conditionLevel: z.number().nullable(),
+              isStarted: z.boolean().nullable(),
+              imageUrl: z.string().nullable(),
+              rarity: z.string(),
+              types: z
+                .array(
+                  z.object({
+                    id: z.number(),
+                    type_name: z.string(),
+                    display_name: z.any(),
+                    color_hex: z.string()
+                  })
+                )
+                .optional(),
+              weaknesses: z
+                .array(
+                  z.object({
+                    id: z.number(),
+                    type_name: z.string(),
+                    display_name: z.any(),
+                    color_hex: z.string(),
+                    effectiveness_multiplier: z.number()
+                  })
+                )
+                .optional()
+                .nullable(),
+              nextPokemons: z
+                .array(
+                  z.object({
+                    id: z.number(),
+                    pokedex_number: z.number(),
+                    nameJp: z.string(),
+                    nameTranslations: z.any(),
+                    description: z.string().nullable(),
+                    conditionLevel: z.number().nullable(),
+                    isStarted: z.boolean().nullable(),
+                    imageUrl: z.string().nullable(),
+                    rarity: z.string(),
+                    types: z
+                      .array(
+                        z.object({
+                          id: z.number(),
+                          type_name: z.string(),
+                          display_name: z.any(),
+                          color_hex: z.string()
+                        })
+                      )
+                      .optional()
+                      .nullable(),
+                    weaknesses: z
+                      .array(
+                        z.object({
+                          id: z.number(),
+                          type_name: z.string(),
+                          display_name: z.any(),
+                          color_hex: z.string(),
+                          effectiveness_multiplier: z.number()
+                        })
+                      )
+                      .optional()
+                      .nullable()
+                  })
+                )
+                .optional()
+                .nullable(),
+              level: z
+                .object({
+                  id: z.number(),
+                  levelNumber: z.number(),
+                  requiredExp: z.number(),
+                  levelType: z.string()
+                })
+                .nullable()
+            })
+          )
+          .optional(),
+        previousPokemons: z
+          .array(
+            z.object({
+              id: z.number(),
+              pokedex_number: z.number(),
+              nameJp: z.string(),
+              nameTranslations: z.any(),
+              description: z.string().nullable(),
+              conditionLevel: z.number().nullable(),
+              isStarted: z.boolean().nullable(),
+              imageUrl: z.string().nullable(),
+              rarity: z.string(),
+              types: z
+                .array(
+                  z.object({
+                    id: z.number(),
+                    type_name: z.string(),
+                    display_name: z.any(),
+                    color_hex: z.string()
+                  })
+                )
+                .optional()
+                .nullable(),
+              weaknesses: z
+                .array(
+                  z.object({
+                    id: z.number(),
+                    type_name: z.string(),
+                    display_name: z.any(),
+                    color_hex: z.string(),
+                    effectiveness_multiplier: z.number()
+                  })
+                )
+                .optional()
+                .nullable()
+            })
+          )
+          .optional()
+          .nullable()
+      })
+      .optional()
+      .nullable(),
+    level: z
+      .object({
+        id: z.number(),
+        levelNumber: z.number(),
+        requiredExp: z.number(),
+        levelType: z.string()
+      })
+      .optional()
+      .nullable()
+  }),
+  message: z.string()
+})
+
+export const GetUserPokemonAddExpDetailResSchema = z.object({
+  statusCode: z.number(),
+  data: UserPokemonSchema.extend({
+    user: z
+      .object({
+        id: z.number(),
+        name: z.string(),
+        email: z.string()
+      })
+      .optional(),
+    pokemon: z
+      .object({
+        id: z.number(),
+        pokedex_number: z.number(),
+        nameJp: z.string(),
+        nameTranslations: z.any(),
+        description: z.string().nullable(),
+        conditionLevel: z.number().nullable(),
         imageUrl: z.string().nullable(),
         rarity: z.string(),
         types: z
@@ -101,7 +283,10 @@ export const GetUserPokemonDetailResSchema = z.object({
         requiredExp: z.number(),
         levelType: z.string()
       })
-      .optional()
+      .optional(),
+    leveledUp: z.boolean().optional(),
+    levelsGained: z.number().optional(),
+    finalExp: z.number().optional()
   }),
   message: z.string()
 })

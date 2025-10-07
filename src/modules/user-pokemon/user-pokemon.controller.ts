@@ -10,6 +10,7 @@ import {
   CreateUserPokemonResDTO,
   EvolvePokemonBodyDTO,
   EvolvePokemonResDTO,
+  GetUserPokemonAddExpDetailResDTO,
   GetUserPokemonDetailResDTO,
   GetUserPokemonParamsDTO,
   UpdateUserPokemonBodyDTO,
@@ -103,7 +104,7 @@ export class UserPokemonController {
   }
 
   @Post(':userPokemonId/add-exp')
-  @ZodSerializerDto(GetUserPokemonDetailResDTO)
+  @ZodSerializerDto(GetUserPokemonAddExpDetailResDTO)
   addExp(
     @Param() params: GetUserPokemonParamsDTO,
     @Body() body: AddExpBodyDTO,

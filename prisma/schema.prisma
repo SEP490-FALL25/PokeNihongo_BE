@@ -406,7 +406,6 @@ model UserPokemon {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@unique([userId, nickname]) // optional: mỗi user không có 2 con trùng nickname (NULL cho phép)
   @@index([userId])
   @@index([pokemonId])
 }
