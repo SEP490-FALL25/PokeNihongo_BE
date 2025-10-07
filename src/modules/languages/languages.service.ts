@@ -28,13 +28,17 @@ export class LanguagesService {
             const result = await this.languagesRepository.findMany(params)
 
             return {
+                statusCode: 200,
+                message: LANGUAGES_MESSAGE.GET_LIST_SUCCESS,
                 data: {
-                    items: result.data,
-                    total: result.total,
-                    page: result.page,
-                    limit: result.limit
-                },
-                message: LANGUAGES_MESSAGE.GET_LIST_SUCCESS
+                    results: result.data,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
             }
         } catch (error) {
             this.logger.error('Error finding languages:', error)
@@ -219,7 +223,7 @@ export class LanguagesService {
         }
     }
 
-   
+
     /**
      * Kiểm tra ngôn ngữ có được hỗ trợ không
      */
