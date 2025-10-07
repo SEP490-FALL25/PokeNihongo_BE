@@ -66,6 +66,23 @@ export const GetWordTypeByNameKeyParamsSchema = z.object({
     nameKey: z.string().min(1, 'Name key không được để trống')
 })
 
+// Response schemas
+export const WordTypeListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(WordTypeSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
 // Type exports
 export type WordType = z.infer<typeof WordTypeSchema>
 export type CreateWordTypeBodyType = z.infer<typeof CreateWordTypeSchema>
@@ -73,3 +90,4 @@ export type UpdateWordTypeBodyType = z.infer<typeof UpdateWordTypeSchema>
 export type GetWordTypeByIdParamsType = z.infer<typeof GetWordTypeByIdParamsSchema>
 export type GetWordTypeListQueryType = z.infer<typeof GetWordTypeListQuerySchema>
 export type GetWordTypeByNameKeyParamsType = z.infer<typeof GetWordTypeByNameKeyParamsSchema>
+export type WordTypeListResType = z.infer<typeof WordTypeListResSchema>

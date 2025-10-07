@@ -115,6 +115,23 @@ export const GetMeaningsByVocabularyParamsSchema = z.object({
     vocabularyId: z.string().transform((val) => parseInt(val, 10))
 })
 
+// Response schemas
+export const MeaningListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(MeaningSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
 // Type exports
 export type MeaningType = z.infer<typeof MeaningSchema>
 export type CreateMeaningBodyType = z.infer<typeof CreateMeaningSchema>
@@ -123,3 +140,4 @@ export type UpdateMeaningBodyType = z.infer<typeof UpdateMeaningSchema>
 export type GetMeaningByIdParamsType = z.infer<typeof GetMeaningByIdParamsSchema>
 export type GetMeaningListQueryType = z.infer<typeof GetMeaningListQuerySchema>
 export type GetMeaningsByVocabularyParamsType = z.infer<typeof GetMeaningsByVocabularyParamsSchema>
+export type MeaningListResType = z.infer<typeof MeaningListResSchema>

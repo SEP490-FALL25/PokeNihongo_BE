@@ -36,7 +36,20 @@ export class KanjiReadingService {
             }
 
             const result = await this.kanjiReadingRepository.findMany(queryParams)
-            return result
+
+            return {
+                statusCode: 200,
+                message: 'Lấy danh sách cách đọc kanji thành công',
+                data: {
+                    results: result.data,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
+            }
         } catch (error) {
             this.logger.error('Error finding kanji readings:', error)
             throw error

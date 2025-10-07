@@ -42,6 +42,23 @@ export const GetLessonContentListQueryType = z.object({
     contentType: z.string().optional(),
 })
 
+// Response schemas
+export const LessonContentListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(LessonContentType),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
 // Type exports
 export type LessonContentType = z.infer<typeof LessonContentType>
 export type LessonContentWithRelationsType = z.infer<typeof LessonContentWithRelationsType>
@@ -49,3 +66,4 @@ export type CreateLessonContentBodyType = z.infer<typeof CreateLessonContentBody
 export type UpdateLessonContentBodyType = z.infer<typeof UpdateLessonContentBodyType>
 export type GetLessonContentByIdParamsType = z.infer<typeof GetLessonContentByIdParamsType>
 export type GetLessonContentListQueryType = z.infer<typeof GetLessonContentListQueryType>
+export type LessonContentListResType = z.infer<typeof LessonContentListResSchema>
