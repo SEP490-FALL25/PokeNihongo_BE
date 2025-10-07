@@ -30,6 +30,40 @@ type UserPokemonWithRelations = UserPokemonType & {
       display_name: any
       color_hex: string
     }>
+    nextPokemons?: Array<{
+      id: number
+      pokedex_number: number
+      nameJp: string
+      nameTranslations: any
+      description: string | null
+      conditionLevel: number | null
+      isStarted: boolean | null
+      imageUrl: string | null
+      rarity: string
+      types?: Array<{
+        id: number
+        type_name: string
+        display_name: any
+        color_hex: string
+      }>
+    }>
+    previousPokemons?: Array<{
+      id: number
+      pokedex_number: number
+      nameJp: string
+      nameTranslations: any
+      description: string | null
+      conditionLevel: number | null
+      isStarted: boolean | null
+      imageUrl: string | null
+      rarity: string
+      types?: Array<{
+        id: number
+        type_name: string
+        display_name: any
+        color_hex: string
+      }>
+    }>
   }
   level?: {
     id: number
@@ -188,6 +222,72 @@ export class UserPokemonRepo {
                 type_name: true,
                 display_name: true,
                 color_hex: true
+              }
+            },
+            nextPokemons: {
+              select: {
+                id: true,
+                pokedex_number: true,
+                nameJp: true,
+                nameTranslations: true,
+                description: true,
+                conditionLevel: true,
+                isStarted: true,
+                imageUrl: true,
+                rarity: true,
+                types: {
+                  select: {
+                    id: true,
+                    type_name: true,
+                    display_name: true,
+                    color_hex: true
+                  }
+                },
+                nextPokemons: {
+                  select: {
+                    id: true,
+                    pokedex_number: true,
+                    nameJp: true,
+                    nameTranslations: true,
+                    description: true,
+                    conditionLevel: true,
+                    isStarted: true,
+                    imageUrl: true,
+                    rarity: true,
+                    types: {
+                      select: {
+                        id: true,
+                        type_name: true,
+                        display_name: true,
+                        color_hex: true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            previousPokemons: {
+              select: {
+                id: true,
+                pokedex_number: true,
+                nameJp: true,
+                nameTranslations: true,
+                description: true,
+                conditionLevel: true,
+                isStarted: true,
+                imageUrl: true,
+                rarity: true,
+                types: {
+                  select: {
+                    id: true,
+                    type_name: true,
+                    display_name: true,
+                    color_hex: true
+                  }
+                }
+              },
+              where: {
+                deletedAt: null
               }
             }
           }
