@@ -8,6 +8,7 @@
   "license": "LICENSED",
   "scripts": {
     "init-seed-data": "ts-node initialScript/index.ts && ts-node initialScript/import-elemental-types.ts && ts-node initialScript/import-type-effectiveness.ts",
+    "seed-kanji-vocabulary": "ts-node initialScript/seed-default-data.ts",
     "create-permissions": "ts-node initialScript/create-permissions.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

@@ -24,7 +24,6 @@ export const CreateLessonContentBodyType = z.object({
     lessonId: z.number(),
     contentId: z.number(),
     contentType: z.string().min(1).max(50),
-    contentOrder: z.number().min(0).default(0),
 })
 
 export const UpdateLessonContentBodyType = z.object({

@@ -121,4 +121,24 @@ export class LessonContentRepository {
         })
         return count > 0
     }
+
+    async getMaxContentOrder(lessonId: number) {
+        const result = await this.prismaService.lessonContents.findFirst({
+            where: { lessonId },
+            orderBy: { contentOrder: 'desc' },
+            select: { contentOrder: true }
+        })
+        return result?.contentOrder ?? -1
+    }
+
+    async checkContentExistsInLesson(lessonId: number, contentId: number, contentType: string) {
+        const count = await this.prismaService.lessonContents.count({
+            where: {
+                lessonId,
+                contentId,
+                contentType
+            }
+        })
+        return count > 0
+    }
 }

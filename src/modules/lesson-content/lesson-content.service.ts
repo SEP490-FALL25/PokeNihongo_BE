@@ -10,6 +10,7 @@ import {
     LessonContentAlreadyExistsException,
     InvalidLessonContentDataException,
     LessonNotFoundException,
+    ContentAlreadyExistsInLessonException,
 } from './dto/lesson-content.error'
 import { LessonContentRepository } from './lesson-content.repo'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
@@ -73,9 +74,29 @@ export class LessonContentService {
                 throw new LessonNotFoundException()
             }
 
-            const content = await this.lessonContentRepository.create(data)
+            // Check if content already exists in this lesson with same contentType
+            const contentExists = await this.lessonContentRepository.checkContentExistsInLesson(
+                data.lessonId,
+                data.contentId,
+                data.contentType
+            )
+            if (contentExists) {
+                throw new ContentAlreadyExistsInLessonException(data.contentId, data.contentType, data.lessonId)
+            }
 
-            this.logger.log(`Created lesson content: ${content.id}`)
+            // Auto-generate contentOrder
+            const maxOrder = await this.lessonContentRepository.getMaxContentOrder(data.lessonId)
+            const contentOrder = maxOrder + 1
+            this.logger.log(`Auto-generated contentOrder: ${contentOrder} for lesson ${data.lessonId}`)
+
+            const contentData = {
+                ...data,
+                contentOrder
+            }
+
+            const content = await this.lessonContentRepository.create(contentData)
+
+            this.logger.log(`Created lesson content: ${content.id} with contentOrder: ${contentOrder}`)
             return {
                 data: content,
                 message: 'Tạo nội dung bài học thành công'
@@ -83,7 +104,7 @@ export class LessonContentService {
         } catch (error) {
             this.logger.error('Error creating lesson content:', error)
 
-            if (error instanceof LessonNotFoundException) {
+            if (error instanceof LessonNotFoundException || error instanceof ContentAlreadyExistsInLessonException) {
                 throw error
             }
 
