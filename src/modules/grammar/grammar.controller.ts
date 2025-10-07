@@ -43,7 +43,7 @@ export class GrammarController {
 
     @Post()
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Tạo ngữ pháp mới' })
+    @ApiOperation({ summary: 'Tạo ngữ pháp mới với usage và translations' })
     @ApiResponse({ status: 201, description: 'Tạo ngữ pháp thành công', type: GrammarResponseSwaggerDTO })
     @ApiBody({ type: CreateGrammarSwaggerDTO })
     @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
@@ -51,6 +51,17 @@ export class GrammarController {
     @ZodSerializerDto(GrammarResponseDTO)
     async createGrammar(@Body() body: CreateGrammarBodyDTO) {
         return await this.grammarService.createGrammar(body)
+    }
+
+    @Post('basic')
+    @HttpCode(HttpStatus.CREATED)
+    @ApiOperation({ summary: 'Tạo ngữ pháp cơ bản (chỉ structure và level)' })
+    @ApiResponse({ status: 201, description: 'Tạo ngữ pháp cơ bản thành công', type: GrammarResponseSwaggerDTO })
+    @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
+    @ApiResponse({ status: 409, description: 'Ngữ pháp đã tồn tại' })
+    @ZodSerializerDto(GrammarResponseDTO)
+    async createGrammarBasic(@Body() body: { structure: string; level: string }) {
+        return await this.grammarService.createGrammarBasic(body)
     }
 
     @Get()

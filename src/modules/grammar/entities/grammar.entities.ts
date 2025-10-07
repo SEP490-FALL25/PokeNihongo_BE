@@ -16,16 +16,16 @@ export const GrammarType = z.object({
 
 // Request/Response Types
 export const CreateGrammarBodyType = z.object({
-    structure: z.string().min(1).max(500),
-    level: z.string().min(1).max(10),
+    structure: z.string().min(1, 'Cấu trúc ngữ pháp không được để trống').max(500, 'Cấu trúc ngữ pháp không được vượt quá 500 ký tự'),
+    level: z.string().min(1, 'Cấp độ không được để trống').max(10, 'Cấp độ không được vượt quá 10 ký tự'),
     usage: z.object({
-        exampleSentenceJp: z.string().min(1).max(1000),
+        exampleSentenceJp: z.string().min(1, 'Câu ví dụ tiếng Nhật không được để trống').max(1000, 'Câu ví dụ tiếng Nhật không được vượt quá 1000 ký tự'),
     }).optional(),
     translations: z.object({
         usage: z.array(z.object({
-            language_code: z.string(),
-            explanation: z.string(),
-            example: z.string()
+            language_code: z.string().min(2, 'Mã ngôn ngữ phải có ít nhất 2 ký tự').max(5, 'Mã ngôn ngữ không được vượt quá 5 ký tự'),
+            explanation: z.string().min(1, 'Giải thích không được để trống').max(2000, 'Giải thích không được vượt quá 2000 ký tự'),
+            example: z.string().min(1, 'Ví dụ không được để trống').max(1000, 'Ví dụ không được vượt quá 1000 ký tự')
         })).optional(),
     }).optional(),
 })
