@@ -45,8 +45,17 @@ export class VocabularyService {
         })
 
         return {
-            data: result,
-            message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS
+            statusCode: 200,
+            message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS,
+            data: {
+                results: result.items,
+                pagination: {
+                    current: result.page,
+                    pageSize: result.limit,
+                    totalPage: Math.ceil(result.total / result.limit),
+                    totalItem: result.total
+                }
+            }
         }
     }
     //#endregion

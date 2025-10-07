@@ -41,8 +41,17 @@ export class LessonService {
 
             this.logger.log(`Found ${result.data.length} lessons`)
             return {
-                ...result,
-                message: LESSON_MESSAGE.GET_LIST_SUCCESS
+                statusCode: 200,
+                message: LESSON_MESSAGE.GET_LIST_SUCCESS,
+                data: {
+                    results: result.data,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
             }
         } catch (error) {
             this.logger.error('Error getting lesson list:', error)

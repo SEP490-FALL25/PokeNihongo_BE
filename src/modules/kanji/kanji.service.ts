@@ -51,13 +51,17 @@ export class KanjiService {
             const result = await this.kanjiRepository.findMany(queryParams)
 
             return {
+                statusCode: 200,
+                message: KANJI_MESSAGE.GET_LIST_SUCCESS,
                 data: {
-                    items: result.data,
-                    total: result.total,
-                    page: result.page,
-                    limit: result.limit
-                },
-                message: KANJI_MESSAGE.GET_LIST_SUCCESS
+                    results: result.data,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
             }
         } catch (error) {
             this.logger.error('Error finding kanji:', error)
