@@ -10,7 +10,7 @@ import {
     Put,
     Query,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { UseGuards } from '@nestjs/common'
@@ -18,6 +18,7 @@ import { GrammarService } from './grammar.service'
 import {
     CreateGrammarBodyDTO,
     UpdateGrammarBodyDTO,
+    CreateGrammarBasicBodyDTO,
     GetGrammarByIdParamsDTO,
     GetGrammarListQueryDTO,
 } from './dto/grammar.zod-dto'
@@ -65,8 +66,9 @@ export class GrammarController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'Lấy danh sách ngữ pháp' })
+    @ApiOperation({ summary: 'Lấy danh sách ngữ pháp với phân trang và tìm kiếm' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách ngữ pháp thành công', type: GrammarListResponseSwaggerDTO })
+    @ApiQuery({ type: GetGrammarListQuerySwaggerDTO })
     @ZodSerializerDto(GrammarListResponseDTO)
     async getGrammarList(@Query() query: GetGrammarListQueryDTO) {
         return await this.grammarService.getGrammarList(query)

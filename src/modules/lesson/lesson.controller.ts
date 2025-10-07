@@ -11,7 +11,7 @@ import {
     Put,
     Query,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
@@ -60,8 +60,9 @@ export class LessonController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'Lấy danh sách bài học' })
+    @ApiOperation({ summary: 'Lấy danh sách bài học với phân trang và tìm kiếm' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách bài học thành công', type: LessonListResponseSwaggerDTO })
+    @ApiQuery({ type: GetLessonListQuerySwaggerDTO })
     @ZodSerializerDto(LessonListResponseDTO)
     async getLessonList(@Query() query: GetLessonListQueryDTO) {
         return await this.lessonService.getLessonList(query)

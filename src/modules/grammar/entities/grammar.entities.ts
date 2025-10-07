@@ -31,8 +31,13 @@ export const CreateGrammarBodyType = z.object({
 })
 
 export const UpdateGrammarBodyType = z.object({
-    structure: z.string().min(1).max(500).optional(),
-    level: z.string().min(1).max(10).optional(),
+    structure: z.string().min(1, 'Cấu trúc ngữ pháp không được để trống').max(500, 'Cấu trúc ngữ pháp không được vượt quá 500 ký tự').optional(),
+    level: z.string().min(1, 'Cấp độ không được để trống').max(10, 'Cấp độ không được vượt quá 10 ký tự').optional(),
+})
+
+export const CreateGrammarBasicBodyType = z.object({
+    structure: z.string().min(1, 'Cấu trúc ngữ pháp không được để trống').max(500, 'Cấu trúc ngữ pháp không được vượt quá 500 ký tự'),
+    level: z.string().min(1, 'Cấp độ không được để trống').max(10, 'Cấp độ không được vượt quá 10 ký tự'),
 })
 
 export const GetGrammarByIdParamsType = z.object({
@@ -50,5 +55,6 @@ export const GetGrammarListQueryType = z.object({
 export type GrammarType = z.infer<typeof GrammarType>
 export type CreateGrammarBodyType = z.infer<typeof CreateGrammarBodyType>
 export type UpdateGrammarBodyType = z.infer<typeof UpdateGrammarBodyType>
+export type CreateGrammarBasicBodyType = z.infer<typeof CreateGrammarBasicBodyType>
 export type GetGrammarByIdParamsType = z.infer<typeof GetGrammarByIdParamsType>
 export type GetGrammarListQueryType = z.infer<typeof GetGrammarListQueryType>

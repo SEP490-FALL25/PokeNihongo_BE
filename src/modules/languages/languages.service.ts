@@ -219,32 +219,7 @@ export class LanguagesService {
         }
     }
 
-    /**
-     * Lấy tất cả ngôn ngữ được hỗ trợ
-     */
-    async getAllSupportedLanguages() {
-        try {
-            this.logger.log('Getting all supported languages')
-            const result = await this.languagesRepository.findMany({
-                page: 1,
-                limit: 1000 // Lấy tất cả
-            })
-
-            return {
-                data: {
-                    items: result.data,
-                    total: result.total,
-                    page: result.page,
-                    limit: result.limit
-                },
-                message: LANGUAGES_MESSAGE.GET_LIST_SUCCESS
-            }
-        } catch (error) {
-            this.logger.error('Error getting all supported languages:', error)
-            throw error
-        }
-    }
-
+   
     /**
      * Kiểm tra ngôn ngữ có được hỗ trợ không
      */

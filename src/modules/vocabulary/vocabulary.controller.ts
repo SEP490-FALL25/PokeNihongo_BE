@@ -114,6 +114,7 @@ export class VocabularyController {
         description: 'Lấy danh sách từ vựng thành công',
         type: VocabularyListResponseSwaggerDTO
     })
+    @ApiQuery({ type: GetVocabularyListQuerySwaggerDTO })
     @ZodSerializerDto(VocabularyListResDTO)
     findAll(@Query() query: GetVocabularyListQueryDTO) {
         return this.vocabularyService.findAll(query)

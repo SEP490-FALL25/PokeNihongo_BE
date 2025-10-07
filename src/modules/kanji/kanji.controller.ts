@@ -11,7 +11,7 @@ import {
     KanjiListResponseDTO,
     KanjiResDTO,
     KanjiListResDTO
-} from './dto/kanji.dto'
+} from './dto/zod/kanji.zod-dto'
 import {
     CreateKanjiWithMeaningsBodyDTO,
     CreateKanjiWithMeaningsBodyType,
@@ -33,7 +33,8 @@ import {
     CreateKanjiSwaggerDTO,
     UpdateKanjiSwaggerDTO,
     KanjiSwaggerResponseDTO,
-    KanjiListSwaggerResponseDTO
+    KanjiListSwaggerResponseDTO,
+    GetKanjiListQuerySwaggerDTO
 } from './dto/kanji.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -68,7 +69,7 @@ export class KanjiController {
 
     @Get()
     @ApiOperation({
-        summary: 'Lấy danh sách Kanji',
+        summary: 'Lấy danh sách Kanji với phân trang và tìm kiếm',
         description: 'Lấy danh sách tất cả Kanji với phân trang và tìm kiếm'
     })
     @ApiResponse({
@@ -76,8 +77,9 @@ export class KanjiController {
         description: 'Lấy danh sách Kanji thành công',
         type: KanjiListSwaggerResponseDTO
     })
+    @ApiQuery({ type: GetKanjiListQuerySwaggerDTO })
     @ZodSerializerDto(KanjiListResDTO)
-    findMany(@Query() query: GetKanjiListQueryDTO) {
+    findAll(@Query() query: GetKanjiListQueryDTO) {
         // Transform query to match service expectations
         const transformedQuery = {
             ...query,
