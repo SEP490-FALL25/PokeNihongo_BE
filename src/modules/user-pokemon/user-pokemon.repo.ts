@@ -128,6 +128,46 @@ export class UserPokemonRepo {
         })
   }
 
+  async getByUserId(userId: number): Promise<UserPokemonType[]> {
+    return this.prismaService.userPokemon.findMany({
+      where: {
+        userId,
+        deletedAt: null
+      },
+      include: {
+        pokemon: {
+          select: {
+            id: true,
+            pokedex_number: true,
+            nameJp: true,
+            nameTranslations: true,
+            description: true,
+            imageUrl: true,
+            rarity: true,
+            types: {
+              select: {
+                id: true,
+                type_name: true,
+                display_name: true,
+                color_hex: true
+              }
+            }
+          }
+        },
+        level: {
+          select: {
+            id: true,
+            levelNumber: true,
+            requiredExp: true,
+            levelType: true
+          }
+        },
+        user: { select: { id: true, name: true, email: true } }
+      },
+      orderBy: [{ createdAt: 'desc' }]
+    })
+  }
+
   async list(pagination: PaginationQueryType, userId?: number) {
     const { where, orderBy } = parseQs(pagination.qs, USER_POKEMON_FIELDS)
 

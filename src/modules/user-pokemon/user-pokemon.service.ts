@@ -40,8 +40,99 @@ export class UserPokemonService {
     private prismaService: PrismaService
   ) {}
 
-  async list(pagination: PaginationQueryType, userId?: number, lang: string = 'vi') {
+  async list(pagination: PaginationQueryType, userId: number, lang: string = 'vi') {
     const data = await this.userPokemonRepo.list(pagination, userId)
+    return {
+      statusCode: 200,
+      data,
+      message: this.i18nService.translate(UserPokemonMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  async listWithUserId(userId: number, lang: string = 'vi') {
+    const data = await this.userPokemonRepo.getByUserId(userId)
+
+    // Optimize: Calculate weaknesses for all Pokemon in batch
+    if (data && data.length > 0) {
+      // Get all unique type IDs from all Pokemon
+      const allTypeIds = new Set<number>()
+      data.forEach((userPokemon: any) => {
+        userPokemon.pokemon?.types?.forEach((type: any) => {
+          allTypeIds.add(type.id)
+        })
+      })
+
+      // Batch load all type effectiveness data once
+      const allTypeEffectiveness = await this.prismaService.typeEffectiveness.findMany({
+        where: {
+          defenderId: {
+            in: Array.from(allTypeIds)
+          },
+          multiplier: {
+            gt: 1 // Only get super effective (weaknesses)
+          }
+        },
+        include: {
+          attacker: {
+            select: {
+              id: true,
+              type_name: true,
+              display_name: true,
+              color_hex: true
+            }
+          }
+        }
+      })
+
+      // Create lookup map for faster access
+      const effectivenessMap = new Map<number, any[]>()
+      allTypeEffectiveness.forEach((eff) => {
+        if (!effectivenessMap.has(eff.defenderId)) {
+          effectivenessMap.set(eff.defenderId, [])
+        }
+        effectivenessMap.get(eff.defenderId)!.push({
+          ...eff.attacker,
+          effectiveness_multiplier: eff.multiplier
+        })
+      })
+
+      // Calculate weaknesses for each Pokemon using cached data
+      const userPokemonsWithWeaknesses = data.map((userPokemon: any) => {
+        if (!userPokemon.pokemon?.types) {
+          return userPokemon
+        }
+
+        const allWeaknesses = new Map<number, any>()
+
+        userPokemon.pokemon.types.forEach((type: any) => {
+          const weaknesses = effectivenessMap.get(type.id) || []
+          weaknesses.forEach((weakness) => {
+            if (
+              !allWeaknesses.has(weakness.id) ||
+              allWeaknesses.get(weakness.id).effectiveness_multiplier <
+                weakness.effectiveness_multiplier
+            ) {
+              allWeaknesses.set(weakness.id, weakness)
+            }
+          })
+        })
+
+        return {
+          ...userPokemon,
+          pokemon: {
+            ...userPokemon.pokemon,
+            weaknesses: Array.from(allWeaknesses.values())
+          }
+        }
+      })
+
+      return {
+        statusCode: 200,
+        data: userPokemonsWithWeaknesses,
+        message: this.i18nService.translate(UserPokemonMessage.GET_LIST_SUCCESS, lang)
+      }
+    }
+
     return {
       statusCode: 200,
       data,
