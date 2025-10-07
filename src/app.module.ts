@@ -17,14 +17,12 @@ import { RoleModule } from './modules/role/role.module'
 import { TranslationModule } from './modules/translation/translation.module'
 import { VocabularyModule } from './modules/vocabulary/vocabulary.module'
 
-import { ElementalTypeModule } from './modules/elemental-type/elemental-type.module'
+
 import { KanjiModule } from './modules/kanji/kanji.module'
 import { LanguagesModule } from './modules/languages/languages.module'
 import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
-import { PokemonModule } from './modules/pokemon/pokemon.module'
 import { RewardModule } from './modules/reward/reward.module'
-import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module'
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserModule } from './modules/user/user.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
@@ -32,7 +30,6 @@ import { SharedModule } from './shared/shared.module'
 import { ElementalTypeModule } from './modules/elemental-type/elemental-type.module';
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module';
 import { PokemonModule } from './modules/pokemon/pokemon.module';
-import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module';
 import { LessonModule } from './modules/lesson/lesson.module';
 import { LessonCategoryModule } from './modules/lesson-category/lesson-category.module';
 import { LessonContentModule } from './modules/lesson-content/lesson-content.module';
