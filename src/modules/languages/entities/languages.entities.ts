@@ -13,14 +13,15 @@ const isValidLanguageCode = (code: string): boolean => {
 }
 
 const isValidLanguageName = (name: string): boolean => {
-    // Language names should contain only letters, spaces, and some punctuation
-    const nameRegex = /^[a-zA-Z\s\-\.]+$/
+    // Language names should contain letters (including Unicode), spaces, hyphens, and dots
+    // This allows for international language names like "日本語", "Tiếng Việt", etc.
+    const nameRegex = /^[\p{L}\s\-\.]+$/u
     return nameRegex.test(name)
 }
 
 // Custom error messages
 const LANGUAGE_CODE_ERROR = 'Mã ngôn ngữ phải là 2-3 ký tự chữ cái thường (ISO 639-1/639-2)'
-const LANGUAGE_NAME_ERROR = 'Tên ngôn ngữ chỉ được chứa chữ cái, khoảng trắng và dấu gạch ngang'
+const LANGUAGE_NAME_ERROR = 'Tên ngôn ngữ chỉ được chứa chữ cái (bao gồm Unicode), khoảng trắng, dấu gạch ngang và dấu chấm'
 
 export const LanguagesSchema = z.object({
     id: z.number(),
