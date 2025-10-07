@@ -8,13 +8,13 @@ export class LessonResponseSwaggerDTO {
     id: number
 
     @ApiProperty({
-        example: 'basic-greetings',
+        example: 'aisatsu-no-kihon',
         description: 'URL slug của bài học'
     })
     slug: string
 
     @ApiProperty({
-        example: 'lesson.basic-greetings.title',
+        example: 'lesson.1.title',
         description: 'Key để dịch tiêu đề bài học'
     })
     titleKey: string
@@ -27,7 +27,7 @@ export class LessonResponseSwaggerDTO {
     levelJlpt?: number
 
     @ApiProperty({
-        example: 30,
+        example: 45,
         description: 'Thời gian ước tính hoàn thành (phút)'
     })
     estimatedTimeMinutes: number
@@ -118,7 +118,7 @@ export class LessonListResponseSwaggerDTO {
 // Request DTOs
 export class CreateLessonSwaggerDTO {
     @ApiPropertyOptional({
-        example: '',
+        example: 'aisatsu-no-kihon',
         description: 'URL slug của bài học (tự động tạo nếu không cung cấp)'
     })
     slug?: string
@@ -129,12 +129,6 @@ export class CreateLessonSwaggerDTO {
     })
     titleJp: string
 
-    @ApiPropertyOptional({
-        example: '',
-        description: 'Key để dịch tiêu đề bài học (tự động tạo nếu không cung cấp)'
-    })
-    titleKey?: string
-
     @ApiProperty({
         example: 5,
         description: 'Cấp độ JLPT (1-5)',
@@ -143,7 +137,7 @@ export class CreateLessonSwaggerDTO {
     levelJlpt?: number
 
     @ApiProperty({
-        example: 30,
+        example: 45,
         description: 'Thời gian ước tính hoàn thành (phút)',
         required: false
     })
@@ -184,7 +178,7 @@ export class CreateLessonSwaggerDTO {
     rewardId?: number
 
     @ApiPropertyOptional({
-        description: 'Bản dịch cho tiêu đề bài học',
+        description: 'Bản dịch cho tiêu đề bài học (Minna no Nihongo Lesson 1)',
         example: {
             meaning: [
                 { language_code: 'vi', value: 'Cách chào hỏi cơ bản' },
@@ -199,14 +193,14 @@ export class CreateLessonSwaggerDTO {
 
 export class UpdateLessonSwaggerDTO {
     @ApiProperty({
-        example: 'basic-greetings',
+        example: 'aisatsu-no-kihon',
         description: 'URL slug của bài học',
         required: false
     })
     slug?: string
 
     @ApiProperty({
-        example: 'lesson.basic-greetings.title',
+        example: 'lesson.1.title',
         description: 'Key để dịch tiêu đề bài học',
         required: false
     })

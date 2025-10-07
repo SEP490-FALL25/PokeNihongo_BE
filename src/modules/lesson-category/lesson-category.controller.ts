@@ -107,7 +107,7 @@ export class LessonCategoryController {
         return await this.lessonCategoryService.getLessonCategoryById({ id })
     }
 
-    @Get('slug/:slug')
+    @Get(':slug')
     @ApiOperation({ summary: 'Lấy thông tin danh mục bài học theo slug' })
     @ApiResponse({ status: 200, description: 'Lấy thông tin danh mục bài học thành công', type: LessonCategoryResponseSwaggerDTO })
     @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục bài học' })

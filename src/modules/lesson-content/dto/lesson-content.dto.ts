@@ -88,13 +88,6 @@ export class CreateLessonContentSwaggerDTO {
         description: 'Loại nội dung (vocabulary, grammar, kanji, etc.)'
     })
     contentType: string
-
-    @ApiProperty({
-        example: 1,
-        description: 'Thứ tự nội dung trong bài học',
-        required: false
-    })
-    contentOrder?: number
 }
 
 export class UpdateLessonContentSwaggerDTO {

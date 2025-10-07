@@ -26,6 +26,19 @@ export class LessonContentAlreadyExistsException extends HttpException {
     }
 }
 
+export class ContentAlreadyExistsInLessonException extends HttpException {
+    constructor(contentId: number, contentType: string, lessonId: number) {
+        super(
+            {
+                statusCode: HttpStatus.CONFLICT,
+                message: `ContentId: ${contentId} (${contentType}) đã tồn tại trong lesson ${lessonId}`,
+                error: 'CONTENT_ALREADY_EXISTS_IN_LESSON'
+            },
+            HttpStatus.CONFLICT
+        )
+    }
+}
+
 export class InvalidLessonContentDataException extends HttpException {
     constructor(message: string) {
         super(

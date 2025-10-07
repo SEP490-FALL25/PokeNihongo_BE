@@ -44,15 +44,22 @@ export class VocabularyHelperService {
             let kanji = kanjiResponse?.data
 
             if (!kanji) {
-                // Tạo Kanji mới với meaningKey tự động
-                const meaningKey = `kanji.${character}.meaning`
+                // Tạo Kanji mới với meaningKey tạm thời (sẽ được cập nhật sau)
+                const tempMeaningKey = `kanji.temp.${Date.now()}.meaning`
 
                 this.logger.log(`Creating new Kanji: ${character}`)
                 kanji = await this.prismaService.kanji.create({
                     data: {
                         character,
-                        meaningKey
+                        meaningKey: tempMeaningKey
                     }
+                })
+
+                // Cập nhật meaningKey với ID thực tế
+                const finalMeaningKey = `kanji.${kanji.id}.meaning`
+                await this.prismaService.kanji.update({
+                    where: { id: kanji.id },
+                    data: { meaningKey: finalMeaningKey }
                 })
 
                 this.logger.log(`Kanji created successfully: ${character} with id ${kanji.id}`)
@@ -78,15 +85,22 @@ export class VocabularyHelperService {
             })
 
             if (!kanji) {
-                // Tạo Kanji mới với meaningKey tự động trong transaction
-                const meaningKey = `kanji.${character}.meaning`
+                // Tạo Kanji mới với meaningKey tạm thời trong transaction
+                const tempMeaningKey = `kanji.temp.${Date.now()}.meaning`
 
                 this.logger.log(`Creating new Kanji in transaction: ${character}`)
                 kanji = await prisma.kanji.create({
                     data: {
                         character,
-                        meaningKey
+                        meaningKey: tempMeaningKey
                     }
+                })
+
+                // Cập nhật meaningKey với ID thực tế trong transaction
+                const finalMeaningKey = `kanji.${kanji.id}.meaning`
+                kanji = await prisma.kanji.update({
+                    where: { id: kanji.id },
+                    data: { meaningKey: finalMeaningKey }
                 })
 
                 this.logger.log(`Kanji created successfully in transaction: ${character} with id ${kanji.id}`)
