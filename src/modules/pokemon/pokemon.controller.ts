@@ -68,6 +68,7 @@ export class PokemonController {
   }
 
   @Post()
+  @IsPublic()
   @ZodSerializerDto(CreatePokemonResDTO)
   create(
     @Body() body: CreatePokemonBodyDTO,
@@ -84,6 +85,7 @@ export class PokemonController {
   }
 
   @Put(':pokemonId')
+  @IsPublic()
   @ZodSerializerDto(UpdatePokemonResDTO)
   update(
     @Body() body: UpdatePokemonBodyDTO,

@@ -104,6 +104,9 @@ importers:
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
+      form-data:
+        specifier: ^4.0.4
+        version: 4.0.4
       googleapis:
         specifier: ^146.0.0
         version: 146.0.0
@@ -192,6 +195,9 @@ importers:
       '@types/express':
         specifier: ^5.0.0
         version: 5.0.2
+      '@types/form-data':
+        specifier: ^2.5.2
+        version: 2.5.2
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14
@@ -2106,6 +2112,10 @@ packages:
   '@types/express@5.0.2':
     resolution: {integrity: sha512-BtjL3ZwbCQriyb0DGw+Rt12qAXPiBTPs815lsUvtt1Grk0vLRMZNMUZ741d5rjk+UQOxfDiBZ3dxpX00vSkK3g==}
 
+  '@types/form-data@2.5.2':
+    resolution: {integrity: sha512-tfmcyHn1Pp9YHAO5r40+UuZUPAZbUEgqTel3EuEKpmF9hPkXgR4l41853raliXnb4gwyPNoQOfvgGGlHN5WSog==}
+    deprecated: This is a stub types definition. form-data provides its own type definitions, so you do not need this installed.
+
   '@types/graceful-fs@4.1.9':
     resolution: {integrity: sha512-olP3sd1qOEe5dXTSaFvQG+02VdRXcdytWLAZsAq1PecU8uqQAhkrnbli7DagjtXKW/Bl7YJbUsa8MPcuc8LHEQ==}
 
@@ -3459,10 +3469,6 @@ packages:
   form-data-encoder@2.1.4:
     resolution: {integrity: sha512-yDYSgNMraqvnxiEXO4hi88+YZxaHC6QKzb5N84iRCTDeRO7ZALpir/lVmf/uXUhnwUr2O4HU8s/n6x+yNjQkHw==}
     engines: {node: '>= 14.17'}
-
-  form-data@4.0.2:
-    resolution: {integrity: sha512-hGfm/slu0ZabnNt4oaRZ6uREyfCj6P4fT/n6A1rGV+Z0VdGXjfOhVUpkn6qVQONHGIFwmveGXyDs75+nr6FM8w==}
-    engines: {node: '>= 6'}
 
   form-data@4.0.4:
     resolution: {integrity: sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==}
@@ -7906,6 +7912,10 @@ snapshots:
       '@types/express-serve-static-core': 5.0.6
       '@types/serve-static': 1.15.7
 
+  '@types/form-data@2.5.2':
+    dependencies:
+      form-data: 4.0.4
+
   '@types/graceful-fs@4.1.9':
     dependencies:
       '@types/node': 22.15.21
@@ -7987,7 +7997,7 @@ snapshots:
       '@types/cookiejar': 2.1.5
       '@types/methods': 1.1.4
       '@types/node': 22.15.21
-      form-data: 4.0.2
+      form-data: 4.0.4
 
   '@types/supertest@6.0.3':
     dependencies:
@@ -9531,13 +9541,6 @@ snapshots:
       webpack: 5.99.6(@swc/core@1.11.24)
 
   form-data-encoder@2.1.4: {}
-
-  form-data@4.0.2:
-    dependencies:
-      asynckit: 0.4.0
-      combined-stream: 1.0.8
-      es-set-tostringtag: 2.1.0
-      mime-types: 2.1.35
 
   form-data@4.0.4:
     dependencies:
@@ -12244,7 +12247,7 @@ snapshots:
       cookiejar: 2.1.4
       debug: 4.4.1
       fast-safe-stringify: 2.1.1
-      form-data: 4.0.2
+      form-data: 4.0.4
       formidable: 3.5.4
       methods: 1.1.2
       mime: 2.6.0
