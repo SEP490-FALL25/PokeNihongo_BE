@@ -642,12 +642,12 @@ export class KanjiService {
                         code: langCode
                     })
 
-                    if (!languages.data?.items || languages.data.items.length === 0) {
+                    if (!languages.data?.results || languages.data.results.length === 0) {
                         this.logger.warn(`Language ${langCode} not found, skipping`)
                         continue
                     }
 
-                    const language = languages.data.items[0]
+                    const language = languages.data.results[0]
 
                     // Kiểm tra translation đã tồn tại chưa
                     const existingTranslation = await this.translationService.findByKeyAndLanguage(
@@ -703,12 +703,12 @@ export class KanjiService {
                         code: langCode
                     })
 
-                    if (!languages.data?.items || languages.data.items.length === 0) {
+                    if (!languages.data?.results || languages.data.results.length === 0) {
                         this.logger.warn(`Language ${langCode} not found, skipping`)
                         continue
                     }
 
-                    const language = languages.data.items[0]
+                    const language = languages.data.results[0]
 
                     // Kiểm tra translation đã tồn tại chưa
                     const existingTranslation = await this.translationService.findByKeyAndLanguage(
@@ -748,14 +748,14 @@ export class KanjiService {
             // Lấy danh sách các ngôn ngữ để map code -> id
             const languages = await this.languagesService.findMany({ page: 1, limit: 100 })
 
-            if (!languages.data || !languages.data.items || languages.data.items.length === 0) {
+            if (!languages.data || !languages.data.results || languages.data.results.length === 0) {
                 this.logger.warn('No languages found, skipping specific translation creation')
                 return
             }
 
             // Tạo map code -> id
             const languageMap = new Map<string, number>()
-            for (const language of languages.data.items) {
+            for (const language of languages.data.results) {
                 languageMap.set(language.code, language.id)
             }
 
