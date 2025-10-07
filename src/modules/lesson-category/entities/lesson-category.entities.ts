@@ -1,0 +1,48 @@
+import { z } from 'zod'
+
+// Lesson Category Entity Types
+export const LessonCategoryType = z.object({
+    id: z.number(),
+    nameKey: z.string(),
+    slug: z.string(),
+    createdAt: z.date(),
+    updatedAt: z.date(),
+})
+
+export const LessonCategoryWithRelationsType = LessonCategoryType.extend({
+    lessons: z.array(z.object({
+        id: z.number(),
+        slug: z.string(),
+        titleKey: z.string(),
+        isPublished: z.boolean(),
+    })).optional(),
+})
+
+// Request/Response Types
+export const CreateLessonCategoryBodyType = z.object({
+    nameKey: z.string().min(1).max(200),
+    slug: z.string().min(1).max(200).optional(),
+})
+
+export const UpdateLessonCategoryBodyType = z.object({
+    nameKey: z.string().min(1).max(200).optional(),
+    slug: z.string().min(1).max(200).optional(),
+})
+
+export const GetLessonCategoryByIdParamsType = z.object({
+    id: z.string().transform(Number),
+})
+
+export const GetLessonCategoryListQueryType = z.object({
+    page: z.string().transform(Number).default('1'),
+    limit: z.string().transform(Number).default('10'),
+    search: z.string().optional(),
+})
+
+// Type exports
+export type LessonCategoryType = z.infer<typeof LessonCategoryType>
+export type LessonCategoryWithRelationsType = z.infer<typeof LessonCategoryWithRelationsType>
+export type CreateLessonCategoryBodyType = z.infer<typeof CreateLessonCategoryBodyType>
+export type UpdateLessonCategoryBodyType = z.infer<typeof UpdateLessonCategoryBodyType>
+export type GetLessonCategoryByIdParamsType = z.infer<typeof GetLessonCategoryByIdParamsType>
+export type GetLessonCategoryListQueryType = z.infer<typeof GetLessonCategoryListQueryType>

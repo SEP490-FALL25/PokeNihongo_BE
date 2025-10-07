@@ -26,6 +26,9 @@ import { ElementalTypeModule } from './modules/elemental-type/elemental-type.mod
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module';
 import { PokemonModule } from './modules/pokemon/pokemon.module';
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module';
+import { LessonModule } from './modules/lesson/lesson.module';
+import { LessonCategoryModule } from './modules/lesson-category/lesson-category.module';
+import { LessonContentModule } from './modules/lesson-content/lesson-content.module';
 
 @Module({
   imports: [
@@ -52,7 +55,10 @@ import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module';
     ElementalTypeModule,
     TypeEffectivenessModule,
     PokemonModule,
-    UserPokemonModule
+    UserPokemonModule,
+    LessonModule,
+    LessonCategoryModule,
+    LessonContentModule
   ],
 
   controllers: [],
@@ -69,4 +75,4 @@ import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module';
     }
   ]
 })
-export class AppModule {}
+export class AppModule { }

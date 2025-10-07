@@ -250,3 +250,24 @@ export const USER_POKEMON_MESSAGE = {
   INVALID_NEXT_POKEMON: 'Pokemon này không thể tiến hóa thành Pokemon đã chọn',
   CANNOT_EVOLVE: 'Pokemon này không thể tiến hóa thêm nữa'
 }
+
+export const LESSON_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo bài học thành công',
+  UPDATE_SUCCESS: 'Cập nhật bài học thành công',
+  DELETE_SUCCESS: 'Xóa bài học thành công',
+  GET_BY_ID_SUCCESS: 'Lấy thông tin bài học thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách bài học thành công',
+  PUBLISH_SUCCESS: 'Xuất bản bài học thành công',
+  UNPUBLISH_SUCCESS: 'Hủy xuất bản bài học thành công',
+  NOT_FOUND: 'Không tìm thấy bài học',
+  ALREADY_EXISTS: 'Bài học đã tồn tại',
+  INVALID_DATA: 'Dữ liệu bài học không hợp lệ',
+  SLUG_REQUIRED: 'Slug không được để trống',
+  TITLE_KEY_REQUIRED: 'Title key không được để trống',
+  LESSON_CATEGORY_ID_REQUIRED: 'Lesson category ID không được để trống',
+  SLUG_TOO_LONG: 'Slug quá dài (tối đa 200 ký tự)',
+  TITLE_KEY_TOO_LONG: 'Title key quá dài (tối đa 500 ký tự)',
+  LEVEL_JLPT_INVALID: 'Cấp độ JLPT không hợp lệ (1-5)',
+  ESTIMATED_TIME_INVALID: 'Thời gian ước tính không hợp lệ (1-480 phút)',
+  VERSION_INVALID: 'Phiên bản không hợp lệ'
+}
