@@ -1,21 +1,52 @@
 import { SYSTEM_MESSAGE } from '@/common/constants/message'
+import { AuthMessage, SystemMessage } from '@/i18n/message-keys'
 import {
   NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException
 } from '@nestjs/common'
 
-export const NotFoundRecordException = new NotFoundException(SYSTEM_MESSAGE.NOT_FOUND)
+export class NotFoundRecordException extends NotFoundException {
+  constructor() {
+    super({
+      message: 'Không tìm thấy bản ghi',
+      errorKey: SystemMessage.NOT_FOUND
+    })
+  }
+}
 
-export const InvalidPasswordException = new UnauthorizedException(
-  SYSTEM_MESSAGE.INVALID_PASSWORD
-)
+export class InvalidPasswordException extends UnauthorizedException {
+  constructor() {
+    super({
+      message: SYSTEM_MESSAGE.INVALID_PASSWORD,
+      errorKey: SystemMessage.INVALID_PASSWORD
+    })
+  }
+}
 
-export const InvalidOldPasswordException = new UnauthorizedException(
-  SYSTEM_MESSAGE.INVALID_OLD_PASSWORD
-)
-export const InValidNewPasswordAndConfirmPasswordException =
-  new UnprocessableEntityException(SYSTEM_MESSAGE.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD)
+export class InvalidOldPasswordException extends UnauthorizedException {
+  constructor() {
+    super({
+      message: 'Sai mật khẩu cũ',
+      errorKey: AuthMessage.INVALID_OLD_PASSWORD
+    })
+  }
+}
 
-export const InValidNewPasswordAndConfirmPasswordRegisterException =
-  new UnprocessableEntityException(SYSTEM_MESSAGE.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD_REGISTER)
+export class InValidNewPasswordAndConfirmPasswordException extends UnprocessableEntityException {
+  constructor() {
+    super({
+      message: 'Sai mật khẩu hoặc xác nhận mật khẩu',
+      errorKey: AuthMessage.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD
+    })
+  }
+}
+
+export class InValidNewPasswordAndConfirmPasswordRegisterException extends UnprocessableEntityException {
+  constructor() {
+    super({
+      message: 'Sai mật khẩu hoặc xác nhận mật khẩu',
+      errorKey: AuthMessage.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD_REGISTER
+    })
+  }
+}

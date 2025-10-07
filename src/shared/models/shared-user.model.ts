@@ -1,5 +1,5 @@
 import { UserStatus } from '@/common/constants/auth.constant'
-import { AUTH_MESSAGE } from '@/common/constants/message'
+import { AuthMessage } from '@/i18n/message-keys'
 import { PermissionSchema } from 'src/shared/models/shared-permission.model'
 import { RoleSchema } from 'src/shared/models/shared-role.model'
 import { z } from 'zod'
@@ -7,11 +7,11 @@ import { z } from 'zod'
 export const UserSchema = z.object({
   id: z.number(),
   email: z.string().email(),
-  name: z.string().min(1, AUTH_MESSAGE.NAME_IS_REQUIRED).max(100),
+  name: z.string().min(1, AuthMessage.NAME_IS_REQUIRED).max(100),
   password: z.string().min(6).max(100),
   phoneNumber: z
     .string()
-    .min(9, AUTH_MESSAGE.PHONE_IS_INVALID)
+    .min(9, AuthMessage.PHONE_IS_INVALID)
     .max(15)
     .optional()
     .nullable(),

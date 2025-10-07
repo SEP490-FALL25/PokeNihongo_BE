@@ -1,4 +1,5 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { PaginationResponseSchema } from '@/shared/models/response.model'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
@@ -22,23 +23,30 @@ export class RoleController {
 
   @Get()
   @ZodSerializerDto(PaginationResponseSchema)
-  list(@Query() query: PaginationQueryDTO) {
-    return this.roleService.list(query)
+  list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
+    return this.roleService.list(query, lang)
   }
 
   @Get(':roleId')
   @ZodSerializerDto(GetRoleDetailResDTO)
-  findById(@Param() params: GetRoleParamsDTO) {
-    return this.roleService.findById(params.roleId)
+  findById(@Param() params: GetRoleParamsDTO, @I18nLang() lang: string) {
+    return this.roleService.findById(params.roleId, lang)
   }
 
   @Post()
   @ZodSerializerDto(CreateRoleResDTO)
-  create(@Body() body: CreateRoleBodyDTO, @ActiveUser('userId') userId: number) {
-    return this.roleService.create({
-      data: body,
-      createdById: userId
-    })
+  create(
+    @Body() body: CreateRoleBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.roleService.create(
+      {
+        data: body,
+        createdById: userId
+      },
+      lang
+    )
   }
 
   @Put(':roleId')
@@ -46,21 +54,32 @@ export class RoleController {
   update(
     @Body() body: UpdateRoleBodyDTO,
     @Param() params: GetRoleParamsDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.roleService.update({
-      data: body,
-      id: params.roleId,
-      updatedById: userId
-    })
+    return this.roleService.update(
+      {
+        data: body,
+        id: params.roleId,
+        updatedById: userId
+      },
+      lang
+    )
   }
 
   @Delete(':roleId')
   @ZodSerializerDto(MessageResDTO)
-  delete(@Param() params: GetRoleParamsDTO, @ActiveUser('userId') userId: number) {
-    return this.roleService.delete({
-      id: params.roleId,
-      deletedById: userId
-    })
+  delete(
+    @Param() params: GetRoleParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.roleService.delete(
+      {
+        id: params.roleId,
+        deletedById: userId
+      },
+      lang
+    )
   }
 }

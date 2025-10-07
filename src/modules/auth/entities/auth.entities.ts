@@ -1,4 +1,5 @@
 import { TypeOfVerificationCode } from '@/common/constants/auth.constant'
+import { AuthMessage } from '@/i18n/message-keys'
 import { LevelSchema } from '@/modules/level/entities/level.entity'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -168,7 +169,7 @@ export const ResetPasswordBodySchema = z
     if (confirmNewPassword !== newPassword) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Mật khẩu mới và mật khẩu xác nhận phải giống nhau',
+        message: AuthMessage.PASSWORD_MUST_BE_MATCH,
         path: ['confirmNewPassword']
       })
     }
@@ -185,7 +186,7 @@ export const ChangePasswordBodySchema = z
     if (confirmNewPassword !== newPassword) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Mật khẩu mới và mật khẩu xác nhận phải giống nhau',
+        message: AuthMessage.PASSWORD_MUST_BE_MATCH,
         path: ['confirmNewPassword']
       })
     }

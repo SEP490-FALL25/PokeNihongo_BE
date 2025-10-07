@@ -1,4 +1,5 @@
-import { REWARD_MESSAGE } from '@/common/constants/message'
+import { I18nService } from '@/i18n/i18n.service'
+import { RewardMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
@@ -9,34 +10,40 @@ import { RewardRepo } from './reward.repo'
 
 @Injectable()
 export class RewardService {
-  constructor(private rewardRepo: RewardRepo) {}
+  constructor(
+    private rewardRepo: RewardRepo,
+    private readonly i18nService: I18nService
+  ) {}
 
-  async list(pagination: PaginationQueryType) {
+  async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.rewardRepo.list(pagination)
     return {
       data,
-      message: REWARD_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(RewardMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number) {
+  async findById(id: number, lang: string = 'vi') {
     const reward = await this.rewardRepo.findById(id)
     if (!reward) {
-      throw NotFoundRecordException
+      throw new NotFoundRecordException()
     }
     return {
       data: reward,
-      message: 'Lấy danh mục thành công'
+      message: this.i18nService.translate(RewardMessage.GET_SUCCESS, lang)
     }
   }
 
-  async create({
-    data,
-    createdById
-  }: {
-    data: CreateRewardBodyType
-    createdById: number
-  }) {
+  async create(
+    {
+      data,
+      createdById
+    }: {
+      data: CreateRewardBodyType
+      createdById: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       const result = await this.rewardRepo.create({
         createdById,
@@ -44,25 +51,28 @@ export class RewardService {
       })
       return {
         data: result,
-        message: REWARD_MESSAGE.CREATE_SUCCESS
+        message: this.i18nService.translate(RewardMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
-        throw RewardAlreadyExistsException
+        throw new RewardAlreadyExistsException()
       }
       throw error
     }
   }
 
-  async update({
-    id,
-    data,
-    updatedById
-  }: {
-    id: number
-    data: UpdateRewardBodyType
-    updatedById: number
-  }) {
+  async update(
+    {
+      id,
+      data,
+      updatedById
+    }: {
+      id: number
+      data: UpdateRewardBodyType
+      updatedById: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       const reward = await this.rewardRepo.update({
         id,
@@ -71,20 +81,23 @@ export class RewardService {
       })
       return {
         data: reward,
-        message: REWARD_MESSAGE.UPDATE_SUCCESS
+        message: this.i18nService.translate(RewardMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       if (isUniqueConstraintPrismaError(error)) {
-        throw RewardAlreadyExistsException
+        throw new RewardAlreadyExistsException()
       }
       throw error
     }
   }
 
-  async delete({ id, deletedById }: { id: number; deletedById: number }) {
+  async delete(
+    { id, deletedById }: { id: number; deletedById: number },
+    lang: string = 'vi'
+  ) {
     try {
       await this.rewardRepo.delete({
         id,
@@ -92,11 +105,11 @@ export class RewardService {
       })
       return {
         data: null,
-        message: REWARD_MESSAGE.DELETE_SUCCESS
+        message: this.i18nService.translate(RewardMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }

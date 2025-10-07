@@ -1,5 +1,6 @@
 import { FolderName } from '@/common/constants/media.constant'
-import { POKEMON_MESSAGE } from '@/common/constants/message'
+import { I18nService } from '@/i18n/i18n.service'
+import { PokemonMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -28,7 +29,8 @@ export class PokemonService {
   constructor(
     private pokemonRepo: PokemonRepo,
     private uploadService: UploadService,
-    private prismaService: PrismaService
+    private prismaService: PrismaService,
+    private readonly i18nService: I18nService
   ) {}
 
   // Helper function to normalize form-data to standard format
@@ -59,7 +61,7 @@ export class PokemonService {
     }
   }
 
-  async list(pagination: PaginationQueryType) {
+  async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.pokemonRepo.list(pagination)
 
     // Calculate weaknesses for each Pokemon in the list
@@ -80,14 +82,14 @@ export class PokemonService {
     return {
       statusCode: 200,
       data,
-      message: POKEMON_MESSAGE.GET_LIST_SUCCESS
+      message: this.i18nService.translate(PokemonMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number) {
+  async findById(id: number, lang: string = 'vi') {
     const pokemon = await this.pokemonRepo.findById(id)
     if (!pokemon) {
-      throw PokemonNotFoundException
+      throw new PokemonNotFoundException()
     }
 
     // Calculate weaknesses for this Pokemon
@@ -99,17 +101,20 @@ export class PokemonService {
         ...pokemon,
         weaknesses
       },
-      message: POKEMON_MESSAGE.GET_DETAIL_SUCCESS
+      message: this.i18nService.translate(PokemonMessage.GET_DETAIL_SUCCESS, lang)
     }
   }
 
-  async create({
-    data,
-    createdById
-  }: {
-    data: CreatePokemonBodyType
-    createdById: number
-  }) {
+  async create(
+    {
+      data,
+      createdById
+    }: {
+      data: CreatePokemonBodyType
+      createdById: number
+    },
+    lang: string = 'vi'
+  ) {
     try {
       // Normalize data to standard format
       let pokemonData = this.normalizeCreateData(data)
@@ -119,7 +124,7 @@ export class PokemonService {
         pokemonData.pokedex_number
       )
       if (existingPokemon) {
-        throw PokemonAlreadyExistsException
+        throw new PokemonAlreadyExistsException()
       }
 
       // Create Pokemon first
@@ -138,37 +143,40 @@ export class PokemonService {
       return {
         statusCode: 201,
         data: result,
-        message: POKEMON_MESSAGE.CREATE_SUCCESS
+        message: this.i18nService.translate(PokemonMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
-        throw PokemonAlreadyExistsException
+        throw new PokemonAlreadyExistsException()
       }
       if (isNotFoundPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async update({
-    id,
-    data,
-    updatedById,
-    imageFile
-  }: {
-    id: number
-    data: UpdatePokemonBodyType | UpdatePokemonFormDataType
-    updatedById: number
-    imageFile?: Express.Multer.File
-  }) {
+  async update(
+    {
+      id,
+      data,
+      updatedById,
+      imageFile
+    }: {
+      id: number
+      data: UpdatePokemonBodyType | UpdatePokemonFormDataType
+      updatedById: number
+      imageFile?: Express.Multer.File
+    },
+    lang: string = 'vi'
+  ) {
     try {
       // Normalize data
       let pokemonData = this.normalizeUpdateData(data)
 
       const existPokemon = await this.pokemonRepo.findById(id)
       if (!existPokemon) {
-        throw PokemonNotFoundException
+        throw new PokemonNotFoundException()
       }
 
       // Check if updating pokedex number to existing one
@@ -177,7 +185,7 @@ export class PokemonService {
           pokemonData.pokedex_number
         )
         if (existingWithPokedex && existingWithPokedex.id !== id) {
-          throw PokemonAlreadyExistsException
+          throw new PokemonAlreadyExistsException()
         }
       }
 
@@ -244,27 +252,30 @@ export class PokemonService {
       return {
         statusCode: 200,
         data: pokemon,
-        message: POKEMON_MESSAGE.UPDATE_SUCCESS
+        message: this.i18nService.translate(PokemonMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw PokemonNotFoundException
+        throw new PokemonNotFoundException()
       }
       if (isUniqueConstraintPrismaError(error)) {
-        throw PokemonAlreadyExistsException
+        throw new PokemonAlreadyExistsException()
       }
       if (isForeignKeyConstraintPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
   }
 
-  async delete({ id, deletedById }: { id: number; deletedById: number }) {
+  async delete(
+    { id, deletedById }: { id: number; deletedById: number },
+    lang: string = 'vi'
+  ) {
     try {
       const existPokemon = await this.pokemonRepo.findById(id)
       if (!existPokemon) {
-        throw PokemonNotFoundException
+        throw new PokemonNotFoundException()
       }
 
       // Remove from next Pokemons' previousPokemons if this Pokemon has evolutions
@@ -290,35 +301,35 @@ export class PokemonService {
       return {
         statusCode: 200,
         data: null,
-        message: POKEMON_MESSAGE.DELETE_SUCCESS
+        message: this.i18nService.translate(PokemonMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw PokemonNotFoundException
+        throw new PokemonNotFoundException()
       }
       throw error
     }
   }
 
-  async assignTypes(id: number, data: AssignPokemonTypesBodyType) {
+  async assignTypes(id: number, data: AssignPokemonTypesBodyType, lang: string = 'vi') {
     try {
       const existPokemon = await this.pokemonRepo.findById(id)
       if (!existPokemon) {
-        throw PokemonNotFoundException
+        throw new PokemonNotFoundException()
       }
 
       await this.pokemonRepo.assignTypes(id, data)
       return {
         statusCode: 200,
         data: null,
-        message: POKEMON_MESSAGE.ASSIGN_TYPES_SUCCESS
+        message: this.i18nService.translate(PokemonMessage.ASSIGN_TYPES_SUCCESS)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw PokemonNotFoundException
+        throw new PokemonNotFoundException()
       }
       if (isForeignKeyConstraintPrismaError(error)) {
-        throw NotFoundRecordException
+        throw new NotFoundRecordException()
       }
       throw error
     }
@@ -412,11 +423,11 @@ export class PokemonService {
   }
 
   // Calculate Pokemon weaknesses based on its types
-  async calculatePokemonWeaknesses(pokemonId: number) {
+  async calculatePokemonWeaknesses(pokemonId: number, lang: string = 'vi') {
     // Get Pokemon with its types
     const pokemon = await this.pokemonRepo.findById(pokemonId)
     if (!pokemon) {
-      throw PokemonNotFoundException
+      throw new PokemonNotFoundException()
     }
 
     if (!pokemon.types || pokemon.types.length === 0) {
@@ -430,7 +441,7 @@ export class PokemonService {
           },
           weaknesses: []
         },
-        message: 'Pokemon không có hệ nào'
+        message: this.i18nService.translate(PokemonMessage.NO_TYPE_WEAKNESS, lang)
       }
     }
 
@@ -522,7 +533,7 @@ export class PokemonService {
           effectiveness_multiplier: w.multiplier
         }))
       },
-      message: 'Lấy điểm yếu Pokemon thành công'
+      message: this.i18nService.translate(PokemonMessage.CALCULATE_WEAKNESS_SUCCESS, lang)
     }
   }
 
@@ -595,11 +606,11 @@ export class PokemonService {
   } /**
    * Get available evolution options for a Pokemon
    */
-  async getEvolutionOptions(pokemonId: number) {
+  async getEvolutionOptions(pokemonId: number, lang: string = 'vi') {
     try {
       const pokemon = await this.pokemonRepo.findById(pokemonId)
       if (!pokemon) {
-        throw PokemonNotFoundException
+        throw new PokemonNotFoundException()
       }
 
       // Get evolution options (nextPokemons)
@@ -608,11 +619,14 @@ export class PokemonService {
       return {
         statusCode: 200,
         data: evolutionOptions,
-        message: 'Lấy danh sách tiến hóa thành công'
+        message: this.i18nService.translate(
+          PokemonMessage.GET_EVOLUTION_OPTIONS_SUCCESS,
+          lang
+        )
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw PokemonNotFoundException
+        throw new PokemonNotFoundException()
       }
       throw error
     }

@@ -1,4 +1,5 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { PaginationResponseSchema } from '@/shared/models/response.model'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
@@ -23,23 +24,30 @@ export class PermissionController {
   //permissions?currentPage=1&pageSize=15&qs=name:like=POST,path:like=/auth/l,sort:-name
   @Get()
   @ZodSerializerDto(PaginationResponseSchema)
-  list(@Query() query: PaginationQueryDTO) {
-    return this.permissionService.list(query)
+  list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
+    return this.permissionService.list(query, lang)
   }
 
   @Get(':permissionId')
   @ZodSerializerDto(GetPermissionDetailResDTO)
-  findById(@Param() params: GetPermissionParamsDTO) {
-    return this.permissionService.findById(params.permissionId)
+  findById(@Param() params: GetPermissionParamsDTO, @I18nLang() lang: string) {
+    return this.permissionService.findById(params.permissionId, lang)
   }
 
   @Post()
   @ZodSerializerDto(CreatePermissionResDTO)
-  create(@Body() body: CreatePermissionBodyDTO, @ActiveUser('userId') userId: number) {
-    return this.permissionService.create({
-      data: body,
-      createdById: userId
-    })
+  create(
+    @Body() body: CreatePermissionBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.permissionService.create(
+      {
+        data: body,
+        createdById: userId
+      },
+      lang
+    )
   }
 
   @Put(':permissionId')
@@ -47,21 +55,32 @@ export class PermissionController {
   update(
     @Body() body: UpdatePermissionBodyDTO,
     @Param() params: GetPermissionParamsDTO,
-    @ActiveUser('userId') userId: number
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
   ) {
-    return this.permissionService.update({
-      data: body,
-      id: params.permissionId,
-      updatedById: userId
-    })
+    return this.permissionService.update(
+      {
+        data: body,
+        id: params.permissionId,
+        updatedById: userId
+      },
+      lang
+    )
   }
 
   @Delete(':permissionId')
   @ZodSerializerDto(MessageResDTO)
-  delete(@Param() params: GetPermissionParamsDTO, @ActiveUser('userId') userId: number) {
-    return this.permissionService.delete({
-      id: params.permissionId,
-      deletedById: userId
-    })
+  delete(
+    @Param() params: GetPermissionParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.permissionService.delete(
+      {
+        id: params.permissionId,
+        deletedById: userId
+      },
+      lang
+    )
   }
 }

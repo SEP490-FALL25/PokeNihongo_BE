@@ -248,7 +248,24 @@ export const USER_POKEMON_MESSAGE = {
   ERROR_INIT_LEVEL: 'Lỗi khi khởi tạo level cho User Pokemon',
   INVALID_ACCESS_POKEMON: 'Bạn không có quyền thao tác Pokemon này',
   INVALID_NEXT_POKEMON: 'Pokemon này không thể tiến hóa thành Pokemon đã chọn',
-  CANNOT_EVOLVE: 'Pokemon này không thể tiến hóa thêm nữa'
+  CANNOT_EVOLVE: 'Pokemon này không thể tiến hóa thêm nữa',
+  USER_HAS_POKEMON: 'Người dùng đã có Pokemon này'
+}
+
+export const USER_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo người dùng thành công',
+  UPDATE_SUCCESS: 'Cập nhật người dùng thành công',
+  DELETE_SUCCESS: 'Xóa người dùng thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách người dùng thành công',
+  GET_DETAIL_SUCCESS: 'Lấy thông tin người dùng thành công',
+  INVALID_DATA: 'Dữ liệu người dùng không hợp lệ',
+  NOT_FOUND: 'Không tìm thấy người dùng',
+  EMAIL_ALREADY_EXISTS: 'Email đã tồn tại',
+  INVALID_EMAIL: 'Email không hợp lệ',
+  NAME_REQUIRED: 'Tên không được để trống',
+  PASSWORD_MIN: 'Mật khẩu phải có ít nhất 6 ký tự',
+  PHONE_INVALID: 'Số điện thoại không hợp lệ',
+  SET_MAIN_POKEMON_SUCCESS: 'Đặt Pokemon chính thành công'
 }
 
 export const LESSON_MESSAGE = {

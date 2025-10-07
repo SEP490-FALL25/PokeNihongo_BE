@@ -1,4 +1,5 @@
 import { AUTH_MESSAGE } from '@/common/constants/message'
+import { AuthMessage } from '@/i18n/message-keys'
 import {
   BadRequestException,
   NotFoundException,
@@ -7,80 +8,184 @@ import {
 } from '@nestjs/common'
 
 // OTP related errors
-export const InvalidOTPException = new UnauthorizedException(AUTH_MESSAGE.INVALID_OTP)
+export class InvalidOTPException extends UnauthorizedException {
+  constructor() {
+    super({
+      message: AUTH_MESSAGE.INVALID_OTP,
+      errorKey: AuthMessage.INVALID_OTP
+    })
+  }
+}
 
-export const OTPExpiredException = new UnauthorizedException(AUTH_MESSAGE.OTP_EXPIRED)
+export class OTPExpiredException extends UnauthorizedException {
+  constructor() {
+    super({
+      message: AUTH_MESSAGE.OTP_EXPIRED,
+      errorKey: AuthMessage.OTP_EXPIRED
+    })
+  }
+}
 
-export const FailedToSendOTPException = new BadRequestException(
-  AUTH_MESSAGE.FAILED_TO_SEND_OTP
-)
+export class FailedToSendOTPException extends BadRequestException {
+  constructor() {
+    super({
+      message: AUTH_MESSAGE.FAILED_TO_SEND_OTP,
+      errorKey: AuthMessage.FAILED_TO_SEND_OTP
+    })
+  }
+}
 
 // Email related errors
-export const EmailAlreadyExistsException = new UnprocessableEntityException(
-  AUTH_MESSAGE.EMAIL_ALREADY_EXISTS
-)
+export class EmailAlreadyExistsException extends UnprocessableEntityException {
+  constructor() {
+    super({
+      message: AUTH_MESSAGE.EMAIL_ALREADY_EXISTS,
+      errorKey: AuthMessage.EMAIL_ALREADY_EXISTS
+    })
+  }
+}
 
-export const EmailNotFoundException = new NotFoundException(AUTH_MESSAGE.NOT_FOUND_EMAIL)
+export class EmailNotFoundException extends NotFoundException {
+  constructor() {
+    super({
+      message: AUTH_MESSAGE.NOT_FOUND_EMAIL,
+      errorKey: AuthMessage.NOT_FOUND_EMAIL
+    })
+  }
+}
 
-export const EmailAlreadyActiveException = new NotFoundException(
-  AUTH_MESSAGE.EMAIL_ACTIVE
-)
+export class EmailAlreadyActiveException extends NotFoundException {
+  constructor() {
+    super({
+      message: AUTH_MESSAGE.EMAIL_ACTIVE,
+      errorKey: AuthMessage.EMAIL_ACTIVE
+    })
+  }
+}
 
-export const FailToLoginException = new NotFoundException('Sai email hoặc mật khẩu')
+export class FailToLoginException extends NotFoundException {
+  constructor() {
+    super({
+      message: 'Sai email hoặc mật khẩu',
+      errorKey: AuthMessage.FAIL_TO_LOGIN
+    })
+  }
+}
 
-export const InvalidOTPExceptionForEmail = new UnauthorizedException(
-  AUTH_MESSAGE.INVALID_OTP
-)
+export class InvalidOTPExceptionForEmail extends UnauthorizedException {
+  constructor() {
+    super({
+      message: AUTH_MESSAGE.INVALID_OTP,
+      errorKey: AuthMessage.INVALID_OTP
+    })
+  }
+}
 
 // Auth token related errors
-export const RefreshTokenAlreadyUsedException = new UnauthorizedException(
-  AUTH_MESSAGE.REFRESH_TOKEN_ALREADY_USED
-)
-export const UnauthorizedAccessException = new UnauthorizedException(
-  AUTH_MESSAGE.UNAUTHORIZED_ACCESS
-)
+export class RefreshTokenAlreadyUsedException extends UnauthorizedException {
+  constructor() {
+    super({
+      message: AUTH_MESSAGE.REFRESH_TOKEN_ALREADY_USED,
+      errorKey: AuthMessage.REFRESH_TOKEN_ALREADY_USED
+    })
+  }
+}
 
-export const AccountIsBanned = new UnauthorizedException(AUTH_MESSAGE.ACCOUNT_IS_BANNED)
+export class UnauthorizedAccessException extends UnauthorizedException {
+  constructor() {
+    super({
+      message: AUTH_MESSAGE.UNAUTHORIZED_ACCESS,
+      errorKey: AuthMessage.UNAUTHORIZED_ACCESS
+    })
+  }
+}
 
-export const UnVeryfiedAccountException = new UnauthorizedException(
-  'Tài khoản chưa được xác thực, vui lòng kiểm tra email để xác thực tài khoản'
-)
+export class AccountIsBannedException extends UnauthorizedException {
+  constructor() {
+    super({
+      message: AUTH_MESSAGE.ACCOUNT_IS_BANNED,
+      errorKey: AuthMessage.ACCOUNT_IS_BANNED
+    })
+  }
+}
+
+export class UnverifiedAccountException extends UnauthorizedException {
+  constructor() {
+    super({
+      message:
+        'Tài khoản chưa được xác thực, vui lòng kiểm tra email để xác thực tài khoản',
+      errorKey: AuthMessage.UNVERIFIED_ACCOUNT
+    })
+  }
+}
 
 // Google auth related errors
-export const GoogleUserInfoError = new Error(AUTH_MESSAGE.FAILD_TO_GET_GOOGLE_USER_INFO)
-
-export const InvalidTOTPException = new UnprocessableEntityException([
-  {
-    message: 'Error.InvalidTOTP',
-    path: 'totpCode'
+export class GoogleUserInfoException extends Error {
+  constructor() {
+    super(AUTH_MESSAGE.FAILD_TO_GET_GOOGLE_USER_INFO)
+    this.name = 'GoogleUserInfoException'
   }
-])
+}
 
-export const TOTPAlreadyEnabledException = new UnprocessableEntityException([
-  {
-    message: 'Error.TOTPAlreadyEnabled',
-    path: 'totpCode'
+export class InvalidTOTPException extends UnprocessableEntityException {
+  constructor() {
+    super([
+      {
+        message: 'Error.InvalidTOTP',
+        errorKey: AuthMessage.INVALID_TOTP,
+        path: 'totpCode'
+      }
+    ])
   }
-])
+}
 
-export const TOTPNotEnabledException = new UnprocessableEntityException([
-  {
-    message: 'Error.TOTPNotEnabled',
-    path: 'totpCode'
+export class TOTPAlreadyEnabledException extends UnprocessableEntityException {
+  constructor() {
+    super([
+      {
+        message: 'Error.TOTPAlreadyEnabled',
+        errorKey: AuthMessage.TOTP_ALREADY_ENABLED,
+        path: 'totpCode'
+      }
+    ])
   }
-])
+}
 
-export const InvalidTOTPAndCodeException = new UnprocessableEntityException([
-  {
-    message: 'Error.InvalidTOTPAndCode',
-    path: 'totpCode'
-  },
-  {
-    message: 'Error.InvalidTOTPAndCode',
-    path: 'code'
+export class TOTPNotEnabledException extends UnprocessableEntityException {
+  constructor() {
+    super([
+      {
+        message: 'Error.TOTPNotEnabled',
+        errorKey: AuthMessage.TOTP_NOT_ENABLED,
+        path: 'totpCode'
+      }
+    ])
   }
-])
+}
 
-export const NeedToVerifyWithFirstLogin = new UnauthorizedException(
-  'Đây là lần đăng nhập đầu tiên từ thiết bị này. Vui lòng kiểm tra email để xác thực.'
-)
+export class InvalidTOTPAndCodeException extends UnprocessableEntityException {
+  constructor() {
+    super([
+      {
+        message: 'Error.InvalidTOTPAndCode',
+        errorKey: AuthMessage.INVALID_TOTP_AND_CODE,
+        path: 'totpCode'
+      },
+      {
+        message: 'Error.InvalidTOTPAndCode',
+        errorKey: AuthMessage.INVALID_TOTP_AND_CODE,
+        path: 'code'
+      }
+    ])
+  }
+}
+
+export class NeedDeviceVerificationException extends UnauthorizedException {
+  constructor() {
+    super({
+      message:
+        'Đây là lần đăng nhập đầu tiên từ thiết bị này. Vui lòng kiểm tra email để xác thực.',
+      errorKey: AuthMessage.NEED_DEVICE_VERIFICATION
+    })
+  }
+}
