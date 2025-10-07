@@ -123,12 +123,8 @@ export class LessonService {
                 }
             }
 
-            // Auto-generate titleKey if not provided or empty
-            let titleKey = data.titleKey
-            if (!titleKey || titleKey.trim() === '') {
-                // Tạo titleKey tạm thời, sẽ được cập nhật sau khi tạo lesson
-                titleKey = `lesson.temp.${Date.now()}.title`
-            }
+            // Auto-generate titleKey (will be updated with actual lesson ID after creation)
+            const titleKey = `lesson.temp.${Date.now()}.title`
 
             // Auto-generate slug if not provided or empty
             let slug = data.slug
@@ -159,13 +155,10 @@ export class LessonService {
                 createdById: userId,
             })
 
-            // Cập nhật titleKey với ID thực tế nếu đã tạo tạm thời
-            let finalTitleKey = titleKey
-            if (titleKey.startsWith('lesson.temp.')) {
-                finalTitleKey = `lesson.${lesson.id}.title`
-                // Cập nhật titleKey trong database
-                await this.lessonRepository.update(lesson.id, { titleKey: finalTitleKey })
-            }
+            // Cập nhật titleKey với ID thực tế
+            const finalTitleKey = `lesson.${lesson.id}.title`
+            // Cập nhật titleKey trong database
+            await this.lessonRepository.update(lesson.id, { titleKey: finalTitleKey })
 
             // Tự động tạo translation keys
             try {
