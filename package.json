@@ -7,6 +7,7 @@
   "private": true,
   "license": "LICENSED",
   "scripts": {
+    "reset-sequences": "ts-node initialScript/reset-sequences.ts",
     "init-seed-data": "ts-node initialScript/index.ts && ts-node initialScript/import-elemental-types.ts && ts-node initialScript/import-type-effectiveness.ts",
     "seed-kanji-vocabulary": "ts-node initialScript/seed-default-data.ts",
     "create-permissions": "ts-node initialScript/create-permissions.ts",
