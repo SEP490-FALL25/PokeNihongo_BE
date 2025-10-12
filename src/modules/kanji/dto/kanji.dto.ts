@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { KanjiSortField, SortOrder } from '@/common/enum/enum'
 
 // Export Zod DTOs from subfolder
 export {
@@ -72,22 +71,6 @@ export class GetKanjiListQuerySwaggerDTO {
     @ApiProperty({ example: 10, description: 'Số lượng Kanji mỗi trang', required: false })
     limit?: number
 
-    @ApiProperty({
-        enum: KanjiSortField,
-        example: KanjiSortField.CHARACTER,
-        description: 'Field để sắp xếp theo character, meaningKey, strokeCount, jlptLevel, createdAt, updatedAt',
-        required: false
-    })
-    sortBy?: KanjiSortField
-
-    @ApiProperty({
-        enum: SortOrder,
-        example: SortOrder.ASC,
-        description: 'Sắp xếp theo thứ tự tăng dần (asc) hoặc giảm dần (desc)',
-        required: false
-    })
-    sort?: SortOrder
-
     @ApiProperty({ example: '日', description: 'Từ khóa tìm kiếm', required: false })
     search?: string
 
@@ -96,6 +79,22 @@ export class GetKanjiListQuerySwaggerDTO {
 
     @ApiProperty({ example: 8, description: 'Lọc theo số nét vẽ', required: false })
     strokeCount?: number
+
+    @ApiProperty({
+        example: 'character',
+        description: 'Sắp xếp theo trường',
+        enum: ['id', 'character', 'meaningKey', 'strokeCount', 'jlptLevel', 'createdAt', 'updatedAt'],
+        required: false
+    })
+    sortBy?: 'id' | 'character' | 'meaningKey' | 'strokeCount' | 'jlptLevel' | 'createdAt' | 'updatedAt'
+
+    @ApiProperty({
+        example: 'asc',
+        description: 'Thứ tự sắp xếp',
+        enum: ['asc', 'desc'],
+        required: false
+    })
+    sortOrder?: 'asc' | 'desc'
 }
 
 export class KanjiListSwaggerResponseDTO {
