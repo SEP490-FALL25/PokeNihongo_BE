@@ -207,6 +207,24 @@ export const viMessages = {
     ERROR: 'Đã xảy ra lỗi',
     INVALID_DATA: 'Dữ liệu không hợp lệ',
     UNAUTHORIZED: 'Không có quyền truy cập',
-    FORBIDDEN: 'Truy cập bị cấm'
+    FORBIDDEN: 'Truy cập bị cấm',
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'Ngôn ngữ không tồn tại để dịch'
+  },
+  entity: {
+    INVALID_DATA: 'Dữ liệu không hợp lệ',
+    NOT_FOUND: 'Không tìm thấy bản ghi',
+    ALREADY_EXISTS: 'Bản ghi đã tồn tại',
+    INVALID_ID: 'ID không hợp lệ'
+  },
+  achievement_group: {
+    CREATE_SUCCESS: 'Tạo nhóm thành tích thành công',
+    UPDATE_SUCCESS: 'Cập nhật nhóm thành tích thành công',
+    DELETE_SUCCESS: 'Xóa nhóm thành tích thành công',
+    GET_SUCCESS: 'Lấy chi tiết nhóm thành tích thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách nhóm thành tích thành công',
+    NOT_FOUND: 'Không tìm thấy nhóm thành tích',
+    ALREADY_EXISTS: 'Nhóm thành tích đã tồn tại',
+    INVALID_DATA: 'Dữ liệu nhóm thành tích không hợp lệ',
+    NAME_REQUIRED: 'Tên nhóm thành tích không được để trống'
   }
 }

@@ -208,6 +208,24 @@ export const jaMessages = {
     ERROR: 'エラーが発生しました',
     INVALID_DATA: '無効なデータが提供されました',
     UNAUTHORIZED: '認証されていないアクセス',
-    FORBIDDEN: 'アクセスが禁止されています'
+    FORBIDDEN: 'アクセスが禁止されています',
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: '翻訳する言語が存在しません'
+  },
+  entity: {
+    INVALID_DATA: '無効なデータが提供されました',
+    NOT_FOUND: 'レコードが見つかりません',
+    ALREADY_EXISTS: 'レコードは既に存在します',
+    INVALID_ID: '無効なIDです'
+  },
+  achievement_group: {
+    CREATE_SUCCESS: '実績グループの作成が完了しました',
+    UPDATE_SUCCESS: '実績グループの更新が完了しました',
+    DELETE_SUCCESS: '実績グループの削除が完了しました',
+    GET_SUCCESS: '実績グループ情報を取得しました',
+    GET_LIST_SUCCESS: '実績グループリストを取得しました',
+    NOT_FOUND: '実績グループが見つかりません',
+    ALREADY_EXISTS: '実績グループは既に存在します',
+    INVALID_DATA: '無効な実績グループデータです',
+    NAME_REQUIRED: '実績グループ名は必須です'
   }
 }

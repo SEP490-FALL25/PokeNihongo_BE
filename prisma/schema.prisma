@@ -711,10 +711,10 @@ model UserDailyRequest {
 
 // === BẢNG ĐỊNH NGHĨA TOÀN BỘ HUY HIỆU ===
 model AchievementGroup {
-  id           Int     @id @default(autoincrement())
-  name         String  @unique // Tên nhóm, VD: "Welcome & Onboarding"
-  description  String? // Mô tả, VD: "Dành cho người mới tham gia"
-  displayOrder Int // Thứ tự hiển thị, VD: 1, 2, 3...
+  id             Int    @id @default(autoincrement())
+  nameKey        String
+  descriptionKey String // Mô tả, VD: "Dành cho người mới tham gia"
+  displayOrder   Int // Thứ tự hiển thị, VD: 1, 2, 3...
 
   // Quan hệ: Một nhóm có thể chứa nhiều huy hiệu
   achievements Achievement[]
@@ -735,9 +735,9 @@ model Achievement {
   id Int @id @default(autoincrement())
 
   // Thông tin cơ bản
-  name        String // Tên huy hiệu, VD: "Ngọn Lửa Nhỏ"
-  description String // Mô tả chi tiết
-  imageUrl    String? // Đường dẫn tới ảnh của huy hiệu
+  nameKey        String // Tên huy hiệu, VD: "Ngọn Lửa Nhỏ"
+  descriptionKey String // Mô tả chi tiết
+  imageUrl       String? // Đường dẫn tới ảnh của huy hiệu
 
   // Phân loại & Hiển thị
   achievementTierType AchievementTierType?

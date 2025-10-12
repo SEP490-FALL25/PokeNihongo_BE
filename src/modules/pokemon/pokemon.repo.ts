@@ -169,7 +169,12 @@ export class PokemonRepo {
   }
 
   async list(pagination: PaginationQueryType) {
-    const { where, orderBy } = parseQs(pagination.qs, POKEMON_FIELDS)
+    const { where, orderBy } = parseQs(
+      pagination.qs,
+      POKEMON_FIELDS,
+      ['types', 'rarities'], // relation fields - types là relation với ElementalType
+      [] // array fields
+    )
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize

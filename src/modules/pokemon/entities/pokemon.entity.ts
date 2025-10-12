@@ -428,5 +428,7 @@ export const POKEMON_FIELDS = [
   ...Object.keys(PokemonSchema.shape),
   'nameTranslations.vi',
   'nameTranslations.en',
-  'nameTranslations.ja'
+  'nameTranslations.ja',
+  'types',
+  'rarities'
 ] as PokemonFieldType[]
