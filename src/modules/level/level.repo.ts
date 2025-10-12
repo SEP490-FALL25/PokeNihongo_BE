@@ -25,7 +25,7 @@ export class LevelRepo {
     return this.prismaService.level.create({
       data: {
         ...data,
-        createdById
+        createdById // nằm trong data
       }
     })
   }

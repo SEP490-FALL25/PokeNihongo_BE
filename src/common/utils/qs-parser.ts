@@ -5,11 +5,18 @@ type QSResult = {
   orderBy?: Record<string, 'asc' | 'desc'>
 }
 
+/**
+ * parseQs
+ * @param qs query string, ví dụ: "rarity:eq=COMMON,nameTranslations.vi:like=Garuura,sort:-createdAt"
+ * @param validFields danh sách field hợp lệ
+ * @param relationFields array của relation fields (Prisma some)
+ * @param arrayFields array của scalar array fields (Prisma has/hasSome)
+ */
 export function parseQs(
   qs?: string,
   validFields?: string[],
-  relationFields: string[] = [], // relation array fields
-  arrayFields: string[] = [] // scalar array fields
+  relationFields: string[] = [],
+  arrayFields: string[] = []
 ): QSResult {
   if (!qs) return {}
 
@@ -79,9 +86,28 @@ export function parseQs(
     // --- Scalar array field ---
     if (arrayFields.includes(field)) {
       if (Array.isArray(parsedValue)) {
-        where[field] = { hasSome: parsedValue } // Prisma array filter
+        where[field] = { hasSome: parsedValue }
       } else {
         where[field] = { has: parsedValue }
+      }
+      continue
+    }
+
+    // --- Nested JSON field ---
+    if (field.includes('.')) {
+      const [root, nested] = field.split('.')
+      const op = tokens[1] || 'eq'
+
+      if (!where[root]) where[root] = {}
+
+      if (op === 'eq') {
+        where[root] = { path: [nested], equals: parsedValue }
+      } else if (op === 'like') {
+        where[root] = {
+          path: [nested],
+          string_contains: parsedValue,
+          mode: 'insensitive'
+        }
       }
       continue
     }
@@ -92,7 +118,8 @@ export function parseQs(
     } else if (tokens.length === 2) {
       const op = tokens[1]
       if (op === 'eq') where[field] = parsedValue
-      else if (op === 'like') where[field] = { contains: value, mode: 'insensitive' }
+      else if (op === 'like')
+        where[field] = { contains: parsedValue, mode: 'insensitive' }
     }
   }
 
