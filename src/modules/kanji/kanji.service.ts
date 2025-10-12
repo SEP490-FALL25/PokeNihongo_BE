@@ -32,6 +32,82 @@ export class KanjiService {
     ) { }
 
 
+    // Kanji Management API for UI
+    async getKanjiManagementList(params: GetKanjiListQueryType) {
+        try {
+            this.logger.log(`Getting kanji management list with params: ${JSON.stringify(params)}`)
+
+            // Set default values
+            const queryParams = {
+                page: params.page || 1,
+                limit: params.limit || 10,
+                search: params.search,
+                jlptLevel: params.jlptLevel,
+                strokeCount: params.strokeCount,
+                sortBy: params.sortBy,
+                sort: params.sort
+            }
+
+            const result = await this.kanjiRepository.findMany(queryParams)
+
+            // Transform data for management UI
+            const kanjiManagementData = await Promise.all(
+                result.data.map(async (kanji) => {
+                    // Get meanings
+                    let meaning = ''
+                    if (kanji.meaningKey) {
+                        try {
+                            const translations = await this.translationService.findByKey({ key: kanji.meaningKey })
+                            if (translations && translations.translations && translations.translations.length > 0) {
+                                // Get Vietnamese meaning first, fallback to first available
+                                const viTranslation = translations.translations.find(t => {
+                                    // We need to get language code, for now use a simple approach
+                                    return t.languageId === 1 // Assuming Vietnamese is languageId 1
+                                })
+                                meaning = viTranslation?.value || translations.translations[0]?.value || ''
+                            }
+                        } catch (error) {
+                            this.logger.warn(`Failed to get meaning for kanji ${kanji.id}:`, error)
+                        }
+                    }
+
+                    // Separate onyomi and kunyomi readings
+                    const onyomiReadings = kanji.readings?.filter(r => r.readingType === 'onyomi').map(r => r.reading) || []
+                    const kunyomiReadings = kanji.readings?.filter(r => r.readingType === 'kunyomi').map(r => r.reading) || []
+
+                    return {
+                        id: kanji.id,
+                        kanji: kanji.character,
+                        meaning: meaning,
+                        strokeCount: kanji.strokeCount,
+                        jlptLevel: kanji.jlptLevel,
+                        onyomi: onyomiReadings.join(', '),
+                        kunyomi: kunyomiReadings.join(', '),
+                        createdAt: kanji.createdAt,
+                        updatedAt: kanji.updatedAt
+                    }
+                })
+            )
+
+            return {
+                statusCode: 200,
+                message: 'Lấy danh sách quản lý kanji thành công',
+                data: {
+                    results: kanjiManagementData,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error getting kanji management list:', error)
+            throw error
+        }
+    }
+
     // Kanji CRUD operations
     async findMany(params: GetKanjiListQueryType) {
         try {
@@ -45,19 +121,69 @@ export class KanjiService {
                 jlptLevel: params.jlptLevel,
                 strokeCount: params.strokeCount,
                 sortBy: params.sortBy,
-                sortOrder: params.sortOrder
+                sort: params.sort
             }
 
             const result = await this.kanjiRepository.findMany(queryParams)
 
+            // Add meanings for each kanji
+            const kanjiWithMeanings = await Promise.all(
+                result.data.map(async (kanji) => {
+                    let meanings: Array<{ meaningKey: string, translations: Record<string, string> }> = []
+                    if (kanji.meaningKey) {
+                        try {
+                            const translations = await this.translationService.findByKey({ key: kanji.meaningKey })
+                            if (translations && translations.translations && translations.translations.length > 0) {
+                                // Get language codes for each translation
+                                const translationsWithLanguageCodes = await Promise.all(
+                                    translations.translations.map(async (translation) => {
+                                        try {
+                                            const language = await this.languagesService.findById(translation.languageId)
+                                            return {
+                                                languageCode: language?.data?.code || `lang_${translation.languageId}`,
+                                                value: translation.value
+                                            }
+                                        } catch (error) {
+                                            return {
+                                                languageCode: `lang_${translation.languageId}`,
+                                                value: translation.value
+                                            }
+                                        }
+                                    })
+                                )
+
+                                meanings = [{
+                                    meaningKey: kanji.meaningKey,
+                                    translations: translationsWithLanguageCodes.reduce((acc, translation) => {
+                                        acc[translation.languageCode] = translation.value
+                                        return acc
+                                    }, {} as Record<string, string>)
+                                }]
+                            }
+                        } catch (error) {
+                            this.logger.warn(`Failed to get meanings for kanji ${kanji.id}:`, error)
+                        }
+                    }
+
+                    return {
+                        ...kanji,
+                        meanings
+                    }
+                })
+            )
+
             return {
+                statusCode: 200,
+                message: KANJI_MESSAGE.GET_LIST_SUCCESS,
                 data: {
-                    items: result.data,
-                    total: result.total,
-                    page: result.page,
-                    limit: result.limit
-                },
-                message: KANJI_MESSAGE.GET_LIST_SUCCESS
+                    results: kanjiWithMeanings,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
             }
         } catch (error) {
             this.logger.error('Error finding kanji:', error)
@@ -516,12 +642,12 @@ export class KanjiService {
                         code: langCode
                     })
 
-                    if (!languages.data?.items || languages.data.items.length === 0) {
+                    if (!languages.data?.results || languages.data.results.length === 0) {
                         this.logger.warn(`Language ${langCode} not found, skipping`)
                         continue
                     }
 
-                    const language = languages.data.items[0]
+                    const language = languages.data.results[0]
 
                     // Kiểm tra translation đã tồn tại chưa
                     const existingTranslation = await this.translationService.findByKeyAndLanguage(
@@ -577,12 +703,12 @@ export class KanjiService {
                         code: langCode
                     })
 
-                    if (!languages.data?.items || languages.data.items.length === 0) {
+                    if (!languages.data?.results || languages.data.results.length === 0) {
                         this.logger.warn(`Language ${langCode} not found, skipping`)
                         continue
                     }
 
-                    const language = languages.data.items[0]
+                    const language = languages.data.results[0]
 
                     // Kiểm tra translation đã tồn tại chưa
                     const existingTranslation = await this.translationService.findByKeyAndLanguage(
@@ -622,14 +748,14 @@ export class KanjiService {
             // Lấy danh sách các ngôn ngữ để map code -> id
             const languages = await this.languagesService.findMany({ page: 1, limit: 100 })
 
-            if (!languages.data || !languages.data.items || languages.data.items.length === 0) {
+            if (!languages.data || !languages.data.results || languages.data.results.length === 0) {
                 this.logger.warn('No languages found, skipping specific translation creation')
                 return
             }
 
             // Tạo map code -> id
             const languageMap = new Map<string, number>()
-            for (const language of languages.data.items) {
+            for (const language of languages.data.results) {
                 languageMap.set(language.code, language.id)
             }
 

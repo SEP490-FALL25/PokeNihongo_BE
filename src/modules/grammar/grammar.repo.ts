@@ -5,13 +5,14 @@ import {
     UpdateGrammarBodyType,
     GetGrammarListQueryType,
 } from './entities/grammar.entities'
+import { GrammarSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class GrammarRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetGrammarListQueryType) {
-        const { page, limit, level, search } = params
+        const { page, limit, level, search, sortBy = GrammarSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -30,10 +31,7 @@ export class GrammarRepository {
         const [data, total] = await Promise.all([
             this.prismaService.grammar.findMany({
                 where,
-                orderBy: [
-                    { level: 'asc' },
-                    { createdAt: 'desc' }
-                ],
+                orderBy: { [sortBy]: sort },
                 skip,
                 take: limit,
             }),

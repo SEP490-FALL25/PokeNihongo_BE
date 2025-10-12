@@ -7,7 +7,8 @@ import {
     GetKanjiReadingsByKanjiIdParamsDTO,
     GetKanjiReadingsByTypeParamsDTO,
     KanjiReadingResponseDTO,
-    KanjiReadingListResponseDTO
+    KanjiReadingListResponseDTO,
+    GetKanjiReadingListQuerySwaggerDTO
 } from './dto/kanji-reading.dto'
 import {
     CreateKanjiReadingSwaggerDTO,
@@ -51,6 +52,7 @@ export class KanjiReadingController {
         summary: 'Lấy danh sách cách đọc Kanji',
         description: 'Lấy danh sách tất cả cách đọc Kanji với phân trang và tìm kiếm'
     })
+    @ApiQuery({ type: GetKanjiReadingListQuerySwaggerDTO })
     @ApiResponse({
         status: 200,
         description: 'Lấy danh sách cách đọc thành công',

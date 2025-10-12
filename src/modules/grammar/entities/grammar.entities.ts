@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { GrammarSortField, SortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -49,7 +50,26 @@ export const GetGrammarListQueryType = z.object({
     limit: z.string().transform(Number).default('10'),
     level: z.string().optional(),
     search: z.string().optional(),
+    sortBy: z.nativeEnum(GrammarSortField).optional().default(GrammarSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
+
+// Response schemas
+export const GrammarListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(GrammarType),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
 
 // Type exports
 export type GrammarType = z.infer<typeof GrammarType>
@@ -58,3 +78,4 @@ export type UpdateGrammarBodyType = z.infer<typeof UpdateGrammarBodyType>
 export type CreateGrammarBasicBodyType = z.infer<typeof CreateGrammarBasicBodyType>
 export type GetGrammarByIdParamsType = z.infer<typeof GetGrammarByIdParamsType>
 export type GetGrammarListQueryType = z.infer<typeof GetGrammarListQueryType>
+export type GrammarListResType = z.infer<typeof GrammarListResSchema>

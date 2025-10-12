@@ -1,0 +1,134 @@
+import { ApiProperty } from '@nestjs/swagger'
+
+// Swagger DTOs - for API documentation only
+export class CreateExercisesSwaggerDTO {
+    @ApiProperty({ example: '文法練習', description: 'Tiêu đề bài tập bằng tiếng Nhật' })
+    titleJp: string
+
+    @ApiProperty({
+        example: 'multiple_choice',
+        description: 'Loại bài tập',
+        enum: ['multiple_choice', 'matching', 'listening', 'speaking']
+    })
+    exerciseType: string
+
+    @ApiProperty({ example: 'この練習では文法を学びます', description: 'Nội dung mô tả bài tập', required: false })
+    content?: string
+
+    @ApiProperty({ example: 'https://example.com/audio.mp3', description: 'URL file âm thanh', required: false })
+    audioUrl?: string
+
+    @ApiProperty({ example: false, description: 'Trạng thái bị chặn', required: false })
+    isBlocked?: boolean
+
+    @ApiProperty({ example: 0.99, description: 'Giá bài tập (nếu có)', required: false })
+    price?: number
+
+    @ApiProperty({ example: 1, description: 'ID bài học' })
+    lessonId: number
+}
+
+export class UpdateExercisesSwaggerDTO {
+    @ApiProperty({ example: '文法練習', description: 'Tiêu đề bài tập bằng tiếng Nhật', required: false })
+    titleJp?: string
+
+    @ApiProperty({
+        example: 'multiple_choice',
+        description: 'Loại bài tập',
+        enum: ['multiple_choice', 'matching', 'listening', 'speaking'],
+        required: false
+    })
+    exerciseType?: string
+
+    @ApiProperty({ example: 'この練習では文法を学びます', description: 'Nội dung mô tả bài tập', required: false })
+    content?: string
+
+    @ApiProperty({ example: 'https://example.com/audio.mp3', description: 'URL file âm thanh', required: false })
+    audioUrl?: string
+
+    @ApiProperty({ example: false, description: 'Trạng thái bị chặn', required: false })
+    isBlocked?: boolean
+
+    @ApiProperty({ example: 0.99, description: 'Giá bài tập (nếu có)', required: false })
+    price?: number
+
+    @ApiProperty({ example: 1, description: 'ID bài học', required: false })
+    lessonId?: number
+}
+
+export class GetExercisesListQuerySwaggerDTO {
+    @ApiProperty({ example: 1, description: 'Số trang', required: false })
+    page?: number
+
+    @ApiProperty({ example: 10, description: 'Số lượng bài tập mỗi trang', required: false })
+    limit?: number
+
+    @ApiProperty({
+        example: 'multiple_choice',
+        description: 'Lọc theo loại bài tập',
+        enum: ['multiple_choice', 'matching', 'listening', 'speaking'],
+        required: false
+    })
+    exerciseType?: string
+
+    @ApiProperty({ example: 1, description: 'Lọc theo ID bài học', required: false })
+    lessonId?: number
+
+    @ApiProperty({ example: false, description: 'Lọc theo trạng thái bị chặn', required: false })
+    isBlocked?: boolean
+
+    @ApiProperty({ example: '文法', description: 'Từ khóa tìm kiếm', required: false })
+    search?: string
+}
+
+export class ExercisesResponseSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID' })
+    id: number
+
+    @ApiProperty({ example: '文法練習', description: 'Tiêu đề bài tập bằng tiếng Nhật' })
+    titleJp: string
+
+    @ApiProperty({ example: 'multiple_choice', description: 'Loại bài tập' })
+    exerciseType: string
+
+    @ApiProperty({ example: 'exercise.grammar.practice.title', description: 'Key để dịch tiêu đề bài tập' })
+    titleKey: string
+
+    @ApiProperty({ example: 'この練習では文法を学びます', description: 'Nội dung mô tả bài tập' })
+    content: string
+
+    @ApiProperty({ example: 'https://example.com/audio.mp3', description: 'URL file âm thanh' })
+    audioUrl: string
+
+    @ApiProperty({ example: false, description: 'Trạng thái bị chặn' })
+    isBlocked: boolean
+
+    @ApiProperty({ example: 0.99, description: 'Giá bài tập' })
+    price: number
+
+    @ApiProperty({ example: 1, description: 'ID bài học' })
+    lessonId: number
+
+    @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Ngày tạo' })
+    createdAt: Date
+
+    @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Ngày cập nhật' })
+    updatedAt: Date
+}
+
+export class ExercisesListResponseSwaggerDTO {
+    @ApiProperty({ type: [ExercisesResponseSwaggerDTO], description: 'Danh sách bài tập' })
+    data: ExercisesResponseSwaggerDTO[]
+
+    @ApiProperty({ example: 100, description: 'Tổng số bài tập' })
+    total: number
+
+    @ApiProperty({ example: 1, description: 'Trang hiện tại' })
+    page: number
+
+    @ApiProperty({ example: 10, description: 'Số bài tập mỗi trang' })
+    limit: number
+
+    @ApiProperty({ example: 10, description: 'Tổng số trang' })
+    totalPages: number
+}

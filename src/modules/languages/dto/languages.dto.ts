@@ -62,21 +62,87 @@ export class LanguagesSwaggerResponseDTO {
     updatedAt: Date
 }
 
+export class GetLanguagesListQuerySwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'Số trang',
+        required: false,
+        default: 1,
+        minimum: 1
+    })
+    page?: number
+
+    @ApiProperty({
+        example: 10,
+        description: 'Số lượng ngôn ngữ mỗi trang',
+        required: false,
+        default: 10,
+        minimum: 1,
+        maximum: 100
+    })
+    limit?: number
+
+    @ApiProperty({
+        example: 'vi',
+        description: 'Tìm kiếm theo mã ngôn ngữ',
+        required: false,
+        maxLength: 10
+    })
+    code?: string
+
+    @ApiProperty({
+        example: 'Vietnamese',
+        description: 'Tìm kiếm theo tên ngôn ngữ',
+        required: false,
+        maxLength: 100
+    })
+    name?: string
+
+    @ApiProperty({
+        example: 'vi',
+        description: 'Từ khóa tìm kiếm (có thể tìm theo mã hoặc tên ngôn ngữ)',
+        required: false,
+        maxLength: 100
+    })
+    search?: string
+}
+
 export class LanguagesListSwaggerResponseDTO {
-    @ApiProperty({ type: [LanguagesSwaggerResponseDTO], description: 'Danh sách ngôn ngữ' })
-    data: LanguagesSwaggerResponseDTO[]
+    @ApiProperty({ example: 200, description: 'Mã trạng thái HTTP' })
+    statusCode: number
 
-    @ApiProperty({ example: 10, description: 'Tổng số ngôn ngữ' })
-    total: number
+    @ApiProperty({ example: 'Lấy danh sách ngôn ngữ thành công', description: 'Thông báo' })
+    message: string
 
-    @ApiProperty({ example: 1, description: 'Trang hiện tại' })
-    page: number
-
-    @ApiProperty({ example: 10, description: 'Số ngôn ngữ mỗi trang' })
-    limit: number
-
-    @ApiProperty({ example: 1, description: 'Tổng số trang' })
-    totalPages: number
+    @ApiProperty({
+        type: 'object',
+        description: 'Dữ liệu trả về',
+        properties: {
+            results: {
+                type: 'array',
+                items: { $ref: '#/components/schemas/LanguagesSwaggerResponseDTO' },
+                description: 'Danh sách ngôn ngữ'
+            },
+            pagination: {
+                type: 'object',
+                properties: {
+                    current: { type: 'number', example: 1, description: 'Trang hiện tại' },
+                    pageSize: { type: 'number', example: 10, description: 'Số ngôn ngữ mỗi trang' },
+                    totalPage: { type: 'number', example: 1, description: 'Tổng số trang' },
+                    totalItem: { type: 'number', example: 10, description: 'Tổng số ngôn ngữ' }
+                }
+            }
+        }
+    })
+    data: {
+        results: LanguagesSwaggerResponseDTO[]
+        pagination: {
+            current: number
+            pageSize: number
+            totalPage: number
+            totalItem: number
+        }
+    }
 }
 
 // Export Zod DTOs

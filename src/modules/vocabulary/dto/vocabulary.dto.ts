@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { VocabularySortField, VocabularySortOrder } from '@/common/enum/enum'
 
 
 
@@ -119,6 +120,33 @@ export class GetVocabularyListQuerySwaggerDTO {
         maxLength: 500
     })
     reading?: string
+
+    @ApiProperty({
+        example: 5,
+        description: 'Lọc theo cấp độ JLPT (1-5, trong đó 5 là N5, 4 là N4, ..., 1 là N1)',
+        required: false,
+        minimum: 1,
+        maximum: 5
+    })
+    levelN?: number
+
+    @ApiProperty({
+        enum: VocabularySortField,
+        example: VocabularySortField.CREATED_AT,
+        description: 'Field để sắp xếp theo createdAt, updatedAt, id, wordJp, reading, levelN',
+        required: false,
+    })
+    sortBy?: VocabularySortField
+
+    @ApiProperty({
+        enum: VocabularySortOrder,
+        example: VocabularySortOrder.DESC,
+        description: 'Sắp xếp theo thứ tự tăng dần (asc) hoặc giảm dần (desc)',
+        required: false,
+    })
+    sort?: VocabularySortOrder
+
+
 }
 
 // Multipart DTOs for file uploads

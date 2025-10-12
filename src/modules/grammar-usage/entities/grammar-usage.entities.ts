@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { GrammarUsageSortField, SortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -46,6 +47,8 @@ export const GetGrammarUsageListQueryType = z.object({
     page: z.string().transform(Number).default('1'),
     limit: z.string().transform(Number).default('10'),
     grammarId: z.string().transform(Number).optional(),
+    sortBy: z.nativeEnum(GrammarUsageSortField).optional().default(GrammarUsageSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
 
 // Type exports

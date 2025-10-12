@@ -5,6 +5,7 @@ import {
     UpdateLessonBodyType,
     GetLessonListQueryType,
 } from './entities/lesson.entities'
+import { LessonSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class LessonRepository {
@@ -12,7 +13,7 @@ export class LessonRepository {
 
     // Lesson CRUD
     async findMany(params: GetLessonListQueryType) {
-        const { page, limit, search, lessonCategoryId, levelJlpt, isPublished } = params
+        const { page, limit, search, lessonCategoryId, levelJlpt, isPublished, sortBy = LessonSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -64,10 +65,7 @@ export class LessonRepository {
                         }
                     },
                 },
-                orderBy: [
-                    { lessonOrder: 'asc' },
-                    { createdAt: 'desc' }
-                ],
+                orderBy: { [sortBy]: sort },
                 skip,
                 take: limit,
             }),

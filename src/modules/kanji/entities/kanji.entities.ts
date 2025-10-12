@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { KanjiSortField, SortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -26,6 +27,29 @@ const isOnyomiKunyomi = (text: string): boolean => {
 // Custom error messages
 const KANJI_CHARACTER_ERROR = 'Phải là một ký tự Kanji duy nhất'
 const ONYOMI_KUNYOMI_ERROR = 'Phải là cách đọc Onyomi/Kunyomi (chỉ chứa Hiragana, Katakana và dấu câu cơ bản)'
+
+// Kanji Reading Schema
+export const KanjiReadingSchema = z.object({
+    id: z.number(),
+    kanjiId: z.number(),
+    readingType: z.string(),
+    reading: z.string(),
+    createdAt: z.date(),
+    updatedAt: z.date()
+})
+
+// Kanji Management Schema for UI
+export const KanjiManagementSchema = z.object({
+    id: z.number(),
+    kanji: z.string(),
+    meaning: z.string(),
+    strokeCount: z.number().nullable().optional(),
+    jlptLevel: z.number().nullable().optional(),
+    onyomi: z.string(),
+    kunyomi: z.string(),
+    createdAt: z.date(),
+    updatedAt: z.date()
+})
 
 
 export const KanjiSchema = z.object({
@@ -59,7 +83,12 @@ export const KanjiSchema = z.object({
         .nullable()
         .optional(),
     createdAt: z.date(),
-    updatedAt: z.date()
+    updatedAt: z.date(),
+    readings: z.array(KanjiReadingSchema).optional(),
+    meanings: z.array(z.object({
+        meaningKey: z.string(),
+        translations: z.record(z.string(), z.string())
+    })).optional()
 })
 
 
@@ -130,10 +159,10 @@ export const GetKanjiByIdParamsSchema = z.object({
 
 // Get Kanji list query schema
 export const GetKanjiListQuerySchema = z.object({
-    page: z.string().transform((val) => parseInt(val, 10)).optional(),
-    limit: z.string().transform((val) => parseInt(val, 10)).optional(),
-    sortBy: z.enum(['id', 'character', 'meaningKey', 'strokeCount', 'jlptLevel', 'createdAt', 'updatedAt']).optional(),
-    sortOrder: z.enum(['asc', 'desc']).optional(),
+    page: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
+    limit: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
+    sortBy: z.nativeEnum(KanjiSortField).optional().default(KanjiSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
     search: z.string().optional(),
     jlptLevel: z.string().transform((val) => parseInt(val, 10)).optional(),
     strokeCount: z.string().transform((val) => parseInt(val, 10)).optional()
@@ -162,10 +191,29 @@ export const KanjiListResSchema = z
     .object({
         statusCode: z.number(),
         data: z.object({
-            items: z.array(KanjiSchema),
-            total: z.number(),
-            page: z.number(),
-            limit: z.number()
+            results: z.array(KanjiSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
+export const KanjiManagementListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(KanjiManagementSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
         }),
         message: z.string()
     })
@@ -179,3 +227,5 @@ export type GetKanjiByIdParamsType = z.infer<typeof GetKanjiByIdParamsSchema>
 export type GetKanjiListQueryType = z.infer<typeof GetKanjiListQuerySchema>
 export type KanjiResType = z.infer<typeof KanjiResSchema>
 export type KanjiListResType = z.infer<typeof KanjiListResSchema>
+export type KanjiManagement = z.infer<typeof KanjiManagementSchema>
+export type KanjiManagementListResType = z.infer<typeof KanjiManagementListResSchema>

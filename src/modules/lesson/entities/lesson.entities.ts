@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { LessonSortField, SortOrder } from '@/common/enum/enum'
 
 // Lesson Entity Types
 export const LessonType = z.object({
@@ -104,6 +105,8 @@ export const GetLessonListQueryType = z.object({
     lessonCategoryId: z.string().transform(Number).optional(),
     levelJlpt: z.string().transform(Number).optional(),
     isPublished: z.string().transform(Boolean).optional(),
+    sortBy: z.nativeEnum(LessonSortField).optional().default(LessonSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
 
 // Type exports

@@ -118,10 +118,13 @@ export const LanguagesListResSchema = z
     .object({
         statusCode: z.number(),
         data: z.object({
-            items: z.array(LanguagesSchema),
-            total: z.number(),
-            page: z.number(),
-            limit: z.number()
+            results: z.array(LanguagesSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
         }),
         message: z.string()
     })

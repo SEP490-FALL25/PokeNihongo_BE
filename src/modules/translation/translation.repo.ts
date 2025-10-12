@@ -1,6 +1,7 @@
 import { TranslationType, CreateTranslationBodyType, UpdateTranslationBodyType } from './entities/translation.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
+import { TranslationSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class TranslationRepository {
@@ -12,8 +13,10 @@ export class TranslationRepository {
         search?: string
         languageId?: number
         key?: string
+        sortBy?: TranslationSortField
+        sort?: SortOrder
     }) {
-        const { page, limit, search, languageId, key } = params
+        const { page, limit, search, languageId, key, sortBy = TranslationSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -38,10 +41,7 @@ export class TranslationRepository {
                 where,
                 skip,
                 take: limit,
-                orderBy: [
-                    { key: 'asc' },
-                    { languageId: 'asc' }
-                ]
+                orderBy: { [sortBy]: sort }
             }),
             this.prismaService.translation.count({ where })
         ])

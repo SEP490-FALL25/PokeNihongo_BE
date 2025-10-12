@@ -37,8 +37,17 @@ export class GrammarService {
 
             this.logger.log(`Found ${result.data.length} grammar entries`)
             return {
-                ...result,
-                message: 'Lấy danh sách ngữ pháp thành công'
+                statusCode: 200,
+                message: 'Lấy danh sách ngữ pháp thành công',
+                data: {
+                    results: result.data,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
             }
         } catch (error) {
             this.logger.error('Error getting grammar list:', error)

@@ -256,12 +256,12 @@ export class WordTypeService {
                         code: langCode
                     })
 
-                    if (!languages.data?.items || languages.data.items.length === 0) {
+                    if (!languages.data?.results || languages.data.results.length === 0) {
                         this.logger.warn(`Language ${langCode} not found, skipping translation`)
                         continue
                     }
 
-                    const language = languages.data.items[0]
+                    const language = languages.data.results[0]
 
                     // Kiểm tra translation đã tồn tại chưa
                     const existingTranslation = await this.translationService.findByKeyAndLanguage(

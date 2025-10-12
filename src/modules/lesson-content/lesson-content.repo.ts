@@ -5,13 +5,14 @@ import {
     UpdateLessonContentBodyType,
     GetLessonContentListQueryType,
 } from './entities/lesson-content.entities'
+import { LessonContentSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class LessonContentRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetLessonContentListQueryType) {
-        const { page, limit, lessonId, contentType } = params
+        const { page, limit, lessonId, contentType, sortBy = LessonContentSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -36,10 +37,7 @@ export class LessonContentRepository {
                         }
                     }
                 },
-                orderBy: [
-                    { contentOrder: 'asc' },
-                    { createdAt: 'desc' }
-                ],
+                orderBy: { [sortBy]: sort },
                 skip,
                 take: limit,
             }),

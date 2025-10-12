@@ -71,6 +71,15 @@ export class GetKanjiListQuerySwaggerDTO {
     @ApiProperty({ example: 10, description: 'Số lượng Kanji mỗi trang', required: false })
     limit?: number
 
+    @ApiProperty({ example: '日', description: 'Từ khóa tìm kiếm', required: false })
+    search?: string
+
+    @ApiProperty({ example: 5, description: 'Lọc theo cấp độ JLPT', required: false })
+    jlptLevel?: number
+
+    @ApiProperty({ example: 8, description: 'Lọc theo số nét vẽ', required: false })
+    strokeCount?: number
+
     @ApiProperty({
         example: 'character',
         description: 'Sắp xếp theo trường',
@@ -86,15 +95,6 @@ export class GetKanjiListQuerySwaggerDTO {
         required: false
     })
     sortOrder?: 'asc' | 'desc'
-
-    @ApiProperty({ example: '日', description: 'Từ khóa tìm kiếm', required: false })
-    search?: string
-
-    @ApiProperty({ example: 5, description: 'Lọc theo cấp độ JLPT', required: false })
-    jlptLevel?: number
-
-    @ApiProperty({ example: 8, description: 'Lọc theo số nét vẽ', required: false })
-    strokeCount?: number
 }
 
 export class KanjiListSwaggerResponseDTO {

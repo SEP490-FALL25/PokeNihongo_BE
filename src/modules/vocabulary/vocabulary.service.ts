@@ -34,19 +34,31 @@ export class VocabularyService {
 
     //#region Find All
     async findAll(query: GetVocabularyListQueryType) {
-        const { page, limit, search, wordJp, reading } = query
+        const { page, limit, search, wordJp, reading, levelN, sortBy, sort } = query
 
         const result = await this.vocabularyRepository.findMany({
             page,
             limit,
             search,
             wordJp,
-            reading
+            reading,
+            levelN,
+            sortBy,
+            sort
         })
 
         return {
-            data: result,
-            message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS
+            statusCode: 200,
+            message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS,
+            data: {
+                results: result.items,
+                pagination: {
+                    current: result.page,
+                    pageSize: result.limit,
+                    totalPage: Math.ceil(result.total / result.limit),
+                    totalItem: result.total
+                }
+            }
         }
     }
     //#endregion

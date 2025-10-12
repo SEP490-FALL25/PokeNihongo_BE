@@ -5,6 +5,7 @@ import {
 } from './entities/kanji.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
+import { KanjiSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class KanjiRepository {
@@ -17,10 +18,10 @@ export class KanjiRepository {
         search?: string
         jlptLevel?: number
         strokeCount?: number
-        sortBy?: string
-        sortOrder?: 'asc' | 'desc'
+        sortBy?: KanjiSortField
+        sort?: SortOrder
     }) {
-        const { page, limit, search, jlptLevel, strokeCount, sortBy = 'id', sortOrder = 'asc' } = params
+        const { page, limit, search, jlptLevel, strokeCount, sortBy = KanjiSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -41,7 +42,7 @@ export class KanjiRepository {
         }
 
         const orderBy: any = {}
-        orderBy[sortBy] = sortOrder
+        orderBy[sortBy] = sort
 
         const [data, total] = await Promise.all([
             this.prismaService.kanji.findMany({
@@ -50,6 +51,16 @@ export class KanjiRepository {
                 take: limit,
                 orderBy,
                 include: {
+                    readings: {
+                        select: {
+                            id: true,
+                            kanjiId: true,
+                            readingType: true,
+                            reading: true,
+                            createdAt: true,
+                            updatedAt: true
+                        }
+                    },
                     _count: {
                         select: {
                             vocabularies: true,
@@ -248,7 +259,8 @@ export class KanjiRepository {
             jlptLevel: kanji.jlptLevel,
             img: kanji.img || null, // Handle case where img column doesn't exist
             createdAt: kanji.createdAt,
-            updatedAt: kanji.updatedAt
+            updatedAt: kanji.updatedAt,
+            readings: kanji.readings || []
         }
     }
 
