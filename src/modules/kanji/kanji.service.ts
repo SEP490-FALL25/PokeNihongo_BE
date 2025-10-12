@@ -45,7 +45,7 @@ export class KanjiService {
                 jlptLevel: params.jlptLevel,
                 strokeCount: params.strokeCount,
                 sortBy: params.sortBy,
-                sortOrder: params.sortOrder
+                sort: params.sort
             }
 
             const result = await this.kanjiRepository.findMany(queryParams)
@@ -121,7 +121,7 @@ export class KanjiService {
                 jlptLevel: params.jlptLevel,
                 strokeCount: params.strokeCount,
                 sortBy: params.sortBy,
-                sortOrder: params.sortOrder
+                sort: params.sort
             }
 
             const result = await this.kanjiRepository.findMany(queryParams)

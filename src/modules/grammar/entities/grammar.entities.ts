@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { GrammarSortField, SortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -49,6 +50,8 @@ export const GetGrammarListQueryType = z.object({
     limit: z.string().transform(Number).default('10'),
     level: z.string().optional(),
     search: z.string().optional(),
+    sortBy: z.nativeEnum(GrammarSortField).optional().default(GrammarSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
 
 // Response schemas

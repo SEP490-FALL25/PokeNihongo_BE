@@ -1,6 +1,7 @@
 import { VocabularyType } from '@/modules/vocabulary/entities/vocabulary.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
+import { VocabularySortField, VocabularySortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class VocabularyRepository {
@@ -12,8 +13,11 @@ export class VocabularyRepository {
         search?: string
         wordJp?: string
         reading?: string
+        levelN?: number
+        sortBy?: VocabularySortField
+        sort?: VocabularySortOrder
     }) {
-        const { page, limit, search, wordJp, reading } = params
+        const { page, limit, search, wordJp, reading, levelN, sortBy = VocabularySortField.CREATED_AT, sort = VocabularySortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -33,12 +37,16 @@ export class VocabularyRepository {
             where.reading = { contains: reading, mode: 'insensitive' }
         }
 
+        if (levelN) {
+            where.levelN = levelN
+        }
+
         const [items, total] = await Promise.all([
             this.prismaService.vocabulary.findMany({
                 where,
                 skip,
                 take: limit,
-                orderBy: { createdAt: 'desc' }
+                orderBy: { [sortBy]: sort }
             }),
             this.prismaService.vocabulary.count({ where })
         ])

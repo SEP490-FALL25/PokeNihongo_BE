@@ -5,13 +5,14 @@ import {
     UpdateQuestionBodyType,
     GetQuestionListQueryType,
 } from './entities/question.entities'
+import { QuestionSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class QuestionRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetQuestionListQueryType) {
-        const { page, limit, exercisesId, search } = params
+        const { page, limit, exercisesId, search, sortBy = QuestionSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -41,10 +42,7 @@ export class QuestionRepository {
                     },
                     answers: true
                 },
-                orderBy: [
-                    { questionOrder: 'asc' },
-                    { createdAt: 'desc' }
-                ],
+                orderBy: { [sortBy]: sort },
                 skip,
                 take: limit,
             }),

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { AnswerSortField, SortOrder } from '@/common/enum/enum'
 
 // Swagger DTOs - for API documentation only
 export class CreateAnswerSwaggerDTO {
@@ -38,6 +39,22 @@ export class GetAnswerListQuerySwaggerDTO {
 
     @ApiProperty({ example: '本', description: 'Từ khóa tìm kiếm', required: false })
     search?: string
+
+    @ApiProperty({
+        enum: AnswerSortField,
+        example: AnswerSortField.CREATED_AT,
+        description: 'Field để sắp xếp theo answerJp, answerKey, isCorrect, questionId, createdAt, updatedAt',
+        required: false
+    })
+    sortBy?: AnswerSortField
+
+    @ApiProperty({
+        enum: SortOrder,
+        example: SortOrder.DESC,
+        description: 'Sắp xếp theo thứ tự tăng dần (asc) hoặc giảm dần (desc)',
+        required: false
+    })
+    sort?: SortOrder
 }
 
 export class AnswerResponseSwaggerDTO {

@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { AnswerSortField, SortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -39,6 +40,8 @@ export const GetAnswerListQueryType = z.object({
     questionId: z.string().transform(Number).optional(),
     isCorrect: z.string().transform(val => val === 'true').optional(),
     search: z.string().optional(),
+    sortBy: z.nativeEnum(AnswerSortField).optional().default(AnswerSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
 
 // Response schemas
