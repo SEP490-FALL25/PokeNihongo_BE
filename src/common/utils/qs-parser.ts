@@ -75,24 +75,78 @@ export function parseQs(
 
     // --- Relation array field (Prisma "some") ---
     if (relationFields.includes(field)) {
-      if (Array.isArray(parsedValue)) {
-        where[field] = { some: { type_name: { in: parsedValue } } }
+      let targetField = 'id'
+      if (field === 'types') {
+        targetField =
+          typeof parsedValue === 'number' ||
+          (Array.isArray(parsedValue) && typeof parsedValue[0] === 'number')
+            ? 'id'
+            : 'type_name'
+      } else if (field === 'roles' || field === 'permissions') {
+        targetField =
+          typeof parsedValue === 'number' ||
+          (Array.isArray(parsedValue) && typeof parsedValue[0] === 'number')
+            ? 'id'
+            : 'name'
+      } else if (field === 'users') {
+        targetField =
+          typeof parsedValue === 'number' ||
+          (Array.isArray(parsedValue) && typeof parsedValue[0] === 'number')
+            ? 'id'
+            : 'email'
       } else {
-        where[field] = { some: { type_name: parsedValue } }
+        targetField =
+          typeof parsedValue === 'number' ||
+          (Array.isArray(parsedValue) && typeof parsedValue[0] === 'number')
+            ? 'id'
+            : 'name'
+      }
+
+      if (Array.isArray(parsedValue)) {
+        where.AND = where.AND || []
+        for (const val of parsedValue) {
+          where.AND.push({ [field]: { some: { [targetField]: val } } })
+        }
+      } else {
+        where[field] = { some: { [targetField]: parsedValue } }
       }
       continue
     }
 
-    // --- Scalar array field ---
-    if (arrayFields.includes(field)) {
+    // --- Auto-detect scalar array fields ---
+    const arrayFieldPatterns = [
+      'rarities',
+      'tags',
+      'categories',
+      'skills',
+      'abilities',
+      'items',
+      'languages',
+      'statuses',
+      'codes',
+      'values'
+    ]
+
+    const isAutoArrayField = arrayFieldPatterns.some(
+      (pattern) =>
+        field === pattern ||
+        field.endsWith('Ids') ||
+        (field.endsWith('s') && !relationFields.includes(field))
+    )
+
+    if (arrayFields.includes(field) || isAutoArrayField) {
       if (Array.isArray(parsedValue)) {
-        where[field] = { hasSome: parsedValue }
+        where.AND = where.AND || []
+        for (const val of parsedValue) {
+          where.AND.push({ [field]: { has: val } })
+        }
       } else {
         where[field] = { has: parsedValue }
       }
       continue
     }
 
+    // --- Nested JSON field ---
     // --- Nested JSON field ---
     if (field.includes('.')) {
       const [root, nested] = field.split('.')

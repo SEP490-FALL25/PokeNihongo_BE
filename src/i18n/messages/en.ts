@@ -209,6 +209,24 @@ export const enMessages = {
     ERROR: 'An error occurred',
     INVALID_DATA: 'Invalid data provided',
     UNAUTHORIZED: 'Unauthorized access',
-    FORBIDDEN: 'Access forbidden'
+    FORBIDDEN: 'Access forbidden',
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'Language does not exist to translate'
+  },
+  entity: {
+    INVALID_DATA: 'Invalid data provided',
+    NOT_FOUND: 'Record not found',
+    ALREADY_EXISTS: 'Record already exists',
+    INVALID_ID: 'Invalid ID'
+  },
+  achievement_group: {
+    CREATE_SUCCESS: 'Achievement group created successfully',
+    UPDATE_SUCCESS: 'Achievement group updated successfully',
+    DELETE_SUCCESS: 'Achievement group deleted successfully',
+    GET_SUCCESS: 'Achievement group retrieved successfully',
+    GET_LIST_SUCCESS: 'Achievement group list retrieved successfully',
+    NOT_FOUND: 'Achievement group not found',
+    ALREADY_EXISTS: 'Achievement group already exists',
+    INVALID_DATA: 'Invalid achievement group data',
+    NAME_REQUIRED: 'Achievement group name is required'
   }
 }

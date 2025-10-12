@@ -214,5 +214,25 @@ export const CommonMessage = {
   ERROR: 'common.ERROR',
   INVALID_DATA: 'common.INVALID_DATA',
   UNAUTHORIZED: 'common.UNAUTHORIZED',
-  FORBIDDEN: 'common.FORBIDDEN'
+  FORBIDDEN: 'common.FORBIDDEN',
+  LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'common.LANGUAGE_NOT_EXIST_TO_TRANSLATE'
+} as const
+
+export const ENTITY_MESSAGE = {
+  INVALID_DATA: 'entity.INVALID_DATA',
+  NOT_FOUND: 'entity.NOT_FOUND',
+  ALREADY_EXISTS: 'entity.ALREADY_EXISTS',
+  INVALID_ID: 'entity.INVALID_ID'
+} as const
+
+export const AchievementGroupMessage = {
+  CREATE_SUCCESS: 'achievement_group.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'achievement_group.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'achievement_group.DELETE_SUCCESS',
+  GET_SUCCESS: 'achievement_group.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'achievement_group.GET_LIST_SUCCESS',
+  NOT_FOUND: 'achievement_group.NOT_FOUND',
+  ALREADY_EXISTS: 'achievement_group.ALREADY_EXISTS',
+  INVALID_DATA: 'achievement_group.INVALID_DATA',
+  NAME_REQUIRED: 'achievement_group.NAME_REQUIRED'
 } as const
