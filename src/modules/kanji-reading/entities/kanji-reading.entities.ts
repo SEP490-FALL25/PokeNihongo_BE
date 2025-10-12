@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { KanjiReadingSortField, SortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -90,10 +91,10 @@ export const GetKanjiReadingByIdParamsSchema = z.object({
 
 // Get Kanji Reading list query schema
 export const GetKanjiReadingListQuerySchema = z.object({
-    page: z.string().transform((val) => parseInt(val, 10)).optional(),
-    limit: z.string().transform((val) => parseInt(val, 10)).optional(),
-    sortBy: z.enum(['id', 'kanjiId', 'readingType', 'reading', 'createdAt', 'updatedAt']).optional(),
-    sortOrder: z.enum(['asc', 'desc']).optional(),
+    page: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
+    limit: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
+    sortBy: z.nativeEnum(KanjiReadingSortField).optional().default(KanjiReadingSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
     search: z.string().optional(),
     kanjiId: z.string().transform((val) => parseInt(val, 10)).optional(),
     readingType: z.string().optional()

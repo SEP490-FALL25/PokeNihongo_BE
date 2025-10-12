@@ -32,7 +32,7 @@ export class KanjiReadingService {
                 kanjiId: params.kanjiId,
                 readingType: params.readingType,
                 sortBy: params.sortBy,
-                sortOrder: params.sortOrder
+                sort: params.sort
             }
 
             const result = await this.kanjiReadingRepository.findMany(queryParams)

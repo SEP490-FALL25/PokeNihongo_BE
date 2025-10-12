@@ -82,6 +82,35 @@ export enum TranslationSortField {
     UPDATED_AT = 'updatedAt'
 }
 
+// Grammar Usage specific sort fields
+export enum GrammarUsageSortField {
+    ID = 'id',
+    GRAMMAR_ID = 'grammarId',
+    EXAMPLE_SENTENCE_JP = 'exampleSentenceJp',
+    CREATED_AT = 'createdAt',
+    UPDATED_AT = 'updatedAt'
+}
+
+// Kanji Reading specific sort fields
+export enum KanjiReadingSortField {
+    ID = 'id',
+    KANJI_ID = 'kanjiId',
+    READING_TYPE = 'readingType',
+    READING = 'reading',
+    CREATED_AT = 'createdAt',
+    UPDATED_AT = 'updatedAt'
+}
+
+// Lesson Content specific sort fields
+export enum LessonContentSortField {
+    ID = 'id',
+    LESSON_ID = 'lessonId',
+    CONTENT_TYPE = 'contentType',
+    CONTENT_ORDER = 'contentOrder',
+    CREATED_AT = 'createdAt',
+    UPDATED_AT = 'updatedAt'
+}
+
 // Keep VocabularySortOrder for backward compatibility
 export enum VocabularySortOrder {
     ASC = 'asc',
