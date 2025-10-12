@@ -9,19 +9,20 @@ datasource db {
 }
 
 model User {
-  id                         Int                 @id @default(autoincrement())
-  email                      String              @unique @db.VarChar(500)
-  name                       String              @db.VarChar(500)
-  password                   String              @db.VarChar(500)
-  phoneNumber                String?             @db.VarChar(11)
-  avatar                     String?             @db.VarChar(1000)
-  status                     UserStatus          @default(INACTIVE)
-  roleId                     Int
-  role                       Role                @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  levelId                    Int?
-  level                      Level?              @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  devices                    Device[] // Liên kết 1-n với Device
-  refreshTokens              RefreshToken[]
+  id           Int        @id @default(autoincrement())
+  email        String     @unique @db.VarChar(500)
+  name         String     @db.VarChar(500)
+  password     String     @db.VarChar(500)
+  phoneNumber  String?    @db.VarChar(11)
+  avatar       String?    @db.VarChar(1000)
+  status       UserStatus @default(INACTIVE)
+  premiumCoins Int        @default(0)
+  freeCoins    Int        @default(0)
+  roleId       Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  levelId      Int?
+  level        Level?     @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
   createdPermissions         Permission[]        @relation("PermissionCreatedBy")
   updatedPermissions         Permission[]        @relation("PermissionUpdatedBy")
   deletedPermissions         Permission[]        @relation("PermissionDeletedBy")
@@ -45,11 +46,30 @@ model User {
   createdTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessCreatedBy")
   updatedTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessUpdatedBy")
   deletedTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessDeletedBy")
+  createdDailyRequest        DailyRequest[]      @relation("DailyRequestCreatedBy")
+  updatedDailyRequest        DailyRequest[]      @relation("DailyRequestUpdatedBy")
+  deletedDailyRequest        DailyRequest[]      @relation("DailyRequestDeletedBy")
+  createdUserDailyRequest    UserDailyRequest[]  @relation("UserDailyRequestCreatedBy")
+  updatedUserDailyRequest    UserDailyRequest[]  @relation("UserDailyRequestUpdatedBy")
+  deletedUserDailyRequest    UserDailyRequest[]  @relation("UserDailyRequestDeletedBy")
+  createdAchievements        Achievement[]       @relation("AchievementCreatedBy")
+  updatedAchievements        Achievement[]       @relation("AchievementUpdatedBy")
+  deletedAchievements        Achievement[]       @relation("AchievementDeletedBy")
+  createdUserAchievements    UserAchievement[]   @relation("UserAchievementCreatedBy")
+  updatedUserAchievements    UserAchievement[]   @relation("UserAchievementUpdatedBy")
+  deletedUserAchievements    UserAchievement[]   @relation("UserAchievementDeletedBy")
+  createdAchievementGroups   AchievementGroup[]  @relation("AchievementGroupCreatedBy")
+  updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
+  deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
   // Tự quan hệ 1-n
-  userPokemons UserPokemon[]
+  devices           Device[] // Liên kết 1-n với Device
+  refreshTokens     RefreshToken[]
+  userDailyRequests UserDailyRequest[]
+  userPokemons      UserPokemon[]
+  userAchievements  UserAchievement[]
 
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -310,9 +330,11 @@ model Reward {
   deletedBy   User? @relation("RewardDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   // Timestamps
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  DailyRequest DailyRequest[]
+  Achievement  Achievement[]
 }
 
 model Level {
@@ -462,60 +484,6 @@ model TypeEffectiveness {
   @@unique([attackerId, defenderId]) // tránh trùng
 }
 
-enum VerificationCodeType {
-  REGISTER
-  FORGOT_PASSWORD
-}
-
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-}
-
-enum HTTPMethod {
-  GET
-  POST
-  PUT
-  DELETE
-  PATCH
-  OPTIONS
-  HEAD
-}
-
-enum MediaType {
-  IMAGE
-  VIDEO
-}
-
-enum LevelType {
-  USER
-  POKEMON
-}
-
-enum RewardType {
-  LESSON
-  DAILY_REQUEST
-  EVENT
-  ACHIEVEMENT
-  LEVEL
-}
-
-enum RewardTarget {
-  EXP
-  POINT
-  POKEMON
-  BADGE
-  VOUCHER
-}
-
-enum RarityPokemon {
-  COMMON
-  UNCOMMON
-  RARE
-  EPIC
-  LEGENDARY
-}
-
 // Model LessonCategory (Danh mục bài học)
 model LessonCategory {
   id        Int      @id @default(autoincrement())
@@ -621,4 +589,222 @@ model GrammarUsage {
 
   @@index([grammarId])
   @@index([explanationKey])
+}
+
+model DailyRequest {
+  id             Int                @id @default(autoincrement())
+  name           String             @db.VarChar(200)
+  description    String             @db.VarChar(500)
+  conditionType  DailyConditionType // Loại điều kiện (LOGIN, COMPLETE_LESSON, STREAK_LOGIN, ...)
+  conditionValue Int? // Giá trị cần đạt (VD: 1, 7, ...)
+  rewardId       Int? // Liên kết tới Reward
+  reward         Reward?            @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+  isActive       Boolean            @default(true)
+
+  userDailyRequests UserDailyRequest[]
+
+  //
+  createdById Int?
+  createdBy   User? @relation("DailyRequestCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("DailyRequestUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("DailyRequestDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model UserDailyRequest {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyRequestId Int
+  dailyRequest   DailyRequest @relation(fields: [dailyRequestId], references: [id], onDelete: Cascade)
+  progress       Int          @default(0) // Tiến độ hiện tại
+  isCompleted    Boolean      @default(false)
+  completedAt    DateTime?
+  date           DateTime // Ngày của nhiệm vụ (ví dụ: 2025-10-12)
+  //
+  createdById    Int?
+  createdBy      User?        @relation("UserDailyRequestCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById    Int?
+  updatedBy      User?        @relation("UserDailyRequestUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById    Int?
+  deletedBy      User?        @relation("UserDailyRequestDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, dailyRequestId, date])
+}
+
+// === BẢNG ĐỊNH NGHĨA TOÀN BỘ HUY HIỆU ===
+model AchievementGroup {
+  id           Int     @id @default(autoincrement())
+  name         String  @unique // Tên nhóm, VD: "Welcome & Onboarding"
+  description  String? // Mô tả, VD: "Dành cho người mới tham gia"
+  displayOrder Int // Thứ tự hiển thị, VD: 1, 2, 3...
+
+  // Quan hệ: Một nhóm có thể chứa nhiều huy hiệu
+  achievements Achievement[]
+
+  createdById Int?
+  createdBy   User? @relation("AchievementGroupCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("AchievementGroupUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("AchievementGroupDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Achievement {
+  id Int @id @default(autoincrement())
+
+  // Thông tin cơ bản
+  name        String // Tên huy hiệu, VD: "Ngọn Lửa Nhỏ"
+  description String // Mô tả chi tiết
+  imageUrl    String? // Đường dẫn tới ảnh của huy hiệu
+
+  // Phân loại & Hiển thị
+  achievementTierType AchievementTierType?
+  // Điều kiện để nhận
+  conditionType       AchievementType // Loại điều kiện, VD: LEARNING_STREAK
+  conditionValue      Int? // Giá trị cần đạt, VD: 3 (cho 3 ngày)
+  conditionMeta       Json? // Dữ liệu phức tạp, VD: {"pokemon_type": "FIRE"} hoặc {"pokemon_name": "Charizard"}
+
+  // Phần thưởng (nếu có)
+  rewardId Int? // Liên kết tới bảng Reward
+  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  groupId Int
+  group   AchievementGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Quan hệ: Một huy hiệu có thể được nhiều user sở hữu
+  userAchievements UserAchievement[]
+
+  createdById Int?
+  createdBy   User? @relation("AchievementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("AchievementUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("AchievementDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model UserAchievement {
+  id Int @id @default(autoincrement())
+
+  // Liên kết tới User nào?
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Liên kết tới Huy hiệu nào?
+  achievementId Int
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Thông tin thêm
+  achievedAt      DateTime @default(now()) // Thời điểm nhận được huy hiệu
+  isRewardClaimed Boolean  @default(false) // Đã nhận quà của huy hiệu này chưa?
+
+  createdById Int?
+  createdBy   User? @relation("UserAchievementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("UserAchievementUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("UserAchievementDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Đảm bảo một user chỉ nhận 1 huy hiệu 1 lần duy nhất
+  @@unique([userId, achievementId])
+}
+
+enum VerificationCodeType {
+  REGISTER
+  FORGOT_PASSWORD
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum HTTPMethod {
+  GET
+  POST
+  PUT
+  DELETE
+  PATCH
+  OPTIONS
+  HEAD
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum LevelType {
+  USER
+  POKEMON
+}
+
+enum RewardType {
+  LESSON
+  DAILY_REQUEST
+  EVENT
+  ACHIEVEMENT
+  LEVEL
+}
+
+enum RewardTarget {
+  EXP
+  POINT
+  POKEMON
+  BADGE
+  VOUCHER
+}
+
+enum RarityPokemon {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum DailyConditionType {
+  LOGIN // Đăng nhập hằng ngày
+  COMPLETE_LESSON // Hoàn thành 1 bài học
+  STREAK_LOGIN // Đăng nhập liên tục X ngày
+}
+
+enum AchievementTierType {
+  BASIC // Cơ bản
+  INTERMEDIATE // Trung cấp
+  ADVANCED // Nâng cao
+  MASTER // Cao thủ
+}
+
+enum AchievementType {
+  COMPLETE_LESSON // Hoàn thành bài học (value: 1 = bài đầu tiên)
+  CHOOSE_STARTER_POKEMON // Chọn Pokémon khởi đầu
+  PLACEMENT_TEST_DONE // Hoàn thành bài kiểm tra đầu vào
+  LEARNING_STREAK // Chuỗi ngày học (value: 3, 7, 30, 100)
+  CAPTURE_POKEMON_COUNT // Sở hữu X Pokémon (value: 10)
+  CAPTURE_TYPE_COLLECTION // Thu thập đủ Pokémon 1 hệ (meta: {"type": "GRASS"})
+  CAPTURE_ALL_POKEMON // Hoàn thành Pokédex (value: 151)
+  CAPTURE_LEGENDARY // Bắt được Pokémon huyền thoại
+  EVOLVE_POKEMON_FINAL // Tiến hóa Pokémon lên dạng cuối (meta: {"pokemon_name": "Charizard"})
 }
