@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { QuestionSortField, SortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -38,6 +39,8 @@ export const GetQuestionListQueryType = z.object({
     limit: z.string().transform(Number).default('10'),
     exercisesId: z.string().transform(Number).optional(),
     search: z.string().optional(),
+    sortBy: z.nativeEnum(QuestionSortField).optional().default(QuestionSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
 
 // Response schemas

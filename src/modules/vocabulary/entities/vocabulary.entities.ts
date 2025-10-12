@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { VocabularySortField, VocabularySortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -52,6 +53,7 @@ export const VocabularySchema = z.object({
         }),
     imageUrl: z.string().url().nullable().optional(),
     audioUrl: z.string().url().nullable().optional(),
+    levelN: z.number().min(1).max(5).nullable().optional(),
     createdById: z.number().nullable().optional(),
     createdAt: z.date(),
     updatedAt: z.date()
@@ -107,7 +109,10 @@ export const GetVocabularyListQuerySchema = z
         limit: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         search: z.string().optional(),
         wordJp: z.string().optional(),
-        reading: z.string().optional()
+        reading: z.string().optional(),
+        levelN: z.string().transform((val) => parseInt(val, 10)).optional(),
+        sortBy: z.nativeEnum(VocabularySortField).optional().default(VocabularySortField.CREATED_AT),
+        sort: z.nativeEnum(VocabularySortOrder).optional().default(VocabularySortOrder.DESC)
     })
     .strict()
 

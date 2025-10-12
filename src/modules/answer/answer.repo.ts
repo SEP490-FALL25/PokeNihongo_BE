@@ -5,13 +5,14 @@ import {
     UpdateAnswerBodyType,
     GetAnswerListQueryType,
 } from './entities/answer.entities'
+import { AnswerSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class AnswerRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetAnswerListQueryType) {
-        const { page, limit, questionId, isCorrect, search } = params
+        const { page, limit, questionId, isCorrect, search, sortBy = AnswerSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -44,9 +45,7 @@ export class AnswerRepository {
                         }
                     }
                 },
-                orderBy: [
-                    { id: 'asc' }
-                ],
+                orderBy: { [sortBy]: sort },
                 skip,
                 take: limit,
             }),

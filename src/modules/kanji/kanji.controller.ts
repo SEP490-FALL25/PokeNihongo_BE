@@ -81,12 +81,7 @@ export class KanjiController {
     @ApiQuery({ type: GetKanjiListQuerySwaggerDTO })
     @ZodSerializerDto(KanjiListResDTO)
     findAll(@Query() query: GetKanjiListQueryDTO) {
-        // Transform query to match service expectations
-        const transformedQuery = {
-            ...query,
-            sortBy: query.sortBy as 'id' | 'character' | 'meaningKey' | 'strokeCount' | 'jlptLevel' | 'createdAt' | 'updatedAt' | undefined
-        }
-        return this.kanjiService.findMany(transformedQuery)
+        return this.kanjiService.findMany(query)
     }
 
     @Get('management')
@@ -97,12 +92,7 @@ export class KanjiController {
     @ApiQuery({ type: GetKanjiListQuerySwaggerDTO })
     @ZodSerializerDto(KanjiManagementListResDTO)
     getKanjiManagementList(@Query() query: GetKanjiListQueryDTO) {
-        // Transform query to match service expectations
-        const transformedQuery = {
-            ...query,
-            sortBy: query.sortBy as 'id' | 'character' | 'meaningKey' | 'strokeCount' | 'jlptLevel' | 'createdAt' | 'updatedAt' | undefined
-        }
-        return this.kanjiService.getKanjiManagementList(transformedQuery)
+        return this.kanjiService.getKanjiManagementList(query)
     }
 
     @Get('stats')

@@ -5,6 +5,7 @@ import {
 } from './entities/kanji.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
+import { KanjiSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class KanjiRepository {
@@ -17,10 +18,10 @@ export class KanjiRepository {
         search?: string
         jlptLevel?: number
         strokeCount?: number
-        sortBy?: string
-        sortOrder?: 'asc' | 'desc'
+        sortBy?: KanjiSortField
+        sort?: SortOrder
     }) {
-        const { page, limit, search, jlptLevel, strokeCount, sortBy = 'id', sortOrder = 'asc' } = params
+        const { page, limit, search, jlptLevel, strokeCount, sortBy = KanjiSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -41,7 +42,7 @@ export class KanjiRepository {
         }
 
         const orderBy: any = {}
-        orderBy[sortBy] = sortOrder
+        orderBy[sortBy] = sort
 
         const [data, total] = await Promise.all([
             this.prismaService.kanji.findMany({
