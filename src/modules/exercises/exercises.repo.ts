@@ -105,6 +105,30 @@ export class ExercisesRepository {
         })
     }
 
+    async findByTitleJp(titleJp: string) {
+        return this.prismaService.exercises.findFirst({
+            where: { titleJp },
+            include: {
+                lesson: {
+                    select: {
+                        id: true,
+                        titleJp: true,
+                        titleKey: true,
+                        slug: true
+                    }
+                },
+                questions: {
+                    include: {
+                        answers: true
+                    },
+                    orderBy: {
+                        questionOrder: 'asc'
+                    }
+                }
+            }
+        })
+    }
+
     async create(data: any) {
         return this.prismaService.exercises.create({
             data,
@@ -125,6 +149,36 @@ export class ExercisesRepository {
         return this.prismaService.exercises.update({
             where: { id },
             data,
+            include: {
+                lesson: {
+                    select: {
+                        id: true,
+                        titleJp: true,
+                        titleKey: true,
+                        slug: true
+                    }
+                },
+                questions: {
+                    include: {
+                        answers: true
+                    },
+                    orderBy: {
+                        questionOrder: 'asc'
+                    }
+                }
+            }
+        })
+    }
+
+    async updatePartial(id: number, data: any) {
+        // Remove undefined values
+        const cleanData = Object.fromEntries(
+            Object.entries(data).filter(([_, value]) => value !== undefined)
+        )
+
+        return this.prismaService.exercises.update({
+            where: { id },
+            data: cleanData,
             include: {
                 lesson: {
                     select: {
