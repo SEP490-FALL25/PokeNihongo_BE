@@ -424,4 +424,9 @@ export type GetEvolutionOptionsResType = z.infer<typeof GetEvolutionOptionsResSc
 
 // Field for query
 export type PokemonFieldType = keyof z.infer<typeof PokemonSchema>
-export const POKEMON_FIELDS = Object.keys(PokemonSchema.shape) as PokemonFieldType[]
+export const POKEMON_FIELDS = [
+  ...Object.keys(PokemonSchema.shape),
+  'nameTranslations.vi',
+  'nameTranslations.en',
+  'nameTranslations.ja'
+] as PokemonFieldType[]
