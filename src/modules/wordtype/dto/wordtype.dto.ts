@@ -82,13 +82,26 @@ export {
 // Query Swagger DTO
 export class GetWordTypeListQuerySwaggerDTO {
     @ApiProperty({ example: 1, description: 'Số trang hiện tại', required: false })
-    currentPage?: number
+    page?: number
 
     @ApiProperty({ example: 10, description: 'Số lượng loại từ mỗi trang', required: false })
-    pageSize?: number
+    limit?: number
 
-    @ApiProperty({ example: 'noun', description: 'Tìm kiếm theo name key', required: false })
-    search?: string
+    @ApiProperty({
+        enum: ['id', 'nameKey', 'createdAt', 'updatedAt'],
+        example: 'createdAt',
+        description: 'Field để sắp xếp: id | nameKey | createdAt | updatedAt',
+        required: false
+    })
+    sortBy?: 'id' | 'nameKey' | 'createdAt' | 'updatedAt'
+
+    @ApiProperty({
+        enum: ['asc', 'desc'],
+        example: 'desc',
+        description: 'Thứ tự sắp xếp: asc hoặc desc',
+        required: false
+    })
+    sortOrder?: 'asc' | 'desc'
 }
 
 // List Response DTO (not Zod)

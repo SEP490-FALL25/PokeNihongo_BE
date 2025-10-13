@@ -36,15 +36,48 @@ export class WordTypeService {
             const queryParams = {
                 page: params.page || 1,
                 limit: params.limit || 10,
-                search: params.search,
                 sortBy: params.sortBy as 'id' | 'createdAt' | 'updatedAt' | 'nameKey' | undefined,
                 sortOrder: params.sortOrder
             }
 
             const result = await this.wordTypeRepository.findMany(queryParams)
+
+            // Resolve translation values for nameKey per requested language
+            let languageId: number | undefined
+            try {
+                const language = await this.languagesService.findByCode({ code: lang })
+                languageId = language?.data?.id
+            } catch {
+                languageId = undefined
+            }
+
+            const resultsWithName = await Promise.all(
+                result.data.map(async (item) => {
+                    if (!languageId) {
+                        return { id: item.id, name: item.nameKey, createdAt: item.createdAt, updatedAt: item.updatedAt }
+                    }
+                    try {
+                        const translation = await this.translationService.findByKeyAndLanguage(item.nameKey, languageId as number)
+                        const value = translation?.value || item.nameKey
+                        return { id: item.id, name: value, createdAt: item.createdAt, updatedAt: item.updatedAt }
+                    } catch {
+                        return { id: item.id, name: item.nameKey, createdAt: item.createdAt, updatedAt: item.updatedAt }
+                    }
+                })
+            )
+
             return {
-                ...result,
-                message: this.i18nService.translate(WordTypeMessage.GET_LIST_SUCCESS, lang)
+                statusCode: 200,
+                message: this.i18nService.translate(WordTypeMessage.GET_LIST_SUCCESS, lang),
+                data: {
+                    results: resultsWithName,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
             }
         } catch (error) {
             this.logger.error('Error finding word types:', error)

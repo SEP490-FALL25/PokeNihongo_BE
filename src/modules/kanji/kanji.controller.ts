@@ -13,23 +13,15 @@ import {
     KanjiListResDTO,
     KanjiManagementListResDTO
 } from './dto/zod/kanji.zod-dto'
-import {
-    CreateKanjiWithMeaningsBodyDTO,
-    CreateKanjiWithMeaningsBodyType,
-    KanjiWithMeaningsResponseDTO,
-    KanjiWithMeaningsResDTO,
-    CreateKanjiWithMeaningsSwaggerDTO,
-    KanjiWithMeaningsResponseSwaggerDTO
-} from './dto/kanji-with-meanings.dto'
+import { CreateKanjiWithMeaningsSwaggerDTO, KanjiWithMeaningsResponseSwaggerDTO } from './dto/kanji-with-meanings.dto'
+import { CreateKanjiWithMeaningsBodyDTO, KanjiWithMeaningsResDTO } from './dto/zod/kanji-with-meanings.zod-dto'
 import {
     UpdateKanjiWithMeaningsBodyType,
     UpdateKanjiWithMeaningsResponseType,
     UpdateKanjiWithMeaningsSwaggerDTO,
     UpdateKanjiWithMeaningsResponseSwaggerDTO
 } from './dto/update-kanji-with-meanings.dto'
-import {
-    UpdateKanjiWithMeaningsResDTO
-} from './dto/zod/update-kanji.zod-dto'
+import { UpdateKanjiWithMeaningsBodyDTO, UpdateKanjiWithMeaningsResDTO } from './dto/zod/update-kanji.zod-dto'
 import {
     CreateKanjiSwaggerDTO,
     UpdateKanjiSwaggerDTO,
@@ -200,7 +192,7 @@ export class KanjiController {
     })
     @ZodSerializerDto(KanjiWithMeaningsResDTO)
     createWithMeanings(
-        @Body() body: CreateKanjiWithMeaningsBodyType,
+        @Body() body: CreateKanjiWithMeaningsBodyDTO,
         @UploadedFile() image?: Express.Multer.File
     ) {
         return this.kanjiService.createWithMeanings(body, image)
@@ -227,7 +219,7 @@ export class KanjiController {
     @ZodSerializerDto(UpdateKanjiWithMeaningsResDTO)
     updateWithMeanings(
         @Param('identifier') identifier: string,
-        @Body() body: UpdateKanjiWithMeaningsBodyType,
+        @Body() body: UpdateKanjiWithMeaningsBodyDTO,
         @UploadedFile() image?: Express.Multer.File
     ) {
         return this.kanjiService.updateWithMeanings(identifier, body, image)

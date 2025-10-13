@@ -13,10 +13,12 @@ import { LanguagesService } from '@/modules/languages/languages.service'
 import { UploadService } from '@/3rdService/upload/upload.service'
 import { KANJI_MESSAGE } from '@/common/constants/message'
 import { Injectable, Logger } from '@nestjs/common'
+import { UnprocessableEntityException } from '@nestjs/common'
 import {
     KanjiNotFoundException,
     KanjiAlreadyExistsException,
-    InvalidKanjiDataException
+    InvalidKanjiDataException,
+    KanjiCharacterInvalidException
 } from './dto/kanji.error'
 
 @Injectable()
@@ -108,7 +110,7 @@ export class KanjiService {
         }
     }
 
-    // Kanji CRUD operations
+    //#region Find many
     async findMany(params: GetKanjiListQueryType) {
         try {
             this.logger.log(`Finding kanji with params: ${JSON.stringify(params)}`)
@@ -190,7 +192,9 @@ export class KanjiService {
             throw error
         }
     }
+    //#endregion
 
+    //#region Find by id
     async findById(id: number) {
         try {
             this.logger.log(`Finding kanji by id: ${id}`)
@@ -209,7 +213,9 @@ export class KanjiService {
             throw error
         }
     }
+    //#endregion
 
+    //#region Find by character
     async findByCharacter(character: string) {
         try {
             this.logger.log(`Finding kanji by character: ${character}`)
@@ -228,229 +234,17 @@ export class KanjiService {
             throw error
         }
     }
+    //#endregion
 
-    async updateWithMeanings(identifier: string, data: UpdateKanjiWithMeaningsBodyType, image?: Express.Multer.File) {
-        try {
-            this.logger.log(`Updating kanji with meanings: ${identifier}`)
-            this.logger.log(`Update data: ${JSON.stringify(data)}`)
-
-            // Parse meanings nếu là string (từ multipart/form-data)
-            if (typeof data.meanings === 'string') {
-                try {
-                    // Loại bỏ dấu phẩy thừa và whitespace
-                    const cleanedJson = (data.meanings as string)
-                        .replace(/,\s*}/g, '}')  // Loại bỏ dấu phẩy trước }
-                        .replace(/,\s*]/g, ']')  // Loại bỏ dấu phẩy trước ]
-                        .trim()
-
-                    this.logger.log(`Cleaned JSON: ${cleanedJson}`)
-                    data.meanings = JSON.parse(cleanedJson)
-                    this.logger.log(`Parsed meanings from string: ${JSON.stringify(data.meanings)}`)
-                } catch (error) {
-                    this.logger.error('Failed to parse meanings JSON:', error)
-                    this.logger.error(`Original JSON string: "${data.meanings}"`)
-                    throw new Error('Invalid JSON format for meanings')
-                }
-            }
-
-            // Nếu meanings là object thay vì array, chuyển thành array
-            if (data.meanings && !Array.isArray(data.meanings)) {
-                data.meanings = [data.meanings]
-                this.logger.log(`Converted meanings object to array: ${JSON.stringify(data.meanings)}`)
-            }
-
-            // Parse readings nếu là string (từ multipart/form-data)
-            if (typeof data.readings === 'string') {
-                this.logger.log(`Raw readings string: "${data.readings}"`)
-                this.logger.log(`Readings string length: ${(data.readings as string).length}`)
-
-                // Kiểm tra nếu string rỗng hoặc chỉ có whitespace
-                const trimmedReadings = (data.readings as string).trim()
-                if (trimmedReadings === '' || trimmedReadings === '[]' || trimmedReadings === '{}') {
-                    this.logger.log('Readings string is empty, setting to undefined')
-                    data.readings = undefined
-                } else {
-                    try {
-                        data.readings = JSON.parse(trimmedReadings)
-                        this.logger.log(`Parsed readings from string: ${JSON.stringify(data.readings)}`)
-
-                        // Xử lý trường hợp readings bị stringify 2 lần
-                        if (Array.isArray(data.readings)) {
-                            data.readings = data.readings.map(reading => {
-                                if (typeof reading === 'string') {
-                                    try {
-                                        return JSON.parse(reading)
-                                    } catch (e) {
-                                        return reading
-                                    }
-                                }
-                                return reading
-                            })
-                            this.logger.log(`Processed nested readings: ${JSON.stringify(data.readings)}`)
-                        }
-                    } catch (error) {
-                        this.logger.error('Failed to parse readings JSON:', error)
-                        this.logger.error(`Problematic JSON string: "${data.readings}"`)
-                        throw new Error('Invalid JSON format for readings')
-                    }
-                }
-            }
-
-            // Kiểm tra identifier là ID (số) hay Character (chữ)
-            let existingKanji
-            const isNumeric = /^\d+$/.test(identifier)
-
-            if (isNumeric) {
-                // Nếu là số, tìm bằng ID
-                existingKanji = await this.kanjiRepository.findById(parseInt(identifier))
-            } else {
-                // Nếu là chữ, tìm bằng character
-                existingKanji = await this.kanjiRepository.findByCharacter(identifier)
-            }
-
-            if (!existingKanji) {
-                throw KanjiNotFoundException
-            }
-
-            // Xử lý hình ảnh - chỉ dùng file upload như hàm create
-            let imageUrl = existingKanji.img // Giữ lại URL hiện có
-
-            if (image) {
-                // Upload hình ảnh mới nếu có
-                this.logger.log(`Uploading image for kanji: ${existingKanji.character}`)
-                const uploadResult = await this.uploadService.uploadFile(image, 'kanji')
-                imageUrl = uploadResult.url
-                this.logger.log(`Image uploaded successfully: ${imageUrl}`)
-            }
-            // Nếu không có file upload, giữ nguyên URL hiện có
-
-            this.logger.log(`Final imageUrl for database: ${imageUrl}`)
-
-            // Cập nhật kanji (không cho phép thay đổi character)
-            const kanjiData = {
-                strokeCount: data.strokeCount ? parseInt(data.strokeCount.toString()) : undefined,
-                jlptLevel: data.jlptLevel ? parseInt(data.jlptLevel.toString()) : undefined,
-                img: imageUrl
-            }
-
-            this.logger.log(`Kanji data to update: ${JSON.stringify(kanjiData)}`)
-
-            const kanji = await this.kanjiRepository.updatePartial(existingKanji.id, kanjiData)
-            this.logger.log(`Kanji updated successfully: ${kanji.id}`)
-
-            // Tự động tạo translation cho meaningKey hiện có (nếu chưa có)
-            if (existingKanji.meaningKey) {
-                await this.createTranslationForMeaningKey(existingKanji.meaningKey)
-            }
-
-            // Cập nhật/tạo readings
-            const readings: any[] = []
-            if (data.readings && Array.isArray(data.readings) && data.readings.length > 0) {
-                for (const readingData of data.readings) {
-                    try {
-                        if (readingData.id) {
-                            // Update existing reading
-                            const reading = await this.kanjiReadingService.update(readingData.id, {
-                                readingType: readingData.readingType,
-                                reading: readingData.reading
-                            })
-                            readings.push(reading)
-                        } else {
-                            // Create new reading
-                            const reading = await this.kanjiReadingService.create({
-                                kanjiId: existingKanji.id,
-                                readingType: readingData.readingType,
-                                reading: readingData.reading
-                            })
-                            readings.push(reading)
-                        }
-                    } catch (error) {
-                        this.logger.warn(`Failed to update/create reading ${readingData.readingType}: ${readingData.reading} for kanji ${existingKanji.id}`)
-                    }
-                }
-            }
-
-            // Cập nhật/tạo meanings
-            const meanings: any[] = []
-            if (data.meanings && data.meanings.length > 0) {
-                for (const meaningData of data.meanings) {
-                    try {
-                        let meaningKey = meaningData.meaningKey
-
-                        // Nếu không có meaningKey, tự động generate từ kanji ID
-                        if (!meaningKey) {
-                            meaningKey = `kanji.${existingKanji.id}.meaning`
-                            this.logger.log(`Auto-generated meaningKey: ${meaningKey}`)
-                        }
-
-                        // Kiểm tra translation đã tồn tại chưa để quyết định tạo mới hay update
-                        if (meaningData.translations) {
-                            await this.createOrUpdateTranslationsForLanguages(meaningKey, meaningData.translations)
-                        } else {
-                            // Nếu không có translations, chỉ tạo translation mặc định
-                            await this.createTranslationForMeaningKey(meaningKey)
-                        }
-
-                        // Lưu thông tin meaning (không tạo trong database vì meaning thuộc về vocabulary)
-                        meanings.push({
-                            id: meaningData.id,
-                            meaningKey: meaningKey,
-                            translations: meaningData.translations
-                        })
-                    } catch (error) {
-                        this.logger.warn(`Failed to update/create meaning for kanji ${existingKanji.id}`, error)
-                    }
-                }
-            }
-
-            this.logger.log(`Kanji with meanings updated successfully: ${kanji.id}`)
-
-            return {
-                data: {
-                    kanji,
-                    readings: readings.length > 0 ? readings : undefined,
-                    meanings
-                },
-                message: 'Cập nhật Kanji cùng với nghĩa thành công'
-            }
-        } catch (error) {
-            this.logger.error('Error updating kanji with meanings:', error)
-            if (error.message.includes('không tồn tại') || error.message.includes('đã tồn tại')) {
-                throw error
-            }
-            throw InvalidKanjiDataException
-        }
-    }
-
-
-    async delete(id: number) {
-        try {
-            this.logger.log(`Deleting kanji: ${id}`)
-
-            // Kiểm tra kanji có tồn tại không
-            const existingKanji = await this.kanjiRepository.findById(id)
-            if (!existingKanji) {
-                throw KanjiNotFoundException
-            }
-
-            await this.kanjiRepository.delete(id)
-            this.logger.log(`Kanji deleted successfully: ${id}`)
-
-            return {
-                message: KANJI_MESSAGE.DELETE_SUCCESS
-            }
-        } catch (error) {
-            this.logger.error('Error deleting kanji:', error)
-            if (error.message.includes('không tồn tại')) {
-                throw error
-            }
-            throw InvalidKanjiDataException
-        }
-    }
-
+    //#region Create with meanings
     async createWithMeanings(data: CreateKanjiWithMeaningsBodyType, image?: Express.Multer.File) {
         try {
             this.logger.log(`Creating kanji with meanings: ${data.character}`)
+
+            // Service-level validation for Kanji character (single Kanji, not Latin or number)
+            if (!this.isKanjiCharacter(data.character)) {
+                throw KanjiCharacterInvalidException
+            }
 
             // Parse meanings nếu là string (từ multipart/form-data)
             if (typeof data.meanings === 'string') {
@@ -621,12 +415,238 @@ export class KanjiService {
             }
         } catch (error) {
             this.logger.error('Error creating kanji with meanings:', error)
-            if (error.message.includes('đã tồn tại')) {
+            if (error.message.includes('đã tồn tại') || error.message.includes('Phải là một ký tự Kanji (Hán tự) duy nhất. Không chấp nhận ký tự Latin hoặc số')) {
                 throw error
             }
             throw InvalidKanjiDataException
         }
     }
+    //#endregion
+
+    //#region Update with meanings
+    async updateWithMeanings(identifier: string, data: UpdateKanjiWithMeaningsBodyType, image?: Express.Multer.File) {
+        try {
+            this.logger.log(`Updating kanji with meanings: ${identifier}`)
+            this.logger.log(`Update data: ${JSON.stringify(data)}`)
+
+            // Parse meanings nếu là string (từ multipart/form-data)
+            if (typeof data.meanings === 'string') {
+                try {
+                    // Loại bỏ dấu phẩy thừa và whitespace
+                    const cleanedJson = (data.meanings as string)
+                        .replace(/,\s*}/g, '}')  // Loại bỏ dấu phẩy trước }
+                        .replace(/,\s*]/g, ']')  // Loại bỏ dấu phẩy trước ]
+                        .trim()
+
+                    this.logger.log(`Cleaned JSON: ${cleanedJson}`)
+                    data.meanings = JSON.parse(cleanedJson)
+                    this.logger.log(`Parsed meanings from string: ${JSON.stringify(data.meanings)}`)
+                } catch (error) {
+                    this.logger.error('Failed to parse meanings JSON:', error)
+                    this.logger.error(`Original JSON string: "${data.meanings}"`)
+                    throw new Error('Invalid JSON format for meanings')
+                }
+            }
+
+            // Nếu meanings là object thay vì array, chuyển thành array
+            if (data.meanings && !Array.isArray(data.meanings)) {
+                data.meanings = [data.meanings]
+                this.logger.log(`Converted meanings object to array: ${JSON.stringify(data.meanings)}`)
+            }
+
+            // Parse readings nếu là string (từ multipart/form-data)
+            if (typeof data.readings === 'string') {
+                this.logger.log(`Raw readings string: "${data.readings}"`)
+                this.logger.log(`Readings string length: ${(data.readings as string).length}`)
+
+                // Kiểm tra nếu string rỗng hoặc chỉ có whitespace
+                const trimmedReadings = (data.readings as string).trim()
+                if (trimmedReadings === '' || trimmedReadings === '[]' || trimmedReadings === '{}') {
+                    this.logger.log('Readings string is empty, setting to undefined')
+                    data.readings = undefined
+                } else {
+                    try {
+                        data.readings = JSON.parse(trimmedReadings)
+                        this.logger.log(`Parsed readings from string: ${JSON.stringify(data.readings)}`)
+
+                        // Xử lý trường hợp readings bị stringify 2 lần
+                        if (Array.isArray(data.readings)) {
+                            data.readings = data.readings.map(reading => {
+                                if (typeof reading === 'string') {
+                                    try {
+                                        return JSON.parse(reading)
+                                    } catch (e) {
+                                        return reading
+                                    }
+                                }
+                                return reading
+                            })
+                            this.logger.log(`Processed nested readings: ${JSON.stringify(data.readings)}`)
+                        }
+                    } catch (error) {
+                        this.logger.error('Failed to parse readings JSON:', error)
+                        this.logger.error(`Problematic JSON string: "${data.readings}"`)
+                        throw new Error('Invalid JSON format for readings')
+                    }
+                }
+            }
+
+            // Kiểm tra identifier là ID (số) hay Character (chữ)
+            let existingKanji
+            const isNumeric = /^\d+$/.test(identifier)
+
+            if (isNumeric) {
+                // Nếu là số, tìm bằng ID
+                existingKanji = await this.kanjiRepository.findById(parseInt(identifier))
+            } else {
+                // Nếu là chữ, tìm bằng character
+                if (!this.isKanjiCharacter(identifier)) {
+                    throw KanjiCharacterInvalidException
+                }
+                existingKanji = await this.kanjiRepository.findByCharacter(identifier)
+            }
+
+            if (!existingKanji) {
+                throw KanjiNotFoundException
+            }
+
+            // Xử lý hình ảnh - chỉ dùng file upload như hàm create
+            let imageUrl = existingKanji.img // Giữ lại URL hiện có
+
+            if (image) {
+                // Upload hình ảnh mới nếu có
+                this.logger.log(`Uploading image for kanji: ${existingKanji.character}`)
+                const uploadResult = await this.uploadService.uploadFile(image, 'kanji')
+                imageUrl = uploadResult.url
+                this.logger.log(`Image uploaded successfully: ${imageUrl}`)
+            }
+            // Nếu không có file upload, giữ nguyên URL hiện có
+
+            this.logger.log(`Final imageUrl for database: ${imageUrl}`)
+
+            // Cập nhật kanji (không cho phép thay đổi character)
+            const kanjiData = {
+                strokeCount: data.strokeCount ? parseInt(data.strokeCount.toString()) : undefined,
+                jlptLevel: data.jlptLevel ? parseInt(data.jlptLevel.toString()) : undefined,
+                img: imageUrl
+            }
+
+            this.logger.log(`Kanji data to update: ${JSON.stringify(kanjiData)}`)
+
+            const kanji = await this.kanjiRepository.updatePartial(existingKanji.id, kanjiData)
+            this.logger.log(`Kanji updated successfully: ${kanji.id}`)
+
+            // Tự động tạo translation cho meaningKey hiện có (nếu chưa có)
+            if (existingKanji.meaningKey) {
+                await this.createTranslationForMeaningKey(existingKanji.meaningKey)
+            }
+
+            // Cập nhật/tạo readings
+            const readings: any[] = []
+            if (data.readings && Array.isArray(data.readings) && data.readings.length > 0) {
+                for (const readingData of data.readings) {
+                    try {
+                        if (readingData.id) {
+                            // Update existing reading
+                            const reading = await this.kanjiReadingService.update(readingData.id, {
+                                readingType: readingData.readingType,
+                                reading: readingData.reading
+                            })
+                            readings.push(reading)
+                        } else {
+                            // Create new reading
+                            const reading = await this.kanjiReadingService.create({
+                                kanjiId: existingKanji.id,
+                                readingType: readingData.readingType,
+                                reading: readingData.reading
+                            })
+                            readings.push(reading)
+                        }
+                    } catch (error) {
+                        this.logger.warn(`Failed to update/create reading ${readingData.readingType}: ${readingData.reading} for kanji ${existingKanji.id}`)
+                    }
+                }
+            }
+
+            // Cập nhật/tạo meanings
+            const meanings: any[] = []
+            if (data.meanings && data.meanings.length > 0) {
+                for (const meaningData of data.meanings) {
+                    try {
+                        let meaningKey = meaningData.meaningKey
+
+                        // Nếu không có meaningKey, tự động generate từ kanji ID
+                        if (!meaningKey) {
+                            meaningKey = `kanji.${existingKanji.id}.meaning`
+                            this.logger.log(`Auto-generated meaningKey: ${meaningKey}`)
+                        }
+
+                        // Kiểm tra translation đã tồn tại chưa để quyết định tạo mới hay update
+                        if (meaningData.translations) {
+                            await this.createOrUpdateTranslationsForLanguages(meaningKey, meaningData.translations)
+                        } else {
+                            // Nếu không có translations, chỉ tạo translation mặc định
+                            await this.createTranslationForMeaningKey(meaningKey)
+                        }
+
+                        // Lưu thông tin meaning (không tạo trong database vì meaning thuộc về vocabulary)
+                        meanings.push({
+                            id: meaningData.id,
+                            meaningKey: meaningKey,
+                            translations: meaningData.translations
+                        })
+                    } catch (error) {
+                        this.logger.warn(`Failed to update/create meaning for kanji ${existingKanji.id}`, error)
+                    }
+                }
+            }
+
+            this.logger.log(`Kanji with meanings updated successfully: ${kanji.id}`)
+
+            return {
+                data: {
+                    kanji,
+                    readings: readings.length > 0 ? readings : undefined,
+                    meanings
+                },
+                message: 'Cập nhật Kanji cùng với nghĩa thành công'
+            }
+        } catch (error) {
+            this.logger.error('Error updating kanji with meanings:', error)
+            if (error.message.includes('không tồn tại') || error.message.includes('đã tồn tại') || error.message.includes('Phải là một ký tự Kanji (Hán tự) duy nhất. Không chấp nhận ký tự Latin hoặc số')) {
+                throw error
+            }
+            throw InvalidKanjiDataException
+        }
+    }
+    //#endregion
+
+    //#region Delete
+    async delete(id: number) {
+        try {
+            this.logger.log(`Deleting kanji: ${id}`)
+
+            // Kiểm tra kanji có tồn tại không (nhẹ, không load full record)
+            const exists = await this.kanjiRepository.exists(id)
+            if (!exists) {
+                throw KanjiNotFoundException
+            }
+
+            await this.kanjiRepository.delete(id)
+            this.logger.log(`Kanji deleted successfully: ${id}`)
+
+            return {
+                message: KANJI_MESSAGE.DELETE_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error deleting kanji:', error)
+            if (error.message.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidKanjiDataException
+        }
+    }
+    //#endregion
 
     // Tạo hoặc cập nhật translations cho các ngôn ngữ
     private async createOrUpdateTranslationsForLanguages(meaningKey: string, translations: Record<string, string>) {
@@ -817,6 +837,21 @@ export class KanjiService {
     }
 
     // Utility methods
+    private isKanjiCharacter(text: string): boolean {
+        if (!text || text.length !== 1) return false
+        if (/[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(text)) return false
+        const ranges = [
+            /[\u4E00-\u9FAF]/,
+            /[\u3400-\u4DBF]/,
+            /[\u20000-\u2A6DF]/,
+            /[\u2A700-\u2B73F]/,
+            /[\u2B740-\u2B81F]/,
+            /[\u2B820-\u2CEAF]/,
+            /[\uF900-\uFAFF]/,
+            /[\u2F800-\u2FA1F]/
+        ]
+        return ranges.some((r) => r.test(text))
+    }
     async getKanjiWithReadings(kanjiId: number) {
         try {
             this.logger.log(`Getting kanji with readings: ${kanjiId}`)

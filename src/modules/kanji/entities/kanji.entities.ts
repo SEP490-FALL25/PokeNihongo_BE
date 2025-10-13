@@ -89,10 +89,7 @@ export const KanjiSchema = z.object({
     character: z
         .string()
         .min(1, 'Ký tự Kanji không được để trống')
-        .max(10, 'Ký tự Kanji quá dài (tối đa 10 ký tự)')
-        .refine(isKanjiCharacter, {
-            message: KANJI_CHARACTER_ERROR
-        }),
+        .max(10, 'Ký tự Kanji quá dài (tối đa 10 ký tự)'),
     meaningKey: z
         .string()
         .min(1, 'Key nghĩa không được để trống')
@@ -128,10 +125,7 @@ export const CreateKanjiSchema = z.object({
     character: z
         .string()
         .min(1, 'Ký tự Kanji không được để trống')
-        .max(10, 'Ký tự Kanji quá dài (tối đa 10 ký tự)')
-        .refine(isKanjiCharacter, {
-            message: KANJI_CHARACTER_ERROR
-        }),
+        .max(10, 'Ký tự Kanji quá dài (tối đa 10 ký tự)'),
     meaningKey: z
         .string()
         .min(1, 'Key nghĩa không được để trống')
@@ -157,9 +151,6 @@ export const UpdateKanjiSchema = z.object({
         .string()
         .min(1, 'Ký tự Kanji không được để trống')
         .max(10, 'Ký tự Kanji quá dài (tối đa 10 ký tự)')
-        .refine(isKanjiCharacter, {
-            message: KANJI_CHARACTER_ERROR
-        })
         .optional(),
     meaningKey: z
         .string()
