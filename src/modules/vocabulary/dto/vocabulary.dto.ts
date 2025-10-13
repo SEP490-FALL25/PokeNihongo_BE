@@ -4,6 +4,27 @@ import { VocabularySortField, VocabularySortOrder } from '@/common/enum/enum'
 
 
 
+export class WordTypeResponseSwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'ID của loại từ'
+    })
+    id: number
+
+    @ApiProperty({
+        example: 'word_type.noun',
+        description: 'Key để dịch tên loại từ'
+    })
+    nameKey: string
+
+    @ApiProperty({
+        example: 'Danh từ',
+        description: 'Tên loại từ đã được dịch',
+        nullable: true
+    })
+    name?: string
+}
+
 export class VocabularyResponseSwaggerDTO {
     @ApiProperty({
         example: 1,
@@ -28,14 +49,35 @@ export class VocabularyResponseSwaggerDTO {
         description: 'URL hình ảnh minh họa từ vựng',
         nullable: true
     })
-    imageUrl?: File
+    imageUrl?: string
 
     @ApiProperty({
         example: 'https://example.com/audio/konnichiwa.mp3',
         description: 'URL âm thanh phát âm từ vựng',
         nullable: true
     })
-    audioUrl?: File
+    audioUrl?: string
+
+    @ApiProperty({
+        example: 5,
+        description: 'Cấp độ JLPT (1-5)',
+        nullable: true
+    })
+    levelN?: number
+
+    @ApiProperty({
+        type: WordTypeResponseSwaggerDTO,
+        description: 'Thông tin loại từ',
+        nullable: true
+    })
+    wordType?: WordTypeResponseSwaggerDTO
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID người tạo',
+        nullable: true
+    })
+    createdById?: number
 
     @ApiProperty({
         example: '2025-01-01T10:00:00.000Z',

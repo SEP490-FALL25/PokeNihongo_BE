@@ -1,4 +1,5 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import {
     CreateVocabularyBodyDTO,
     GetVocabularyByIdParamsDTO,
@@ -116,8 +117,8 @@ export class VocabularyController {
     })
     @ApiQuery({ type: GetVocabularyListQuerySwaggerDTO })
     @ZodSerializerDto(VocabularyListResDTO)
-    findAll(@Query() query: GetVocabularyListQueryDTO) {
-        return this.vocabularyService.findAll(query)
+    findAll(@Query() query: GetVocabularyListQueryDTO, @I18nLang() lang: string) {
+        return this.vocabularyService.findAll(query, lang)
     }
 
 
@@ -130,8 +131,8 @@ export class VocabularyController {
         type: VocabularyResponseSwaggerDTO
     })
     @ZodSerializerDto(VocabularyResDTO)
-    findOne(@Param() params: GetVocabularyByIdParamsDTO) {
-        return this.vocabularyService.findOne(params)
+    findOne(@Param() params: GetVocabularyByIdParamsDTO, @I18nLang() lang: string) {
+        return this.vocabularyService.findOne(params, lang)
     }
 
     @Delete(':id')

@@ -36,7 +36,10 @@ export class VocabularyRepository {
                 where,
                 skip,
                 take: pageSize,
-                orderBy: { [sortBy]: sort }
+                orderBy: { [sortBy]: sort },
+                include: {
+                    wordType: true
+                }
             }),
             this.prismaService.vocabulary.count({ where })
         ])
@@ -53,14 +56,20 @@ export class VocabularyRepository {
         if (!where.id) return null
 
         const result = await this.prismaService.vocabulary.findUnique({
-            where: { id: where.id }
+            where: { id: where.id },
+            include: {
+                wordType: true
+            }
         })
         return result ? this.transformVocabulary(result) : null
     }
 
     async findFirst(where: { wordJp: string }): Promise<VocabularyType | null> {
         const result = await this.prismaService.vocabulary.findFirst({
-            where
+            where,
+            include: {
+                wordType: true
+            }
         })
         return result ? this.transformVocabulary(result) : null
     }
@@ -108,9 +117,14 @@ export class VocabularyRepository {
     private transformVocabulary(vocabulary: any): VocabularyType {
         return {
             ...vocabulary,
-            imageUrl: vocabulary.imageUrl || undefined,
-            audioUrl: vocabulary.audioUrl || undefined,
-            createdById: vocabulary.createdById || undefined
+            imageUrl: vocabulary.imageUrl || null,
+            audioUrl: vocabulary.audioUrl || null,
+            createdById: vocabulary.createdById || null,
+            wordType: vocabulary.wordType ? {
+                id: vocabulary.wordType.id,
+                nameKey: vocabulary.wordType.nameKey,
+                name: undefined // Will be resolved by service layer
+            } : null
         }
     }
 

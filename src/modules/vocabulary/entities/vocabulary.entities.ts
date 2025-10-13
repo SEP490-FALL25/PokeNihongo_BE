@@ -35,6 +35,13 @@ const isHiraganaText = (text: string): boolean => {
 const JAPANESE_TEXT_ERROR = 'Phải là văn bản tiếng Nhật thuần túy (CHỈ chứa Hiragana, Katakana, hoặc Kanji - không cho phép số hoặc ký tự Latin)'
 const HIRAGANA_TEXT_ERROR = 'Phải là cách đọc Hiragana (chỉ chứa ký tự Hiragana và dấu câu cơ bản)'
 
+// WordType schema for nested relation
+export const WordTypeSchema = z.object({
+    id: z.number(),
+    nameKey: z.string(),
+    name: z.string().optional() // Resolved translation value
+})
+
 export const VocabularySchema = z.object({
     id: z.number(),
     wordJp: z
@@ -54,6 +61,7 @@ export const VocabularySchema = z.object({
     imageUrl: z.string().url().nullable().optional(),
     audioUrl: z.string().url().nullable().optional(),
     levelN: z.number().min(1).max(5).nullable().optional(),
+    wordType: WordTypeSchema.nullable().optional(),
     createdById: z.number().nullable().optional(),
     createdAt: z.date(),
     updatedAt: z.date()

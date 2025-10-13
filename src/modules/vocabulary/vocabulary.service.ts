@@ -16,6 +16,8 @@ import { VocabularyHelperService } from '@/modules/vocabulary/vocabulary.helper.
 import { VOCABULARY_MESSAGE } from '@/common/constants/message'
 import { UploadService } from '@/3rdService/upload/upload.service'
 import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
+import { TranslationService } from '@/modules/translation/translation.service'
+import { LanguagesService } from '@/modules/languages/languages.service'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 import { Injectable, Logger } from '@nestjs/common'
 
@@ -27,13 +29,15 @@ export class VocabularyService {
         private readonly vocabularyRepository: VocabularyRepository,
         private readonly uploadService: UploadService,
         private readonly textToSpeechService: TextToSpeechService,
-        private readonly vocabularyHelperService: VocabularyHelperService
+        private readonly vocabularyHelperService: VocabularyHelperService,
+        private readonly translationService: TranslationService,
+        private readonly languagesService: LanguagesService
     ) { }
 
     // Removed old create method - use createFullVocabularyWithFiles instead
 
     //#region Find All
-    async findAll(query: GetVocabularyListQueryType) {
+    async findAll(query: GetVocabularyListQueryType, lang: string) {
         const { currentPage, pageSize, search, levelN, sortBy, sort } = query
 
         const result = await this.vocabularyRepository.findMany({
@@ -45,11 +49,51 @@ export class VocabularyService {
             sort
         })
 
+        // Resolve translation values for wordType.nameKey per requested language
+        let languageId: number | undefined
+        try {
+            const language = await this.languagesService.findByCode({ code: lang })
+            languageId = language?.data?.id
+        } catch {
+            languageId = undefined
+        }
+
+        const resultsWithWordType = await Promise.all(
+            result.items.map(async (item) => {
+                if (!item.wordType || !languageId) {
+                    return item
+                }
+
+                try {
+                    const translation = await this.translationService.findByKeyAndLanguage(
+                        item.wordType.nameKey,
+                        languageId as number
+                    )
+                    const name = translation?.value || item.wordType.nameKey
+                    return {
+                        ...item,
+                        wordType: {
+                            ...item.wordType,
+                            name
+                        }
+                    }
+                } catch {
+                    return {
+                        ...item,
+                        wordType: {
+                            ...item.wordType,
+                            name: item.wordType.nameKey
+                        }
+                    }
+                }
+            })
+        )
+
         return {
             statusCode: 200,
             message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS,
             data: {
-                results: result.items,
+                results: resultsWithWordType,
                 pagination: {
                     current: result.page,
                     pageSize: result.limit,
@@ -62,7 +106,7 @@ export class VocabularyService {
     //#endregion
 
     //#region Find One
-    async findOne(params: GetVocabularyByIdParamsType) {
+    async findOne(params: GetVocabularyByIdParamsType, lang: string) {
         const vocabulary = await this.vocabularyRepository.findUnique({
             id: params.id
         })
@@ -71,8 +115,39 @@ export class VocabularyService {
             throw VocabularyNotFoundException
         }
 
+        // Resolve wordType translation if present
+        let vocabularyWithWordType = vocabulary
+        if (vocabulary.wordType) {
+            try {
+                const language = await this.languagesService.findByCode({ code: lang })
+                if (language?.data?.id) {
+                    const translation = await this.translationService.findByKeyAndLanguage(
+                        vocabulary.wordType.nameKey,
+                        language.data.id
+                    )
+                    const name = translation?.value || vocabulary.wordType.nameKey
+                    vocabularyWithWordType = {
+                        ...vocabulary,
+                        wordType: {
+                            ...vocabulary.wordType,
+                            name
+                        }
+                    }
+                }
+            } catch {
+                // Keep original wordType if translation fails
+                vocabularyWithWordType = {
+                    ...vocabulary,
+                    wordType: {
+                        ...vocabulary.wordType,
+                        name: vocabulary.wordType.nameKey
+                    }
+                }
+            }
+        }
+
         return {
-            data: vocabulary,
+            data: vocabularyWithWordType,
             message: VOCABULARY_MESSAGE.GET_SUCCESS
         }
     }
