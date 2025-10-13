@@ -4,9 +4,13 @@ import {
   LanguageNotExistToTranslateException,
   NotFoundRecordException
 } from '@/shared/error'
-import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
+import {
+  isForeignKeyConstraintPrismaError,
+  isNotFoundPrismaError,
+  isUniqueConstraintPrismaError
+} from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
-import { Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
@@ -29,7 +33,11 @@ export class DailyRequestService {
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
-    const data = await this.dailyRequestRepo.list(pagination)
+    const langId = await this.languageRepo.getIdByCode(lang)
+    if (!langId) {
+      throw new NotFoundRecordException()
+    }
+    const data = await this.dailyRequestRepo.list(pagination, langId)
     return {
       data,
       message: this.i18nService.translate(DailyRequestMessage.GET_LIST_SUCCESS, lang)
@@ -38,11 +46,28 @@ export class DailyRequestService {
 
   async findById(id: number, lang: string = 'vi') {
     const dailyRequest = await this.dailyRequestRepo.findById(id)
-    if (!dailyRequest) {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    if (!langId || !dailyRequest) {
       throw new NotFoundRecordException()
     }
+
+    const nameTranslation = await this.translationRepo.findByLangAndKey(
+      langId,
+      dailyRequest.nameKey
+    )
+    const descriptionTranslation = await this.translationRepo.findByLangAndKey(
+      langId,
+      dailyRequest.descriptionKey
+    )
+
+    const resultRes = {
+      ...dailyRequest,
+      nameTranslation: nameTranslation?.value ?? null,
+      descriptionTranslation: descriptionTranslation?.value ?? null
+    }
     return {
-      data: dailyRequest,
+      statusCode: HttpStatus.OK,
+      data: resultRes,
       message: this.i18nService.translate(DailyRequestMessage.GET_SUCCESS, lang)
     }
   }
@@ -57,88 +82,124 @@ export class DailyRequestService {
     },
     lang: string = 'vi'
   ) {
+    let createdDailyRequest: any = null
+
     try {
-      const nameKey = `daily_request.name.${Date.now()}`
-      const descKey = `daily_request.description.${Date.now()}`
+      return await this.dailyRequestRepo.withTransaction(async (prismaTx) => {
+        const nameKey = `daily_request.name.${Date.now()}`
+        const descKey = `daily_request.description.${Date.now()}`
 
-      //convert data cho create
-      const dataCreate: CreateDailyRequestBodyType = {
-        conditionType: data.conditionType,
-        conditionValue: data.conditionValue,
-        nameKey,
-        descriptionKey: descKey,
-        rewardId: data.rewardId,
-        isActive: data.isActive
-      }
+        //convert data cho create
+        const dataCreate: CreateDailyRequestBodyType = {
+          conditionType: data.conditionType,
+          conditionValue: data.conditionValue,
+          nameKey,
+          descriptionKey: descKey,
+          rewardId: data.rewardId,
+          isActive: data.isActive
+        }
 
-      const createdDailyRequest = await this.dailyRequestRepo.create({
-        createdById,
-        data: dataCreate
+        createdDailyRequest = await this.dailyRequestRepo.create(
+          {
+            createdById,
+            data: dataCreate
+          },
+          prismaTx
+        )
+
+        // co id, tao nameKey chuan
+        const fNameKey = `daily_request.name.${createdDailyRequest.id}`
+        const fDescKey = `daily_request.description.${createdDailyRequest.id}`
+
+        const nameList = data.nameTranslations.map((t) => t.key)
+        const desList = data.descriptionTranslations?.map((t) => t.key) ?? []
+
+        // Gộp & loại bỏ trùng key
+        const allLangCodes = Array.from(new Set([...nameList, ...desList]))
+
+        // Lấy danh sách ngôn ngữ tương ứng với các key
+        const languages = await this.languageRepo.getWithListCode(allLangCodes)
+
+        // Tạo map { code: id } để truy cập nhanh
+        const langMap = Object.fromEntries(languages.map((l) => [l.code, l.id]))
+
+        // Kiểm tra có ngôn ngữ nào bị thiếu không
+        const missingLangs = allLangCodes.filter((code) => !langMap[code])
+        if (missingLangs.length > 0) {
+          throw new LanguageNotExistToTranslateException()
+        }
+
+        // Tạo danh sách bản dịch
+        const translationRecords: CreateTranslationBodyType[] = []
+
+        // nameTranslations → key = nameKey
+        for (const item of data.nameTranslations) {
+          translationRecords.push({
+            languageId: langMap[item.key],
+            key: fNameKey,
+            value: item.value
+          })
+        }
+
+        //check khong cho trung name
+        await this.translationRepo.validateTranslationRecords(translationRecords)
+
+        // descriptionTranslations → key = descriptionKey
+        for (const item of data.descriptionTranslations ?? []) {
+          translationRecords.push({
+            languageId: langMap[item.key],
+            key: fDescKey,
+            value: item.value
+          })
+        }
+
+        // Sử dụng createOrUpdate thay vì createMany
+        // và dùng transaction
+
+        const translationPromises = translationRecords.map((record) =>
+          this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
+        )
+        await Promise.all(translationPromises)
+        // Thêm bản dịch và update lại daily request
+        const result = await this.dailyRequestRepo.update(
+          {
+            id: createdDailyRequest.id,
+            data: {
+              nameKey: fNameKey,
+              descriptionKey: fDescKey
+            }
+          },
+          prismaTx
+        )
+
+        return {
+          statusCode: HttpStatus.CREATED,
+          data: result,
+          message: this.i18nService.translate(DailyRequestMessage.CREATE_SUCCESS, lang)
+        }
       })
-
-      // co id, tao nameKey chuan
-
-      const fNameKey = `daily_request.name.${createdDailyRequest.id}`
-      const fDescKey = `daily_request.description.${createdDailyRequest.id}`
-
-      const nameList = data.nameTranslations.map((t) => t.key)
-      const desList = data.descriptionTranslations?.map((t) => t.key) ?? []
-
-      // Gộp & loại bỏ trùng key
-      const allLangCodes = Array.from(new Set([...nameList, ...desList]))
-
-      // Lấy danh sách ngôn ngữ tương ứng với các key
-      const languages = await this.languageRepo.getWithListCode(allLangCodes)
-
-      // Tạo map { code: id } để truy cập nhanh
-      const langMap = Object.fromEntries(languages.map((l) => [l.code, l.id]))
-
-      // Kiểm tra có ngôn ngữ nào bị thiếu không
-      const missingLangs = allLangCodes.filter((code) => !langMap[code])
-      if (missingLangs.length > 0) {
-        throw new LanguageNotExistToTranslateException()
-      }
-
-      // Tạo danh sách bản dịch
-      const translationRecords: CreateTranslationBodyType[] = []
-
-      // nameTranslations → key = nameKey
-      for (const item of data.nameTranslations) {
-        translationRecords.push({
-          languageId: langMap[item.key],
-          key: fNameKey,
-          value: item.value
-        })
-      }
-
-      // descriptionTranslations → key = descriptionKey
-      for (const item of data.descriptionTranslations ?? []) {
-        translationRecords.push({
-          languageId: langMap[item.key],
-          key: fDescKey,
-          value: item.value
-        })
-      }
-
-      // Thêm bản dịch và update lại achievementGroup
-      const [, result] = await Promise.all([
-        this.translationRepo.createMany(translationRecords),
-        await this.dailyRequestRepo.update({
-          id: createdDailyRequest.id,
-          data: {
-            nameKey: fNameKey,
-            descriptionKey: fDescKey
-          }
-        })
-      ])
-
-      return {
-        data: createdDailyRequest,
-        message: this.i18nService.translate(DailyRequestMessage.CREATE_SUCCESS, lang)
-      }
     } catch (error) {
+      // Rollback: Xóa daily request đã tạo nếu có lỗi
+      if (createdDailyRequest?.id) {
+        try {
+          await this.dailyRequestRepo.delete(
+            {
+              id: createdDailyRequest.id,
+              deletedById: createdById
+            },
+            true
+          )
+        } catch (rollbackError) {}
+      }
+
       if (isUniqueConstraintPrismaError(error)) {
         throw new DailyRequestAlreadyExistsException()
+      }
+      if (isNotFoundPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
       }
       throw error
     }
@@ -156,28 +217,91 @@ export class DailyRequestService {
     },
     lang: string = 'vi'
   ) {
-    try {
-      //convert data cho update
-      const dataUpdate: UpdateDailyRequestBodyType = {
-        ...data
-      }
+    let existingDailyRequest: any = null
 
-      const dailyRequest = await this.dailyRequestRepo.update({
-        id,
-        updatedById,
-        data: dataUpdate
+    try {
+      return await this.dailyRequestRepo.withTransaction(async (prismaTx) => {
+        // --- 1. Lấy bản ghi hiện tại ---
+        existingDailyRequest = await this.dailyRequestRepo.findById(id)
+        if (!existingDailyRequest) throw new NotFoundRecordException()
+
+        // --- 2. Chuẩn bị data update ---
+        const dataUpdate: UpdateDailyRequestBodyType = {
+          conditionType: data.conditionType,
+          conditionValue: data.conditionValue,
+          rewardId: data.rewardId,
+          isActive: data.isActive
+        }
+
+        // --- 3. Handle translations nếu có ---
+        if (data.nameTranslations || data.descriptionTranslations) {
+          const nameList = data.nameTranslations?.map((t) => t.key) ?? []
+          const descList = data.descriptionTranslations?.map((t) => t.key) ?? []
+
+          const allLangCodes = Array.from(new Set([...nameList, ...descList]))
+
+          if (allLangCodes.length > 0) {
+            // Lấy languages tương ứng
+            const languages = await this.languageRepo.getWithListCode(allLangCodes)
+            const langMap = Object.fromEntries(languages.map((l) => [l.code, l.id]))
+
+            // Kiểm tra missing language
+            const missingLangs = allLangCodes.filter((code) => !langMap[code])
+            if (missingLangs.length > 0) throw new LanguageNotExistToTranslateException()
+
+            // --- 4. Tạo translation records ---
+            const translationRecords: CreateTranslationBodyType[] = []
+
+            // nameTranslations
+            for (const t of data.nameTranslations ?? []) {
+              translationRecords.push({
+                languageId: langMap[t.key],
+                key: existingDailyRequest.nameKey,
+                value: t.value
+              })
+            }
+
+            // --- 5. Validate translation records: check name la dc, desc cho trung---
+            await this.translationRepo.validateTranslationRecords(translationRecords)
+
+            // descriptionTranslations
+            for (const t of data.descriptionTranslations ?? []) {
+              translationRecords.push({
+                languageId: langMap[t.key],
+                key: existingDailyRequest.descriptionKey,
+                value: t.value
+              })
+            }
+
+            // --- 6. Update translations với transaction ---
+            const translationPromises = translationRecords.map((record) =>
+              this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
+            )
+            await Promise.all(translationPromises)
+          }
+        }
+
+        // --- 7. Update DailyRequest chính ---
+        const updatedDailyRequest = await this.dailyRequestRepo.update(
+          {
+            id,
+            updatedById,
+            data: dataUpdate
+          },
+          prismaTx
+        )
+
+        return {
+          statusCode: HttpStatus.OK,
+          data: updatedDailyRequest,
+          message: this.i18nService.translate(DailyRequestMessage.UPDATE_SUCCESS, lang)
+        }
       })
-      return {
-        data: dailyRequest,
-        message: this.i18nService.translate(DailyRequestMessage.UPDATE_SUCCESS, lang)
-      }
     } catch (error) {
-      if (isNotFoundPrismaError(error)) {
-        throw new NotFoundRecordException()
-      }
-      if (isUniqueConstraintPrismaError(error)) {
+      // --- 8. Xử lý lỗi ---
+      if (isNotFoundPrismaError(error)) throw new NotFoundRecordException()
+      if (isUniqueConstraintPrismaError(error))
         throw new DailyRequestAlreadyExistsException()
-      }
       throw error
     }
   }
@@ -187,11 +311,28 @@ export class DailyRequestService {
     lang: string = 'vi'
   ) {
     try {
-      await this.dailyRequestRepo.delete({
-        id,
-        deletedById
-      })
+      const [langId, existingDailyRequest] = await Promise.all([
+        this.languageRepo.getIdByCode(lang),
+        this.dailyRequestRepo.findById(id)
+      ])
+      if (!langId) {
+        throw new NotFoundRecordException()
+      }
+
+      if (!existingDailyRequest) {
+        throw new NotFoundRecordException()
+      }
+
+      const [,] = await Promise.all([
+        this.dailyRequestRepo.delete({
+          id,
+          deletedById
+        }),
+        this.translationRepo.deleteByKey(existingDailyRequest.nameKey)
+      ])
+
       return {
+        statusCode: HttpStatus.OK,
         data: null,
         message: this.i18nService.translate(DailyRequestMessage.DELETE_SUCCESS, lang)
       }

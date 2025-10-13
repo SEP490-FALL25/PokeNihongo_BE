@@ -70,14 +70,17 @@ export const GetParamsDailyRequestSchema = z.object({
 export const GetDailyRequestDetailResSchema = z.object({
   statusCode: z.number(),
   data: DailyRequestSchema.extend({
-    nameTranslation: z.string().nullable(),
-    descriptionTranslation: z.string().nullable(),
+    nameTranslation: z.string().nullable().optional(),
+    descriptionTranslation: z.string().nullable().optional(),
     reward: RewardSchema.pick({
+      id: true,
       name: true,
       rewardItem: true,
       rewardTarget: true,
       rewardType: true
-    }).nullable()
+    })
+      .nullable()
+      .optional()
   }),
   message: z.string()
 })
@@ -106,6 +109,8 @@ export type GetParamDailyRequestDetailType = z.infer<
 // Field
 
 type DailyRequestFieldType = keyof z.infer<typeof DailyRequestSchema>
-export const REWARD_FIELDS = Object.keys(
-  DailyRequestSchema.shape
-) as DailyRequestFieldType[]
+export const DAILY_REQUEST_FIELDS = [
+  ...Object.keys(DailyRequestSchema.shape),
+  'nameTranslation',
+  'descriptionTranslation'
+] as DailyRequestFieldType[]
