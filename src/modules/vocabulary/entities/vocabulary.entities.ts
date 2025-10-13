@@ -122,6 +122,25 @@ export const GetVocabularyListQuerySchema = z
     })
     .strict()
 
+// Statistics Schema
+export const VocabularyStatisticsSchema = z.object({
+    totalVocabulary: z.number(),
+    totalKanji: z.number(),
+    vocabularyN5: z.number(),
+    vocabularyN4: z.number(),
+    vocabularyN3: z.number(),
+    vocabularyN2: z.number(),
+    vocabularyN1: z.number()
+})
+
+export const VocabularyStatisticsResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: VocabularyStatisticsSchema,
+        message: z.string()
+    })
+    .strict()
+
 // Types
 export type VocabularyType = z.infer<typeof VocabularySchema>
 export type CreateVocabularyBodyType = z.infer<typeof CreateVocabularyBodySchema>
@@ -130,3 +149,5 @@ export type VocabularyResType = z.infer<typeof VocabularyResSchema>
 export type VocabularyListResType = z.infer<typeof VocabularyListResSchema>
 export type GetVocabularyByIdParamsType = z.infer<typeof GetVocabularyByIdParamsSchema>
 export type GetVocabularyListQueryType = z.infer<typeof GetVocabularyListQuerySchema>
+export type VocabularyStatisticsType = z.infer<typeof VocabularyStatisticsSchema>
+export type VocabularyStatisticsResType = z.infer<typeof VocabularyStatisticsResSchema>

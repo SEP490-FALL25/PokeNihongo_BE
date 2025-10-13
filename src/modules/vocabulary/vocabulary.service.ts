@@ -105,6 +105,18 @@ export class VocabularyService {
     }
     //#endregion
 
+    //#region Statistics
+    async getStatistics() {
+        const stats = await this.vocabularyRepository.getStatistics()
+
+        return {
+            statusCode: 200,
+            message: VOCABULARY_MESSAGE.GET_STATS_SUCCESS,
+            data: stats
+        }
+    }
+    //#endregion
+
     //#region Find One
     async findOne(params: GetVocabularyByIdParamsType, lang: string) {
         const vocabulary = await this.vocabularyRepository.findUnique({

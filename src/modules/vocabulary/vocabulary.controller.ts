@@ -1,4 +1,5 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
+import { IsPublic } from '@/common/decorators/auth.decorator'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import {
     CreateVocabularyBodyDTO,
@@ -6,7 +7,8 @@ import {
     GetVocabularyListQueryDTO,
     UpdateVocabularyBodyDTO,
     VocabularyListResDTO,
-    VocabularyResDTO
+    VocabularyResDTO,
+    VocabularyStatisticsResDTO
 } from '@/modules/vocabulary/dto/vocabulary.zod-dto'
 import { VocabularyNotFoundException } from '@/modules/vocabulary/dto/vocabulary.error'
 import {
@@ -14,6 +16,7 @@ import {
     VocabularyListResponseSwaggerDTO,
     GetVocabularyListQuerySwaggerDTO,
     UpdateVocabularyMultipartSwaggerDTO,
+    VocabularyStatisticsResponseSwaggerDTO,
 } from '@/modules/vocabulary/dto/vocabulary.dto'
 import { AddMeaningToVocabularyDTO, AddMeaningSwaggerDTO } from '@/modules/vocabulary/dto/add-meaning.dto'
 import {
@@ -121,6 +124,18 @@ export class VocabularyController {
         return this.vocabularyService.findAll(query, lang)
     }
 
+    @Get('statistics')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy thống kê từ vựng tổng hợp' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy thống kê từ vựng thành công',
+        type: VocabularyStatisticsResponseSwaggerDTO
+    })
+    @ZodSerializerDto(VocabularyStatisticsResDTO)
+    getStatistics() {
+        return this.vocabularyService.getStatistics()
+    }
 
     @Get(':id')
     @ApiBearerAuth()

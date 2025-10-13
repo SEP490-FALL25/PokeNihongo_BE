@@ -35,6 +35,7 @@ export const VOCABULARY_MESSAGE = {
   DELETE_SUCCESS: 'Xóa từ vựng thành công',
   GET_SUCCESS: 'Lấy thông tin từ vựng thành công',
   GET_LIST_SUCCESS: 'Lấy danh sách từ vựng thành công',
+  GET_STATS_SUCCESS: 'Lấy thống kê từ vựng thành công',
   NOT_FOUND: 'Không tìm thấy từ vựng',
   ALREADY_EXISTS: 'Từ vựng đã tồn tại',
   INVALID_DATA: 'Dữ liệu từ vựng không hợp lệ',

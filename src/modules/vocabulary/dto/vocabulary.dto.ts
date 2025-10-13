@@ -118,6 +118,58 @@ export class VocabularyListResponseSwaggerDTO {
     limit: number
 }
 
+export class VocabularyStatisticsSwaggerDTO {
+    @ApiProperty({
+        example: 100,
+        description: 'Tổng số từ vựng'
+    })
+    totalVocabulary: number
+
+    @ApiProperty({
+        example: 50,
+        description: 'Tổng số Kanji'
+    })
+    totalKanji: number
+
+    @ApiProperty({
+        example: 20,
+        description: 'Số từ vựng cấp độ N5'
+    })
+    vocabularyN5: number
+
+    @ApiProperty({
+        example: 25,
+        description: 'Số từ vựng cấp độ N4'
+    })
+    vocabularyN4: number
+
+    @ApiProperty({
+        example: 30,
+        description: 'Số từ vựng cấp độ N3'
+    })
+    vocabularyN3: number
+
+    @ApiProperty({
+        example: 15,
+        description: 'Số từ vựng cấp độ N2'
+    })
+    vocabularyN2: number
+
+    @ApiProperty({
+        example: 10,
+        description: 'Số từ vựng cấp độ N1'
+    })
+    vocabularyN1: number
+}
+
+export class VocabularyStatisticsResponseSwaggerDTO {
+    @ApiProperty({
+        type: VocabularyStatisticsSwaggerDTO,
+        description: 'Thống kê từ vựng'
+    })
+    data: VocabularyStatisticsSwaggerDTO
+}
+
 //Get
 export class GetVocabularyListQuerySwaggerDTO {
     @ApiProperty({

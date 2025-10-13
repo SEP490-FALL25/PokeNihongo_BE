@@ -4,7 +4,8 @@ import {
     GetVocabularyListQuerySchema,
     UpdateVocabularyBodySchema,
     VocabularyListResSchema,
-    VocabularyResSchema
+    VocabularyResSchema,
+    VocabularyStatisticsResSchema,
 } from '@/modules/vocabulary/entities/vocabulary.entities'
 import { createZodDto } from 'nestjs-zod'
 
@@ -19,3 +20,5 @@ export class GetVocabularyListQueryDTO extends createZodDto(GetVocabularyListQue
 export class VocabularyResDTO extends createZodDto(VocabularyResSchema) { }
 
 export class VocabularyListResDTO extends createZodDto(VocabularyListResSchema) { }
+
+export class VocabularyStatisticsResDTO extends createZodDto(VocabularyStatisticsResSchema) { }

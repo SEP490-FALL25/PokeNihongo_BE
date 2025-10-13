@@ -114,6 +114,46 @@ export class VocabularyRepository {
         return this.prismaService.vocabulary.count({ where })
     }
 
+    async getStatistics() {
+        // Sử dụng 2 queries thay vì 7 queries để giảm số lượng kết nối database
+        const [vocabularyStats, totalKanji] = await Promise.all([
+            // Query 1: Lấy thống kê vocabulary theo levelN
+            this.prismaService.vocabulary.groupBy({
+                by: ['levelN'],
+                _count: {
+                    levelN: true
+                }
+            }),
+            // Query 2: Đếm tổng số kanji
+            this.prismaService.kanji.count()
+        ])
+
+        // Tính tổng vocabulary
+        const totalVocabulary = vocabularyStats.reduce((sum, stat) => sum + stat._count.levelN, 0)
+
+        // Khởi tạo object kết quả với giá trị mặc định
+        const result = {
+            totalVocabulary,
+            totalKanji,
+            vocabularyN5: 0,
+            vocabularyN4: 0,
+            vocabularyN3: 0,
+            vocabularyN2: 0,
+            vocabularyN1: 0
+        }
+
+        // Cập nhật số lượng vocabulary theo từng level
+        vocabularyStats.forEach(stat => {
+            if (stat.levelN === 5) result.vocabularyN5 = stat._count.levelN
+            else if (stat.levelN === 4) result.vocabularyN4 = stat._count.levelN
+            else if (stat.levelN === 3) result.vocabularyN3 = stat._count.levelN
+            else if (stat.levelN === 2) result.vocabularyN2 = stat._count.levelN
+            else if (stat.levelN === 1) result.vocabularyN1 = stat._count.levelN
+        })
+
+        return result
+    }
+
     private transformVocabulary(vocabulary: any): VocabularyType {
         return {
             ...vocabulary,
