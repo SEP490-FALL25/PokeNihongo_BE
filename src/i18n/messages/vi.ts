@@ -249,5 +249,14 @@ export const viMessages = {
     DUPLICATE_LANGUAGE: 'Ngôn ngữ bị trùng lặp',
     ALREADY_EXISTS: 'Bản dịch đã tồn tại',
     DUPLICATE_VALUE: 'Giá trị bản dịch bị trùng lặp'
+  },
+  user_daily_request: {
+    CREATE_SUCCESS: 'Tạo yêu cầu hàng ngày cho người dùng thành công',
+    UPDATE_SUCCESS: 'Cập nhật yêu cầu hàng ngày cho người dùng thành công',
+    DELETE_SUCCESS: 'Xóa yêu cầu hàng ngày cho người dùng thành công',
+    GET_SUCCESS: 'Lấy thông tin yêu cầu hàng ngày cho người dùng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách yêu cầu hàng ngày cho người dùng thành công',
+    NOT_FOUND: 'Không tìm thấy yêu cầu hàng ngày cho người dùng',
+    ALREADY_EXISTS: 'Yêu cầu hàng ngày cho người dùng đã tồn tại'
   }
 }

@@ -1,6 +1,7 @@
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
+import { DailyConditionType } from '@/common/constants/daily-request.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
@@ -10,6 +11,14 @@ import {
   DailyRequestType,
   UpdateDailyRequestBodyType
 } from './entities/daily-request.entity'
+
+export type WhereDailyRequestType = {
+  id?: number
+  conditionTypes?:
+    | DailyConditionType
+    | DailyConditionType[]
+    | { in: DailyConditionType[] }
+}
 
 @Injectable()
 export class DailyRequestRepo {
@@ -187,6 +196,41 @@ export class DailyRequestRepo {
           }
         }
       }
+    })
+  }
+
+  checkDailyRequestIsStreak(id: number): Promise<DailyRequestType | null> {
+    return this.prismaService.dailyRequest.findUnique({
+      where: {
+        id,
+        conditionType: {
+          in: [
+            DailyConditionType.STREAK_LOGIN,
+            DailyConditionType.STREAK_COMPLETE_LESSON,
+            DailyConditionType.STREAK_EXERCISE
+          ]
+        },
+        deletedAt: null
+      }
+    })
+  }
+
+  findByWhere(where: WhereDailyRequestType): Promise<DailyRequestType[]> {
+    const prismaWhere: any = {
+      deletedAt: null
+    }
+
+    if (where.id) prismaWhere.id = where.id
+
+    if (where.conditionTypes) {
+      // Nếu là mảng enum thì wrap lại bằng { in: [...] }
+      prismaWhere.conditionType = Array.isArray(where.conditionTypes)
+        ? { in: where.conditionTypes }
+        : where.conditionTypes
+    }
+
+    return this.prismaService.dailyRequest.findMany({
+      where: prismaWhere
     })
   }
 }

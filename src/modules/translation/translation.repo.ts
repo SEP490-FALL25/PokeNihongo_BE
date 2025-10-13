@@ -350,6 +350,23 @@ export class TranslationRepository {
     })
   }
 
+  // Lấy nhiều translations theo keys và languageId
+  async findByKeysAndLanguage(
+    keys: string[],
+    languageId: number
+  ): Promise<TranslationType[]> {
+    if (keys.length === 0) return []
+
+    return this.prismaService.translation.findMany({
+      where: {
+        key: {
+          in: keys
+        },
+        languageId
+      }
+    })
+  }
+
   private transformTranslation(translation: any): TranslationType {
     return {
       ...translation

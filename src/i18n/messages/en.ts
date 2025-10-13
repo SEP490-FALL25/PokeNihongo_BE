@@ -251,5 +251,14 @@ export const enMessages = {
     DUPLICATE_LANGUAGE: 'Duplicate language',
     ALREADY_EXISTS: 'Translation already exists',
     DUPLICATE_VALUE: 'Duplicate translation value'
+  },
+  user_daily_request: {
+    CREATE_SUCCESS: 'User daily request created successfully',
+    UPDATE_SUCCESS: 'User daily request updated successfully',
+    DELETE_SUCCESS: 'User daily request deleted successfully',
+    GET_SUCCESS: 'User daily request retrieved successfully',
+    GET_LIST_SUCCESS: 'User daily request list retrieved successfully',
+    NOT_FOUND: 'User daily request not found',
+    ALREADY_EXISTS: 'User daily request already exists'
   }
 }

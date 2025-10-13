@@ -241,5 +241,14 @@ export const jaMessages = {
     DUPLICATE_LANGUAGE: '言語が重複しています',
     ALREADY_EXISTS: '翻訳は既に存在します',
     DUPLICATE_VALUE: '翻訳値が重複しています'
+  },
+  user_daily_request: {
+    CREATE_SUCCESS: 'ユーザーデイリーリクエストの作成が完了しました',
+    UPDATE_SUCCESS: 'ユーザーデイリーリクエストの更新が完了しました',
+    DELETE_SUCCESS: 'ユーザーデイリーリクエストの削除が完了しました',
+    GET_SUCCESS: 'ユーザーデイリーリクエスト情報を取得しました',
+    GET_LIST_SUCCESS: 'ユーザーデイリーリクエストリストを取得しました',
+    NOT_FOUND: 'ユーザーデイリーリクエストが見つかりません',
+    ALREADY_EXISTS: 'ユーザーデイリーリクエストは既に存在します'
   }
 }

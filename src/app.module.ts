@@ -39,6 +39,7 @@ import { UserModule } from './modules/user/user.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { DailyRequestModule } from './modules/daily-request/daily-request.module';
+import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-request.module';
 
 @Module({
   imports: [
@@ -77,7 +78,8 @@ import { DailyRequestModule } from './modules/daily-request/daily-request.module
     AnswerModule,
     UserModule,
     AchievementGroupModule,
-    DailyRequestModule
+    DailyRequestModule,
+    UserDailyRequestModule
   ],
 
   controllers: [],

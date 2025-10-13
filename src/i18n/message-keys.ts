@@ -262,3 +262,13 @@ export const TranslationMessage = {
   ALREADY_EXISTS: 'translation.ALREADY_EXISTS',
   DUPLICATE_VALUE: 'translation.DUPLICATE_VALUE'
 } as const
+
+export const UserDailyRequestMessage = {
+  CREATE_SUCCESS: 'user_daily_request.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'user_daily_request.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'user_daily_request.DELETE_SUCCESS',
+  GET_SUCCESS: 'user_daily_request.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'user_daily_request.GET_LIST_SUCCESS',
+  NOT_FOUND: 'user_daily_request.NOT_FOUND',
+  ALREADY_EXISTS: 'user_daily_request.ALREADY_EXISTS'
+} as const
