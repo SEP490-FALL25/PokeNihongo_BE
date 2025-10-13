@@ -11,7 +11,7 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
-import { RewardTarget } from '@prisma/client'
+import { RewardTarget, RewardType } from '@prisma/client'
 import { DailyRequestRepo } from '../daily-request/daily-request.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { TranslationRepository } from '../translation/translation.repo'
@@ -348,7 +348,12 @@ export class UserDailyRequestService {
         conditionTypes: [DailyConditionType.STREAK_LOGIN, DailyConditionType.LOGIN]
       })
 
-      const rewardsToGive: Array<{ rewardTarget: RewardTarget; rewardItem: number }> = []
+      const rewardsToGive: Array<{
+        id: number
+        rewardType: RewardType
+        rewardTarget: RewardTarget
+        rewardItem: number
+      }> = []
 
       // Xử lý điểm danh cho từng daily request
       for (const dailyRequest of dailyRequests) {
@@ -387,6 +392,8 @@ export class UserDailyRequestService {
           // Nếu hoàn thành và có reward, thu thập reward để trao
           if (isCompleted && (dailyRequest as any).reward) {
             rewardsToGive.push({
+              id: (dailyRequest as any).reward.id,
+              rewardType: (dailyRequest as any).reward.rewardType,
               rewardTarget: (dailyRequest as any).reward.rewardTarget,
               rewardItem: (dailyRequest as any).reward.rewardItem
             })
@@ -419,6 +426,8 @@ export class UserDailyRequestService {
             // Nếu vừa hoàn thành và có reward, thu thập reward để trao
             if (isCompleted && (dailyRequest as any).reward) {
               rewardsToGive.push({
+                id: (dailyRequest as any).reward.id,
+                rewardType: (dailyRequest as any).reward.rewardType,
                 rewardTarget: (dailyRequest as any).reward.rewardTarget,
                 rewardItem: (dailyRequest as any).reward.rewardItem
               })

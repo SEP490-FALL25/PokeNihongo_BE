@@ -81,6 +81,21 @@ export const GetListUserDailyRequestTodayDetailResSchema = z.object({
   message: z.string()
 })
 
+export const GetRewardListUserDailyRequestTodayDetailResSchema = z.object({
+  statusCode: z.number(),
+  data: z.object({
+    rewardsReceived: z.array(
+      RewardSchema.pick({
+        id: true,
+        rewardType: true,
+        rewardTarget: true,
+        rewardItem: true
+      })
+    )
+  }),
+  message: z.string()
+})
+
 //type
 
 export type UserDailyRequestType = z.infer<typeof UserDailyRequestSchema>
