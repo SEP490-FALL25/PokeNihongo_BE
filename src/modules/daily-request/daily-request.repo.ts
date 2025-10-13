@@ -2,11 +2,12 @@ import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
 import { parseQs } from '@/common/utils/qs-parser'
+import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
   CreateDailyRequestBodyType,
+  DAILY_REQUEST_FIELDS,
   DailyRequestType,
-  REWARD_FIELDS,
   UpdateDailyRequestBodyType
 } from './entities/daily-request.entity'
 
@@ -14,14 +15,23 @@ import {
 export class DailyRequestRepo {
   constructor(private prismaService: PrismaService) {}
 
-  create({
-    createdById,
-    data
-  }: {
-    createdById: number | null
-    data: CreateDailyRequestBodyType
-  }): Promise<DailyRequestType> {
-    return this.prismaService.dailyRequest.create({
+  // Wrapper cho transaction
+  async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
+    return this.prismaService.$transaction(callback)
+  }
+
+  create(
+    {
+      createdById,
+      data
+    }: {
+      createdById: number | null
+      data: CreateDailyRequestBodyType
+    },
+    prismaTx?: PrismaClient
+  ): Promise<DailyRequestType> {
+    const client = prismaTx || this.prismaService
+    return client.dailyRequest.create({
       data: {
         ...data,
         createdById
@@ -29,16 +39,20 @@ export class DailyRequestRepo {
     })
   }
 
-  update({
-    id,
-    updatedById,
-    data
-  }: {
-    id: number
-    updatedById?: number
-    data: UpdateDailyRequestBodyType
-  }): Promise<DailyRequestType> {
-    return this.prismaService.dailyRequest.update({
+  update(
+    {
+      id,
+      updatedById,
+      data
+    }: {
+      id: number
+      updatedById?: number
+      data: UpdateDailyRequestBodyType
+    },
+    prismaTx?: PrismaClient
+  ): Promise<DailyRequestType> {
+    const client = prismaTx || this.prismaService
+    return client.dailyRequest.update({
       where: {
         id,
         deletedAt: null
@@ -58,8 +72,10 @@ export class DailyRequestRepo {
       id: number
       deletedById: number
     },
-    isHard?: boolean
+    isHard?: boolean,
+    prismaTx?: PrismaClient
   ): Promise<DailyRequestType> {
+    const client = prismaTx || this.prismaService
     return isHard
       ? this.prismaService.dailyRequest.delete({
           where: {
@@ -78,26 +94,73 @@ export class DailyRequestRepo {
         })
   }
 
-  async list(pagination: PaginationQueryType) {
-    const { where, orderBy } = parseQs(pagination.qs, REWARD_FIELDS)
+  async list(pagination: PaginationQueryType, langId: number) {
+    // --- 1. Parse QS bình thường ---
+    const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, DAILY_REQUEST_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
 
+    // --- 2. Xử lý filter nameTranslation ---
+    let nameKeys: string[] | undefined
+    if (rawWhere.nameTranslation) {
+      // Nếu rawWhere.nameTranslation là object { contains, mode }
+      const searchValue =
+        typeof rawWhere.nameTranslation === 'object'
+          ? rawWhere.nameTranslation.contains
+          : rawWhere.nameTranslation
+
+      const translations = await this.prismaService.translation.findMany({
+        where: {
+          languageId: langId, // từ param
+          value: {
+            contains: searchValue,
+            mode: 'insensitive'
+          }
+        },
+        select: { key: true }
+      })
+
+      nameKeys = translations.map((t) => t.key)
+      delete rawWhere.nameTranslation
+    }
+
+    // --- 3. Build final where ---
+    const where: any = {
+      deletedAt: null,
+      ...rawWhere,
+      ...(nameKeys ? { nameKey: { in: nameKeys } } : {})
+    }
+
+    // --- 4. Query tổng số + data ---
     const [totalItems, data] = await Promise.all([
-      this.prismaService.dailyRequest.count({
-        where: { deletedAt: null, ...where }
-      }),
+      this.prismaService.dailyRequest.count({ where }),
       this.prismaService.dailyRequest.findMany({
-        where: { deletedAt: null, ...where },
+        where,
         orderBy,
         skip,
         take
       })
     ])
 
+    // --- 5. Include nameTranslation ---
+    const nameTranslations = await this.prismaService.translation.findMany({
+      where: {
+        key: { in: data.map((d) => d.nameKey) },
+        languageId: 1 // hoặc lấy từ request/user
+      },
+      select: { key: true, value: true }
+    })
+
+    const results = data.map((d) => ({
+      ...d,
+      nameTranslation:
+        nameTranslations.find((t) => t.key === d.nameKey)?.value || d.nameKey
+    }))
+
+    // --- 6. Trả kết quả ---
     return {
-      results: data,
+      results,
       pagination: {
         current: pagination.currentPage,
         pageSize: pagination.pageSize,
@@ -112,6 +175,17 @@ export class DailyRequestRepo {
       where: {
         id,
         deletedAt: null
+      },
+      include: {
+        reward: {
+          select: {
+            id: true,
+            name: true,
+            rewardItem: true,
+            rewardTarget: true,
+            rewardType: true
+          }
+        }
       }
     })
   }

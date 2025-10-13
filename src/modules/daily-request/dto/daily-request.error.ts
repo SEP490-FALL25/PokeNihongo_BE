@@ -9,3 +9,12 @@ export class DailyRequestAlreadyExistsException extends ConflictException {
     })
   }
 }
+
+export class InValidTranslationException extends ConflictException {
+  constructor() {
+    super({
+      message: DailyRequestMessage.ALREADY_EXISTS,
+      errorKey: DailyRequestMessage.ALREADY_EXISTS
+    })
+  }
+}

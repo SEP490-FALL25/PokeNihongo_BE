@@ -255,4 +255,10 @@ export const DailyRequestMessage = {
   GET_LIST_SUCCESS: 'daily_request.GET_LIST_SUCCESS',
   NOT_FOUND: 'daily_request.NOT_FOUND',
   ALREADY_EXISTS: 'daily_request.ALREADY_EXISTS'
-}
+} as const
+
+export const TranslationMessage = {
+  DUPLICATE_LANGUAGE: 'translation.DUPLICATE_LANGUAGE',
+  ALREADY_EXISTS: 'translation.ALREADY_EXISTS',
+  DUPLICATE_VALUE: 'translation.DUPLICATE_VALUE'
+} as const

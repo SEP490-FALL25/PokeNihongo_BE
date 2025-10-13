@@ -244,5 +244,10 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách nhiệm vụ hàng ngày thành công',
     NOT_FOUND: 'Không tìm thấy nhiệm vụ hàng ngày',
     ALREADY_EXISTS: 'Nhiệm vụ hàng ngày đã tồn tại'
+  },
+  translation: {
+    DUPLICATE_LANGUAGE: 'Ngôn ngữ bị trùng lặp',
+    ALREADY_EXISTS: 'Bản dịch đã tồn tại',
+    DUPLICATE_VALUE: 'Giá trị bản dịch bị trùng lặp'
   }
 }

@@ -236,5 +236,10 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'デイリーリクエストリストを取得しました',
     NOT_FOUND: 'デイリーリクエストが見つかりません',
     ALREADY_EXISTS: 'デイリーリクエストは既に存在します'
+  },
+  translation: {
+    DUPLICATE_LANGUAGE: '言語が重複しています',
+    ALREADY_EXISTS: '翻訳は既に存在します',
+    DUPLICATE_VALUE: '翻訳値が重複しています'
   }
 }

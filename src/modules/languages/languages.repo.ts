@@ -8,7 +8,7 @@ import {
 
 @Injectable()
 export class LanguagesRepository {
-  constructor(private readonly prismaService: PrismaService) { }
+  constructor(private readonly prismaService: PrismaService) {}
 
   async findMany(params: {
     currentPage: number
@@ -178,5 +178,14 @@ export class LanguagesRepository {
     })
 
     return languages
+  }
+
+  async getIdByCode(code: string): Promise<number | null> {
+    const language = await this.prismaService.languages.findUnique({
+      where: { code },
+      select: { id: true }
+    })
+
+    return language?.id ?? null
   }
 }
