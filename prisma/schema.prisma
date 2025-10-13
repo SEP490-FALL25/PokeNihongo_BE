@@ -658,10 +658,10 @@ model GrammarUsage {
 
 model DailyRequest {
   id             Int                @id @default(autoincrement())
-  name           String             @db.VarChar(200)
-  description    String             @db.VarChar(500)
+  nameKey        String             @db.VarChar(200)
+  descriptionKey String             @db.VarChar(500)
   conditionType  DailyConditionType // Loại điều kiện (LOGIN, COMPLETE_LESSON, STREAK_LOGIN, ...)
-  conditionValue Int? // Giá trị cần đạt (VD: 1, 7, ...)
+  conditionValue Int // Giá trị cần đạt (VD: 1, 7, ...)
   rewardId       Int? // Liên kết tới Reward
   reward         Reward?            @relation(fields: [rewardId], references: [id], onDelete: SetNull)
   isActive       Boolean            @default(true)

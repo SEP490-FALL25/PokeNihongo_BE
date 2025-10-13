@@ -38,6 +38,7 @@ import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserModule } from './modules/user/user.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
+import { DailyRequestModule } from './modules/daily-request/daily-request.module';
 
 @Module({
   imports: [
@@ -75,7 +76,8 @@ import { SharedModule } from './shared/shared.module'
     QuestionModule,
     AnswerModule,
     UserModule,
-    AchievementGroupModule
+    AchievementGroupModule,
+    DailyRequestModule
   ],
 
   controllers: [],

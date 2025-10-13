@@ -1,5 +1,5 @@
 import { I18nService } from '@/i18n/i18n.service'
-import { AchievementGroupMessage } from '@/i18n/message-keys'
+import { DailyRequestMessage } from '@/i18n/message-keys'
 import {
   LanguageNotExistToTranslateException,
   NotFoundRecordException
@@ -7,44 +7,43 @@ import {
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
-
 import { LanguagesRepository } from '../languages/languages.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
-import { AchievementGroupRepo } from './achievement-group.repo'
-import { AchievementGroupAlreadyExistsException } from './dto/achievement-group.error'
+import { DailyRequestRepo } from './daily-request.repo'
+import { DailyRequestAlreadyExistsException } from './dto/daily-request.error'
 import {
-  CreateAchievementGroupBodyInputType,
-  CreateAchievementGroupBodyType,
-  UpdateAchievementGroupBodyInputType,
-  UpdateAchievementGroupBodyType
-} from './entities/achievement-group.entity'
+  CreateDailyRequestBodyInputType,
+  CreateDailyRequestBodyType,
+  UpdateDailyRequestBodyInputType,
+  UpdateDailyRequestBodyType
+} from './entities/daily-request.entity'
 
 @Injectable()
-export class AchievementGroupService {
+export class DailyRequestService {
   constructor(
-    private achievementGroupRepo: AchievementGroupRepo,
+    private dailyRequestRepo: DailyRequestRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
     private readonly translationRepo: TranslationRepository
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
-    const data = await this.achievementGroupRepo.list(pagination)
+    const data = await this.dailyRequestRepo.list(pagination)
     return {
       data,
-      message: this.i18nService.translate(AchievementGroupMessage.GET_LIST_SUCCESS, lang)
+      message: this.i18nService.translate(DailyRequestMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
   async findById(id: number, lang: string = 'vi') {
-    const achievementGroup = await this.achievementGroupRepo.findById(id)
-    if (!achievementGroup) {
+    const dailyRequest = await this.dailyRequestRepo.findById(id)
+    if (!dailyRequest) {
       throw new NotFoundRecordException()
     }
     return {
-      data: achievementGroup,
-      message: this.i18nService.translate(AchievementGroupMessage.GET_SUCCESS, lang)
+      data: dailyRequest,
+      message: this.i18nService.translate(DailyRequestMessage.GET_SUCCESS, lang)
     }
   }
 
@@ -53,27 +52,34 @@ export class AchievementGroupService {
       data,
       createdById
     }: {
-      data: CreateAchievementGroupBodyInputType
+      data: CreateDailyRequestBodyInputType
       createdById: number
     },
     lang: string = 'vi'
   ) {
     try {
-      // tạo trước để lấy id rồi update lại nameKey và descriptionKey
-      const initData: CreateAchievementGroupBodyType = {
-        nameKey: `achievement_group.name.${Date.now()}`,
-        descriptionKey: `achievement_group.description.${Date.now()}`,
-        displayOrder: data.displayOrder
+      const nameKey = `daily_request.name.${Date.now()}`
+      const descKey = `daily_request.description.${Date.now()}`
+
+      //convert data cho create
+      const dataCreate: CreateDailyRequestBodyType = {
+        conditionType: data.conditionType,
+        conditionValue: data.conditionValue,
+        nameKey,
+        descriptionKey: descKey,
+        rewardId: data.rewardId,
+        isActive: data.isActive
       }
 
-      const achievementGroupResult = await this.achievementGroupRepo.create({
+      const createdDailyRequest = await this.dailyRequestRepo.create({
         createdById,
-        data: initData
+        data: dataCreate
       })
 
-      //final key để add cho translation và update lại bảng achievementGroup
-      const nameKey = `achievement_group.name.${achievementGroupResult.id}`
-      const descriptionKey = `achievement_group.description.${achievementGroupResult.id}`
+      // co id, tao nameKey chuan
+
+      const fNameKey = `daily_request.name.${createdDailyRequest.id}`
+      const fDescKey = `daily_request.description.${createdDailyRequest.id}`
 
       const nameList = data.nameTranslations.map((t) => t.key)
       const desList = data.descriptionTranslations?.map((t) => t.key) ?? []
@@ -100,7 +106,7 @@ export class AchievementGroupService {
       for (const item of data.nameTranslations) {
         translationRecords.push({
           languageId: langMap[item.key],
-          key: nameKey,
+          key: fNameKey,
           value: item.value
         })
       }
@@ -109,32 +115,30 @@ export class AchievementGroupService {
       for (const item of data.descriptionTranslations ?? []) {
         translationRecords.push({
           languageId: langMap[item.key],
-          key: descriptionKey,
+          key: fDescKey,
           value: item.value
         })
       }
 
-      // check bảng dịch có bị trùng key + languageId không
-
       // Thêm bản dịch và update lại achievementGroup
       const [, result] = await Promise.all([
         this.translationRepo.createMany(translationRecords),
-        await this.achievementGroupRepo.update({
-          id: achievementGroupResult.id,
+        await this.dailyRequestRepo.update({
+          id: createdDailyRequest.id,
           data: {
-            nameKey,
-            descriptionKey
+            nameKey: fNameKey,
+            descriptionKey: fDescKey
           }
         })
       ])
 
       return {
-        data: result,
-        message: this.i18nService.translate(AchievementGroupMessage.CREATE_SUCCESS, lang)
+        data: createdDailyRequest,
+        message: this.i18nService.translate(DailyRequestMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
-        throw new AchievementGroupAlreadyExistsException()
+        throw new DailyRequestAlreadyExistsException()
       }
       throw error
     }
@@ -147,31 +151,32 @@ export class AchievementGroupService {
       updatedById
     }: {
       id: number
-      data: UpdateAchievementGroupBodyInputType
+      data: UpdateDailyRequestBodyInputType
       updatedById: number
     },
     lang: string = 'vi'
   ) {
     try {
-      const initData: UpdateAchievementGroupBodyType = {
-        displayOrder: data.displayOrder
+      //convert data cho update
+      const dataUpdate: UpdateDailyRequestBodyType = {
+        ...data
       }
 
-      const achievementGroup = await this.achievementGroupRepo.update({
+      const dailyRequest = await this.dailyRequestRepo.update({
         id,
         updatedById,
-        data
+        data: dataUpdate
       })
       return {
-        data: achievementGroup,
-        message: this.i18nService.translate(AchievementGroupMessage.UPDATE_SUCCESS, lang)
+        data: dailyRequest,
+        message: this.i18nService.translate(DailyRequestMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
         throw new NotFoundRecordException()
       }
       if (isUniqueConstraintPrismaError(error)) {
-        throw new AchievementGroupAlreadyExistsException()
+        throw new DailyRequestAlreadyExistsException()
       }
       throw error
     }
@@ -182,13 +187,13 @@ export class AchievementGroupService {
     lang: string = 'vi'
   ) {
     try {
-      await this.achievementGroupRepo.delete({
+      await this.dailyRequestRepo.delete({
         id,
         deletedById
       })
       return {
         data: null,
-        message: this.i18nService.translate(AchievementGroupMessage.DELETE_SUCCESS, lang)
+        message: this.i18nService.translate(DailyRequestMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {

@@ -227,5 +227,14 @@ export const jaMessages = {
     ALREADY_EXISTS: '実績グループは既に存在します',
     INVALID_DATA: '無効な実績グループデータです',
     NAME_REQUIRED: '実績グループ名は必須です'
+  },
+  daily_request: {
+    CREATE_SUCCESS: 'デイリーリクエストの作成が完了しました',
+    UPDATE_SUCCESS: 'デイリーリクエストの更新が完了しました',
+    DELETE_SUCCESS: 'デイリーリクエストの削除が完了しました',
+    GET_SUCCESS: 'デイリーリクエスト情報を取得しました',
+    GET_LIST_SUCCESS: 'デイリーリクエストリストを取得しました',
+    NOT_FOUND: 'デイリーリクエストが見つかりません',
+    ALREADY_EXISTS: 'デイリーリクエストは既に存在します'
   }
 }

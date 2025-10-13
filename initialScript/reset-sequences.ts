@@ -15,7 +15,7 @@ $$
     BEGIN
         -- Lấy tất cả sequences và table tương ứng
         FOR seq_record IN
-            SELECT 
+            SELECT
                 s.sequence_name,
                 REPLACE(s.sequence_name::text, '_id_seq', '') as table_name
             FROM information_schema.sequences s
@@ -27,7 +27,7 @@ $$
                 seq_record.sequence_name,
                 seq_record.table_name
             );
-            
+
             RAISE NOTICE 'Reset sequence % for table %', seq_record.sequence_name, seq_record.table_name;
         END LOOP;
     END

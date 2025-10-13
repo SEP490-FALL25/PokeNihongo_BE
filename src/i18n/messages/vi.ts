@@ -235,5 +235,14 @@ export const viMessages = {
     ALREADY_EXISTS: 'Nhóm thành tích đã tồn tại',
     INVALID_DATA: 'Dữ liệu nhóm thành tích không hợp lệ',
     NAME_REQUIRED: 'Tên nhóm thành tích không được để trống'
+  },
+  daily_request: {
+    CREATE_SUCCESS: 'Tạo nhiệm vụ hàng ngày thành công',
+    UPDATE_SUCCESS: 'Cập nhật nhiệm vụ hàng ngày thành công',
+    DELETE_SUCCESS: 'Xóa nhiệm vụ hàng ngày thành công',
+    GET_SUCCESS: 'Lấy thông tin nhiệm vụ hàng ngày thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách nhiệm vụ hàng ngày thành công',
+    NOT_FOUND: 'Không tìm thấy nhiệm vụ hàng ngày',
+    ALREADY_EXISTS: 'Nhiệm vụ hàng ngày đã tồn tại'
   }
 }

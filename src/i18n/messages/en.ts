@@ -237,5 +237,14 @@ export const enMessages = {
     ALREADY_EXISTS: 'Achievement group already exists',
     INVALID_DATA: 'Invalid achievement group data',
     NAME_REQUIRED: 'Achievement group name is required'
+  },
+  daily_request: {
+    CREATE_SUCCESS: 'Daily request created successfully',
+    UPDATE_SUCCESS: 'Daily request updated successfully',
+    DELETE_SUCCESS: 'Daily request deleted successfully',
+    GET_SUCCESS: 'Daily request retrieved successfully',
+    GET_LIST_SUCCESS: 'Daily request list retrieved successfully',
+    NOT_FOUND: 'Daily request not found',
+    ALREADY_EXISTS: 'Daily request already exists'
   }
 }

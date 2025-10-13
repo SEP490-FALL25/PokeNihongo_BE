@@ -246,3 +246,13 @@ export const AchievementGroupMessage = {
   INVALID_DATA: 'achievement_group.INVALID_DATA',
   NAME_REQUIRED: 'achievement_group.NAME_REQUIRED'
 } as const
+
+export const DailyRequestMessage = {
+  CREATE_SUCCESS: 'daily_request.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'daily_request.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'daily_request.DELETE_SUCCESS',
+  GET_SUCCESS: 'daily_request.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'daily_request.GET_LIST_SUCCESS',
+  NOT_FOUND: 'daily_request.NOT_FOUND',
+  ALREADY_EXISTS: 'daily_request.ALREADY_EXISTS'
+}
