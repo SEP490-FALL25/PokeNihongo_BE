@@ -53,11 +53,11 @@ export class UpdateExercisesSwaggerDTO {
 }
 
 export class GetExercisesListQuerySwaggerDTO {
-    @ApiProperty({ example: 1, description: 'Số trang', required: false })
-    page?: number
+    @ApiProperty({ example: 1, description: 'Số trang hiện tại', required: false })
+    currentPage?: number
 
     @ApiProperty({ example: 10, description: 'Số lượng bài tập mỗi trang', required: false })
-    limit?: number
+    pageSize?: number
 
     @ApiProperty({
         example: 'multiple_choice',

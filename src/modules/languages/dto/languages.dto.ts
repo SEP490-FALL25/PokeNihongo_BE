@@ -65,12 +65,12 @@ export class LanguagesSwaggerResponseDTO {
 export class GetLanguagesListQuerySwaggerDTO {
     @ApiProperty({
         example: 1,
-        description: 'Số trang',
+        description: 'Số trang hiện tại',
         required: false,
         default: 1,
         minimum: 1
     })
-    page?: number
+    currentPage?: number
 
     @ApiProperty({
         example: 10,
@@ -80,7 +80,7 @@ export class GetLanguagesListQuerySwaggerDTO {
         minimum: 1,
         maximum: 100
     })
-    limit?: number
+    pageSize?: number
 
     @ApiProperty({
         example: 'vi',

@@ -65,11 +65,11 @@ export class KanjiSwaggerResponseDTO {
 }
 
 export class GetKanjiListQuerySwaggerDTO {
-    @ApiProperty({ example: 1, description: 'Số trang', required: false })
-    page?: number
+    @ApiProperty({ example: 1, description: 'Số trang hiện tại', required: false })
+    currentPage?: number
 
     @ApiProperty({ example: 10, description: 'Số lượng Kanji mỗi trang', required: false })
-    limit?: number
+    pageSize?: number
 
     @ApiProperty({ example: '日', description: 'Từ khóa tìm kiếm', required: false })
     search?: string

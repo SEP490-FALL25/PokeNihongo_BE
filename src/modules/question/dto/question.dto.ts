@@ -25,11 +25,11 @@ export class UpdateQuestionSwaggerDTO {
 }
 
 export class GetQuestionListQuerySwaggerDTO {
-    @ApiProperty({ example: 1, description: 'Số trang', required: false })
-    page?: number
+    @ApiProperty({ example: 1, description: 'Số trang hiện tại', required: false })
+    currentPage?: number
 
     @ApiProperty({ example: 10, description: 'Số lượng câu hỏi mỗi trang', required: false })
-    limit?: number
+    pageSize?: number
 
     @ApiProperty({ example: 1, description: 'Lọc theo ID bài tập', required: false })
     exercisesId?: number

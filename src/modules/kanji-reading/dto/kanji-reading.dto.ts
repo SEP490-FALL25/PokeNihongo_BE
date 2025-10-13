@@ -102,11 +102,11 @@ export {
 } from './zod/kanji-reading-zod.dto'
 // Query parameter DTOs
 export class GetKanjiReadingListQuerySwaggerDTO {
-    @ApiProperty({ example: 1, description: 'Số trang', required: false })
-    page?: number
+    @ApiProperty({ example: 1, description: 'Số trang hiện tại', required: false })
+    currentPage?: number
 
     @ApiProperty({ example: 10, description: 'Số item mỗi trang', required: false })
-    limit?: number
+    pageSize?: number
 
     @ApiProperty({ example: 'にち', description: 'Tìm kiếm theo cách đọc', required: false })
     search?: string
