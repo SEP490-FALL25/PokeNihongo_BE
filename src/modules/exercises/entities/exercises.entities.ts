@@ -8,9 +8,7 @@ patchNestJsSwagger()
 // Exercises Entity Types
 export const ExercisesType = z.object({
     id: z.number(),
-    titleJp: z.string(),
     exerciseType: z.string(),
-    titleKey: z.string(),
     content: z.string().nullable(),
     audioUrl: z.string().nullable(),
     isBlocked: z.boolean(),
@@ -22,7 +20,6 @@ export const ExercisesType = z.object({
 
 // Request/Response Types
 export const CreateExercisesBodyType = z.object({
-    titleJp: z.string().min(1, 'Tiêu đề bài tập không được để trống').max(500, 'Tiêu đề bài tập không được vượt quá 500 ký tự'),
     exerciseType: z.string().min(1, 'Loại bài tập không được để trống').max(100, 'Loại bài tập không được vượt quá 100 ký tự'),
     content: z.string().max(5000, 'Nội dung không được vượt quá 5000 ký tự').optional(),
     audioUrl: z.string().url('URL âm thanh không hợp lệ').max(1000, 'URL âm thanh không được vượt quá 1000 ký tự').optional(),
@@ -32,7 +29,6 @@ export const CreateExercisesBodyType = z.object({
 })
 
 export const UpdateExercisesBodyType = z.object({
-    titleJp: z.string().min(1, 'Tiêu đề bài tập không được để trống').max(500, 'Tiêu đề bài tập không được vượt quá 500 ký tự').optional(),
     exerciseType: z.string().min(1, 'Loại bài tập không được để trống').max(100, 'Loại bài tập không được vượt quá 100 ký tự').optional(),
     content: z.string().max(5000, 'Nội dung không được vượt quá 5000 ký tự').optional(),
     audioUrl: z.string().url('URL âm thanh không hợp lệ').max(1000, 'URL âm thanh không được vượt quá 1000 ký tự').optional(),

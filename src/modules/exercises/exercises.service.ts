@@ -87,7 +87,7 @@ export class ExercisesService {
     //#region Create Exercises With Meanings
     async createExercisesWithMeanings(data: CreateExercisesWithMeaningsBodyType, audioFile?: Express.Multer.File) {
         try {
-            this.logger.log(`Creating exercises with meanings: ${data.titleJp}`)
+            this.logger.log(`Creating exercises with meanings: ${data.exerciseType}`)
 
             // Parse meanings nếu là string (từ multipart/form-data)
             if (typeof data.meanings === 'string') {
@@ -128,7 +128,7 @@ export class ExercisesService {
             this.logger.log(`Audio file exists: ${!!audioFile}`)
 
             if (audioFile) {
-                this.logger.log(`Uploading audio file for exercises: ${data.titleJp}`)
+                this.logger.log(`Uploading audio file for exercises: ${data.exerciseType}`)
                 const uploadResult = await this.uploadService.uploadFile(audioFile, 'exercises')
                 audioUrl = uploadResult.url
                 this.logger.log(`Audio file uploaded successfully: ${audioUrl}`)
@@ -136,37 +136,20 @@ export class ExercisesService {
 
             this.logger.log(`Final audioUrl for database: ${audioUrl}`)
 
-            // Tạo exercises trước (tạm thời không có titleKey)
+            // Tạo exercises
             const exercisesData = {
-                titleJp: data.titleJp,
                 exerciseType: data.exerciseType,
                 content: data.content,
                 audioUrl: audioUrl,
                 isBlocked: isBlocked, // Use parsed isBlocked
                 price: price, // Use parsed price
                 lessonId: lessonId, // Use parsed lessonId
-                titleKey: '' // Tạm thời để trống
             }
 
             this.logger.log(`Exercises data to create: ${JSON.stringify(exercisesData)}`)
 
             const exercises = await this.exercisesRepository.create(exercisesData)
             this.logger.log(`Exercises created successfully: ${exercises.id}`)
-
-            // Tự động generate titleKey bằng ID
-            const titleKey = `exercise.${exercises.id}.${exercises.exerciseType}.title`
-            this.logger.log(`Auto-generated titleKey: ${titleKey}`)
-
-            // Cập nhật exercises với titleKey đã generate
-            this.logger.log(`Updating exercises with titleKey: ${titleKey}`)
-            const updatedExercises = await this.exercisesRepository.update(exercises.id, {
-                titleKey,
-                audioUrl: audioUrl // Giữ lại field audioUrl
-            })
-            this.logger.log(`Updated exercises result: ${JSON.stringify(updatedExercises)}`)
-
-            // Tự động tạo translation cho titleKey chính
-            await this.createTranslationForTitleKey(titleKey)
 
             // Xử lý meanings - chỉ lấy meaning đầu tiên và cập nhật vào meaningKey chính
             const meanings: any[] = []
@@ -254,7 +237,7 @@ export class ExercisesService {
                 this.logger.log(`Converted meanings object to array: ${JSON.stringify(data.meanings)}`)
             }
 
-            // Kiểm tra identifier là ID (số) hay titleJp (chữ)
+            // Kiểm tra identifier là ID (số) hay không
             let existingExercises
             const isNumeric = /^\d+$/.test(identifier)
 
@@ -262,8 +245,7 @@ export class ExercisesService {
                 // Nếu là số, tìm bằng ID
                 existingExercises = await this.exercisesRepository.findById(parseInt(identifier))
             } else {
-                // Nếu là chữ, tìm bằng titleJp
-                existingExercises = await this.exercisesRepository.findByTitleJp(identifier)
+                throw new InvalidExercisesDataException('Chỉ có thể cập nhật exercises bằng ID')
             }
 
             if (!existingExercises) {
@@ -288,7 +270,7 @@ export class ExercisesService {
 
             if (audioFile) {
                 // Upload file âm thanh mới nếu có
-                this.logger.log(`Uploading audio file for exercises: ${existingExercises.titleJp}`)
+                this.logger.log(`Uploading audio file for exercises: ${existingExercises.id}`)
                 const uploadResult = await this.uploadService.uploadFile(audioFile, 'exercises')
                 audioUrl = uploadResult.url
                 this.logger.log(`Audio file uploaded successfully: ${audioUrl}`)
@@ -299,7 +281,6 @@ export class ExercisesService {
 
             // Cập nhật exercises
             const exercisesData = {
-                titleJp: data.titleJp,
                 exerciseType: data.exerciseType,
                 content: data.content,
                 audioUrl: audioUrl,
@@ -313,10 +294,6 @@ export class ExercisesService {
             const exercises = await this.exercisesRepository.updatePartial(existingExercises.id, exercisesData)
             this.logger.log(`Exercises updated successfully: ${exercises.id}`)
 
-            // Tự động tạo translation cho titleKey hiện có (nếu chưa có)
-            if (existingExercises.titleKey) {
-                await this.createTranslationForTitleKey(existingExercises.titleKey)
-            }
 
             // Cập nhật/tạo meanings
             const meanings: any[] = []
@@ -516,65 +493,6 @@ export class ExercisesService {
     //#endregion
 
     //#region Translation Helper Methods
-    // Tự động tạo translation cho titleKey
-    private async createTranslationForTitleKey(titleKey: string) {
-        try {
-            // Kiểm tra titleKey có tồn tại không
-            if (!titleKey || titleKey.trim() === '') {
-                this.logger.warn(`TitleKey is empty or undefined: ${titleKey}`)
-                return
-            }
-
-            this.logger.log(`Creating translations for titleKey: ${titleKey}`)
-
-            // Chỉ tạo translations cho 2 ngôn ngữ: Việt (vi), Anh (en)
-            const targetLanguages = ['vi', 'en']
-
-            for (const langCode of targetLanguages) {
-                try {
-                    // Tìm ngôn ngữ theo code
-                    const languages = await this.languagesService.findMany({
-                        page: 1,
-                        limit: 100,
-                        code: langCode
-                    })
-
-                    if (!languages.data?.results || languages.data.results.length === 0) {
-                        this.logger.warn(`Language ${langCode} not found, skipping`)
-                        continue
-                    }
-
-                    const language = languages.data.results[0]
-
-                    // Kiểm tra translation đã tồn tại chưa
-                    const existingTranslation = await this.translationService.findByKeyAndLanguage(
-                        titleKey,
-                        language.id
-                    )
-
-                    if (existingTranslation) {
-                        this.logger.log(`Translation already exists for key: ${titleKey}, language: ${language.code}`)
-                        continue
-                    }
-
-                    // Tạo translation mặc định
-                    await this.translationService.create({
-                        key: titleKey,
-                        languageId: language.id,
-                        value: titleKey // Tạm thời dùng key làm value, có thể cập nhật sau
-                    })
-
-                    this.logger.log(`Translation created for key: ${titleKey}, language: ${language.code}`)
-                } catch (error) {
-                    this.logger.warn(`Failed to create translation for key: ${titleKey}, language: ${langCode}`, error)
-                    // Tiếp tục với ngôn ngữ khác nếu có lỗi
-                }
-            }
-        } catch (error) {
-            this.logger.error('Error creating translations for titleKey:', error)
-            // Không throw error để không ảnh hưởng đến việc tạo exercises
-        }
-    }
 
     // Tạo translations cho các ngôn ngữ cụ thể
     private async createTranslationsForLanguages(meaningKey: string, translations: Record<string, string>) {

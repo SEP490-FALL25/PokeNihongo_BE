@@ -43,21 +43,6 @@ import {
 export class LessonController {
     constructor(private readonly lessonService: LessonService) { }
 
-    // Lesson CRUD
-    @Post()
-    @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Tạo bài học mới' })
-    @ApiResponse({ status: 201, description: 'Tạo bài học thành công', type: LessonResponseSwaggerDTO })
-    @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
-    @ApiResponse({ status: 409, description: 'Bài học đã tồn tại' })
-    @ZodSerializerDto(LessonResponseDTO)
-    @ApiBody({ type: CreateLessonSwaggerDTO })
-    async createLesson(
-        @Body() body: CreateLessonBodyDTO,
-        @ActiveUser('userId') userId: number
-    ) {
-        return await this.lessonService.createLesson(body, userId)
-    }
 
     @Get()
     @ApiOperation({ summary: 'Lấy danh sách bài học với phân trang và tìm kiếm' })
@@ -84,6 +69,22 @@ export class LessonController {
     @ZodSerializerDto(LessonResponseDTO)
     async getLessonBySlug(@Param('slug') slug: string) {
         return await this.lessonService.getLessonBySlug(slug)
+    }
+
+    // Lesson CRUD
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    @ApiOperation({ summary: 'Tạo bài học mới' })
+    @ApiResponse({ status: 201, description: 'Tạo bài học thành công', type: LessonResponseSwaggerDTO })
+    @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
+    @ApiResponse({ status: 409, description: 'Bài học đã tồn tại' })
+    @ZodSerializerDto(LessonResponseDTO)
+    @ApiBody({ type: CreateLessonSwaggerDTO })
+    async createLesson(
+        @Body() body: CreateLessonBodyDTO,
+        @ActiveUser('userId') userId: number
+    ) {
+        return await this.lessonService.createLesson(body, userId)
     }
 
     @Put(':id')
