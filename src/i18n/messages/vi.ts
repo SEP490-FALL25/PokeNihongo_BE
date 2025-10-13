@@ -257,6 +257,7 @@ export const viMessages = {
     GET_SUCCESS: 'Lấy thông tin yêu cầu hàng ngày cho người dùng thành công',
     GET_LIST_SUCCESS: 'Lấy danh sách yêu cầu hàng ngày cho người dùng thành công',
     NOT_FOUND: 'Không tìm thấy yêu cầu hàng ngày cho người dùng',
-    ALREADY_EXISTS: 'Yêu cầu hàng ngày cho người dùng đã tồn tại'
+    ALREADY_EXISTS: 'Yêu cầu hàng ngày cho người dùng đã tồn tại',
+    USER_ALREADY_ATTENDED_TODAY: 'Người dùng đã điểm danh hôm nay'
   }
 }

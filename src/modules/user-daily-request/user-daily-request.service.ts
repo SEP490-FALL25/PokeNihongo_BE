@@ -1,6 +1,7 @@
 import { DailyConditionType } from '@/common/constants/daily-request.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserDailyRequestMessage } from '@/i18n/message-keys'
+import { UserService } from '@/modules/user/user.service'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -10,10 +11,14 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
+import { RewardTarget } from '@prisma/client'
 import { DailyRequestRepo } from '../daily-request/daily-request.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { TranslationRepository } from '../translation/translation.repo'
-import { UserDailyRequestAlreadyExistsException } from './dto/user-daily-request.error'
+import {
+  UserAlreadyAttendedTodayException,
+  UserDailyRequestAlreadyExistsException
+} from './dto/user-daily-request.error'
 import {
   CreateUserDailyRequestBodyType,
   UpdateUserDailyRequestBodyType,
@@ -28,7 +33,8 @@ export class UserDailyRequestService {
     private readonly i18nService: I18nService,
     private readonly dailyReqRepo: DailyRequestRepo,
     private readonly langRepo: LanguagesRepository,
-    private readonly translationRepo: TranslationRepository
+    private readonly translationRepo: TranslationRepository,
+    private readonly userService: UserService
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -71,8 +77,7 @@ export class UserDailyRequestService {
         progress = await this.checkStreakComplete(data.userId, data.dailyRequestId)
       }
 
-      const date = new Date()
-      date.setUTCHours(0, 0, 0, 0)
+      const date = todayUTCFromVN()
 
       const result = await this.userDailyRequestRepo.create({
         createdById,
@@ -168,18 +173,19 @@ export class UserDailyRequestService {
   }
 
   async checkStreakComplete(userId: number, dailyRequestId: number) {
-    const date = new Date()
-    date.setHours(0, 0, 0, 0)
-    date.setDate(date.getDate() - 1) // Hom truoc
+    const yesterday = todayUTCFromVN()
+    yesterday.setDate(yesterday.getDate() - 1) // Hôm trước
+
     const userDailyRequest = await this.userDailyRequestRepo.findByUserIdDateDailyId(
       userId,
-      date,
+      yesterday,
       dailyRequestId
     )
-    if (userDailyRequest) {
+    if (userDailyRequest && userDailyRequest.isCompleted) {
       return userDailyRequest.progress + 1
     }
-    return 0
+    // Nếu không có record hôm trước hoặc chưa hoàn thành, streak bắt đầu từ 1
+    return 1
   }
 
   /**
@@ -189,9 +195,9 @@ export class UserDailyRequestService {
    */
   async getUserDailyRequestsToday(userId: number, lang: string = 'vi') {
     try {
-      const now = new Date()
       const today = todayUTCFromVN()
-      console.log(today.toISOString())
+      const bDate = todayUTCFromVN()
+      bDate.setDate(bDate.getDate() - 1)
 
       // Lấy languageId từ code
       const languageId = await this.langRepo.getIdByCode(lang)
@@ -303,9 +309,7 @@ export class UserDailyRequestService {
 
   async presentUserToday(userId: number, lang: string = 'vi') {
     try {
-      const today = new Date()
-      today.setUTCHours(0, 0, 0, 0)
-      console.log(today)
+      const today = todayUTCFromVN()
 
       // Lấy languageId từ code
       const languageId = await this.langRepo.getIdByCode(lang)
@@ -313,11 +317,40 @@ export class UserDailyRequestService {
         throw new NotFoundRecordException()
       }
 
+      // Lấy các daily request LOGIN để kiểm tra điểm danh
+      const loginDailyRequests = await this.dailyReqRepo.findByWhere({
+        conditionTypes: [DailyConditionType.LOGIN]
+      })
+
+      // Kiểm tra xem user đã điểm danh hôm nay chưa
+      let hasAttended = false
+      for (const dailyRequest of loginDailyRequests) {
+        const existingUserDailyRequest =
+          await this.userDailyRequestRepo.findByUserIdDateDailyId(
+            userId,
+            today,
+            dailyRequest.id
+          )
+
+        if (existingUserDailyRequest && existingUserDailyRequest.isCompleted) {
+          hasAttended = true
+          break
+        }
+      }
+
+      // Nếu đã điểm danh hôm nay, throw error
+      if (hasAttended) {
+        throw new UserAlreadyAttendedTodayException()
+      }
+
+      // Lấy tất cả daily requests login và streak login
       const dailyRequests = await this.dailyReqRepo.findByWhere({
         conditionTypes: [DailyConditionType.STREAK_LOGIN, DailyConditionType.LOGIN]
       })
 
-      // Kiểm tra user đã có user daily request nào hôm nay chưa và tạo nếu thiếu
+      const rewardsToGive: Array<{ rewardTarget: RewardTarget; rewardItem: number }> = []
+
+      // Xử lý điểm danh cho từng daily request
       for (const dailyRequest of dailyRequests) {
         const existingUserDailyRequest =
           await this.userDailyRequestRepo.findByUserIdDateDailyId(
@@ -328,12 +361,16 @@ export class UserDailyRequestService {
 
         if (!existingUserDailyRequest) {
           // Tạo user daily request mới
-          let progress = 0
+          let progress = 1 // Điểm danh = 1 progress
 
-          // Check nếu là streak type thì tính progress
+          // Check nếu là streak type thì tính progress từ streak
           if (dailyRequest.conditionType === DailyConditionType.STREAK_LOGIN) {
             progress = await this.checkStreakComplete(userId, dailyRequest.id)
           }
+
+          // Check xem đã hoàn thành daily request chưa
+          const isCompleted = progress >= dailyRequest.conditionValue
+          const completedAt = isCompleted ? new Date() : null
 
           await this.userDailyRequestRepo.create({
             createdById: userId,
@@ -341,21 +378,69 @@ export class UserDailyRequestService {
               userId,
               dailyRequestId: dailyRequest.id,
               date: today,
-              progress
+              progress,
+              isCompleted,
+              completedAt
             }
           })
-        } else {
-          // Update existing user daily request
-          if (dailyRequest.conditionType === DailyConditionType.STREAK_LOGIN) {
-            await this.updateStreakProgress(existingUserDailyRequest.id, userId)
-          } else {
-            await this.updateNormalProgress(existingUserDailyRequest.id, userId)
+
+          // Nếu hoàn thành và có reward, thu thập reward để trao
+          if (isCompleted && (dailyRequest as any).reward) {
+            rewardsToGive.push({
+              rewardTarget: (dailyRequest as any).reward.rewardTarget,
+              rewardItem: (dailyRequest as any).reward.rewardItem
+            })
           }
+        } else {
+          // Update existing user daily request (chỉ nếu chưa hoàn thành)
+          if (!existingUserDailyRequest.isCompleted) {
+            let newProgress = existingUserDailyRequest.progress
+
+            if (dailyRequest.conditionType === DailyConditionType.STREAK_LOGIN) {
+              newProgress = await this.checkStreakComplete(userId, dailyRequest.id)
+            } else {
+              newProgress = existingUserDailyRequest.progress + 1
+            }
+
+            // Check xem đã hoàn thành chưa
+            const isCompleted = newProgress >= dailyRequest.conditionValue
+            const completedAt = isCompleted ? new Date() : null
+
+            await this.userDailyRequestRepo.update({
+              id: existingUserDailyRequest.id,
+              updatedById: userId,
+              data: {
+                progress: newProgress,
+                isCompleted,
+                completedAt
+              }
+            })
+
+            // Nếu vừa hoàn thành và có reward, thu thập reward để trao
+            if (isCompleted && (dailyRequest as any).reward) {
+              rewardsToGive.push({
+                rewardTarget: (dailyRequest as any).reward.rewardTarget,
+                rewardItem: (dailyRequest as any).reward.rewardItem
+              })
+            }
+          }
+        }
+      }
+
+      // Trao rewards cho user
+      for (const reward of rewardsToGive) {
+        if (reward.rewardTarget === RewardTarget.EXP) {
+          // Cộng EXP cho user
+          await this.userService.userAddExp(userId, reward.rewardItem, lang)
+        } else if (reward.rewardTarget === RewardTarget.POINT) {
+          // Cộng freeCoins cho user
+          await this.userService.addFreeCoins(userId, reward.rewardItem, lang)
         }
       }
 
       return {
         statusCode: HttpStatus.OK,
+        data: { rewardsReceived: rewardsToGive },
         message: this.i18nService.translate(UserDailyRequestMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {

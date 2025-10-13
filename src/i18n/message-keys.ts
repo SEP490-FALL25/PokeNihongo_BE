@@ -270,5 +270,6 @@ export const UserDailyRequestMessage = {
   GET_SUCCESS: 'user_daily_request.GET_SUCCESS',
   GET_LIST_SUCCESS: 'user_daily_request.GET_LIST_SUCCESS',
   NOT_FOUND: 'user_daily_request.NOT_FOUND',
-  ALREADY_EXISTS: 'user_daily_request.ALREADY_EXISTS'
+  ALREADY_EXISTS: 'user_daily_request.ALREADY_EXISTS',
+  USER_ALREADY_ATTENDED_TODAY: 'user_daily_request.USER_ALREADY_ATTENDED_TODAY'
 } as const

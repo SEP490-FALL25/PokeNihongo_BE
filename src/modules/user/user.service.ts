@@ -392,4 +392,32 @@ export class UserService {
       finalExp: currentExp
     }
   }
+
+  /**
+   * Add free coins to user
+   * @param userId - User ID to add coins to
+   * @param amount - Amount of coins to add
+   * @param lang - Language for response messages
+   */
+  async addFreeCoins(userId: number, amount: number, lang: string = 'vi') {
+    try {
+      const user = await this.userRepo.findById(userId)
+      if (!user) {
+        throw new UserNotFoundException()
+      }
+
+      const updatedUser = await this.userRepo.incrementFreeCoins(userId, amount)
+
+      return {
+        statusCode: HttpStatus.OK,
+        data: updatedUser,
+        message: this.i18nService.translate(UserMessage.UPDATE_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new UserNotFoundException()
+      }
+      throw error
+    }
+  }
 }

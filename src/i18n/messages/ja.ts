@@ -249,6 +249,7 @@ export const jaMessages = {
     GET_SUCCESS: 'ユーザーデイリーリクエスト情報を取得しました',
     GET_LIST_SUCCESS: 'ユーザーデイリーリクエストリストを取得しました',
     NOT_FOUND: 'ユーザーデイリーリクエストが見つかりません',
-    ALREADY_EXISTS: 'ユーザーデイリーリクエストは既に存在します'
+    ALREADY_EXISTS: 'ユーザーデイリーリクエストは既に存在します',
+    USER_ALREADY_ATTENDED_TODAY: 'ユーザーは本日既に出席しています'
   }
 }

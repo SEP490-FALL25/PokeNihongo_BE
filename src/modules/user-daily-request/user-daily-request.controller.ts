@@ -43,7 +43,7 @@ export class UserDailyRequestController {
   }
 
   @Post('attendence')
-  @ZodSerializerDto(GetListUserDailyRequestTodayDetailResDTO)
+  // @ZodSerializerDto(GetListUserDailyRequestTodayDetailResDTO)
   presentUserToday(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
     return this.userDailyReqService.presentUserToday(userId, lang)
   }
