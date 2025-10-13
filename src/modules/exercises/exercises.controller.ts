@@ -98,7 +98,7 @@ export class ExercisesController {
     @UseInterceptors(FileInterceptor('audioFile'))
     @ApiOperation({
         summary: 'Cập nhật bài tập cùng với nghĩa và translations',
-        description: 'Cập nhật thông tin bài tập cùng với các nghĩa và translations trong nhiều ngôn ngữ trong một lần gọi API. Có thể sử dụng ID (số) hoặc titleJp (tiêu đề tiếng Nhật) để cập nhật. Có thể upload file âm thanh cùng lúc.'
+        description: 'Cập nhật thông tin bài tập cùng với các nghĩa và translations trong nhiều ngôn ngữ trong một lần gọi API. Chỉ có thể sử dụng ID (số) để cập nhật. Có thể upload file âm thanh cùng lúc.'
     })
     @ApiConsumes('multipart/form-data')
     @ApiBody({

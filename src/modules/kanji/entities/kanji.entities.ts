@@ -8,14 +8,46 @@ patchNestJsSwagger()
 
 // Custom validation functions for Kanji
 const isKanjiCharacter = (text: string): boolean => {
-    // Check if it's a single Kanji character
+    // Check if it's a single character
     if (text.length !== 1) {
         return false
     }
 
-    // Kanji Unicode ranges
-    const kanjiRegex = /[\u4E00-\u9FAF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF\uF900-\uFAFF\u2F800-\u2FA1F]/
-    return kanjiRegex.test(text)
+    const char = text
+
+    // First, reject ASCII characters (a-z, A-Z, 0-9) and common symbols
+    if (/[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(char)) {
+        return false
+    }
+
+    // Then check if it's a valid Kanji character using comprehensive Unicode ranges
+    // CJK Unified Ideographs (main Kanji block)
+    const cjkUnifiedIdeographs = /[\u4E00-\u9FAF]/
+
+    // CJK Extension A (rare Kanji)
+    const cjkExtensionA = /[\u3400-\u4DBF]/
+
+    // CJK Extension B, C, D, E (very rare Kanji)
+    const cjkExtensionB = /[\u20000-\u2A6DF]/
+    const cjkExtensionC = /[\u2A700-\u2B73F]/
+    const cjkExtensionD = /[\u2B740-\u2B81F]/
+    const cjkExtensionE = /[\u2B820-\u2CEAF]/
+
+    // CJK Compatibility Ideographs
+    const cjkCompatibility = /[\uF900-\uFAFF]/
+
+    // CJK Compatibility Supplement
+    const cjkCompatibilitySupplement = /[\u2F800-\u2FA1F]/
+
+    // Check if character matches any Kanji range
+    return cjkUnifiedIdeographs.test(char) ||
+        cjkExtensionA.test(char) ||
+        cjkExtensionB.test(char) ||
+        cjkExtensionC.test(char) ||
+        cjkExtensionD.test(char) ||
+        cjkExtensionE.test(char) ||
+        cjkCompatibility.test(char) ||
+        cjkCompatibilitySupplement.test(char)
 }
 
 const isOnyomiKunyomi = (text: string): boolean => {
@@ -25,7 +57,7 @@ const isOnyomiKunyomi = (text: string): boolean => {
 }
 
 // Custom error messages
-const KANJI_CHARACTER_ERROR = 'Phải là một ký tự Kanji duy nhất'
+const KANJI_CHARACTER_ERROR = 'Phải là một ký tự Kanji (Hán tự) duy nhất. Không chấp nhận ký tự Latin, số hoặc ký hiệu đặc biệt'
 const ONYOMI_KUNYOMI_ERROR = 'Phải là cách đọc Onyomi/Kunyomi (chỉ chứa Hiragana, Katakana và dấu câu cơ bản)'
 
 // Kanji Reading Schema

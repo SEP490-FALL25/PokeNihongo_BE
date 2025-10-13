@@ -4,9 +4,7 @@ import { z } from 'zod'
 // Response DTOs
 export const ExercisesResponseSchema = z.object({
     id: z.number(),
-    titleJp: z.string(),
     exerciseType: z.string(),
-    titleKey: z.string(),
     content: z.string().nullable(),
     audioUrl: z.string().nullable(),
     isBlocked: z.boolean(),

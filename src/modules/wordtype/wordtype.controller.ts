@@ -18,6 +18,7 @@ import {
     ApiParam,
     ApiQuery
 } from '@nestjs/swagger'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { WordTypeService } from './wordtype.service'
 import {
     CreateWordTypeBodyDTO,
@@ -60,8 +61,8 @@ export class WordTypeController {
         status: 401,
         description: 'Không có quyền truy cập'
     })
-    findMany(@Query() query: GetWordTypeListQueryDTO) {
-        return this.wordTypeService.findMany(query)
+    findMany(@Query() query: GetWordTypeListQueryDTO, @I18nLang() lang: string) {
+        return this.wordTypeService.findMany(query, lang)
     }
 
     @Get('stats')
@@ -77,8 +78,8 @@ export class WordTypeController {
         status: 401,
         description: 'Không có quyền truy cập'
     })
-    getStats() {
-        return this.wordTypeService.getStats()
+    getStats(@I18nLang() lang: string) {
+        return this.wordTypeService.getStats(lang)
     }
 
     @Get('name-key/:nameKey')
@@ -101,8 +102,8 @@ export class WordTypeController {
         description: 'Không có quyền truy cập'
     })
     @ZodSerializerDto(WordTypeResponseDTO)
-    findByNameKey(@Param('nameKey') nameKey: string) {
-        return this.wordTypeService.findByNameKey(nameKey)
+    findByNameKey(@Param('nameKey') nameKey: string, @I18nLang() lang: string) {
+        return this.wordTypeService.findByNameKey(nameKey, lang)
     }
 
 
@@ -129,8 +130,8 @@ export class WordTypeController {
         status: 401,
         description: 'Không có quyền truy cập'
     })
-    findById(@Param() params: GetWordTypeByIdParamsDTO) {
-        return this.wordTypeService.findById(params.id)
+    findById(@Param() params: GetWordTypeByIdParamsDTO, @I18nLang() lang: string) {
+        return this.wordTypeService.findById(params.id, lang)
     }
 
     @Post()
@@ -159,8 +160,8 @@ export class WordTypeController {
         status: 401,
         description: 'Không có quyền truy cập'
     })
-    create(@Body() body: CreateWordTypeBodyDTO) {
-        return this.wordTypeService.create(body)
+    create(@Body() body: CreateWordTypeBodyDTO, @I18nLang() lang: string) {
+        return this.wordTypeService.create(body, lang)
     }
 
     @Put(':id')
@@ -200,9 +201,10 @@ export class WordTypeController {
     })
     update(
         @Param() params: GetWordTypeByIdParamsDTO,
-        @Body() body: UpdateWordTypeBodyDTO
+        @Body() body: UpdateWordTypeBodyDTO,
+        @I18nLang() lang: string
     ) {
-        return this.wordTypeService.update(params.id, body)
+        return this.wordTypeService.update(params.id, body, lang)
     }
 
     @Delete(':id')
@@ -227,8 +229,8 @@ export class WordTypeController {
         status: 401,
         description: 'Không có quyền truy cập'
     })
-    delete(@Param() params: GetWordTypeByIdParamsDTO) {
-        return this.wordTypeService.delete(params.id)
+    delete(@Param() params: GetWordTypeByIdParamsDTO, @I18nLang() lang: string) {
+        return this.wordTypeService.delete(params.id, lang)
     }
 
     @Post('seed-defaults')
@@ -244,7 +246,7 @@ export class WordTypeController {
         status: 401,
         description: 'Không có quyền truy cập'
     })
-    createDefaultWordTypes() {
-        return this.wordTypeService.createDefaultWordTypes()
+    createDefaultWordTypes(@I18nLang() lang: string) {
+        return this.wordTypeService.createDefaultWordTypes(lang)
     }
 }

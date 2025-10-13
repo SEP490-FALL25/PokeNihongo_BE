@@ -31,12 +31,6 @@ export class ExercisesRepository {
         if (search) {
             where.OR = [
                 {
-                    titleJp: {
-                        contains: search,
-                        mode: 'insensitive'
-                    }
-                },
-                {
                     content: {
                         contains: search,
                         mode: 'insensitive'
@@ -52,7 +46,6 @@ export class ExercisesRepository {
                     lesson: {
                         select: {
                             id: true,
-                            titleJp: true,
                             titleKey: true,
                             slug: true
                         }
@@ -88,7 +81,6 @@ export class ExercisesRepository {
                 lesson: {
                     select: {
                         id: true,
-                        titleJp: true,
                         titleKey: true,
                         slug: true
                     }
@@ -105,29 +97,6 @@ export class ExercisesRepository {
         })
     }
 
-    async findByTitleJp(titleJp: string) {
-        return this.prismaService.exercises.findFirst({
-            where: { titleJp },
-            include: {
-                lesson: {
-                    select: {
-                        id: true,
-                        titleJp: true,
-                        titleKey: true,
-                        slug: true
-                    }
-                },
-                questions: {
-                    include: {
-                        answers: true
-                    },
-                    orderBy: {
-                        questionOrder: 'asc'
-                    }
-                }
-            }
-        })
-    }
 
     async create(data: any) {
         return this.prismaService.exercises.create({
@@ -136,7 +105,6 @@ export class ExercisesRepository {
                 lesson: {
                     select: {
                         id: true,
-                        titleJp: true,
                         titleKey: true,
                         slug: true
                     }
@@ -153,7 +121,6 @@ export class ExercisesRepository {
                 lesson: {
                     select: {
                         id: true,
-                        titleJp: true,
                         titleKey: true,
                         slug: true
                     }
@@ -183,7 +150,6 @@ export class ExercisesRepository {
                 lesson: {
                     select: {
                         id: true,
-                        titleJp: true,
                         titleKey: true,
                         slug: true
                     }
@@ -221,13 +187,4 @@ export class ExercisesRepository {
         return count > 0
     }
 
-    async checkTitleKeyExists(titleKey: string, excludeId?: number) {
-        const where: any = { titleKey }
-        if (excludeId) {
-            where.id = { not: excludeId }
-        }
-
-        const count = await this.prismaService.exercises.count({ where })
-        return count > 0
-    }
 }
