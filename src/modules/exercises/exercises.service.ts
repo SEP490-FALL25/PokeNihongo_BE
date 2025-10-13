@@ -14,7 +14,6 @@ import {
 import { CreateExercisesWithMeaningsBodyType } from './dto/exercises-with-meanings.dto'
 import { UpdateExercisesWithMeaningsBodyType } from './dto/update-exercises-with-meanings.dto'
 import { ExercisesRepository } from './exercises.repo'
-import { TranslationService } from '@/modules/translation/translation.service'
 import { LanguagesService } from '@/modules/languages/languages.service'
 import { UploadService } from '@/3rdService/upload/upload.service'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
@@ -25,7 +24,6 @@ export class ExercisesService {
 
     constructor(
         private readonly exercisesRepository: ExercisesRepository,
-        private readonly translationService: TranslationService,
         private readonly languagesService: LanguagesService,
         private readonly uploadService: UploadService
     ) { }
@@ -151,45 +149,13 @@ export class ExercisesService {
             const exercises = await this.exercisesRepository.create(exercisesData)
             this.logger.log(`Exercises created successfully: ${exercises.id}`)
 
-            // Xử lý meanings - chỉ lấy meaning đầu tiên và cập nhật vào meaningKey chính
-            const meanings: any[] = []
-            this.logger.log(`Processing meanings for exercises ${exercises.id}`)
-
-            if (data.meanings && data.meanings.length > 0) {
-                // Chỉ lấy meaning đầu tiên
-                const meaningData = data.meanings[0]
-                this.logger.log(`Processing main meaning:`, meaningData)
-
-                try {
-                    // Tự động generate meaningKey
-                    const meaningKey = `exercise.${exercises.id}.meaning`
-                    this.logger.log(`Auto-generated meaningKey: ${meaningKey}`)
-
-                    // Cập nhật translations cho meaningKey chính
-                    if (meaningData.translations) {
-                        this.logger.log(`Creating specific translations for main meaningKey: ${meaningKey}`)
-                        await this.createTranslationsForLanguages(meaningKey, meaningData.translations)
-                    }
-
-                    // Lưu thông tin meaning chính
-                    meanings.push({
-                        meaningKey: meaningKey,
-                        translations: meaningData.translations
-                    })
-                    this.logger.log(`Added main meaning to meanings array`)
-                } catch (error) {
-                    this.logger.warn(`Failed to create main meaning for exercises ${exercises.id}`)
-                }
-            }
-
-            this.logger.log(`Exercises with meanings created successfully: ${exercises.id}`)
+            this.logger.log(`Exercises created successfully: ${exercises.id}`)
 
             return {
                 data: {
-                    exercises,
-                    meanings
+                    exercises
                 },
-                message: 'Tạo bài tập cùng với nghĩa thành công'
+                message: 'Tạo bài tập thành công'
             }
         } catch (error) {
             this.logger.error('Error creating exercises with meanings:', error)
@@ -295,47 +261,13 @@ export class ExercisesService {
             this.logger.log(`Exercises updated successfully: ${exercises.id}`)
 
 
-            // Cập nhật/tạo meanings
-            const meanings: any[] = []
-            if (data.meanings && data.meanings.length > 0) {
-                for (const meaningData of data.meanings) {
-                    try {
-                        let meaningKey = meaningData.meaningKey
-
-                        // Nếu không có meaningKey, tự động generate từ exercises ID
-                        if (!meaningKey) {
-                            meaningKey = `exercise.${existingExercises.id}.meaning`
-                            this.logger.log(`Auto-generated meaningKey: ${meaningKey}`)
-                        }
-
-                        // Kiểm tra translation đã tồn tại chưa để quyết định tạo mới hay update
-                        if (meaningData.translations) {
-                            await this.createOrUpdateTranslationsForLanguages(meaningKey, meaningData.translations)
-                        } else {
-                            // Nếu không có translations, chỉ tạo translation mặc định
-                            await this.createTranslationForMeaningKey(meaningKey)
-                        }
-
-                        // Lưu thông tin meaning
-                        meanings.push({
-                            id: meaningData.id,
-                            meaningKey: meaningKey,
-                            translations: meaningData.translations
-                        })
-                    } catch (error) {
-                        this.logger.warn(`Failed to update/create meaning for exercises ${existingExercises.id}`, error)
-                    }
-                }
-            }
-
-            this.logger.log(`Exercises with meanings updated successfully: ${exercises.id}`)
+            this.logger.log(`Exercises updated successfully: ${exercises.id}`)
 
             return {
                 data: {
-                    exercises,
-                    meanings
+                    exercises
                 },
-                message: 'Cập nhật bài tập cùng với nghĩa thành công'
+                message: 'Cập nhật bài tập thành công'
             }
         } catch (error) {
             this.logger.error('Error updating exercises with meanings:', error)
@@ -346,117 +278,6 @@ export class ExercisesService {
         }
     }
 
-    // Tạo hoặc cập nhật translations cho các ngôn ngữ
-    private async createOrUpdateTranslationsForLanguages(meaningKey: string, translations: Record<string, string>) {
-        try {
-            this.logger.log(`Creating/updating translations for meaningKey: ${meaningKey}`)
-
-            for (const [langCode, value] of Object.entries(translations)) {
-                try {
-                    // Tìm ngôn ngữ theo code
-                    const languages = await this.languagesService.findMany({
-                        currentPage: 1,
-                        pageSize: 100,
-                        code: langCode
-                    })
-
-                    if (!languages.data?.results || languages.data.results.length === 0) {
-                        this.logger.warn(`Language ${langCode} not found, skipping`)
-                        continue
-                    }
-
-                    const language = languages.data.results[0]
-
-                    // Kiểm tra translation đã tồn tại chưa
-                    const existingTranslation = await this.translationService.findByKeyAndLanguage(
-                        meaningKey,
-                        language.id
-                    )
-
-                    if (existingTranslation) {
-                        // Update translation đã tồn tại
-                        await this.translationService.update(existingTranslation.id, {
-                            value: value
-                        })
-                        this.logger.log(`Updated translation for key: ${meaningKey}, language: ${language.code}, value: ${value}`)
-                    } else {
-                        // Tạo translation mới
-                        await this.translationService.create({
-                            key: meaningKey,
-                            languageId: language.id,
-                            value: value
-                        })
-                        this.logger.log(`Created new translation for key: ${meaningKey}, language: ${language.code}, value: ${value}`)
-                    }
-                } catch (error) {
-                    this.logger.warn(`Failed to create/update translation for key: ${meaningKey}, language: ${langCode}`, error)
-                }
-            }
-        } catch (error) {
-            this.logger.error(`Error creating/updating translations for meaningKey: ${meaningKey}`, error)
-            throw error
-        }
-    }
-
-    // Tự động tạo translation cho meaningKey
-    private async createTranslationForMeaningKey(meaningKey: string) {
-        try {
-            // Kiểm tra meaningKey có tồn tại không
-            if (!meaningKey || meaningKey.trim() === '') {
-                this.logger.warn(`MeaningKey is empty or undefined: ${meaningKey}`)
-                return
-            }
-
-            this.logger.log(`Creating translations for meaningKey: ${meaningKey}`)
-
-            // Chỉ tạo translations cho 2 ngôn ngữ: Việt (vi), Anh (en)
-            const targetLanguages = ['vi', 'en']
-
-            for (const langCode of targetLanguages) {
-                try {
-                    // Tìm ngôn ngữ theo code
-                    const languages = await this.languagesService.findMany({
-                        currentPage: 1,
-                        pageSize: 100,
-                        code: langCode
-                    })
-
-                    if (!languages.data?.results || languages.data.results.length === 0) {
-                        this.logger.warn(`Language ${langCode} not found, skipping`)
-                        continue
-                    }
-
-                    const language = languages.data.results[0]
-
-                    // Kiểm tra translation đã tồn tại chưa
-                    const existingTranslation = await this.translationService.findByKeyAndLanguage(
-                        meaningKey,
-                        language.id
-                    )
-
-                    if (existingTranslation) {
-                        this.logger.log(`Translation already exists for key: ${meaningKey}, language: ${language.code}`)
-                        continue
-                    }
-
-                    // Tạo translation mặc định
-                    await this.translationService.create({
-                        key: meaningKey,
-                        languageId: language.id,
-                        value: meaningKey // Tạm thời dùng key làm value, có thể cập nhật sau
-                    })
-
-                    this.logger.log(`Translation created for key: ${meaningKey}, language: ${language.code}`)
-                } catch (error) {
-                    this.logger.warn(`Failed to create translation for key: ${meaningKey}, language: ${langCode}`, error)
-                    // Tiếp tục với ngôn ngữ khác nếu có lỗi
-                }
-            }
-        } catch (error) {
-            this.logger.error('Error creating translations for meaningKey:', error)
-            // Không throw error để không ảnh hưởng đến việc cập nhật exercises
-        }
-    }
     //#endregion
 
     //#region Delete Exercises
@@ -492,71 +313,4 @@ export class ExercisesService {
     }
     //#endregion
 
-    //#region Translation Helper Methods
-
-    // Tạo translations cho các ngôn ngữ cụ thể
-    private async createTranslationsForLanguages(meaningKey: string, translations: Record<string, string>) {
-        try {
-            this.logger.log(`Creating specific translations for meaningKey: ${meaningKey}`)
-
-            // Lấy danh sách các ngôn ngữ để map code -> id
-            const languages = await this.languagesService.findMany({ currentPage: 1, pageSize: 100 })
-
-            if (!languages.data || !languages.data.results || languages.data.results.length === 0) {
-                this.logger.warn('No languages found, skipping specific translation creation')
-                return
-            }
-
-            // Tạo map code -> id
-            const languageMap = new Map<string, number>()
-            for (const language of languages.data.results) {
-                languageMap.set(language.code, language.id)
-            }
-
-            // Chỉ xử lý các ngôn ngữ được hỗ trợ: vi, en
-            const supportedLanguages = ['vi', 'en']
-
-            for (const languageCode of supportedLanguages) {
-                const translationValue = translations[languageCode]
-                if (!translationValue) {
-                    continue // Bỏ qua nếu không có translation cho ngôn ngữ này
-                }
-
-                const languageId = languageMap.get(languageCode)
-                if (!languageId) {
-                    this.logger.warn(`Language code ${languageCode} not found, skipping`)
-                    continue
-                }
-
-                try {
-                    // Kiểm tra translation đã tồn tại chưa
-                    const existingTranslation = await this.translationService.findByKeyAndLanguage(
-                        meaningKey,
-                        languageId
-                    )
-
-                    if (existingTranslation) {
-                        // Cập nhật translation hiện có
-                        await this.translationService.update(existingTranslation.id, {
-                            value: translationValue
-                        })
-                        this.logger.log(`Updated translation for key: ${meaningKey}, language: ${languageCode}`)
-                    } else {
-                        // Tạo translation mới
-                        await this.translationService.create({
-                            key: meaningKey,
-                            languageId: languageId,
-                            value: translationValue
-                        })
-                        this.logger.log(`Created translation for key: ${meaningKey}, language: ${languageCode}`)
-                    }
-                } catch (error) {
-                    this.logger.warn(`Failed to create/update translation for key: ${meaningKey}, language: ${languageCode}`, error)
-                }
-            }
-        } catch (error) {
-            this.logger.error('Error creating specific translations:', error)
-        }
-    }
-    //#endregion
 }

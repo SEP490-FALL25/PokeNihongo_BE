@@ -7,8 +7,6 @@ export enum SortOrder {
 // Vocabulary specific sort fields
 export enum VocabularySortField {
     ID = 'id',
-    WORD_JP = 'wordJp',
-    READING = 'reading',
     LEVEL_N = 'levelN',
     CREATED_AT = 'createdAt',
     UPDATED_AT = 'updatedAt'

@@ -106,22 +106,6 @@ export class GetVocabularyListQuerySwaggerDTO {
     search?: string
 
     @ApiProperty({
-        example: 'こんにちは',
-        description: 'Tìm kiếm theo từ tiếng Nhật cụ thể',
-        required: false,
-        maxLength: 500
-    })
-    wordJp?: string
-
-    @ApiProperty({
-        example: 'konnichiwa',
-        description: 'Tìm kiếm theo cách đọc cụ thể',
-        required: false,
-        maxLength: 500
-    })
-    reading?: string
-
-    @ApiProperty({
         example: 5,
         description: 'Lọc theo cấp độ JLPT (1-5, trong đó 5 là N5, 4 là N4, ..., 1 là N1)',
         required: false,
@@ -133,7 +117,7 @@ export class GetVocabularyListQuerySwaggerDTO {
     @ApiProperty({
         enum: VocabularySortField,
         example: VocabularySortField.CREATED_AT,
-        description: 'Field để sắp xếp theo createdAt, updatedAt, id, wordJp, reading, levelN',
+        description: 'Field để sắp xếp theo createdAt, updatedAt, id, levelN',
         required: false,
     })
     sortBy?: VocabularySortField

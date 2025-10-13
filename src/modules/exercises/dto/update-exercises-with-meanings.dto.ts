@@ -15,11 +15,7 @@ const isValidExerciseType = (exerciseType: string): boolean => {
 // Meaning schema for updating exercises with meanings
 const MeaningSchema = z.object({
     id: z.number().optional().describe('ID của meaning (nếu đã tồn tại)'),
-    meaningKey: z.string().optional().describe('Key nghĩa (nếu đã tồn tại)'),
-    translations: z
-        .record(z.enum(['vi', 'en']), z.string())
-        .optional()
-        .describe('Translations cho nghĩa này theo ngôn ngữ. Chỉ hỗ trợ: vi (Việt), en (Anh). Ví dụ: { "vi": "nghĩa tiếng Việt", "en": "English meaning" }')
+    meaningKey: z.string().optional().describe('Key nghĩa (nếu đã tồn tại)')
 })
 
 // Main schema for updating exercises with meanings
@@ -77,11 +73,6 @@ export const UpdateExercisesWithMeaningsResponseSchema = z.object({
         createdAt: z.date(),
         updatedAt: z.date()
     }),
-    meanings: z.array(z.object({
-        id: z.number().optional(),
-        meaningKey: z.string(),
-        translations: z.record(z.string(), z.string()).optional()
-    }))
 })
 
 // Standard response schema
@@ -109,12 +100,6 @@ export class UpdateMeaningWithTranslationsSwaggerDTO {
     })
     meaningKey?: string
 
-    @ApiProperty({
-        example: { "vi": "Bài tập trắc nghiệm", "en": "Multiple choice exercise" },
-        description: 'Translations cho nghĩa này theo ngôn ngữ. Chỉ hỗ trợ: vi (Việt), en (Anh)',
-        required: false
-    })
-    translations?: Record<string, string>
 }
 
 export class UpdateExercisesWithMeaningsSwaggerDTO {
@@ -170,22 +155,6 @@ export class UpdateExercisesWithMeaningsSwaggerDTO {
     })
     lessonId?: number
 
-    @ApiProperty({
-        type: [UpdateMeaningWithTranslationsSwaggerDTO],
-        description: 'Danh sách nghĩa của bài tập với translations để cập nhật',
-        example: [
-            {
-                "id": 1,
-                "meaningKey": "exercise.1.meaning",
-                "translations": {
-                    "vi": "Bài tập trắc nghiệm",
-                    "en": "Multiple choice exercise"
-                }
-            }
-        ],
-        required: false
-    })
-    meanings?: UpdateMeaningWithTranslationsSwaggerDTO | UpdateMeaningWithTranslationsSwaggerDTO[]
 }
 
 class UpdateExercisesWithMeaningsInfoSwaggerDTO {
@@ -219,38 +188,16 @@ class UpdateExercisesWithMeaningsInfoSwaggerDTO {
     updatedAt: Date
 }
 
-class UpdateExercisesMeaningInfoSwaggerDTO {
-    @ApiProperty({ example: 1, description: 'ID của meaning (nếu có)' })
-    id?: number
-
-    @ApiProperty({ example: 'exercise.1.meaning', description: 'Key nghĩa' })
-    meaningKey: string
-
-    @ApiProperty({
-        example: { "vi": "Bài tập trắc nghiệm", "en": "Multiple choice exercise" },
-        description: 'Translations cho nghĩa này theo ngôn ngữ',
-        required: false
-    })
-    translations?: Record<string, string>
-}
-
 export class UpdateExercisesWithMeaningsResponseSwaggerDTO {
     @ApiProperty({
         type: UpdateExercisesWithMeaningsInfoSwaggerDTO,
         description: 'Thông tin bài tập đã cập nhật'
     })
     exercises: UpdateExercisesWithMeaningsInfoSwaggerDTO
-
-    @ApiProperty({
-        type: [UpdateExercisesMeaningInfoSwaggerDTO],
-        description: 'Danh sách nghĩa đã cập nhật'
-    })
-    meanings: UpdateExercisesMeaningInfoSwaggerDTO[]
 }
 
 // Type exports
 export type UpdateExercisesWithMeaningsBodyType = z.infer<typeof UpdateExercisesWithMeaningsSchema> & {
-    meanings?: any[] | any | string  // Allow array, object, or string for multipart/form-data
     audioFile?: Express.Multer.File  // File upload for multipart/form-data
 }
 export type UpdateExercisesWithMeaningsResponseType = z.infer<typeof UpdateExercisesWithMeaningsResponseSchema>

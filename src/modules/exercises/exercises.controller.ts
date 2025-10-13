@@ -58,8 +58,8 @@ export class ExercisesController {
     @Post('with-meanings')
     @UseInterceptors(FileInterceptor('audioFile'))
     @ApiOperation({
-        summary: 'Tạo bài tập mới cùng với nghĩa và translations',
-        description: 'Tạo một bài tập mới cùng với các nghĩa và translations trong nhiều ngôn ngữ trong một lần gọi API. Có thể upload file âm thanh cùng lúc.'
+        summary: 'Tạo bài tập mới',
+        description: 'Tạo một bài tập mới trong một lần gọi API. Có thể upload file âm thanh cùng lúc.'
     })
     @ApiConsumes('multipart/form-data')
     @ApiBody({ type: CreateExercisesWithMeaningsSwaggerDTO })
@@ -97,13 +97,13 @@ export class ExercisesController {
     @Put(':identifier/with-meanings')
     @UseInterceptors(FileInterceptor('audioFile'))
     @ApiOperation({
-        summary: 'Cập nhật bài tập cùng với nghĩa và translations',
-        description: 'Cập nhật thông tin bài tập cùng với các nghĩa và translations trong nhiều ngôn ngữ trong một lần gọi API. Chỉ có thể sử dụng ID (số) để cập nhật. Có thể upload file âm thanh cùng lúc.'
+        summary: 'Cập nhật bài tập',
+        description: 'Cập nhật thông tin bài tập trong một lần gọi API. Chỉ có thể sử dụng ID (số) để cập nhật. Có thể upload file âm thanh cùng lúc.'
     })
     @ApiConsumes('multipart/form-data')
     @ApiBody({
         type: UpdateExercisesWithMeaningsSwaggerDTO,
-        description: 'Dữ liệu cập nhật bài tập cùng với danh sách nghĩa và translations'
+        description: 'Dữ liệu cập nhật bài tập'
     })
     @ApiResponse({
         status: 200,

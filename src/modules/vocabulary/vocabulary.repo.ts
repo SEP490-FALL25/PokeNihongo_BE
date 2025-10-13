@@ -11,13 +11,11 @@ export class VocabularyRepository {
         currentPage: number
         pageSize: number
         search?: string
-        wordJp?: string
-        reading?: string
         levelN?: number
         sortBy?: VocabularySortField
         sort?: VocabularySortOrder
     }) {
-        const { currentPage, pageSize, search, wordJp, reading, levelN, sortBy = VocabularySortField.CREATED_AT, sort = VocabularySortOrder.DESC } = params
+        const { currentPage, pageSize, search, levelN, sortBy = VocabularySortField.CREATED_AT, sort = VocabularySortOrder.DESC } = params
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -27,14 +25,6 @@ export class VocabularyRepository {
                 { wordJp: { contains: search, mode: 'insensitive' } },
                 { reading: { contains: search, mode: 'insensitive' } }
             ]
-        }
-
-        if (wordJp) {
-            where.wordJp = { contains: wordJp, mode: 'insensitive' }
-        }
-
-        if (reading) {
-            where.reading = { contains: reading, mode: 'insensitive' }
         }
 
         if (levelN) {
