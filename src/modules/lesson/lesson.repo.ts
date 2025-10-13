@@ -13,8 +13,8 @@ export class LessonRepository {
 
     // Lesson CRUD
     async findMany(params: GetLessonListQueryType) {
-        const { page, limit, search, lessonCategoryId, levelJlpt, isPublished, sortBy = LessonSortField.CREATED_AT, sort = SortOrder.DESC } = params
-        const skip = (page - 1) * limit
+        const { currentPage, pageSize, search, lessonCategoryId, levelJlpt, isPublished, sortBy = LessonSortField.CREATED_AT, sort = SortOrder.DESC } = params
+        const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
 
@@ -67,7 +67,7 @@ export class LessonRepository {
                 },
                 orderBy: { [sortBy]: sort },
                 skip,
-                take: limit,
+                take: pageSize,
             }),
             this.prismaService.lesson.count({ where })
         ])
@@ -75,9 +75,9 @@ export class LessonRepository {
         return {
             data,
             total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit),
+            page: currentPage,
+            limit: pageSize,
+            totalPages: Math.ceil(total / pageSize),
         }
     }
 

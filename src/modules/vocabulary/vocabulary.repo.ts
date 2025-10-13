@@ -8,8 +8,8 @@ export class VocabularyRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: {
-        page: number
-        limit: number
+        currentPage: number
+        pageSize: number
         search?: string
         wordJp?: string
         reading?: string
@@ -17,8 +17,8 @@ export class VocabularyRepository {
         sortBy?: VocabularySortField
         sort?: VocabularySortOrder
     }) {
-        const { page, limit, search, wordJp, reading, levelN, sortBy = VocabularySortField.CREATED_AT, sort = VocabularySortOrder.DESC } = params
-        const skip = (page - 1) * limit
+        const { currentPage, pageSize, search, wordJp, reading, levelN, sortBy = VocabularySortField.CREATED_AT, sort = VocabularySortOrder.DESC } = params
+        const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
 
@@ -45,7 +45,7 @@ export class VocabularyRepository {
             this.prismaService.vocabulary.findMany({
                 where,
                 skip,
-                take: limit,
+                take: pageSize,
                 orderBy: { [sortBy]: sort }
             }),
             this.prismaService.vocabulary.count({ where })
@@ -54,8 +54,8 @@ export class VocabularyRepository {
         return {
             items: items.map(item => this.transformVocabulary(item)),
             total,
-            page,
-            limit
+            page: currentPage,
+            limit: pageSize
         }
     }
 

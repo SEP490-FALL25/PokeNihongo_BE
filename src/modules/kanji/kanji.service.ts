@@ -637,8 +637,8 @@ export class KanjiService {
                 try {
                     // Tìm ngôn ngữ theo code
                     const languages = await this.languagesService.findMany({
-                        page: 1,
-                        limit: 100,
+                        currentPage: 1,
+                        pageSize: 100,
                         code: langCode
                     })
 
@@ -698,8 +698,8 @@ export class KanjiService {
                 try {
                     // Tìm ngôn ngữ theo code
                     const languages = await this.languagesService.findMany({
-                        page: 1,
-                        limit: 100,
+                        currentPage: 1,
+                        pageSize: 100,
                         code: langCode
                     })
 
@@ -746,7 +746,7 @@ export class KanjiService {
             this.logger.log(`Creating specific translations for meaningKey: ${meaningKey}`)
 
             // Lấy danh sách các ngôn ngữ để map code -> id
-            const languages = await this.languagesService.findMany({ page: 1, limit: 100 })
+            const languages = await this.languagesService.findMany({ currentPage: 1, pageSize: 100 })
 
             if (!languages.data || !languages.data.results || languages.data.results.length === 0) {
                 this.logger.warn('No languages found, skipping specific translation creation')

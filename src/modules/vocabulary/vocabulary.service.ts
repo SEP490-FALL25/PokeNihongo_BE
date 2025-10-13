@@ -34,11 +34,11 @@ export class VocabularyService {
 
     //#region Find All
     async findAll(query: GetVocabularyListQueryType) {
-        const { page, limit, search, wordJp, reading, levelN, sortBy, sort } = query
+        const { currentPage, pageSize, search, wordJp, reading, levelN, sortBy, sort } = query
 
         const result = await this.vocabularyRepository.findMany({
-            page,
-            limit,
+            currentPage,
+            pageSize,
             search,
             wordJp,
             reading,

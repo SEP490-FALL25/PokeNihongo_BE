@@ -42,8 +42,8 @@ export const GetExercisesByIdParamsType = z.object({
 })
 
 export const GetExercisesListQueryType = z.object({
-    page: z.string().transform(Number).default('1'),
-    limit: z.string().transform(Number).default('10'),
+    currentPage: z.string().transform(Number).default('1'),
+    pageSize: z.string().transform(Number).default('10'),
     exerciseType: z.string().optional(),
     lessonId: z.string().transform(Number).optional(),
     isBlocked: z.string().transform(val => val === 'true').optional(),

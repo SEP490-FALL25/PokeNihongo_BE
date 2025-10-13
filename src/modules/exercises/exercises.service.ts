@@ -186,7 +186,7 @@ export class ExercisesService {
 
             return {
                 data: {
-                    exercises: updatedExercises,
+                    exercises,
                     meanings
                 },
                 message: 'Tạo bài tập cùng với nghĩa thành công'
@@ -355,8 +355,8 @@ export class ExercisesService {
                 try {
                     // Tìm ngôn ngữ theo code
                     const languages = await this.languagesService.findMany({
-                        page: 1,
-                        limit: 100,
+                        currentPage: 1,
+                        pageSize: 100,
                         code: langCode
                     })
 
@@ -416,8 +416,8 @@ export class ExercisesService {
                 try {
                     // Tìm ngôn ngữ theo code
                     const languages = await this.languagesService.findMany({
-                        page: 1,
-                        limit: 100,
+                        currentPage: 1,
+                        pageSize: 100,
                         code: langCode
                     })
 
@@ -500,7 +500,7 @@ export class ExercisesService {
             this.logger.log(`Creating specific translations for meaningKey: ${meaningKey}`)
 
             // Lấy danh sách các ngôn ngữ để map code -> id
-            const languages = await this.languagesService.findMany({ page: 1, limit: 100 })
+            const languages = await this.languagesService.findMany({ currentPage: 1, pageSize: 100 })
 
             if (!languages.data || !languages.data.results || languages.data.results.length === 0) {
                 this.logger.warn('No languages found, skipping specific translation creation')

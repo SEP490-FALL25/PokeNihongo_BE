@@ -105,8 +105,8 @@ export const GetVocabularyByIdParamsSchema = z
 
 export const GetVocabularyListQuerySchema = z
     .object({
-        page: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
-        limit: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
+        currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
+        pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         search: z.string().optional(),
         wordJp: z.string().optional(),
         reading: z.string().optional(),

@@ -35,8 +35,8 @@ export const GetQuestionByIdParamsType = z.object({
 })
 
 export const GetQuestionListQueryType = z.object({
-    page: z.string().transform(Number).default('1'),
-    limit: z.string().transform(Number).default('10'),
+    currentPage: z.string().transform(Number).default('1'),
+    pageSize: z.string().transform(Number).default('10'),
     exercisesId: z.string().transform(Number).optional(),
     search: z.string().optional(),
     sortBy: z.nativeEnum(QuestionSortField).optional().default(QuestionSortField.CREATED_AT),

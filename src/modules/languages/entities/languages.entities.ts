@@ -86,8 +86,8 @@ export const GetLanguagesByIdParamsSchema = z.object({
 })
 
 export const GetLanguagesListQuerySchema = z.object({
-    page: z.string().transform((val) => parseInt(val, 10)).default('1'),
-    limit: z.string().transform((val) => parseInt(val, 10)).default('10'),
+    currentPage: z.string().transform((val) => parseInt(val, 10)).default('1'),
+    pageSize: z.string().transform((val) => parseInt(val, 10)).default('10'),
     search: z.string().optional(),
     code: z.string().optional()
 })

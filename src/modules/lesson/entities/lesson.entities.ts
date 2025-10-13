@@ -99,8 +99,8 @@ export const GetLessonByIdParamsType = z.object({
 })
 
 export const GetLessonListQueryType = z.object({
-    page: z.string().transform(Number).default('1'),
-    limit: z.string().transform(Number).default('10'),
+    currentPage: z.string().transform(Number).default('1'),
+    pageSize: z.string().transform(Number).default('10'),
     search: z.string().optional(),
     lessonCategoryId: z.string().transform(Number).optional(),
     levelJlpt: z.string().transform(Number).optional(),

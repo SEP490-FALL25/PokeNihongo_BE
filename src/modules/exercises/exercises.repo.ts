@@ -11,8 +11,8 @@ export class ExercisesRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetExercisesListQueryType) {
-        const { page, limit, exerciseType, lessonId, isBlocked, search } = params
-        const skip = (page - 1) * limit
+        const { currentPage, pageSize, exerciseType, lessonId, isBlocked, search } = params
+        const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
 
@@ -60,7 +60,7 @@ export class ExercisesRepository {
                     { createdAt: 'desc' }
                 ],
                 skip,
-                take: limit,
+                take: pageSize,
             }),
             this.prismaService.exercises.count({ where })
         ])
@@ -68,9 +68,9 @@ export class ExercisesRepository {
         return {
             data,
             total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit),
+            page: currentPage,
+            limit: pageSize,
+            totalPages: Math.ceil(total / pageSize),
         }
     }
 

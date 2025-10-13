@@ -280,8 +280,8 @@ export class WordTypeService {
                 try {
                     // Tìm ngôn ngữ theo code
                     const languages = await this.languagesService.findMany({
-                        page: 1,
-                        limit: 100,
+                        currentPage: 1,
+                        pageSize: 100,
                         code: langCode
                     })
 

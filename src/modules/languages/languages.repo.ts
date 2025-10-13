@@ -8,16 +8,16 @@ import {
 
 @Injectable()
 export class LanguagesRepository {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
   async findMany(params: {
-    page: number
-    limit: number
+    currentPage: number
+    pageSize: number
     search?: string
     code?: string
   }) {
-    const { page, limit, search, code } = params
-    const skip = (page - 1) * limit
+    const { currentPage, pageSize, search, code } = params
+    const skip = (currentPage - 1) * pageSize
 
     const where: any = {}
 
@@ -36,7 +36,7 @@ export class LanguagesRepository {
       this.prismaService.languages.findMany({
         where,
         skip,
-        take: limit,
+        take: pageSize,
         orderBy: { code: 'asc' }
       }),
       this.prismaService.languages.count({ where })
@@ -45,9 +45,9 @@ export class LanguagesRepository {
     return {
       data: data.map((item) => this.transformLanguages(item)),
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit)
+      page: currentPage,
+      limit: pageSize,
+      totalPages: Math.ceil(total / pageSize)
     }
   }
 
