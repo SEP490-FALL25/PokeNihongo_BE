@@ -75,8 +75,21 @@ export {
     GetWordTypeByIdParamsDTO,
     GetWordTypeListQueryDTO,
     GetWordTypeByNameKeyParamsDTO,
-    WordTypeResponseDTO
+    WordTypeResponseDTO,
+    WordTypeListResDTO
 } from './zod/wordtype-zod.dto'
+
+// Query Swagger DTO
+export class GetWordTypeListQuerySwaggerDTO {
+    @ApiProperty({ example: 1, description: 'Số trang hiện tại', required: false })
+    currentPage?: number
+
+    @ApiProperty({ example: 10, description: 'Số lượng loại từ mỗi trang', required: false })
+    pageSize?: number
+
+    @ApiProperty({ example: 'noun', description: 'Tìm kiếm theo name key', required: false })
+    search?: string
+}
 
 // List Response DTO (not Zod)
 export class WordTypeListResponseDTO {

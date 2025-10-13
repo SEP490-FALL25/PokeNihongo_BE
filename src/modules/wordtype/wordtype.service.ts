@@ -28,7 +28,7 @@ export class WordTypeService {
         private readonly i18nService: I18nService
     ) { }
 
-    async findMany(params: GetWordTypeListQueryType, lang: string = 'vi') {
+    async findAll(params: GetWordTypeListQueryType, lang: string = 'vi') {
         try {
             this.logger.log(`Finding word types with params: ${JSON.stringify(params)}`)
 

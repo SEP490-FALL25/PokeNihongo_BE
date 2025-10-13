@@ -18,6 +18,7 @@ import {
     ApiParam,
     ApiQuery
 } from '@nestjs/swagger'
+import { ZodSerializerDto } from 'nestjs-zod'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { WordTypeService } from './wordtype.service'
 import {
@@ -30,11 +31,13 @@ import {
     CreateWordTypeSwaggerDTO,
     UpdateWordTypeSwaggerDTO,
     WordTypeSwaggerResponseDTO,
-    WordTypeListSwaggerResponseDTO
+    WordTypeListSwaggerResponseDTO,
+    GetWordTypeListQuerySwaggerDTO,
+    WordTypeListResDTO
 } from './dto/wordtype.dto'
-import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { AccessTokenGuard } from '@/common/guards/access-token.guard'
+import { PaginationResponseSchema } from '@/shared/models/response.model'
 
 @ApiTags('WordType')
 @Controller('wordtype')
@@ -44,25 +47,16 @@ export class WordTypeController {
     constructor(private readonly wordTypeService: WordTypeService) { }
 
     @Get()
-    @ApiOperation({
-        summary: 'Lấy danh sách loại từ',
-        description: 'Lấy danh sách tất cả loại từ với phân trang và tìm kiếm'
-    })
+    @ApiOperation({ summary: 'Lấy danh sách loại từ với phân trang và tìm kiếm' })
     @ApiResponse({
         status: 200,
         description: 'Lấy danh sách loại từ thành công',
         type: WordTypeListSwaggerResponseDTO
     })
-    @ApiResponse({
-        status: 400,
-        description: 'Dữ liệu truy vấn không hợp lệ'
-    })
-    @ApiResponse({
-        status: 401,
-        description: 'Không có quyền truy cập'
-    })
-    findMany(@Query() query: GetWordTypeListQueryDTO, @I18nLang() lang: string) {
-        return this.wordTypeService.findMany(query, lang)
+    @ApiQuery({ type: GetWordTypeListQuerySwaggerDTO })
+    @ZodSerializerDto(WordTypeListResDTO)
+    findAll(@Query() query: GetWordTypeListQueryDTO, @I18nLang() lang: string) {
+        return this.wordTypeService.findAll(query, lang)
     }
 
     @Get('stats')
