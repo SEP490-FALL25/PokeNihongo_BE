@@ -15,7 +15,10 @@ export const DailyRequestSchema = z.object({
   conditionType: z.enum([
     DailyConditionType.LOGIN,
     DailyConditionType.COMPLETE_LESSON,
-    DailyConditionType.STREAK_LOGIN
+    DailyConditionType.STREAK_LOGIN,
+    DailyConditionType.EXCERCISE,
+    DailyConditionType.STREAK_COMPLETE_LESSON,
+    DailyConditionType.STREAK_EXERCISE
   ]),
   conditionValue: z.number().min(1),
   rewardId: z.number().nullable().optional(),

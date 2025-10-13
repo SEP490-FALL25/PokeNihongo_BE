@@ -8,6 +8,7 @@ import { DailyRequestService } from './daily-request.service'
 @Module({
   imports: [LanguagesModule, TranslationModule],
   controllers: [DailyRequestController],
-  providers: [DailyRequestService, DailyRequestRepo]
+  providers: [DailyRequestService, DailyRequestRepo],
+  exports: [DailyRequestService, DailyRequestRepo]
 })
 export class DailyRequestModule {}

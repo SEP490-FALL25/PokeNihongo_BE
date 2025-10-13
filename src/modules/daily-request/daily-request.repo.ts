@@ -1,6 +1,7 @@
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
+import { DailyConditionType } from '@/common/constants/daily-request.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
@@ -186,6 +187,22 @@ export class DailyRequestRepo {
             rewardType: true
           }
         }
+      }
+    })
+  }
+
+  checkDailyRequestIsStreak(id: number): Promise<DailyRequestType | null> {
+    return this.prismaService.dailyRequest.findUnique({
+      where: {
+        id,
+        conditionType: {
+          in: [
+            DailyConditionType.STREAK_LOGIN,
+            DailyConditionType.STREAK_COMPLETE_LESSON,
+            DailyConditionType.STREAK_EXERCISE
+          ]
+        },
+        deletedAt: null
       }
     })
   }
