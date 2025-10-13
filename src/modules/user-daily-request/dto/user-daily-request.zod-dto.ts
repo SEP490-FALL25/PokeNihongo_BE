@@ -3,6 +3,7 @@ import {
   CreateUserDailyRequestBodySchema,
   CreateUserDailyRequestResSchema,
   GetListUserDailyRequestTodayDetailResSchema,
+  GetRewardListUserDailyRequestTodayDetailResSchema,
   GetUserDailyRequestDetailResSchema,
   GetUserDailyRequestParamsSchema,
   UpdateUserDailyRequestBodySchema,
@@ -35,4 +36,8 @@ export class GetUserDailyRequestDetailResDTO extends createZodDto(
 
 export class GetListUserDailyRequestTodayDetailResDTO extends createZodDto(
   GetListUserDailyRequestTodayDetailResSchema
+) {}
+
+export class GetRewardListUserDailyRequestTodayDetailResDTO extends createZodDto(
+  GetRewardListUserDailyRequestTodayDetailResSchema
 ) {}
