@@ -18,6 +18,7 @@ model User {
   status       UserStatus @default(INACTIVE)
   premiumCoins Int        @default(0)
   freeCoins    Int        @default(0)
+  exp          Int        @default(0)
   roleId       Int
   role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   levelId      Int?

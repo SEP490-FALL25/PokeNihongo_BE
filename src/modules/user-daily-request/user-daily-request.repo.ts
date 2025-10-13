@@ -7,6 +7,7 @@ import {
   CreateUserDailyRequestBodyType,
   USER_DAILY_REQUEST_FIELDS,
   UpdateUserDailyRequestBodyType,
+  UserDailyRequestDetailType,
   UserDailyRequestType
 } from './entities/user-daily-request.entity'
 
@@ -138,6 +139,50 @@ export class UserDailyRequestRepo {
         date,
         dailyRequestId,
         deletedAt: null
+      }
+    })
+  }
+
+  // Lấy user daily requests theo userId và date
+  async findByUserAndDate(userId: number, date: Date): Promise<UserDailyRequestType[]> {
+    return this.prismaService.userDailyRequest.findMany({
+      where: {
+        userId,
+        date,
+        deletedAt: null
+      },
+      orderBy: {
+        id: 'asc'
+      }
+    })
+  }
+
+  // Lấy user daily requests với chi tiết daily request và user
+  async findByUserAndDateWithDetails(
+    userId: number,
+    date: Date
+  ): Promise<UserDailyRequestDetailType[]> {
+    return this.prismaService.userDailyRequest.findMany({
+      where: {
+        userId,
+        date,
+        deletedAt: null
+      },
+      include: {
+        dailyRequest: {
+          include: {
+            reward: {
+              select: {
+                id: true,
+                name: true,
+                rewardItem: true,
+                rewardTarget: true,
+                rewardType: true
+              }
+            }
+          }
+        },
+        user: true
       }
     })
   }

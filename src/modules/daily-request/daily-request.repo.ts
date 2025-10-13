@@ -12,6 +12,14 @@ import {
   UpdateDailyRequestBodyType
 } from './entities/daily-request.entity'
 
+export type WhereDailyRequestType = {
+  id?: number
+  conditionTypes?:
+    | DailyConditionType
+    | DailyConditionType[]
+    | { in: DailyConditionType[] }
+}
+
 @Injectable()
 export class DailyRequestRepo {
   constructor(private prismaService: PrismaService) {}
@@ -204,6 +212,25 @@ export class DailyRequestRepo {
         },
         deletedAt: null
       }
+    })
+  }
+
+  findByWhere(where: WhereDailyRequestType): Promise<DailyRequestType[]> {
+    const prismaWhere: any = {
+      deletedAt: null
+    }
+
+    if (where.id) prismaWhere.id = where.id
+
+    if (where.conditionTypes) {
+      // Nếu là mảng enum thì wrap lại bằng { in: [...] }
+      prismaWhere.conditionType = Array.isArray(where.conditionTypes)
+        ? { in: where.conditionTypes }
+        : where.conditionTypes
+    }
+
+    return this.prismaService.dailyRequest.findMany({
+      where: prismaWhere
     })
   }
 }

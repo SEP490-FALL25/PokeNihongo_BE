@@ -21,6 +21,7 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreatedUserDailyRequestBodyDTO,
   CreateUserDailyRequestResDTO,
+  GetListUserDailyRequestTodayDetailResDTO,
   GetUserDailyRequestDetailResDTO,
   GetUserDailyRequestParamsDTO,
   UpdateUserDailyRequestBodyDTO,
@@ -41,17 +42,26 @@ export class UserDailyRequestController {
     return this.userDailyReqService.list(query, lang)
   }
 
+  @Post('attendence')
+  @ZodSerializerDto(GetListUserDailyRequestTodayDetailResDTO)
+  presentUserToday(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
+    return this.userDailyReqService.presentUserToday(userId, lang)
+  }
+
+  @Get('user-today')
+  @ZodSerializerDto(GetListUserDailyRequestTodayDetailResDTO)
+  getUserDailyRequestsToday(
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userDailyReqService.getUserDailyRequestsToday(userId, lang)
+  }
+
   @Get(':userDailyRequestId')
   @IsPublic()
   @ZodSerializerDto(GetUserDailyRequestDetailResDTO)
   findById(@Param() params: GetUserDailyRequestParamsDTO, @I18nLang() lang: string) {
     return this.userDailyReqService.findById(params.userDailyRequestId, lang)
-  }
-
-  @Get('/user-today')
-  @ZodSerializerDto(GetUserDailyRequestDetailResDTO)
-  getWithUserToday(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
-    return this.userDailyReqService.getWithUserToday(userId, lang)
   }
 
   @Post()

@@ -1,19 +1,23 @@
+import { DailyConditionType } from '@/common/constants/daily-request.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserDailyRequestMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError,
-  isUniqueConstraintPrismaError
+  isUniqueConstraintPrismaError,
+  todayUTCFromVN
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { DailyRequestRepo } from '../daily-request/daily-request.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
+import { TranslationRepository } from '../translation/translation.repo'
 import { UserDailyRequestAlreadyExistsException } from './dto/user-daily-request.error'
 import {
   CreateUserDailyRequestBodyType,
-  UpdateUserDailyRequestBodyType
+  UpdateUserDailyRequestBodyType,
+  UserDailyRequestDetailType
 } from './entities/user-daily-request.entity'
 import { UserDailyRequestRepo } from './user-daily-request.repo'
 
@@ -23,7 +27,8 @@ export class UserDailyRequestService {
     private userDailyRequestRepo: UserDailyRequestRepo,
     private readonly i18nService: I18nService,
     private readonly dailyReqRepo: DailyRequestRepo,
-    private readonly langRepo: LanguagesRepository
+    private readonly langRepo: LanguagesRepository,
+    private readonly translationRepo: TranslationRepository
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -177,10 +182,267 @@ export class UserDailyRequestService {
     return 0
   }
 
-  async getWithUserToday(userId: number, lang: string = 'vi') {
-    const date = new Date()
-    date.setUTCHours(0, 0, 0, 0)
+  /**
+   * Lấy danh sách daily request của user hôm nay
+   * Nếu chưa có thì tự động tạo mới
+   * Kèm theo nameTranslation và descriptionTranslation
+   */
+  async getUserDailyRequestsToday(userId: number, lang: string = 'vi') {
+    try {
+      const now = new Date()
+      const today = todayUTCFromVN()
+      console.log(today.toISOString())
 
-    const langId = await this.langRepo.getIdByCode(lang)
+      // Lấy languageId từ code
+      const languageId = await this.langRepo.getIdByCode(lang)
+      if (!languageId) {
+        throw new NotFoundRecordException()
+      }
+      // 1. Lấy tất cả daily requests đang active
+      const activeDailyRequests = await this.dailyReqRepo.list(
+        {
+          currentPage: 1,
+          pageSize: 1000,
+          qs: 'isActive=true'
+        },
+        languageId
+      )
+
+      // 2. Lấy user daily requests hiện có của user hôm nay
+      const existingUserDailyRequests = await this.userDailyRequestRepo.findByUserAndDate(
+        userId,
+        today
+      )
+      const existingDailyRequestIds = existingUserDailyRequests.map(
+        (udr) => udr.dailyRequestId
+      )
+
+      // 3. Tìm những daily requests user chưa có hôm nay và tự động tạo
+      const missingDailyRequests = activeDailyRequests.results.filter(
+        (dr) => !existingDailyRequestIds.includes(dr.id)
+      )
+
+      for (const dailyRequest of missingDailyRequests) {
+        try {
+          let progress = 0
+          // Check nếu là streak type thì tính progress
+          const isStreak = await this.dailyReqRepo.checkDailyRequestIsStreak(
+            dailyRequest.id
+          )
+          if (isStreak) {
+            progress = await this.checkStreakComplete(userId, dailyRequest.id)
+          }
+
+          await this.userDailyRequestRepo.create({
+            createdById: userId,
+            data: {
+              userId,
+              dailyRequestId: dailyRequest.id,
+              date: today,
+              progress
+            }
+          })
+        } catch (error) {
+          throw error
+        }
+      }
+
+      // 4. Lấy lại tất cả user daily requests của user hôm nay (bao gồm vừa tạo)
+      const allUserDailyRequests =
+        await this.userDailyRequestRepo.findByUserAndDateWithDetails(userId, today)
+
+      // 5. Lấy tất cả nameKey và descriptionKey để query translations
+      const translationKeys: string[] = []
+      allUserDailyRequests.forEach((udr) => {
+        if (udr.dailyRequest?.nameKey) {
+          translationKeys.push(udr.dailyRequest.nameKey)
+        }
+        if (udr.dailyRequest?.descriptionKey) {
+          translationKeys.push(udr.dailyRequest.descriptionKey)
+        }
+      })
+
+      // 6. Lấy tất cả translations cho các keys này với languageId
+      const translations = await this.translationRepo.findByKeysAndLanguage(
+        translationKeys,
+        languageId
+      )
+
+      // Tạo map để truy cập nhanh
+      const translationMap = new Map<string, string>()
+      translations.forEach((t) => {
+        translationMap.set(t.key, t.value)
+      })
+
+      // 7. Gắn translations vào kết quả
+      const result: UserDailyRequestDetailType[] = allUserDailyRequests.map((udr) => ({
+        ...udr,
+        dailyRequest: udr.dailyRequest
+          ? {
+              ...udr.dailyRequest,
+              nameTranslation: translationMap.get(udr.dailyRequest.nameKey) || '',
+              descriptionTranslation:
+                translationMap.get(udr.dailyRequest.descriptionKey) || null
+            }
+          : undefined
+      }))
+
+      return {
+        statusCode: HttpStatus.OK,
+        data: result,
+        message: this.i18nService.translate(
+          UserDailyRequestMessage.GET_LIST_SUCCESS,
+          lang
+        )
+      }
+    } catch (error) {
+      console.error('Error in getUserDailyRequestsToday:', error)
+      throw error
+    }
+  }
+
+  async presentUserToday(userId: number, lang: string = 'vi') {
+    try {
+      const today = new Date()
+      today.setUTCHours(0, 0, 0, 0)
+      console.log(today)
+
+      // Lấy languageId từ code
+      const languageId = await this.langRepo.getIdByCode(lang)
+      if (!languageId) {
+        throw new NotFoundRecordException()
+      }
+
+      const dailyRequests = await this.dailyReqRepo.findByWhere({
+        conditionTypes: [DailyConditionType.STREAK_LOGIN, DailyConditionType.LOGIN]
+      })
+
+      // Kiểm tra user đã có user daily request nào hôm nay chưa và tạo nếu thiếu
+      for (const dailyRequest of dailyRequests) {
+        const existingUserDailyRequest =
+          await this.userDailyRequestRepo.findByUserIdDateDailyId(
+            userId,
+            today,
+            dailyRequest.id
+          )
+
+        if (!existingUserDailyRequest) {
+          // Tạo user daily request mới
+          let progress = 0
+
+          // Check nếu là streak type thì tính progress
+          if (dailyRequest.conditionType === DailyConditionType.STREAK_LOGIN) {
+            progress = await this.checkStreakComplete(userId, dailyRequest.id)
+          }
+
+          await this.userDailyRequestRepo.create({
+            createdById: userId,
+            data: {
+              userId,
+              dailyRequestId: dailyRequest.id,
+              date: today,
+              progress
+            }
+          })
+        } else {
+          // Update existing user daily request
+          if (dailyRequest.conditionType === DailyConditionType.STREAK_LOGIN) {
+            await this.updateStreakProgress(existingUserDailyRequest.id, userId)
+          } else {
+            await this.updateNormalProgress(existingUserDailyRequest.id, userId)
+          }
+        }
+      }
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: this.i18nService.translate(UserDailyRequestMessage.UPDATE_SUCCESS, lang)
+      }
+    } catch (error) {
+      console.error('Error in presentUserToday:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update progress cho daily request không phải streak
+   */
+  private async updateNormalProgress(userDailyRequestId: number, userId: number) {
+    try {
+      const userDailyRequest =
+        await this.userDailyRequestRepo.findById(userDailyRequestId)
+      if (!userDailyRequest) {
+        throw new NotFoundRecordException()
+      }
+
+      // Lấy thông tin daily request để biết conditionValue
+      const dailyRequest = await this.dailyReqRepo.findById(
+        userDailyRequest.dailyRequestId
+      )
+      if (!dailyRequest) {
+        throw new NotFoundRecordException()
+      }
+
+      // Tăng progress lên 1
+      const newProgress = userDailyRequest.progress + 1
+
+      // Check xem đã hoàn thành chưa
+      const isCompleted = newProgress >= dailyRequest.conditionValue
+      const completedAt = isCompleted ? new Date() : null
+
+      await this.userDailyRequestRepo.update({
+        id: userDailyRequestId,
+        updatedById: userId,
+        data: {
+          progress: newProgress,
+          isCompleted,
+          completedAt
+        }
+      })
+    } catch (error) {
+      console.error('Error updating normal progress:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update progress cho daily request streak
+   */
+  private async updateStreakProgress(userDailyRequestId: number, userId: number) {
+    try {
+      const userDailyRequest =
+        await this.userDailyRequestRepo.findById(userDailyRequestId)
+      if (!userDailyRequest) {
+        throw new NotFoundRecordException()
+      }
+
+      // Lấy thông tin daily request để biết conditionValue
+      const dailyRequest = await this.dailyReqRepo.findById(
+        userDailyRequest.dailyRequestId
+      )
+      if (!dailyRequest) {
+        throw new NotFoundRecordException()
+      }
+
+      // Đối với streak, progress được tính từ streak liên tiếp
+      const streakProgress = await this.checkStreakComplete(userId, dailyRequest.id)
+
+      // Check xem đã hoàn thành chưa
+      const isCompleted = streakProgress >= dailyRequest.conditionValue
+      const completedAt = isCompleted ? new Date() : null
+
+      await this.userDailyRequestRepo.update({
+        id: userDailyRequestId,
+        updatedById: userId,
+        data: {
+          progress: streakProgress,
+          isCompleted,
+          completedAt
+        }
+      })
+    } catch (error) {
+      console.error('Error updating streak progress:', error)
+      throw error
+    }
   }
 }

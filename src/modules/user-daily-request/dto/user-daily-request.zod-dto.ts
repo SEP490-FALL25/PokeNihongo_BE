@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod'
 import {
   CreateUserDailyRequestBodySchema,
   CreateUserDailyRequestResSchema,
+  GetListUserDailyRequestTodayDetailResSchema,
   GetUserDailyRequestDetailResSchema,
   GetUserDailyRequestParamsSchema,
   UpdateUserDailyRequestBodySchema,
@@ -30,4 +31,8 @@ export class GetUserDailyRequestParamsDTO extends createZodDto(
 
 export class GetUserDailyRequestDetailResDTO extends createZodDto(
   GetUserDailyRequestDetailResSchema
+) {}
+
+export class GetListUserDailyRequestTodayDetailResDTO extends createZodDto(
+  GetListUserDailyRequestTodayDetailResSchema
 ) {}
