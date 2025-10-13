@@ -120,18 +120,6 @@ export class VocabularyController {
         return this.vocabularyService.findAll(query)
     }
 
-    @Get('search/:word')
-    @ApiBearerAuth()
-    @ApiOperation({ summary: 'Tìm kiếm từ vựng theo từ khóa' })
-    @ApiResponse({
-        status: 200,
-        description: 'Tìm kiếm từ vựng thành công',
-        type: VocabularyListResponseSwaggerDTO
-    })
-    @ZodSerializerDto(VocabularyListResDTO)
-    searchByWord(@Param('word') word: string) {
-        return this.vocabularyService.searchByWord(word)
-    }
 
     @Get(':id')
     @ApiBearerAuth()
@@ -230,5 +218,27 @@ export class VocabularyController {
         return this.vocabularyService.createFullVocabularyWithFiles(data, audioFile, imageFile, userId)
     }
 
+    //#endregion
+
+    //#region Create Multiple Sample Vocabularies
+    @Post('create-sample-vocabularies')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Tạo nhiều từ vựng mẫu với dữ liệu mặc định',
+        description: 'Tạo một bộ từ vựng tiếng Nhật cơ bản với nghĩa tiếng Việt và tiếng Anh'
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo từ vựng mẫu thành công',
+        type: VocabularyListResponseSwaggerDTO
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Dữ liệu không hợp lệ'
+    })
+    @ZodSerializerDto(VocabularyListResDTO)
+    async createSampleVocabularies(@ActiveUser('userId') userId?: number) {
+        return this.vocabularyService.createSampleVocabularies(userId)
+    }
     //#endregion
 }

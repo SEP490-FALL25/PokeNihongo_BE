@@ -14,6 +14,8 @@ import {
 } from './dto/wordtype.error'
 import { TranslationService } from '@/modules/translation/translation.service'
 import { LanguagesService } from '@/modules/languages/languages.service'
+import { I18nService } from '@/i18n/i18n.service'
+import { WordTypeMessage } from '@/i18n/message-keys'
 
 @Injectable()
 export class WordTypeService {
@@ -22,10 +24,11 @@ export class WordTypeService {
     constructor(
         private readonly wordTypeRepository: WordTypeRepository,
         private readonly translationService: TranslationService,
-        private readonly languagesService: LanguagesService
+        private readonly languagesService: LanguagesService,
+        private readonly i18nService: I18nService
     ) { }
 
-    async findMany(params: GetWordTypeListQueryType) {
+    async findMany(params: GetWordTypeListQueryType, lang: string = 'vi') {
         try {
             this.logger.log(`Finding word types with params: ${JSON.stringify(params)}`)
 
@@ -38,14 +41,18 @@ export class WordTypeService {
                 sortOrder: params.sortOrder
             }
 
-            return await this.wordTypeRepository.findMany(queryParams)
+            const result = await this.wordTypeRepository.findMany(queryParams)
+            return {
+                ...result,
+                message: this.i18nService.translate(WordTypeMessage.GET_LIST_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error finding word types:', error)
             throw error
         }
     }
 
-    async findById(id: number): Promise<WordType> {
+    async findById(id: number, lang: string = 'vi') {
         try {
             this.logger.log(`Finding word type by id: ${id}`)
             const wordType = await this.wordTypeRepository.findById(id)
@@ -54,14 +61,17 @@ export class WordTypeService {
                 throw WordTypeNotFoundException
             }
 
-            return wordType
+            return {
+                data: wordType,
+                message: this.i18nService.translate(WordTypeMessage.GET_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error finding word type by id:', error)
             throw error
         }
     }
 
-    async findByNameKey(nameKey: string): Promise<WordType> {
+    async findByNameKey(nameKey: string, lang: string = 'vi') {
         try {
             this.logger.log(`Finding word type by name key: ${nameKey}`)
             const wordType = await this.wordTypeRepository.findByNameKey(nameKey)
@@ -70,14 +80,17 @@ export class WordTypeService {
                 throw WordTypeNotFoundException
             }
 
-            return wordType
+            return {
+                data: wordType,
+                message: this.i18nService.translate(WordTypeMessage.GET_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error finding word type by name key:', error)
             throw error
         }
     }
 
-    async create(data: CreateWordTypeBodyType): Promise<WordType> {
+    async create(data: CreateWordTypeBodyType, lang: string = 'vi') {
         try {
             this.logger.log(`Creating word type with nameKey: ${data.nameKey}`)
 
@@ -89,7 +102,10 @@ export class WordTypeService {
 
             const wordType = await this.wordTypeRepository.create(data)
             this.logger.log(`Word type created successfully: ${wordType.id}`)
-            return wordType
+            return {
+                data: wordType,
+                message: this.i18nService.translate(WordTypeMessage.CREATE_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error creating word type:', error)
             if (error.message.includes('đã tồn tại')) {
@@ -99,7 +115,7 @@ export class WordTypeService {
         }
     }
 
-    async update(id: number, data: UpdateWordTypeBodyType): Promise<WordType> {
+    async update(id: number, data: UpdateWordTypeBodyType, lang: string = 'vi') {
         try {
             this.logger.log(`Updating word type: ${id}`)
 
@@ -119,7 +135,10 @@ export class WordTypeService {
 
             const wordType = await this.wordTypeRepository.update(id, data)
             this.logger.log(`Word type updated successfully: ${wordType.id}`)
-            return wordType
+            return {
+                data: wordType,
+                message: this.i18nService.translate(WordTypeMessage.UPDATE_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error updating word type:', error)
             if (error.message.includes('không tồn tại') || error.message.includes('đã tồn tại')) {
@@ -129,7 +148,7 @@ export class WordTypeService {
         }
     }
 
-    async delete(id: number): Promise<void> {
+    async delete(id: number, lang: string = 'vi') {
         try {
             this.logger.log(`Deleting word type: ${id}`)
 
@@ -141,6 +160,9 @@ export class WordTypeService {
 
             await this.wordTypeRepository.delete(id)
             this.logger.log(`Word type deleted successfully: ${id}`)
+            return {
+                message: this.i18nService.translate(WordTypeMessage.DELETE_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error deleting word type:', error)
             if (error.message.includes('không tồn tại')) {
@@ -150,10 +172,14 @@ export class WordTypeService {
         }
     }
 
-    async getStats() {
+    async getStats(lang: string = 'vi') {
         try {
             this.logger.log('Getting word type statistics')
-            return await this.wordTypeRepository.getStats()
+            const stats = await this.wordTypeRepository.getStats()
+            return {
+                data: stats,
+                message: this.i18nService.translate(WordTypeMessage.GET_STATS_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error getting word type statistics:', error)
             throw error
@@ -163,7 +189,7 @@ export class WordTypeService {
     /**
      * Tạo loại từ mặc định nếu chưa có
      */
-    async createDefaultWordTypes(): Promise<void> {
+    async createDefaultWordTypes(lang: string = 'vi') {
         try {
             this.logger.log('Creating default word types')
 
@@ -234,6 +260,9 @@ export class WordTypeService {
             }
 
             this.logger.log('Default word types creation completed')
+            return {
+                message: this.i18nService.translate(WordTypeMessage.CREATE_DEFAULT_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error creating default word types:', error)
             throw InvalidWordTypeDataException

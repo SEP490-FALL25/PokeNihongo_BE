@@ -57,6 +57,15 @@ export const enMessages = {
     INVALID_DATA: 'Invalid reward data',
     NAME_REQUIRED: 'Reward name is required'
   },
+  wordtype: {
+    CREATE_SUCCESS: 'Word type created successfully',
+    UPDATE_SUCCESS: 'Word type updated successfully',
+    DELETE_SUCCESS: 'Word type deleted successfully',
+    GET_SUCCESS: 'Word type retrieved successfully',
+    GET_LIST_SUCCESS: 'Word type list retrieved successfully',
+    GET_STATS_SUCCESS: 'Word type statistics retrieved successfully',
+    CREATE_DEFAULT_SUCCESS: 'Default word types created successfully'
+  },
   system: {
     NOT_FOUND: 'Record not found',
     INVALID_NEW_PASSWORD_CONFIRM_PASSWORD:

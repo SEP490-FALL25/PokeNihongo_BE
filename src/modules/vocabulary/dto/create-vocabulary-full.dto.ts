@@ -45,7 +45,7 @@ export const CreateVocabularyFullMultipartSchema = z.object({
 })
 
 // Zod DTOs
-export class CreateVocabularyFullDTO extends createZodDto(CreateVocabularyFullSchema) { }
+
 export class CreateVocabularyFullMultipartDTO extends createZodDto(CreateVocabularyFullMultipartSchema) { }
 
 // Swagger DTOs for documentation

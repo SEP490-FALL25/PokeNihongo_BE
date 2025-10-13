@@ -9,12 +9,6 @@ export class LessonResponseSwaggerDTO {
     id: number
 
     @ApiProperty({
-        example: 'aisatsu-no-kihon',
-        description: 'URL slug của bài học'
-    })
-    slug: string
-
-    @ApiProperty({
         example: 'lesson.1.title',
         description: 'Key để dịch tiêu đề bài học'
     })
@@ -118,11 +112,6 @@ export class LessonListResponseSwaggerDTO {
 
 // Request DTOs
 export class CreateLessonSwaggerDTO {
-    @ApiPropertyOptional({
-        example: 'aisatsu-no-kihon',
-        description: 'URL slug của bài học (tự động tạo nếu không cung cấp)'
-    })
-    slug?: string
 
     @ApiProperty({
         example: '挨拶の基本',

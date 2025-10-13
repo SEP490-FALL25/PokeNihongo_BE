@@ -2,8 +2,6 @@ import { ApiProperty } from '@nestjs/swagger'
 
 // Swagger DTOs - for API documentation only
 export class CreateExercisesSwaggerDTO {
-    @ApiProperty({ example: '文法練習', description: 'Tiêu đề bài tập bằng tiếng Nhật' })
-    titleJp: string
 
     @ApiProperty({
         example: 'multiple_choice',
@@ -29,8 +27,6 @@ export class CreateExercisesSwaggerDTO {
 }
 
 export class UpdateExercisesSwaggerDTO {
-    @ApiProperty({ example: '文法練習', description: 'Tiêu đề bài tập bằng tiếng Nhật', required: false })
-    titleJp?: string
 
     @ApiProperty({
         example: 'multiple_choice',
@@ -85,14 +81,10 @@ export class ExercisesResponseSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID' })
     id: number
 
-    @ApiProperty({ example: '文法練習', description: 'Tiêu đề bài tập bằng tiếng Nhật' })
-    titleJp: string
 
     @ApiProperty({ example: 'multiple_choice', description: 'Loại bài tập' })
     exerciseType: string
 
-    @ApiProperty({ example: 'exercise.grammar.practice.title', description: 'Key để dịch tiêu đề bài tập' })
-    titleKey: string
 
     @ApiProperty({ example: 'この練習では文法を学びます', description: 'Nội dung mô tả bài tập' })
     content: string

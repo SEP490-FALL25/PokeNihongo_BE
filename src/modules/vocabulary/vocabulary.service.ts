@@ -217,21 +217,6 @@ export class VocabularyService {
     }
     //#endregion
 
-    //#region Search By Word
-    async searchByWord(word: string) {
-        const vocabularies = await this.vocabularyRepository.findMany({
-            page: 1,
-            limit: 10,
-            search: word
-        })
-
-        return {
-            data: vocabularies,
-            message: VOCABULARY_MESSAGE.SEARCH_SUCCESS
-        }
-    }
-    //#endregion
-
     //#region File Upload Methods
     async uploadVocabularyImage(imageFile: Express.Multer.File, oldImageUrl?: string) {
         try {
@@ -283,7 +268,6 @@ export class VocabularyService {
     }
 
     //#endregion
-
 
     //#region Add Meaning to Existing Vocabulary
     /**
@@ -522,6 +506,294 @@ export class VocabularyService {
             if (error && error.status === 409 && error.response?.error === 'MEANING_ALREADY_EXISTS') {
                 throw error
             }
+            throw InvalidVocabularyDataException
+        }
+    }
+    //#endregion
+
+    //#region Create Sample Vocabularies
+    /**
+     * Tạo nhiều từ vựng mẫu với dữ liệu mặc định
+     */
+    async createSampleVocabularies(userId?: number) {
+        try {
+            this.logger.log('Creating sample vocabularies...')
+
+            // Dữ liệu mẫu cho các từ vựng tiếng Nhật cơ bản
+            // word_jp: Hán tự (Kanji) hoặc Hiragana/Katakana nếu không có Kanji
+            // reading: Hiragana (cách đọc)
+            const sampleVocabularies = [
+                {
+                    word_jp: '水',
+                    reading: 'みず',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Nước' },
+                            { language_code: 'en', value: 'Water' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '山',
+                    reading: 'やま',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Núi' },
+                            { language_code: 'en', value: 'Mountain' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '人',
+                    reading: 'ひと',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Người' },
+                            { language_code: 'en', value: 'Person' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '家',
+                    reading: 'いえ',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Nhà' },
+                            { language_code: 'en', value: 'House / Home' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '学校',
+                    reading: 'がっこう',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Trường học' },
+                            { language_code: 'en', value: 'School' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '電話',
+                    reading: 'でんわ',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Điện thoại' },
+                            { language_code: 'en', value: 'Telephone' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '車',
+                    reading: 'くるま',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Xe ô tô' },
+                            { language_code: 'en', value: 'Car' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '飛行機',
+                    reading: 'ひこうき',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Máy bay' },
+                            { language_code: 'en', value: 'Airplane' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '犬',
+                    reading: 'いぬ',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Con chó' },
+                            { language_code: 'en', value: 'Dog' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '猫',
+                    reading: 'ねこ',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Con mèo' },
+                            { language_code: 'en', value: 'Cat' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '食べ物',
+                    reading: 'たべもの',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Đồ ăn' },
+                            { language_code: 'en', value: 'Food' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '私',
+                    reading: 'わたし',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Tôi' },
+                            { language_code: 'en', value: 'I / Me' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: 'あなた',
+                    reading: 'あなた',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Bạn / Anh / Chị' },
+                            { language_code: 'en', value: 'You' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '本',
+                    reading: 'ほん',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Sách' },
+                            { language_code: 'en', value: 'Book' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '友達',
+                    reading: 'ともだち',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Bạn bè' },
+                            { language_code: 'en', value: 'Friend' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '先生',
+                    reading: 'せんせい',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Giáo viên / Thầy cô' },
+                            { language_code: 'en', value: 'Teacher' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '学生',
+                    reading: 'がくせい',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Học sinh / Sinh viên' },
+                            { language_code: 'en', value: 'Student' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '日本語',
+                    reading: 'にほんご',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Tiếng Nhật' },
+                            { language_code: 'en', value: 'Japanese language' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '英語',
+                    reading: 'えいご',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Tiếng Anh' },
+                            { language_code: 'en', value: 'English language' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '時間',
+                    reading: 'じかん',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Thời gian' },
+                            { language_code: 'en', value: 'Time' }
+                        ]
+                    }
+                }
+            ]
+
+            const createdVocabularies: any[] = []
+            const errors: Array<{ word: string; error: string }> = []
+
+            // Tạo từng từ vựng một cách tuần tự để tránh conflict
+            for (const vocabData of sampleVocabularies) {
+                try {
+                    this.logger.log(`Creating vocabulary: ${vocabData.word_jp}`)
+
+                    const result = await this.createFullVocabularyWithFiles(
+                        vocabData,
+                        undefined, // no audio file
+                        undefined, // no image file
+                        userId
+                    )
+
+                    createdVocabularies.push(result.data)
+                    this.logger.log(`Successfully created: ${vocabData.word_jp}`)
+                } catch (error) {
+                    this.logger.warn(`Failed to create vocabulary ${vocabData.word_jp}:`, error.message)
+                    errors.push({
+                        word: vocabData.word_jp,
+                        error: error.message || 'Unknown error'
+                    })
+                }
+            }
+
+            this.logger.log(`Sample vocabularies creation completed. Created: ${createdVocabularies.length}, Errors: ${errors.length}`)
+
+            return {
+                statusCode: 201,
+                message: `${VOCABULARY_MESSAGE.CREATE_SAMPLE_SUCCESS}. Đã tạo ${createdVocabularies.length} từ vựng`,
+                data: {
+                    results: createdVocabularies,
+                    pagination: {
+                        current: 1,
+                        pageSize: createdVocabularies.length,
+                        totalPage: 1,
+                        totalItem: createdVocabularies.length
+                    },
+                    summary: {
+                        totalAttempted: sampleVocabularies.length,
+                        successfullyCreated: createdVocabularies.length,
+                        failed: errors.length,
+                        errors: errors
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error creating sample vocabularies:', error)
             throw InvalidVocabularyDataException
         }
     }

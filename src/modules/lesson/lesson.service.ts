@@ -135,39 +135,25 @@ export class LessonService {
             // Auto-generate titleKey (will be updated with actual lesson ID after creation)
             const titleKey = `lesson.temp.${Date.now()}.title`
 
-            // Auto-generate slug if not provided or empty
-            let slug = data.slug
-            if (!slug || slug.trim() === '') {
-                slug = this.generateSlug(data.titleJp)
-            }
-
-            // Check if slug already exists
-            const slugExists = await this.lessonRepository.checkSlugExists(slug)
-            if (slugExists) {
-                // If slug exists, append a number
-                let counter = 1
-                let newSlug = `${slug}-${counter}`
-                while (await this.lessonRepository.checkSlugExists(newSlug)) {
-                    counter++
-                    newSlug = `${slug}-${counter}`
-                }
-                slug = newSlug
-            }
-
-            // Remove translations from data before passing to Prisma
-            const { translations, ...lessonData } = data
+            // Remove translations and slug from data before passing to Prisma
+            const { translations, slug, ...lessonData } = data
 
             const lesson = await this.lessonRepository.create({
                 ...lessonData,
                 titleKey, // Use the generated/validated titleKey
-                slug,
+                slug: `lesson-temp-${Date.now()}`, // Temporary slug
                 createdById: userId,
             })
 
-            // Cập nhật titleKey với ID thực tế
+            // Cập nhật titleKey và slug với ID thực tế
             const finalTitleKey = `lesson.${lesson.id}.title`
-            // Cập nhật titleKey trong database
-            await this.lessonRepository.update(lesson.id, { titleKey: finalTitleKey })
+            const finalSlug = `lesson-${lesson.id}`
+
+            // Cập nhật titleKey và slug trong database
+            await this.lessonRepository.update(lesson.id, {
+                titleKey: finalTitleKey,
+                slug: finalSlug
+            })
 
             // Tự động tạo translation keys
             try {
@@ -178,9 +164,12 @@ export class LessonService {
                 // Không throw error vì lesson đã tạo thành công
             }
 
-            this.logger.log(`Created lesson: ${lesson.slug}`)
+            // Lấy lesson đã được cập nhật với slug mới
+            const updatedLesson = await this.lessonRepository.findById(lesson.id)
+
+            this.logger.log(`Created lesson: ${finalSlug}`)
             return {
-                data: lesson,
+                data: updatedLesson,
                 message: LESSON_MESSAGE.CREATE_SUCCESS
             }
         } catch (error) {
@@ -229,15 +218,10 @@ export class LessonService {
                 }
             }
 
-            // Check if slug already exists (excluding current lesson)
-            if (data.slug) {
-                const slugExists = await this.lessonRepository.checkSlugExists(data.slug, id)
-                if (slugExists) {
-                    throw new LessonAlreadyExistsException()
-                }
-            }
+            // Remove slug from update data since slug is auto-generated as lesson-{id}
+            const { slug, ...updateData } = data
 
-            const lesson = await this.lessonRepository.update(id, data)
+            const lesson = await this.lessonRepository.update(id, updateData)
 
             this.logger.log(`Updated lesson: ${lesson.slug}`)
             return {
@@ -335,23 +319,6 @@ export class LessonService {
 
             throw new InvalidLessonDataException('Lỗi khi xóa bài học')
         }
-    }
-    //#endregion
-
-    //#region generateSlug
-    /**
-     * Tạo slug từ titleKey
-     */
-    private generateSlug(titleJp: string): string {
-        // Convert Japanese title to slug
-        const cleanTitle = titleJp
-            .toLowerCase()
-            .replace(/[^\w\s-]/g, '') // Remove special characters except word chars, spaces, hyphens
-            .replace(/\s+/g, '-') // Replace spaces with hyphens
-            .replace(/-+/g, '-') // Replace multiple hyphens with single
-            .trim()
-
-        return cleanTitle
     }
     //#endregion
 

@@ -56,6 +56,15 @@ export const viMessages = {
     INVALID_DATA: 'Dữ liệu phần thưởng không hợp lệ',
     NAME_REQUIRED: 'Tên phần thưởng không được để trống'
   },
+  wordtype: {
+    CREATE_SUCCESS: 'Tạo loại từ thành công',
+    UPDATE_SUCCESS: 'Cập nhật loại từ thành công',
+    DELETE_SUCCESS: 'Xóa loại từ thành công',
+    GET_SUCCESS: 'Lấy thông tin loại từ thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách loại từ thành công',
+    GET_STATS_SUCCESS: 'Lấy thống kê loại từ thành công',
+    CREATE_DEFAULT_SUCCESS: 'Tạo loại từ mặc định thành công'
+  },
   system: {
     NOT_FOUND: 'Không tìm thấy bản ghi',
     INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'Mật khẩu mới và mật khẩu xác nhận không khớp',

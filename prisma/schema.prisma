@@ -567,9 +567,7 @@ model LessonContents {
 // Model Exercises (Bài tập)
 model Exercises {
   id           Int      @id @default(autoincrement())
-  titleJp      String   @db.VarChar(500) // Tiêu đề bài tập bằng tiếng Nhật
   exerciseType String   @db.VarChar(100) // Loại bài tập (multiple_choice, fill_blank, etc.)
-  titleKey     String   @db.VarChar(200) // Key để dịch tiêu đề bài tập
   content      String?  @db.Text // Nội dung mô tả bài tập
   audioUrl     String?  @db.VarChar(1000) // URL file âm thanh
   isBlocked    Boolean  @default(false) // Trạng thái bị chặn
@@ -586,7 +584,6 @@ model Exercises {
 
   @@index([lessonId])
   @@index([exerciseType])
-  @@index([titleKey])
   @@index([isBlocked])
 }
 

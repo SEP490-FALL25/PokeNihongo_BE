@@ -55,6 +55,16 @@ export const RewardMessage = {
   NAME_REQUIRED: 'reward.NAME_REQUIRED'
 } as const
 
+export const WordTypeMessage = {
+  CREATE_SUCCESS: 'wordtype.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'wordtype.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'wordtype.DELETE_SUCCESS',
+  GET_SUCCESS: 'wordtype.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'wordtype.GET_LIST_SUCCESS',
+  GET_STATS_SUCCESS: 'wordtype.GET_STATS_SUCCESS',
+  CREATE_DEFAULT_SUCCESS: 'wordtype.CREATE_DEFAULT_SUCCESS'
+} as const
+
 export const SystemMessage = {
   NOT_FOUND: 'system.NOT_FOUND',
   INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'system.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD',

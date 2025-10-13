@@ -22,10 +22,6 @@ const MeaningSchema = z.object({
 
 // Main schema for creating exercises with meanings
 export const CreateExercisesWithMeaningsSchema = z.object({
-    titleJp: z
-        .string()
-        .min(1, 'Tiêu đề bài tập không được để trống')
-        .max(200, 'Tiêu đề bài tập quá dài (tối đa 200 ký tự)'),
     exerciseType: z
         .string()
         .min(1, 'Loại bài tập không được để trống')
@@ -68,9 +64,7 @@ export const CreateExercisesWithMeaningsSchema = z.object({
 export const ExercisesWithMeaningsResponseSchema = z.object({
     exercises: z.object({
         id: z.number(),
-        titleJp: z.string(),
         exerciseType: z.string(),
-        titleKey: z.string(),
         content: z.string().nullable(),
         audioUrl: z.string().nullable(),
         isBlocked: z.boolean(),
@@ -105,11 +99,6 @@ export class MeaningWithTranslationsSwaggerDTO {
 }
 
 export class CreateExercisesWithMeaningsSwaggerDTO {
-    @ApiProperty({
-        example: '文法練習',
-        description: 'Tiêu đề bài tập bằng tiếng Nhật'
-    })
-    titleJp: string
 
     @ApiProperty({
         example: 'multiple_choice',
@@ -180,14 +169,10 @@ class ExercisesWithMeaningsInfoSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của bài tập' })
     id: number
 
-    @ApiProperty({ example: '文法練習', description: 'Tiêu đề bài tập bằng tiếng Nhật' })
-    titleJp: string
 
     @ApiProperty({ example: 'multiple_choice', description: 'Loại bài tập' })
     exerciseType: string
 
-    @ApiProperty({ example: 'exercise.1.multiple_choice.title', description: 'Key tiêu đề được tự động tạo' })
-    titleKey: string
 
     @ApiProperty({ example: 'この練習では文法を学びます', description: 'Nội dung mô tả bài tập' })
     content: string | null
