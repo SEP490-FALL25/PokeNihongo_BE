@@ -230,7 +230,10 @@ export class DailyRequestRepo {
     }
 
     return this.prismaService.dailyRequest.findMany({
-      where: prismaWhere
+      where: prismaWhere,
+      include: {
+        reward: true
+      }
     })
   }
 }

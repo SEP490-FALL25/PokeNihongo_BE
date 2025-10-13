@@ -259,6 +259,7 @@ export const enMessages = {
     GET_SUCCESS: 'User daily request retrieved successfully',
     GET_LIST_SUCCESS: 'User daily request list retrieved successfully',
     NOT_FOUND: 'User daily request not found',
-    ALREADY_EXISTS: 'User daily request already exists'
+    ALREADY_EXISTS: 'User daily request already exists',
+    USER_ALREADY_ATTENDED_TODAY: 'User has already attended today'
   }
 }

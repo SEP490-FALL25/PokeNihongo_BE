@@ -33,16 +33,14 @@ export const generateRandomFilename = (filename: string) => {
 
 export function todayUTCFromVN() {
   const now = new Date()
-  console.log(now)
 
   // Lấy ngày hiện tại ở múi giờ VN
-  const vnOffset = 7 * 60 // phút
-  const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000) // UTC hiện tại
-  const vnDate = new Date(utc.getTime() + vnOffset * 60000)
+  const vnYear = now.getUTCFullYear()
+  const vnMonth = now.getUTCMonth()
+  const vnDate = now.getUTCDate()
+  now.setHours(0, 0, 0, 0)
+  now.setHours(now.getHours() + 7)
 
-  // set giờ phút giây = 0
-  vnDate.setUTCHours(0, 0, 0, 0)
-
-  // Chuyển về UTC
-  return vnDate
+  // 0h VN
+  return now
 }

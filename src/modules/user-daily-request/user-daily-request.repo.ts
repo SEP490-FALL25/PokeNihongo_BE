@@ -20,14 +20,19 @@ export class UserDailyRequestRepo {
     data
   }: {
     createdById: number | null
-    data: CreateUserDailyRequestBodyType & { date: Date; progress: number }
+    data: CreateUserDailyRequestBodyType & {
+      date: Date
+      progress: number
+      isCompleted?: boolean
+      completedAt?: Date | null
+    }
   }): Promise<UserDailyRequestType> {
     return this.prismaService.userDailyRequest.create({
       data: {
         ...data,
         createdById,
-        isCompleted: false,
-        completedAt: null
+        isCompleted: data.isCompleted ?? false,
+        completedAt: data.completedAt ?? null
       }
     })
   }
