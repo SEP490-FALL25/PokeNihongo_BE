@@ -1,26 +1,16 @@
 import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
+import { ExercisesType, ExercisesListResSchema } from '../entities/exercises.entities'
 
 // Response DTOs
 export const ExercisesResponseSchema = z.object({
-    id: z.number(),
-    exerciseType: z.string(),
-    content: z.string().nullable(),
-    audioUrl: z.string().nullable(),
-    isBlocked: z.boolean(),
-    price: z.number().nullable(),
-    lessonId: z.number(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
+    statusCode: z.number(),
+    data: ExercisesType,
+    message: z.string()
 })
 
-export const ExercisesListResponseSchema = z.object({
-    data: z.array(ExercisesResponseSchema),
-    total: z.number(),
-    page: z.number(),
-    limit: z.number(),
-    totalPages: z.number(),
-})
+// Use the schema from entities that matches vocabulary/lesson pattern
+export const ExercisesListResponseSchema = ExercisesListResSchema
 
 export class ExercisesResponseDTO extends createZodDto(ExercisesResponseSchema) { }
 export class ExercisesListResponseDTO extends createZodDto(ExercisesListResponseSchema) { }

@@ -76,8 +76,6 @@ export class LessonController {
     @HttpCode(HttpStatus.CREATED)
     @ApiOperation({ summary: 'Tạo bài học mới' })
     @ApiResponse({ status: 201, description: 'Tạo bài học thành công', type: LessonResponseSwaggerDTO })
-    @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
-    @ApiResponse({ status: 409, description: 'Bài học đã tồn tại' })
     @ZodSerializerDto(LessonResponseDTO)
     @ApiBody({ type: CreateLessonSwaggerDTO })
     async createLesson(
@@ -90,8 +88,6 @@ export class LessonController {
     @Put(':id')
     @ApiOperation({ summary: 'Cập nhật bài học' })
     @ApiResponse({ status: 200, description: 'Cập nhật bài học thành công', type: LessonResponseSwaggerDTO })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy bài học' })
-    @ApiResponse({ status: 409, description: 'Bài học đã tồn tại' })
     @ZodSerializerDto(LessonResponseDTO)
     async updateLesson(
         @Param() params: GetLessonByIdParamsDTO,

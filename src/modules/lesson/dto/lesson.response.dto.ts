@@ -1,6 +1,6 @@
 import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
-import { LessonWithRelationsType } from '../entities/lesson.entities'
+import { LessonWithRelationsType, LessonListResSchema } from '../entities/lesson.entities'
 
 // Response DTOs
 export const LessonResponseSchema = z.object({
@@ -8,14 +8,8 @@ export const LessonResponseSchema = z.object({
     message: z.string()
 })
 
-export const LessonListResponseSchema = z.object({
-    data: z.array(LessonWithRelationsType),
-    page: z.number(),
-    limit: z.number(),
-    total: z.number(),
-    totalPages: z.number(),
-    message: z.string()
-})
+// Use the schema from entities that matches vocabulary pattern
+export const LessonListResponseSchema = LessonListResSchema
 
 // DTO Classes
 export class LessonResponseDTO extends createZodDto(LessonResponseSchema) { }

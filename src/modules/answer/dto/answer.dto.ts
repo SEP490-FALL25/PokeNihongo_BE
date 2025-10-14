@@ -1,27 +1,86 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { AnswerSortField, SortOrder } from '@/common/enum/enum'
 
+// Translation DTOs
+export class MeaningSwaggerDTO {
+    @ApiProperty({
+        example: 'vi',
+        description: 'Mã ngôn ngữ (vi, en, ja)'
+    })
+    language_code: string
+
+    @ApiProperty({
+        example: 'Đây là quyển sách',
+        description: 'Giá trị dịch thuật'
+    })
+    value: string
+}
+
+export class TranslationSwaggerDTO {
+    @ApiProperty({
+        type: [MeaningSwaggerDTO],
+        description: 'Danh sách bản dịch'
+    })
+    meaning: MeaningSwaggerDTO[]
+}
+
 // Swagger DTOs - for API documentation only
 export class CreateAnswerSwaggerDTO {
-    @ApiProperty({ example: 'これは本です。', description: 'Nội dung câu trả lời bằng tiếng Nhật' })
+    @ApiProperty({
+        example: 'これは本です。',
+        description: 'Nội dung câu trả lời bằng tiếng Nhật'
+    })
     answerJp: string
 
-    @ApiProperty({ example: true, description: 'Đánh dấu câu trả lời đúng', required: false })
+    @ApiProperty({
+        example: true,
+        description: 'Đánh dấu câu trả lời đúng',
+        required: false
+    })
     isCorrect?: boolean
 
-    @ApiProperty({ example: 1, description: 'ID câu hỏi' })
+    @ApiProperty({
+        example: 1,
+        description: 'ID câu hỏi'
+    })
     questionId: number
+
+    @ApiProperty({
+        type: TranslationSwaggerDTO,
+        description: 'Bản dịch của câu trả lời (tùy chọn)',
+        required: false
+    })
+    translations?: TranslationSwaggerDTO
 }
 
 export class UpdateAnswerSwaggerDTO {
-    @ApiProperty({ example: 'これは本です。', description: 'Nội dung câu trả lời bằng tiếng Nhật', required: false })
+    @ApiProperty({
+        example: 'これは本です。',
+        description: 'Nội dung câu trả lời bằng tiếng Nhật',
+        required: false
+    })
     answerJp?: string
 
-    @ApiProperty({ example: true, description: 'Đánh dấu câu trả lời đúng', required: false })
+    @ApiProperty({
+        example: true,
+        description: 'Đánh dấu câu trả lời đúng',
+        required: false
+    })
     isCorrect?: boolean
 
-    @ApiProperty({ example: 1, description: 'ID câu hỏi', required: false })
+    @ApiProperty({
+        example: 1,
+        description: 'ID câu hỏi',
+        required: false
+    })
     questionId?: number
+
+    @ApiProperty({
+        type: TranslationSwaggerDTO,
+        description: 'Bản dịch của câu trả lời (tùy chọn)',
+        required: false
+    })
+    translations?: TranslationSwaggerDTO
 }
 
 export class GetAnswerListQuerySwaggerDTO {
@@ -57,42 +116,155 @@ export class GetAnswerListQuerySwaggerDTO {
     sort?: SortOrder
 }
 
-export class AnswerResponseSwaggerDTO {
+export class AnswerDataSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID' })
     id: number
 
-    @ApiProperty({ example: 'これは本です。', description: 'Nội dung câu trả lời bằng tiếng Nhật' })
+    @ApiProperty({
+        example: 'これは本です。',
+        description: 'Nội dung câu trả lời bằng tiếng Nhật'
+    })
     answerJp: string
 
-    @ApiProperty({ example: 'answer.this.is.book', description: 'Key để dịch câu trả lời' })
+    @ApiProperty({
+        example: 'answer.1.text',
+        description: 'Key để dịch câu trả lời'
+    })
     answerKey: string
 
-    @ApiProperty({ example: true, description: 'Đánh dấu câu trả lời đúng' })
+    @ApiProperty({
+        example: true,
+        description: 'Đánh dấu câu trả lời đúng'
+    })
     isCorrect: boolean
 
-    @ApiProperty({ example: 1, description: 'ID câu hỏi' })
+    @ApiProperty({
+        example: 1,
+        description: 'ID câu hỏi'
+    })
     questionId: number
 
-    @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Ngày tạo' })
+    @ApiProperty({
+        example: '2024-01-01T00:00:00.000Z',
+        description: 'Ngày tạo'
+    })
     createdAt: Date
 
-    @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Ngày cập nhật' })
+    @ApiProperty({
+        example: '2024-01-01T00:00:00.000Z',
+        description: 'Ngày cập nhật'
+    })
     updatedAt: Date
+
+    @ApiProperty({
+        type: TranslationSwaggerDTO,
+        description: 'Bản dịch của câu trả lời',
+        required: false
+    })
+    translations?: TranslationSwaggerDTO
+}
+
+export class AnswerResponseSwaggerDTO {
+    @ApiProperty({ example: 200, description: 'HTTP status code' })
+    statusCode: number
+
+    @ApiProperty({
+        type: AnswerDataSwaggerDTO,
+        description: 'Dữ liệu câu trả lời'
+    })
+    data: AnswerDataSwaggerDTO
+
+    @ApiProperty({
+        example: 'Tạo câu trả lời thành công',
+        description: 'Thông báo kết quả'
+    })
+    message: string
+}
+
+// Answer with translation for list (without answerKey)
+export class AnswerWithTranslationSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID' })
+    id: number
+
+    @ApiProperty({
+        example: 'これは本です。',
+        description: 'Nội dung câu trả lời bằng tiếng Nhật'
+    })
+    answerJp: string
+
+    @ApiProperty({
+        example: true,
+        description: 'Đánh dấu câu trả lời đúng'
+    })
+    isCorrect: boolean
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID câu hỏi'
+    })
+    questionId: number
+
+    @ApiProperty({
+        example: '2024-01-01T00:00:00.000Z',
+        description: 'Ngày tạo'
+    })
+    createdAt: Date
+
+    @ApiProperty({
+        example: '2024-01-01T00:00:00.000Z',
+        description: 'Ngày cập nhật'
+    })
+    updatedAt: Date
+
+    @ApiProperty({
+        example: 'Đây là quyển sách',
+        description: 'Bản dịch của câu trả lời (nếu có)',
+        required: false
+    })
+    translatedText?: string
+}
+
+export class AnswerPaginationSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'Trang hiện tại' })
+    current: number
+
+    @ApiProperty({ example: 10, description: 'Số câu trả lời mỗi trang' })
+    pageSize: number
+
+    @ApiProperty({ example: 10, description: 'Tổng số trang' })
+    totalPage: number
+
+    @ApiProperty({ example: 100, description: 'Tổng số câu trả lời' })
+    totalItem: number
+}
+
+export class AnswerListDataSwaggerDTO {
+    @ApiProperty({
+        type: [AnswerWithTranslationSwaggerDTO],
+        description: 'Danh sách câu trả lời'
+    })
+    results: AnswerWithTranslationSwaggerDTO[]
+
+    @ApiProperty({
+        type: AnswerPaginationSwaggerDTO,
+        description: 'Thông tin phân trang'
+    })
+    pagination: AnswerPaginationSwaggerDTO
 }
 
 export class AnswerListResponseSwaggerDTO {
-    @ApiProperty({ type: [AnswerResponseSwaggerDTO], description: 'Danh sách câu trả lời' })
-    data: AnswerResponseSwaggerDTO[]
+    @ApiProperty({ example: 200, description: 'HTTP status code' })
+    statusCode: number
 
-    @ApiProperty({ example: 100, description: 'Tổng số câu trả lời' })
-    total: number
+    @ApiProperty({
+        type: AnswerListDataSwaggerDTO,
+        description: 'Dữ liệu danh sách câu trả lời'
+    })
+    data: AnswerListDataSwaggerDTO
 
-    @ApiProperty({ example: 1, description: 'Trang hiện tại' })
-    page: number
-
-    @ApiProperty({ example: 10, description: 'Số câu trả lời mỗi trang' })
-    limit: number
-
-    @ApiProperty({ example: 10, description: 'Tổng số trang' })
-    totalPages: number
+    @ApiProperty({
+        example: 'Lấy danh sách câu trả lời thành công',
+        description: 'Thông báo kết quả'
+    })
+    message: string
 }

@@ -10,6 +10,7 @@ import {
     Put,
     Query,
 } from '@nestjs/common'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
@@ -56,8 +57,8 @@ export class QuestionController {
     @ApiResponse({ status: 200, description: 'Lấy danh sách câu hỏi thành công', type: QuestionListResponseSwaggerDTO })
     @ApiQuery({ type: GetQuestionListQuerySwaggerDTO })
     @ZodSerializerDto(QuestionListResponseDTO)
-    async getQuestionList(@Query() query: GetQuestionListQueryDTO) {
-        return await this.questionService.getQuestionList(query)
+    async getQuestionList(@Query() query: GetQuestionListQueryDTO, @I18nLang() lang: string) {
+        return await this.questionService.getQuestionList(query, lang)
     }
 
     @Get(':id')

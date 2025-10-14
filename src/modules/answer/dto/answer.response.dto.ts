@@ -1,24 +1,26 @@
 import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
+import { AnswerType, AnswerListResSchema } from '../entities/answer.entities'
+
+// Extended Answer type with translations
+const AnswerWithTranslationsType = AnswerType.extend({
+    translations: z.object({
+        meaning: z.array(z.object({
+            language_code: z.string(),
+            value: z.string()
+        }))
+    }).optional()
+})
 
 // Response DTOs
 export const AnswerResponseSchema = z.object({
-    id: z.number(),
-    answerJp: z.string(),
-    answerKey: z.string(),
-    isCorrect: z.boolean(),
-    questionId: z.number(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
+    statusCode: z.number(),
+    data: AnswerWithTranslationsType,
+    message: z.string()
 })
 
-export const AnswerListResponseSchema = z.object({
-    data: z.array(AnswerResponseSchema),
-    total: z.number(),
-    page: z.number(),
-    limit: z.number(),
-    totalPages: z.number(),
-})
+// Use the schema from entities that matches vocabulary/lesson pattern
+export const AnswerListResponseSchema = AnswerListResSchema
 
 export class AnswerResponseDTO extends createZodDto(AnswerResponseSchema) { }
 export class AnswerListResponseDTO extends createZodDto(AnswerListResponseSchema) { }

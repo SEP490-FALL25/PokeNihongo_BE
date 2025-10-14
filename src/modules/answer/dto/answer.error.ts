@@ -23,3 +23,15 @@ export class QuestionNotFoundException extends HttpException {
         super('Không tìm thấy câu hỏi', HttpStatus.NOT_FOUND)
     }
 }
+
+export class AnswerContentAlreadyExistsException extends HttpException {
+    constructor() {
+        super('Câu trả lời này đã tồn tại trong câu hỏi', HttpStatus.CONFLICT)
+    }
+}
+
+export class InvalidJapaneseContentException extends HttpException {
+    constructor() {
+        super('Câu trả lời phải chứa ít nhất một ký tự tiếng Nhật (Hiragana, Katakana, hoặc Kanji)', HttpStatus.BAD_REQUEST)
+    }
+}
