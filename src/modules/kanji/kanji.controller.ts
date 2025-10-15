@@ -28,7 +28,7 @@ import {
     KanjiSwaggerResponseDTO,
     KanjiListSwaggerResponseDTO,
     GetKanjiListQuerySwaggerDTO,
-    ImportKanjiXlsxSwaggerDTO
+    ImportKanjiSwaggerDTO
 } from './dto/kanji.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -226,6 +226,30 @@ export class KanjiController {
         return this.kanjiService.updateWithMeanings(identifier, body, image)
     }
 
+    @Delete('all')
+    @HttpCode(HttpStatus.OK)
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Xóa toàn bộ dữ liệu Kanji và những thứ liên quan',
+        description: 'Xóa tất cả Kanji, cách đọc Kanji, liên kết từ vựng-Kanji, và các bản dịch liên quan. Thao tác này không thể hoàn tác!'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa toàn bộ dữ liệu Kanji thành công',
+        type: MessageResDTO
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Unauthorized - Cần đăng nhập'
+    })
+    @ApiResponse({
+        status: 403,
+        description: 'Forbidden - Không có quyền thực hiện thao tác này'
+    })
+    async deleteAllKanjiData() {
+        return this.kanjiService.deleteAllKanjiData()
+    }
+
     @Delete(':id')
     @ApiOperation({
         summary: 'Xóa Kanji',
@@ -249,7 +273,7 @@ export class KanjiController {
     @UseInterceptors(FileInterceptor('file'))
     @ApiOperation({ summary: 'Import Kanji từ file Excel (.xlsx)' })
     @ApiConsumes('multipart/form-data')
-    @ApiBody({ type: ImportKanjiXlsxSwaggerDTO })
+    @ApiBody({ type: ImportKanjiSwaggerDTO })
     @ApiResponse({ status: 201, description: 'Import Kanji thành công' })
     async importKanji(
         @UploadedFile() file: Express.Multer.File,
@@ -257,6 +281,25 @@ export class KanjiController {
         @ActiveUser('userId') userId?: number
     ) {
         return this.kanjiService.importFromXlsx(file, language || 'vi', userId)
+    }
+
+    @Post('import-txt')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiOperation({
+        summary: 'Import Kanji từ file TXT (tab-separated)',
+        description: 'Import Kanji từ file TXT với cấu trúc tab-separated: kanji	mean	detail	kun	on	jlpt	strokes. Cập nhật thông tin thiếu cho Kanji đã tồn tại (strokeCount, jlptLevel).'
+    })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: ImportKanjiSwaggerDTO })
+    @ApiResponse({
+        status: 201,
+        description: 'Import Kanji từ TXT thành công'
+    })
+    async importKanjiFromTxt(
+        @UploadedFile() file: Express.Multer.File,
+        @Body('language') language?: string
+    ) {
+        return this.kanjiService.importFromTxt(file, language || 'en')
     }
 
 }

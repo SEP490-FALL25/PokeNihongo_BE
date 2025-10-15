@@ -82,7 +82,7 @@ export class GetKanjiListQuerySwaggerDTO {
 
     @ApiProperty({
         example: 'character',
-        description: 'Sắp xếp theo trường',
+        description: 'Sắp xếp theo trường id, character, meaningKey, strokeCount, jlptLevel, createdAt, updatedAt',
         enum: ['id', 'character', 'meaningKey', 'strokeCount', 'jlptLevel', 'createdAt', 'updatedAt'],
         required: false
     })
@@ -90,7 +90,7 @@ export class GetKanjiListQuerySwaggerDTO {
 
     @ApiProperty({
         example: 'asc',
-        description: 'Thứ tự sắp xếp',
+        description: 'Thứ tự sắp xếp asc, desc',
         enum: ['asc', 'desc'],
         required: false
     })
@@ -115,7 +115,7 @@ export class KanjiListSwaggerResponseDTO {
 }
 
 // Import Kanji DTO
-export class ImportKanjiXlsxSwaggerDTO {
+export class ImportKanjiSwaggerDTO {
     @ApiProperty({
         type: 'string',
         format: 'binary',

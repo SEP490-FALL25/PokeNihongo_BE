@@ -118,7 +118,7 @@ export class VocabularyService {
     //#region Import from XLSX
     /**
      * Import vocabularies from an Excel file (.xlsx) with columns:
-     * word (Kanji/Kana), phonetic (reading in Hiragana), mean (Vietnamese)
+     * kanji, mean (English), detail (English), kun, on
      */
     async importFromXlsx(file: Express.Multer.File, createdById?: number) {
         try {
@@ -135,24 +135,51 @@ export class VocabularyService {
             const skipped: Array<{ word: string; reason: string }> = []
 
             for (const row of rows) {
-                const word = (row.word || row['Word'] || row['word_jp'] || '').toString().trim()
-                const reading = (row.phonetic || row['reading'] || '').toString().trim()
-                const mean = (row.mean || row['meaning'] || '').toString().trim()
+                const kanji = (row.kanji || '').toString().trim()
+                const meanEn = (row.mean || '').toString().trim()
+                const detailEn = (row.detail || '').toString().trim()
+                const kun = (row.kun || '').toString().trim()
+                const on = (row.on || '').toString().trim()
 
-                if (!word || !reading || !mean) {
-                    skipped.push({ word, reason: 'Thiếu dữ liệu (word/reading/mean)' })
+                // Tạo reading từ kun và on
+                const reading = [kun, on].filter(r => r).join(', ')
+
+                if (!kanji) {
+                    skipped.push({ word: kanji || 'N/A', reason: 'Thiếu ký tự kanji' })
+                    continue
+                }
+
+                if (!meanEn) {
+                    skipped.push({ word: kanji, reason: 'Thiếu nghĩa tiếng Anh' })
                     continue
                 }
 
                 try {
+                    // Tạo danh sách nghĩa
+                    const meanings: Array<{ language_code: string; value: string }> = []
+
+                    if (meanEn) {
+                        meanings.push({ language_code: 'en', value: meanEn })
+                    }
+
+                    // Tạo danh sách chi tiết nghĩa (nếu có)
+                    const examples: Array<{ language_code: string; sentence: string; original_sentence: string }> = []
+
+                    if (detailEn) {
+                        examples.push({
+                            language_code: 'en',
+                            sentence: detailEn,
+                            original_sentence: kanji
+                        })
+                    }
+
                     const result = await this.createFullVocabularyWithFiles(
                         {
-                            word_jp: word,
-                            reading,
+                            word_jp: kanji,
+                            reading: reading || kanji, // Fallback to kanji if no reading
                             translations: {
-                                meaning: [
-                                    { language_code: 'vi', value: mean }
-                                ]
+                                meaning: meanings,
+                                examples: examples.length > 0 ? examples : undefined
                             }
                         },
                         undefined,
@@ -161,7 +188,7 @@ export class VocabularyService {
                     )
                     created.push(result.data)
                 } catch (err: any) {
-                    skipped.push({ word, reason: err?.message || 'Lỗi không xác định' })
+                    skipped.push({ word: kanji, reason: err?.message || 'Lỗi không xác định' })
                 }
             }
 
@@ -720,8 +747,8 @@ export class VocabularyService {
                     data: {
                         vocabulary: {
                             ...vocabulary,
-                            imageUrl: imageUrl || vocabulary.imageUrl,
-                            audioUrl: audioUrl || vocabulary.audioUrl
+                            imageUrl: (imageUrl ?? vocabulary.imageUrl) ?? null,
+                            audioUrl: (audioUrl ?? vocabulary.audioUrl) ?? null
                         },
                         meaning: {
                             id: result.meaning.id,
@@ -766,8 +793,8 @@ export class VocabularyService {
                     data: {
                         vocabulary: {
                             ...result.vocabulary,
-                            imageUrl,
-                            audioUrl
+                            imageUrl: imageUrl ?? null,
+                            audioUrl: audioUrl ?? null
                         },
                         meaning: {
                             id: result.meaning.id,

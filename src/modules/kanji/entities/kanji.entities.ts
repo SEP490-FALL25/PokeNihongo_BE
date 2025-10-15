@@ -180,12 +180,12 @@ export const GetKanjiByIdParamsSchema = z.object({
 })
 
 
-// Get Kanji list query schema
+// Get Kanji list query schema (standardize on currentPage/pageSize + sortOrder)
 export const GetKanjiListQuerySchema = z.object({
-    page: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
-    limit: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
-    sortBy: z.nativeEnum(KanjiSortField).optional().default(KanjiSortField.CREATED_AT),
-    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
+    currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
+    pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
+    sortBy: z.nativeEnum(KanjiSortField).optional(),
+    sortOrder: z.nativeEnum(SortOrder).optional(),
     search: z.string().optional(),
     jlptLevel: z.string().transform((val) => parseInt(val, 10)).optional(),
     strokeCount: z.string().transform((val) => parseInt(val, 10)).optional()
@@ -196,8 +196,8 @@ export const GetKanjiListQuerySchema = z.object({
 export const KanjiListResponseSchema = z.object({
     data: z.array(KanjiSchema),
     total: z.number(),
-    page: z.number(),
-    limit: z.number(),
+    currentPage: z.number(),
+    pageSize: z.number(),
     totalPages: z.number()
 })
 

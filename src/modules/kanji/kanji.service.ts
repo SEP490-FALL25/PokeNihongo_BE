@@ -34,7 +34,7 @@ export class KanjiService {
         private readonly uploadService: UploadService
     ) { }
 
-
+    //#region Kanji Management API for UI
     // Kanji Management API for UI
     async getKanjiManagementList(params: GetKanjiListQueryType) {
         try {
@@ -42,13 +42,13 @@ export class KanjiService {
 
             // Set default values
             const queryParams = {
-                page: params.page || 1,
-                limit: params.limit || 10,
+                currentPage: (params as any).currentPage || 1,
+                pageSize: (params as any).pageSize || 10,
                 search: params.search,
                 jlptLevel: params.jlptLevel,
                 strokeCount: params.strokeCount,
                 sortBy: params.sortBy,
-                sort: params.sort
+                sortOrder: (params as any).sortOrder
             }
 
             const result = await this.kanjiRepository.findMany(queryParams)
@@ -98,8 +98,8 @@ export class KanjiService {
                 data: {
                     results: kanjiManagementData,
                     pagination: {
-                        current: result.page,
-                        pageSize: result.limit,
+                        current: (result as any).currentPage,
+                        pageSize: (result as any).pageSize,
                         totalPage: result.totalPages,
                         totalItem: result.total
                     }
@@ -110,6 +110,7 @@ export class KanjiService {
             throw error
         }
     }
+    //#endregion
 
     //#region Find many
     async findMany(params: GetKanjiListQueryType) {
@@ -118,13 +119,13 @@ export class KanjiService {
 
             // Set default values
             const queryParams = {
-                page: params.page || 1,
-                limit: params.limit || 10,
+                currentPage: (params as any).currentPage || 1,
+                pageSize: (params as any).pageSize || 10,
                 search: params.search,
                 jlptLevel: params.jlptLevel,
                 strokeCount: params.strokeCount,
                 sortBy: params.sortBy,
-                sort: params.sort
+                sortOrder: (params as any).sortOrder
             }
 
             const result = await this.kanjiRepository.findMany(queryParams)
@@ -181,8 +182,8 @@ export class KanjiService {
                 data: {
                     results: kanjiWithMeanings,
                     pagination: {
-                        current: result.page,
-                        pageSize: result.limit,
+                        current: (result as any).currentPage,
+                        pageSize: (result as any).pageSize,
                         totalPage: result.totalPages,
                         totalItem: result.total
                     }
@@ -901,11 +902,13 @@ export class KanjiService {
                 const kanji = (row.kanji || row['Kanji'] || '').toString().trim()
                 const mean = (row.mean || row['Mean'] || '').toString().trim()
                 const detail = (row.detail || row['Detail'] || '').toString().trim()
+                const meanViet = (row.meanViet || row['meanViet'] || '').toString().trim()
+                const detailViet = (row.detailViet || row['detailViet'] || '').toString().trim()
                 const kun = (row.kun || row['Kun'] || '').toString().trim()
                 const on = (row.on || row['On'] || '').toString().trim()
 
-                if (!kanji || !mean) {
-                    skipped.push({ kanji, reason: 'Thiếu dữ liệu (kanji/mean)' })
+                if (!kanji || (!mean && !meanViet)) {
+                    skipped.push({ kanji, reason: 'Thiếu dữ liệu (kanji/mean/meanViet)' })
                     continue
                 }
 
@@ -921,17 +924,29 @@ export class KanjiService {
                 try {
                     if (existing) {
                         // Kanji đã tồn tại -> Thêm translation cho ngôn ngữ mới
-                        this.logger.log(`Kanji ${kanji} đã tồn tại, thêm translation cho ngôn ngữ ${language}`)
+                        this.logger.log(`Kanji ${kanji} đã tồn tại, thêm translation`)
 
-                        const meaningValue = detail ? `${mean}. ${detail}` : mean
-                        await this.createTranslationsForLanguages(existing.meaningKey, {
-                            [language]: meaningValue
-                        })
+                        const translations: Record<string, string> = {}
+
+                        // Thêm translation tiếng Anh nếu có
+                        if (mean) {
+                            const meaningValueEn = detail ? `${mean}. ${detail}` : mean
+                            translations['en'] = meaningValueEn
+                        }
+
+                        // Thêm translation tiếng Việt nếu có
+                        if (meanViet) {
+                            const meaningValueVi = detailViet ? `${meanViet}. ${detailViet}` : meanViet
+                            translations['vi'] = meaningValueVi
+                        }
+
+                        if (Object.keys(translations).length > 0) {
+                            await this.createTranslationsForLanguages(existing.meaningKey, translations)
+                        }
 
                         updated.push({
                             kanji: existing,
-                            language,
-                            meaningValue,
+                            translations,
                             action: 'updated_translation'
                         })
                     } else {
@@ -949,10 +964,23 @@ export class KanjiService {
                         await this.kanjiRepository.update(newKanji.id, { meaningKey })
 
                         // Tạo translations cho meaningKey
-                        const meaningValue = detail ? `${mean}. ${detail}` : mean
-                        await this.createTranslationsForLanguages(meaningKey, {
-                            [language]: meaningValue
-                        })
+                        const translations: Record<string, string> = {}
+
+                        // Thêm translation tiếng Anh nếu có
+                        if (mean) {
+                            const meaningValueEn = detail ? `${mean}. ${detail}` : mean
+                            translations['en'] = meaningValueEn
+                        }
+
+                        // Thêm translation tiếng Việt nếu có
+                        if (meanViet) {
+                            const meaningValueVi = detailViet ? `${meanViet}. ${detailViet}` : meanViet
+                            translations['vi'] = meaningValueVi
+                        }
+
+                        if (Object.keys(translations).length > 0) {
+                            await this.createTranslationsForLanguages(meaningKey, translations)
+                        }
 
                         // Tạo readings (kun và on)
                         const readings: any[] = []
@@ -992,8 +1020,7 @@ export class KanjiService {
                             kanji: newKanji,
                             readings,
                             meaningKey,
-                            meaningValue,
-                            language
+                            translations
                         })
                     }
                 } catch (err: any) {
@@ -1003,16 +1030,223 @@ export class KanjiService {
 
             return {
                 statusCode: 201,
-                message: `Import Kanji (${language}) thành công: ${created.length} tạo mới, ${updated.length} cập nhật, ${skipped.length} bỏ qua`,
+                message: `Import Kanji thành công: ${created.length} tạo mới, ${updated.length} cập nhật, ${skipped.length} bỏ qua`,
                 data: {
                     created,
                     updated,
                     skipped,
-                    language
+                    supportedLanguages: ['en', 'vi']
                 }
             }
         } catch (error) {
             this.logger.error('Error importing kanji from xlsx:', error)
+            throw InvalidKanjiDataException
+        }
+    }
+    //#endregion
+
+    //#region Import from TXT
+    /**
+     * Import Kanji từ file TXT (tab-separated)
+     * Cấu trúc: kanji	mean	detail	kun	on	jlpt	strokes
+     */
+    async importFromTxt(file: Express.Multer.File, language: string = 'en'): Promise<{ statusCode: number; message: string; data: any }> {
+        try {
+            if (!file || !file.buffer) {
+                throw new Error('File không hợp lệ')
+            }
+
+            const fileContent = file.buffer.toString('utf-8')
+            const lines = fileContent.split('\n').filter(line => line.trim())
+
+            const created: any[] = []
+            const updated: any[] = []
+            const skipped: Array<{ kanji: string; reason: string }> = []
+
+            // Bỏ qua header line
+            const dataLines = lines.slice(1)
+
+            for (const line of dataLines) {
+                const columns = line.split('\t')
+
+                if (columns.length < 7) {
+                    skipped.push({ kanji: columns[0] || 'N/A', reason: 'Thiếu cột dữ liệu' })
+                    continue
+                }
+
+                const kanji = columns[0]?.trim()
+                const mean = columns[1]?.trim()
+                const detail = columns[2]?.trim()
+                const kun = columns[3]?.trim()
+                const on = columns[4]?.trim()
+                const jlpt = columns[5]?.trim()
+                const strokes = columns[6]?.trim()
+
+                if (!kanji || !mean) {
+                    skipped.push({ kanji: kanji || 'N/A', reason: 'Thiếu dữ liệu (kanji/mean)' })
+                    continue
+                }
+
+                // Validate kanji character
+                if (!this.isKanjiCharacter(kanji)) {
+                    skipped.push({ kanji, reason: 'Không phải ký tự Kanji hợp lệ' })
+                    continue
+                }
+
+                // Kiểm tra Kanji đã tồn tại chưa
+                const existing = await this.kanjiRepository.findByCharacter(kanji)
+
+                try {
+                    if (existing) {
+                        // Kanji đã tồn tại -> Thêm translation và cập nhật thông tin thiếu
+                        this.logger.log(`Kanji ${kanji} đã tồn tại, cập nhật thông tin`)
+
+                        const updates: any = {}
+                        const actions: string[] = []
+
+                        // Cập nhật JLPT level nếu có
+                        if (jlpt && existing.jlptLevel !== parseInt(jlpt)) {
+                            updates.jlptLevel = parseInt(jlpt)
+                            actions.push('jlpt_level')
+                        }
+
+                        // Cập nhật stroke count nếu có và đang null
+                        if (strokes && !existing.strokeCount) {
+                            updates.strokeCount = parseInt(strokes)
+                            actions.push('stroke_count')
+                        }
+
+                        // Cập nhật thông tin Kanji nếu có thay đổi
+                        if (Object.keys(updates).length > 0) {
+                            await this.kanjiRepository.update(existing.id, updates)
+                            actions.push('kanji_info')
+                        }
+
+                        // Thêm translation cho ngôn ngữ
+                        const meaningValue = detail ? `${mean}. ${detail}` : mean
+                        await this.createTranslationsForLanguages(existing.meaningKey, {
+                            [language]: meaningValue
+                        })
+                        actions.push('translation')
+
+                        updated.push({
+                            kanji: existing,
+                            language: language,
+                            meaningValue,
+                            actions: actions,
+                            updates: updates
+                        })
+                    } else {
+                        // Tạo Kanji mới
+                        const jlptLevel = jlpt ? parseInt(jlpt) : 5
+                        const strokeCount = strokes ? parseInt(strokes) : null
+
+                        const kanjiData = {
+                            character: kanji,
+                            meaningKey: '', // Tạm thời để trống
+                            jlptLevel: jlptLevel,
+                            strokeCount: strokeCount || undefined
+                        }
+
+                        const newKanji = await this.kanjiRepository.create(kanjiData)
+
+                        // Tạo meaningKey từ ID
+                        const meaningKey = `kanji.${newKanji.id}.meaning`
+                        await this.kanjiRepository.update(newKanji.id, { meaningKey })
+
+                        // Tạo translations cho meaningKey
+                        const meaningValue = detail ? `${mean}. ${detail}` : mean
+                        await this.createTranslationsForLanguages(meaningKey, {
+                            [language]: meaningValue
+                        })
+
+                        // Tạo readings (kun và on)
+                        const readings: any[] = []
+                        if (kun) {
+                            const kunReadings = kun.split(/[\s,]+/).filter(r => r.trim())
+                            for (const kunReading of kunReadings) {
+                                try {
+                                    const reading = await this.kanjiReadingService.create({
+                                        kanjiId: newKanji.id,
+                                        readingType: 'kunyomi',
+                                        reading: kunReading.trim()
+                                    })
+                                    readings.push(reading)
+                                } catch (err) {
+                                    this.logger.warn(`Failed to create kun reading: ${kunReading}`)
+                                }
+                            }
+                        }
+
+                        if (on) {
+                            const onReadings = on.split(/[\s,]+/).filter(r => r.trim())
+                            for (const onReading of onReadings) {
+                                try {
+                                    const reading = await this.kanjiReadingService.create({
+                                        kanjiId: newKanji.id,
+                                        readingType: 'onyomi',
+                                        reading: onReading.trim()
+                                    })
+                                    readings.push(reading)
+                                } catch (err) {
+                                    this.logger.warn(`Failed to create on reading: ${onReading}`)
+                                }
+                            }
+                        }
+
+                        created.push({
+                            kanji: newKanji,
+                            readings,
+                            meaningKey,
+                            meaningValue,
+                            jlptLevel,
+                            strokeCount
+                        })
+                    }
+                } catch (err: any) {
+                    skipped.push({ kanji, reason: err?.message || 'Lỗi không xác định' })
+                }
+            }
+
+            return {
+                statusCode: 201,
+                message: `Import Kanji từ TXT (${language}) thành công: ${created.length} tạo mới, ${updated.length} cập nhật, ${skipped.length} bỏ qua`,
+                data: {
+                    created,
+                    updated,
+                    skipped,
+                    totalLines: lines.length - 1,
+                    language
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error importing kanji from txt:', error)
+            throw InvalidKanjiDataException
+        }
+    }
+    //#endregion
+
+    //#region Delete All Kanji
+    /**
+     * Xóa toàn bộ dữ liệu Kanji và những thứ liên quan
+     * Bao gồm: Kanji, Kanji_Reading, Vocabulary_Kanji, và các Translation liên quan
+     */
+    async deleteAllKanjiData(): Promise<{ statusCode: number; message: string; data: any }> {
+        try {
+            this.logger.log('Starting to delete all Kanji data and related records')
+
+            // Sử dụng repository method để xóa tất cả dữ liệu Kanji
+            const result = await this.kanjiRepository.deleteAllKanjiData()
+
+            this.logger.log(`Successfully deleted all Kanji data: ${JSON.stringify(result)}`)
+
+            return {
+                statusCode: 200,
+                message: `Đã xóa toàn bộ dữ liệu Kanji thành công. Đã xóa ${result.kanjiDeleted} Kanji, ${result.readingDeleted} cách đọc, ${result.vocabularyKanjiDeleted} liên kết từ vựng, và ${result.translationDeleted} bản dịch.`,
+                data: result
+            }
+        } catch (error) {
+            this.logger.error('Error deleting all Kanji data:', error)
             throw InvalidKanjiDataException
         }
     }
