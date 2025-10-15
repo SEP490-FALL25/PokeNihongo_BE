@@ -244,27 +244,8 @@ export class WordTypeService {
                 { id: 12, key: 'na_adjective', translations: { vi: 'tính từ na', en: 'na-adjective' } },
                 { id: 13, key: 'no_adjective', translations: { vi: 'tính từ no', en: 'no-adjective' } },
 
-                // Động từ tiếng Nhật - các thể
-                { id: 14, key: 'verb_ichidan', translations: { vi: 'động từ ichidan', en: 'ichidan verb' } },
-                { id: 15, key: 'verb_godan', translations: { vi: 'động từ godan', en: 'godan verb' } },
-                { id: 16, key: 'verb_irregular', translations: { vi: 'động từ bất quy tắc', en: 'irregular verb' } },
-                { id: 17, key: 'verb_suru', translations: { vi: 'động từ suru', en: 'suru verb' } },
-                { id: 18, key: 'verb_kuru', translations: { vi: 'động từ kuru', en: 'kuru verb' } },
-
-                // Thể động từ
-                { id: 19, key: 'verb_dict_form', translations: { vi: 'thể từ điển', en: 'dictionary form' } },
-                { id: 20, key: 'verb_masu_form', translations: { vi: 'thể masu', en: 'masu form' } },
-                { id: 21, key: 'verb_te_form', translations: { vi: 'thể te', en: 'te form' } },
-                { id: 22, key: 'verb_ta_form', translations: { vi: 'thể ta', en: 'ta form' } },
-                { id: 23, key: 'verb_ba_form', translations: { vi: 'thể ba', en: 'ba form' } },
-                { id: 24, key: 'verb_potential', translations: { vi: 'thể khả năng', en: 'potential form' } },
-                { id: 25, key: 'verb_passive', translations: { vi: 'thể bị động', en: 'passive form' } },
-                { id: 26, key: 'verb_causative', translations: { vi: 'thể sai khiến', en: 'causative form' } },
-                { id: 27, key: 'verb_causative_passive', translations: { vi: 'thể sai khiến bị động', en: 'causative passive form' } },
-                { id: 28, key: 'verb_volitional', translations: { vi: 'thể ý chí', en: 'volitional form' } },
-                { id: 29, key: 'verb_conditional', translations: { vi: 'thể điều kiện', en: 'conditional form' } },
-                { id: 30, key: 'verb_imperative', translations: { vi: 'thể mệnh lệnh', en: 'imperative form' } },
-                { id: 31, key: 'verb_prohibitive', translations: { vi: 'thể cấm', en: 'prohibitive form' } },
+                // Động từ tiếng Nhật - dùng loại chung "động từ"
+                { id: 14, key: 'verb', translations: { vi: 'động từ', en: 'verb' } },
 
                 // Từ đặc biệt tiếng Nhật
                 { id: 32, key: 'onomatopoeia', translations: { vi: 'từ tượng thanh', en: 'onomatopoeia' } },

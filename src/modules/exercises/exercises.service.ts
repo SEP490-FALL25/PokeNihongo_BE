@@ -11,7 +11,7 @@ import {
     InvalidExercisesDataException,
     LessonNotFoundException,
 } from './dto/exercises.error'
-import { CreateExercisesWithMeaningsBodyType } from './dto/exercises-with-meanings.dto'
+import { CreateExercisesWithMeaningsBodyType, CreateExercisesWithMeaningsSchema } from './dto/exercises-with-meanings.dto'
 import { UpdateExercisesWithMeaningsBodyType } from './dto/update-exercises-with-meanings.dto'
 import { ExercisesRepository } from './exercises.repo'
 import { LanguagesService } from '@/modules/languages/languages.service'
@@ -36,11 +36,18 @@ export class ExercisesService {
             const result = await this.exercisesRepository.findMany(params)
 
             this.logger.log(`Found ${result.data.length} exercises entries`)
+
+            // Convert price from Decimal to number for all exercises
+            const exercisesWithNumberPrice = result.data.map(exercise => ({
+                ...exercise,
+                price: exercise.price ? Number(exercise.price) : null
+            }))
+
             return {
                 statusCode: 200,
                 message: 'Lấy danh sách bài tập thành công',
                 data: {
-                    results: result.data,
+                    results: exercisesWithNumberPrice,
                     pagination: {
                         current: result.page,
                         pageSize: result.limit,
@@ -66,8 +73,15 @@ export class ExercisesService {
             }
 
             this.logger.log(`Found exercises: ${exercises.id}`)
+            // Convert price from Decimal to number if needed
+            const exercisesResponse = {
+                ...exercises,
+                price: exercises.price ? Number(exercises.price) : null
+            }
+
             return {
-                data: exercises,
+                statusCode: 200,
+                data: exercisesResponse,
                 message: 'Lấy thông tin bài tập thành công'
             }
         } catch (error) {
@@ -87,11 +101,15 @@ export class ExercisesService {
         try {
             this.logger.log(`Creating exercises with meanings: ${data.exerciseType}`)
 
+            // Manually validate the data to ensure proper types
+            const validatedData = CreateExercisesWithMeaningsSchema.parse(data)
+            this.logger.log(`Validated data: ${JSON.stringify(validatedData)}`)
+
             // Parse meanings nếu là string (từ multipart/form-data)
-            if (typeof data.meanings === 'string') {
+            if (typeof validatedData.meanings === 'string') {
                 try {
-                    data.meanings = JSON.parse(data.meanings)
-                    this.logger.log(`Parsed meanings from string: ${JSON.stringify(data.meanings)}`)
+                    validatedData.meanings = JSON.parse(validatedData.meanings)
+                    this.logger.log(`Parsed meanings from string: ${JSON.stringify(validatedData.meanings)}`)
                 } catch (error) {
                     this.logger.error('Failed to parse meanings JSON:', error)
                     throw new Error('Invalid JSON format for meanings')
@@ -99,18 +117,16 @@ export class ExercisesService {
             }
 
             // Nếu meanings là object thay vì array, chuyển thành array
-            if (data.meanings && !Array.isArray(data.meanings)) {
-                data.meanings = [data.meanings]
-                this.logger.log(`Converted meanings object to array: ${JSON.stringify(data.meanings)}`)
+            if (validatedData.meanings && !Array.isArray(validatedData.meanings)) {
+                validatedData.meanings = [validatedData.meanings]
+                this.logger.log(`Converted meanings object to array: ${JSON.stringify(validatedData.meanings)}`)
             }
 
-            // Parse lessonId to number if it's a string (from multipart/form-data)
-            const lessonId = typeof data.lessonId === 'string' ? parseInt(data.lessonId) : data.lessonId
+            // Use validated data (should already be properly typed)
+            const lessonId = validatedData.lessonId
+            const isBlocked = validatedData.isBlocked || false
+            const price = validatedData.price
             this.logger.log(`Parsed lessonId: ${lessonId} (type: ${typeof lessonId})`)
-
-            // Parse other fields from multipart/form-data
-            const isBlocked = typeof data.isBlocked === 'string' ? data.isBlocked === 'true' : (data.isBlocked || false)
-            const price = data.price ? (typeof data.price === 'string' ? parseFloat(data.price) : data.price) : null
             this.logger.log(`Parsed isBlocked: ${isBlocked} (type: ${typeof isBlocked})`)
             this.logger.log(`Parsed price: ${price} (type: ${typeof price})`)
 
@@ -121,12 +137,12 @@ export class ExercisesService {
             }
 
             // Upload audio file nếu có
-            let audioUrl = data.audioUrl
+            let audioUrl = validatedData.audioUrl
             this.logger.log(`Initial audioUrl: ${audioUrl}`)
             this.logger.log(`Audio file exists: ${!!audioFile}`)
 
             if (audioFile) {
-                this.logger.log(`Uploading audio file for exercises: ${data.exerciseType}`)
+                this.logger.log(`Uploading audio file for exercises: ${validatedData.exerciseType}`)
                 const uploadResult = await this.uploadService.uploadFile(audioFile, 'exercises')
                 audioUrl = uploadResult.url
                 this.logger.log(`Audio file uploaded successfully: ${audioUrl}`)
@@ -136,8 +152,8 @@ export class ExercisesService {
 
             // Tạo exercises
             const exercisesData = {
-                exerciseType: data.exerciseType,
-                content: data.content,
+                exerciseType: validatedData.exerciseType,
+                content: validatedData.content,
                 audioUrl: audioUrl,
                 isBlocked: isBlocked, // Use parsed isBlocked
                 price: price, // Use parsed price
@@ -151,14 +167,28 @@ export class ExercisesService {
 
             this.logger.log(`Exercises created successfully: ${exercises.id}`)
 
+            // Convert price from Decimal to number if needed
+            const exercisesResponse = {
+                ...exercises,
+                price: exercises.price ? Number(exercises.price) : null
+            }
+
             return {
+                statusCode: 201,
                 data: {
-                    exercises
+                    exercises: exercisesResponse
                 },
                 message: 'Tạo bài tập thành công'
             }
         } catch (error) {
             this.logger.error('Error creating exercises with meanings:', error)
+
+            // Handle Zod validation errors
+            if (error.name === 'ZodError') {
+                const errorMessage = error.errors.map((err: any) => err.message).join(', ')
+                throw new InvalidExercisesDataException(`Dữ liệu không hợp lệ: ${errorMessage}`)
+            }
+
             if (error instanceof LessonNotFoundException || error instanceof ExercisesAlreadyExistsException) {
                 throw error
             }
@@ -218,10 +248,10 @@ export class ExercisesService {
                 throw new ExercisesNotFoundException()
             }
 
-            // Parse fields from multipart/form-data for update
+            // All fields should already be parsed by Zod validation, but add fallback conversion
             const parsedLessonId = data.lessonId ? (typeof data.lessonId === 'string' ? parseInt(data.lessonId) : data.lessonId) : undefined
-            const parsedIsBlocked = data.isBlocked !== undefined ? (typeof data.isBlocked === 'string' ? data.isBlocked === 'true' : data.isBlocked) : undefined
-            const parsedPrice = data.price ? (typeof data.price === 'string' ? parseFloat(data.price) : data.price) : undefined
+            const parsedIsBlocked = data.isBlocked
+            const parsedPrice = data.price
 
             // Check if lesson exists (if updating lessonId)
             if (parsedLessonId) {
@@ -263,9 +293,16 @@ export class ExercisesService {
 
             this.logger.log(`Exercises updated successfully: ${exercises.id}`)
 
+            // Convert price from Decimal to number if needed
+            const exercisesResponse = {
+                ...exercises,
+                price: exercises.price ? Number(exercises.price) : null
+            }
+
             return {
+                statusCode: 200,
                 data: {
-                    exercises
+                    exercises: exercisesResponse
                 },
                 message: 'Cập nhật bài tập thành công'
             }
@@ -295,6 +332,7 @@ export class ExercisesService {
 
             this.logger.log(`Deleted exercises ${id}`)
             return {
+                statusCode: 204,
                 message: 'Xóa bài tập thành công'
             }
         } catch (error) {

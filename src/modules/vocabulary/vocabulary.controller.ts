@@ -17,6 +17,8 @@ import {
     GetVocabularyListQuerySwaggerDTO,
     UpdateVocabularyMultipartSwaggerDTO,
     VocabularyStatisticsResponseSwaggerDTO,
+    ImportVocabularyXlsxSwaggerDTO,
+    ImportVocabularyTxtSwaggerDTO,
 } from '@/modules/vocabulary/dto/vocabulary.dto'
 import { AddMeaningToVocabularyDTO, AddMeaningSwaggerDTO } from '@/modules/vocabulary/dto/add-meaning.dto'
 import {
@@ -108,6 +110,34 @@ export class VocabularyController {
             audioFile,
             regenerateAudio
         )
+    }
+
+    @Post('import')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Import từ vựng từ file Excel (.xlsx)' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: ImportVocabularyXlsxSwaggerDTO as any })
+    @ApiResponse({ status: 201, description: 'Import thành công' })
+    async importVocabulary(
+        @UploadedFile() file: Express.Multer.File,
+        @ActiveUser('userId') userId?: number
+    ) {
+        return this.vocabularyService.importFromXlsx(file, userId)
+    }
+
+    @Post('import-txt')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Import từ vựng từ file TXT (tab-separated)' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: ImportVocabularyTxtSwaggerDTO as any })
+    @ApiResponse({ status: 201, description: 'Import TXT thành công' })
+    async importVocabularyTxt(
+        @UploadedFile() file: Express.Multer.File,
+        @ActiveUser('userId') userId?: number
+    ) {
+        return this.vocabularyService.importFromTxt(file, userId)
     }
 
     @Get()

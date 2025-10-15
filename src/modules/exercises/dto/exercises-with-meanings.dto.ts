@@ -34,18 +34,41 @@ export const CreateExercisesWithMeaningsSchema = z.object({
         .optional(),
     isBlocked: z
         .union([z.boolean(), z.string()])
-        .transform((val) => typeof val === 'string' ? val === 'true' : val)
+        .transform((val) => {
+            if (typeof val === 'string') {
+                return val === 'true' || val === '1'
+            }
+            return val
+        })
         .optional(),
     price: z
         .union([z.number(), z.string()])
-        .transform((val) => typeof val === 'string' ? parseFloat(val) : val)
+        .transform((val) => {
+            if (typeof val === 'string') {
+                const parsed = parseFloat(val)
+                if (isNaN(parsed)) {
+                    throw new Error('Giá bài tập phải là số hợp lệ')
+                }
+                return parsed
+            }
+            return val
+        })
         .refine((val) => val >= 0, {
             message: 'Giá bài tập phải >= 0'
         })
         .optional(),
     lessonId: z
         .union([z.number(), z.string()])
-        .transform((val) => typeof val === 'string' ? parseInt(val) : val)
+        .transform((val) => {
+            if (typeof val === 'string') {
+                const parsed = parseInt(val)
+                if (isNaN(parsed)) {
+                    throw new Error('ID bài học phải là số hợp lệ')
+                }
+                return parsed
+            }
+            return val
+        })
         .refine((val) => val > 0, {
             message: 'ID bài học phải > 0'
         }),

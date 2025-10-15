@@ -61,7 +61,7 @@ export class GetExercisesListQuerySwaggerDTO {
 
     @ApiProperty({
         example: 'multiple_choice',
-        description: 'Lọc theo loại bài tập',
+        description: 'Lọc theo loại bài tập multiple_choice, matching, listening, speaking',
         enum: ['multiple_choice', 'matching', 'listening', 'speaking'],
         required: false
     })

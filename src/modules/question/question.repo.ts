@@ -116,7 +116,7 @@ export class QuestionRepository {
     }
 
     // Helper methods
-    async checkQuestionExists(id: number) {
+    async checkQuestionExistsById(id: number) {
         const count = await this.prismaService.question.count({
             where: { id }
         })
@@ -138,5 +138,27 @@ export class QuestionRepository {
 
         const count = await this.prismaService.question.count({ where })
         return count > 0
+    }
+
+    async checkQuestionExists(exercisesId: number, questionJp: string, excludeId?: number) {
+        const where: any = {
+            exercisesId,
+            questionJp
+        }
+
+        if (excludeId) {
+            where.id = { not: excludeId }
+        }
+
+        return this.prismaService.question.findFirst({ where })
+    }
+
+    async getNextQuestionOrder(exercisesId: number) {
+        const result = await this.prismaService.question.aggregate({
+            where: { exercisesId },
+            _max: { questionOrder: true }
+        })
+
+        return (result._max.questionOrder || 0) + 1
     }
 }

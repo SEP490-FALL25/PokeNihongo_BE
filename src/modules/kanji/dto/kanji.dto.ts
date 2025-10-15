@@ -114,3 +114,23 @@ export class KanjiListSwaggerResponseDTO {
     totalPages: number
 }
 
+// Import Kanji DTO
+export class ImportKanjiXlsxSwaggerDTO {
+    @ApiProperty({
+        type: 'string',
+        format: 'binary',
+        description: 'File Excel với các cột: kanji, mean, detail, kun, on'
+    })
+    file: any
+
+    @ApiProperty({
+        name: 'language',
+        required: false,
+        type: String,
+        description: 'Ngôn ngữ của file (vi hoặc en). Mặc định: vi',
+        enum: ['vi', 'en']
+    })
+    language: string
+}
+
+

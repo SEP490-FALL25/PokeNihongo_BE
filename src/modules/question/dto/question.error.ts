@@ -12,6 +12,18 @@ export class QuestionAlreadyExistsException extends HttpException {
     }
 }
 
+export class QuestionContentAlreadyExistsException extends HttpException {
+    constructor() {
+        super('Câu hỏi này đã tồn tại trong bài tập', HttpStatus.CONFLICT)
+    }
+}
+
+export class InvalidJapaneseContentException extends HttpException {
+    constructor() {
+        super('Câu hỏi phải chứa ít nhất một ký tự tiếng Nhật (Hiragana, Katakana, hoặc Kanji)', HttpStatus.BAD_REQUEST)
+    }
+}
+
 export class InvalidQuestionDataException extends HttpException {
     constructor(message: string) {
         super(message, HttpStatus.BAD_REQUEST)

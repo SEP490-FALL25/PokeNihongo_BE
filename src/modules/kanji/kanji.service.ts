@@ -14,6 +14,7 @@ import { UploadService } from '@/3rdService/upload/upload.service'
 import { KANJI_MESSAGE } from '@/common/constants/message'
 import { Injectable, Logger } from '@nestjs/common'
 import { UnprocessableEntityException } from '@nestjs/common'
+import * as XLSX from 'xlsx'
 import {
     KanjiNotFoundException,
     KanjiAlreadyExistsException,
@@ -870,5 +871,151 @@ export class KanjiService {
             throw error
         }
     }
+
+    //#region Import from XLSX
+    /**
+     * Import Kanji từ file Excel với cột: kanji, mean, detail, kun, on
+     * @param language - Ngôn ngữ của file (vi hoặc en)
+     */
+    async importFromXlsx(file: Express.Multer.File, language: string = 'vi', createdById?: number) {
+        try {
+            if (!file || !file.buffer) {
+                throw new Error('File không hợp lệ')
+            }
+
+            // Validate language
+            if (!['vi', 'en'].includes(language)) {
+                throw new Error('Ngôn ngữ không hợp lệ. Chỉ hỗ trợ vi hoặc en')
+            }
+
+            const workbook = XLSX.read(file.buffer, { type: 'buffer' })
+            const sheetName = workbook.SheetNames[0]
+            const sheet = workbook.Sheets[sheetName]
+            const rows: Array<Record<string, any>> = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+
+            const created: any[] = []
+            const updated: any[] = []
+            const skipped: Array<{ kanji: string; reason: string }> = []
+
+            for (const row of rows) {
+                const kanji = (row.kanji || row['Kanji'] || '').toString().trim()
+                const mean = (row.mean || row['Mean'] || '').toString().trim()
+                const detail = (row.detail || row['Detail'] || '').toString().trim()
+                const kun = (row.kun || row['Kun'] || '').toString().trim()
+                const on = (row.on || row['On'] || '').toString().trim()
+
+                if (!kanji || !mean) {
+                    skipped.push({ kanji, reason: 'Thiếu dữ liệu (kanji/mean)' })
+                    continue
+                }
+
+                // Validate kanji character
+                if (!this.isKanjiCharacter(kanji)) {
+                    skipped.push({ kanji, reason: 'Không phải ký tự Kanji hợp lệ' })
+                    continue
+                }
+
+                // Kiểm tra Kanji đã tồn tại chưa
+                const existing = await this.kanjiRepository.findByCharacter(kanji)
+
+                try {
+                    if (existing) {
+                        // Kanji đã tồn tại -> Thêm translation cho ngôn ngữ mới
+                        this.logger.log(`Kanji ${kanji} đã tồn tại, thêm translation cho ngôn ngữ ${language}`)
+
+                        const meaningValue = detail ? `${mean}. ${detail}` : mean
+                        await this.createTranslationsForLanguages(existing.meaningKey, {
+                            [language]: meaningValue
+                        })
+
+                        updated.push({
+                            kanji: existing,
+                            language,
+                            meaningValue,
+                            action: 'updated_translation'
+                        })
+                    } else {
+                        // Tạo Kanji mới
+                        const kanjiData = {
+                            character: kanji,
+                            meaningKey: '', // Tạm thời để trống
+                            jlptLevel: 5 // Mặc định N5
+                        }
+
+                        const newKanji = await this.kanjiRepository.create(kanjiData)
+
+                        // Tạo meaningKey từ ID
+                        const meaningKey = `kanji.${newKanji.id}.meaning`
+                        await this.kanjiRepository.update(newKanji.id, { meaningKey })
+
+                        // Tạo translations cho meaningKey
+                        const meaningValue = detail ? `${mean}. ${detail}` : mean
+                        await this.createTranslationsForLanguages(meaningKey, {
+                            [language]: meaningValue
+                        })
+
+                        // Tạo readings (kun và on)
+                        const readings: any[] = []
+                        if (kun) {
+                            const kunReadings = kun.split(/[\s]+/).filter(r => r.trim())
+                            for (const kunReading of kunReadings) {
+                                try {
+                                    const reading = await this.kanjiReadingService.create({
+                                        kanjiId: newKanji.id,
+                                        readingType: 'kunyomi',
+                                        reading: kunReading.trim()
+                                    })
+                                    readings.push(reading)
+                                } catch (err) {
+                                    this.logger.warn(`Failed to create kun reading: ${kunReading}`)
+                                }
+                            }
+                        }
+
+                        if (on) {
+                            const onReadings = on.split(/[\s]+/).filter(r => r.trim())
+                            for (const onReading of onReadings) {
+                                try {
+                                    const reading = await this.kanjiReadingService.create({
+                                        kanjiId: newKanji.id,
+                                        readingType: 'onyomi',
+                                        reading: onReading.trim()
+                                    })
+                                    readings.push(reading)
+                                } catch (err) {
+                                    this.logger.warn(`Failed to create on reading: ${onReading}`)
+                                }
+                            }
+                        }
+
+                        created.push({
+                            kanji: newKanji,
+                            readings,
+                            meaningKey,
+                            meaningValue,
+                            language
+                        })
+                    }
+                } catch (err: any) {
+                    skipped.push({ kanji, reason: err?.message || 'Lỗi không xác định' })
+                }
+            }
+
+            return {
+                statusCode: 201,
+                message: `Import Kanji (${language}) thành công: ${created.length} tạo mới, ${updated.length} cập nhật, ${skipped.length} bỏ qua`,
+                data: {
+                    created,
+                    updated,
+                    skipped,
+                    language
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error importing kanji from xlsx:', error)
+            throw InvalidKanjiDataException
+        }
+    }
+    //#endregion
 
 }

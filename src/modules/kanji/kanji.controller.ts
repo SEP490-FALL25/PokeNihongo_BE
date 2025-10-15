@@ -27,7 +27,8 @@ import {
     UpdateKanjiSwaggerDTO,
     KanjiSwaggerResponseDTO,
     KanjiListSwaggerResponseDTO,
-    GetKanjiListQuerySwaggerDTO
+    GetKanjiListQuerySwaggerDTO,
+    ImportKanjiXlsxSwaggerDTO
 } from './dto/kanji.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -242,6 +243,20 @@ export class KanjiController {
     @HttpCode(HttpStatus.OK)
     delete(@Param() params: GetKanjiByIdParamsDTO) {
         return this.kanjiService.delete(params.id)
+    }
+
+    @Post('import')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiOperation({ summary: 'Import Kanji từ file Excel (.xlsx)' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: ImportKanjiXlsxSwaggerDTO })
+    @ApiResponse({ status: 201, description: 'Import Kanji thành công' })
+    async importKanji(
+        @UploadedFile() file: Express.Multer.File,
+        @Body('language') language?: string,
+        @ActiveUser('userId') userId?: number
+    ) {
+        return this.kanjiService.importFromXlsx(file, language || 'vi', userId)
     }
 
 }

@@ -12,8 +12,8 @@ export class AnswerRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetAnswerListQueryType) {
-        const { page, limit, questionId, isCorrect, search, sortBy = AnswerSortField.CREATED_AT, sort = SortOrder.DESC } = params
-        const skip = (page - 1) * limit
+        const { currentPage, pageSize, questionId, isCorrect, search, sortBy = AnswerSortField.CREATED_AT, sort = SortOrder.DESC } = params
+        const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
 
@@ -47,7 +47,7 @@ export class AnswerRepository {
                 },
                 orderBy: { [sortBy]: sort },
                 skip,
-                take: limit,
+                take: pageSize,
             }),
             this.prismaService.answer.count({ where })
         ])
@@ -55,9 +55,9 @@ export class AnswerRepository {
         return {
             data,
             total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit),
+            currentPage,
+            pageSize,
+            totalPages: Math.ceil(total / pageSize),
         }
     }
 
@@ -117,19 +117,6 @@ export class AnswerRepository {
     }
 
     // Helper methods
-    async checkAnswerExists(id: number) {
-        const count = await this.prismaService.answer.count({
-            where: { id }
-        })
-        return count > 0
-    }
-
-    async checkQuestionExists(questionId: number) {
-        const count = await this.prismaService.question.count({
-            where: { id: questionId }
-        })
-        return count > 0
-    }
 
     async checkAnswerKeyExists(answerKey: string, excludeId?: number) {
         const where: any = { answerKey }
@@ -138,6 +125,27 @@ export class AnswerRepository {
         }
 
         const count = await this.prismaService.answer.count({ where })
+        return count > 0
+    }
+
+    async checkAnswerExistsById(id: number) {
+        const count = await this.prismaService.answer.count({ where: { id } })
+        return count > 0
+    }
+
+    async checkAnswerExists(questionId: number, answerJp: string, excludeId?: number) {
+        const where: any = {
+            questionId,
+            answerJp
+        }
+        if (excludeId) {
+            where.id = { not: excludeId }
+        }
+        return this.prismaService.answer.findFirst({ where })
+    }
+
+    async checkQuestionExists(questionId: number) {
+        const count = await this.prismaService.question.count({ where: { id: questionId } })
         return count > 0
     }
 }
