@@ -307,3 +307,22 @@ export class MeaningDTO {
     meaning_text: string
 }
 
+// Import DTOs
+export class ImportVocabularyXlsxSwaggerDTO {
+    @ApiProperty({
+        type: 'string',
+        format: 'binary',
+        description: 'File Excel với các cột: word, phonetic, mean'
+    })
+    file: any
+}
+
+export class ImportVocabularyTxtSwaggerDTO {
+    @ApiProperty({
+        type: 'string',
+        format: 'binary',
+        description: 'TXT có các cột: Category\tword\treading\tmeaning\texample_jp\texample_vi'
+    })
+    file: any
+}
+

@@ -54,10 +54,7 @@ export const VocabularySchema = z.object({
     reading: z
         .string()
         .min(1, 'Cách đọc không được để trống')
-        .max(500, 'Cách đọc quá dài (tối đa 500 ký tự)')
-        .refine(isHiraganaText, {
-            message: HIRAGANA_TEXT_ERROR
-        }),
+        .max(500, 'Cách đọc quá dài (tối đa 500 ký tự)'),
     imageUrl: z.string().url().nullable().optional(),
     audioUrl: z.string().url().nullable().optional(),
     levelN: z.number().min(1).max(5).nullable().optional(),

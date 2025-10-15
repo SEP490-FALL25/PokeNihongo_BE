@@ -9,7 +9,8 @@ import {
     InvalidVocabularyDataException,
     VocabularyAlreadyExistsException,
     VocabularyNotFoundException,
-    MeaningAlreadyExistsException
+    MeaningAlreadyExistsException,
+    VocabularyJapaneseTextInvalidException
 } from '@/modules/vocabulary/dto/vocabulary.error'
 import { VocabularyRepository } from '@/modules/vocabulary/vocabulary.repo'
 import { VocabularyHelperService } from '@/modules/vocabulary/vocabulary.helper.service'
@@ -20,6 +21,9 @@ import { TranslationService } from '@/modules/translation/translation.service'
 import { LanguagesService } from '@/modules/languages/languages.service'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 import { Injectable, Logger } from '@nestjs/common'
+import * as XLSX from 'xlsx'
+import { WordTypeService } from '@/modules/wordtype/wordtype.service'
+import e from 'express'
 
 @Injectable()
 export class VocabularyService {
@@ -31,76 +35,263 @@ export class VocabularyService {
         private readonly textToSpeechService: TextToSpeechService,
         private readonly vocabularyHelperService: VocabularyHelperService,
         private readonly translationService: TranslationService,
-        private readonly languagesService: LanguagesService
+        private readonly languagesService: LanguagesService,
+        private readonly wordTypeService: WordTypeService
     ) { }
 
     // Removed old create method - use createFullVocabularyWithFiles instead
 
     //#region Find All
     async findAll(query: GetVocabularyListQueryType, lang: string) {
-        const { currentPage, pageSize, search, levelN, sortBy, sort } = query
-
-        const result = await this.vocabularyRepository.findMany({
-            currentPage,
-            pageSize,
-            search,
-            levelN,
-            sortBy,
-            sort
-        })
-
-        // Resolve translation values for wordType.nameKey per requested language
-        let languageId: number | undefined
         try {
-            const language = await this.languagesService.findByCode({ code: lang })
-            languageId = language?.data?.id
-        } catch {
-            languageId = undefined
-        }
+            const { currentPage, pageSize, search, levelN, sortBy, sort } = query
 
-        const resultsWithWordType = await Promise.all(
-            result.items.map(async (item) => {
-                if (!item.wordType || !languageId) {
-                    return item
+            const result = await this.vocabularyRepository.findMany({
+                currentPage,
+                pageSize,
+                search,
+                levelN,
+                sortBy,
+                sort
+            })
+
+            // Resolve translation values for wordType.nameKey per requested language
+            let languageId: number | undefined
+            try {
+                const language = await this.languagesService.findByCode({ code: lang })
+                languageId = language?.data?.id
+            } catch {
+                languageId = undefined
+            }
+
+            const resultsWithWordType = await Promise.all(
+                result.items.map(async (item) => {
+                    if (!item.wordType || !languageId) {
+                        return item
+                    }
+
+                    try {
+                        const translation = await this.translationService.findByKeyAndLanguage(
+                            item.wordType.nameKey,
+                            languageId as number
+                        )
+                        const name = translation?.value || item.wordType.nameKey
+                        return {
+                            ...item,
+                            wordType: {
+                                ...item.wordType,
+                                name
+                            }
+                        }
+                    } catch {
+                        return {
+                            ...item,
+                            wordType: {
+                                ...item.wordType,
+                                name: item.wordType.nameKey
+                            }
+                        }
+                    }
+                })
+            )
+
+            return {
+                statusCode: 200,
+                message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS,
+                data: {
+                    results: resultsWithWordType,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: Math.ceil(result.total / result.limit),
+                        totalItem: result.total
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error in findAll vocabulary:', error)
+            throw error
+        }
+    }
+    //#endregion
+
+    //#region Import from XLSX
+    /**
+     * Import vocabularies from an Excel file (.xlsx) with columns:
+     * word (Kanji/Kana), phonetic (reading in Hiragana), mean (Vietnamese)
+     */
+    async importFromXlsx(file: Express.Multer.File, createdById?: number) {
+        try {
+            if (!file || !file.buffer) {
+                throw new Error('File không hợp lệ')
+            }
+
+            const workbook = XLSX.read(file.buffer, { type: 'buffer' })
+            const sheetName = workbook.SheetNames[0]
+            const sheet = workbook.Sheets[sheetName]
+            const rows: Array<Record<string, any>> = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+
+            const created: any[] = []
+            const skipped: Array<{ word: string; reason: string }> = []
+
+            for (const row of rows) {
+                const word = (row.word || row['Word'] || row['word_jp'] || '').toString().trim()
+                const reading = (row.phonetic || row['reading'] || '').toString().trim()
+                const mean = (row.mean || row['meaning'] || '').toString().trim()
+
+                if (!word || !reading || !mean) {
+                    skipped.push({ word, reason: 'Thiếu dữ liệu (word/reading/mean)' })
+                    continue
                 }
 
                 try {
-                    const translation = await this.translationService.findByKeyAndLanguage(
-                        item.wordType.nameKey,
-                        languageId as number
+                    const result = await this.createFullVocabularyWithFiles(
+                        {
+                            word_jp: word,
+                            reading,
+                            translations: {
+                                meaning: [
+                                    { language_code: 'vi', value: mean }
+                                ]
+                            }
+                        },
+                        undefined,
+                        undefined,
+                        createdById
                     )
-                    const name = translation?.value || item.wordType.nameKey
-                    return {
-                        ...item,
-                        wordType: {
-                            ...item.wordType,
-                            name
-                        }
-                    }
-                } catch {
-                    return {
-                        ...item,
-                        wordType: {
-                            ...item.wordType,
-                            name: item.wordType.nameKey
-                        }
-                    }
-                }
-            })
-        )
-
-        return {
-            statusCode: 200,
-            message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS,
-            data: {
-                results: resultsWithWordType,
-                pagination: {
-                    current: result.page,
-                    pageSize: result.limit,
-                    totalPage: Math.ceil(result.total / result.limit),
-                    totalItem: result.total
+                    created.push(result.data)
+                } catch (err: any) {
+                    skipped.push({ word, reason: err?.message || 'Lỗi không xác định' })
                 }
             }
+
+            return {
+                statusCode: 201,
+                message: `Import từ vựng thành công: ${created.length} mục, bỏ qua ${skipped.length} mục`,
+                data: {
+                    created,
+                    skipped
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error importing vocabularies from xlsx:', error)
+            throw InvalidVocabularyDataException
+        }
+    }
+    //#endregion
+
+    //#region Import from TXT (tab-separated)
+    /**
+     * Import vocabularies from a tab-separated TXT file with columns:
+     * Category	word	reading	meaning	example_jp	example_vi
+     */
+    async importFromTxt(file: Express.Multer.File, createdById?: number) {
+        try {
+            if (!file || !file.buffer) {
+                throw new Error('File không hợp lệ')
+            }
+
+            const content = file.buffer.toString('utf8')
+            const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0)
+
+            const created: any[] = []
+            const skipped: Array<{ word: string; reason: string }> = []
+            let cachedVerbTypeId: number | undefined
+
+            for (const line of lines) {
+                const cols = line.split('\t')
+                // Expected minimum: [category, word, reading, meaning]
+                if (cols.length < 4) {
+                    skipped.push({ word: '', reason: 'Dòng không đúng định dạng (>=4 cột)' })
+                    continue
+                }
+
+                const category = cols[0]?.trim() || ''
+                const word = cols[1].trim()
+                const reading = cols[2].trim()
+                const meaningVi = cols[3].trim()
+                const exampleJp = cols[4]?.trim()
+                const exampleVi = cols[5]?.trim()
+
+                // Derive JLPT level from category like "Từ Vựng N5" -> level 5
+                let levelN: number | undefined
+                const match = category.match(/N([1-5])/i)
+                if (match) {
+                    levelN = parseInt(match[1], 10)
+                }
+
+                // Map Category to word_type_id
+                let wordTypeId: number | undefined
+                const normCat = category.toLowerCase()
+                if (/\bđộng\s*từ\b/i.test(category)) {
+                    if (!cachedVerbTypeId) {
+                        try {
+                            const res = await this.wordTypeService.findByNameKey('wordtype.verb.name')
+                            cachedVerbTypeId = res.data.id
+                        } catch { /* ignore */ }
+                    }
+                    wordTypeId = cachedVerbTypeId
+                } else if (/(tính\s*từ.*\(\s*i\s*\)|tính\s*từ\s*đuôi\s*\(\s*i\s*\))/i.test(category)) {
+                    try {
+                        const res = await this.wordTypeService.findByNameKey('wordtype.i_adjective.name')
+                        wordTypeId = res.data.id
+                    } catch { /* ignore */ }
+                } else if (/(tính\s*từ.*\(\s*na\s*\)|tính\s*từ\s*đuôi\s*\(\s*na\s*\))/i.test(category)) {
+                    try {
+                        const res = await this.wordTypeService.findByNameKey('wordtype.na_adjective.name')
+                        wordTypeId = res.data.id
+                    } catch { /* ignore */ }
+                } else if (/\btrạng\s*từ\b/i.test(category)) {
+                    try {
+                        const res = await this.wordTypeService.findByNameKey('wordtype.adverb.name')
+                        wordTypeId = res.data.id
+                    } catch { /* ignore */ }
+                } else if (/\btrợ\s*từ\b/i.test(category)) {
+                    try {
+                        const res = await this.wordTypeService.findByNameKey('wordtype.particle.name')
+                        wordTypeId = res.data.id
+                    } catch { /* ignore */ }
+                }
+
+                if (!word || !reading || !meaningVi) {
+                    skipped.push({ word, reason: 'Thiếu dữ liệu (word/reading/meaning)' })
+                    continue
+                }
+
+                try {
+                    const result = await this.createFullVocabularyWithFiles(
+                        {
+                            word_jp: word,
+                            reading,
+                            level_n: levelN,
+                            word_type_id: wordTypeId,
+                            translations: {
+                                meaning: [
+                                    { language_code: 'vi', value: meaningVi }
+                                ],
+                                examples: exampleJp && exampleVi ? [
+                                    { language_code: 'vi', sentence: exampleVi, original_sentence: exampleJp }
+                                ] : undefined
+                            }
+                        },
+                        undefined,
+                        undefined,
+                        createdById
+                    )
+                    created.push(result.data)
+                } catch (err: any) {
+                    skipped.push({ word, reason: err?.message || 'Lỗi không xác định' })
+                }
+            }
+
+            return {
+                statusCode: 201,
+                message: `Import TXT thành công: ${created.length} mục, bỏ qua ${skipped.length} mục`,
+                data: { created, skipped }
+            }
+        } catch (error) {
+            this.logger.error('Error importing vocabularies from txt:', error)
+            throw InvalidVocabularyDataException
         }
     }
     //#endregion
@@ -416,6 +607,10 @@ export class VocabularyService {
         createdById?: number
     ) {
         try {
+            // Validate word_jp must be Japanese (Hiragana/Katakana/Kanji)
+            if (!this.isJapaneseText(data.word_jp)) {
+                throw VocabularyJapaneseTextInvalidException
+            }
             this.logger.log('Creating full vocabulary with file uploads')
 
             // Parse translations if it's a string (from multipart/form-data)
@@ -587,14 +782,28 @@ export class VocabularyService {
             }
         } catch (error) {
             this.logger.error('Error creating full vocabulary with files:', error)
-            // Let MeaningAlreadyExistsException bubble up, only catch other errors
-            if (error && error.status === 409 && error.response?.error === 'MEANING_ALREADY_EXISTS') {
+            // Let specific exceptions bubble up
+            if (
+                error === VocabularyJapaneseTextInvalidException ||
+                (error && error.status === 409 && error.response?.error === 'MEANING_ALREADY_EXISTS')
+            ) {
                 throw error
             }
             throw InvalidVocabularyDataException
         }
     }
     //#endregion
+
+    // Helper: validate Japanese text (Hiragana/Katakana/Kanji)
+    private isJapaneseText(text: string): boolean {
+        if (!text || typeof text !== 'string') return false
+        // Reject obvious Latin letters, digits, common symbols
+        const hasNonJapanese = /[a-zA-Z0-9@#$%^&*()_+=\[\]{}|\\:\";'<>?,./`~]/.test(text)
+        if (hasNonJapanese) return false
+        // Require at least one Japanese character
+        const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF\uF900-\uFAFF\u2F800-\u2FA1F]/
+        return japaneseRegex.test(text)
+    }
 
     //#region Create Sample Vocabularies
     /**
