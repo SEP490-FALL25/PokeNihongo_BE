@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { ExercisesSortField, SortOrder } from '@/common/enum/enum'
 
 // Swagger DTOs - for API documentation only
 export class CreateExercisesSwaggerDTO {
 
     @ApiProperty({
         example: 'multiple_choice',
-        description: 'Loại bài tập',
-        enum: ['multiple_choice', 'matching', 'listening', 'speaking']
+        description: 'Loại bài tập QUIZ, multiple_choice, matching, listening, speaking',
+        enum: ['QUIZ', 'multiple_choice', 'matching', 'listening', 'speaking']
     })
     exerciseType: string
 
@@ -30,8 +31,8 @@ export class UpdateExercisesSwaggerDTO {
 
     @ApiProperty({
         example: 'multiple_choice',
-        description: 'Loại bài tập',
-        enum: ['multiple_choice', 'matching', 'listening', 'speaking'],
+        description: 'Loại bài tập QUIZ, multiple_choice, matching, listening, speaking',
+        enum: ['QUIZ', 'multiple_choice', 'matching', 'listening', 'speaking'],
         required: false
     })
     exerciseType?: string
@@ -61,8 +62,8 @@ export class GetExercisesListQuerySwaggerDTO {
 
     @ApiProperty({
         example: 'multiple_choice',
-        description: 'Lọc theo loại bài tập multiple_choice, matching, listening, speaking',
-        enum: ['multiple_choice', 'matching', 'listening', 'speaking'],
+        description: 'Lọc theo loại bài tập QUIZ, multiple_choice, matching, listening, speaking',
+        enum: ['QUIZ', 'multiple_choice', 'matching', 'listening', 'speaking'],
         required: false
     })
     exerciseType?: string
@@ -73,8 +74,24 @@ export class GetExercisesListQuerySwaggerDTO {
     @ApiProperty({ example: false, description: 'Lọc theo trạng thái bị chặn', required: false })
     isBlocked?: boolean
 
-    @ApiProperty({ example: '文法', description: 'Từ khóa tìm kiếm', required: false })
+    @ApiProperty({ example: '文法', description: 'Từ khóa tìm kiếm theo content', required: false })
     search?: string
+
+    @ApiProperty({
+        enum: ExercisesSortField,
+        example: ExercisesSortField.CREATED_AT,
+        description: 'Field để sắp xếp theo exerciseType, isBlocked, price, lessonId, createdAt, updatedAt',
+        required: false
+    })
+    sortBy?: ExercisesSortField
+
+    @ApiProperty({
+        enum: SortOrder,
+        example: SortOrder.DESC,
+        description: 'Sắp xếp theo thứ tự tăng dần (asc) hoặc giảm dần (desc)',
+        required: false
+    })
+    sort?: SortOrder
 }
 
 export class ExercisesResponseSwaggerDTO {

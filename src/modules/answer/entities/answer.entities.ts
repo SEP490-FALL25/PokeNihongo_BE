@@ -74,7 +74,7 @@ export const GetAnswerListQueryType = z.object({
     isCorrect: z.string().transform(val => val === 'true').optional(),
     search: z.string().optional(),
     sortBy: z.nativeEnum(AnswerSortField).optional().default(AnswerSortField.CREATED_AT),
-    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
+    sort: z.preprocess((val) => typeof val === 'string' ? val.toLowerCase() : val, z.nativeEnum(SortOrder)).optional().default(SortOrder.DESC),
 })
 
 // Response schemas
@@ -84,7 +84,7 @@ export const AnswerListResSchema = z
         data: z.object({
             results: z.array(AnswerWithTranslationType),
             pagination: z.object({
-                current: z.number(),
+                currentPage: z.number(),
                 pageSize: z.number(),
                 totalPage: z.number(),
                 totalItem: z.number()

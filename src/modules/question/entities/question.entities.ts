@@ -64,7 +64,7 @@ export const GetQuestionListQueryType = z.object({
     exercisesId: z.string().transform(Number).optional(),
     search: z.string().optional(),
     sortBy: z.nativeEnum(QuestionSortField).optional().default(QuestionSortField.CREATED_AT),
-    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
+    sort: z.preprocess((val) => typeof val === 'string' ? val.toLowerCase() : val, z.nativeEnum(SortOrder)).optional().default(SortOrder.DESC),
 })
 
 // Response schemas
@@ -74,7 +74,7 @@ export const QuestionListResSchema = z
         data: z.object({
             results: z.array(QuestionWithTranslationType),
             pagination: z.object({
-                current: z.number(),
+                currentPage: z.number(),
                 pageSize: z.number(),
                 totalPage: z.number(),
                 totalItem: z.number()

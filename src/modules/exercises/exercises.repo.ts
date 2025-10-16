@@ -11,7 +11,7 @@ export class ExercisesRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetExercisesListQueryType) {
-        const { currentPage, pageSize, exerciseType, lessonId, isBlocked, search } = params
+        const { currentPage, pageSize, exerciseType, lessonId, isBlocked, search, sortBy, sort } = params
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -39,7 +39,7 @@ export class ExercisesRepository {
             ]
         }
 
-        const [data, total] = await Promise.all([
+        const [items, total] = await Promise.all([
             this.prismaService.exercises.findMany({
                 where,
                 include: {
@@ -56,9 +56,20 @@ export class ExercisesRepository {
                         }
                     }
                 },
-                orderBy: [
-                    { createdAt: 'desc' }
-                ],
+                orderBy: (
+                    () => {
+                        const primaryField = (sortBy ?? 'createdAt') as string
+                        const direction = (sort ?? 'desc') as 'asc' | 'desc'
+                        // Add secondary sort by id to ensure stable ordering when primary values are equal
+                        if (primaryField !== 'id') {
+                            return [
+                                { [primaryField]: direction } as any,
+                                { id: direction } as any
+                            ]
+                        }
+                        return [{ id: direction } as any]
+                    }
+                )(),
                 skip,
                 take: pageSize,
             }),
@@ -66,11 +77,10 @@ export class ExercisesRepository {
         ])
 
         return {
-            data,
+            items,
             total,
             page: currentPage,
             limit: pageSize,
-            totalPages: Math.ceil(total / pageSize),
         }
     }
 

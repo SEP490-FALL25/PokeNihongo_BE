@@ -46,7 +46,7 @@ export class AnswerService {
 
             // Add translations for each answer
             const resultsWithTranslations = await Promise.all(
-                result.data.map(async (answer) => {
+                result.items.map(async (answer) => {
                     if (!languageId) {
                         // If no language, return answer without answerKey
                         const { answerKey, ...answerWithoutKey } = answer
@@ -83,16 +83,16 @@ export class AnswerService {
                 })
             )
 
-            this.logger.log(`Found ${result.data.length} answer entries`)
+            this.logger.log(`Found ${result.items.length} answer entries`)
             return {
                 statusCode: 200,
                 message: 'Lấy danh sách câu trả lời thành công',
                 data: {
                     results: resultsWithTranslations,
                     pagination: {
-                        current: result.currentPage,
-                        pageSize: result.pageSize,
-                        totalPage: result.totalPages,
+                        currentPage: result.page,
+                        pageSize: result.limit,
+                        totalPage: Math.ceil(result.total / result.limit),
                         totalItem: result.total
                     }
                 }

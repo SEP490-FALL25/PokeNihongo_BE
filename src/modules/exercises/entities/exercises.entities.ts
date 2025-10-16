@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { ExercisesSortField, SortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -48,6 +49,8 @@ export const GetExercisesListQueryType = z.object({
     lessonId: z.string().transform(Number).optional(),
     isBlocked: z.string().transform(val => val === 'true').optional(),
     search: z.string().optional(),
+    sortBy: z.nativeEnum(ExercisesSortField).optional().default(ExercisesSortField.CREATED_AT),
+    sort: z.preprocess((val) => typeof val === 'string' ? val.toLowerCase() : val, z.nativeEnum(SortOrder)).optional().default(SortOrder.DESC),
 })
 
 // Response schemas
@@ -57,7 +60,7 @@ export const ExercisesListResSchema = z
         data: z.object({
             results: z.array(ExercisesType),
             pagination: z.object({
-                current: z.number(),
+                currentPage: z.number(),
                 pageSize: z.number(),
                 totalPage: z.number(),
                 totalItem: z.number()

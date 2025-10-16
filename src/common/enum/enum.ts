@@ -70,6 +70,17 @@ export enum AnswerSortField {
     UPDATED_AT = 'updatedAt'
 }
 
+// Exercises specific sort fields
+export enum ExercisesSortField {
+    ID = 'id',
+    EXERCISE_TYPE = 'exerciseType',
+    IS_BLOCKED = 'isBlocked',
+    PRICE = 'price',
+    LESSON_ID = 'lessonId',
+    CREATED_AT = 'createdAt',
+    UPDATED_AT = 'updatedAt'
+}
+
 // Translation specific sort fields
 export enum TranslationSortField {
     ID = 'id',

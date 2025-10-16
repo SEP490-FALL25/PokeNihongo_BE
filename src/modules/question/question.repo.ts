@@ -28,7 +28,7 @@ export class QuestionRepository {
             }
         }
 
-        const [data, total] = await Promise.all([
+        const [items, total] = await Promise.all([
             this.prismaService.question.findMany({
                 where,
                 include: {
@@ -40,7 +40,19 @@ export class QuestionRepository {
                     },
                     answers: true
                 },
-                orderBy: { [sortBy]: sort },
+                orderBy: (
+                    () => {
+                        const primaryField = (sortBy ?? 'createdAt') as string
+                        const direction = (sort ?? 'desc') as 'asc' | 'desc'
+                        if (primaryField !== 'id') {
+                            return [
+                                { [primaryField]: direction } as any,
+                                { id: direction } as any
+                            ]
+                        }
+                        return [{ id: direction } as any]
+                    }
+                )(),
                 skip,
                 take: pageSize,
             }),
@@ -48,11 +60,10 @@ export class QuestionRepository {
         ])
 
         return {
-            data,
+            items,
             total,
             page: currentPage,
             limit: pageSize,
-            totalPages: Math.ceil(total / pageSize),
         }
     }
 

@@ -46,7 +46,7 @@ export class QuestionService {
 
             // Add translations for each question
             const resultsWithTranslations = await Promise.all(
-                result.data.map(async (question) => {
+                result.items.map(async (question) => {
                     if (!languageId) {
                         // If no language, return question without questionKey
                         const { questionKey, ...questionWithoutKey } = question
@@ -83,16 +83,16 @@ export class QuestionService {
                 })
             )
 
-            this.logger.log(`Found ${result.data.length} question entries`)
+            this.logger.log(`Found ${result.items.length} question entries`)
             return {
                 statusCode: 200,
                 message: 'Lấy danh sách câu hỏi thành công',
                 data: {
                     results: resultsWithTranslations,
                     pagination: {
-                        current: result.page,
+                        currentPage: result.page,
                         pageSize: result.limit,
-                        totalPage: result.totalPages,
+                        totalPage: Math.ceil(result.total / result.limit),
                         totalItem: result.total
                     }
                 }

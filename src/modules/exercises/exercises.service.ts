@@ -35,10 +35,10 @@ export class ExercisesService {
 
             const result = await this.exercisesRepository.findMany(params)
 
-            this.logger.log(`Found ${result.data.length} exercises entries`)
+            this.logger.log(`Found ${result.items.length} exercises entries`)
 
             // Convert price from Decimal to number for all exercises
-            const exercisesWithNumberPrice = result.data.map(exercise => ({
+            const exercisesWithNumberPrice = result.items.map(exercise => ({
                 ...exercise,
                 price: exercise.price ? Number(exercise.price) : null
             }))
@@ -49,9 +49,9 @@ export class ExercisesService {
                 data: {
                     results: exercisesWithNumberPrice,
                     pagination: {
-                        current: result.page,
+                        currentPage: result.page,
                         pageSize: result.limit,
-                        totalPage: result.totalPages,
+                        totalPage: Math.ceil(result.total / result.limit),
                         totalItem: result.total
                     }
                 }

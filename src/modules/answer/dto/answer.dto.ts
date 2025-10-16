@@ -96,7 +96,7 @@ export class GetAnswerListQuerySwaggerDTO {
     @ApiProperty({ example: true, description: 'Lọc theo câu trả lời đúng', required: false })
     isCorrect?: boolean
 
-    @ApiProperty({ example: '本', description: 'Từ khóa tìm kiếm', required: false })
+    @ApiProperty({ example: '本', description: 'Từ khóa tìm kiếm theo answerJp', required: false })
     search?: string
 
     @ApiProperty({
