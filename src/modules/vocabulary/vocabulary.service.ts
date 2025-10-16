@@ -219,65 +219,97 @@ export class VocabularyService {
             }
 
             const content = file.buffer.toString('utf8')
-            const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0)
+            const linesAll = content.split(/\r?\n/)
+            const lines = linesAll.filter(l => l.trim().length > 0)
 
             const created: any[] = []
             const skipped: Array<{ word: string; reason: string }> = []
-            let cachedVerbTypeId: number | undefined
 
-            for (const line of lines) {
+            // Detect header
+            const headerCols = lines[0]?.split('\t') || []
+            const hasHeaderWord = headerCols.some(h => /^(word|từ|kanji)$/i.test(h.trim()))
+
+            let startIndex = 0
+            let idxWord = 0
+            let idxReading = 1
+            let idxMeaning = 2
+            let idxExampleJp = 3
+            let idxExampleVi = 4
+            let idxJlpt = -1
+            let idxWordType = -1
+            let legacyCategory = false
+
+            if (hasHeaderWord) {
+                // New cleaned format with header
+                startIndex = 1
+                const map = new Map<string, number>()
+                headerCols.forEach((h, i) => map.set(h.trim().toLowerCase(), i))
+                idxWord = map.get('word') ?? 0
+                idxReading = map.get('reading') ?? 1
+                idxMeaning = map.get('meaning') ?? 2
+                idxExampleJp = map.get('example_jp') ?? 3
+                idxExampleVi = map.get('example_vi') ?? 4
+                idxJlpt = map.get('jlpt') ?? -1
+                idxWordType = map.get('word_type') ?? -1
+            } else {
+                // Legacy format: Category, word, reading, meaning, example_jp, example_vi
+                legacyCategory = true
+                startIndex = 0
+            }
+
+            // (moved) resolveWordTypeId helper is now a class method
+
+            for (let li = startIndex; li < lines.length; li++) {
+                const line = lines[li]
                 const cols = line.split('\t')
-                // Expected minimum: [category, word, reading, meaning]
-                if (cols.length < 4) {
-                    skipped.push({ word: '', reason: 'Dòng không đúng định dạng (>=4 cột)' })
-                    continue
-                }
-
-                const category = cols[0]?.trim() || ''
-                const word = cols[1].trim()
-                const reading = cols[2].trim()
-                const meaningVi = cols[3].trim()
-                const exampleJp = cols[4]?.trim()
-                const exampleVi = cols[5]?.trim()
-
-                // Derive JLPT level from category like "Từ Vựng N5" -> level 5
-                let levelN: number | undefined
-                const match = category.match(/N([1-5])/i)
-                if (match) {
-                    levelN = parseInt(match[1], 10)
-                }
-
-                // Map Category to word_type_id
-                let wordTypeId: number | undefined
-                const normCat = category.toLowerCase()
-                if (/\bđộng\s*từ\b/i.test(category)) {
-                    if (!cachedVerbTypeId) {
-                        try {
-                            const res = await this.wordTypeService.findByNameKey('wordtype.verb.name')
-                            cachedVerbTypeId = res.data.id
-                        } catch { /* ignore */ }
+                if (legacyCategory) {
+                    if (cols.length < 4) {
+                        skipped.push({ word: '', reason: 'Dòng không đúng định dạng (>=4 cột)' })
+                        continue
                     }
-                    wordTypeId = cachedVerbTypeId
-                } else if (/(tính\s*từ.*\(\s*i\s*\)|tính\s*từ\s*đuôi\s*\(\s*i\s*\))/i.test(category)) {
-                    try {
-                        const res = await this.wordTypeService.findByNameKey('wordtype.i_adjective.name')
-                        wordTypeId = res.data.id
-                    } catch { /* ignore */ }
-                } else if (/(tính\s*từ.*\(\s*na\s*\)|tính\s*từ\s*đuôi\s*\(\s*na\s*\))/i.test(category)) {
-                    try {
-                        const res = await this.wordTypeService.findByNameKey('wordtype.na_adjective.name')
-                        wordTypeId = res.data.id
-                    } catch { /* ignore */ }
-                } else if (/\btrạng\s*từ\b/i.test(category)) {
-                    try {
-                        const res = await this.wordTypeService.findByNameKey('wordtype.adverb.name')
-                        wordTypeId = res.data.id
-                    } catch { /* ignore */ }
-                } else if (/\btrợ\s*từ\b/i.test(category)) {
-                    try {
-                        const res = await this.wordTypeService.findByNameKey('wordtype.particle.name')
-                        wordTypeId = res.data.id
-                    } catch { /* ignore */ }
+                } else {
+                    if (cols.length < 3) {
+                        skipped.push({ word: '', reason: 'Dòng không đúng định dạng (>=3 cột)' })
+                        continue
+                    }
+                }
+
+                let levelN: number | undefined
+                let wordTypeId: number | undefined
+                let exampleJp: string | undefined
+                let exampleVi: string | undefined
+
+                let word = ''
+                let reading = ''
+                let meaningVi = ''
+
+                if (legacyCategory) {
+                    const category = (cols[0] || '').trim()
+                    word = (cols[1] || '').trim()
+                    reading = (cols[2] || '').trim()
+                    meaningVi = (cols[3] || '').trim()
+                    exampleJp = (cols[4] || '').trim() || undefined
+                    exampleVi = (cols[5] || '').trim() || undefined
+
+                    const m = category.match(/N([1-5])/i)
+                    if (m) levelN = parseInt(m[1], 10)
+                } else {
+                    word = (cols[idxWord] || '').trim()
+                    reading = (cols[idxReading] || '').trim()
+                    meaningVi = (cols[idxMeaning] || '').trim()
+                    exampleJp = idxExampleJp >= 0 ? (cols[idxExampleJp] || '').trim() : ''
+                    exampleVi = idxExampleVi >= 0 ? (cols[idxExampleVi] || '').trim() : ''
+                    if (idxJlpt >= 0) {
+                        const j = (cols[idxJlpt] || '').trim()
+                        if (/^[1-5]$/.test(j)) levelN = parseInt(j, 10)
+                    }
+                    if (idxWordType >= 0) {
+                        const wt = (cols[idxWordType] || '').trim()
+                        wordTypeId = await this.resolveWordTypeId(wt)
+                        if (wt && !wordTypeId) {
+                            throw new Error(`Word type not found in system: '${wt}' at line ${li + 1}`)
+                        }
+                    }
                 }
 
                 if (!word || !reading || !meaningVi) {
@@ -286,6 +318,91 @@ export class VocabularyService {
                 }
 
                 try {
+                    // Check if vocabulary exists (same word_jp + reading)
+                    const existingCheck2 = await this.vocabularyHelperService.checkVocabularyExists(word, reading)
+
+                    if (existingCheck2.exists && existingCheck2.vocabularyId) {
+                        const existing = await this.vocabularyRepository.findUnique({ id: existingCheck2.vocabularyId })
+                        if (!existing) {
+                            // fallback: proceed to create
+                        } else {
+                            this.logger.log(`[Import TXT] Found existing vocab ${existing.id}: word="${existing.wordJp}", reading_db="${existing.reading}", reading_file="${reading}"`)
+                            // Prepare updates for NULL fields or changed reading
+                            const updateData: any = {}
+                            if (existing.levelN == null && typeof levelN === 'number') {
+                                updateData.levelN = levelN
+                                this.logger.log(`[Vocab ${existing.id}] Updating levelN: null → ${levelN}`)
+                            }
+                            if ((existing as any).wordTypeId == null && typeof wordTypeId === 'number') {
+                                updateData.wordTypeId = wordTypeId
+                                this.logger.log(`[Vocab ${existing.id}] Updating wordTypeId: null → ${wordTypeId}`)
+                            }
+                            // Update reading if different (và không rỗng)
+                            if (reading && existing.reading !== reading) {
+                                updateData.reading = reading
+                                this.logger.log(`[Vocab ${existing.id}] Updating reading: "${existing.reading}" → "${reading}"`)
+                            }
+                            if (!existing.audioUrl) {
+                                try {
+                                    const tts = await this.textToSpeechService.convertTextToSpeech(
+                                        word,
+                                        { languageCode: 'ja-JP', audioEncoding: 'MP3' }
+                                    )
+                                    const audioBuffer = tts.audioContent
+                                    const fileName = `vocabulary_${word}_${Date.now()}.mp3`
+                                    const generatedAudioFile: Express.Multer.File = {
+                                        buffer: audioBuffer,
+                                        originalname: fileName,
+                                        mimetype: 'audio/mpeg',
+                                        fieldname: 'audioFile',
+                                        encoding: '7bit',
+                                        size: audioBuffer.length,
+                                        stream: null as any,
+                                        destination: '',
+                                        filename: fileName,
+                                        path: ''
+                                    }
+                                    const upload = await this.uploadService.uploadFile(generatedAudioFile, 'vocabulary/audio')
+                                    updateData.audioUrl = upload.url
+                                } catch { /* ignore TTS failure */ }
+                            }
+
+                            if (Object.keys(updateData).length > 0) {
+                                this.logger.log(`[Vocab ${existing.id}] Applying updates: ${JSON.stringify(updateData)}`)
+                                await this.vocabularyRepository.update({ id: existing.id }, updateData)
+                                this.logger.log(`[Vocab ${existing.id}] Update completed successfully`)
+                            } else {
+                                this.logger.log(`[Vocab ${existing.id}] No fields to update`)
+                            }
+
+                            // Skip adding meaning if it already exists (helper throws MeaningAlreadyExistsException)
+                            try {
+                                await this.vocabularyHelperService.addMeaningWithTranslations(
+                                    existing.id,
+                                    {
+                                        meaning: [{ language_code: 'vi', value: meaningVi }],
+                                        examples: exampleVi ? [{ language_code: 'vi', sentence: exampleVi, original_sentence: exampleJp || '' }] : undefined
+                                    },
+                                    wordTypeId
+                                )
+                            } catch (e: any) {
+                                // If meaning already exists, silently skip (don't create duplicate)
+                                if (e === MeaningAlreadyExistsException) {
+                                    this.logger.log(`Meaning already exists for vocabulary ${existing.id}, skipping`)
+                                } else {
+                                    throw e
+                                }
+                            }
+
+                            created.push({
+                                vocabulary: { ...existing },
+                                message: 'Skipped create; updated null fields and/or added translations if needed'
+                            })
+                            continue
+                        }
+                    }
+
+                    // Not existing → create full
                     const result = await this.createFullVocabularyWithFiles(
                         {
                             word_jp: word,
@@ -296,8 +413,8 @@ export class VocabularyService {
                                 meaning: [
                                     { language_code: 'vi', value: meaningVi }
                                 ],
-                                examples: exampleJp && exampleVi ? [
-                                    { language_code: 'vi', sentence: exampleVi, original_sentence: exampleJp }
+                                examples: exampleVi ? [
+                                    { language_code: 'vi', sentence: exampleVi, original_sentence: exampleJp || '' }
                                 ] : undefined
                             }
                         },
@@ -322,6 +439,53 @@ export class VocabularyService {
         }
     }
     //#endregion
+
+    /**
+     * Chuẩn hóa và ánh xạ chuỗi word_type từ file TXT sang WordTypeId trong hệ thống.
+     */
+    private async resolveWordTypeId(wordType?: string): Promise<number | undefined> {
+        if (!wordType) return undefined
+        const type = wordType.toLowerCase()
+        try {
+            if (type.includes('ichidan')) {
+                try {
+                    const r = await this.wordTypeService.findByNameKey('wordtype.ichidan_verb.name')
+                    return r.data.id
+                } catch { /* fallback */ }
+                const rAlias = await this.wordTypeService.findByNameKey('wordtype.verb_ichidan.name')
+                return rAlias.data.id
+            }
+            if (type.includes('godan')) {
+                try {
+                    const r = await this.wordTypeService.findByNameKey('wordtype.godan_verb.name')
+                    return r.data.id
+                } catch { /* fallback */ }
+                const rAlias = await this.wordTypeService.findByNameKey('wordtype.verb_godan.name')
+                return rAlias.data.id
+            }
+            if (type.includes('i_adjective') || type.includes('i-adjective')) {
+                const r = await this.wordTypeService.findByNameKey('wordtype.i_adjective.name')
+                return r.data.id
+            }
+            if (type.includes('na_adjective') || type.includes('na-adjective')) {
+                const r = await this.wordTypeService.findByNameKey('wordtype.na_adjective.name')
+                return r.data.id
+            }
+            if (type.includes('adverb')) {
+                const r = await this.wordTypeService.findByNameKey('wordtype.adverb.name')
+                return r.data.id
+            }
+            if (type.includes('particle')) {
+                const r = await this.wordTypeService.findByNameKey('wordtype.particle.name')
+                return r.data.id
+            }
+            if (type.includes('noun')) {
+                const r = await this.wordTypeService.findByNameKey('wordtype.noun.name')
+                return r.data.id
+            }
+        } catch { /* ignore */ }
+        return undefined
+    }
 
     //#region Statistics
     async getStatistics() {

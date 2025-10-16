@@ -5,7 +5,7 @@ import {
     WordType
 } from './entities/wordtype.entities'
 
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { WordTypeRepository } from './wordtype.repo'
 import {
     WordTypeNotFoundException,
@@ -18,7 +18,7 @@ import { I18nService } from '@/i18n/i18n.service'
 import { WordTypeMessage } from '@/i18n/message-keys'
 
 @Injectable()
-export class WordTypeService {
+export class WordTypeService implements OnModuleInit {
     private readonly logger = new Logger(WordTypeService.name)
 
     constructor(
@@ -27,6 +27,16 @@ export class WordTypeService {
         private readonly languagesService: LanguagesService,
         private readonly i18nService: I18nService
     ) { }
+
+    async onModuleInit(): Promise<void> {
+        // Best-effort: ensure default word types exist so other modules (imports) don't fail
+        try {
+            await this.createDefaultWordTypes('vi')
+        } catch (error) {
+            // Avoid breaking app startup if migration not yet applied; just log
+            this.logger.warn('Skip creating default word types on init (might be before migration).', error as any)
+        }
+    }
 
     async findAll(params: GetWordTypeListQueryType, lang: string = 'vi') {
         try {
@@ -238,22 +248,23 @@ export class WordTypeService {
                 { id: 8, key: 'counter', translations: { vi: 'lượng từ', en: 'counter' } },
                 { id: 9, key: 'prefix', translations: { vi: 'tiền tố', en: 'prefix' } },
                 { id: 10, key: 'suffix', translations: { vi: 'hậu tố', en: 'suffix' } },
-
                 // Tính từ tiếng Nhật
                 { id: 11, key: 'i_adjective', translations: { vi: 'tính từ i', en: 'i-adjective' } },
                 { id: 12, key: 'na_adjective', translations: { vi: 'tính từ na', en: 'na-adjective' } },
                 { id: 13, key: 'no_adjective', translations: { vi: 'tính từ no', en: 'no-adjective' } },
-
-                // Động từ tiếng Nhật - dùng loại chung "động từ"
+                // Động từ tiếng Nhật
                 { id: 14, key: 'verb', translations: { vi: 'động từ', en: 'verb' } },
-
+                { id: 15, key: 'godan_verb', translations: { vi: 'động từ ngũ đoạn', en: 'godan verb' } },
+                { id: 16, key: 'ichidan_verb', translations: { vi: 'động từ nhất đoạn', en: 'ichidan verb' } },
+                { id: 17, key: 'transitive_verb', translations: { vi: 'tha động từ', en: 'transitive verb' } },
+                { id: 18, key: 'intransitive_verb', translations: { vi: 'tự động từ', en: 'intransitive verb' } },
                 // Từ đặc biệt tiếng Nhật
-                { id: 32, key: 'onomatopoeia', translations: { vi: 'từ tượng thanh', en: 'onomatopoeia' } },
-                { id: 33, key: 'mimetic_word', translations: { vi: 'từ tượng hình', en: 'mimetic word' } },
-                { id: 34, key: 'honorific', translations: { vi: 'kính ngữ', en: 'honorific' } },
-                { id: 35, key: 'humble', translations: { vi: 'khiêm nhường ngữ', en: 'humble form' } },
-                { id: 36, key: 'polite', translations: { vi: 'lịch sự ngữ', en: 'polite form' } },
-                { id: 37, key: 'casual', translations: { vi: 'thân mật ngữ', en: 'casual form' } }
+                { id: 19, key: 'onomatopoeia', translations: { vi: 'từ tượng thanh', en: 'onomatopoeia' } },
+                { id: 20, key: 'mimetic_word', translations: { vi: 'từ tượng hình', en: 'mimetic word' } },
+                { id: 21, key: 'honorific', translations: { vi: 'kính ngữ', en: 'honorific' } },
+                { id: 22, key: 'humble', translations: { vi: 'khiêm nhường ngữ', en: 'humble form' } },
+                { id: 23, key: 'polite', translations: { vi: 'lịch sự ngữ', en: 'polite form' } },
+                { id: 24, key: 'casual', translations: { vi: 'thân mật ngữ', en: 'casual form' } }
             ]
 
             for (const wordType of defaultWordTypes) {

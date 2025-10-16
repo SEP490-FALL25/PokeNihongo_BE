@@ -928,16 +928,22 @@ export class KanjiService {
 
                         const translations: Record<string, string> = {}
 
-                        // Thêm translation tiếng Anh nếu có
-                        if (mean) {
-                            const meaningValueEn = detail ? `${mean}. ${detail}` : mean
-                            translations['en'] = meaningValueEn
+                        // Fallback rules:
+                        // - vi: prefer meanViet/detailViet; if missing and importing language is 'vi', fallback to mean/detail
+                        // - en: prefer mean/detail; if missing and importing language is 'en', fallback to meanViet/detailViet
+                        const viBase = meanViet || (language === 'vi' ? mean : '')
+                        const viDetail = detailViet || (language === 'vi' ? detail : '')
+                        const enBase = mean || (language === 'en' ? meanViet : '')
+                        const enDetail = detail || (language === 'en' ? detailViet : '')
+
+                        if (enBase || enDetail) {
+                            const meaningValueEn = enDetail ? `${enBase || ''}${enBase && enDetail ? '. ' : ''}${enDetail}` : enBase
+                            if (meaningValueEn) translations['en'] = meaningValueEn
                         }
 
-                        // Thêm translation tiếng Việt nếu có
-                        if (meanViet) {
-                            const meaningValueVi = detailViet ? `${meanViet}. ${detailViet}` : meanViet
-                            translations['vi'] = meaningValueVi
+                        if (viBase || viDetail) {
+                            const meaningValueVi = viDetail ? `${viBase || ''}${viBase && viDetail ? '. ' : ''}${viDetail}` : viBase
+                            if (meaningValueVi) translations['vi'] = meaningValueVi
                         }
 
                         if (Object.keys(translations).length > 0) {
@@ -963,19 +969,22 @@ export class KanjiService {
                         const meaningKey = `kanji.${newKanji.id}.meaning`
                         await this.kanjiRepository.update(newKanji.id, { meaningKey })
 
-                        // Tạo translations cho meaningKey
+                        // Tạo translations cho meaningKey (với fallback tương tự)
                         const translations: Record<string, string> = {}
 
-                        // Thêm translation tiếng Anh nếu có
-                        if (mean) {
-                            const meaningValueEn = detail ? `${mean}. ${detail}` : mean
-                            translations['en'] = meaningValueEn
+                        const viBase = meanViet || (language === 'vi' ? mean : '')
+                        const viDetail = detailViet || (language === 'vi' ? detail : '')
+                        const enBase = mean || (language === 'en' ? meanViet : '')
+                        const enDetail = detail || (language === 'en' ? detailViet : '')
+
+                        if (enBase || enDetail) {
+                            const meaningValueEn = enDetail ? `${enBase || ''}${enBase && enDetail ? '. ' : ''}${enDetail}` : enBase
+                            if (meaningValueEn) translations['en'] = meaningValueEn
                         }
 
-                        // Thêm translation tiếng Việt nếu có
-                        if (meanViet) {
-                            const meaningValueVi = detailViet ? `${meanViet}. ${detailViet}` : meanViet
-                            translations['vi'] = meaningValueVi
+                        if (viBase || viDetail) {
+                            const meaningValueVi = viDetail ? `${viBase || ''}${viBase && viDetail ? '. ' : ''}${viDetail}` : viBase
+                            if (meaningValueVi) translations['vi'] = meaningValueVi
                         }
 
                         if (Object.keys(translations).length > 0) {
