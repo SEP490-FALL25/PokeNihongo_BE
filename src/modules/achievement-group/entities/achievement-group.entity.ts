@@ -56,8 +56,8 @@ export const GetAchievementGroupParamsSchema = z
 export const GetAchievementGroupDetailResSchema = z.object({
   statusCode: z.number(),
   data: AchievementGroupSchema.extend({
-    nameTranslations: z.string(),
-    descriptionTranslations: z.string()
+    nameTranslation: z.string(),
+    descriptionTranslation: z.string()
   }),
   message: z.string()
 })
@@ -91,6 +91,8 @@ export type GetAchievementGroupDetailResType = z.infer<
 
 // field
 type AchievementGroupFieldType = keyof z.infer<typeof AchievementGroupSchema>
-export const ACHIEVEMENT_GROUP_FIELDS = Object.keys(
-  AchievementGroupSchema.shape
-) as AchievementGroupFieldType[]
+export const ACHIEVEMENT_GROUP_FIELDS = [
+  ...Object.keys(AchievementGroupSchema.shape),
+  'nameTranslation',
+  'descriptionTranslation'
+] as AchievementGroupFieldType[]
