@@ -38,7 +38,7 @@ export class UserPokemonService {
     private readonly sharedUserRepository: SharedUserRepository,
     private readonly i18nService: I18nService,
     private prismaService: PrismaService
-  ) {}
+  ) { }
 
   async list(pagination: PaginationQueryType, userId: number, lang: string = 'vi') {
     const data = await this.userPokemonRepo.list(pagination, userId)
@@ -128,6 +128,7 @@ export class UserPokemonService {
         //   })
         // })
 
+
         return {
           ...pokemon,
           weaknesses: Array.from(allWeaknesses.values()),
@@ -211,7 +212,7 @@ export class UserPokemonService {
             if (
               !allWeaknesses.has(weakness.id) ||
               allWeaknesses.get(weakness.id).effectiveness_multiplier <
-                weakness.effectiveness_multiplier
+              weakness.effectiveness_multiplier
             ) {
               allWeaknesses.set(weakness.id, weakness)
             }
@@ -374,11 +375,11 @@ export class UserPokemonService {
       ...userPokemon,
       pokemon: userPokemon.pokemon
         ? {
-            ...userPokemon.pokemon,
-            weaknesses,
-            nextPokemons: nextPokemonsWithDetails,
-            previousPokemons: previousPokemonsWithWeaknesses
-          }
+          ...userPokemon.pokemon,
+          weaknesses,
+          nextPokemons: nextPokemonsWithDetails,
+          previousPokemons: previousPokemonsWithWeaknesses
+        }
         : userPokemon.pokemon
     }
 

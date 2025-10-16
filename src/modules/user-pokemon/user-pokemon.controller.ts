@@ -16,11 +16,12 @@ import {
   UpdateUserPokemonBodyDTO,
   UpdateUserPokemonResDTO
 } from './dto/user-pokemon.dto'
+import { PokemonListWithUserResponseDTO } from './dto/user-pokemon-response.dto'
 import { UserPokemonService } from './user-pokemon.service'
 
 @Controller('user-pokemon')
 export class UserPokemonController {
-  constructor(private readonly userPokemonService: UserPokemonService) {}
+  constructor(private readonly userPokemonService: UserPokemonService) { }
 
   @Get()
   @ZodSerializerDto(PaginationResponseDTO)
@@ -33,7 +34,7 @@ export class UserPokemonController {
   }
 
   @Get('user/pokemons')
-  @ZodSerializerDto(PaginationResponseDTO)
+  @ZodSerializerDto(PokemonListWithUserResponseDTO)
   getPokemonListWithUser(
     @Query() query: PaginationQueryDTO,
     @ActiveUser('userId') userId: number,
