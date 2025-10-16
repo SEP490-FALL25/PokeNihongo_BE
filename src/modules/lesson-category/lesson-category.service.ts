@@ -291,16 +291,21 @@ export class LessonCategoryService {
         },
         {
           id: 3,
+          nameKey: 'category.jlpt_n3',
+          slug: 'jlpt-n3'
+        },
+        {
+          id: 4,
           nameKey: 'category.grammar',
           slug: 'grammar'
         },
         {
-          id: 4,
+          id: 5,
           nameKey: 'category.vocabulary',
           slug: 'vocabulary'
         },
         {
-          id: 5,
+          id: 6,
           nameKey: 'category.listening',
           slug: 'listening'
         }
@@ -314,6 +319,10 @@ export class LessonCategoryService {
         // JLPT N4
         { key: 'category.jlpt_n4', languageId: 1, value: 'Trình độ JLPT N4' },
         { key: 'category.jlpt_n4', languageId: 2, value: 'JLPT N4 Level' },
+
+        // JLPT N3
+        { key: 'category.jlpt_n3', languageId: 1, value: 'Trình độ JLPT N3' },
+        { key: 'category.jlpt_n3', languageId: 2, value: 'JLPT N3 Level' },
 
         // Grammar
         { key: 'category.grammar', languageId: 1, value: 'Ngữ pháp' },
