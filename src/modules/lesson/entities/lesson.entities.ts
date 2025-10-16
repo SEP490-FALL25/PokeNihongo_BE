@@ -104,7 +104,7 @@ export const GetLessonListQueryType = z.object({
     search: z.string().optional(),
     lessonCategoryId: z.string().transform(Number).optional(),
     levelJlpt: z.string().transform(Number).optional(),
-    isPublished: z.string().transform(Boolean).optional(),
+    isPublished: z.string().transform((val) => val === 'true').optional(),
     sortBy: z.nativeEnum(LessonSortField).optional().default(LessonSortField.CREATED_AT),
     sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
