@@ -49,6 +49,107 @@ export class UserPokemonService {
     }
   }
 
+  async getPokemonListWithUser(
+    query: PaginationQueryType,
+    userId: number,
+    lang: string = 'vi'
+  ) {
+    // 1. Lấy danh sách tất cả pokemon
+    const pokemonData = await this.pokemonRepo.getPokemonListWithPokemonUser(query)
+
+    // 2. Lấy danh sách pokemon của user
+    const userPokemons = await this.userPokemonRepo.getByUserId(userId)
+    const userPokemonIds = new Set(userPokemons.map((up) => up.pokemonId))
+
+    // 3. Tính tổng số pokemon
+    const totalPokemons = await this.prismaService.pokemon.count()
+    const userPokemonsCount = userPokemons.length
+    const ownershipPercentage =
+      totalPokemons > 0 ? Math.round((userPokemonsCount / totalPokemons) * 100) : 0
+
+    // 4. Optimize: Calculate weaknesses for all Pokemon in batch
+    if (pokemonData.results && pokemonData.results.length > 0) {
+      // Get all unique type IDs from all Pokemon
+      const allTypeIds = new Set<number>()
+      pokemonData.results.forEach((pokemon: any) => {
+        pokemon.types?.forEach((type: any) => {
+          allTypeIds.add(type.id)
+        })
+      })
+
+      // Batch load all type effectiveness data once
+      // const allTypeEffectiveness = await this.prismaService.typeEffectiveness.findMany({
+      //   where: {
+      //     defenderId: {
+      //       in: Array.from(allTypeIds)
+      //     },
+      //     multiplier: {
+      //       gt: 1 // Only get super effective (weaknesses)
+      //     }
+      //   },
+      //   include: {
+      //     attacker: {
+      //       select: {
+      //         id: true,
+      //         type_name: true,
+      //         display_name: true,
+      //         color_hex: true
+      //       }
+      //     }
+      //   }
+      // })
+
+      // Create lookup map for faster access
+      // const effectivenessMap = new Map<number, any[]>()
+      // allTypeEffectiveness.forEach((eff) => {
+      //   if (!effectivenessMap.has(eff.defenderId)) {
+      //     effectivenessMap.set(eff.defenderId, [])
+      //   }
+      //   effectivenessMap.get(eff.defenderId)!.push({
+      //     ...eff.attacker,
+      //     effectiveness_multiplier: eff.multiplier
+      //   })
+      // })
+
+      // Calculate weaknesses for each Pokemon and mark if user owns it
+      const pokemonWithUserInfo = pokemonData.results.map((pokemon: any) => {
+        const allWeaknesses = new Map<number, any>()
+
+        // pokemon.types?.forEach((type: any) => {
+        //   const weaknesses = effectivenessMap.get(type.id) || []
+        //   weaknesses.forEach((weakness) => {
+        //     if (
+        //       !allWeaknesses.has(weakness.id) ||
+        //       allWeaknesses.get(weakness.id).effectiveness_multiplier <
+        //         weakness.effectiveness_multiplier
+        //     ) {
+        //       allWeaknesses.set(weakness.id, weakness)
+        //     }
+        //   })
+        // })
+
+        return {
+          ...pokemon,
+          weaknesses: Array.from(allWeaknesses.values()),
+          userPokemon: userPokemonIds.has(pokemon.id)
+        }
+      })
+
+      pokemonData.results = pokemonWithUserInfo
+    }
+
+    return {
+      statusCode: 200,
+      data: {
+        ...pokemonData,
+        ownershipPercentage,
+        userPokemonsCount,
+        totalPokemons
+      },
+      message: this.i18nService.translate(UserPokemonMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
   async listWithUserId(userId: number, lang: string = 'vi') {
     const data = await this.userPokemonRepo.getByUserId(userId)
 

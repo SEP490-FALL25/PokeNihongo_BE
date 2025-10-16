@@ -32,6 +32,16 @@ export class UserPokemonController {
     return this.userPokemonService.list(query, userId, lang)
   }
 
+  @Get('user/pokemons')
+  @ZodSerializerDto(PaginationResponseDTO)
+  getPokemonListWithUser(
+    @Query() query: PaginationQueryDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userPokemonService.getPokemonListWithUser(query, userId, lang)
+  }
+
   @Get('/pokemons')
   getWithUserId(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
     return this.userPokemonService.listWithUserId(userId, lang)

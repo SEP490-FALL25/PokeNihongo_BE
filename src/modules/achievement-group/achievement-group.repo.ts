@@ -2,6 +2,7 @@ import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
 import { parseQs } from '@/common/utils/qs-parser'
+import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
   ACHIEVEMENT_GROUP_FIELDS,
@@ -13,6 +14,11 @@ import {
 @Injectable()
 export class AchievementGroupRepo {
   constructor(private prismaService: PrismaService) {}
+
+  // Wrapper cho transaction
+  async withTransaction<T>(fn: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
+    return this.prismaService.$transaction(fn)
+  }
 
   create({
     createdById,
@@ -78,19 +84,69 @@ export class AchievementGroupRepo {
         })
   }
 
-  async list(pagination: PaginationQueryType) {
-    const { where, orderBy } = parseQs(pagination.qs, ACHIEVEMENT_GROUP_FIELDS)
+  async list(pagination: PaginationQueryType, languageId?: number) {
+    // --- 1. Parse QS bình thường ---
+    const { where: rawWhere = {}, orderBy } = parseQs(
+      pagination.qs,
+      ACHIEVEMENT_GROUP_FIELDS
+    )
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
 
+    // --- 2. Xử lý filter nameTranslation ---
+    let nameKeys: string[] | undefined
+    if (rawWhere.nameTranslation && languageId) {
+      // Nếu rawWhere.nameTranslation là object { contains, mode }
+      const searchValue =
+        typeof rawWhere.nameTranslation === 'object'
+          ? rawWhere.nameTranslation.contains
+          : rawWhere.nameTranslation
+
+      const translations = await this.prismaService.translation.findMany({
+        where: {
+          languageId: languageId, // từ param
+          value: {
+            contains: searchValue,
+            mode: 'insensitive'
+          }
+        },
+        select: { key: true }
+      })
+
+      nameKeys = translations.map((t) => t.key)
+
+      // Nếu không tìm thấy translation nào, trả về rỗng
+      if (nameKeys.length === 0) {
+        return {
+          results: [],
+          pagination: {
+            current: pagination.currentPage,
+            pageSize: pagination.pageSize,
+            totalPage: 0,
+            totalItem: 0
+          }
+        }
+      }
+    }
+
+    // --- 3. Build where clause ---
+    const where: any = {
+      deletedAt: null,
+      ...rawWhere,
+      ...(nameKeys && { nameKey: { in: nameKeys } })
+    }
+
+    // Loại bỏ nameTranslation khỏi where vì nó không phải field thực
+    delete where.nameTranslation
+
     const [totalItems, data] = await Promise.all([
       this.prismaService.achievementGroup.count({
-        where: { deletedAt: null, ...where }
+        where
       }),
       this.prismaService.achievementGroup.findMany({
-        where: { deletedAt: null, ...where },
-        orderBy,
+        where,
+        orderBy: orderBy || { displayOrder: 'asc' },
         skip,
         take
       })
