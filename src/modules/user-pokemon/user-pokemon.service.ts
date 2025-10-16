@@ -49,6 +49,23 @@ export class UserPokemonService {
     }
   }
 
+  async getUserPokemonStats(userId: number, lang: string = 'vi') {
+    const userPokemons = await this.userPokemonRepo.getByUserId(userId)
+    const totalPokemons = await this.prismaService.pokemon.count()
+    const userPokemonsCount = userPokemons.length
+    const ownershipPercentage =
+      totalPokemons > 0 ? Math.round((userPokemonsCount / totalPokemons) * 100) : 0
+    return {
+      statusCode: 200,
+      data: {
+        ownershipPercentage,
+        userPokemonsCount,
+        totalPokemons
+      },
+      message: this.i18nService.translate(UserPokemonMessage.GET_STATS_SUCCESS, lang)
+    }
+  }
+
   async getPokemonListWithUser(
     query: PaginationQueryType,
     userId: number,
@@ -61,11 +78,6 @@ export class UserPokemonService {
     const userPokemons = await this.userPokemonRepo.getByUserId(userId)
     const userPokemonIds = new Set(userPokemons.map((up) => up.pokemonId))
 
-    // 3. Tính tổng số pokemon
-    const totalPokemons = await this.prismaService.pokemon.count()
-    const userPokemonsCount = userPokemons.length
-    const ownershipPercentage =
-      totalPokemons > 0 ? Math.round((userPokemonsCount / totalPokemons) * 100) : 0
 
     // 4. Optimize: Calculate weaknesses for all Pokemon in batch
     if (pokemonData.results && pokemonData.results.length > 0) {
@@ -141,12 +153,7 @@ export class UserPokemonService {
 
     return {
       statusCode: 200,
-      data: {
-        ...pokemonData,
-        ownershipPercentage,
-        userPokemonsCount,
-        totalPokemons
-      },
+      data: pokemonData,
       message: this.i18nService.translate(UserPokemonMessage.GET_LIST_SUCCESS, lang)
     }
   }

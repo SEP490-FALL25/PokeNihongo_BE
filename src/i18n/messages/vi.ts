@@ -168,7 +168,8 @@ export const viMessages = {
     SET_MAIN_POKEMON_SUCCESS: 'Đặt Pokemon chính thành công',
     EVOLVE_SUCCESS: 'Tiến hóa Pokemon thành công',
     ADD_EXP_SUCCESS: 'Thêm EXP cho Pokemon thành công',
-    LEVEL_UP_SUCCESS: 'Pokemon đã lên cấp!'
+    LEVEL_UP_SUCCESS: 'Pokemon đã lên cấp!',
+    GET_STATS_SUCCESS: 'Lấy thống kê User Pokemon thành công'
   },
   user: {
     GET_LIST_SUCCESS: 'Lấy danh sách người dùng thành công',

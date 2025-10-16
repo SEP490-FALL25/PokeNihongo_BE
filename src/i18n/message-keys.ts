@@ -154,6 +154,7 @@ export const PokemonMessage = {
 } as const
 
 export const UserPokemonMessage = {
+  GET_STATS_SUCCESS: 'user_pokemon.GET_STATS_SUCCESS',
   CREATE_SUCCESS: 'user_pokemon.CREATE_SUCCESS',
   UPDATE_SUCCESS: 'user_pokemon.UPDATE_SUCCESS',
   DELETE_SUCCESS: 'user_pokemon.DELETE_SUCCESS',

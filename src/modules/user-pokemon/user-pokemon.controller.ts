@@ -13,10 +13,10 @@ import {
   GetUserPokemonAddExpDetailResDTO,
   GetUserPokemonDetailResDTO,
   GetUserPokemonParamsDTO,
+  GetUserPokemonStatsResDTO,
   UpdateUserPokemonBodyDTO,
   UpdateUserPokemonResDTO
 } from './dto/user-pokemon.dto'
-import { PokemonListWithUserResponseDTO } from './dto/user-pokemon-response.dto'
 import { UserPokemonService } from './user-pokemon.service'
 
 @Controller('user-pokemon')
@@ -33,8 +33,17 @@ export class UserPokemonController {
     return this.userPokemonService.list(query, userId, lang)
   }
 
+  @Get('user/pokemons/stats')
+  @ZodSerializerDto(GetUserPokemonStatsResDTO)
+  getUserPokemonStats(
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userPokemonService.getUserPokemonStats(userId, lang)
+  }
+
   @Get('user/pokemons')
-  @ZodSerializerDto(PokemonListWithUserResponseDTO)
+  @ZodSerializerDto(PaginationResponseDTO)
   getPokemonListWithUser(
     @Query() query: PaginationQueryDTO,
     @ActiveUser('userId') userId: number,

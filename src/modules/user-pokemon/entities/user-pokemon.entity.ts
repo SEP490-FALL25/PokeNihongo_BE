@@ -244,6 +244,16 @@ export const GetUserPokemonDetailResSchema = z.object({
   message: z.string()
 })
 
+export const GetUserPokemonStatsResSchema = z.object({
+  statusCode: z.number(),
+  data: z.object({
+    ownershipPercentage: z.number(),
+    userPokemonsCount: z.number(),
+    totalPokemons: z.number()
+  }),
+  message: z.string()
+})
+
 export const GetUserPokemonAddExpDetailResSchema = z.object({
   statusCode: z.number(),
   data: UserPokemonSchema.extend({

@@ -171,7 +171,8 @@ export const enMessages = {
     SET_MAIN_POKEMON_SUCCESS: 'Main Pokemon set successfully',
     EVOLVE_SUCCESS: 'Pokemon evolved successfully',
     ADD_EXP_SUCCESS: 'EXP added to Pokemon successfully',
-    LEVEL_UP_SUCCESS: 'Pokemon leveled up successfully'
+    LEVEL_UP_SUCCESS: 'Pokemon leveled up successfully',
+    GET_STATS_SUCCESS: 'User Pokemon stats retrieved successfully'
   },
   user: {
     GET_LIST_SUCCESS: 'User list retrieved successfully',
