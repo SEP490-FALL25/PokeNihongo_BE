@@ -575,12 +575,12 @@ model Exercises {
   audioUrl     String?  @db.VarChar(1000) // URL file âm thanh
   isBlocked    Boolean  @default(false) // Trạng thái bị chặn
   price        Decimal? @db.Decimal(10, 2) // Giá bài tập (nếu có)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now()) @db.Timestamp(3)
+  updatedAt    DateTime @updatedAt @db.Timestamp(3)
+  lessonId     Int // Foreign key đến Lesson
 
   // Quan hệ với Lesson
-  lessonId Int
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   // Quan hệ với Question
   questions Question[]
@@ -596,15 +596,15 @@ model Exercises {
 // Model Question (Câu hỏi)
 model Question {
   id            Int      @id @default(autoincrement())
-  questionJp    String   @db.VarChar(1000) // Nội dung câu hỏi bằng tiếng Nhật
+  questionJp    String?  @db.VarChar(1000) // Nội dung câu hỏi bằng tiếng Nhật
   questionOrder Int      @default(0) // Thứ tự câu hỏi trong bài tập
-  questionKey   String   @db.VarChar(200) // Key để dịch câu hỏi
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  questionKey   String?  @db.VarChar(200) // Key để dịch câu hỏi
+  createdAt     DateTime @default(now()) @db.Timestamp(3)
+  updatedAt     DateTime @updatedAt @db.Timestamp(3)
+  exercisesId   Int // Foreign key đến Exercises
 
   // Quan hệ với Exercises
-  exercisesId Int
-  exercises   Exercises @relation(fields: [exercisesId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  exercises Exercises @relation(fields: [exercisesId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   // Quan hệ với Answer
   answers Answer[]
@@ -622,16 +622,16 @@ model Question {
 
 // Model Answer (Câu trả lời)
 model Answer {
-  id        Int      @id @default(autoincrement())
-  answerJp  String   @db.VarChar(1000) // Nội dung câu trả lời bằng tiếng Nhật
-  answerKey String   @db.VarChar(200) // Key để dịch câu trả lời
-  isCorrect Boolean  @default(false) // Đánh dấu câu trả lời đúng
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  answerJp   String?  @db.VarChar(1000) // Nội dung câu trả lời bằng tiếng Nhật
+  answerKey  String?  @db.VarChar(200) // Key để dịch câu trả lời
+  isCorrect  Boolean  @default(false) // Đánh dấu câu trả lời đúng
+  createdAt  DateTime @default(now()) @db.Timestamp(3)
+  updatedAt  DateTime @updatedAt @db.Timestamp(3)
+  questionId Int // Foreign key đến Question
 
   // Quan hệ với Question
-  questionId Int
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   // Quan hệ với UserAnswerLog
   userAnswerLogs UserAnswerLog[]

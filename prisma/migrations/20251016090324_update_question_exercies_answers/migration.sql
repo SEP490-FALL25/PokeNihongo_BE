@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "Answer" ALTER COLUMN "answerJp" DROP NOT NULL,
+ALTER COLUMN "answerKey" DROP NOT NULL;
+
+-- AlterTable
+ALTER TABLE "Question" ALTER COLUMN "questionJp" DROP NOT NULL,
+ALTER COLUMN "questionKey" DROP NOT NULL;

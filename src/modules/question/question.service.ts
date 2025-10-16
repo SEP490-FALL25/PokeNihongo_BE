@@ -54,6 +54,12 @@ export class QuestionService {
                     }
 
                     try {
+                        if (!question.questionKey) {
+                            // If no questionKey, return question without translation
+                            const { questionKey, ...questionWithoutKey } = question
+                            return questionWithoutKey
+                        }
+
                         const translationResult = await this.translationService.findByKeyAndLanguage(
                             question.questionKey,
                             languageId as number
@@ -361,6 +367,16 @@ export class QuestionService {
             let response = { ...question }
 
             try {
+                if (!question.questionKey) {
+                    // If no questionKey, return question without translations
+                    return {
+                        ...question,
+                        translations: {
+                            question: []
+                        }
+                    }
+                }
+
                 const translationResult = await this.translationService.findByKey({ key: question.questionKey })
 
                 if (translationResult.translations && translationResult.translations.length > 0) {
