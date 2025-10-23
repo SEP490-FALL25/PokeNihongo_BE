@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { LessonContentSortField, SortOrder } from '@/common/enum/enum'
 
 // Lesson Content Entity Types
 export const LessonContentType = z.object({
@@ -40,7 +41,26 @@ export const GetLessonContentListQueryType = z.object({
     limit: z.string().transform(Number).default('10'),
     lessonId: z.string().transform(Number).optional(),
     contentType: z.string().optional(),
+    sortBy: z.nativeEnum(LessonContentSortField).optional().default(LessonContentSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
+
+// Response schemas
+export const LessonContentListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(LessonContentType),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
 
 // Type exports
 export type LessonContentType = z.infer<typeof LessonContentType>
@@ -49,3 +69,4 @@ export type CreateLessonContentBodyType = z.infer<typeof CreateLessonContentBody
 export type UpdateLessonContentBodyType = z.infer<typeof UpdateLessonContentBodyType>
 export type GetLessonContentByIdParamsType = z.infer<typeof GetLessonContentByIdParamsType>
 export type GetLessonContentListQueryType = z.infer<typeof GetLessonContentListQueryType>
+export type LessonContentListResType = z.infer<typeof LessonContentListResSchema>

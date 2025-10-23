@@ -1,50 +1,48 @@
-# ---- Giai đoạn Base ----
-# Chuẩn bị môi trường có pnpm
-FROM node:20-alpine AS base
+# Application Docker file Configuration
+# Visit https://docs.docker.com/engine/reference/builder/
+# Using multi stage build
+
+# Prepare the image when build
+# also use to minimize the docker image
+FROM node:20-alpine as builder
+
+# Install pnpm
 RUN npm install -g pnpm
+
 WORKDIR /app
-
-# ---- Giai đoạn cài Dependencies ----
-FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --ignore-scripts --frozen-lockfile
-
-# ---- Giai đoạn Build ----
-# Build ứng dụng NestJS
-FROM base AS builder
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
-
-COPY prisma ./prisma
-RUN npx prisma generate
-
-# Copy toàn bộ source code và build
 COPY . .
-RUN pnpm exec nest build
+# Generate Prisma client
+RUN pnpm prisma:generate
+# Build the application
+RUN pnpm run build
 
-# ---- Giai đoạn Production ----
-# Tạo image cuối cùng, siêu nhẹ để chạy
-FROM node:20-alpine AS production
+
+# Build the image as production
+# So we can minimize the size
+FROM node:20-alpine
+
+# Install pnpm
+RUN npm install -g pnpm
+
 WORKDIR /app
-
-# Copy code đã build và Prisma client từ giai đoạn 'builder'
+COPY package.json pnpm-lock.yaml ./
+ENV PORT=8080
+ENV NODE_ENV=Production
+# Copy Prisma schema
+COPY --from=builder /app/prisma ./prisma
+# Install dependencies and generate Prisma client in one layer
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts && \
+    pnpm add -D prisma@6.8.2 && \
+    pnpm exec prisma generate
+# Copy built application
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/tsconfig.json ./
+# Copy entrypoint script
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+EXPOSE ${PORT}
+ENTRYPOINT ["./docker-entrypoint.sh"] # Dùng entrypoint này
 
-# Copy các dependencies production từ giai đoạn 'deps'
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package.json ./package.json
-
-# Copy file .env để có environment variables
-COPY .env .env
-
-# Copy email templates cho production
-COPY src/3rdService/mail/templates ./dist/3rdService/mail/templates
-
-# Set environment variable for production
-ENV NODE_ENV=production
-
-EXPOSE 3000
-
-# Lệnh khởi chạy ứng dụng
-CMD ["node", "dist/src/main.js"]
+CMD ["node", "dist/main.js"]

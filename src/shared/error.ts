@@ -1,5 +1,5 @@
 import { SYSTEM_MESSAGE } from '@/common/constants/message'
-import { AuthMessage, SystemMessage } from '@/i18n/message-keys'
+import { AuthMessage, CommonMessage, SystemMessage } from '@/i18n/message-keys'
 import {
   NotFoundException,
   UnauthorizedException,
@@ -47,6 +47,15 @@ export class InValidNewPasswordAndConfirmPasswordRegisterException extends Unpro
     super({
       message: 'Sai mật khẩu hoặc xác nhận mật khẩu',
       errorKey: AuthMessage.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD_REGISTER
+    })
+  }
+}
+
+export class LanguageNotExistToTranslateException extends UnprocessableEntityException {
+  constructor() {
+    super({
+      message: CommonMessage.LANGUAGE_NOT_EXIST_TO_TRANSLATE,
+      errorKey: CommonMessage.LANGUAGE_NOT_EXIST_TO_TRANSLATE
     })
   }
 }

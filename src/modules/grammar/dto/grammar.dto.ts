@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { GrammarSortField, SortOrder } from '@/common/enum/enum'
 
 export class GrammarResponseSwaggerDTO {
     @ApiProperty({
@@ -124,12 +125,12 @@ export class UpdateGrammarSwaggerDTO {
 export class GetGrammarListQuerySwaggerDTO {
     @ApiProperty({
         example: 1,
-        description: 'Số trang',
+        description: 'Số trang hiện tại',
         required: false,
         default: 1,
         minimum: 1
     })
-    page?: number
+    currentPage?: number
 
     @ApiProperty({
         example: 10,
@@ -139,7 +140,7 @@ export class GetGrammarListQuerySwaggerDTO {
         minimum: 1,
         maximum: 100
     })
-    limit?: number
+    pageSize?: number
 
     @ApiProperty({
         example: 'N5',
@@ -154,4 +155,20 @@ export class GetGrammarListQuerySwaggerDTO {
         required: false
     })
     search?: string
+
+    @ApiProperty({
+        enum: GrammarSortField,
+        example: GrammarSortField.CREATED_AT,
+        description: 'Field để sắp xếp theo structure, level, createdAt, updatedAt',
+        required: false
+    })
+    sortBy?: GrammarSortField
+
+    @ApiProperty({
+        enum: SortOrder,
+        example: SortOrder.DESC,
+        description: 'Sắp xếp theo thứ tự tăng dần (asc) hoặc giảm dần (desc)',
+        required: false
+    })
+    sort?: SortOrder
 }

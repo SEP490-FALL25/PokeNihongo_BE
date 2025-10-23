@@ -9,18 +9,13 @@ export class WordTypeRepository {
     async findMany(params: {
         page: number
         limit: number
-        search?: string
         sortBy?: string
         sortOrder?: 'asc' | 'desc'
     }) {
-        const { page, limit, search, sortBy = 'id', sortOrder = 'asc' } = params
+        const { page, limit, sortBy = 'id', sortOrder = 'asc' } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
-
-        if (search) {
-            where.nameKey = { contains: search, mode: 'insensitive' }
-        }
 
         const [data, total] = await Promise.all([
             this.prismaService.wordType.findMany({

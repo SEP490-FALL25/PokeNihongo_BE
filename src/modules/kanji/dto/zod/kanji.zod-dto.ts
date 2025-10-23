@@ -7,7 +7,8 @@ import {
     KanjiSchema,
     KanjiListResponseSchema,
     KanjiResSchema,
-    KanjiListResSchema
+    KanjiListResSchema,
+    KanjiManagementListResSchema
 } from '../../entities/kanji.entities'
 
 // Zod DTOs - automatically validated
@@ -19,4 +20,5 @@ export class KanjiResponseDTO extends createZodDto(KanjiSchema) { }
 export class KanjiListResponseDTO extends createZodDto(KanjiListResponseSchema) { }
 export class KanjiResDTO extends createZodDto(KanjiResSchema) { }
 export class KanjiListResDTO extends createZodDto(KanjiListResSchema) { }
+export class KanjiManagementListResDTO extends createZodDto(KanjiManagementListResSchema) { }
 

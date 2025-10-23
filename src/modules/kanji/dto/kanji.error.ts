@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common'
+import { VOCABULARY_MESSAGE } from '@/common/constants/message'
 
 export const KanjiNotFoundException = new HttpException(
     {
@@ -25,5 +26,23 @@ export const InvalidKanjiDataException = new HttpException(
         error: 'INVALID_KANJI_DATA'
     },
     HttpStatus.BAD_REQUEST
+)
+
+export const KanjiCharacterInvalidException = new HttpException(
+    {
+        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+        message: 'Phải là một ký tự Kanji (Hán tự) duy nhất. Không chấp nhận ký tự Latin hoặc số',
+        error: 'KANJI_CHARACTER_INVALID'
+    },
+    HttpStatus.UNPROCESSABLE_ENTITY
+)
+
+export const MeaningAlreadyExistsException = new HttpException(
+    {
+        statusCode: HttpStatus.CONFLICT,
+        message: VOCABULARY_MESSAGE.MEANING_ALREADY_EXISTS,
+        error: 'MEANING_ALREADY_EXISTS'
+    },
+    HttpStatus.CONFLICT
 )
 

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { LessonSortField, SortOrder } from '@/common/enum/enum'
 
 // Lesson Entity Types
 export const LessonType = z.object({
@@ -98,13 +99,32 @@ export const GetLessonByIdParamsType = z.object({
 })
 
 export const GetLessonListQueryType = z.object({
-    page: z.string().transform(Number).default('1'),
-    limit: z.string().transform(Number).default('10'),
+    currentPage: z.string().transform(Number).default('1'),
+    pageSize: z.string().transform(Number).default('10'),
     search: z.string().optional(),
     lessonCategoryId: z.string().transform(Number).optional(),
     levelJlpt: z.string().transform(Number).optional(),
-    isPublished: z.string().transform(Boolean).optional(),
+    isPublished: z.string().transform((val) => val === 'true').optional(),
+    sortBy: z.nativeEnum(LessonSortField).optional().default(LessonSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
+
+// Response Schemas
+export const LessonListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(LessonWithRelationsType),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
 
 // Type exports
 export type LessonType = z.infer<typeof LessonType>
@@ -113,4 +133,5 @@ export type CreateLessonBodyType = z.infer<typeof CreateLessonBodyType>
 export type UpdateLessonBodyType = z.infer<typeof UpdateLessonBodyType>
 export type GetLessonByIdParamsType = z.infer<typeof GetLessonByIdParamsType>
 export type GetLessonListQueryType = z.infer<typeof GetLessonListQueryType>
+export type LessonListResType = z.infer<typeof LessonListResSchema>
 export type MinnaNoNihongoLesson1DataType = typeof MinnaNoNihongoLesson1Data

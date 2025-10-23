@@ -1,0 +1,2476 @@
+word	reading	meaning	example_jp	example_vi	jlpt	word_type
+男性	だんせい	Nam giới			3	noun
+女性	じょせい	Nữ giới			3	noun
+理想	りそう	Lý tưởng			3	noun
+高齢	こうれい	Cao tuổi			3	noun
+年上	としうえ	Hơn tuổi			3	noun
+目上	めうえ	Người trên			3	noun
+敬語	けいご	Kính ngữ			3	noun
+先輩	せんぱい	Tiền bối			3	noun
+後輩	こうはい	hậu bối			3	noun
+職場	しょくば	Nơi làm việc			3	noun
+上	じょう司し	Cấp trên			3	noun
+決定	けってい	Quyết định			3	noun
+相手	あいて	đối phương			3	noun
+友人	ゆうじん	Bạn thân			3	noun
+時代	じだい	Thời đại			3	noun
+仲	なか	Quan hệ			3	noun
+生年月日	せいねんがっぴ	Ngày tháng năm sinh			3	noun
+誕生	たんじょう	Ra đời			3	noun
+出身	しゅっしん	Xuất thân, quê			3	noun
+命	いのち	sự sống, sinh mệnh	命のある間は望みがある		3	noun
+計画	けいかく	Kế hoạch			3	noun
+故郷・故郷	こきょう・こきょう	Quê hương			3	noun
+事業	じぎょう	Hoạt động kinh doanh	事業に手を出す		3	noun
+喜ぶ	よろこぶ	Vui mừng (vì)	合格を喜ぶ		3	godan_verb
+記入	きにゅう	Nhập vào			3	noun
+立てる	たてる	Lập, dựng đứng, đặt			3	ichidan_verb
+頼む	たのむ	Nhờ vả, năn nỉ; Yêu cầu, đặt hàng			3	godan_verb
+成長	せいちょう	Trưởng thành			3	noun
+成人	せいじん	người lớn			3	noun
+進学	しんがく	Học lên tiếp (cấp cao hơn)			3	noun
+退学	たいがく	Thôi học			3	noun
+就職	しゅうしょく	có việc làm	地元の企業に就職する 就職試験	職業につくこと。 新しく職を得て勤めること。	3	noun
+介護	かいご	Chăm sóc	寝たきり老人の介護		3	noun
+決める	きめる	quyết định			3	ichidan_verb
+退職	たいしょく	nghỉ hưu			3	noun
+倒産	とうさん	sập, phá sản			3	noun
+失業	しつぎょう	Thất nghiệp			3	noun
+残業	ざんぎょう	Làm thêm giờ			3	noun
+疲れる	つかれる	Mệt mỏi			3	ichidan_verb
+通勤	つうきん	Đi làm			3	noun
+学歴	がくれき	Bằng cấp			3	noun
+実力	じつりょく	Thực lực			3	noun
+給料	きゅうりょう	Lương			3	noun
+面接	めんせつ	Phỏng vấn			3	noun
+休憩	きゅうけい	Nghỉ giải lao	ゆっくり休憩をとる	仕事や運動などを一時やめて、休むこと。 休息。	3	noun
+Tham quan	Tham quan	[観光[かんこう]]			3	noun
+帰国	きこく	Về nước			3	noun
+帰省	きせい	Về quê			3	noun
+帰宅	きたく	Về nhà			3	noun
+Tham gia	Tham gia	[参加[さんか]]			3	noun
+活動	かつどう	Hoạt động			3	noun
+欠席	けっせき	Không tham gia, vắng			3	noun
+寝坊	ねぼう	Ngủ quên			3	noun
+遅刻	ちこく	Đến muộn			3	noun
+苦手	にがて	Không thích, không hợp; Không giỏi; Sợ			3	na_adjective
+計算	けいさん	Tính toán			3	noun
+成功	せいこう	Thành công			3	noun
+実験	じっけん	Thực nghiệm			3	noun
+整理	せいり	Sắp xếp, điều chỉnh	交通整理 感情の整理がつく		3	noun
+書類	しょるい	Giấy tờ			3	noun
+品	しな	hàng hóa			3	noun
+届く	とどく	chạm tới, với tới	四十に手が届く 遠くまで届く声	ある所にまで至りつく。 達する。 及ぶ。	3	godan_verb
+注文	ちゅうもん	Đặt hàng			3	noun
+増える	ふえる	Tăng, cộng lên			3	ichidan_verb
+徹夜	てつや	Thức xuyên đêm			3	noun
+身長	しんちょう	chiều cao			3	noun
+体重	たいじょう	cân nặng			3	noun
+怪我	けが	Bị thương			3	noun
+趣味	しゅみ	Sở thích			3	noun
+読書	どくしょ	Đọc sách			3	noun
+興味	きょうみ	Hứng thú			3	noun
+歴し	へし	Lịch sử			3	noun
+思い出	おもいで	Hồi ức			3	noun
+冗談	じょうだん	nói đùa			3	noun
+本気	ほんき	Nghiêm túc			3	na_adjective
+目的	もくてき	Mục đích			3	noun
+おしゃべり	おしゃべり	Nói nhiều			3	noun
+遠慮	えんりょ	Ngại ngần, hạn chế			3	noun
+我慢	がまん	Chịu đựng, nhẫn nhịn			3	noun
+捨てる	すてる	Vứt, từ bỏ			3	ichidan_verb
+希望	きぼう	Hi vọng			3	noun
+夢	ゆめ	Giấc mơ, ước mơ			3	noun
+怖い	こわい	Đáng sợ			3	i_adjective
+挙げる	あげる	Bắt giữ tội phạm	犯人を挙げる		3	ichidan_verb
+想像	そうぞう	Tưởng tượng			3	noun
+現実	げんじつ	Hiện thực, sự thật			3	noun
+努力	どりょく	Nỗ lực			3	noun
+太陽	たいよう	Mặt trời			3	noun
+昇る	のぼる	Lên cao, thăng lên, mọc			3	godan_verb
+地球	ちきゅう	Trái đất			3	noun
+環境	かんきょう	Môi trường			3	noun
+温度	おんど	Nhiệt độ	今日の温度があがって、暑いだ。		3	noun
+湿度	しつど	Độ ẩm			3	noun
+湿気	しっけ	Hơi ẩm			3	noun
+梅雨	つゆ	Mùa mưa			3	noun
+カビ	カビ	Nấm mốc			3	noun
+時期	じき	Lúc, thời điểm			3	noun
+暖房	だんぼう	Thiết bị làm ấm			3	noun
+皮	かわ	Vỏ, da			3	noun
+画面	がめん	màn hình ảo			3	noun
+番組	ばんぐみ	Chương trình truyền hình			3	noun
+記事	きじ	Kí sự, phóng sự			3	noun
+近所	きんじょ	Hàng xóm, xung quanh			3	noun
+盗む	ぬすむ	Ăn trộm	Văn viết		3	godan_verb
+警官	けいかん	Cảnh sát (người)			3	noun
+犯人	はんにん	Tội phạm			3	noun
+小銭	こぜに	Tiền lẻ			3	noun
+祝う	いわう	Chúc mừng			3	godan_verb
+ご馳走	ごちそう	Chiêu đãi, khao			3	noun
+作者	さくしゃ	Tác giả nghệ thuật			3	noun
+作品	さくひん	Tác phẩm			3	noun
+展示	てんじ	Trưng bày, triển lãm			3	noun
+制服	せいふく	Đồng phục	制服を着て学校に行く		3	noun
+食器	しょっき	Bát đĩa			3	noun
+洗剤	せんざい	Chất tẩy rửa			3	noun
+底	そこ	Đáy			3	noun
+進む	すすむ	Tiến lên	一歩進んで礼をする 出口に向かって進む		3	godan_verb
+開発	かいはつ	Khai thác			3	noun
+都市	とし	Thành phố			3	noun
+道路	どうろ	Con đường			3	noun
+坂	さか	Con dốc			3	noun
+煙	けむり	Khói			3	noun
+逃げる	にげる	trốn	犯人は盗難車で逃げたらしい 一目散に逃げる	捕まらないように、追って来るものの力の及ばない所に身を置く。	3	ichidan_verb
+火事	かじ	Hỏa hoạn			3	noun
+灰	はい	Tro tàn			3	noun
+判	はん	Con dấu; Khổ giấy (viết tắt)			3	noun
+名刺	めいし	Danh thiếp			3	noun
+交換	こうかん	Trao đổi			3	noun
+免許	めんきょ	Giấy phép			3	noun
+必要	ひつよう	cần thiết			3	na_adjective
+調理師	ちょうりし	Đầu bếp			3	noun
+多く	おおく	nhiều			3	noun
+前半	ぜんはん	Nửa đầu			3	noun
+後半	こうはん	Nửa sau			3	noun
+退屈	たいくつ	Buồn tẻ, chán ngắt (vì không có gì làm)			3	na_adjective
+最高	さいこう	Cao nhất, tuyệt nhất			3	na_adjective
+最低	さいてい	Thấp nhất, tối thiểu; Tồi, bỉ ổi;			3	noun
+花束	はなたば	Bó hoa			3	noun
+自動	じどう	Tự động			3	noun
+種類	しゅるい	Chủng loại			3	noun
+性格	せいかく	Tính cách			3	noun
+性質	せいしつ	Tính chất			3	noun
+布	ぬの	Vải			3	noun
+順番	じゅんばん	Thứ tự, lượt	順番を待つ	順序に従って代わる代わるそのことに当たること。 また、その順序。	3	noun
+発表	はっぴょう	Phát biểu, thuyết trình			3	noun
+賞品	しょうひん	Phần thưởng			3	noun
+番	ばん	Lượt			3	noun
+方法	ほうほう	Phương pháp			3	noun
+製品	せいひん	Sản phẩm	プラスチック製品		3	noun
+値上がり	ねあがり	Tăng giá			3	noun
+生	なま	Tươi, mới (chưa chế biến)			3	noun
+渇く	かわく	Khát	のどが渇く		3	godan_verb
+嗅ぐ	かぐ	Ngửi			3	godan_verb
+叩く	たたく	Vỗ, đánh, gõ; Mặc cả; Chỉ trích			3	godan_verb
+お尻	おしり	Mông			3	noun
+殴る	なぐる	Đấm			3	godan_verb
+蹴る	ける	Đá	馬に蹴られる ボールを蹴る	足で勢いよく突く。 また、足にはずみをつけるようにして突いて飛ばす。	3	godan_verb
+抱く	いだく	ấp ủ	抱いていた夢が叶った。 疑問を抱く 青年よ大志を抱け	ある考えや感情をもつ。	3	godan_verb
+両手	りょうて	đôi tay			3	noun
+台風	たいふう	Bão			3	noun
+倒す	たおす	Chặt đổ, làm ngã	木を倒す からだを倒す 足をかけて倒す	力を加えて、立っている状態のものを横にする。 横にねかす。 また、ころばす。	3	godan_verb
+起こす	おこす	Đánh thức	寝入りばなを起こされる	目を覚まさせる	3	godan_verb
+尋ねる	たずねる	Hỏi thăm			3	ichidan_verb
+呼ぶ	よぶ	Gọi			3	godan_verb
+叫ぶ	さけぶ	Gào, hét, rú lên			3	godan_verb
+黙る	だまる	Im lặng			3	godan_verb
+飼う	かう	Nuôi			3	godan_verb
+数える	かぞえる	Đếm			3	ichidan_verb
+数	かず	số			3	noun
+乾く	かわく	Khô			3	godan_verb
+乾かす	かわかす	Làm khô			3	godan_verb
+畳む	たたむ	Gấp, gập, xếp			3	godan_verb
+畳	たたみ	Cái chiếu			3	noun
+誘う	さそう	rủ			3	godan_verb
+奢る	おごる	Đãi, khao			3	godan_verb
+預かる	あずかる	Chăm sóc, trông nom			3	godan_verb
+預ける	あづける	Giao cho, gửi cho ai đó trông coi hộ			3	ichidan_verb
+決まる	きまる	được quyết định			3	godan_verb
+写る	うつる	hiện trên ảnh, có thể chụp được	にやけた顔で写っている	写真に姿・形が現れる。 写真が撮れる。	3	godan_verb
+写す	うつす	Chép lại	手本を写す 友達のレポートを写す		3	godan_verb
+思い出す	おもいだす	Nhớ ra			3	godan_verb
+教わる	おそわる	Được dạy	私は週１回山野先生にピアノを教わった。		3	godan_verb
+申し込む	もうしこむ	đăng kí			3	godan_verb
+断る	ことわる	Từ chối			3	godan_verb
+指輪	ゆびわ	Nhẫn			3	noun
+見つける	みつける	Tìm thấy, tìm ra; Bắt quả tang			3	ichidan_verb
+捕まる	つかまる	Bị bắt, bị tóm; Bám vào, giữ lấy			3	godan_verb
+捕まえる	つかまえる	Tóm lấy			3	ichidan_verb
+乗る	のる	Lên, cưỡi			3	godan_verb
+乗せる	のせる	Cho lên, xếp lên			3	ichidan_verb
+下ろす	おろす	Cho xuống (vật)			3	godan_verb
+直る	なおる	Được sửa chữa			3	godan_verb
+直す	なおす	Sửa chữa (vật)			3	godan_verb
+治す	なおす	Chữa trị			3	godan_verb
+亡くなる	なくなる	Chết; Biến mất			3	godan_verb
+亡くす	なくす	Đánh mất			3	godan_verb
+父親	ちちおや	phụ thân			3	noun
+生まれる	うまれる	Được sinh ra			3	ichidan_verb
+産む	うむ	(Người, động vật) Sinh, đẻ			3	godan_verb
+先日	せんじつ	Mấy ngày trước			3	noun
+出会う	であう	Gặp gỡ ngẫu nhiên			3	godan_verb
+訪ねる	たずねる	ghé thăm			3	ichidan_verb
+付き合う	つきあう	Hẹn hò; Đi cùng; Hòa hợp			3	godan_verb
+効く	きく	Có tác dụng			3	godan_verb
+頭痛	ずつう	Đau đầu			3	noun
+流行る	はやる	thịnh hành, mốt	中高年の間で登山が流行る ガレージセールが流行る	その時代の人々の好みに合って、盛んに世の中に行われる。 世間で広くもてはやされる。 流行 (りゅうこう) する。	3	godan_verb
+経つ	たつ	Trôi qua			3	godan_verb
+間に合わせる	まにあわせる	Làm cho kịp			3	ichidan_verb
+すれ違う	すれちがう	Đi ngang qua, lướt qua			3	godan_verb
+動く	うごく	lay động, hoạt động			3	godan_verb
+動かす	うごかす	Di chuyển, lay động			3	godan_verb
+離す	はなす	Để xa ra, làm tránh ra			3	godan_verb
+ぶつかる	ぶつかる	Bị đâm, va chạm			3	godan_verb
+ぶつける	ぶつける	Đâm vào; Nói thẳng ra			3	ichidan_verb
+涙	なみだ	Nước mắt			3	noun
+溢れる	あふれる	Ngập tràn			3	ichidan_verb
+溢す	あぶす	Làm tràn ra, làm đổ			3	godan_verb
+拭く	ふく	Lau, chùi, gạt			3	godan_verb
+片付く	かたづく	Ngăn nắp			3	godan_verb
+片付ける	かたづける	Dọn dẹp; Giải quyết			3	ichidan_verb
+包む	つつむ	cuốn gói trong vải, giấy,... (với tình yêu gửi gắm vào)	書類を風呂敷でくるむ	巻くようにして物をつつむ。	3	godan_verb
+貼る	はる	Dán			3	godan_verb
+無くす	なくす	Làm mất; Loại bỏ			3	godan_verb
+足りる	たりる	Vừa đủ			3	ichidan_verb
+収入	しゅうにゅう	Thu nhập			3	noun
+残る	のこる	Còn lại, sót lại, đọng lại			3	godan_verb
+残す	のこす	Chừa lại, để lại			3	godan_verb
+腐る	くさる	Ôi, thiu, suy đồi			3	godan_verb
+剥ける	むける	Bị bóc, bị gọt			3	ichidan_verb
+剥く	むく	Gọt (vỏ)			3	godan_verb
+滑る	すべる	Trượt	スキーで急斜面を滑りおりる 戸がよく滑る 船が川面を滑るように下っていく		3	godan_verb
+雪	ゆき	Tuyết			3	noun
+積もる	つもる	Chất đống	雪が積もる ほこりが積もる	物が次々に重なって高くなる。 一面に多くたまる。	3	godan_verb
+積む	つむ	Tích lũy			3	godan_verb
+空ける	あける	Giữ chỗ; Làm trống, rỗng			3	ichidan_verb
+下げる	さげる	Hạ thấp xuống	頭を下げる 機首を下げる 目尻を下げる 一字下げて書く		3	ichidan_verb
+冷える	ひえる	Lạnh, cóng			3	ichidan_verb
+冷やす	ひやす	Làm lạnh			3	godan_verb
+冷める	さめる	Nguội			3	ichidan_verb
+冷ます	さます	Làm nguội			3	godan_verb
+燃やす	もやす	Đốt cháy;			3	godan_verb
+沸く	わく	Sôi lên			3	godan_verb
+沸かす	わかす	Đun sôi			3	godan_verb
+鳴る	なる	Kêu			3	godan_verb
+鳴らす	ならす	Làm cho kêu			3	godan_verb
+役に立つ	やくにたつ	Có tác dụng, có ích			3	godan_verb
+飾る	かざる	Trang trí			3	godan_verb
+遊ぶ	あそぶ	Chơi			3	godan_verb
+踊る	おどる	Nhảy			3	godan_verb
+思う	おもう	Cảm nghĩ tức thời			3	godan_verb
+考える	かんがえる	Suy nghĩ (kĩ)			3	ichidan_verb
+手伝う	てつだう	giúp đỡ			3	godan_verb
+働く	はたらく	Hoạt động; Làm việc			3	godan_verb
+決まり	きまり	Luật lệ, quy định			3	noun
+騒ぐ	さわぐ	Ồn ào			3	godan_verb
+知らせる	しらせる	Thông báo			3	ichidan_verb
+違う	ちがう	Khác nhau, không giống	見方が違う 習慣が違う 違った角度から見る	比べてみて同じでない状態を呈する。 相違する。 異なる。	3	godan_verb
+始める	はじめる	Bắt đầu			3	ichidan_verb
+続く	つづく	Liên tục			3	godan_verb
+暮れる	くれる	Mặt trời lặn	日が暮れる		3	ichidan_verb
+優勝	ゆうしょう	Vô địch			3	noun
+笑う	わらう	Cười			3	godan_verb
+驚く	おどろく	Kinh ngạc			3	godan_verb
+怒る	おこる	Nổi giận			3	godan_verb
+殺人	さつじん	Sát nhân			3	noun
+幸せ	しあわせ	Hạnh phúc			3	na_adjective
+得意	とくい	Giỏi, sở trường			3	na_adjective
+認め	みとめ	Thừa nhận			3	noun
+昇進	しょうしん	Thăng tiến			3	noun
+夢中	むちゅう	Say mê			3	na_adjective
+観客	かんきゃく	Khán giả, khách tham quan			3	noun
+育てる	そだてる	Nuôi dạy, nuôi dưỡng			3	ichidan_verb
+苦しい	くるしい	Khổ đau			3	i_adjective
+悪口	わるぐち	Nói xấu			3	noun
+平気	へいき	Bình thản, dửng dưng			3	na_adjective
+悔しい	くやしい	Bực bội, cay cú			3	i_adjective
+羨ましい	うらやましい	Ghen ăn tức ở			3	i_adjective
+才能	さいのう	Tài năng			3	noun
+豊か	ゆたか	Dư dả, giàu có; Thanh thản, ung dung; Dày dặn, có sức nặng; Quá giới hạn			3	na_adjective
+蚊	か	Muỗi			3	noun
+首	くび	Cái cổ			3	noun
+痒い	かゆい	Ngứa			3	i_adjective
+大人しい	おとなしい	Trầm tính, ít nói			3	i_adjective
+我慢強い	がまんづよい	Chịu đựng giỏi			3	i_adjective
+正直	しょうじき	Thành thực, trung thực			3	na_adjective
+けち	けち	Keo kiệt			3	na_adjective
+我儘	わがまま	Ích kỉ			3	na_adjective
+積極的	せっきょくてき	Tính tích cực			3	na_adjective
+消極的	しょうきょくてき	Tính tiêu cực			3	na_adjective
+満足	まんぞく	Mãn nguyện, hài lòng			3	na_adjective
+不満	ふまん	Bất mãn			3	na_adjective
+不安	ふあん	Bất an			3	na_adjective
+不注意	ふちゅうい	Không chú ý, bất cẩn			3	na_adjective
+楽	らく	Thoải mái, nhàn hạ			3	na_adjective
+面倒	めんどう	Phiền hà, lằng nhằng			3	na_adjective
+手続き	てつづき	Thủ tục			3	noun
+失礼	しつれい	Mất lịch sự, thất lễ			3	na_adjective
+当然	とうぜん	Đương nhiên			3	na_adjective
+意外	いがい	Ngoài ý muốn			3	noun
+調査	ちょうさ	Điều tra			3	noun
+事故	じこ	Tai nạn, sự cố			3	noun
+結構	けっこう	Khá, tốt, đủ; tuyệt			3	na_adjective
+派手	はで	Lòe loẹt, màu mè			3	na_adjective
+地味	じみ	Giản dị, đơn giản			3	na_adjective
+お洒落	おしゃれ	Sành điệu, hợp mốt			3	na_adjective
+不思議	ふしぎ	Kì lạ			3	na_adjective
+増し	まし	Tốt lên, tốt hơn			3	na_adjective
+不自由	ふじゆう	Không tự do, tàn phế			3	na_adjective
+暖まる	あたたまる	Ấm lên			3	godan_verb
+暖める	あたためる	Làm ấm			3	ichidan_verb
+高まる	たかまる	Cao lên, tăng lên;			3	godan_verb
+高める	たかめる	Nâng cao			3	ichidan_verb
+強まる	つよまる	Khỏe, mạnh lên			3	godan_verb
+強める	つよめる	Làm mạnh lên, tăng cường			3	ichidan_verb
+弱まる	よわまる	Yếu đi			3	godan_verb
+弱める	よわめる	Làm yếu đi			3	ichidan_verb
+広まる	ひろまる	Được lan truyền (có tính trừu tượng)			3	godan_verb
+広める	ひろめる	Làm lan rộng			3	ichidan_verb
+深まる	ふかまる	Sâu sắc thêm, uyên thâm			3	godan_verb
+深める	ふかめる	Làm sâu sắc thêm	親睦 (しんぼく) を深める 改めて認識を深める	物事の程度を深くする。	3	ichidan_verb
+世話	せわ	Chăm sóc, giúp đỡ			3	noun
+家庭	かてい	Gia đình (nơi chốn)			3	noun
+厳しい	きびしい	Nghiêm khắc	厳しい先生		3	i_adjective
+易しい	やさしい	Dễ			3	i_adjective
+協力	きょうりょく	Hiệp lực, hợp tác			3	noun
+感謝	かんしゃ	Cảm tạ			3	noun
+お詫び	おわび	Lời xin lỗi			3	noun
+お辞儀	おじぎ	Cúi chào			3	noun
+丁寧	ていねい	Cẩn thận, chỉn chu; Lịch sự			3	na_adjective
+握手	あくしゅ	Bắt tay			3	noun
+意地悪	いじわる	Tâm địa xấu, xấu bụng; Trêu đùa, bắt nạt			3	na_adjective
+悪戯	いたずら	Nghịch ngợm; Làm chơi chơi			3	na_adjective
+節約	せつやく	Tiết kiệm, dành dụm			3	noun
+生活費	せいかつひ	Phí sinh hoạt			3	noun
+経営	けいえい	Điều hành, quản lí	会社を経営する	事業目的を達成するために、継続的・計画的に意思決定を行って実行に移し、事業を管理・遂行すること。 また、そのための組織体。	3	noun
+反省	はんせい	Tự kiểm điểm			3	noun
+実行	じっこう	Thực hành			3	noun
+進歩	しんぽ	Tiến bộ			3	noun
+変化	へんか	Thay đổi			3	noun
+発達	はったつ	Phát triển			3	noun
+体力	たいりょく	Thể lực			3	noun
+低下	ていか	Suy giảm			3	noun
+若者	わかもの	Giới trẻ			3	noun
+出場	しゅつじょう	Ra mặt, ra mắt (trình diễn)			3	noun
+活躍	かつやく	Cố gắng, nỗ lực một cách đáng nể			3	noun
+競争	きょうそう	Cạnh tranh			3	noun
+成績	せいせき	Thành tích			3	noun
+応援	おうえん	Cổ vũ, hỗ trợ; ủng hộ			3	noun
+拍手	はくしゅ	Vỗ tay			3	noun
+情報	じょうほう	Thông tin			3	noun
+宣伝	せんでん	Tuyên truyền			3	noun
+広告	こうこく	Quảng cáo			3	noun
+注目	ちゅうもく	Tập trung sự chú ý			3	noun
+通訳	つうやく	Thông dịch			3	noun
+翻訳	ほんやく	Phiên dịch			3	noun
+伝言	でんごん	Nhắn tin			3	noun
+報告	ほうこく	Báo cáo			3	noun
+録画	ろくが	Ghi hình			3	noun
+混雑	こんざつ	Hỗn tạp, đông đúc			3	noun
+渋滞	じゅうたい	Tắc đường, tắc nghẽn			3	noun
+衝突	しょうとつ	Xung đột, va chạm			3	noun
+被害	ひがい	Thiệt hại			3	noun
+事件	じけん	vụ việc, vụ án			3	noun
+修理	しゅうり	Sửa chữa			3	noun
+停電	ていでん	Mất điện			3	noun
+雷・雷	かみなり・かみなり	Sấm sét			3	noun
+調子	ちょうし	Tình trạng			3	noun
+自信	じしん	Tự tin			3	noun
+自慢	じまん	Hãnh diện, tâm đắc, tự hào			3	noun
+関心	かんしん	Quan tâm (có hứng thú)			3	noun
+感動	かんどう	Cảm động			3	noun
+興奮	こうふん	Hưng phấn			3	noun
+感想	かんそう	Cảm tưởng (biểu thị suy nghĩ)			3	noun
+予想	よそう	Đoán trước, trù liệu (cảm tính)			3	noun
+専門	せんもん	Chuyên môn			3	noun
+研究	けんきゅう	Nghiên cứu			3	noun
+原因	げんいん	Nguyên nhân			3	noun
+結果	けっか	Kết quả			3	noun
+解決	かいけつ	Giải quyết			3	noun
+確かめる	たしかめる	xác nhận kiểm tra			3	ichidan_verb
+Sai	Sai	[間違[まちが]]う			3	godan_verb
+利用	りよう	sử dụng tùy biến			3	noun
+減る	へる	Giảm			3	godan_verb
+理解	りかい	Hiểu, nắm bắt			3	noun
+発見	はっけん	Phát hiện			3	noun
+発明	はつめい	Phát minh			3	noun
+団体	だんたい	Đoàn thể, nhóm			3	noun
+博物館	はくぶつかん	Viện bảo tàng			3	noun
+選挙	せんきょ	Bầu cử			3	noun
+行う	おこなう	Tổ chức			3	godan_verb
+税金	ぜいきん	Tiền thuế			3	noun
+責任	せきにん	Trách nhiệm			3	noun
+題名	だいめい	Nhan đề			3	noun
+条件	じょうけん	Điều kiện			3	noun
+採用	さいよう	Tuyển dụng	tuyển theo hướng vượt qua kỳ thi tuyển		3	noun
+締め切り	しめきり	Hạn cuối			3	noun
+期間	きかん	Kì hạn			3	noun
+倍	ばい	Gấp đôi			3	noun
+近道	ちかみち	Đường tắt			3	noun
+中心	ちゅうしん	Trung tâm			3	noun
+辺り	あたり	(cảnh vật) Xung quanh			3	noun
+周り	まわり	ven, đường mép, chu vi	湖の周りに沿った道	そのものの外側の縁の部分。 また、その長さ。 周囲。 ぐるり。	3	noun
+穴	あな	Lỗ			3	noun
+地面	じめん	Mặt đất			3	noun
+掘る	ほる	Đào			3	godan_verb
+列	れつ	Hàng (dọc), dãy; Cột			3	noun
+幅	はば	Chiều rộng			3	noun
+範囲	はんい	Phạm vi			3	noun
+内容	ないよう	Nội dung			3	noun
+中身	なかみ	Nội dung bên trong			3	noun
+特徴	とくちょう	Đặc trưng			3	noun
+普通	ふつう	phổ thông, thông thường			3	noun
+当たり前	あたりまえ	Dĩ nhiên			3	na_adjective
+偽	にせ	giả dối			3	noun
+国籍	こくせき	Quốc tịch			3	noun
+東洋	とうよう	Phương Đông			3	noun
+西洋	せいよう	Phương Tây			3	noun
+文化	ぶんか	Văn hóa			3	noun
+国際	こくさい	Quốc tế			3	noun
+支社	ししゃ	chi nhánh			3	noun
+企業	きぎょう	Công ty, xí nghiệp			3	noun
+発展	はってん	Phát triển; Dẫn đến, thành ra			3	noun
+自然	しぜん	Tự nhiên			3	na_adjective
+景色	けしき	Phong cảnh			3	noun
+宗教	しゅうきょう	Tôn giáo			3	noun
+愛	あい	Yêu			3	noun
+届ける	とどける	Giao, đưa, chuyển	お歳暮を届ける		3	ichidan_verb
+掻く	かく	Gãi, cào, bới;			3	godan_verb
+掴む	つかむ	cầm chặt	腕を掴む まわしを掴む	手でしっかりと握り持つ。 強くとらえて離すまいとする。	3	godan_verb
+びっくり	びっくり	Ngạc nhiên, giật mình			3	noun
+握る	にぎる	nắm	こぶしを握る ペンを握る 車のハンドルを握る	手の指全部を内側へ曲げる。 また、そのようにして、物をつかんだり、持ったりする。	3	godan_verb
+押さえる	おさえる	Nắm, nắm bắt được; Giữ, ôm (bụng), che; Trấn áp, chế ngự;			3	ichidan_verb
+近づく	ちかづく	Đến gần, tới gần			3	godan_verb
+近づける	ちかづける	Kết thân, mang lại gần			3	ichidan_verb
+不図	ふと	Đột nhiên, bất chợt; Tình cờ			3	adverb
+合わせる	あわせる	Hiệp sức			3	ichidan_verb
+当たる	あたる	va vào	ボールが顔に当たる 雨がフロントガラスに当たる	動いて来たものがぶつかる。 また、動きのあるものが触れる。	3	godan_verb
+当てる	あてる	Đánh (vật) vào	ボールを頭に当てる 的に当てる		3	ichidan_verb
+似合う	にあう	Hợp			3	godan_verb
+似る	にる	Giống			3	ichidan_verb
+似せる	にせる	Bắt chước			3	ichidan_verb
+分かれる	わかれる	Phân chia			3	ichidan_verb
+Chia ra	Chia ra	[分[わ]]ける			3	ichidan_verb
+財産	ざいさん	Tài sản			3	noun
+足す	たす	Cộng vào (phép cộng), thêm vào			3	godan_verb
+薄い	うすい	Nhạt, mỏng			3	i_adjective
+塩	しお	Muối			3	noun
+引く	ひく	kéo, lôi về phía mình	網を引く サイドブレーキを引く 弓を引く	手繰り寄せる。 手前に動かす。 矢を射放つ。	3	godan_verb
+増やす	ふやす	Làm tăng lên			3	godan_verb
+減らす	へらす	Làm giảm			3	godan_verb
+店長	てんちょう	Chủ tiệm			3	noun
+返る	かえる	Được trả lại			3	godan_verb
+返す	かえす	Làm quay lại			3	godan_verb
+譲る	ゆずる	Nhường lại, nhượng lại			3	godan_verb
+助ける	たすける	giúp đỡ			3	ichidan_verb
+苛める・虐める	いじめる・いじめる	Bắt nạt, trêu chọc			3	ichidan_verb
+騙す	だます	Lừa đảo, lạm dụng			3	godan_verb
+独身	どくしん	Độc thân			3	noun
+留守中	るすちゅう	Trong lúc đi vắng			3	noun
+刺さる	ささる	đâm vào, găm vào	とげが刺さる	先のとがった物が他の物に突き立つ。	3	godan_verb
+刺す	さす	Đâm, chọc, chích			3	godan_verb
+殺す	ころす	Giết			3	godan_verb
+隠れる	かくれる	Ẩn nấp, núp, che giấu			3	ichidan_verb
+隠す	かくす	Che giấu			3	godan_verb
+埋まる	うまる	bị chôn vùi	庭が花で埋まる 雪崩で埋まる	物に覆われてその下になり、見えなくなる。 うずまる。 うずもれる。	3	godan_verb
+埋める	うめる	Chôn lấp			3	ichidan_verb
+囲む	かこむ	vây quanh			3	godan_verb
+詰まる	つまる	Chặt, đầy, tắc nghẽn			3	godan_verb
+詰める	つめる	Nhét kín	衣装を詰めた鞄 (かばん) 料理を重箱に詰める		3	ichidan_verb
+閉じる	とじる	Khép			3	ichidan_verb
+飛ばす	とばす	Làm cho bay	模型飛行機を飛ばす 風船を飛ばす	空中を飛ぶようにする。	3	godan_verb
+振る	ふる	lắc, vẫy, ve vẩy	ハンカチを振る 腕を振って歩く 犬がしっぽを振る	からだの一部を、また物の一方の端をもって上下・左右・前後に何度も繰り返すようにして動かす。	3	godan_verb
+捲る	めくる	(động từ ghép) V miệt mài, sấp mặt	書き捲る 走り捲る	ずっとその動作を続ける。 盛んに…する。	3	godan_verb
+見かける	みかける	Tình cờ gặp			3	ichidan_verb
+試す	ためす	thử nghiệm			3	godan_verb
+洋服	ようふく	Âu phục			3	noun
+繰り返す	くりかえす	Lặp lại			3	godan_verb
+体操	たいそう	Tập thể dục			3	noun
+訳す	やくす	Dịch			3	godan_verb
+間違える	まちがえる	Nhầm			3	ichidan_verb
+許す	ゆるす	Tha thứ			3	godan_verb
+謝る	あやまる	Xin lỗi			3	godan_verb
+慣らす	ならす	làm cho thích nghi, làm cho quen	準備運動をして体を慣らす 水に慣らす 履き慣らした靴	ある状態・環境になれさせる。 少しずつ何度も試みて、そのことが当然のことになるようにする。 また、うまくやれるかどうか前もって調子をためしたり整えたりする。 なじませる。 順応させる。	3	godan_verb
+建つ	たつ	Được xây			3	godan_verb
+建てる	たてる	Xây lên (những thứ lớn)			3	ichidan_verb
+育つ	そだつ	Lớn lên, khôn lớn			3	godan_verb
+生える	はえる	Mọc, phát triển			3	ichidan_verb
+生やす	はやす	Để dài (râu); Làm cho mọc			3	godan_verb
+汚れる	よごれる	bẩn bên trong (ô nhục, ô danh,...)			3	ichidan_verb
+汚す	けがす	Làm bẩn, làm nhục	làm bẩn bên trong		3	godan_verb
+壊れる	こわれる	Bị hỏng			3	ichidan_verb
+壊す	こわす	Làm hỏng			3	godan_verb
+割れる	われる	Bị vỡ, hỏng			3	ichidan_verb
+割る	われる	Làm vỡ	茶碗を割る クルミを割る まきを割る	強い力を加え固体の物をいくつかに分けて離す。	3	godan_verb
+折れる	おれる	Gãy			3	ichidan_verb
+折る	おる	Làm gãy			3	godan_verb
+破れる	われる	Rách; Bị phá vỡ			3	ichidan_verb
+破る	やぶる	Xé rách, phá			3	godan_verb
+曲げる	まげる	Gập, bẻ cong			3	ichidan_verb
+外れる	はずれる	Rời ra, tách ra	ボタンが外れている 障子が外れる	掛けたりはめたりした位置から抜け出る。	3	ichidan_verb
+外す	はずす	Làm rời ra, tách ra			3	godan_verb
+揺れる	ゆれる	Rung, đong đưa; đưa qua đưa lại;			3	ichidan_verb
+揺らす	ゆらす	Rung, đung đưa			3	godan_verb
+流す	ながす	Làm chảy	汚水をどぶに流す トイレの水を流す		3	godan_verb
+都心	としん	Nội thành; Trung tâm thành phố, đô thị			3	noun
+濡れる	ぬれる	Bị ướt			3	ichidan_verb
+濡らす	ぬらす	Làm ướt			3	godan_verb
+迷う	まよう	lạc	山中で道に迷う	まぎれて、進むべき道や方向がわからなくなる。	3	godan_verb
+悩む	なやむ	Băn khoăn, trăn trở	進学か就職かで悩む 恋に悩む若者 人生に悩む		3	godan_verb
+慌てる	あわてる	(Hành động) Luống cuống; Vội vàng, hấp tấp			3	ichidan_verb
+覚める	さめる	tỉnh dậy			3	ichidan_verb
+覚ます	さます	Làm cho tỉnh lại			3	godan_verb
+夜中	よなか	Giữa đêm			3	noun
+緊張	きんちょう	Căng thẳng, lo lắng			3	noun
+祈る	いのる	Cầu nguyện			3	godan_verb
+感じる	かんじる	Cảm thấy, cảm giác như kiểu			3	ichidan_verb
+濃い	こい	Nồng, đậm			3	i_adjective
+Chua	Chua	[酸[す]]っぱい			3	i_adjective
+臭い	くさい	Thối, tanh			3	i_adjective
+可笑しい	おかしい	Buồn cười (vì kỳ quặc)			3	i_adjective
+格好いい	かっこういい	Đẹp trai, bảnh bao			3	i_adjective
+美味い・上手い	うまい・うまい	Ngon, giỏi			3	i_adjective
+親しい	したしい	Thân thiện, gần gũi (người quen)			3	i_adjective
+詳しい	くわしい	Tường tận, chi tiết			3	i_adjective
+細かい	こまかい	Chi tiết, chi li			3	i_adjective
+浅い	あさい	Nông, cạn			3	i_adjective
+固い	かたい	Cứng đầu, bảo thủ			3	i_adjective
+温い	ぬくい	Nguội			3	i_adjective
+眩しい	まぶしい	Chói mắt, sáng chói			3	i_adjective
+蒸し暑い	むしあつい	Nóng ẩm, oi bức			3	i_adjective
+清潔	せいけつ	Thanh khiết, sạch sẽ			3	na_adjective
+新鮮	しんせん	Tươi, mới mẻ			3	na_adjective
+立派	りっぱ	Tráng lệ, uy nghiêm, lộng lẫy	立派な邸宅 立派な業績		3	na_adjective
+正確	せいかく	chính xác			3	na_adjective
+重要	じゅうよう	Trọng yếu, quan trọng			3	na_adjective
+勿体無い	もったいない	Lãng phí, hoang phí			3	na_adjective
+凄い	すごい	Tuyệt, ghê;			3	i_adjective
+酷い	ひどい	khủng khiếp			3	i_adjective
+激しい	はげしい	Mãnh liệt, gắt			3	i_adjective
+そっくり	そっくり	Giống y hệt			3	na_adjective
+急	きゅう	Gấp, bất chợt; Hiểm trở			3	na_adjective
+特別	とくべつ	Đặc biệt			3	na_adjective
+完全	かんぜん	Hoàn toàn, toàn diện			3	na_adjective
+盛ん	さかん	Tràn đầy khí thế, mãnh liệt	食欲が盛んだ 盛んに燃える 盛んな声援がとぶ		3	na_adjective
+様々	さまざま	Đa dạng, phong phú			3	na_adjective
+可能	かのう	Khả năng, có thể			3	na_adjective
+不可能	ふかのう	Bất khả thi			3	na_adjective
+基本的	きほんてき	Tính cơ bản			3	na_adjective
+国際的	こくさいてき	Tầm cỡ quốc tế			3	na_adjective
+ばらばら	ばらばら	Rời rạc			3	na_adjective
+ぼろぼろ	ぼろぼろ	Rách nát, tơi tả, te tua			3	adverb
+演奏	えんそう	Trình diễn, biểu diễn			3	noun
+芸術	げいじゅつ	Nghệ thuật trừu tượng			3	noun
+検査	けんさ	Kiểm tra			3	noun
+胃	い	Dạ dày			3	noun
+血液	けつえき	Máu			3	noun
+流れる	ながれる	Chảy, trôi đi			3	ichidan_verb
+治療	ちりょう	Trị liệu			3	noun
+症状	しょうじょう	Triệu chứng			3	noun
+鼻水	はなみず	Nước mũi			3	noun
+予防	よぼう	Dự phòng, phòng ngừa			3	noun
+栄養	えいよう	Dinh dưỡng			3	noun
+手術	しゅじゅつ	Phẫu thuật			3	noun
+死亡	しぼう	Tử vong			3	noun
+一生	いっしょう	Cuộc đời, suốt đời			3	noun
+誤解	ごかい	Hiểu nhầm (từ việc có thật)			3	noun
+後悔	こうかい	Hối hận			3	noun
+訳	わけ	lý do			3	noun
+態度	たいど	Thái độ			3	noun
+癖	くせ	Thói quen			3	noun
+礼儀	れいぎ	Phép lịch sự			3	noun
+文句	もんく	Câu cú, câu chữ	気のきいた文句 殺し文句	文章中の語句。文言。	3	noun
+表情	ひょうじょう	Biểu cảm			3	noun
+表面	ひょうめん	Bề ngoài, bề mặt			3	noun
+禁止	きんし	Cấm chỉ			3	noun
+完成	かんせい	Hoàn thành			3	noun
+課題	かだい	Chủ đề			3	noun
+例外	れいがい	Ngoại lệ			3	noun
+基本	きほん	Cơ bản			3	noun
+記録	きろく	Ghi chép, ghi lại			3	noun
+状態	じょうたい	Trạng thái			3	noun
+出来事	できごと	Việc đã xảy ra			3	noun
+場面	ばめん	Hiện trường, bối cảnh			3	noun
+機会	きかい	Cơ hội			3	noun
+距離	きょり	Cự ly			3	noun
+提案	ていあん	Đề xuất			3	noun
+遣り取り	やりとり	Trao đổi	見合写真をやり取りする		3	noun
+知識	ちしき	Tri thức, kiến thức			3	noun
+手段	しゅだん	Phương pháp, cách thức			3	noun
+代表	だいひょう	Đại diện, thay mặt			3	noun
+影響	えいきょう	Ảnh hưởng			3	noun
+効果	こうか	Hiệu quả, hiệu ứng			3	noun
+印象	いんしょう	Ấn tượng			3	noun
+印	しるし	Dấu hiệu			3	noun
+合図	あいず	Dấu hiệu, ra hiệu	目で合図する ピストルの合図		3	noun
+共通	きょうつう	Chung, điểm chung			3	na_adjective
+強調	きょうちょう	Nhấn mạnh			3	noun
+大事	だいじ	quan trọng			3	na_adjective
+説明	せつめい	Thuyết minh, giải thích			3	noun
+省略	しょうりゃく	Lược bỏ			3	noun
+挑戦	ちょうせん	Khiêu chiến, thách thức			3	noun
+やる気	やるき	Có hứng thú làm			3	noun
+勇気	ゆうき	Dũng khí			3	noun
+資格	しかく	Tư cách; Bằng cấp			3	noun
+弁護士	べんごし	Luật sư			3	noun
+申請	しんせい	Yêu cầu, xin	ビザを申請する	希望や要望事項を願い出ること。 特に、国や公共の機関などに対して認可・許可その他一定の行為を求めること。	3	noun
+通帳	かよいちょう	Sổ tài khoản			3	noun
+貯金	ちょきん	Tiết kiệm tiền tiền tiết kiệm	毎月決まった額を貯金する 貯金箱	金銭をためること。 また、その金。	3	noun
+本人	ほんにん	Người chính, chính chủ; Đương sự (Người được nhắc đến hoặc chính bản thân)			3	noun
+契約	けいやく	Hợp đồng			3	noun
+証明	しょうめい	Chứng minh			3	noun
+変更	へんこう	Sửa đổi	計画を変更する		3	noun
+保存	ほぞん	Bảo tồn, lưu			3	noun
+保護	ほご	Bảo hộ			3	noun
+郊外	こうがい	Ngoại ô			3	noun
+資源	しげん	Tài nguyên			3	noun
+有効	ゆうこう	Có hiệu lực			3	na_adjective
+不足	ふそく	Không đủ			3	noun
+平均	へいきん	Trung bình			3	noun
+割合	わりあい	Tỉ lệ; Tương đối			3	adverb
+商売	しょうばい	thương mại, buôn bán			3	noun
+商品	しょうひん	Hàng hóa, sản phẩm, dịch vụ (mục đích thương mại)	新発売の商品を見せてください! 目玉商品 商品を陳列する		3	noun
+質	しつ	Chất lượng			3	noun
+型	かた	Mẫu, khuôn			3	noun
+生産	せいさん	Sản xuất (nói chung)			3	noun
+農業	のうぎょう	Nông nghiệp			3	noun
+消費	しょうひ	Tiêu thụ	消費電力 ガスを消費する	使ってなくすこと。 金銭・物質・エネルギー・時間などについていう。	3	noun
+現代	げんだい	Hiện đại; Thời đại này			3	noun
+世紀	せいき	Thế kỉ			3	noun
+地方	ちほう	Địa phương			3	noun
+平和	へいわ	Hòa bình			3	noun
+上る	のぼる	Leo lên			3	godan_verb
+階段	かいだん	Cầu thang có bậc			3	noun
+下る	くだる	Đi xuống, leo xuống	坂を下る 船で川を下る	上から下へ、高いところから低いところへ移る。	3	godan_verb
+進める	すすめる	Làm cho tiến lên	馬を進める 歩 (ほ) を進める ひざを進める	前の方へ動かして位置を移す。前進させる。	3	ichidan_verb
+通す	とおす	Xuyên qua			3	godan_verb
+光	ひかり	Ánh sáng			3	noun
+空気	くうき	Không khí			3	noun
+越える	こえる	Vượt qua (→) (địa điểm, thời gian, điểm,...)			3	ichidan_verb
+過ごす	すごす	Trải qua, sống	その後は、いかがお過ごしですか	月日を送る。 暮らす。	3	godan_verb
+移る	うつる	Di chuyển, chuyển sang; lây, lan			3	godan_verb
+移す	うつす	Chuyển			3	godan_verb
+本社	ほんしゃ	Trụ sở chính			3	noun
+連れる	つれる	Dẫn, dắt			3	ichidan_verb
+寄せる	よせる	ghé tới gần, tiến đánh vào	波が岸辺に寄せる 敵勢が寄せて来る	近づく。寄る。 また、攻めて近くに迫る。	3	ichidan_verb
+奨学金	しょうがくきん	Học bổng			3	noun
+与える	あたえる	Trao, ban	子供におやつを与える 賞を与える	自分の所有物を他の人に渡して、その人の物とする。 現在ではやや改まった言い方で、恩恵的な意味で目下の者に授ける場合に多く用いる。	3	ichidan_verb
+得る	える	Đạt được			3	ichidan_verb
+向ける	むける	Chĩa về phía, hướng về phía			3	ichidan_verb
+勧める	すすめる	Mời, rủ, gợi ý			3	ichidan_verb
+薦める	すすめる	Tiến cử, giới thiệu			3	ichidan_verb
+任せる	まかせる	Để cho ai làm gì	今日はお任せします 私に任せて下さい		3	ichidan_verb
+守る	まもる	Giữ, tuân thủ, bảo vệ			3	godan_verb
+争う	あらそう	cạnh tranh	優勝を争う 先を争う 一、二を争う名騎手	相手にまさろうとして、また、何かを得ようとして張り合う。 競争する。	3	godan_verb
+望む	のぞむ	Kỳ vọng, trông mong; Ao ước;			3	godan_verb
+信じる	しんじる	Tin tưởng			3	ichidan_verb
+通じる	つうじる	kết nối được	電話が通じる 電流を通じる	何かを伝って到達する。 また、届かせる。	3	ichidan_verb
+飽く	あく	Ngán			3	godan_verb
+思いつく	おもいつく	Nảy ra ý tưởng, chợt nghĩ ra			3	godan_verb
+思いやる	おもいやる	Quan tâm, thông cảm			3	godan_verb
+熱中	ねっちゅう	Nghiện, mê			3	noun
+暮らす	くらす	Sinh sống			3	godan_verb
+巻く	まく	Quấn			3	godan_verb
+結ぶ	むすぶ	Buộc, kết, nối (1 thứ hoặc thứ này với thứ khác)			3	godan_verb
+紐	ひも	Dây			3	noun
+済む	すむ	xong hoàn tất			3	godan_verb
+済ます	すます	Làm cho kết thúc			3	godan_verb
+出来る	できる	Hoàn thành, có thể			3	ichidan_verb
+切らす	きらす	Dùng hết; Làm đứt, làm ngưng			3	godan_verb
+伝わる	つたわる	Truyền đi			3	godan_verb
+伝える	つたえる	Truyền đạt lại	電話で用件を伝える 皆さんにもよろしく伝えて下さい		3	ichidan_verb
+続ける	つづける	Tiếp tục			3	ichidan_verb
+繋がる	つながる	Kết nối	島と島とが橋で繋がる 電話が繋がる 光回線が繋がる		3	godan_verb
+繋ぐ	つなぐ	Kết nối			3	godan_verb
+繋げる	つなげる	Liên kết, kết nối;			3	ichidan_verb
+伸びる	のびる	Dài ra, vươn ra			3	ichidan_verb
+伸ばす	のばす	Kéo dài, vươn			3	godan_verb
+延びる	のびる	Trì hoãn			3	ichidan_verb
+延ばす	のばす	Hoãn			3	godan_verb
+重なる	かさなる	chồng chất (đồng chất)	人が重なって倒れる	ある物の上に、さらにそれと同類の物が載る。 幾重にも層をなす。	3	godan_verb
+重ねる	かさねる	Chồng, chất lên  (đồng tính)	書類を重ねる 着物を重ねて着る	物の上に、さらにそれと同類の物を載せる。	3	ichidan_verb
+広がる	ひろがる	Mở rộng ra			3	godan_verb
+広げる	ひろげる	Mở rộng, banh ra			3	ichidan_verb
+載る	のる	được ghi (trong)	新聞に載る 台帳に載る	書かれる。 記録される。	3	godan_verb
+載せる	のせる	Cho lên, chất lên, tải lên (đồ vật)			3	ichidan_verb
+揃う	そろう	đồng đều	粒が揃う 高さの揃った家並み	二つ以上のものの、形・大きさなどが同じになる。	3	godan_verb
+揃える	そろえる	Làm đồng đều (hình dạng, độ lớn)	ひもの長さを揃える 彼とセーターの柄を揃える		3	ichidan_verb
+纏まる	まとまる	Thu gom, thu thập	引っ越し荷物が纏まる 纏まった金額		3	godan_verb
+纏める	まとめる	Tóm tắt, tổng hợp			3	ichidan_verb
+付く	つく	Dính, gắn, có			3	godan_verb
+付ける	つける	Gắn, thêm vào			3	ichidan_verb
+貯まる	たまる	Tiết kiệm			3	godan_verb
+貯める	ためる	Tiết kiệm			3	ichidan_verb
+混じる	まじる	Lẫn lộn (không thể hoặc khó tách ra)			3	godan_verb
+混ざる	まざる	lẫn vào nhau	không phân biệt được		3	godan_verb
+交ぜる	まぜる	Trộn vào			3	ichidan_verb
+解ける	とける	Được giải quyết			3	ichidan_verb
+解く	とく	Giải quyết			3	godan_verb
+含む	ふくむ	Bao gồm (trạng thái)			3	godan_verb
+含める	ふくめる	Bao gồm (hành động)			3	ichidan_verb
+抜ける	ぬける	Bị nhổ, rút, bứt ra (từ bên trong)	歯が抜ける 栓が抜ける 髪の毛が抜ける		3	ichidan_verb
+抜く	ぬく	Rút ra, nhổ ra	刀を抜く 歯を抜く 刺を抜く		3	godan_verb
+現れる	あらわれる	Xuất hiện, hiện ra			3	ichidan_verb
+現す	あらわす	làm xuất hiện			3	godan_verb
+表れる	あらわれる	Hiện ra, lộ ra			3	ichidan_verb
+表す	あらわす	Diễn tả			3	godan_verb
+散る	ちる	Rụng	花が散る 実が散る		3	godan_verb
+散らす	ちらす	Phân tán, rải rác			3	godan_verb
+差す	さす	Giương, giơ			3	godan_verb
+漱ぐ	すすぐ	súc (miệng)	口(くち)を漱(すす)ぐ		5	godan_verb
+有る・在る	ある	có, tồn tại			5	godan_verb
+来る	くる	đến			5	godan_verb
+人	ひと	người			5	noun
+悲しむ	かなしむ	đau buồn (vì)	別(わか)れを悲(かな)しむ 道徳心(どうとくしん)の低下(ていか)を悲(かな)しむ	心が痛む思いだ。 悲しく思う。 また、なげかわしく思う。	5	godan_verb
+方向	ほうこう	phương hướng	北の方向を指す 右の方向から風が吹く 進行方向	物が向いたり、進んだりする方。 向き。 方角。	3	noun
+そっと	そっと	Yên lặng, nhẹ nhàng, âm thầm, lặng lẽ			3	adverb
+私	わたし	tôi	私は学生です。		5	noun
+私達	わたしたち	chúng tôi			5	noun
+貴方	あなた	bạn			5	noun
+先生	せんせい	thầy/cô			5	noun
+教師	きょうし	giáo viên			5	noun
+実習生	じっしゅうせい	thực tập sinh			5	noun
+研究者	けんきゅうしゃ	nhà nghiên cứu			5	noun
+技術者	ぎじゅつしゃ	kỹ thuật viên			5	noun
+留学生	りゅうがくせい	du học sinh			5	noun
+学生	がくせい	học sinh			5	noun
+会社員	かいしゃいん	nhân viên công ty			5	noun
+銀行員	ぎんこういん	nhân viên ngân hàng			5	noun
+医者	いしゃ	người làm y (không có bằng cấp)			5	noun
+大学	だいがく	đại học			5	noun
+機械	きかい	máy móc, cơ khí			5	noun
+自動車	じどうしゃ	ô tô			5	noun
+何歳・おいくつ	なんさい・おいくつ	bao nhiêu tuổi			5	godan_verb
+失礼ですが	しつれいですが	xin lỗi (vì đã làm phiền)			5	noun
+お名前は	おなまえは	tên bạn là gì?			5	noun
+初めまして	はじめまして	xin chào (lần đầu gặp)			5	noun
+中国	ちゅうごく	Trung Quốc			5	noun
+韓国	かんこく	Hàn Quốc			5	noun
+ベトナム	ベトナム	Việt Nam			5	noun
+日本	にほん	Nhật Bản			5	noun
+誰	だれ	ai			5	noun
+本	ほん	quyển sách			5	noun
+辞書	じしょ	từ điển			5	noun
+雑誌	ざっし	tạp chí			5	noun
+新聞	しんぶん	báo	社会の出来事の報道や論評を、広い読者を対象に伝達するための定期刊行物。 日刊が多いが、週刊・旬刊・月刊などもある。		5	noun
+紙	かみ	giấy			5	noun
+煙草	たばこ	thuốc lá			5	noun
+灰皿	はいざら	gạt tàn thuốc lá			5	noun
+箱	はこ	hộp			5	noun
+手紙	てがみ	thư			5	noun
+手帳	てちょう	sổ tay			5	noun
+鉛筆	えんぴつ	bút chì			5	noun
+鍵	かぎ	chìa khóa			5	noun
+時計	とけい	đồng hồ			5	noun
+傘	かさ	cái ô			5	noun
+鞄	かばん	túi xách			5	noun
+電話	でんわ	điện thoại			5	noun
+携帯電話	けいたいでんわ	điện thoại cầm tay			5	noun
+机	つくえ	bàn làm việc			5	noun
+椅子	いす	ghế dựa			5	noun
+窓	まど	cửa sổ			5	noun
+英語	えいご	tiếng Anh			5	noun
+日本語	にほんご	tiếng Nhật			5	noun
+お土産	おみやげ	quà lưu niệm			5	noun
+教室	きょうしつ	phòng học			5	noun
+食堂	しょくどう	nhà ăn			5	noun
+事務所・事務室	じむしょ・じむしつ	văn phòng			5	noun
+会議室	かいぎしつ	phòng họp, hội nghị			5	noun
+受付	うけつけ	lễ tân	病院の受付		5	noun
+部屋	へや	căn phòng			5	noun
+庭	にわ	sân vườn			5	noun
+「お」国	「お」くに	đất nước			5	noun
+会社	かいしゃ	công ty			5	noun
+家	いえ	nhà			5	noun
+靴	くつ	giày			5	noun
+売場	うりば	nơi bán			5	noun
+自動販売機	じどうはんばいき	máy bán hàng tự động			5	noun
+地下	ちか	tầng hầm			5	noun
+~階	~かい	tầng ~			5	noun
+何階	なんかい	tầng mấy			5	noun
+~円	~えん	～ yên			5	noun
+幾ら	いくら	bao nhiêu tiền dù có như nào			5	noun
+百	ひゃく	trăm			5	noun
+千	せん	nghìn			5	noun
+万	ばん	vạn			5	noun
+寝る	ねる	nằm ngủ			5	ichidan_verb
+休む	やすむ	nghỉ			5	godan_verb
+勉強	べんきょう	học			5	noun
+見学	けんがく	học bằng cách quan sát			5	noun
+終わる	おわる	kết thúc			5	godan_verb
+銀行	ぎんこう	ngân hàng			5	noun
+郵便局	ゆうびんきょく	bưu điện			5	noun
+図書館	としょかん	thư viện			5	noun
+美術館	びじゅつかん	bảo tàng mỹ thuật			5	noun
+今	いま	bây giờ, vừa nãy	今、学校から帰る。 今の電車		5	noun
+~時	~じ	~ giờ			5	noun
+分	ぶん	phút	１時３０分		5	noun
+何時	なんじ	mấy giờ			5	noun
+何分	なにぶん	mấy phút			5	noun
+午前	ごぜん	sáng (A.M)			5	noun
+午後	ごご	chiều (P.M)			5	noun
+朝	あさ	buổi sáng			5	noun
+昼	ひる	buổi trưa			5	noun
+晩・夜	ばん・よる	tối・đêm			5	noun
+毎朝	まいあさ	mỗi sáng			5	noun
+毎晩	まいばん	mỗi tối			5	noun
+毎日	まいにち	mỗi ngày			5	noun
+一昨日	おととい	 ngày trước			5	noun
+昨日	きのう	hôm qua			5	noun
+今日	きょう	hôm nay			5	noun
+明日	あした	ngày mai			5	noun
+明後日	あさって	ngày kia (2 ngày sau)			5	noun
+今朝	けさ	sáng nay			5	noun
+今晩	こんばん	tối nay			5	noun
+昼休み	ひるやすみ	nghỉ trưa			5	noun
+講義	こうぎ	bài giảng			5	noun
+日曜日	にちようび	ngày Chủ Nhật			5	noun
+月曜日	げつようび	thứ 2			5	noun
+火曜日	かようび	thứ 3			5	noun
+水曜日	すいようび	Thứ 4			5	noun
+木曜日	もくようび	thứ 5			5	noun
+金曜日	きんようび	thứ 6			5	noun
+土曜日	どようび	thứ 7			5	noun
+何曜日	なんようび	ngày thứ mấy (trong tuần)			5	noun
+番号	ばんごう	mã số			5	noun
+何番	なんばん	số mấy			5	noun
+大変ですね	たいへんですね	vất vả quá nhỉ			5	noun
+お願いします	おねがいします	làm ơn			5	godan_verb
+行く	いく	đi			5	godan_verb
+帰る	かえる	đi về	郷里へ帰る まもなく帰ってくる 客が帰る	自分の家や、もといた場所に戻る	5	godan_verb
+学校	がっこう	trường học			5	noun
+小学校	しょうがっこう	trường tiểu học			5	noun
+中学校	ちゅうがっこう	trường trung học			5	noun
+高校	こうこう	trường cấp 3			5	noun
+市場	いちば	chợ	魚市場 青物市場 公設市場	一定の商品を大量に卸売りする所。 小売店が集まって常設の設備の中で、食料品や日用品を売る所。 マーケット。	5	noun
+駅	えき	nhà ga			5	noun
+工場	こうじょう	nhà máy công xưởng			5	noun
+~屋	~や	tiệm, quán ~			5	noun
+公園	こうえん	công viên			5	noun
+空港	くうこう	sân bay			5	noun
+飛行機	ひこうき	máy bay			5	noun
+船	ふね	thuyền			5	noun
+電車	でんしゃ	tàu điện			5	noun
+新幹線	しんかんせん	tàu siêu tốc			5	noun
+地下鉄	ちかてつ	tàu điện ngầm			5	noun
+急行	きゅうこう	tàu tốc hành			5	noun
+特急	とっきゅう	tàu siêu tốc (đặc cấp)			5	noun
+自転車	じてんしゃ	xe đạp	学校に自転車で行く - tôi đến trường bằng ?		5	noun
+歩く	あるく	đi bộ	橋を歩く - tôi ? trên cầu		5	godan_verb
+友達	ともだち	bạn bè			5	noun
+恋人	こいびと	người yêu			5	noun
+彼	かれ	anh ấy			5	noun
+彼女	かのじょ	cô ấy bạn gái			5	noun
+家族	かぞく	gia đình			5	noun
+一人で	ひとりで	một mình			5	noun
+先週	せんしゅう	tuần trước			5	noun
+今週	こんしゅう	tuần này	今週の日曜日は遊びましょうか		5	noun
+来週	らいしゅう	tuần sau			5	noun
+誕生日	たんじょうび	ngày sinh nhật			5	noun
+~番線	~ばんせん	tuyến số ~			5	noun
+次	つぎ	tiếp theo	１９の次の数は２０である。		5	noun
+食べる	たべる	ăn	ご飯(はん)を食(た)べる - tôi ? cơm		5	ichidan_verb
+飲む	のむ	uống	水(みず)を飲(の)む - tôi ? nước		5	godan_verb
+吸う	すう	hút	煙草(たばこ)を吸(す)う - ? thuốc lá		5	godan_verb
+見る	みる	xem, nhìn	映画(えいが)を見(み)る		5	ichidan_verb
+聞く	きく	nghe, hỏi			5	godan_verb
+書く	かく	viết	本(ほん)に書(か)く - ? vào sách		5	godan_verb
+読む	よむ	đọc	本(ほん)を読(よ)む - ? sách		5	godan_verb
+買う	かう	mua	コンビニで物を買いに行く - đi ? đồ ở combini		5	godan_verb
+撮る	とる	chụp (ảnh) quay (phim)	写真(しゃしん)を撮(と)る - ? ảnh 映画(えいが)を撮(と)る - ? phim		5	godan_verb
+会う	あう	gặp	人(ひと)に会(あ)う - ? ai đó		5	godan_verb
+実習	じっしゅう	thực tập			5	noun
+ご飯	ごはん	cơm bữa ăn			5	noun
+朝ご飯	あさごはん	bữa sáng			5	noun
+昼ご飯	ひるごはん	bữa trưa			5	noun
+晩ご飯	ばんごはん	bữa tối			5	noun
+卵	たまご	trứng			5	noun
+肉	にく	thịt			5	noun
+魚	さかな	cá			5	noun
+果物	くだもの	trái cây			5	noun
+水	みず	nước			5	noun
+お茶	おちゃ	trà			5	noun
+紅茶	こうちゃ	trà đen			5	noun
+牛乳・ミルク	ぎゅうにゅう・ミルク	sữa bò			5	noun
+「お」酒	「お」さけ	rượu sake			5	noun
+映画	えいが	phim			5	noun
+写真	しゃしん	bức ảnh			5	noun
+店	みせ	cửa hàng			5	noun
+宿題	しゅくだい	bài tập			5	noun
+一緒に	いっしょに	cùng nhau			5	adverb
+時々	ときどき	thỉnh thoảng			5	adverb
+何ですか	なんですか	gì vậy, cái gì vậy			5	noun
+じゃ、また明日	じゃ、またあした	hẹn mai gặp			5	noun
+切る	きる	cắt	髪(かみ)を切(き)る - tôi ? tóc		5	godan_verb
+送る	おくる	gửi			5	godan_verb
+上げる	あげる	đưa lên, cho lên, cất lên làm cho lên cao	箱を棚に上げる 幕を上げる すだれを上げる		4	ichidan_verb
+貰う	もらう	nhận			5	godan_verb
+貸す	かす	cho mượn/thuê			5	godan_verb
+借りる	かりる	mượn, thuê			5	ichidan_verb
+教える	おしえる	dạy chỉ bảo			5	ichidan_verb
+習う	ならう	học	先生から数学を習う。 料理を習いたいです。		5	godan_verb
+手	て	tay			5	noun
+箸	はし	đũa			5	noun
+鋏	はさみ	cái kéo	鋏(はさみ)で紙(かみ)を切(き)る - cắt giấy bằng ?		5	noun
+消しゴム	けしゴム	cục tẩy			5	noun
+お金	おかね	tiền			5	noun
+花	はな	hoa			5	noun
+荷物	にもつ	hành lý			5	noun
+切符	きっぷ	vé (tàu xe)			5	noun
+切手	きって	tem			5	noun
+父	ちち	bố			5	noun
+お父さん	おとうさん	bố			5	noun
+母	はは	mẹ			5	noun
+お母さん	おかあさん	mẹ			5	noun
+兄	あに	anh trai			5	noun
+お兄さん	おにいさん	anh trai			5	noun
+姉	あね	chị gái			5	noun
+お姉さん	おねえさん	chị gái			5	noun
+弟	おとうと	em trai			5	noun
+弟さん	おとうとさん	em trai			5	noun
+妹	いもうと	em gái			5	noun
+妹さん	いもうとさん	em gái			5	noun
+家内・妻	かない・つま	vợ			5	noun
+奥さん	おくさん	vợ			5	noun
+主人	しゅじん	chồng			5	noun
+ご主人	ごしゅじん	chồng			5	noun
+子供	こども	trẻ con			5	noun
+素敵ですね	すてきですね	đẹp nhỉ			5	noun
+旅行	りょこう	du lịch			5	noun
+奇麗	きれい	xinh đẹp sạch			5	na_adjective
+静か	しずか	yên tĩnh			5	na_adjective
+賑やか	にぎやか	náo nhiệt			5	na_adjective
+有名	ゆうめい	nổi tiếng			5	na_adjective
+親切	しんせつ	thân thiện			5	na_adjective
+元気	げんき	khỏe mạnh			5	na_adjective
+暇	ひま	rảnh rỗi			5	na_adjective
+便利	べんり	tiện lợi			5	na_adjective
+素敵	すてき	tuyệt vời đáng yêu			5	na_adjective
+大き	おおき	to, lớn			5	noun
+小さい	ちいさい	nhỏ	小さい家 小さい花	物の形・容積・面積が、狭い空間や場所しか占めていない。	5	i_adjective
+新しい	あたらしい	mới			5	i_adjective
+古い	ふるい	cũ			5	i_adjective
+良い	よい	tốt			5	i_adjective
+悪い	わるい	xấu			5	i_adjective
+暑い	あつい	nóng (thời tiết)			5	i_adjective
+寒い	さむい	lạnh (thời tiết)			5	i_adjective
+冷たい	つめたい	lạnh nhạt, vô tâm	冷(つめ)たい目(め)で見(み)られる 冷(つめ)たい仕打(しう)ちを受(う)ける		5	i_adjective
+難しい	むずかしい	khó, căng			5	i_adjective
+高い	たかい	cao			5	i_adjective
+安い	やすい	rẻ	ベトナムの[物価[ぶっか]]が[安[やす]]い		5	i_adjective
+低い	ひくい	thấp	温度(おんど)が低(ひく)い - nhiệt độ ?		5	i_adjective
+面白い	おもしろい	thú vị hay			5	i_adjective
+美味しい	おいしい	ngon			5	i_adjective
+楽しい	たのしい	(bữa tiệc) vui			5	i_adjective
+白い	しろい	màu trắng			5	i_adjective
+黒い	くろい	màu đen			5	i_adjective
+赤い	あかい	màu đỏ			5	i_adjective
+青い	あおい	màu xanh dương	空(そら)は青(あお)い色(いろ)がある。 - trời có màu ?		5	i_adjective
+桜	さくら	hoa anh đào			5	noun
+富士山	ふじさん	núi Phú Sĩ			5	noun
+山	やま	núi			5	noun
+町	まち	phố thị trấn			5	noun
+食べ物	たべもの	đồ ăn			5	noun
+飲み物	のみもの	đồ uống			5	noun
+所	ところ	nơi, chỗ			5	noun
+寮	りょう	ký túc xá			5	noun
+生活	せいかつ	đời sống sinh hoạt	大学(だいがく)生活(せいかつ) - ? đại học		5	noun
+「お」仕事	「お」しごと	công việc			5	noun
+大変	たいへん	rất vất vả			5	na_adjective
+暫くですね・お久しぶりですね	しばらくくですね	đã lâu (không gặp) rồi nhỉ			5	noun
+いいえ、結構です	いいえ、けっこうです	không, tôi dùng đủ rồi			5	godan_verb
+分かる	わかる	hiểu, biết			5	godan_verb
+好き	すき	thích			5	na_adjective
+嫌い	きらい	ghét			5	na_adjective
+上手	じょうず	giỏi			5	na_adjective
+下手	へた	kém			5	na_adjective
+料理	りょうり	món ăn việc nấu ăn			5	noun
+豚肉	ぶたにく	thịt lợn			5	noun
+鳥肉	とりにく	thịt gà			5	noun
+牛肉	ぎゅうにく	thịt bò			5	noun
+野球	やきゅう	bóng chày			5	noun
+音楽	おんがく	âm nhạc			5	noun
+歌	うた	bài ca			5	noun
+歌舞伎	かぶき	kịch Kabuki			5	noun
+絵	え	bức tranh			5	noun
+字	じ	chữ			5	noun
+漢字	かんじ	chữ Hán			5	noun
+平仮名	ひらがな	chữ mềm			5	noun
+細かいお金	こまかいおかね	tiền lẻ			5	noun
+時間	じかん	thời gian			5	noun
+用事	ようじ	việc bận			5	noun
+約束	やくそく	hẹn lời hứa			5	noun
+よく	よく	hay, thường			5	godan_verb
+沢山	たくさん	nhiều			5	noun
+少し	すこし	một chút, một ít			5	noun
+全然	ぜんぜん	hoàn toàn			5	adverb
+勿論	もちろん	tất nhiên			5	noun
+速く・早く	はやく	nhanh, sớm			5	godan_verb
+病気	びょうき	bị bệnh			5	noun
+薬	くすり	thuốc			5	noun
+頭	あたま	cái đầu			5	noun
+お腹・腹部	おなか	bụng	お腹が空いているから、何かを食べた方がいいだと思う。		5	noun
+痛い	いたい	đau			5	i_adjective
+熱がある	ねつがある	bị sốt			5	godan_verb
+風邪を引く	かぜをひく	bị cảm			5	godan_verb
+残念ですね	ざんねんですね	tiếc nhỉ			5	noun
+駄目ですか	だめですか	không được à			5	noun
+色々	いろいろ	nhiều loại các loại			5	na_adjective
+男の人	おとこのひと	người con trai			5	noun
+女の人	おんなのひと	người con gái			5	noun
+男の子	おとこのこ	bé trai			5	noun
+女の子	おんなのこ	bé gái			5	noun
+犬	いぬ	con chó			5	noun
+猫	ねこ	con mèo			5	noun
+象	ぞう	con voi			5	noun
+木	き	cây			5	noun
+物	もの	đồ vật			5	noun
+電池	でんち	pin			5	noun
+冷蔵庫	れいぞうこ	tủ lạnh			5	noun
+棚	たな	ngăn kệ			5	noun
+乗り場	のりば	điểm lên xe bến xe			5	noun
+県	けん	tỉnh			5	noun
+上	うえ	ở trên			5	noun
+下	した	bên dưới			5	noun
+前	まえ	phía trước	前(まえ)に進(すす)む - tiến lên ?		5	noun
+後ろ	うしろ	phía sau	自分(じぶん)の肩(かた)を後(うし)ろに引(ひ)く		5	noun
+右	みぎ	bên phải			5	noun
+左	ひだり	bên trái			5	noun
+中	なか	bên trong	本(ほん)の中(なか)で字(じ)がある - ? sách có chữ		5	noun
+隣	となり	sát bên hàng xóm	A家はB家の隣です。 あれは隣のミラさんです。		5	noun
+側	そば	bên cạnh, ở gần	あなたのそばにずっといたい。		5	noun
+横	よこ	bên cạnh (ngang)			5	noun
+近く	ちかく	gần			5	noun
+真ん中	まんなか	chính giữa			5	noun
+一番	いちばん	nhất số một			5	noun
+~段目	~だんめ	ngăn thứ ~ bậc thứ ~			5	noun
+地図	ちず	bản đồ			5	noun
+大使館	たいしかん	đại sự quán			5	noun
+奥	おく	phía trong cùng			5	noun
+葉書	はがき	bưu thiếp			5	noun
+封筒	ふうとう	phong bì			5	noun
+速達	そくたつ	chuyển phát nhanh			5	noun
+書留	かきとめ	gửi bảo đảm			5	noun
+航空便	こうくうびん	bưu điện hàng không			5	noun
+船便	ふなびん	bưu điện đường tàu thủy			5	noun
+両親	りょうしん	bố mẹ thân sinh	父親と母親。 ふたおや。		5	noun
+外国	がいこく	nước ngoài			5	noun
+一日	いちにち	 ngày			5	noun
+~時間	~じかん	~ tiếng			5	noun
+~週間	~しゅうかん	~ tuần			5	noun
+~ヶ月	~かげつ	~ tháng			5	noun
+~年	~ねん	~ năm			5	noun
+全部	ぜんぶ	toàn bộ			5	noun
+皆	みな	tất cả mọi người			5	noun
+簡単	かんたん	đơn giản dễ dàng			5	na_adjective
+近い	ちかい	gần			5	i_adjective
+遠い	とおい	xa			5	i_adjective
+早い・速い	はやい	sớm nhanh			5	i_adjective
+遅い	おそい	chậm, muộn			5	i_adjective
+多い	おおい	nhiều, đông			5	i_adjective
+少ない	すくない	ít vắng			5	i_adjective
+暖かい	あたたかい	ấm áp ấm lòng			5	i_adjective
+涼しい	すずしい	mát mẻ			5	i_adjective
+甘い	あまい	ngọt			5	i_adjective
+重い	おもい	nặng			5	i_adjective
+軽い	かるい	nhẹ			5	i_adjective
+若い	わかい	trẻ			5	i_adjective
+季節	きせつ	mùa			5	noun
+春	はる	mùa xuân			5	noun
+夏	なつ	mùa hạ			5	noun
+秋	あき	mùa thu			5	noun
+冬	ふゆ	mùa đông			5	noun
+天気	てんき	thời tiết ngắn hạn			5	noun
+雨	あめ	mưa			5	noun
+曇り	くもり	mây mù, nhiều mây			5	noun
+海	うみ	biển			5	noun
+世界	せかい	thế giới			5	noun
+お祭	おまつり	lễ hội			5	noun
+試験	しけん	kỳ thi			5	noun
+泳ぐ	およぐ	bơi			5	godan_verb
+変える	かえる	thay đổi biến đổi			5	ichidan_verb
+入る	はいる	đi vào	映画館に入る	ある区切られた空間の外から中へ移り進む。	5	godan_verb
+見物	けんぶつ	tham quan			5	noun
+結婚	けっこん	kết hôn			5	noun
+買い物	かいもの	mua sắm			5	noun
+食事	しょくじ	dùng bữa			5	noun
+散歩	さんぽ	tản bộ đi dạo			5	noun
+欲しい	ほしい	muốn			5	i_adjective
+寂しい	さびしい	buồn, trống vắng cô đơn hiu quạnh	寂(さび)しい顔(かお)つき 懐(ふところ)が寂(さび)しい 一人(ひとり)寂(さび)しく暮(く)らす 寂(さび)しい夜道(よみち)		5	i_adjective
+広い	ひろい	rộng			5	i_adjective
+狭い	せまい	hẹp			5	i_adjective
+市役所	しやくしょ	chính quyền thành phố			5	noun
+川	かわ	sông			5	noun
+美術	びじゅつ	mỹ thuật			5	noun
+会議をする	かいぎをする	họp			5	godan_verb
+登録をする	とうろくをする	đăng kí			5	godan_verb
+何か	なにか	cái gì đó			5	noun
+お腹が空いた	おなかがすいた	tôi đói			5	noun
+お腹が一杯だ	おなかがいっぱいだ	tôi no rồi			5	noun
+喉が渇いた	のどがかわいた	tôi khát nước	水(みず)はどこ、喉(のど)が渇(かわ)いた。		5	noun
+ご注文は	ごちゅうもんは	quý khách gọi món gì			5	noun
+定食	ていしょく	cơm suất			5	noun
+少々お待ち下さい	しょうしょうおまちください	xin chờ một chút			5	i_adjective
+別々に	べつべつに	riêng ra			5	noun
+開ける	あける	mở ra	窓(まど)を開(あ)ける 封(ふう)を開(あ)ける 鍵(かぎ) (かぎ) を開(あ)ける 目(め)を開(あ)ける	隔てや仕切りになっているものを取り除く。 閉じていたものを開く。	5	ichidan_verb
+閉める	しめる	đóng, đậy	水道(すいどう)の蛇口(じゃぐち)を閉(し)める		5	ichidan_verb
+急ぐ	いそぐ	khẩn trương gấp rút vội vàng nhanh lên	はやく、急がないと		5	godan_verb
+持つ	もつ	cầm, mang			5	godan_verb
+待つ	まつ	chờ, đợi			5	godan_verb
+止める	とめる	tạm dừng việc đang làm một lúc			5	ichidan_verb
+曲がる	まがる	cong, gập, vẹo gấp khúc, uốn éo	雪(ゆき)の重(おも)みで竹(たけ)が曲(ま)がる - vì đống tuyết nặng, tre bị ? 背中(せなか)が曲(ま)がる - lưng bị ? ネクタイが曲(ま)がっている		5	godan_verb
+覚える	おぼえる	nhớ, thuộc lòng cảm thấy	単語(たんご)を覚(おぼ)える - ? từ vựng 働(はたら)き過(す)ぎるので疲(つか)れを覚(おぼ)える - vì làm việc quá sức nên tôi ? mệt		5	ichidan_verb
+取る	とる	lấy			5	godan_verb
+話す	はなす	nói chuyện			5	godan_verb
+見せる	みせる	cho xem/nhìn			5	ichidan_verb
+住所を教える	じゅうしょをおしえる	cho địa chỉ			5	ichidan_verb
+降る	ふる	rơi			5	godan_verb
+名前	なまえ	tên			5	noun
+住所	じゅうしょ	địa chỉ			5	noun
+砂糖	さとう	đường			5	noun
+読み方	よみかた	cách đọc			5	noun
+ゆっくり	ゆっくり	chậm từ từ thong thả			5	adverb
+すぐ	すぐ	ngay lập tức			5	godan_verb
+後で	あとで	sau, để sau			5	noun
+もう少し	もうすこし	thêm một chút nữa			5	noun
+お釣	おつり	tiền thừa trả lại			5	noun
+真っ直ぐ	まっすぐ	thẳng tắp một mạch	真っ直ぐな（の）線 家へ真っ直ぐに帰る		5	na_adjective
+言葉	ことば	ngôn từ, lời nói			5	noun
+立つ	たつ	đứng, dựng đứng			5	godan_verb
+座る	すわる	ngồi			5	godan_verb
+使う	つかう	sử dụng			5	godan_verb
+置く	おく	đặt, để			5	godan_verb
+売る	うる	bán			5	godan_verb
+知る	しる	biết			5	godan_verb
+住む	すむ	sống (tại một địa điểm)	私の住む国はベトナムです。		5	godan_verb
+住んでいる	すんでいる	đang sống (ở đâu đó)	日本に住んでいる		5	godan_verb
+持っている	もっている	có sở hữu			5	godan_verb
+禁煙	きんえん	cấm hút thuốc			5	noun
+石鹸	せっけん	xà phòng			5	noun
+資料	しりょう	tài liệu			5	noun
+時刻表	じこくひょう	thời khắc biểu			5	noun
+服	ふく	quần áo			5	noun
+歯医者	はいしゃ	nha sĩ			5	noun
+床屋	とこや	hiệu cắt tóc nam			5	noun
+ご家族	ごかぞく	gia đình	dùng để gọi gia đình của người khác		5	noun
+乗り換える	のりかえる	chuyển xe			5	ichidan_verb
+入れる	いれる	cho vào	砂糖(さとう)をコーヒーに入(い)れる		5	ichidan_verb
+辞める	やめる	thôi việc, từ chức			5	ichidan_verb
+押す	おす	ấn			5	godan_verb
+下ろす	おろす	rút (tiền)	お[金[かね]]を[下[お]]ろす		4	godan_verb
+長い	ながい	dài			5	i_adjective
+短い	みじかい	ngắn			5	i_adjective
+明るい	あかるい	sáng sủa			5	i_adjective
+暗い	くらい	tăm tối			5	i_adjective
+背が高い	せがたかい	người cao			5	i_adjective
+背が低い	せがひくい	người thấp			5	i_adjective
+頭が良い	あたまがよい	thông minh			5	i_adjective
+体	からだ	cơ thể			5	noun
+鼻	はな	mũi			5	noun
+髪	かみ	tóc			5	noun
+顔	かお	khuôn mặt			5	noun
+目	め	mắt	一般人は２つの目がある。		5	noun
+耳	みみ	tai			5	noun
+口	くち	miệng			5	noun
+歯	は	răng			5	noun
+足	あし	chân			5	noun
+緑	みどり	màu xanh lá cây cây cỏ			5	noun
+「お」寺	「お」てら	chùa			5	noun
+神社	じんじゃ	đền			5	noun
+~番	~ばん	số ~			5	noun
+お引き出しますか	おひきだしますか	bạn rút tiền à			5	noun
+まず	まず	trước tiên			5	adverb
+暗証番号	あんしょうばんごう	mã số bí mật mật khẩu			5	noun
+次に	つぎに	tiếp theo sau đó			5	adverb
+金額	きんがく	số tiền			5	noun
+確認	かくにん	xác nhận			5	noun
+忘れる	わすれる	quên			5	ichidan_verb
+出かける	でかける	đi ra ngoài			5	ichidan_verb
+脱ぐ	ぬぐ	cởi ra	[服[ふく]]を[脱[ぬ]]ぐ		5	godan_verb
+持って行く	もっていく	cầm, mang đi			5	godan_verb
+持って来る	もってくる	cầm, mang đến			5	godan_verb
+心配	しんぱい	lo lắng			5	na_adjective
+出張	しゅっちょう	đi công tác			5	noun
+お風呂に入る	おふろにはいる	đi tắm			5	godan_verb
+食事を作る	しょくじをつくる	nấu ăn			5	godan_verb
+大切	たいせつ	quan trọng			5	na_adjective
+大丈夫	だいじょうぶ	ổn không sao			5	na_adjective
+危ない	あぶない	nguy hiểm			5	i_adjective
+答え	こたえ	câu trả lời			5	noun
+健康保険証	けんこうほけんしょう	thẻ bảo hiểm sức khỏe			5	noun
+保険証	ほけんしょう	thẻ bảo hiểm			5	noun
+お風呂	おふろ	nhà tắm			5	noun
+上着	うわぎ	áo khoác			5	noun
+下着	したぎ	đồ lót			5	noun
+喉が痛いだ	のどがいたいだ	tôi bị đau họng			5	noun
+お大事に	おだいじに	giữ gìn sức khỏe nhé (ốm) bảo trọng			5	noun
+洗う	あらう	rửa giặt	食事の前に手を洗う 雨に洗われて新緑が美しい	水などを使って汚れを取り去る。	5	godan_verb
+歌う	うたう	hát			5	godan_verb
+集める	あつめる	tập trung lại			5	ichidan_verb
+運転	うんてん	lái xe			5	noun
+予約	よやく	đặt trước			5	noun
+練習	れんしゅう	luyện tập			5	noun
+故障	こしょう	hỏng hóc, trục trặc			5	noun
+もっと練習しないと	もっとれんしゅうしないと	tôi còn phải luyện tập nhiều hơn nữa			5	noun
+日記	にっき	nhật kí			5	noun
+「お」祈り	「お」いのり	lời cầu nguyện			5	noun
+課長	かちょう	trưởng nhóm			5	noun
+部長	ぶちょう	trưởng phòng			5	noun
+社長	しゃちょう	giám đốc			5	noun
+動物	どうぶつ	động vật			5	noun
+馬	うま	con ngựa			5	noun
+なかなか	なかなか	mãi mà không...(phủ định) rất...	なかなか上手(じょうず)じゃないな なかなか嬉(うれ)しいものだ		5	adverb
+牧場	ぼくじょう	đồng cỏ trại chăn nuôi			5	noun
+本当ですか	ほんとうですか	thật thế à			5	noun
+是非	ぜひ	nhất định			5	noun
+自分	じぶん	tự mình bản thân			5	noun
+登る	のぼる	leo			5	godan_verb
+掃除	そうじ	dọn dẹp, lau chùi			5	noun
+洗濯	せんたく	giặt giũ			5	noun
+眠い	ねむい	buồn ngủ			5	i_adjective
+強い	つよい	mạnh mẽ			5	i_adjective
+弱い	よわい	yếu đuối			5	i_adjective
+調子がいい	ちょうしがいい	tình trạng tốt			5	i_adjective
+調子が悪い	ちょうしがわるい	tình trạng xấu			5	i_adjective
+相撲	すもう	môn võ Sumo			5	noun
+一度	いちど	một lần			5	noun
+一度も～ない	いちども～ない	một lần cũng chưa... chưa bao giờ	一度もビールを飲みません。		5	noun
+段々	だんだん	dần dần			5	adverb
+もう直ぐ	もうすぐ	chuẩn bị, sắp			5	adverb
+お陰様で	おかげさまで	nhờ trời, cảm ơn			5	noun
+乾杯	かんぱい	cạn ly			5	noun
+何回も	なんかいも	nhiều lần	消毒(しょうどく)液(えき)を何(なん)回(かい)もプッシュする		5	noun
+しかし	しかし	nhưng mà			5	noun
+無理	むり	vô lý không thể được quá sức			5	na_adjective
+体に良い	からだによい	tốt cho cơ thể			5	i_adjective
+要る	いる	cần			5	godan_verb
+調べる	しらべる	điều tra, tìm hiểu	分(わ)からない漢字(かんじ)は辞書(じしょ)で調(しら)べて下(くだ)さい		5	ichidan_verb
+僕	ぼく	tôi, tớ			5	noun
+君	きみ	bạn, cậu			5	noun
+値段	ねだん	giá bình thường			5	noun
+着物	きもの	áo Kimono			5	noun
+始め	はじめ	sự bắt đầu			5	noun
+終わり	おわり	kết thúc			5	noun
+この間	このあいだ	hôm nọ dạo gần đây			5	noun
+~ けど	~ けど	~ nhưng mà			5	noun
+場所	ばしょ	địa điểm			5	noun
+よかったら	よかったら	nếu được thì			5	noun
+言う	いう	nói			5	godan_verb
+勝つ	かつ	thắng			5	godan_verb
+負ける	まける	bị thua			5	ichidan_verb
+無駄	むだ	lãng phí vô ích			5	na_adjective
+不便	ふべん	bất tiện			5	na_adjective
+同じ	おなじ	giống nhau	あれはこれと同じ		5	noun
+首相	しゅしょう	thủ tướng			5	noun
+大統領	だいとうりょう	tổng thống			5	noun
+政治	せいじ	chính trị			5	noun
+試合	しあい	trận đấu			5	noun
+意見	いけん	ý kiến			5	noun
+お話	おはなし	câu chuyện			5	noun
+交通	こうつう	giao thông			5	noun
+多分	たぶん	có lẽ			5	adverb
+そんなに	そんなに	đến như thế			5	adverb
+~について	~について	về ~			5	noun
+仕方がない	しかたがない	không có cách nào khác đành vậy			5	i_adjective
+研修旅行	けんしゅうりょこう	chuyến tập huấn			5	noun
+質問	しつもん	câu hỏi	質問がある		5	noun
+技術	ぎじゅつ	kỹ thuật			5	noun
+他のN	ほかのN	những N khác			5	noun
+~ けれども	~ けれども	~ nhưng mà			5	noun
+天才	てんさい	thiên tài			5	noun
+放送	ほうそう	phát sóng			5	noun
+天神祭	てんじんまつり	lễ hội Tenjin			5	noun
+着る	きる	mặc			5	ichidan_verb
+履く	はく	mặc, xỏ			5	godan_verb
+帽子を被る	ぼうしをかぶる	đội mũ			5	godan_verb
+掛ける	かける	đeo, treo, mắc	すだれを掛ける バッグを肩に掛ける 看板を掛ける 獄門に掛ける	高い所からぶらさげる。 上から下にさげる。 垂らす。 目につくように高い所に掲げる。	4	ichidan_verb
+眼鏡を掛ける	めがねをかける	đeo kính			5	ichidan_verb
+部品	ぶひん	linh kiện			5	noun
+家賃	やちん	tiền thuê nhà			5	noun
+和室	わしつ	phòng kiểu Nhật			5	noun
+押入れ	おしいれ	tủ âm tường			5	noun
+布団	ふとん	chăn, đệm			5	noun
+お釣が出る	おつりがでる	tiền thừa chạy ra			5	ichidan_verb
+道を歩く	みちをあるく	đi bộ trên đường			5	godan_verb
+橋を渡る	はしをわたる	qua cầu			5	godan_verb
+引っ越し	ひっこし	chuyển nhà			5	noun
+調節	ちょうせつ	điều tiết			5	noun
+困る	こまる	khó khăn			5	godan_verb
+頑張る	がんばる	cố gắng			5	godan_verb
+悲しい	かなしい	đau thương đau buồn	友(とも)が死(し)んで悲(かな)しい 悲(かな)しいメロディー	心が痛んで泣けてくるような気持ちである。 嘆いても嘆ききれぬ気持ちだ。	5	i_adjective
+嬉しい	うれしい	vui mừng hạnh phúc			5	i_adjective
+意味	いみ	ý nghĩa			5	noun
+困ったな	こまったな	khó khăn rồi đây			5	noun
+音	おと	âm thanh			5	noun
+抓み	つまみ	núm xoay			5	noun
+角	かく	góc, phần nhô ra	ページの角(かく)を折(お)る 柱(ばしら)の角(かく) 机(つくえ)の角(かく)	物の隅。 物のはしのとがって突き出た部分。	5	noun
+交差点	こうさてん	ngã tư			5	noun
+駐車場	ちゅうしゃじょう	bãi đỗ xe			5	noun
+~目	~め	mục thứ ~			5	noun
+お正月	おしょうがつ	Tết			5	noun
+建物	たてもの	tòa nhà cao to công trình to			5	noun
+呉れる	くれる	cho, tặng (mình)	友達(ともだち)は、私(わたし)に本(ほん)を呉(く)れました。 友達(ともだち)は、私(わたし)に日本語(にほんご)を教(おし)えて呉(く)れました。		5	ichidan_verb
+連れて行く	つれていく	dẫn đi			5	godan_verb
+連れて来る	つれてくる	dẫn đến			5	godan_verb
+紹介	しょうかい	giới thiệu			5	noun
+案内	あんない	hướng dẫn			5	noun
+お祖父さん	おじいさん	ông			5	noun
+お祖母さん	おばあさん	bà			5	noun
+準備	じゅんび	chuẩn bị			5	noun
+お菓子	おかし	bánh kẹo			5	noun
+人形	にんぎょう	búp bê			5	noun
+大阪城	おおさかじょう	thành Osaka			5	noun
+他に	ほかに	ngoài ra khác			5	adverb
+お弁当	おべんとう	cơm hộp			5	noun
+着く	つく	đến nơi			5	godan_verb
+駅に着く	えきにつく	đến nhà ga			5	godan_verb
+留学	りゅうがく	du học			5	noun
+年を取る	としをとる	già có tuổi			5	godan_verb
+間違い	まちがい	nhầm, sai			5	noun
+道具	どうぐ	dụng cụ			5	noun
+一般研修	いっぱんけんしゅう	đào tạo phổ thông			5	noun
+田舎	いなか	quê hương nông thôn			5	noun
+億	おく	trăm triệu			5	noun
+転勤	てんきん	chuyển chỗ làm			5	noun
+色々お世話になりました	いろいろおせわになりました	bạn đã giúp tôi nhiều rồi (cám ơn)			5	noun
+どうぞお元気で	どうぞおげんきで	xin bảo trọng giữ gìn sức khỏe nhé			5	noun
+探す	さがす	tìm kiếm			4	godan_verb
+遅れる	おくれる	chậm, muộn			4	ichidan_verb
+間に合う	まにあう	kịp giờ			4	godan_verb
+都合が良い	つごうがよい	có thời gian rảnh, thuận tiện			4	i_adjective
+都合が悪い	つごうがわるい	không rảnh, không tiện	時間の都合が悪ければ言ってください。 都合が悪いというのは他の予定がある。		4	i_adjective
+気分が良い	きぶんがよい	tâm trạng cảm thấy tốt, thoải mái			4	i_adjective
+気分が悪い	きぶんがわるい	tâm trạng cảm thấy không tốt, không thoải mái			4	i_adjective
+新聞社	しんぶんしゃ	tòa soạn báo			4	noun
+柔道	じゅうどう	môn nhu đạo (Judo)			4	noun
+運動会	うんどうかい	hội thi thể thao			4	noun
+~弁	~べん	giọng vùng ~			4	noun
+直接	ちょくせつ	trực tiếp			4	noun
+ごみ	ごみ	rác			4	noun
+燃える	もえる	cháy được			4	ichidan_verb
+置き場	おきば	nơi đặt, để			4	noun
+瓶	びん	cái chai			4	noun
+缶	かん	cái lon			4	noun
+お湯	おゆ	nước nóng			4	noun
+連絡	れんらく	liên lạc			4	noun
+宇宙	うちゅう	vũ trụ			4	noun
+宇宙船	うちゅうせん	tàu vũ trụ			4	noun
+別のN	べつのN	N khác			4	noun
+宇宙飛行士	うちゅうひこうし	phi hành gia			4	noun
+走る	はしる	chạy			4	godan_verb
+見える	みえる	nhìn thấy trông có vẻ			4	ichidan_verb
+聞こえる	きこえる	nghe thấy			4	ichidan_verb
+できる	できる	được hoàn thành	宿題ができる 建物ができる		4	ichidan_verb
+鳥	とり	chim			4	noun
+声	こえ	tiếng, giọng			4	noun
+波	なみ	sóng			4	noun
+花火	はなび	pháo hoa			4	noun
+昼間	ひるま	ban ngày			4	noun
+昔	むかし	ngày xưa			4	noun
+通信販売	つうしんはんばい	thương mại viễn thông bán hàng online			4	noun
+台所	だいどころ	bếp			4	noun
+殆ど	ほとんど	hầu như, hầu hết			4	noun
+日曜大工	にちようだいく	thợ mộc ngoài giờ tự tay làm			4	noun
+本棚	ほんだな	giá sách			4	noun
+素晴らしい	すばらしい	tuyệt vời			4	i_adjective
+子供達	こどもたち	đám trẻ con			4	noun
+大好き	だいすき	rất thích			4	na_adjective
+漫画	まんが	truyện tranh			4	noun
+主人公	しゅじんこう	nhân vật chính			4	noun
+形	かたち	hình dạng			4	noun
+例えば	たとえば	ví dụ			4	noun
+自由	じゆう	tự do			4	na_adjective
+飛ぶ	とぶ	bay			4	godan_verb
+売れる	うれる	được bán, bán chạy			4	ichidan_verb
+噛む	かむ	nhai			4	godan_verb
+選ぶ	えらぶ	chọn			4	godan_verb
+通う	かよう	đi đến (nơi nào đó) định kì	自転車で学校に通う  病院に通う	一定の区間を定期的に、何度も行き来する。	4	godan_verb
+メモ	メモ	ghi chép, ghi chú			4	noun
+真面目	まじめ	nghiêm túc			4	na_adjective
+熱心	ねっしん	nhiệt tình			4	na_adjective
+優しい	やさしい	dịu dàng hiền lành			4	i_adjective
+丁度いい	ちょうどいい	vừa đủ, vừa đúng			4	i_adjective
+習慣	しゅうかん	tập quán			4	noun
+経験	けいけん	kinh nghiệm			4	noun
+力	ちから	sức lực, sức mạnh			4	noun
+人気	にんき	được hâm mộ, ưa chuộng			4	na_adjective
+色	いろ	màu sắc			4	noun
+味	あじ	vị			4	noun
+品物	しなもの	hàng hóa			4	noun
+小説	しょうせつ	tiểu thuyết			4	noun
+小説家	しょうせつか	tiểu thuyết gia			4	noun
+歌手	かしゅ	ca sĩ			4	noun
+管理人	かんりじん	người quản lý			4	noun
+息子	むすこ	đứa con trai			4	noun
+娘	むすめ	đứa con gái			4	noun
+大抵	たいてい	thông thường			4	na_adjective
+それに	それに	hơn nữa...			4	noun
+会話	かいわ	hội thoại			4	noun
+お知らせ	おしらせ	bản thông báo			4	noun
+日	ひ	ngày			4	noun
+体育館	たいいくかん	nhà tập thể dục			4	noun
+開く	ひらく	mở ra	包(つつ)みを開(ひら)く 本(ほん)を開(ひら)く	閉じふさがっていたものをあけ広げる。	4	godan_verb
+閉まる	しまる	bị đóng			4	godan_verb
+電気がつく	でんきがつく	điện đang bật			4	godan_verb
+消える	きえる	tắt tiêu biến			4	ichidan_verb
+込む	こむ	đông, tắc			4	godan_verb
+空く	すく	trống rỗng, vắng, thoáng			4	godan_verb
+止まる	とまる	dừng			4	godan_verb
+掛ける	かける	khóa ổ	家から出かけたら、鍵を掛ける		4	godan_verb
+皿	さら	đĩa			4	noun
+茶碗	ちゃわん	bát to			4	noun
+袋	ふくろ	túi			4	noun
+財布	さいふ	ví tiền			4	noun
+枝	えだ	cành cây			4	noun
+駅員	えきいん	nhân viên nhà ga			4	noun
+この辺	このあたり	xung quanh đây			4	noun
+~くらい	~くらい	khoảng ~			4	i_adjective
+お先にどうぞ	おさきにどうぞ	xin mời đi trước			4	noun
+忘れ物	わすれもの	đồ để quên			4	noun
+~側	~がわ	phía~ bên~			4	noun
+確か	たしか	vững chắc, chắc chắn	基礎が確かだ 確かな足どり	危なげなく、しっかりしているさま。	4	na_adjective
+地震	じしん	động đất			4	noun
+壁	かべ	bức tường			4	noun
+西	にし	phía tây			4	noun
+方	ほう	hướng, phía			4	noun
+並べる	ならべる	sắp xếp, bố trí			4	ichidan_verb
+植える	うえる	trồng (cây) gieo hạt			4	ichidan_verb
+纏め	まとめ	tóm tắt, tổng kết	纏めの段階に入る		4	noun
+相談	そうだん	trao đổi, bàn bạc			4	noun
+予習	よしゅう	chuẩn bị bài mới			4	noun
+復習	ふくしゅう	ôn tập			4	noun
+そのままにする	そのままにする	cứ để yên như thế			4	godan_verb
+授業	じゅぎょう	giờ học			4	noun
+予定	よてい	kế hoạch, dự định			4	noun
+案内書	あんないしょ	sách hướng dẫn			4	noun
+ゴミ箱	ゴミばこ	thùng rác			4	noun
+花瓶	かびん	bình hoa			4	noun
+鏡	かがみ	cái gương			4	noun
+引き出し	ひきだし	ngăn kéo			4	noun
+廊下	ろうか	hành lang			4	noun
+池	いけ	cái ao			4	noun
+交番	こうばん	trạm/bốt cảnh sát			4	noun
+元の所	もとのところ	vị trí ban đầu			4	noun
+隅	すみ	góc thu vào			4	noun
+~ほど	~ほど	khoảng ~			4	noun
+予定表	よていひょう	lịch làm việc thời gian biểu			4	noun
+ご苦労様	ごくろうさま	đã làm việc vất vả rồi			4	noun
+丸い	まるい	tròn (3D)			4	i_adjective
+月	つき	mặt trăng			4	noun
+~ある	~ある	có ~, một ~			4	godan_verb
+嫌	いや	không chấp nhận được chán, ghét			4	na_adjective
+覚める	さめる	tỉnh (giấc), tỉnh dậy	[目[め]]が[覚[さ]]める		4	ichidan_verb
+始まる	はじまる	được bắt đầu			4	godan_verb
+受ける	うける	tiếp nhận, hứng chịu	雨水を桶 (おけ) に受ける ミットでボールを受ける		4	ichidan_verb
+入学	にゅうがく	nhập học			4	noun
+卒業	そつぎょう	tốt nghiệp			4	noun
+出席	しゅっせき	tham dự, có mặt			4	noun
+連休	れんきゅう	kỳ nghỉ dài			4	noun
+作文	さくぶん	bài văn			4	noun
+展覧会	てんらんかい	triển lãm nghệ thuật			4	noun
+結婚式	けっこんしき	lễ cưới			4	noun
+お葬式	おそうしき	lễ tang			4	noun
+支店	してん	chi nhánh			4	noun
+教会	きょうかい	nhà thờ			4	noun
+大学院	だいがくいん	cao học			4	noun
+動物園	どうぶつえん	vườn bách thú			4	noun
+温泉	おんせん	suối nước nóng			4	noun
+お客さん	おきゃくさん	khách hàng			4	noun
+誰か	だれか	ai đó			4	noun
+~の方	~のほう	phía ~ hướng ~			4	noun
+村	むら	làng			4	noun
+映画館	えいがかん	rạp chiếu phim			4	noun
+世界中	せかいじゅう	khắp thế giới			4	noun
+美しい	うつくしい	đẹp			4	i_adjective
+素晴らしさ	すばらしさ	tuyệt vời			4	noun
+気が付く	きがつく	để ý, nhận ra			4	godan_verb
+運動	うんどう	vận động			4	noun
+失敗	しっぱい	thất bại			4	noun
+合格	ごうかく	đỗ (kỳ thi)			4	noun
+晴れる	はれる	minh bạch, sáng tỏ nhẹ nhõm, sảng khoái (buồn bã) tan biến	朝、運動すると気持ちが晴れる。 先生に聞いて、わからないことが晴れた。 友達とけんかしたけど、誤解が晴れて仲直りできた。	罪や疑いなどが消える。	4	ichidan_verb
+曇る	くもる	(trời) nhiều mây, âm u	どんよりと曇る空	空が、雲や霧などで覆われる。	4	godan_verb
+吹く	ふく	(gió) thổi	風が吹く		4	godan_verb
+治る	なおる	khỏi, khôi phục			4	godan_verb
+十分	じゅうふん	đầy đủ			4	na_adjective
+火傷	かしょう	bỏng			4	noun
+咳	せき	ho			4	noun
+星	ほし	ngôi sao			4	noun
+風	かぜ	gió			4	noun
+北	きた	phía Bắc			4	noun
+南	みなみ	phía nam			4	noun
+東	ひがし	hướng đông			4	noun
+水道	すいどう	nước máy			4	noun
+今夜	こんや	đêm nay			4	noun
+夕方	ゆうがた	chiều tối			4	noun
+遅く	おそく	muộn, khuya			4	godan_verb
+もしかしたら	もしかしたら	có lẽ là...	もしかしたら行き違いになったのかもしれない	疑いながら推定するさま。ひょっとしたら。もしかすると。	4	adverb
+それはいけない	それはいけない	thế thì không được			4	i_adjective
+働きすぎ	はたらきすぎ	(người) làm việc quá sức			4	noun
+無理をする	むりをする	làm việc quá sức			4	godan_verb
+星占い	ほしうらない	bói sao chiêm tinh			4	noun
+牡牛座	おすうしざ	sao Kim Ngưu			4	noun
+宝くじ	たからくじ	xổ số			4	noun
+健康	けんこう	sức khỏe khỏe khoắn			4	na_adjective
+恋愛	れんあい	tình yêu			4	noun
+お金持ち	おかねもち	người giàu có			4	noun
+注意	ちゅうい	chú ý, nhắc nhở			4	noun
+駄目	だめ	không được			4	na_adjective
+席	せき	cái ghế (chỗ ngồi)			4	noun
+洗濯機	せんたくき	máy giặt			4	noun
+規則	きそく	quy tắc, kỉ luật			4	noun
+使用禁止	しようきんし	cấm sử dụng			4	noun
+立入禁止	たちいりきんし	cấm vào			4	noun
+入り口	いりくち	cửa vào			4	noun
+出口	いでぐち	lối ra			4	noun
+非常口(ひじょうぐち)	非常口(ひじょうぐち)	lối thoát hiểm			4	noun
+本日(ほんじつ)休業(きゅうぎょう)	本日(ほんじつ)休業(きゅうぎょう)	hôm nay nghỉ			4	noun
+営業(えいぎょう)中(ちゅう)	営業(えいぎょう)中(ちゅう)	đang mở cửa			4	noun
+使用(しよう)中(ちゅう)	使用(しよう)中(ちゅう)	đang sử dụng			4	noun
+駐車(ちゅうしゃ)違反(いはん)	駐車(ちゅうしゃ)違反(いはん)	đỗ xe trái phép			4	noun
+~以内(いない)	~以内(いない)	trong khoảng ~			4	noun
+警察	けいさつ	(ngành) cảnh sát			4	noun
+罰金(ばっきん)	罰金(ばっきん)	tiền phạt			4	noun
+電報(でんぽう)	電報(でんぽう)	điện báo, điện tín			4	noun
+人々(ひとびと)	人々(ひとびと)	những người			4	noun
+急用(きゅうよう)	急用(きゅうよう)	việc gấp			4	noun
+電報(でんぽう)代(だい)	電報(でんぽう)代(だい)	tiền điện báo			4	noun
+短(みじか)く	短(みじか)く	ngắn gọn			4	godan_verb
+危篤(きとく)	危篤(きとく)	nguy kịch (bệnh), hấp hối			4	noun
+重(おも)い病気(びょうき)	重(おも)い病気(びょうき)	bệnh nặng			4	noun
+留守(るす)	留守(るす)	đi vắng			4	noun
+留守番(るすばん)	留守番(るすばん)	trông nhà, giữ nhà			4	noun
+お祝(いわ)い	お祝(いわ)い	việc/vật mừng lời chúc mừng			4	noun
+悲(かな)しみ	悲(かな)しみ	nỗi buồn			4	noun
+磨(みが)く	磨(みが)く	mài giũa, cải thiện, đánh (răng)			4	godan_verb
+見(み)つかる	見(み)つかる	tìm thấy			4	godan_verb
+細(ほそ)い	細(ほそ)い	gầy			4	i_adjective
+太い	ふとい	béo			4	i_adjective
+盆踊り	ぼんおどり	múa trong hội Bon			4	noun
+家具	かぐ	đồ dùng nội thất			4	noun
+説明書	せつめいしょ	sách giải thích			4	noun
+図ず	はかず	sơ đồ, hình vẽ			4	noun
+線	せん	đường (kẻ)			4	noun
+矢印	やじるし	dấu mũi tên			4	noun
+さっき	さっき	vừa rồi			4	noun
+茶道	さどう	trà đạo			4	noun
+お茶を点てる	おちゃをたてる	pha, khuấy trà			4	ichidan_verb
+先に	さきに	trước			4	adverb
+苦い	にがい	đắng			4	i_adjective
+親子丼ぶり	おやこどんぶりぶり	món oyako-don			4	noun
+~個	~こ	~cái, ~quả (nhỏ)			4	noun
+玉葱	たまねぎ	hành tây			4	noun
+調味料	ちょうみりょう	gia vị			4	noun
+鍋	なべ	cái nồi			4	noun
+火にかける	ひにかける	đun			4	ichidan_verb
+煮える	にえる	chín	芋が煮える		4	ichidan_verb
+丼	どんぶり	cái bát tô			4	noun
+咲く	さく	(hoa) nở	花が咲く		4	godan_verb
+変わる	かわる	thay đổi, biến đổi			4	godan_verb
+電話がかかる	でんわがかかる	có điện thoại			4	godan_verb
+正しい	ただしい	chính xác			4	i_adjective
+珍しい	めずらしい	hiếm			4	i_adjective
+島	しま	đảo			4	noun
+港	みなと	bến cảng			4	noun
+屋上	おくじょう	mái nhà, nóc nhà, sân thượng			4	noun
+海外	かいがい	nước ngoài			4	noun
+山登り	やまのぼり	leo núi			4	noun
+丸	まる	tròn, vòng tròn			4	noun
+葉	は	lá			4	noun
+曲	きょく	ca khúc khúc (1 đoạn, 1 khúc mắt, từng khúc,...)			4	noun
+楽しみ	たのしみ	niềm vui			4	noun
+初めに	はじめに	đầu tiên, trước hết			4	noun
+それなら	それなら	vậy thì ...	面会できないのですね。それなら帰ります		4	noun
+夜行バス	やこうバス	xe bus chạy đêm			4	noun
+旅行社	りょこうしゃ	công ty du lịch			4	noun
+スキー場	スキーじょう	bãi trượt tuyết			4	noun
+朱	しゅ	đỏ			4	noun
+交わる	まじわる	giao lưu, quan hệ			4	godan_verb
+仲良く	なかよく	quan hệ tốt với, chơi thân với			4	noun
+太る	ふとる	béo lên			4	godan_verb
+痩せる	やせる	gầy đi			4	ichidan_verb
+過ぎる	よぎる	quá, qua			4	ichidan_verb
+慣れる	なれる	quen với			4	ichidan_verb
+硬い	かたい	cứng rắn, cứng đờ			4	i_adjective
+軟らかい	やわらかい	mềm (nắng) dịu			4	i_adjective
+電子	でんし	điện tử			4	noun
+携帯	けいたい	mang theo, cầm tay			4	noun
+剣道	けんどう	kiếm đạo			4	noun
+毎週	まいしゅう	hàng tuần			4	noun
+毎月	まいつき	hàng tháng			4	noun
+毎年	まいとし	hàng năm			4	noun
+この頃	このころ	gần đây			4	noun
+~ずつ	~ずつ	từng ~ một			4	godan_verb
+そのほうが~	そのほうが~	như thế ~ hơn			4	noun
+お客様	おきゃくさま	quý khách			4	noun
+していらっしゃいます	していらっしゃいます	しています			4	godan_verb
+水泳	すいえい	bơi, môn bơi			4	noun
+~とか	~とか	(những thứ như) ~ chẳng hạn			4	noun
+気持ち	きもち	cảm giác			4	noun
+乗り物	のりもの	phương tiện đi lại			4	noun
+~世紀	~せいき	thế kỷ ~			4	noun
+遠く	とおく	xa, ở xa			4	godan_verb
+汽車	きしゃ	tàu hơi nước			4	noun
+汽船	きせん	thuyền chạy bằng hơi nước			4	noun
+運ぶ	はこぶ	vận chuyển, khiêng vác			4	godan_verb
+安全	あんぜん	an toàn			4	na_adjective
+叱る	しかる	mắng			4	godan_verb
+招待	しょうたい	chiêu đãi, mời			4	noun
+盗る	とる	ăn trộm (văn nói)			4	godan_verb
+踏む	ふむ	giẫm, đạp			4	godan_verb
+輸出	ゆしゅつ	xuất khẩu			4	noun
+輸入	ゆにゅう	nhập khẩu			4	noun
+設計	せっけい	thiết kế			4	noun
+米	べい	gạo			4	noun
+麦	むぎ	lúa mạch			4	noun
+石油	せきゆ	dầu mỏ			4	noun
+原料	げんりょう	nguyên, vật liệu			4	noun
+泥棒	どろぼう	kẻ trộm			4	noun
+建築家	けんちくか	kiến trúc sư			4	noun
+科学者	かがくしゃ	nhà khoa học			4	noun
+~によって	~によって	do ~			4	noun
+埋め立てる	うめたてる	bồi đắp (để xây dựng)			4	ichidan_verb
+騒音	そうおん	tiếng ồn			4	noun
+豪華	ごうか	sang chảnh, màu mè, xa xỉ	豪華な舞台衣装 絢爛 (けんらん) 豪華		4	na_adjective
+彫刻	ちょうこく	điêu khắc			4	noun
+眠る	ねむる	(trạng thái) ngủ	nói về trạng thái đang ngủ		4	godan_verb
+彫る	ほる	khắc			4	godan_verb
+仲間	なかま	bạn bè, đồng nghiệp; một nhóm có điểm chung			4	noun
+そのあと~	そのあと~	sau đó ~			4	noun
+一生懸命	いっしょうけんめい	chăm chỉ, miệt mài (làm) hết sức			4	na_adjective
+鼠	ねずみ	con chuột			4	noun
+~匹	~ひき	~ con			4	noun
+入院	にゅういん	nhập viện			4	noun
+退院	たいいん	xuất viện			4	noun
+気持ちが良い	きもちがよい	dễ chịu			4	i_adjective
+気持ちが悪い	きもちがわるい	khó chịu, kinh, tởm			4	i_adjective
+赤ちゃん	あかちゃん	em bé			4	noun
+駅前	えきまえ	khu vực trước ga			4	noun
+海岸	かいがん	bờ biển			4	noun
+嘘	うそ	giả dối			4	noun
+電源	でんげん	nguồn điện			4	noun
+N製	Nせい	sản xuất tại N			4	noun
+手紙を回覧する	てがみをかいらんする	lưu hành thư	図書・文書などを、順送りに回して読むこと。		4	noun
+研究室	けんきゅうしつ	phòng nghiên cứu			4	noun
+~冊	~さつ	~ cuốn, quyển			4	noun
+判子	はんこ	con dấu			4	noun
+姉妹	しまい	chị em gái			4	noun
+似ている	にている	hơi giống			4	godan_verb
+世話をする	せわをする	giúp đỡ			4	godan_verb
+時間が経つ	じかんがたつ	thời gian trôi qua			4	godan_verb
+~点	~てん	~ điểm			4	noun
+喧嘩	けんか	cãi nhau			4	noun
+答える	こたえる	trả lời (câu hỏi)			4	ichidan_verb
+倒れる	たおれる	đổ, ngã	暴風で木が倒れる 石につまずいて倒れる	立っている状態を続けられなくなって横になる。 支える力を失ってころんだり、倒壊したりする。	4	ichidan_verb
+焼ける	やける	cháy, nướng			4	ichidan_verb
+通る	とおる	lưu thông	絶え間なく車が通る	人や車が行き来する。	4	godan_verb
+死ぬ	しぬ	chết			4	godan_verb
+安心	あんしん	yên tâm			4	noun
+早退	そうたい	về sớm			4	noun
+離婚	りこん	ly hôn			4	noun
+複雑	ふくざつ	phức tạp			4	na_adjective
+汚い	きたない	dơ			4	i_adjective
+恥ずかしい	はずかしい	xấu hổ, ngại			4	i_adjective
+お見合い	おみあい	mai mối, xem mắt			4	noun
+電話代	でんわだい	tiền điện thoại			4	noun
+~号室	~ごうしつ	phòng số ~			4	noun
+汗	あせ	mồ hôi			4	noun
+大勢	たいせい	đa số, phần đông			4	noun
+お疲れ様でした	おつかれさまでした	vất vả rồi			4	noun
+伺う	うかがう	行く 聞く 尋ねる			4	godan_verb
+途中で	とちゅうで	giữa đường; giữa chừng			4	noun
+並ぶ	ならぶ	xếp hàng	切符を買いに並ぶ 店に品物が並んでいる 並んで座る		4	godan_verb
+大人	おとな	người lớn			4	noun
+西洋化	せいようか	Tây Âu hóa			4	noun
+今では	いまでは	bây giờ thì			4	noun
+成人式	せいじんしき	lễ trưởng thành			4	noun
+測る	はかる	đo thân nhiệt	[体温[たいおん]]を[測[はか]]る		4	godan_verb
+到着	とうちゃく	đến nơi			4	noun
+危険	きけん	nguy hiểm			4	na_adjective
+忘年会	ぼうねんかい	tiệc tất niên			4	noun
+新年会	しんねんかい	tiệc tân niên			4	noun
+二次会	にじかい	tăng hai			4	noun
+大会	たいかい	đại hội, cuộc thi			4	noun
+裏	うら	mặt sau			4	noun
+返事	へんじ	hồi âm, phản hồi (dùng rất rộng)	気のない返事 返事はすぐ書いた方がいい 読者の質問に返事を出す		4	noun
+本当	ほんとう	thật			4	na_adjective
+傷	きず	vết thương			4	noun
+長さ	ながさ	chiều dài			4	noun
+重さ	おもさ	cân nặng			4	noun
+高さ	たかさ	chiều cao			4	noun
+大きさ	おおきさ	độ lớn, độ to			4	noun
+~便	~びん	chuyến bay ~			4	noun
+~号	~ごう	số ~ (tàu, cơn bão)			4	noun
+~本	~ほん	~ cây (thon dài)			4	noun
+~杯	~はい	~ chén, cốc, ly			4	noun
+~キロ	~キロ	~ kilo			4	noun
+~グラム	~グラム	~ gam			4	noun
+~センチ	~センチ	~cm			4	noun
+~ミリ	~ミリ	mm			4	noun
+~以上	~いじょう	~ trở lên			4	noun
+~以下	~いか	~ trở xuống	５以下の数は５，４，３，。。。		4	noun
+どうでしょうか	どうでしょうか	thế nào?			4	noun
+所で	ところで	à mà, tiện thể	話題を変えて別の話を始める		4	adverb
+いらっしゃいます	いらっしゃいます	đến, hoan nghênh			4	godan_verb
+爆弾	ばくだん	bom			4	noun
+運転者	うんてんしゃ	tài xế			4	noun
+離れる	はなれる	tách rời xa cách			4	ichidan_verb
+急に	きゅうに	gấp, đột nhiên			4	adverb
+手に入れる	てにいれる	có được, lấy được			4	ichidan_verb
+今でも	いまでも	ngay cả bây giờ			4	noun
+噂	うわさ	lời đồn, bàn tán có ai nhắc đến mình (hắt xì)			4	noun
+頂きます	いただきます	nhận			4	godan_verb
+くださる	くださる	(ai đó) cho, tặng (mình)	社長は私にとけいをくださいます 先生は私にボールペンをくださいます		4	godan_verb
+やる	やる	cho, tặng, làm, giúp			4	godan_verb
+取り替える	とりかえる	đổi, thay			4	ichidan_verb
+親切にする	しんせつにする	đối xử thân thiện			4	godan_verb
+可愛い	かわいい	đáng yêu, dễ thương			4	i_adjective
+お年玉	おとしだま	tiền mừng tuổi			4	noun
+お見舞い	おみまい	thăm bệnh			4	noun
+(~に)興味がある	(~に)きょうみがある	có hứng thú với ~			4	godan_verb
+文法	ぶんぽう	ngữ pháp			4	noun
+発音	はつおん	phát âm			4	noun
+猿	さる	con khỉ			4	noun
+絵本	えほん	quyển truyện tranh			4	noun
+絵葉書	えはがき	bưu ảnh			4	noun
+靴下	くつした	cái tất			4	noun
+手袋	てぶくろ	găng tay			4	noun
+祖父	そふ	ông			4	noun
+祖母	そぼ	bà (mình)			4	noun
+孫	まご	cháu			4	noun
+叔父	おじ	chú, cậu			4	noun
+叔父さん	おじさん	chú, cậu (khác)			4	noun
+叔母	おば	cô, dì			4	noun
+叔母さん	おばさん	cô, dì			4	noun
+一昨年	いっさくねん	 năm trước			4	noun
+助かる	たすかる	được cứu giúp			4	godan_verb
+昔話	むかしばなし	truyện cổ tích			4	noun
+或る~	あるる~	~ nọ,  ~ nào đó			4	noun
+男	おとこ	đàn ông, con trai			4	noun
+亀	かめ	con rùa			4	noun
+お姫様	おひめさま	công chúa			4	noun
+楽しく	たのしく	vui			4	godan_verb
+陸	りく	lục địa, đất liền			4	noun
+真っ白	まっしろ	trắng tinh			4	na_adjective
+混ぜる	まぜる	trộn, khuấy (không phân biệt được) cho (ai) tham gia cùng			4	ichidan_verb
+厚い	あつい	dày			4	i_adjective
+音楽家	おんがくか	nhạc sĩ			4	noun
+法律	ほうりつ	pháp luật			4	noun
+戦争	せんそう	chiến tranh			4	noun
+関係	かんけい	quan hệ, liên quan			4	noun
+薬缶	やかん	ấm đun nước			4	noun
+栓抜き	せんぬき	cái mở nắp chai			4	noun
+缶切り	かんきり	cái mở đồ hộp			4	noun
+缶詰	かんづめ	đồ hộp			4	noun
+算盤	そろばん	bàn tính			4	noun
+体温計	たいおんけい	nhiệt kế			4	noun
+なぜ	なぜ	tại sao	chỉ đơn thuần là hỏi lí do		4	noun
+食品	しょくひん	thực phẩm			4	noun
+~の代わりに	~のかわりに	thay ~, thay thế ~			4	noun
+どこででも	どこででも	ở đâu cũng			4	noun
+上がる	あがる	đi lên	二階に上がる		4	godan_verb
+下がる	さがる	bị giảm xuống lùi về			4	godan_verb
+切れる	きれる	bị đứt	ひもが切れる 緊張の糸が切れる	力が加わって、ひと続きのもの、つながっているものなどが分かれる。	4	ichidan_verb
+とれる	とれる	bị tuột			4	ichidan_verb
+落つ	おつ	bị rơi, tạch			4	godan_verb
+無くなる	なくなる	bị mất			4	godan_verb
+丈夫	じょうぶ	chắc, bền			4	na_adjective
+変	へん	lạ, kỳ quặc			4	na_adjective
+不味い	まずい	dở			4	i_adjective
+詰まらない	つまらない	buồn tẻ, chán			4	i_adjective
+冷房	れいぼう	thiết bị làm mát			4	noun
+服のセンスがある	ふくのセンスがある	có khiếu, có gu (ăn mặc)			4	godan_verb
+今にも	いまにも	(sắp) ~ đến nơi			4	noun
+会員	かいいん	thành viên			4	noun
+適当	てきとう	thích hợp, phù hợp	工場の建設に適当な土地 この仕事に適当する人材		4	na_adjective
+年齢	ねんれい	tuổi			4	noun
+~という	~という	là ~, gọi là ~			4	godan_verb
+薔薇	ばら	hoa hồng			4	noun
+起きる	おきる	thức dậy xảy ra (tai nạn)			4	ichidan_verb
+和食	わしょく	món ăn Nhật			4	noun
+洋食	ようしょく	món ăn Âu Mỹ			4	noun
+おかず	おかず	thức ăn kèm, đồ nhấm, món ăn thêm			4	noun
+量	りょう	lượng			4	noun
+~倍	~ばい	~ lần			4	noun
+半分	はんぶん	một nửa			4	noun
+箪笥	たんす	tủ ngăn kéo			4	noun
+洗濯物	せんたくぶつ	đồ giặt			4	noun
+理由	りゆう	lý do			4	noun
+嫌がる	いやがる	không thích, không muốn			4	godan_verb
+表現	ひょうげん	cách diễn đạt biểu hiện			4	noun
+これら	これら	những cái này			4	noun
+縁起が悪い	えんぎがわるい	không may, không lành			4	i_adjective
+合ってるけど	あってるけど	đúng nhưng mà...			4	noun
+用意	ようい	chuẩn bị những thứ cần thiết			4	noun
+保証書	ほしょうしょ	giấy bảo hành			4	noun
+領収書	りょうしゅうしょ	hóa đơn			4	noun
+贈り物	おくりもの	quà tặng			4	noun
+係	かかり	việc quản lí, phụ trách			4	noun
+中止	ちゅうし	dừng, đình chỉ			4	noun
+点	てん	điểm			4	noun
+札	さつ	tờ tiền giấy			4	noun
+以上です	いじょうです	xin hết			4	godan_verb
+係員	かかりいん	người chịu trách nhiệm			4	noun
+~位	~い	vị trị thứ ~ giải ~			4	noun
+悩み	なやみ	lo nghĩ phiền muộn			4	noun
+目覚まし	めざまし	báo thức			4	noun
+大学生	だいがくせい	sinh viên đại học			4	noun
+それでも	それでも	tuy thế, mặc dù thế			4	noun
+焼く	やく	thiêu rụi	枯れ草を焼く 失火で家を焼く		4	godan_verb
+人を渡す	ひとをわたす	đưa người sang sông	船で人を渡す	人や荷物を舟で向こう岸に運ぶ。	4	godan_verb
+帰って来る	かえってくる	về, trở lại			4	godan_verb
+宅配便	たくはいびん	dịch vụ giao hàng tận nhà			4	noun
+注射	ちゅうしゃ	tiêm			4	noun
+丁度	ちょうど	vừa đúng			4	noun
+たった今	たったいま	vừa mới rồi vừa lúc nãy			4	noun
+今いいでしょうか	いまいいでしょうか	bây giờ làm phiền chút được không			4	noun
+具合	ぐあい	trạng thái, tình trạng			4	noun
+お待たせしました	おまたせしました	để (bạn) phải đợi rồi			4	noun
+宝庫	ほうこ	kho báu			4	noun
+手に入る	てにはいる	thu nhập được			4	godan_verb
+一部分	いちぶぶん	một bộ phận			4	noun
+入力	にゅうりょく	nhập liệu			4	noun
+秒	びょう	giây			4	noun
+集まる	あつまる	tập trung, tụ tập			4	godan_verb
+別れる	わかれる	chia tay, ly biệt			4	ichidan_verb
+長生き	ながいき	sống lâu			4	noun
+天気予報	てんきよほう	dự báo thời tiết			4	noun
+人口	じんこう	dân số			4	noun
+匂い	におい	mùi hương, hương vị			4	noun
+科学	かがく	khoa học			4	noun
+医学	いがく	y học			4	noun
+文学	ぶんがく	văn học			4	noun
+救急車	きゅうきゅうしゃ	xe cấp cứu			4	noun
+賛成	さんせい	tán thành			4	noun
+反対	はんたい	phản đối ngược lại			4	na_adjective
+~によると	~によると	theo như ~ thì			4	noun
+婚約	こんやく	đính hôn			4	noun
+知り合う	しりあう	gặp gỡ làm quen; quen biết nhau			4	godan_verb
+平均寿命	へいきんじゅみょう	tuổi thọ trung bình			4	noun
+比べる	くらべる	so sánh			4	ichidan_verb
+博士	はかせ	tiến sĩ			4	noun
+脳	のう	não			4	noun
+化粧品	けしょうひん	mỹ phẩm			4	noun
+調べ	しらべ	sự điều tra, tìm hiểu giai điệu, âm điệu			4	noun
+化粧	けしょう	trang điểm			4	noun
+塾	じゅく	lớp học thêm			4	noun
+生徒	せいと	học sinh (THPT trở xuống)			4	noun
+入管	にゅうかん	cục nhập cảnh	日本に到着したばかりで、入管に行きました		4	noun
+再入国ビザ	さいにゅうこくビザ	thị thực tái nhập cảnh			4	noun
+~間	~かん	trong ~ (thời gian)			4	noun
+お忙しいですか	おいそがしいですか	có bận không			4	noun
+久しぶり	ひさしぶり	một thời gian lâu			4	noun
+それまでに	それまでに	cho đến khi đó			4	noun
+構いません	かまいません	không bận tâm			4	noun
+楽しむ	たのしむ	vui vẻ tận hưởng			4	godan_verb
+代わりをする	かわりをする	thay thế			4	godan_verb
+競走	きょうそう	chạy đua			4	noun
+芸	げい	trò diễn, tiết mục			4	noun
+心	こころ	trái tim, tấm lòng, cảm tình			4	noun
+~にとって	~にとって	đối với ~			4	noun
+~に勤める	~につとめる	làm việc ở ~			4	ichidan_verb
+そばに寄る	そばによる	xích lại gần bên	彼女のそばに寄る たき火の近くに寄る	ある人・物やある所に向かって近づく。 近寄る。	4	godan_verb
+召し上がります	めしあがります	ăn, uống			4	godan_verb
+おっしゃいます	おっしゃいます	言います			4	godan_verb
+なさいます	なさいます	làm			4	godan_verb
+ご覧になります	ごらんになります	見ます			4	godan_verb
+ご存じます	ごぞんじます	知ります			4	godan_verb
+挨拶	あいさつ	chào hỏi			4	noun
+旅館	りょかん	khách sạn kiểu Nhật			4	noun
+会場	かいじょう	hội trường			4	noun
+バス停	バスてい	bến xe bus			4	noun
+貿易	ぼうえき	thương mại			4	noun
+~様	~さま	ngài ~			4	noun
+帰りに	かえりに	trên đường về			4	noun
+偶に	偶に	thỉnh thoảng			4	adverb
+遠慮なく	えんりょなく	không giữ ý, không khách sáo			4	godan_verb
+~年~組	~ねん~ぐみ	năm ~ lớp ~			4	noun
+よろしくお伝えください	よろしくおつたえください	cho tôi gửi lời hỏi thăm			4	i_adjective
+失礼いたします	しつれいいたします	xin phép			4	godan_verb
+講師	こうし	giảng/giáo viên			4	noun
+多くの~	おおくの~	nhiều ~			4	noun
+受賞	じゅしょう	nhận thưởng			4	noun
+世界的に	せかいてきに	tầm cỡ thế giới			4	noun
+作家	さっか	nhà văn			4	noun
+~でいらっしゃいます	~でいらっしゃいます	です			4	godan_verb
+お持ちです	おもちです	持っています			4	godan_verb
+作曲	さっきょく	sáng tác nhạc			4	noun
+それでは	それでは	vậy thì ...			4	noun
+参ります	まいります	đi, đến có mặt			4	godan_verb
+おります	おります	います			4	godan_verb
+申します	もうします	いいます			4	godan_verb
+いたします	いたします	します			4	godan_verb
+拝見します	はいけんします	見ます			4	godan_verb
+存じます	ぞんじます	知ります			4	ichidan_verb
+お目にかかります	おめにかかります	会います			4	godan_verb
+ございます	ございます	あります			4	godan_verb
+でございます	でございます	です			4	godan_verb
+お宅	おたく	nhà			4	noun
+アルバム	アルバム	album			4	noun
+再来週	さらいしゅう	tuần sau nữa			4	noun
+再来月	さらいげつ	tháng sau nữa			4	noun
+再来年	さらいねん	năm sau nữa			4	noun
+半年	はんとし	nửa năm			4	noun
+最初に	さいしょに	đầu tiên, trước hết			4	noun
+最後	さいご	cuối cùng			4	noun
+ただ今	ただいま	ngay bây giờ (lịch sự) tôi về rồi (dùng khi về nhà)			4	noun
+賞金	しょうきん	tiền thưởng			4	noun
+頃	ころ	hồi, thời			4	noun
+叶う	かなう	thành hiện thực			4	godan_verb
+一言よろしいでしょうか	ひとことよろしいでしょうか	tôi xin phép nói vài lời được không			4	noun
+心から	こころから	từ trái tim/đáy lòng			4	noun
+拝啓	はいけい	kính gửi ~ (dùng ở đầu thư)			4	noun
+お元気でいらっしゃいますか	おげんきでいらっしゃいますか	ngài có khỏe không			4	noun
+迷惑をかける	めいわくをかける	làm phiền			4	ichidan_verb
+素材を生かす	そざいをいかす	tận dụng tối đa nguyên liệu	素材を生かして料理する		4	godan_verb
+お城	おしろ	lâu đài			4	noun
+敬具	けいぐ	kính thư (dùng ở cuối thư)			4	noun
+所得	しょとく	Thực lãnh			3	noun
+掴む	つかむ	chiếm lấy cảm xúc, trái tim	大衆の心を掴む 固定客を掴む	人の気持ちなどを自分に引きつけて離さないようにする。	3	godan_verb
+掴む	つかむ	nắm bắt được trọng tâm	事件解決の糸口を掴む こつを掴む	物事の要点などを確実にとらえる。	3	godan_verb
+会計窓口	かいけいまどぐち	thủ quỹ			4	noun
+ベッド	ベッド	giường			5	noun
+医師	いし	bác sĩ			5	noun
+先月	せんげつ	tháng trước			5	noun
+去年・去年	きょねん・こぞ	năm trước			5	noun
+今月	こんげつ	tháng này			5	noun
+今年	ことし	năm nay			5	noun
+来月	らいげつ	tháng sau			5	noun
+来年	らいねん	năm sau			5	noun
+快速	かいそく	tàu cao tốc			5	noun
+物価	ぶっか	vật giá			5	noun
+ビル	ビル	nhà cao ốc nhiều tầng			5	noun
+円い	まるい	tròn (2D)			4	i_adjective
+展示会	てんじかい	nơi trưng bày hàng hóa			4	noun
+夜間	やかん	thời gian buổi tối			4	noun
+白	しろ	màu trắng			4	noun
+青	あお	xanh dương			4	noun
+嘘つき	うそつき	kẻ nói dối			4	noun
+複雑さ	ふくざつさ	sự phức tạp			4	noun
+図る	はかる	lập kế hoạch, tiến hành			4	godan_verb
+起こる	おこる	xảy ra (thứ chưa từng có trước đây)	静電気が起こる さざ波が起こる	今までなかったものが新たに生じる。 おきる。	4	godan_verb
+見分け方	みわけかた	cách phân biệt			3	noun
+代金引換・代引き	だいきんひきかえ	ship COD (nhận hàng rồi gửi tiền)			4	noun
+長命	ちょうめい	sống lâu			4	noun
+比較	ひかく	so sánh			3	noun
+大まか	おおまか	khái quát, sơ bộ, đại khái	大(おお)まかな流(なが)れ 大(おお)まかな計算(けいさん)		5	na_adjective
+実家	じっか	Quê nhà, nhà bố mẹ đẻ			3	noun
+進級	しんきゅう	Thăng cấp			3	noun
+退学警告	たいがくけいこく	Cảnh cáo đuổi học			3	noun
+退学届	たいがくとどけ	Đơn xin nghỉ học			3	noun
+中退	ちゅうたい	Nghỉ học giữa chừng			3	noun
+辞職	じしょく	Từ chức, thôi việc			3	noun
+休職	きゅうしょく	Nghỉ việc (ngắn hạn có lí do)			3	noun
+破産	はさん	Phá sản			3	noun
+面目	めんぼく	Khuôn mặt, sĩ diện, thể diện			3	noun
+盲目	もうもく	mù mắt, mù quáng			3	na_adjective
+盲目的	もうもくてき	một cách mù quáng			3	na_adjective
+貧者	ひんじゃ	người nghèo			3	noun
+品切れ	しなぎれ	hết hàng			4	noun
+工場長	こうじょうちょう	trưởng nhà máy			5	noun
+絆	きずな	Ràng buộc, gắn bó			3	noun
+整頓	せいとん	Sắp xếp đúng thứ tự vị trí cũ	教室の机を整頓する 乱れた資料の順序を整頓する		3	noun
+清掃	せいそう	Dọn sạch sẽ kết hợp kiểm tra			3	noun
+殖える	ふえる	Nhân lên (tăng lên từ chính thứ ban đầu)			3	ichidan_verb
+痩せ我慢	やせがまん	Giả vờ ổn			3	noun
+辛抱	しんぼう	Chịu khổ			3	noun
+棄てる	すてる	ném			3	ichidan_verb
+出展	しゅってん	Trưng bày			3	noun
+判型	はんがた	Khổ giấy			3	noun
+醜い	みにくい	trông khó coi			5	i_adjective
+居る・居る	いる	có, ở, có mặt	ここにいる 誰(だれ)かいる		5	godan_verb
+サボる	サボる	Trốn học/việc			3	godan_verb
+夜明け	よあけ	Bình minh	夜明けに出発する		3	noun
+暁	あかつき	Bình minh			3	noun
+明け方	あけがた	Trước mình binh (Thời điểm nhen nhóm bắt đầu có ánh sáng mờ nhạt của Mặt Trời)	明け方を一緒に迎えよう		3	noun
+朝早く	あさはやく	Sáng sớm			3	noun
+超える	こえる	Vượt quá (↑) (giới hạn nhất định)			3	ichidan_verb
+マスク	マスク	khẩu trang dụng cụ bảo vệ mặt			5	noun
+詫びる	わびる	xin lỗi			3	ichidan_verb
+向き	むき	Phù hợp			3	na_adjective
+詰る	つまる	Khiển trách			3	godan_verb
+交じる	まじる	Lẫn lộn			3	godan_verb
+交ざる	まざる	Trộn vào nhau (phân biệt được)			3	godan_verb
+客観	きゃっかん	Khách quan			3	noun
+客観的	きゃっかんてき	Tính khách quan			3	na_adjective
+主観	しゅかん	Chủ quan			3	noun
+主観的	しゅかんてき	Tính chủ quan			3	na_adjective
+断水	だんすい	Mất nước			3	noun
+法曹	ほうそう	Nghề Luật			3	noun
+つり革	つりかわ	Tay nắm trên xe bus, tàu			3	noun
+手すり	てすり	tay vịn cầu thang, hành lang, ...			3	noun
+芸能	げいのう	Nghệ thuật đại chúng			3	noun
+演技	えんぎ	Diễn xuất			3	noun
+演説	えんぜつ	Diễn thuyết, diễn văn (để thuyết phục)			3	noun
+演習	えんしゅう	Diễn tập, thực hành			3	noun
+お見えになる	おみえになる	来る			4	godan_verb
+富	とみ	Tài sản			3	noun
+解ける	とける	Tuột ra, cởi ra			3	ichidan_verb
+溶ける	とける	Tan ra (ở nhiệt độ thường)			3	ichidan_verb
+蕩ける	とろける	Tan chảy ra (ở nhiệt độ cao)			3	ichidan_verb
+剥がす	へがす	Bóc (những thứ dính trên thứ khác)	シールを剥がす 生爪を剥がす		3	godan_verb
+剥ぐ	はぐ	Lột (để sử dụng)			3	godan_verb
+富を殖やす	とみをふやす	Gia tăng tài sản	富を殖やす		3	godan_verb
+窓が開く	まどがひらく	cửa sổ mở	隔て・仕切り・覆いなどが、動かされて除かれる。		4	godan_verb
+欠如	けつじょ	Thiếu	若者のコミュニケーション能力の欠如が問題になった。		3	noun
+囲う	かこう	Bao quanh, bảo bọc (bảo vệ thứ bên trong)			3	godan_verb
+著す	あらわす	Viết sách (sau đó xuất bản)			3	godan_verb
+溶く	とく	Làm tan ra			3	godan_verb
+溶かす	とかす	Hòa tan; Làm nóng chảy			3	godan_verb
+解く	とく	Tháo dỡ, cởi bỏ, gỡ			3	godan_verb
+渋る	しぶる	không mượt không suôn sẻ	筆が渋る 売れ行きが渋る	物事がすらすらと運ばなくなる。 円滑に進まなくなる。	3	godan_verb
+躊躇う	ためらう	Do dự, chần chừ (do phân vân); Lởn vởn một chỗ do phân vân;			3	godan_verb
+エチケット	エチケット	Phép lịch sự			3	noun
+マナー	マナー	Phép lịch sự, ứng xử			3	noun
+作法	さほう	Phép lịch sự			3	noun
+降ろす	おろす	Cho xuống (người)			3	godan_verb
+行	くだり	Hàng (ngang) Dòng			3	noun
+下す	くだす	Hạ; Thi hành; Đưa ra (phán đoán);			3	godan_verb
+お冷や	おひや	Nước mát	暑い日はお冷やが最高だ		3	noun
+確かに	たしかに	Chắc chắn; Quả thật, đúng là			3	adverb
+生きる	いきる	sống, sinh tồn	百歳まで生きる 水だけで生きる	人間・動物などが、生命があり活動できる状態にある。 生命を保つ。 生存する。	3	ichidan_verb
+～内	～うち	trong ~	朝(あさ)の内(うち) 次(つぎ)の内(うち)どれか？ 心(こころ)の内(うち)		5	noun
+寄り添う	よりそう	Bên nhau, gần gũi			3	godan_verb
+生む	うむ	Tạo ra cái mới			3	godan_verb
+了承	りょうしょう	Thông cảm			3	noun
+堅い	かたい	(trạng thái) cứng rắn			3	i_adjective
+向け	むけ	Dành cho, hướng tới	酒は大人の向けのものです。		3	noun
+恐い	こわい	Đáng sợ			3	i_adjective
+どうぞ	どうぞ	làm ơn xin mời, xin hãy	どうぞこちらへ どうぞお元気で		5	adverb
+消防士	しょうぼうし	Lính cứu hỏa			3	noun
+お守り	おまもり	Bùa			3	noun
+煮えた湯	にえたゆ	nước nóng đun sôi	煮えた湯で殺菌する		4	ichidan_verb
+煮える	にえる	bị làm nóng chảy	コールタールが煮える		4	ichidan_verb
+受ける	受ける	nhận được	杯を受ける 援助を受ける 賞を受ける		4	ichidan_verb
+受ける	うける	đảm nhận, chấp nhận (hành động, công việc)	注文を受ける 挑戦を受けて立つ 調査結果を受けて是正する		4	ichidan_verb
+届ける	とどける	Đề nghị, đệ trình, giao nộp	拾得物を届ける		3	ichidan_verb
+届ける	とどける	Thừa nhận, chấp nhận	この国は、難民をたくさん届けている		3	ichidan_verb
+伝える	つたえる	Truyền lại, truyền thụ	家宝を伝える 名を後世に伝える 秘伝を弟子に伝える		3	ichidan_verb
+伝える	つたえる	Truyền đến (từ nơi khác)	インドから経典を伝える キリスト教を日本に伝えた人物		3	ichidan_verb
+伝える	つたえる	Lan truyền (âm thanh), dẫn (nhiệt)	銅は熱をよく伝える		3	ichidan_verb
+当てる	あてる	Phơi	日に当てて布団を乾かす 鉢植えを夜露に当てないようにする		3	ichidan_verb
+当てる	あてる	Áp vào, đắp vào	額に手を当てる 継ぎを当てる 座布団を当ててください		3	ichidan_verb
+当てる	あてる	Ghép đấu	練習試合で強豪に当てて実力を試す		3	ichidan_verb
+当てる	あてる	Trúng giải	一等賞を当てる		3	ichidan_verb
+当てる	あてる	Đoán trúng	彼の年齢を当てる 小説の途中で犯人を当てる		3	ichidan_verb
+当てる	あてる	Thành công (trong kế hoạch, sự kiện)	芝居で当てる 株で一山当てる		3	ichidan_verb
+当てる	あてる	Áp dụng	外来語に漢字を当てる 我が身に当てて考える		3	ichidan_verb
+当てる	あてる	Gọi trúng tên	先生に当てられる		3	ichidan_verb
+滑る	すべる	Trơn trượt	滑って転ぶ 足が滑る 凍結して路面が滑る		3	godan_verb
+滑る	すべる	Tuột, trượt tay	茶碗が滑って落ちる		3	godan_verb
+滑る	すべる	Trượt khỏi vị trí	委員長の座を滑る		3	godan_verb
+滑る	すべる	Lỡ	口が滑る 筆が滑る		3	godan_verb
+滑る	すべる	Trượt, không đậu	大学を滑る		3	godan_verb
+肉を焼く	にくをやく	nướng thịt			4	godan_verb
+焼く	やく	nung, nướng, thui, rán (ít dầu)	瓦を焼く 炭を焼く クッキーを焼く		4	godan_verb
+焼く	やく	photocopy, in ra	サービス判で焼く 図面を焼く		4	godan_verb
+焼く	やく	làm bỏng	スープで舌を焼く    làm ? lưỡi bằng soup		4	godan_verb
+CDに焼く	CDにやく	ghi ra đĩa CD			4	godan_verb
+ディスク	ディスク	đĩa (CD, DVD,...)	パソコンにディスクを入れる		5	noun
+適当	てきとう	vừa phải	調味料を適当に加える     thêm gia vị một cách vừa phải 一日の適当な仕事量     lượng công việc vừa phải cho 1 ngày		4	na_adjective
+適当	てきとう	qua loa	客を適当にあしらう - tiếp khách qua loa 適当な返事でごまかす - phản hồi qua loa cho qua chuyện		4	na_adjective
+詰める	つめる	Bịt kín	虫歯を詰める		3	ichidan_verb
+詰める	つめる	Thu hẹp, làm ngắn	着物の丈 (たけ) を詰める 細かい字で詰めて書く 席を詰めて座る		3	ichidan_verb
+詰める	つめる	Tiết kiệm	生活費を詰める 経費を詰める		3	ichidan_verb
+詰める	つめる	Đi đến cuối	この街を詰める 沢筋を詰める		3	ichidan_verb
+詰める	つめる	Dứt điểm, làm cạn	話を詰める 議論を詰める 水分や汁がなくなるまで詰める		3	ichidan_verb
+詰める	つめる	Chèn ép, thúc ép, dồn vào chân tường	失敗した部下を詰める		3	ichidan_verb
+詰める	つめる	Chiếu tướng, checkmate	王手王手で敵玉を詰める		3	ichidan_verb
+掛かり切り	かかりきり	Dành tất cả	私はいくじと仕事などがあり、お母さんの介護に掛かり切りになれない。		3	noun
+弛まぬ	たゆまぬ	Không biết mệt, không ngừng nghỉ			3	godan_verb
+弛まず	たゆまず	Không biết mệt mỏi, không ngừng nghỉ			3	adverb
+詰める	つめる	Miệt mài làm	詰めて仕事をする 根 (こん) を詰める		3	ichidan_verb
+詰める	つめる	xếp hàng chờ	首相官邸に詰める 持ち場に詰める		3	ichidan_verb
+詰める	つめる	(động từ ghép) làm tới cùng	問い詰める 追い詰める		3	ichidan_verb
+詰める	つめる	(động từ ghép) làm đầy khắp	敷き詰める タイルを貼り詰める		3	ichidan_verb
+詰める	つめる	V không ngừng nghỉ, miệt mài	登り詰める 通い詰める		3	ichidan_verb
+渇く	かわく	Thèm khát	愛に渇く		3	godan_verb
+散る	ちる	Phân tán	ガラスが粉々に散る 波が散る 火花が散る		3	godan_verb
+散る	ちる	Phân tán ra từ một nơi	全国に散ってしまった同窓生		3	godan_verb
+Tan	Tan	[散[ち]]る	雲が散る 霧が散る		3	godan_verb
+散る	ちる	Lan ra, bị lem	墨が散る		3	godan_verb
+散る	ちる	Phân tâm	気が散る		3	godan_verb
+散る	ちる	Phát tán	うわさが散る		3	godan_verb
+散る	ちる	Chết một cách hiên ngang	南の海に散る 花と散る		3	godan_verb
+暮れる	くれる	(Mùa, năm tháng) Đến cuối, sắp kết thúc	今年も無事に暮れた		3	ichidan_verb
+暮れる	くれる	Suốt ngày, cả ngày	今日も一日畑仕事で暮れた		3	ichidan_verb
+暮れる	くれる	Chìm đắm (cảm xúc tiêu cực)	悲嘆に暮れる 涙に暮れる毎日		3	ichidan_verb
+暮れる	くれる	Khó quyết định, không biết nên làm gì	途方に暮れる 思案に暮れる		3	ichidan_verb
+目先	めさき	Trước mắt, tương lai gần	目先の利益を追う		3	noun
+抜く	ぬく	Xả ra, lấy ra	浮き袋の空気を抜く プールの水を抜く 力を抜いて楽にする		3	godan_verb
+抜く	ぬく	Móc túi, móc trộm	車中で財布を抜かれた 積み荷を抜かれる		3	godan_verb
+抜く	ぬく	Lọc ra, rút ra	書棚から読みたい本を抜く 秀歌を抜いて詞華集を編む		3	godan_verb
+抜く	ぬく	Loại bỏ	不良品を抜く 染みを抜く 籍を抜く さびを抜いたにぎりずし		3	godan_verb
+抜く	ぬく	Lược bớt (bỏ qua, cắt bớt giai đoạn)	仕事の手を抜く 朝食を抜く		3	godan_verb
+抜く	ぬく	Vượt qua, vượt trội hơn	すでに師匠の芸を抜いている 先頭の走者を一気に抜く 実力が群を抜いている		3	godan_verb
+抜く	ぬく	Đưa tin trước, thông tấn trước	他紙に抜かれる スクープを抜く		3	godan_verb
+抜く・貫く	ぬく・つらぬく	Xuyên qua	山を抜いてトンネルをつくる 一、二塁間を抜くヒット		3	godan_verb
+抜く	ぬく	In thành hình In nổi màu (trên màu khác)	ハート形に抜く 紫紺の地に白く抜いた紋		3	godan_verb
+抜く	ぬく	Công phá	城を抜く 堅塁を抜く		3	godan_verb
+抜く	ぬく	(động từ ghép) làm đến cùng	難工事をやり抜く がんばり抜く ほとほと困り抜く		3	godan_verb
+ライトスタンド	ライトスタンド	Chân chống đèn	ライトスタンドとは、ストロボなどの写真撮影に必要なライト機材を取り付けるスタンドのこと。		3	noun
+物価が上がる	ぶっかがあがる	vật giá tăng cao			4	godan_verb
+流す	ながす	Làm nhỏ giọt	脂汗を流す 涎を流す		3	godan_verb
+流す	ながす	Thả trôi	筏を流す 台風で橋が流される		3	godan_verb
+純益	じゅんえき	Lợi nhuận thuần	純益は総収益から総費用を差し引いた純粋の利益		3	noun
+男ぶり	おとこぶり	tính cách và ngoại hình như con trai	男ぶりがいい		4	noun
+腕前	うでまえ	tay nghề, kĩ năng, trình độ	洋裁の腕前が上がる 腕前を披露する		4	noun
+並ぶ	ならぶ	ngang bằng	実力、人気ともに並ぶ 彼に並ぶ者はいない		4	godan_verb
+進む	すすむ	Tiến triển	仕事が進む 研究が進む 開発が進む		3	godan_verb
+進む	すすむ	trở nên ưa chuộng	暑さ続きで食が進まない	盛んになる。 勢いがつく。	3	godan_verb
+進む	すすむ	Phát triển, tiến bộ	先進国の進んだ技術を学ぶ 世の中が進む		3	godan_verb
+進む	すすむ	Thăng tiến lên	管理職まで進む 中学に進む 決勝戦に進む		3	godan_verb
+進む	すすむ	Ngày càng nặng, càng căng	自然破壊が進む 近視が進む インフレが進む		3	godan_verb
+進む	すすむ	Muốn làm trong (lĩnh vực nào đó)	法曹界に進む		3	godan_verb
+進む	すすむ	Có hứng	気が進まない 進んでつらい仕事を引き受ける		3	godan_verb
+進む	すすむ	Dẫn trước, đi trước (thời đại)	時代に進む 進んだ考えの持ち主 この時計は日に一分進む		3	godan_verb
+進む	すすむ	Dâng trào	心進む 声を進ませて言った 急に感情が進んだ		3	godan_verb
+流す	ながす	Gác lại, hoãn lại	総会を流す ゲームを流す		3	godan_verb
+流す	ながす	Lướt qua, ngó lơ, bỏ ngoài (tai)	論敵の攻撃を軽く流す 柳に風と聞き流す		3	godan_verb
+流す	ながす	Phá thai	おなかの子を流す		3	godan_verb
+流す	ながす	Làm một cách thoải mái, không tốn sức	ウオーミングアップに100メートルを軽く流す		3	godan_verb
+揃える	そろえる	so đều, xếp đều (những thứ có cặp, đôi)	箸を揃える 脱いだ履物を揃える 両手をひざの上に揃える		3	ichidan_verb
+揃える	そろえる	Chuẩn bị sẵn sàng	スタッフを揃える 機材を揃える		3	ichidan_verb
+揃える	そろえる	Làm cho hòa hợp, điều hòa, phối hợp tốt	口を揃えて反対する 色調を揃える		3	ichidan_verb
+遣り取り	やりとり	Uống rượu cùng nhau	杯を遣り取りする		3	noun
+遣り取り	やりとり	Tranh luận, trả lời qua lại	電話での遣り取り 激しく遣り取りする		3	noun
+悩む	なやむ	Đau đầu (vì xử lí khó)	騒音に悩む 人材不足に悩む企業		3	godan_verb
+悩む	なやむ	(động từ ghép) V ngoài ý muốn, không như mong đợi	伸び悩む 行き悩む		3	godan_verb
+茶碗	ちゃわん	bát	茶碗を右手で持ち、左手の手のひらに乗せる		5	noun
+盛ん	さかん	(thời, phong độ) đỉnh cao	人生の盛んな時代 血気盛ん 老いてますます盛んだ		3	na_adjective
+盛ん	さかん	Hoành tráng, long trọng, phồn thịnh, phổ biến	スポーツの盛んな学校 盛んな歓迎会 貿易が盛んになる 欧米ではサッカーが盛んだ		3	na_adjective
+盛ん	さかん	Sôi nổi, nhiệt tình	学者の間で盛んな議論が交わされた		3	na_adjective
+立派	りっぱ	toàn thiện, tuyệt vời, hoàn hảo	立派に生活を立てていく 立派な大人		3	na_adjective
+盛大	せいだい	Hoành tráng, long trọng	盛大な式典		3	na_adjective
+繁盛	はんじょう	Phồn thịnh, phát đạt	店が繁盛する 商売繁盛 どうか二三年の内に、世界中の繁盛な港へおし渡って		3	na_adjective
+筏	いかだ	Cái bè	筏を流す		3	noun
+写す	うつす	phỏng theo	竜安寺 (りょうあんじ) の石庭を写した庭		3	godan_verb
+写す	うつす	Miêu tả, tả lại (viết và vẽ ra)	情景を写す		3	godan_verb
+写す	うつす	Chụp	カメラで花を写す		3	godan_verb
+纏まる	まとまる	Tổ chức rõ ràng, trật tự, logic	計画が纏まる 考えが纏まる		3	godan_verb
+纏まる	まとまる	Thống nhất (ý muốn đôi bên)	交渉が纏まる 縁談が纏まる		3	godan_verb
+進める	すすめる	thúc đẩy, đẩy nhanh	工事を進める 話を進める	予定の手順に従って、物事を進行させる。 はかどらせる。	3	ichidan_verb
+進める	すすめる	làm xa hơn nữa, làm tiến bộ	一歩進めて考える 合理化を進める	物事の内容・程度をさらに高める。	3	ichidan_verb
+進める	すすめる	lên tầng, vị trí cao hơn	一階級進める	上の地位・段階に移す。 位を高くする。	3	ichidan_verb
+進める	すすめる	Kích thích, làm trỗi dậy ham muốn	食欲を進める酒	（刺激して）盛んにする。うながす。	3	ichidan_verb
+進める	すすめる	Chỉnh đồng hồ nhanh hơn	念のため五分進めておく	時計の針を正しい時刻より先の時刻を示すようにする。	3	ichidan_verb
+念のため	ねんのため	Để cho chắc	念のため十分進めておく		3	adverb
+繋がる	つながる	Trải dài liên tục	車が一〇キロも繋がっている この道は国道に繋がっている 首が繋がる		3	godan_verb
+繋がる	つながる	Có liên quan đến	事件に繋がる遺留品 努力が成功に繋がる		3	godan_verb
+繋がる	つながる	Có quan hệ huyết thống	血の繋がった人		3	godan_verb
+繋がる	つながる	Bị mua chuộc, trói buộc	情に繋がる		3	godan_verb
+お歳暮	おせいぼ	Quà cuối năm	お歳暮を贈る風習		3	noun
+抜ける	ぬける	Xì ra	タイヤの空気が抜ける 気の抜けたビール 臭みが抜ける		3	ichidan_verb
+抜ける	ぬける	Nhả, thả ra	ブレーキが抜けて空走する		3	ichidan_verb
+抜ける	ぬける	Bỏ sót	名簿から名前が抜けている 主語が抜けている		3	ichidan_verb
+抜ける	ぬける	Xuyên qua	打球が右中間を抜ける トンネルを抜ける		3	ichidan_verb
+抜ける	ぬける	「抜けた」「抜けている」 Ngốc, ngớ ngẩn	あの人はどこか抜けている 間 (ま) の抜けた話		3	ichidan_verb
+抜ける	ぬける	「抜けるような」「抜けるように」 Trong trẻo, tinh khôi	抜けるような青空 抜けるように白い肌		3	ichidan_verb
+整理	せいり	Thanh lý, loại bỏ xử lí (để nó không gây phiền)	人員を整理する 身辺を整理する		3	noun
+喜ぶ	よろこぶ	Sẵn lòng	人の忠告を喜ばない		3	godan_verb
+喜ぶ	よろこぶ	Chúc phúc	御結婚を心から喜んでいます		3	godan_verb
+喜ぶ	よろこぶ	「喜んで…」 sẵn lòng, vui lòng làm gì đó	喜んで出席させていただきます		3	godan_verb
+決勝戦	けっしょうせん	Vòng chung kết	決勝戦に進む		3	noun
+曲がる	まがる	rẽ, quành	次(つぎ)の角(かく)を左(ひだり)に曲(ま)がる 信号しんごうを右みぎへ曲まがる - ? sang phải tại đèn giao thông		5	godan_verb
+忠告	ちゅうこく	khuyên răn, răn dạy	友人に忠告する		3	noun
+勧告	かんこく	khuyến cáo	辞職を勧告する 人事院勧告		3	noun
+警告	けいこく	Cảnh cáo	再三の警告を無視する 事前に警告する		3	noun
+度合い	どあい	độ, mức độ	減少の度合いが大きい 緊張の度合いが高まる	物事の程度。 ほどあい。	3	noun
+当たる	あたる	cọ vào	堅いカラーが首筋に当たる	断続的に触れる。 さわる。	3	godan_verb
+当たる	あたる	chiếu vào hơ (lửa) hóng (gió)	日がよく当たる部屋 ストーブに当たる 冷たい風に当たる	光・熱・風などを受ける。	3	godan_verb
+当たる	あたる	đương đầu, đối đầu	強敵に当たる 勢い当たるべからずだ	対抗する。対応する。	3	godan_verb
+べからず	べからず	không nên, không được	働かぬ者に食うべからず		3	noun
+向く	むく	chỉ về	磁石の針は北を向く	その方向を指し示す。	3	godan_verb
+向く	むく	hướng về	気が向く 心は故郷に向いている	その方向・状態にかたむく。	3	godan_verb
+向く	むく	phù hợp, tương xứng	若者に向いた仕事	適する。ふさわしい。	3	godan_verb
+当たる	あたる	như thể là (chú, bác,...)	伯父に当たる人	そのような関係にある。	3	godan_verb
+当たる	あたる	có ở hướng	東の方角にあたる家	その方角にある。	3	godan_verb
+方角	ほうがく	phương hướng	北の方角に向く		3	noun
+当たる	あたる	phù hợp, khớp	人の手に当たる部分	他と比べて、それに当てはまる。	3	godan_verb
+当たる	あたる	được xem là	失礼に当たる 今日は結婚記念日に当たる	結果としてそういうことになる。	3	godan_verb
+方位	ほうい	phương vị			3	noun
+眺望	ちょうぼう	tầm nhìn, góc nhìn, chông ra xa	眺望がきく山頂 屋上から市街を眺望する	遠くを見わたすこと。 また、見わたしたながめ。 見晴らし。	3	noun
+見渡せる	みわたせる	nhìn toàn cảnh, bao quát			3	ichidan_verb
+見通し	みとおし	nhìn, xem xuyên suốt	朝からテレビの見通しだ	初めから終わりまで見つづけること。	3	noun
+見通し	みとおし	thông thoáng, không có vật cản	見通しのきく展望台	さえぎるものがなく遠くまで見えること。 また、その場所。	3	noun
+見通し	みとおし	nhìn thấu	何でもお見通しだ	人の心や目に見えない内面の物事を見抜くこと。 洞察。	3	noun
+見通し	みとおし	triển vọng	復旧の見通しがつかない	物事のなりゆきや、将来のことを予測すること。	3	noun
+人情	にんじょう	tình người	困っている人を見て、何とかしてあげたいと思うのは人情である。 人情の厚い人 人情家	人としての情け。 他人への思いやり。	3	noun
+人情	にんじょう	nhân tính	やすきにつくは人情の常	人間の自然な心の動き。 人間のありのままの情感。	3	noun
+入る	はいる	chứa được	客席いっぱいに入る 一リットル入る瓶	一定の範囲・容量の中に収まる。	3	godan_verb
+入る	はいる	vào tay mình, nhận được	大金が入る	自分のものになる。	4	godan_verb
+入る	はいる	vào đến (địa điểm, thời gian)	雨期に入る    ? mùa mưa  月が山の陰に入る    mặt trăng lặn ? bóng núi	ある時期・地点に至る。	4	godan_verb
+地点	ちてん	địa điểm	落下地点	地上の一定の場所。	3	noun
+地上	ちじょう	trên mặt đất	地上8階建て	地面の上。	3	noun
+地上	ちじょう	thế giới này	地上の楽園	この世。	3	noun
+楽園	らくえん	chốn an vui, thiên đường	プレッシャーのあまりで楽園に入らないかな	苦しみのない幸せな生活ができる所。 パラダイス。	3	noun
+拾得物	しゅうとくぶつ	của rơi, vật nhặt được	失った人に拾得物を返す		3	noun
+雨期	うき	mùa mưa	この島では１１月から雨期にはいる。		3	noun
+文句	もんく	lời phàn nàn, kêu ca	弁償してもらえるのなら文句はない	相手に対する言い分や苦情。 不服。	3	noun
+違う	ちがう	khác biệt, khác hẳn	親子ほども年が違う 格が違う おつむの出来が違う	両者の間に隔たりがある。 差がある。 また、他と異なってまさっている。	3	godan_verb
+違う	ちがう	(động từ ghép) V ngang qua	出迎えと行き違う すれ違う	すれちがう、交差する、の意を表す。	3	godan_verb
+違う	ちがう	sai, không phải thế	話が違う 約束と違う	前に考えていたことや取り決めたことが現実のそれと同じでない。	3	godan_verb
+違う	ちがう	sai, không đúng	計算が違う 答えが違っている A:『もしもし市役所ですか』 B:『いいえ、違います』	基準となるもの、正しいものと一致しない状態である。 まちがっている。	3	godan_verb
+未発達	みはったつ	chưa phát triển	幼児は話す能力が未発達です		3	noun
+有るべき	あるべき	nên có, đáng lý phải có	教師として[有[あ]]るべき姿 有るべきことを手に入りたいのなら、頑張るに限る。	そうあるのが当然の。	3	noun
+迷う	まよう	phân vân	進学か就職かで迷う 判断に迷う	どうしたらよいか決断がつかない。	3	godan_verb
+迷う	まよう	sa ngã	色香に迷う	心が乱れてよくない方向へ行く。 欲望・誘惑に負ける。	3	godan_verb
+迷う	まよう	không thể siêu thoát	迷わず成仏して下さい	死者の霊が成仏できないでいる。	3	godan_verb
+黄昏	たそがれ	hoàng hôn	鮮やかなコントラストの黄昏に見惚れちゃいました。 ビーチで黄昏の太陽を眺めると心が穏やかになる		3	noun
+夕闇	ゆうやみ	sau hoàng hôn	夕闇の中を君と歩いてる 夕闇が迫る		3	noun
+宵闇	よいやみ	lúc tối mờ ảo	宵闇迫る街	宵の薄暗さ。	3	noun
+日没	にちぼつ	mặt trời lặn	日没	太陽の上端が地平線下に沈むこと。 また、その時刻。 日の入り。	3	noun
+日出	ひので	mặt trời mọc	日出時	太陽の上端が地平線上に現れること。 また、その時刻。 ひので。	3	noun
+届く	とどく	giao đến nơi	母から便りが届く 贈り物が届く	送った品物や郵便物が相手の所に着く。	3	godan_verb
+届く	とどく	chú ý cẩn thận, tỉ mỉ	親の目が届く 細かいところまで神経が届く	注意などが十分に行きわたる。 行き届く。	3	godan_verb
+届く	とどく	ứng nghiệm truyền tải được cảm xúc	祈りが届く 誠意が届く	願い事がかなう。 気持ちが通じる。	3	godan_verb
+写る	うつる	hiện xuyên qua, thấu qua	裏のページの絵が写って読みにくい	下にある文字や絵が、紙などを通して、透けて見える。	3	godan_verb
+店を開ける	みせをあける	mở cửa bán	午前(ごぜん)一〇時(じ)に店(みせ)を開(あ)ける	営業を始める。 営業を行う。	5	ichidan_verb
+開く	ひらく	tổ chức sự kiện, hội tiệc	展示会を開く    ? triển lãm hàng hoá	会などを催す。	4	godan_verb
+打つ	うつ	tát, đấm, đập	顔を手で打つ 子供のおしりを打つ 転んでひざを打つ		4	godan_verb
+辺り	あたり	xung quanh	辺りに気を配る 辺りかまわず泣きだす 辺り一面が火の海だ	ある地点の周囲。ある範囲の場所。 付近。 周り。	4	noun
+捲る	めくる	vén lên, xắn lên	裾を捲る	物の端を外側へ巻きながら上へあげる。	3	godan_verb
+捲る	めくる	lật	布団を捲る	おおっているものや重なっているものをはがす。 めくる。	3	godan_verb
+捲る	めくる	dí, đuổi	後ろから激しく捲られる	追い立てる。	3	godan_verb
+捲る	めくる	lật	本のページをめくる 布団をめくる	ít dùng Hán tự	3	godan_verb
+起す	おこす	đỡ dậy	からだを起す 倒木を起す 転んだ子を起す	横になっているものを立たせる。	3	godan_verb
+起す	おこす	tạo ra, sinh ra (thứ chưa từng có)	風力を利用して電気を起す 波を起す	今までなかったものを新たに生じさせる。	3	godan_verb
+小さ	ちいさ	nhỏ	字の小さな本	容積・面積が狭い空間・場所だけを占めるさま。	5	na_adjective
+重なる	かさなる	xảy ra lần nữa	重なる惨事 不幸が重なる	同じ事が繰り返し起こる。 たびかさなる。	3	godan_verb
+重なる	かさなる	trùng nhau	用事が重なる 日曜と祝日が重なる	複数の物事が同時に一緒になる。 かち合う。	3	godan_verb
+預金	よきん	gửi tiết kiệm, tiền tiết kiệm (gửi ngân hàng)	毎月定額を預金する 預金を下ろす 当座預金 普通預金	銀行などの金融機関に金銭を預けること。また、その金銭。	3	noun
+生きる	いきる	kiếm sống, mưu sinh	ペン一本で生きる	生計を立てる。生活する。	3	ichidan_verb
+生きる	いきる	có hồn, sống	その一語で文章が生きてきた 創設者の精神は今日なお生きている	あたかも命があるような働きをする。 生き生きする。 また、理念などが失われずに後世まで伝えられる。	3	ichidan_verb
+生きる	いきる	「…に生きる」 sống vì ...	研究一筋に生きる 趣味に生きる	そのことに生きがいを見出して日々を送る。	3	ichidan_verb
+生きる	いきる	「…にいきる」「…をいきる」 sinh sống ở...; sống hết mình với...	海に生きる人々 青春をいかに生きるか	そこを生活の本拠として暮らす。 また、意識的能動的に毎日を過ごす。	3	ichidan_verb
+生きる・活きる	いきる・いきる	được phát huy, được tận dụng	ひとふりの塩で味が活きてくる 長年の経験が活きる	うまく活用することによってそのものの価値が発揮される。 効果を現す。	3	ichidan_verb
+生きる	いきる	còn hiệu lực	あのときの約束は生きている ライン内の生きたボール	効力が失われていない。	3	ichidan_verb
+寄る	よる	tiện ghé qua	出社前に得意先に寄る 帰りに飲みに寄る	ある所へ向かう途中で、他の所を訪れる。 立ち寄る。	4	godan_verb
+寄る・倚る・凭る	よる	tựa, dựa vào	縁側の柱によって庭を見る	もたれかかる。	4	godan_verb
+寄る	よる	ngày càng nhiều	しわが寄る 年が寄る	数が加わる。 多くなる。 重なる。	4	godan_verb
+思いも寄らない	おもいもよらない	không ngờ đến	思いも寄らない大事件	考えがそこに至りつく。 思い及ぶ。	4	godan_verb
+起こる	おこる	chỉ sự hoạt động của tự nhiên	地震が起こる 洪水が起こる	自然が働きや動きを示す。 おきる。	4	godan_verb
+起こる	おこる	(không may) xảy ra	事件が起こる 戦争が起こる	平常と異なる状態や、好ましくない事態が生じる。 おきる。	4	godan_verb
+周り	まわり	xung quanh (gần)	口の周りをふく    lau vùng ? miệng  周りに迷惑をかける    làm phiền ?	そのものを囲んでいる近くの部分。 近辺。 周辺。 あたり。	4	noun
+積もる	つもる	tích tụ	不平が積もる 積もる思い 積もる話	物事が少しずつたまって多くなる。 次々と加わってふえる。	3	godan_verb
+積もる	つもる	(thời gian) tích lũy, thành chuỗi	日数が積もる	時や日が重なる。時間が経過する。	3	godan_verb
+積もる	つもる	ước lượng	工事費を積もってみる 安く積もっても一万円をくだらない品	あらかじめ計算をして見当をつける。 値段・数量などを概算する。 見積もる。	3	godan_verb
+下る	くだる	xuống vùng quê	東海道を下る	中央から地方へ行く。	3	godan_verb
+下る	くだる	được ban cho	恩賜金が下る	高い地位の人から下げ渡される。 下賜される。	3	godan_verb
+下る	くだる	được tuyên cáo	判決が下る 辞令が下る	判断や命令などが言い渡される。	3	godan_verb
+下る	くだる	thời thế đổi thay	下って明治の御世 (みよ) になる	時、時代が移る。 後世になる。	3	godan_verb
+下る	くだる	(phủ định) không dưới	犠牲者は一千人を下らないだろう	ある基準の数値・数量よりも下になる。 下回る。	3	godan_verb
+下る	くだる	tiêu chảy	腹が下る	下痢をする。	3	godan_verb
+掴む	つかむ	lấy được, giành được	思いがけない大金を掴む 幸運を掴む	自分のものとする。 手に入れる。	3	godan_verb
+握る	にぎる	nắm giữ trong tay	実権を握る 政権を握る 大金を握る	物事をとらえて自分のものとする。 手中に収める。	3	godan_verb
+握る	にぎる	nắm bắt được	相手の弱みを握る 秘密を握る 証拠を握る	重要な事柄を確実につかむ。	3	godan_verb
+握る	にぎる	làm cơm nắm sushi	好みのねたを握ってもらう	握り飯や握りずしを作る。	3	godan_verb
+抱く	いだく	ôm	子供を抱く 肩を抱く	腕を回して、しっかりとかかえるように持つ。	3	godan_verb
+抱く	いだく	ấp trứng	親鳥が卵を抱く	卵をかえすために、鳥が卵の上にしゃがむ。	3	godan_verb
+抱く	いだく	ngủ chung giường	男に抱かれる	男性が女性と共寝をする。 同衾 (どうきん) する。	3	godan_verb
+抱く	いだく	bao trùm	大自然の懐に抱かれる 村々を抱く山塊	かかえるように包み込む。	3	godan_verb
+抱く	いだく	bế, ôm	ひしと抱く 母親の胸に抱かれる	腕でかかえ持つ。だく。	3	godan_verb
+争う	あらそう	đối đầu nhau	労使が争う 相続問題で兄弟が争う	敵対する。 戦う。 けんかする。 いさかいをする。	3	godan_verb
+争う	あらそう	tranh thủ	手術は一刻を争う 寸秒を争う問題	少しの時間をも得ようとして忙しくする。 急を要する意にいう。	3	godan_verb
+争う	あらそう	luôn giữ lời nói của mình là đúng, cãi (?)	裁判で争う 黒白を争う	自分の言い分を、正しいとして押し通す。	3	godan_verb
+消費	しょうひ	tiêu dùng	個人消費	人が欲望を満たすために、財貨・サービスを使うこと。	3	noun
+振る	ふる	rải, rắc	さいころを振る 塩を振る	手を動かして握ったものを下方に投げる。 また、勢いをつけて振りまく。	3	godan_verb
+振る	ふる	chỉ định, giao phó	大役を振られる	割り当てる。 仕事や役割を与える。	3	godan_verb
+振る	ふる	đá, từ chối	女に振られる	相手の求めを退ける。 はねつけて相手にしない。	3	godan_verb
+振る	ふる	bỏ phí, từ bỏ	重役の地位を振る 一生を棒に振る	得た地位・立場などをあっさり捨てる。 また、しようとする意志を捨てる。 むだにする。	3	godan_verb
+振る	ふる	bẻ lái	舵を右に振る	動かして方向を少しずらせる。 進む向きをある方向に変える。	3	godan_verb
+振る	ふる	rước kiệu	みこしを振る	勢いよく担ぎ動かす。	3	godan_verb
+通じる	つうじる	dẫn đến, thông đến	国道へ通じる道 駅までバスが通じる	道路などがある所まで達する。 また、交通機関が通る。	3	ichidan_verb
+通じる	つうじる	truyền tải được	冗談が通じない 気脈を通じる	意志やものの意味などが相手に伝わる。 また、伝える。	3	ichidan_verb
+通じる	つうじる	tinh thông, hiểu cặn kẽ	内情に通じる	ある物事の詳しい知識をもつ。 精通する。	3	ichidan_verb
+通じる	つうじる	thông dụng, thường dùng	あだ名で通じる 現代にも通じる問題	広く行き渡る。 広い方面に通用する。	3	ichidan_verb
+通じる	つうじる	thông đồng, cấu kết	敵に通じる	ひそかに敵方と連絡する。 内通する。	3	ichidan_verb
+通じる	つうじる	bồ bịch	人妻と通じる 情を通じる	異性と関係をもつ。	3	ichidan_verb
+通じる	つうじる	「…を通じて」 thông qua...	友人を通じて知り合う テレビを通じて訴える	媒介とする。	3	ichidan_verb
+通じる	つうじる	「…を通じて」 trong suốt... trên khắp...	一年を通じて暖かい 全国を通じて流行する	全体に及ぼす。 包括する。	3	ichidan_verb
+埋まる	うまる	lấp đầy	流れ込む土砂で池が埋まる 広い講堂が聴衆で埋まる	くぼんだ所に物が詰まっていっぱいになる。 うずまる。 あいている場所が人や物でいっぱいになる。	3	godan_verb
+埋まる	うまる	được bổ sung	赤字が埋まる 部長のポストはまだ埋まらない	欠けたり不足したりしているところの補いがつく。	3	godan_verb
+埋まる	うまる	(phủ định) không đáng làm, không hấp dẫn	戯談 (じょうだん) と聞かれちゃ埋まらない	（多く、打消しの語を伴う）割に合う。引き合う。	3	godan_verb
+逃げる	にげる	chạy trốn, trốn thoát	ライオンが檻 (おり) から逃げる 命からがら逃げる	自由のきかない所や危険から抜け出して、去る。	3	ichidan_verb
+逃げる	にげる	lảng tránh, trốn tránh	やっかいな仕事から逃げる 逃げないで真っ向から勝負する	面倒なこと、いやなことから積極的に遠ざかろうとする。 直面するのを回避する。	3	ichidan_verb
+逃げる	にげる	trào ra ngoài	熱が逃げる 土鍋はさめにくい上に風味も逃げない	室内・容器の中の気体や味などが、そのまま保たれないで外へ出てしまう。	3	ichidan_verb
+相変わらず	あいかわらず	như mọi khi, không thay đổi	今も相変わらずきれいだ		3	adverb
+慣らす	ならす	thuần phục	鷹 (たか) を慣らす 野生の馬を飼い慣らす	動物を訓練して、なつかせる。 人になじみ親しむようにする。	3	godan_verb
+汚れる	よごれる	bẩn bên ngoài	染みがあって汚れる		3	ichidan_verb
+寄せる	よせる	ghé thăm	今夜寄せてもらいます	訪問する意のへりくだった言い方。	3	ichidan_verb
+寄せる	よせる	đưa (cái gì) lại gần	耳へ口を寄せて話す 肩を寄せる 北へ寄せて家を建てる	ある物を別の物の近くへ寄らせる。 近づける。	3	ichidan_verb
+寄せる	よせる	gom lại	客を寄せる 額にしわを寄せる 義援金が寄せられる	1か所に集める。まとめて一緒にする。	3	ichidan_verb
+寄せる	よせる	cộng thêm	二と二を寄せると四になる	数を加える。 足す。 寄せ算をする。	3	ichidan_verb
+寄せる	よせる	tơ tưởng	同情を寄せる 思いを寄せる 彼女に好意を寄せる	愛情・興味・好意などの気持ちをいだく。 思いをかける。	3	ichidan_verb
+寄せる	よせる	tạm nương nhờ	友人宅に身を寄せる	頼って一時的に世話になる。	3	ichidan_verb
+寄せる	よせる	lấy cớ, mượn gió bẻ măng	他人のことに寄せて文句を言う	あることに関係づける。 かこつける。	3	ichidan_verb
+トンネル	トンネル	đường hầm	山腹や地下などを掘り貫いた通路。 鉄道・自動車道・人道や水路用。 隧道 (ずいどう) 。		3	noun
+蹴る	ける	dậm, đạp	床を蹴って高くジャンプする 水を蹴って泳ぐ	足で地面などを強く押す。	3	godan_verb
+蹴る	ける	bác bỏ (đề xuất, yêu cầu)	組合の要求を蹴る 与えられた役を蹴る	要求・提案などを受け入れないで、きっぱり断る。 はねつける。 拒絶する。	3	godan_verb
+揃う	そろう	Xếp ngay ngắn	机が一列に揃う	整然と並ぶ。	3	godan_verb
+揃う	そろう	hài hòa, đồng bộ	足並みが揃う 合唱の声が揃う	全体が一つにまとまる。 調和する。	3	godan_verb
+揃う	そろう	chuẩn bị đầy đủ, sẵn sàng	条件が揃う 資料が揃う 走、攻、守の三拍子が揃った選手	必要なもの、あるべきものが集まる。 欠けたところなく備わる。	3	godan_verb
+飛ばす	とばす	bắn, phóng	ボールを飛ばす 矢を飛ばす	何かをめがけて、手元から勢いよく放つ。	3	godan_verb
+飛ばす	とばす	thổi bay	台風で屋根が飛ばされる 帽子を飛ばす	強く吹いて、空中に舞い上がらせる。	3	godan_verb
+飛ばす	とばす	làm bắn tung tóe	自動車が泥水を飛ばして通る	空中に散るようにする。 はね散らす。 飛散させる。	3	godan_verb
+飛ばす	とばす	tăng tốc	時速100キロで飛ばす 前半をハイペースで飛ばす	乗り物を速く走らせる。 また、スピードを出して速く進む。	3	godan_verb
+飛ばす	とばす	nói bô bô	やじを飛ばす 皮肉を飛ばす	勢いよく、また、遠慮なく言う。	3	godan_verb
+飛ばす	とばす	rao tin, lan truyền	檄 (げき) を飛ばす デマを飛ばす	命令などが早く伝わるようにする。 うわさなどが広まるようにする。	3	godan_verb
+飛ばす	とばす	nhanh chóng phái đi	急便を飛ばす 記者を現場に飛ばす	急いで派遣する。	3	godan_verb
+飛ばす	とばす	bỏ dở và đi tiếp, skip	飛ばして読む	途中を抜かして先へ進む。 間をぬく。	3	godan_verb
+飛ばす	とばす	thuyên chuyển	地方の出張所へ飛ばされた	中央から地方へ、または都会から辺地へ転任させる。 左遷する。	3	godan_verb
+飛ばす	とばす	(động từ ghép) nhấn mạnh động từ V mạnh bạo, khí thế	しかり飛ばす 売り飛ばす 突き飛ばす	その動詞の意味を強める。 勢いよく…する。 乱暴に…する。	3	godan_verb
+飛ばす	とばす	làm bốc hơi	強火で鍋のアルコール分を飛ばす 炊飯器の蓋を開けて余分な水分を飛ばす	水分などを除く。	3	godan_verb
+引く	ひく	nhổ thứ cắm rễ	草を引く	（根差したものを）抜き取る。	3	godan_verb
+引く	ひく	rút (để thử vận may)	くじを引く 花を引く	（勝運などを託して）一つを選んで手もとに取る。	3	godan_verb
+引く	ひく	trừ, giảm	三から二を引く 一割引いて安く売る	除き去る。 減ずる。	3	godan_verb
+引く	ひく	lén lút ăn trộm	猫に魚を引かれた	こっそり盗み去る。	3	godan_verb
+引く・弾く	ひく	gảy, đánh đàn	ピアノを弾く	弦楽器や鍵盤楽器を鳴らす。 弾じる。	3	godan_verb
+引く	ひく	(cầm dây) dắt đi	犬を引いて散歩する	（引き綱を取って）連れ出す。	3	godan_verb
+引く	ひく	áp giải	警察に引かれる	連行する。 引き立てる。	3	godan_verb
+引く	ひく	nắm tay dắt đi	子供の手を引く	（手を取って）導き行く。	3	godan_verb
+引く	ひく	kéo lê	裾が引いている たもとを引く	（長い物が）地面などに触れたまま従い動く。 引きずる。	3	godan_verb
+引く	ひく	làm cho (cái gì) kéo đi	犬ぞりを引く 荷車を引く	後ろに連結して運ぶ。	3	godan_verb
+引く	ひく	lôi kéo, mời vào	客を引く 引く手あまた	誘い込む。	3	godan_verb
+惹く	ひく	thu hút	同情を惹く 気を惹くしぐさ 目を惹く広告	人の注意や関心を向けさせる。	3	godan_verb
+引く	ひく	tra (từ)	辞書を引いて調べる 電話帳を引く	書物を繰って求める語を探し出す。	3	godan_verb
+引く	ひく	dẫn ra, đưa ra (ví dụ, dẫn chứng)	証拠を引く 故事を引く	例としてあげる。 引き合いに出す。	3	godan_verb
+引く	ひく	kẻ	設計図を引く 罫 (けい) を引く	線で描く。 また線を描く。	3	godan_verb
+引く	ひく	trải rộng ra	カーテンを引く	張り広げる。	3	godan_verb
+引く	ひく	phết trải rộng	油を引く 唇に紅を引く	塗り延べる。	3	godan_verb
+引く	ひく	trải rộng ra	砂利を引く なだらかな山裾を引く	延べ広げる。	3	godan_verb
+引く	ひく	kéo dài ra	声を引いて歌う	長く伸ばす。	3	godan_verb
+引く	ひく	kéo thành sợi	納豆が糸を引く	糸状のものを生じさせる。	3	godan_verb
+引く	ひく	dẫn	バス路線を引く ガスを引く 田に水を引く	特定の道筋を通じさせる。	3	godan_verb
+引く	ひく	mang trong mình (sự kế thừa)	血筋を引く 学統を引く	受け継いで伝わり及ぶ。	3	godan_verb
+引く	ひく	còn tiếp diễn, còn ảnh hưởng	航跡を引く わだかまりが尾を引く	あとに余波が続く。	3	godan_verb
+引く	ひく	lôi về phía mình	あごを引く 右手を先に引く	自分の側に動かす。	3	godan_verb
+引く	ひく	có tác dụng hút	磁石は鉄を引く	吸いつけようとする働きをもつ。	3	godan_verb
+引く	ひく	hút, nhiễm vào cơ thể	風邪を引く 大きく息を引く	体内に吸い込む。	3	godan_verb
+引く	ひく	kéo ra (để dọn dẹp phía sau)	膳を引く	取りのけて後方にかたづける。	3	godan_verb
+引く	ひく	rút lui	敗れて兵を引く	後方に退かせる。	3	godan_verb
+引く・退く	ひく・しりぞく	Rút, lui ra phía đối diện	潮が退く	向こうへ離れる。	3	godan_verb
+引く・退く	ひく・しりぞく	trở về trạng thái ban đầu	水が退く 熱が退く	元のような状態にもどる。	3	godan_verb
+引く・退く	ひく・しりぞく	biến mất	痛みが退く 血の気が退く	うせる。なくなる。	3	godan_verb
+引く・退く	ひく・しりぞく	đoạn tuyệt cắt đứt liên quan	事件から手を退く	縁を切る。 関係を断つ。	3	godan_verb
+引く・退く	ひく・しりぞく	rút lui, giải nghệ	現役を退く 舞台を退く	引退する。	3	godan_verb
+挽く	ひく	cắt, nạo	のこを挽く ろくろで挽く	のこぎりや鉋 (かんな) で切ったり削ったりする。	3	godan_verb
+碾く	ひく	xay ngũ cốc	豆を碾く	ひき臼 (うす) を回して穀類をすり砕く。	3	godan_verb
+倒す・殪す・斃す・仆す	たおす	giết	銃で倒す 一刀のもとに倒す	殺す。	3	godan_verb
+倒す	たおす	đánh bại	優勝候補のチームを倒す	勝負で相手を打ち負かす。打ち破る。	3	godan_verb
+倒す	たおす	lật đổ	内閣を倒す 幕府を倒す	政体・国家などを存続できなくする。 くつがえす。 滅ぼす。 転覆する。	3	godan_verb
+倒す	たおす	quỵt tiền, nợ không trả	飲食代を倒す	借りた金を返さず、相手に損害を与える。 ふみたおす。	3	godan_verb
+倒す	たおす	(động từ ghép) V triệt để	使い倒す 遊び倒す	徹底的に…するの意を表す。	3	godan_verb
+与える	あたえる	đem đến (thứ đối phương cần)	援助を与える 注意を与える	相手のためになるものを提供する。	3	ichidan_verb
+与える	あたえる	cho phép (làm) (với sự cân nhắc)	発言の自由を与える 口実を与える	相手に何かができるようにしてやる。 配慮して利用することを認める。	3	ichidan_verb
+与える	あたえる	giao phó	宿題を与える 役割を与える	割り当てる。課する。	3	ichidan_verb
+与える	あたえる	gây ra	感銘を与える いい印象を与える 苦痛を与える 損害を与える	影響を及ぼす。	3	ichidan_verb
+chia ra	chia ra	[割[われ]]る	土地を三つに割る 部屋を割って使う	ある物をいくつかの部分に分ける。	3	godan_verb
+割る	われる	giải tán	党を割る	まとまっているもの、組織などを分裂させる。	3	godan_verb
+割る	われる	chen qua, chia tách ra	両者の間に割ってはいる	押し分けて間を離す。	3	godan_verb
+割る	われる	làm phép chia	六を二で割る	割り算をする。除する。	3	godan_verb
+割る	われる	chia đều	それぞれに役を割る 頭数で割る	分けて与える。 配分する。 割り当てる。	3	godan_verb
+割る	われる	pha loãng	ブランデーを水で割る	他の液体にまぜて濃度を薄める。	3	godan_verb
+割る	われる	mở lòng, bật mí, thú nhận	腹を割って話す 口を割る	心のうちを隠さずにすっかり出す。 うちあける。 また、白状する。	3	godan_verb
+割る	われる	giảm dưới mức	志願者が定員を割る 仕入れ値を割る	一定数に達しないで下回る。 ある水準以下になる。	3	godan_verb
+割る	われる	vượt ra ngoài	土俵を割る ボールがタッチラインを割る	きまった範囲の外に出る。 （サッカーなどで）ラインをこえる。	3	godan_verb
+割る	われる	bổ, chẻ	激しい申し合いで額を割る	突き当たったり切ったりして傷をつける。 できた傷の部分を開いた状態にする。	3	godan_verb
+掛ける	かける	bắc nồi	ストーブに薬缶を掛ける	火に当てるために鍋などをつるしさげる。 また、火の上にのせ置く。	4	ichidan_verb
+水を掛ける	みずをかける	tưới nước hắt nước	ホースで水(みず)を掛(か)ける	水や粉などを、物の上に注いだり物に打ち当たるようにしたりする。	5	ichidan_verb
+掛ける	かける	gác lên	屋根に梯子を掛ける	物の上端を他の物に支えさせるようにして立てる。	4	ichidan_verb
+刺さる	ささる	(ẩn dụ) như bị (người khác) đâm vào gây ấn tượng mạnh	先輩のひと言が刺さる 多くの人の心に刺さるコンテンツを生み出す	（比喩的に、刺されたような）強い衝撃を受ける。 また、深い感銘を与える。	3	godan_verb
+包む	つつむ	bao trùm, vây quanh	山中で霧に包まれる 火に包まれた家 事件はなぞに包まれている	（多く受け身の形で） 物をすっかり取り囲むようにする。	3	godan_verb
+包む	つつむ	giữ trong lòng, che giấu	包まず話す 悲しみを胸に包む	心の中にしまっておいて外へ出さない。 秘める。 隠す。	3	godan_verb
+包む	つつむ	(gói vào phong bì) gửi, đưa tiền	車代を包む	慶弔のためやお礼として、金を紙などにくるんで渡す。	3	godan_verb
+渋る	しぶる	không có hứng làm, ngại làm	出席を渋る 返事を渋る	気が進まないようすをする。 嫌がってなかなか実行しない。	3	godan_verb
+渋る	しぶる	đường thải không thông	腹が渋る	渋り腹で通じが悪くなる。	3	godan_verb
+流行る	はやる	buôn may bán đắt	いつも流行っている店	商売などがうまくいって繁盛する。	3	godan_verb
+流行る	はやる	lây lan	風邪が流行る	病気などが人々の間に広がる。 広く伝わっていく。 はびこる。	3	godan_verb
+過ごす	すごす	dành thời gian	休日は子供と遊んで過ごした	何かをして時間を費やす。	3	godan_verb
+出る	でる	lộ, hiện ra	月が出る 穂が出る 穴から出る 涙が出る だしがよく出ている 貫禄が出てきた	隠れていたもの、中に入っていたものなどが、表に現れる。 現れて見えるようになる。 姿を現す。	4	ichidan_verb
+会議に出る	かいぎにでる	tham gia cuộc họp	会議に出る 競技大会に出る	ある仕事をするために特定の場所にのぞむ。 行事、集まりなどに加わる。	4	ichidan_verb
+確か	たしか	chính xác	確かな数はつかんでいない	正確であるさま。	4	na_adjective
+確か	たしか	xác thực đáng tin cậy	腕前は確かだ    trình độ ?  確かな情報    thông tin ?  明日こそ確かに払います    tôi ? sẽ trả tiền đúng vào ngày mai	信頼できるさま。 安心できるさま。 また、確実であるさま。	4	na_adjective
+倒れる	たおれる	đổ bệnh	心労で倒れる	病気になって床につく。	4	ichidan_verb
+敵弾に殪れる	てきだんに殪れる	ngã xuống dưới làn đạn địch	命を奪われる。 殺される。 死ぬ。		4	ichidan_verb
+敵弾に斃れる	てきだんに斃れる	ngã xuống dưới làn đạn địch	命を奪われる。 殺される。 死ぬ。		4	ichidan_verb
+倒れる	たおれる	bị đánh bại	横綱が倒れる 三振に倒れる	勝負で負かされる。 屈する。	4	ichidan_verb
+倒れる	たおれる	bị lật đổ	内閣が倒れる	政体・国家などがくつがえる。 滅びる。	4	ichidan_verb
+倒れる会社	たおれるかいしゃ	công ty phá sản	不景気で倒れる会社が多い	資金などが続かなくなり仕事がゆきづまって、店・会社などがつぶれる。 倒産する。	4	ichidan_verb
+晴れる	はれる	trời quang mây tạnh	青く晴れた秋空 靄 (もや) が晴れる	雲や霧などが消えてなくなる。	4	ichidan_verb
+雨が晴れる	あめがはれる	mưa tạnh	午後には雨が晴れる	雨や雪が降りやむ。	4	ichidan_verb
+通う	かよう	tự do đi lại	鳥も通わぬ南海の孤島	ある場所を自由に行き来する。	4	godan_verb
+通う	かよう	thông suốt, dẫn thông tới	夏の間だけバスが通う 江戸へ通う街道	道筋が通じる。また、通じている。	4	godan_verb
+曇る	くもる	bị mờ, đục	鏡が曇る 涙で目が曇る	透明な物や光っていた物などが、他の物に薄く覆われたりさえぎられたりして、よく見通せない。 輝きのない状態になる。	4	godan_verb
+通る	とおる	thông qua lỗ	袖に手が通る	一方の口から差し入れて他方の口に出る。	4	godan_verb
+通る	とおる	đi qua nơi nào đó	海辺を通る 東京を通って仙台に行く	ある場所を過ぎる。	4	godan_verb
+通る	とおる	được thông qua, ứng đáp	法案が通る    dự luật được ?  願いが通る    tâm nguyện được ?	認められて成り立つ。	4	godan_verb
+通る	とおる	hợp lí, logic	理屈が通っている	矛盾がなくて内容が理解できる。	3	godan_verb
+通る声	とおるこえ	âm truyền đi	よく通る声	遠くまで伝わる。	4	godan_verb
+市場	しじょう	thị trường	市場開発	商品の販路。 マーケット。	5	noun
+切れる	きれる	(quan hệ) cắt đứt, đoạn tuyệt	縁が切れる 彼女とはもう切れた	つながっていた関係がなくなる。	4	ichidan_verb
+切れる	きれる	hết hạn	期限が切れる 車検が切れる 麻酔が切れる	それが有効である一定の時間・期間が終わりになる。	4	ichidan_verb
+切れる	きれる	hết hàng, cạn	品物が切れている 油が切れる	売れたり使いきったりして今まであった物がなくなる。	4	ichidan_verb
+切れる	きれる	bị vắt khô	洗った野菜の水気が切れる	振り落としたり、したたらせたりした結果、水分がなくなる。	4	ichidan_verb
+切れる刀	きれるかたな	kiếm sắc bén	よく切れる刀	刃物の切れ味が鋭い。	4	ichidan_verb
+払う	はらう	xua đi phủi đi	手(て)でハエを払(はら)う - ? ruồi bằng tay クモの巣(す)を払(はら)う - ? tơ nhện 煤(すす)を払(はら)う - phủi đi mồ hóng	わきへ追いのける。 本体にとって邪魔・不要・無益なものなどを、手や道具を用いて取り除く。 除去する。	4	godan_verb
+払う	はらう	thanh toán nộp tiền	給料(きゅうりょう)を払(はら)う 罰金(ばっきん)を払(はら)う 現金(げんきん)で払(はら)う	金銭を渡す。 支払う。 また、納入する。	5	godan_verb
+払う	はらう	thanh lí (bán đồ không dùng)	不要品を払う 古道具屋に払う	不要品などを売り渡す。	4	godan_verb
+角	かど	sừng	牡鹿(おじか)の角(かど)	動物の頭部に突き出た、堅い骨質や角質のもの。	5	noun
+真っ直ぐな性格	まっすぐなせいかく	tính cách thẳng thắn, chính trực	かくしだてのないさま。 正直。		5	na_adjective
+価格	かかく	giá đã được sửa đổi			5	noun
+車	くるま	ô tô			5	noun
+向かう	むかう	hướng về (phía), quay về (phía) đối diện (với)	舞台に向かって右側を上手という 北に向かって立つ 鏡に向かって化粧する	顔やからだをその方向に向ける。 ある物・方向を正面に見るように位置する。	4	godan_verb
+渡す	わたす	đi qua (trên dây)	[綱[つな]]を[渡[わた]]す	物の上を越えて、一方から他方へ物がとどくようにする。 またがらせる。 かける。	4	godan_verb
+渡す	わたす	truyền lại cho (trao tay)	[書[しょ]][類[るい]]を[渡[わた]]す バトンを[渡[わた]]す	こちらの手から相手の手へ移す。 手渡す。	4	godan_verb
+渡す	わたす	trao lại (cho) nhường lại (cho)	土地とちを人手ひとでに渡わたす	自分の持っているもの、権利などを他の人に与える。	4	godan_verb
+回覧板	かいらんばん	bản thông báo truyền tay	回覧(かいらん)板(ばん)を回(まわ)す		4	noun
+開く	あく	mở ra (bỏ trống không gian)	[鍵[かぎ]]が[開[あ]]かない	閉じていたものがひらく。	4	godan_verb
+数を計る	かずをはかる	đếm số			4	godan_verb
+計る	はかる	đếm (thời gian)	[時[じ]][間[かん]]を[計[はか]]る		4	godan_verb
+量る	はかる	đo (cân nặng, chiều cao, thể tích...)	[重[おも]]さを[量[はか]]る [容[よう]][積[せき]]を[量[はか]]る		4	godan_verb
+ナット	ナット	đai ốc			5	noun
+掛ける	かける	rắc (tiêu)	[胡[こ]][椒[しょう]]を[掛[か]]ける	水や粉などを、物の上に注いだり物に打ち当たるようにしたりする。	4	ichidan_verb
+捻れ・捩れ	ねじれ	xoắn	ねじれること。 ねじれていること。 また、ねじれたもの。		5	noun
+名称	めいしょう	danh xưng, tên gọi			4	noun
+人を送る	ひとをおくる	tiễn biệt ai đó			5	godan_verb
+イラスト	イラスト	minh hoạ			5	noun
+大学に入る	だいがくにはいる	nhập học đại học			5	godan_verb
+クラブに入る	クラブにはいる	gia nhập club			5	godan_verb
+保険に入る	ほけんにはいる	đăng kí bảo hiểm			5	godan_verb
+杉の下枝を払う	すぎのしずえをはらう	(cắt) bỏ đi nhánh nhỏ của cây tùng	本体にとって邪魔・不要・無益なものなどを、手や道具を用いて取り除く。 除去する。		3	godan_verb
+掛ける	かける	dành, bỏ ra (tiền, thời gian, công sức,...) cho cái gì đó	[内装[ないそう]]に[金[きん]]を[掛[か]]ける 勉強に手間暇を[掛[か]]ける	時間・費用・労力などをそのために使う。 費やす。 つぎ込む。	4	ichidan_verb
+もしかすると	もしかすると	có lẽ là...			5	adverb
+もしかして	もしかして	có lẽ là...			5	adverb
+曜日	ようび	ngày trong tuần			5	noun
+出る	でる	tham gia	[競[きょう]][技[ぎ]][大[たい]][会[かい]]に[出[で]]る	ある仕事をするために特定の場所にのぞむ。 行事、集まりなどに加わる。	4	ichidan_verb
+鍵がかかる	かぎがかかる	ổ đã khoá			4	godan_verb
+鍵をかける	かぎをかける	khoá ổ			4	godan_verb
+鍵を差し込む	かぎをさしこむ	cắm chìa khoá			4	godan_verb
+人気	ひとけ	hình bóng, khí tức con người			4	noun
+大勢	たいぜい	đông người			4	noun
+曇る	くもる	mờ đục (do bị che bởi vật khác)	[涙[なみだ]]で[目[め]]が[曇[くも]]る	透明な物や光っていた物などが、他の物に薄く覆われたりさえぎられたりして、よく見通せない。 輝きのない状態になる。	4	godan_verb
+捜す	さがす	tìm kiếm			4	godan_verb
+買いに並ぶ	かいにならぶ	xếp hàng đi mua			4	godan_verb
+過る	よぎる	vụt ngang qua, thoáng qua	目(め)の前(まえ)を黒(くろ)い影(かげ)が過(よぎ)る 不安(ふあん)が心(こころ)を過(よぎ)る 思(おも)い出(で)が一瞬(いっしゅん)頭(あたま)を過(よぎ)る	前を横切る。 通りすぎる。	4	ichidan_verb
+楽しみだ	たのしみだ	thật đáng mong chờ			4	noun
+噂される	うわさされる	bị đồn, bị ai đó nhắc đến			4	godan_verb
+曇り空	くもりぞら	trời nhiều mây			4	noun
+主語	しゅご	chủ ngữ			5	noun
+述語	じゅつご	vị ngữ			5	noun
+目的語	もくてきご	tân ngữ			5	noun
+補語	ほご	bổ ngữ			5	noun
+冷たい	つめたい	lạnh (cảm giác)	冷(つめ)たい水(すい) - nước ? 冷(つめ)たい物(もの) - đồ ?		5	i_adjective
+ご無沙汰しております	ごぶさたしております	đã lâu không liên lạc			5	godan_verb
+因みに	ちなみに	xin nói thêm là			4	adverb
+序に	ついでに	nhân tiện đây	何にかするその機会を利用して行う		4	adverb
+まず～ない	まず～ない	hầu như không ~			5	i_adjective
+大雑把	おおざっぱ	qua loa, sơ sài, đại khái	大雑把(おおざっぱ)な性格(せいかく) 大雑把(おおざっぱ)な計画(けいかく)		5	na_adjective
+フェイス	フェイス	mặt (face)			5	noun
+正月気分	しょうがつきぶん	không khí ngày Tết			4	noun
+言い方	いいかた	cách nói	その言い方は間違いますよ。		5	noun
+海外旅行	かいがいりょこう	du lịch nước ngoài	来週、海外旅行に行きますよ。韓国に行きます。		5	noun
+本屋	ほんや	tiệm sách	本屋に行って本を読みます。		5	noun
+魚屋	さかなや	tiệm cá			5	noun
+バス乗り場	バスのりば	trạm xe buýt			5	noun
+タクシー乗り場	タクシーのりば	trạm xe taxi			5	noun
+電車乗り場	でんしゃのりば	sân gia tàu điện			5	noun
+船乗り場	ふねのりば	bến tàu thuyền			5	noun
+フェリー乗り場	フェリーのりば	bến phà			5	noun
+モノレール乗り場	モノレールのりば	điểm lên tàu một ray			5	noun
+〇〇行きの乗り場	〇〇いきののりば	điểm lên xe đi đến 〇〇			5	noun
+乗車口	じょうしゃぐち	cửa lên tàu			5	noun
+かしこまりました	かしこまりました	tôi hiểu rồi (kính ngữ)			5	noun
+サンドイッチ	サンドイッチ	bánh Sandwich			5	noun
+カレーライス	カレーライス	cơm cà ri			5	noun
+ジュース	ジュース	nước ép			5	noun

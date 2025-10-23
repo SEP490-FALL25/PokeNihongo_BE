@@ -1,20 +1,22 @@
 import { VocabularyType } from '@/modules/vocabulary/entities/vocabulary.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
+import { VocabularySortField, VocabularySortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class VocabularyRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: {
-        page: number
-        limit: number
+        currentPage: number
+        pageSize: number
         search?: string
-        wordJp?: string
-        reading?: string
+        levelN?: number
+        sortBy?: VocabularySortField
+        sort?: VocabularySortOrder
     }) {
-        const { page, limit, search, wordJp, reading } = params
-        const skip = (page - 1) * limit
+        const { currentPage, pageSize, search, levelN, sortBy = VocabularySortField.CREATED_AT, sort = VocabularySortOrder.DESC } = params
+        const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
 
@@ -25,20 +27,19 @@ export class VocabularyRepository {
             ]
         }
 
-        if (wordJp) {
-            where.wordJp = { contains: wordJp, mode: 'insensitive' }
-        }
-
-        if (reading) {
-            where.reading = { contains: reading, mode: 'insensitive' }
+        if (levelN) {
+            where.levelN = levelN
         }
 
         const [items, total] = await Promise.all([
             this.prismaService.vocabulary.findMany({
                 where,
                 skip,
-                take: limit,
-                orderBy: { createdAt: 'desc' }
+                take: pageSize,
+                orderBy: { [sortBy]: sort },
+                include: {
+                    wordType: true
+                }
             }),
             this.prismaService.vocabulary.count({ where })
         ])
@@ -46,8 +47,8 @@ export class VocabularyRepository {
         return {
             items: items.map(item => this.transformVocabulary(item)),
             total,
-            page,
-            limit
+            page: currentPage,
+            limit: pageSize
         }
     }
 
@@ -55,14 +56,20 @@ export class VocabularyRepository {
         if (!where.id) return null
 
         const result = await this.prismaService.vocabulary.findUnique({
-            where: { id: where.id }
+            where: { id: where.id },
+            include: {
+                wordType: true
+            }
         })
         return result ? this.transformVocabulary(result) : null
     }
 
     async findFirst(where: { wordJp: string }): Promise<VocabularyType | null> {
         const result = await this.prismaService.vocabulary.findFirst({
-            where
+            where,
+            include: {
+                wordType: true
+            }
         })
         return result ? this.transformVocabulary(result) : null
     }
@@ -107,12 +114,57 @@ export class VocabularyRepository {
         return this.prismaService.vocabulary.count({ where })
     }
 
+    async getStatistics() {
+        // Sử dụng 2 queries thay vì 7 queries để giảm số lượng kết nối database
+        const [vocabularyStats, totalKanji] = await Promise.all([
+            // Query 1: Lấy thống kê vocabulary theo levelN
+            this.prismaService.vocabulary.groupBy({
+                by: ['levelN'],
+                _count: {
+                    levelN: true
+                }
+            }),
+            // Query 2: Đếm tổng số kanji
+            this.prismaService.kanji.count()
+        ])
+
+        // Tính tổng vocabulary
+        const totalVocabulary = vocabularyStats.reduce((sum, stat) => sum + stat._count.levelN, 0)
+
+        // Khởi tạo object kết quả với giá trị mặc định
+        const result = {
+            totalVocabulary,
+            totalKanji,
+            vocabularyN5: 0,
+            vocabularyN4: 0,
+            vocabularyN3: 0,
+            vocabularyN2: 0,
+            vocabularyN1: 0
+        }
+
+        // Cập nhật số lượng vocabulary theo từng level
+        vocabularyStats.forEach(stat => {
+            if (stat.levelN === 5) result.vocabularyN5 = stat._count.levelN
+            else if (stat.levelN === 4) result.vocabularyN4 = stat._count.levelN
+            else if (stat.levelN === 3) result.vocabularyN3 = stat._count.levelN
+            else if (stat.levelN === 2) result.vocabularyN2 = stat._count.levelN
+            else if (stat.levelN === 1) result.vocabularyN1 = stat._count.levelN
+        })
+
+        return result
+    }
+
     private transformVocabulary(vocabulary: any): VocabularyType {
         return {
             ...vocabulary,
-            imageUrl: vocabulary.imageUrl || undefined,
-            audioUrl: vocabulary.audioUrl || undefined,
-            createdById: vocabulary.createdById || undefined
+            imageUrl: vocabulary.imageUrl || null,
+            audioUrl: vocabulary.audioUrl || null,
+            createdById: vocabulary.createdById || null,
+            wordType: vocabulary.wordType ? {
+                id: vocabulary.wordType.id,
+                nameKey: vocabulary.wordType.nameKey,
+                name: undefined // Will be resolved by service layer
+            } : null
         }
     }
 

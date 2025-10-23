@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { TranslationSortField, SortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -81,7 +82,9 @@ export const GetTranslationListQuerySchema = z.object({
     limit: z.string().transform((val) => parseInt(val, 10)).default('10'),
     search: z.string().optional(),
     languageId: z.string().transform((val) => parseInt(val, 10)).optional(),
-    key: z.string().optional()
+    key: z.string().optional(),
+    sortBy: z.nativeEnum(TranslationSortField).optional().default(TranslationSortField.CREATED_AT),
+    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
 
 export const GetTranslationsByKeyQuerySchema = z.object({
@@ -116,10 +119,13 @@ export const TranslationListResSchema = z
     .object({
         statusCode: z.number(),
         data: z.object({
-            items: z.array(TranslationSchema),
-            total: z.number(),
-            page: z.number(),
-            limit: z.number()
+            results: z.array(TranslationSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
         }),
         message: z.string()
     })

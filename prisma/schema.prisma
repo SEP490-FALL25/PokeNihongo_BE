@@ -9,19 +9,21 @@ datasource db {
 }
 
 model User {
-  id                         Int                 @id @default(autoincrement())
-  email                      String              @unique @db.VarChar(500)
-  name                       String              @db.VarChar(500)
-  password                   String              @db.VarChar(500)
-  phoneNumber                String?             @db.VarChar(11)
-  avatar                     String?             @db.VarChar(1000)
-  status                     UserStatus          @default(INACTIVE)
-  roleId                     Int
-  role                       Role                @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  levelId                    Int?
-  level                      Level?              @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  devices                    Device[] // Liên kết 1-n với Device
-  refreshTokens              RefreshToken[]
+  id           Int        @id @default(autoincrement())
+  email        String     @unique @db.VarChar(500)
+  name         String     @db.VarChar(500)
+  password     String     @db.VarChar(500)
+  phoneNumber  String?    @db.VarChar(11)
+  avatar       String?    @db.VarChar(1000)
+  status       UserStatus @default(INACTIVE)
+  premiumCoins Int        @default(0)
+  freeCoins    Int        @default(0)
+  exp          Int        @default(0)
+  roleId       Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  levelId      Int?
+  level        Level?     @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
   createdPermissions         Permission[]        @relation("PermissionCreatedBy")
   updatedPermissions         Permission[]        @relation("PermissionUpdatedBy")
   deletedPermissions         Permission[]        @relation("PermissionDeletedBy")
@@ -45,11 +47,33 @@ model User {
   createdTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessCreatedBy")
   updatedTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessUpdatedBy")
   deletedTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessDeletedBy")
+  createdDailyRequest        DailyRequest[]      @relation("DailyRequestCreatedBy")
+  updatedDailyRequest        DailyRequest[]      @relation("DailyRequestUpdatedBy")
+  deletedDailyRequest        DailyRequest[]      @relation("DailyRequestDeletedBy")
+  createdUserDailyRequest    UserDailyRequest[]  @relation("UserDailyRequestCreatedBy")
+  updatedUserDailyRequest    UserDailyRequest[]  @relation("UserDailyRequestUpdatedBy")
+  deletedUserDailyRequest    UserDailyRequest[]  @relation("UserDailyRequestDeletedBy")
+  createdAchievements        Achievement[]       @relation("AchievementCreatedBy")
+  updatedAchievements        Achievement[]       @relation("AchievementUpdatedBy")
+  deletedAchievements        Achievement[]       @relation("AchievementDeletedBy")
+  createdUserAchievements    UserAchievement[]   @relation("UserAchievementCreatedBy")
+  updatedUserAchievements    UserAchievement[]   @relation("UserAchievementUpdatedBy")
+  deletedUserAchievements    UserAchievement[]   @relation("UserAchievementDeletedBy")
+  createdAchievementGroups   AchievementGroup[]  @relation("AchievementGroupCreatedBy")
+  updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
+  deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
+  createdQuestionBanks       Question_Bank[]     @relation("QuestionBankCreatedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
   // Tự quan hệ 1-n
-  userPokemons UserPokemon[]
+  devices              Device[] // Liên kết 1-n với Device
+  refreshTokens        RefreshToken[]
+  userDailyRequests    UserDailyRequest[]
+  userPokemons         UserPokemon[]
+  userAchievements     UserAchievement[]
+  userExerciseAttempts UserExerciseAttempt[]
+  userProgresses       UserProgress[]
 
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -310,9 +334,11 @@ model Reward {
   deletedBy   User? @relation("RewardDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   // Timestamps
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  DailyRequest DailyRequest[]
+  Achievement  Achievement[]
 }
 
 model Level {
@@ -406,7 +432,6 @@ model UserPokemon {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@unique([userId, nickname]) // optional: mỗi user không có 2 con trùng nickname (NULL cho phép)
   @@index([userId])
   @@index([pokemonId])
 }
@@ -463,6 +488,416 @@ model TypeEffectiveness {
   @@unique([attackerId, defenderId]) // tránh trùng
 }
 
+// Model LessonCategory (Danh mục bài học)
+model LessonCategory {
+  id        Int      @id @default(autoincrement())
+  nameKey   String   @unique @db.VarChar(200) // Key để dịch tên danh mục
+  slug      String   @unique @db.VarChar(200) // URL slug cho danh mục
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan hệ với Lesson
+  lessons Lesson[]
+
+  @@index([nameKey])
+  @@index([slug])
+}
+
+// Model Lesson (Bài học)
+model Lesson {
+  id                   Int       @id @default(autoincrement())
+  slug                 String    @unique @db.VarChar(200) // URL slug cho bài học
+  titleJp              String    @db.VarChar(500) // Tiêu đề bài học bằng tiếng Nhật
+  titleKey             String    @db.VarChar(500) // Key để dịch tiêu đề bài học
+  levelJlpt            Int? // Cấp độ JLPT (1-5)
+  estimatedTimeMinutes Int       @default(30) // Thời gian ước tính hoàn thành (phút)
+  lessonOrder          Int       @default(0) // Thứ tự bài học trong danh mục
+  isPublished          Boolean   @default(false) // Trạng thái xuất bản
+  publishedAt          DateTime? // Thời gian xuất bản
+  version              String    @default("1.0.0") @db.VarChar(20) // Phiên bản bài học
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Quan hệ với LessonCategory
+  lessonCategoryId Int
+  lessonCategory   LessonCategory @relation(fields: [lessonCategoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  // Quan hệ với Reward
+  rewardId Int?
+  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  // Quan hệ với User (created_by)
+  createdById Int
+  createdBy   User @relation("LessonCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  // Quan hệ với LessonContents
+  lessonContents LessonContents[]
+
+  // Quan hệ với Exercises
+  exercises Exercises[]
+
+  // Quan hệ với UserProgress
+  userProgresses UserProgress[]
+
+  @@index([slug])
+  @@index([titleKey])
+  @@index([levelJlpt])
+  @@index([lessonCategoryId])
+  @@index([lessonOrder])
+  @@index([isPublished])
+  @@index([publishedAt])
+}
+
+// Model LessonContents (Nội dung bài học)
+model LessonContents {
+  id           Int      @id @default(autoincrement())
+  lessonId     Int // Foreign key đến Lesson
+  contentId    Int // Polymorphic foreign key
+  contentType  String   @db.VarChar(50) // Loại nội dung (vocabulary, grammar, kanji, etc.)
+  contentOrder Int      @default(0) // Thứ tự nội dung trong bài học
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Quan hệ với Lesson
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Polymorphic relationships (sẽ được xử lý trong service layer)
+  // contentId có thể trỏ đến Vocabulary.ID, Grammar.ID, hoặc Kanji.ID
+  // tùy thuộc vào giá trị của contentType
+
+  @@index([lessonId])
+  @@index([contentId])
+  @@index([contentType])
+  @@index([contentOrder])
+}
+
+// Model Exercises (Bài tập)
+model Exercises {
+  id           Int      @id @default(autoincrement())
+  exerciseType String   @db.VarChar(100) // Loại bài tập (multiple_choice, fill_blank, etc.)
+  content      String?  @db.Text // Nội dung mô tả bài tập
+  audioUrl     String?  @db.VarChar(1000) // URL file âm thanh
+  isBlocked    Boolean  @default(false) // Trạng thái bị chặn
+  price        Decimal? @db.Decimal(10, 2) // Giá bài tập (nếu có)
+  createdAt    DateTime @default(now()) @db.Timestamp(3)
+  updatedAt    DateTime @updatedAt @db.Timestamp(3)
+  lessonId     Int // Foreign key đến Lesson
+
+  // Quan hệ với Lesson
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Quan hệ với Question
+  questions Question[]
+
+  // Quan hệ với UserExerciseAttempt
+  userExerciseAttempts UserExerciseAttempt[]
+
+  @@index([lessonId])
+  @@index([exerciseType])
+  @@index([isBlocked])
+}
+
+// Model Question (Câu hỏi)
+model Question {
+  id            Int      @id @default(autoincrement())
+  questionJp    String?  @db.VarChar(1000) // Nội dung câu hỏi bằng tiếng Nhật
+  questionOrder Int      @default(0) // Thứ tự câu hỏi trong bài tập
+  questionKey   String?  @db.VarChar(200) // Key để dịch câu hỏi
+  createdAt     DateTime @default(now()) @db.Timestamp(3)
+  updatedAt     DateTime @updatedAt @db.Timestamp(3)
+  exercisesId   Int // Foreign key đến Exercises
+
+  // Quan hệ với Exercises
+  exercises Exercises @relation(fields: [exercisesId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Quan hệ với Answer
+  answers Answer[]
+
+  // Quan hệ với UserAnswerLog
+  userAnswerLogs UserAnswerLog[]
+
+  // Quan hệ với Question_Bank
+  questionBanks Question_Bank[]
+
+  @@index([exercisesId])
+  @@index([questionOrder])
+  @@index([questionKey])
+}
+
+// Model Answer (Câu trả lời)
+model Answer {
+  id         Int      @id @default(autoincrement())
+  answerJp   String?  @db.VarChar(1000) // Nội dung câu trả lời bằng tiếng Nhật
+  answerKey  String?  @db.VarChar(200) // Key để dịch câu trả lời
+  isCorrect  Boolean  @default(false) // Đánh dấu câu trả lời đúng
+  createdAt  DateTime @default(now()) @db.Timestamp(3)
+  updatedAt  DateTime @updatedAt @db.Timestamp(3)
+  questionId Int // Foreign key đến Question
+
+  // Quan hệ với Question
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Quan hệ với UserAnswerLog
+  userAnswerLogs UserAnswerLog[]
+
+  @@index([questionId])
+  @@index([answerKey])
+  @@index([isCorrect])
+}
+
+// Model UserExerciseAttempt (Lần thử bài tập của user)
+model UserExerciseAttempt {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  exerciseId Int
+  exercise   Exercises @relation(fields: [exerciseId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Quan hệ với UserAnswerLog
+  userAnswerLogs UserAnswerLog[]
+
+  @@index([userId])
+  @@index([exerciseId])
+}
+
+// Model UserAnswerLog (Log câu trả lời của user)
+model UserAnswerLog {
+  id                    Int                 @id @default(autoincrement())
+  isCorrect             Boolean             @default(false)
+  userExerciseAttemptId Int
+  userExerciseAttempt   UserExerciseAttempt @relation(fields: [userExerciseAttemptId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  questionId            Int
+  question              Question            @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  answerId              Int
+  answer                Answer              @relation(fields: [answerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([userExerciseAttemptId])
+  @@index([questionId])
+  @@index([answerId])
+}
+
+// Model Question_Bank (Ngân hàng câu hỏi)
+model Question_Bank {
+  id         Int                @id @default(autoincrement())
+  levelN     Int? // Cấp độ JLPT (1-5)
+  bankType   String             @db.VarChar(50) // Loại đề thi thử JLPT (vocabulary, grammar, kanji, listening, etc.)
+  status     QuestionBankStatus @default(DRAFT) // Trạng thái (DRAFT, ACTIVE, INACTIVE)
+  questionId Int
+  question   Question           @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  creatorId  Int?
+  creator    User?              @relation("QuestionBankCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([levelN])
+  @@index([bankType])
+  @@index([status])
+  @@index([questionId])
+  @@index([creatorId])
+}
+
+model Grammar {
+  id        Int      @id @default(autoincrement())
+  structure String   @db.VarChar(500)
+  level     String   @db.VarChar(10)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  usages GrammarUsage[]
+
+  @@index([level])
+  @@index([structure])
+}
+
+model GrammarUsage {
+  id                 Int      @id @default(autoincrement())
+  grammarId          Int
+  explanationKey     String   @db.VarChar(200)
+  exampleSentenceJp  String   @db.VarChar(1000)
+  exampleSentenceKey String   @db.VarChar(200)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  grammar Grammar @relation(fields: [grammarId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([grammarId])
+  @@index([explanationKey])
+}
+
+model DailyRequest {
+  id             Int                @id @default(autoincrement())
+  nameKey        String             @db.VarChar(200)
+  descriptionKey String             @db.VarChar(500)
+  conditionType  DailyConditionType // Loại điều kiện (LOGIN, COMPLETE_LESSON, STREAK_LOGIN, ...)
+  conditionValue Int // Giá trị cần đạt (VD: 1, 7, ...)
+  rewardId       Int? // Liên kết tới Reward
+  reward         Reward?            @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+  isActive       Boolean            @default(true)
+
+  userDailyRequests UserDailyRequest[]
+
+  //
+  createdById Int?
+  createdBy   User? @relation("DailyRequestCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("DailyRequestUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("DailyRequestDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model UserDailyRequest {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyRequestId Int
+  dailyRequest   DailyRequest @relation(fields: [dailyRequestId], references: [id], onDelete: Cascade)
+  progress       Int          @default(0) // Tiến độ hiện tại
+  isCompleted    Boolean      @default(false)
+  completedAt    DateTime?
+  date           DateTime // Ngày của nhiệm vụ (ví dụ: 2025-10-12)
+  //
+  createdById    Int?
+  createdBy      User?        @relation("UserDailyRequestCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById    Int?
+  updatedBy      User?        @relation("UserDailyRequestUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById    Int?
+  deletedBy      User?        @relation("UserDailyRequestDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, dailyRequestId, date])
+}
+
+// === BẢNG ĐỊNH NGHĨA TOÀN BỘ HUY HIỆU ===
+model AchievementGroup {
+  id             Int    @id @default(autoincrement())
+  nameKey        String
+  descriptionKey String // Mô tả, VD: "Dành cho người mới tham gia"
+  displayOrder   Int // Thứ tự hiển thị, VD: 1, 2, 3...
+
+  // Quan hệ: Một nhóm có thể chứa nhiều huy hiệu
+  achievements Achievement[]
+
+  createdById Int?
+  createdBy   User? @relation("AchievementGroupCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("AchievementGroupUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("AchievementGroupDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Achievement {
+  id Int @id @default(autoincrement())
+
+  // Thông tin cơ bản
+  nameKey        String // Tên huy hiệu, VD: "Ngọn Lửa Nhỏ"
+  descriptionKey String // Mô tả chi tiết
+  imageUrl       String? // Đường dẫn tới ảnh của huy hiệu
+
+  // Phân loại & Hiển thị
+  achievementTierType AchievementTierType?
+  // Điều kiện để nhận
+  conditionType       AchievementType // Loại điều kiện, VD: LEARNING_STREAK
+  conditionValue      Int? // Giá trị cần đạt, VD: 3 (cho 3 ngày)
+  conditionMeta       Json // Dữ liệu phức tạp, VD: {"pokemon_type": "FIRE"} hoặc {"pokemon_name": "Charizard"}
+
+  // Phần thưởng (nếu có)
+  rewardId Int? // Liên kết tới bảng Reward
+  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  groupId Int
+  group   AchievementGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Quan hệ: Một huy hiệu có thể được nhiều user sở hữu
+  userAchievements UserAchievement[]
+
+  createdById Int?
+  createdBy   User? @relation("AchievementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("AchievementUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("AchievementDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model UserAchievement {
+  id Int @id @default(autoincrement())
+
+  // Liên kết tới User nào?
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Liên kết tới Huy hiệu nào?
+  achievementId Int
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Thông tin thêm
+  achievedAt      DateTime @default(now()) // Thời điểm nhận được huy hiệu
+  isRewardClaimed Boolean  @default(false) // Đã nhận quà của huy hiệu này chưa?
+
+  createdById Int?
+  createdBy   User? @relation("UserAchievementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("UserAchievementUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("UserAchievementDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Đảm bảo một user chỉ nhận 1 huy hiệu 1 lần duy nhất
+  @@unique([userId, achievementId])
+}
+
+// Model UserProgress (Tiến độ học tập của user)
+model UserProgress {
+  id                 Int            @id @default(autoincrement())
+  userId             Int
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lessonId           Int
+  lesson             Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  status             ProgressStatus @default(NOT_STARTED)
+  progressPercentage Int            @default(0) // Phần trăm hoàn thành (0-100)
+  completedAt        DateTime? // Thời điểm hoàn thành
+  lastAccessedAt     DateTime       @default(now()) // Thời điểm truy cập cuối
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, lessonId]) // Một user chỉ có 1 tiến độ cho 1 lesson
+  @@index([userId])
+  @@index([lessonId])
+  @@index([status])
+  @@index([progressPercentage])
+  @@index([completedAt])
+}
+
+enum ProgressStatus {
+  NOT_STARTED // Chưa bắt đầu
+  IN_PROGRESS // Đang học
+  COMPLETED // Đã hoàn thành
+}
+
 enum VerificationCodeType {
   REGISTER
   FORGOT_PASSWORD
@@ -517,109 +952,36 @@ enum RarityPokemon {
   LEGENDARY
 }
 
-// Model LessonCategory (Danh mục bài học)
-model LessonCategory {
-  id        Int      @id @default(autoincrement())
-  nameKey   String   @unique @db.VarChar(200) // Key để dịch tên danh mục
-  slug      String   @unique @db.VarChar(200) // URL slug cho danh mục
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Quan hệ với Lesson
-  lessons Lesson[]
-
-  @@index([nameKey])
-  @@index([slug])
+enum DailyConditionType {
+  LOGIN // Đăng nhập hằng ngày
+  COMPLETE_LESSON // Hoàn thành 1 bài học
+  EXCERCISE
+  STREAK_LOGIN // Đăng nhập liên tục X ngày
+  STREAK_COMPLETE_LESSON // Hoàn thành liên tục X bài học
+  STREAK_EXERCISE // Hoàn thành liên tục X bài tập
 }
 
-// Model Lesson (Bài học)
-model Lesson {
-  id                   Int       @id @default(autoincrement())
-  slug                 String    @unique @db.VarChar(200) // URL slug cho bài học
-  titleJp              String    @db.VarChar(500) // Tiêu đề bài học bằng tiếng Nhật
-  titleKey             String    @db.VarChar(500) // Key để dịch tiêu đề bài học
-  levelJlpt            Int? // Cấp độ JLPT (1-5)
-  estimatedTimeMinutes Int       @default(30) // Thời gian ước tính hoàn thành (phút)
-  lessonOrder          Int       @default(0) // Thứ tự bài học trong danh mục
-  isPublished          Boolean   @default(false) // Trạng thái xuất bản
-  publishedAt          DateTime? // Thời gian xuất bản
-  version              String    @default("1.0.0") @db.VarChar(20) // Phiên bản bài học
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  // Quan hệ với LessonCategory
-  lessonCategoryId Int
-  lessonCategory   LessonCategory @relation(fields: [lessonCategoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  // Quan hệ với Reward
-  rewardId Int?
-  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-
-  // Quan hệ với User (created_by)
-  createdById Int
-  createdBy   User @relation("LessonCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  // Quan hệ với LessonContents
-  lessonContents LessonContents[]
-
-  @@index([slug])
-  @@index([titleKey])
-  @@index([levelJlpt])
-  @@index([lessonCategoryId])
-  @@index([lessonOrder])
-  @@index([isPublished])
-  @@index([publishedAt])
+enum AchievementTierType {
+  BASIC // Cơ bản
+  INTERMEDIATE // Trung cấp
+  ADVANCED // Nâng cao
+  MASTER // Cao thủ
 }
 
-// Model LessonContents (Nội dung bài học)
-model LessonContents {
-  id           Int      @id @default(autoincrement())
-  lessonId     Int // Foreign key đến Lesson
-  contentId    Int // Polymorphic foreign key
-  contentType  String   @db.VarChar(50) // Loại nội dung (vocabulary, grammar, kanji, etc.)
-  contentOrder Int      @default(0) // Thứ tự nội dung trong bài học
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Quan hệ với Lesson
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  // Polymorphic relationships (sẽ được xử lý trong service layer)
-  // contentId có thể trỏ đến Vocabulary.ID, Grammar.ID, hoặc Kanji.ID
-  // tùy thuộc vào giá trị của contentType
-
-  @@index([lessonId])
-  @@index([contentId])
-  @@index([contentType])
-  @@index([contentOrder])
+enum AchievementType {
+  COMPLETE_LESSON // Hoàn thành bài học (value: 1 = bài đầu tiên)
+  CHOOSE_STARTER_POKEMON // Chọn Pokémon khởi đầu
+  PLACEMENT_TEST_DONE // Hoàn thành bài kiểm tra đầu vào
+  LEARNING_STREAK // Chuỗi ngày học (value: 3, 7, 30, 100)
+  CAPTURE_POKEMON_COUNT // Sở hữu X Pokémon (value: 10)
+  CAPTURE_TYPE_COLLECTION // Thu thập đủ Pokémon 1 hệ (meta: {"type": "GRASS"})
+  CAPTURE_ALL_POKEMON // Hoàn thành Pokédex (value: 151)
+  CAPTURE_LEGENDARY // Bắt được Pokémon huyền thoại
+  EVOLVE_POKEMON_FINAL // Tiến hóa Pokémon lên dạng cuối (meta: {"pokemon_name": "Charizard"})
 }
 
-model Grammar {
-  id        Int      @id @default(autoincrement())
-  structure String   @db.VarChar(500)
-  level     String   @db.VarChar(10)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  usages GrammarUsage[]
-
-  @@index([level])
-  @@index([structure])
-}
-
-model GrammarUsage {
-  id                 Int      @id @default(autoincrement())
-  grammarId          Int
-  explanationKey     String   @db.VarChar(200)
-  exampleSentenceJp  String   @db.VarChar(1000)
-  exampleSentenceKey String   @db.VarChar(200)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  // Relations
-  grammar Grammar @relation(fields: [grammarId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([grammarId])
-  @@index([explanationKey])
+enum QuestionBankStatus {
+  DRAFT // Bản nháp
+  ACTIVE // Đang hoạt động
+  INACTIVE // Không hoạt động
 }

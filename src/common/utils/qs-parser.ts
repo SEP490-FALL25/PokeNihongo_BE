@@ -1,15 +1,23 @@
 import { BadRequestException } from '@nestjs/common'
 
-type QSResult = {
+export type QSResult = {
   where?: Record<string, any>
   orderBy?: Record<string, 'asc' | 'desc'>
 }
 
+/**
+ * parseQs
+ * @param qs query string, ví dụ:
+ * qs=sort:-createdAt,rarity:eq=LEGENDARY,types:some=1|2,nameTranslations.vi:like=Shishiko
+ * @param validFields danh sách field hợp lệ
+ * @param relationFields array của relation fields (Prisma some)
+ * @param arrayFields array của scalar array fields (Prisma has/hasSome)
+ */
 export function parseQs(
   qs?: string,
   validFields?: string[],
-  relationFields: string[] = [], // relation array fields
-  arrayFields: string[] = [] // scalar array fields
+  relationFields: string[] = [],
+  arrayFields: string[] = []
 ): QSResult {
   if (!qs) return {}
 
@@ -29,7 +37,7 @@ export function parseQs(
 
       if (validFields && !validFields.includes(field)) {
         throw new BadRequestException(
-          `Not valid field: ${field}. All field need in: ${validFields.join(', ')}`
+          `Not valid field: ${field}. All field need in: ${validFields.join(' ')}`
         )
       }
 
@@ -41,16 +49,17 @@ export function parseQs(
     const [left, value] = part.split('=')
     if (!left || value === undefined) continue
 
-    const tokens = left.split(':')
+    const tokens = left.split(':') // [field, operator/option]
     const field = tokens[0]
+    const opOrOption = tokens[1] || 'eq'
 
     if (validFields && !validFields.includes(field)) {
       throw new BadRequestException(
-        `Not valid field: ${field}. All field need in: ${validFields.join(', ')}`
+        `Not valid field: ${field}. All field need in: ${validFields.join(' ')}`
       )
     }
 
-    // --- Parse giá trị ---
+    // --- Parse value ---
     let parsedValue: any
     if (value.includes('|')) {
       parsedValue = value.split('|').map((v) => {
@@ -66,33 +75,80 @@ export function parseQs(
       else parsedValue = value
     }
 
-    // --- Relation array field (Prisma "some") ---
+    // --- Relation array field (Prisma some) ---
     if (relationFields.includes(field)) {
+      let targetField = 'id'
+      if (field === 'types')
+        targetField =
+          typeof parsedValue === 'number' ||
+          (Array.isArray(parsedValue) && typeof parsedValue[0] === 'number')
+            ? 'id'
+            : 'type_name'
+
       if (Array.isArray(parsedValue)) {
-        where[field] = { some: { type_name: { in: parsedValue } } }
+        where.AND = where.AND || []
+        for (const val of parsedValue) {
+          where.AND.push({ [field]: { some: { [targetField]: val } } })
+        }
       } else {
-        where[field] = { some: { type_name: parsedValue } }
+        where[field] = { some: { [targetField]: parsedValue } }
       }
       continue
     }
 
-    // --- Scalar array field ---
-    if (arrayFields.includes(field)) {
+    // --- Scalar array fields ---
+    const arrayFieldPatterns = [
+      'rarities',
+      'tags',
+      'categories',
+      'skills',
+      'abilities',
+      'items',
+      'languages',
+      'statuses',
+      'codes',
+      'values'
+    ]
+    const isAutoArrayField = arrayFieldPatterns.some(
+      (pattern) =>
+        field === pattern ||
+        field.endsWith('Ids') ||
+        (field.endsWith('s') && !relationFields.includes(field))
+    )
+
+    if (arrayFields.includes(field) || isAutoArrayField) {
       if (Array.isArray(parsedValue)) {
-        where[field] = { hasSome: parsedValue } // Prisma array filter
+        // OR logic
+        where.OR = where.OR || []
+        for (const val of parsedValue) {
+          where.OR.push({ [field]: { has: val } })
+        }
       } else {
         where[field] = { has: parsedValue }
       }
       continue
     }
 
-    // --- Scalar normal field ---
-    if (tokens.length === 1) {
+    // --- Nested JSON fields ---
+    if (field.includes('.')) {
+      const [root, nested] = field.split('.')
+      if (opOrOption === 'like') {
+        where[root] = {
+          path: [nested],
+          string_contains: parsedValue,
+          mode: 'insensitive'
+        }
+      } else {
+        where[root] = { path: [nested], equals: parsedValue }
+      }
+      continue
+    }
+
+    // --- Scalar normal fields ---
+    if (opOrOption === 'like') {
+      where[field] = { contains: parsedValue, mode: 'insensitive' }
+    } else {
       where[field] = parsedValue
-    } else if (tokens.length === 2) {
-      const op = tokens[1]
-      if (op === 'eq') where[field] = parsedValue
-      else if (op === 'like') where[field] = { contains: value, mode: 'insensitive' }
     }
   }
 

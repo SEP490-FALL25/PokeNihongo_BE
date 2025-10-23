@@ -37,8 +37,17 @@ export class GrammarService {
 
             this.logger.log(`Found ${result.data.length} grammar entries`)
             return {
-                ...result,
-                message: 'Lấy danh sách ngữ pháp thành công'
+                statusCode: 200,
+                message: 'Lấy danh sách ngữ pháp thành công',
+                data: {
+                    results: result.data,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
             }
         } catch (error) {
             this.logger.error('Error getting grammar list:', error)
@@ -50,7 +59,7 @@ export class GrammarService {
         try {
             this.logger.log(`Getting grammar by id: ${params.id}`)
 
-            const grammar = await this.grammarRepository.findById(params.id)
+            const grammar = await this.grammarRepository.findByIdWithTranslations(params.id)
 
             if (!grammar) {
                 throw new GrammarNotFoundException()
@@ -73,7 +82,7 @@ export class GrammarService {
     }
     //#endregion
 
-    ////#region Create Grammar
+    //#region Create Grammar
     async createGrammar(data: CreateGrammarBodyType) {
         try {
             this.logger.log('Creating grammar with data:', data)
@@ -98,37 +107,43 @@ export class GrammarService {
 
                 let grammarUsage: any = null
                 let translationsCreated = 0
-                let explanationKey = ''
-                let exampleSentenceKey = ''
 
                 // 2. Create GrammarUsage if provided
                 if (data.usage) {
+                    // Generate keys first
+                    const tempId = Date.now() // Use timestamp as temporary ID
+                    const explanationKey = `grammar.${grammar.id}.usage.${tempId}.explanation`
+                    const exampleSentenceKey = `grammar.${grammar.id}.usage.${tempId}.example`
+
                     grammarUsage = await tx.grammarUsage.create({
                         data: {
                             grammarId: grammar.id,
-                            explanationKey: 'temp', // Temporary key
+                            explanationKey: explanationKey,
                             exampleSentenceJp: data.usage.exampleSentenceJp,
-                            exampleSentenceKey: 'temp' // Temporary key
+                            exampleSentenceKey: exampleSentenceKey
                         }
                     })
                     this.logger.log(`Created grammar usage: ${grammarUsage.id}`)
 
-                    // Generate keys with actual GrammarUsage ID
-                    explanationKey = `grammar.${grammar.id}.usage.${grammarUsage.id}.explanation`
-                    exampleSentenceKey = `grammar.${grammar.id}.usage.${grammarUsage.id}.example`
+                    // Update keys with actual GrammarUsage ID
+                    const finalExplanationKey = `grammar.${grammar.id}.usage.${grammarUsage.id}.explanation`
+                    const finalExampleSentenceKey = `grammar.${grammar.id}.usage.${grammarUsage.id}.example`
 
-                    // Update with correct keys
                     await tx.grammarUsage.update({
                         where: { id: grammarUsage.id },
                         data: {
-                            explanationKey: explanationKey,
-                            exampleSentenceKey: exampleSentenceKey
+                            explanationKey: finalExplanationKey,
+                            exampleSentenceKey: finalExampleSentenceKey
                         }
                     })
+
+                    // Update the keys for translation creation
+                    grammarUsage.explanationKey = finalExplanationKey
+                    grammarUsage.exampleSentenceKey = finalExampleSentenceKey
                 }
 
                 // 3. Create translations if provided
-                if (data.translations) {
+                if (data.translations && grammarUsage && data.translations.usage) {
                     const allTranslations: any[] = []
 
                     // Get language mappings
@@ -136,36 +151,48 @@ export class GrammarService {
                     const languageMap = Object.fromEntries(
                         languages.map(lang => [lang.code, lang.id])
                     )
+                    this.logger.log('Available languages:', languageMap)
 
-                    // Create usage translations if grammarUsage exists
-                    if (grammarUsage && data.translations.usage) {
-                        for (const translation of data.translations.usage) {
-                            const languageId = languageMap[translation.language_code]
-                            if (languageId) {
-                                // Explanation translation
-                                allTranslations.push({
-                                    key: explanationKey,
-                                    value: translation.explanation,
-                                    languageId: languageId
-                                })
-                                // Example translation
-                                allTranslations.push({
-                                    key: exampleSentenceKey,
-                                    value: translation.example,
-                                    languageId: languageId
-                                })
-                            }
+                    this.logger.log(`Creating translations for grammar usage ${grammarUsage.id}`)
+                    this.logger.log('Usage translations:', data.translations.usage)
+
+                    for (const translation of data.translations.usage) {
+                        const languageId = languageMap[translation.language_code]
+                        this.logger.log(`Processing ${translation.language_code}:`, {
+                            languageId,
+                            explanation: translation.explanation,
+                            example: translation.example
+                        })
+
+                        if (languageId) {
+                            // Explanation translation
+                            allTranslations.push({
+                                key: grammarUsage.explanationKey,
+                                value: translation.explanation,
+                                languageId: languageId
+                            })
+                            // Example translation
+                            allTranslations.push({
+                                key: grammarUsage.exampleSentenceKey,
+                                value: translation.example,
+                                languageId: languageId
+                            })
+                        } else {
+                            this.logger.warn(`Language ${translation.language_code} not found in database`)
                         }
                     }
 
                     // Bulk create translations
                     if (allTranslations.length > 0) {
-                        await tx.translation.createMany({
+                        this.logger.log(`Creating ${allTranslations.length} translations`)
+                        const createResult = await tx.translation.createMany({
                             data: allTranslations,
                             skipDuplicates: true
                         })
-                        translationsCreated = allTranslations.length
-                        this.logger.log(`Created ${translationsCreated} translations`)
+                        translationsCreated = createResult.count
+                        this.logger.log(`Successfully created ${translationsCreated} translations`)
+                    } else {
+                        this.logger.log('No translations to create')
                     }
                 }
 
@@ -177,6 +204,7 @@ export class GrammarService {
             })
 
             this.logger.log(`Grammar creation completed: ${result.grammar.id}`)
+
             return {
                 data: {
                     ...result.grammar,
@@ -197,6 +225,43 @@ export class GrammarService {
             }
 
             throw new InvalidGrammarDataException('Lỗi khi tạo ngữ pháp')
+        }
+    }
+
+    async createGrammarBasic(data: { structure: string; level: string }) {
+        try {
+            this.logger.log('Creating basic grammar with data:', data)
+
+            // Check if structure already exists
+            const structureExists = await this.grammarRepository.checkStructureExists(data.structure)
+            if (structureExists) {
+                throw new GrammarAlreadyExistsException()
+            }
+
+            // Create grammar without usage
+            const grammar = await this.grammarRepository.create({
+                structure: data.structure,
+                level: data.level
+            })
+
+            this.logger.log(`Created basic grammar: ${grammar.id}`)
+
+            return {
+                data: grammar,
+                message: 'Tạo ngữ pháp cơ bản thành công'
+            }
+        } catch (error) {
+            this.logger.error('Error creating basic grammar:', error)
+
+            if (error instanceof GrammarAlreadyExistsException) {
+                throw error
+            }
+
+            if (isUniqueConstraintPrismaError(error)) {
+                throw new GrammarAlreadyExistsException()
+            }
+
+            throw new InvalidGrammarDataException('Lỗi khi tạo ngữ pháp cơ bản')
         }
     }
     //#endregion

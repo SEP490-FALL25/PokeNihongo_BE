@@ -5,13 +5,14 @@ import {
     UpdateGrammarBodyType,
     GetGrammarListQueryType,
 } from './entities/grammar.entities'
+import { GrammarSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class GrammarRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetGrammarListQueryType) {
-        const { page, limit, level, search } = params
+        const { page, limit, level, search, sortBy = GrammarSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -30,10 +31,7 @@ export class GrammarRepository {
         const [data, total] = await Promise.all([
             this.prismaService.grammar.findMany({
                 where,
-                orderBy: [
-                    { level: 'asc' },
-                    { createdAt: 'desc' }
-                ],
+                orderBy: { [sortBy]: sort },
                 skip,
                 take: limit,
             }),
@@ -51,8 +49,70 @@ export class GrammarRepository {
 
     async findById(id: number) {
         return this.prismaService.grammar.findUnique({
-            where: { id }
+            where: { id },
+            include: {
+                usages: {
+                    include: {
+                        grammar: true
+                    }
+                }
+            }
         })
+    }
+
+    async findByIdWithTranslations(id: number) {
+        const grammar = await this.prismaService.grammar.findUnique({
+            where: { id },
+            include: {
+                usages: {
+                    include: {
+                        grammar: true
+                    }
+                }
+            }
+        })
+
+        if (!grammar) {
+            return null
+        }
+
+        // Get translations for all usage keys
+        const usageKeys = grammar.usages.flatMap(usage => [
+            usage.explanationKey,
+            usage.exampleSentenceKey
+        ])
+
+        const translations = await this.prismaService.translation.findMany({
+            where: {
+                key: {
+                    in: usageKeys
+                }
+            },
+            include: {
+                language: true
+            }
+        })
+
+        // Group translations by key
+        const translationsByKey = translations.reduce((acc, translation) => {
+            if (!acc[translation.key]) {
+                acc[translation.key] = []
+            }
+            acc[translation.key].push(translation)
+            return acc
+        }, {} as Record<string, any[]>)
+
+        // Add translations to usages
+        const usagesWithTranslations = grammar.usages.map(usage => ({
+            ...usage,
+            explanationTranslations: translationsByKey[usage.explanationKey] || [],
+            exampleTranslations: translationsByKey[usage.exampleSentenceKey] || []
+        }))
+
+        return {
+            ...grammar,
+            usages: usagesWithTranslations
+        }
     }
 
     async create(data: CreateGrammarBodyType) {

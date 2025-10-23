@@ -169,7 +169,12 @@ export class PokemonRepo {
   }
 
   async list(pagination: PaginationQueryType) {
-    const { where, orderBy } = parseQs(pagination.qs, POKEMON_FIELDS)
+    const { where, orderBy } = parseQs(
+      pagination.qs,
+      POKEMON_FIELDS,
+      ['types', 'rarities'], // relation fields - types là relation với ElementalType
+      [] // array fields
+    )
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
@@ -210,6 +215,50 @@ export class PokemonRepo {
             },
             where: {
               deletedAt: null
+            }
+          }
+        },
+        orderBy,
+        skip,
+        take
+      })
+    ])
+
+    return {
+      results: data,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
+    }
+  }
+
+  async getPokemonListWithPokemonUser(pagination: PaginationQueryType) {
+    const { where, orderBy } = parseQs(
+      pagination.qs,
+      POKEMON_FIELDS,
+      ['types', 'rarities'], // relation fields - types là relation với ElementalType
+      [] // array fields
+    )
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.pokemon.count({
+        where: { deletedAt: null, ...where }
+      }),
+      this.prismaService.pokemon.findMany({
+        where: { deletedAt: null, ...where },
+        include: {
+          types: {
+            select: {
+              id: true,
+              type_name: true,
+              display_name: true,
+              color_hex: true
             }
           }
         },

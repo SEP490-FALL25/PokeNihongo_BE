@@ -10,8 +10,10 @@ import {
   CreateUserPokemonResDTO,
   EvolvePokemonBodyDTO,
   EvolvePokemonResDTO,
+  GetUserPokemonAddExpDetailResDTO,
   GetUserPokemonDetailResDTO,
   GetUserPokemonParamsDTO,
+  GetUserPokemonStatsResDTO,
   UpdateUserPokemonBodyDTO,
   UpdateUserPokemonResDTO
 } from './dto/user-pokemon.dto'
@@ -19,7 +21,7 @@ import { UserPokemonService } from './user-pokemon.service'
 
 @Controller('user-pokemon')
 export class UserPokemonController {
-  constructor(private readonly userPokemonService: UserPokemonService) {}
+  constructor(private readonly userPokemonService: UserPokemonService) { }
 
   @Get()
   @ZodSerializerDto(PaginationResponseDTO)
@@ -29,6 +31,30 @@ export class UserPokemonController {
     @I18nLang() lang: string
   ) {
     return this.userPokemonService.list(query, userId, lang)
+  }
+
+  @Get('user/pokemons/stats')
+  @ZodSerializerDto(GetUserPokemonStatsResDTO)
+  getUserPokemonStats(
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userPokemonService.getUserPokemonStats(userId, lang)
+  }
+
+  @Get('user/pokemons')
+  @ZodSerializerDto(PaginationResponseDTO)
+  getPokemonListWithUser(
+    @Query() query: PaginationQueryDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userPokemonService.getPokemonListWithUser(query, userId, lang)
+  }
+
+  @Get('/pokemons')
+  getWithUserId(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
+    return this.userPokemonService.listWithUserId(userId, lang)
   }
 
   @Post(':userPokemonId/evolve')
@@ -103,7 +129,7 @@ export class UserPokemonController {
   }
 
   @Post(':userPokemonId/add-exp')
-  @ZodSerializerDto(GetUserPokemonDetailResDTO)
+  @ZodSerializerDto(GetUserPokemonAddExpDetailResDTO)
   addExp(
     @Param() params: GetUserPokemonParamsDTO,
     @Body() body: AddExpBodyDTO,

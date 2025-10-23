@@ -4,7 +4,8 @@ import {
     UpdateMeaningSchema,
     GetMeaningByIdParamsSchema,
     GetMeaningListQuerySchema,
-    MeaningSchema
+    MeaningSchema,
+    MeaningListResSchema
 } from '../../entities/meaning.entities'
 
 // Zod DTOs
@@ -13,3 +14,4 @@ export class UpdateMeaningBodyDTO extends createZodDto(UpdateMeaningSchema) { }
 export class GetMeaningByIdParamsDTO extends createZodDto(GetMeaningByIdParamsSchema) { }
 export class GetMeaningListQueryDTO extends createZodDto(GetMeaningListQuerySchema) { }
 export class MeaningResponseDTO extends createZodDto(MeaningSchema) { }
+export class MeaningListResDTO extends createZodDto(MeaningListResSchema) { }

@@ -82,22 +82,6 @@ export class LanguagesController {
         return this.languagesService.findMany(query)
     }
 
-    @Get('all')
-    @ApiBearerAuth()
-    @ApiOperation({
-        summary: 'Lấy tất cả ngôn ngữ được hỗ trợ',
-        description: 'Lấy danh sách tất cả ngôn ngữ được hỗ trợ trong hệ thống'
-    })
-    @ApiResponse({
-        status: 200,
-        description: 'Lấy tất cả ngôn ngữ thành công',
-        type: [LanguagesSwaggerResponseDTO]
-    })
-    @ZodSerializerDto(LanguagesListResDTO)
-    getAllSupportedLanguages() {
-        return this.languagesService.getAllSupportedLanguages()
-    }
-
     @Get('check/:code')
     @ApiBearerAuth()
     @ApiOperation({

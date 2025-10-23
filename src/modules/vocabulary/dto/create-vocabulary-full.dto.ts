@@ -45,7 +45,7 @@ export const CreateVocabularyFullMultipartSchema = z.object({
 })
 
 // Zod DTOs
-export class CreateVocabularyFullDTO extends createZodDto(CreateVocabularyFullSchema) { }
+
 export class CreateVocabularyFullMultipartDTO extends createZodDto(CreateVocabularyFullMultipartSchema) { }
 
 // Swagger DTOs for documentation
@@ -256,17 +256,19 @@ export class VocabularyDataSwaggerDTO {
 
     @ApiProperty({
         example: 'https://res.cloudinary.com/dodtzdovx/image/upload/v1759606962/vocabulary/images/file_ghkhw2.webp',
-        description: 'URL hình ảnh',
-        required: false
+        description: 'URL hình ảnh (có thể là null)',
+        required: false,
+        nullable: true
     })
-    imageUrl?: string
+    imageUrl?: string | null
 
     @ApiProperty({
         example: 'https://res.cloudinary.com/dodtzdovx/video/upload/v1759606961/vocabulary/audio/file_yco4a0.mp3',
-        description: 'URL âm thanh',
-        required: false
+        description: 'URL âm thanh (có thể là null)',
+        required: false,
+        nullable: true
     })
-    audioUrl?: string
+    audioUrl?: string | null
 
     @ApiProperty({
         example: '2025-10-04T19:42:43.416Z',
@@ -350,8 +352,8 @@ const VocabularyDataResponseSchema = z.object({
     levelN: z.number().optional(),
     wordTypeId: z.number().optional(),
     createdById: z.number().optional(),
-    imageUrl: z.string().optional(),
-    audioUrl: z.string().optional(),
+    imageUrl: z.string().nullable().optional(),
+    audioUrl: z.string().nullable().optional(),
     createdAt: z.date(),
     updatedAt: z.date()
 })

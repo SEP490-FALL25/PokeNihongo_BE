@@ -10,30 +10,25 @@ import {
     KanjiResponseDTO,
     KanjiListResponseDTO,
     KanjiResDTO,
-    KanjiListResDTO
-} from './dto/kanji.dto'
-import {
-    CreateKanjiWithMeaningsBodyDTO,
-    CreateKanjiWithMeaningsBodyType,
-    KanjiWithMeaningsResponseDTO,
-    KanjiWithMeaningsResDTO,
-    CreateKanjiWithMeaningsSwaggerDTO,
-    KanjiWithMeaningsResponseSwaggerDTO
-} from './dto/kanji-with-meanings.dto'
+    KanjiListResDTO,
+    KanjiManagementListResDTO
+} from './dto/zod/kanji.zod-dto'
+import { CreateKanjiWithMeaningsSwaggerDTO, KanjiWithMeaningsResponseSwaggerDTO } from './dto/kanji-with-meanings.dto'
+import { CreateKanjiWithMeaningsBodyDTO, KanjiWithMeaningsResDTO } from './dto/zod/kanji-with-meanings.zod-dto'
 import {
     UpdateKanjiWithMeaningsBodyType,
     UpdateKanjiWithMeaningsResponseType,
     UpdateKanjiWithMeaningsSwaggerDTO,
     UpdateKanjiWithMeaningsResponseSwaggerDTO
 } from './dto/update-kanji-with-meanings.dto'
-import {
-    UpdateKanjiWithMeaningsResDTO
-} from './dto/zod/update-kanji.zod-dto'
+import { UpdateKanjiWithMeaningsBodyDTO, UpdateKanjiWithMeaningsResDTO } from './dto/zod/update-kanji.zod-dto'
 import {
     CreateKanjiSwaggerDTO,
     UpdateKanjiSwaggerDTO,
     KanjiSwaggerResponseDTO,
-    KanjiListSwaggerResponseDTO
+    KanjiListSwaggerResponseDTO,
+    GetKanjiListQuerySwaggerDTO,
+    ImportKanjiSwaggerDTO
 } from './dto/kanji.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -68,7 +63,7 @@ export class KanjiController {
 
     @Get()
     @ApiOperation({
-        summary: 'Lấy danh sách Kanji',
+        summary: 'Lấy danh sách Kanji với phân trang và tìm kiếm',
         description: 'Lấy danh sách tất cả Kanji với phân trang và tìm kiếm'
     })
     @ApiResponse({
@@ -76,14 +71,21 @@ export class KanjiController {
         description: 'Lấy danh sách Kanji thành công',
         type: KanjiListSwaggerResponseDTO
     })
+    @ApiQuery({ type: GetKanjiListQuerySwaggerDTO })
     @ZodSerializerDto(KanjiListResDTO)
-    findMany(@Query() query: GetKanjiListQueryDTO) {
-        // Transform query to match service expectations
-        const transformedQuery = {
-            ...query,
-            sortBy: query.sortBy as 'id' | 'character' | 'meaningKey' | 'strokeCount' | 'jlptLevel' | 'createdAt' | 'updatedAt' | undefined
-        }
-        return this.kanjiService.findMany(transformedQuery)
+    findAll(@Query() query: GetKanjiListQueryDTO) {
+        return this.kanjiService.findMany(query)
+    }
+
+    @Get('management')
+    @ApiOperation({
+        summary: 'Lấy danh sách Kanji cho quản lý',
+        description: 'Lấy danh sách Kanji được format phù hợp cho giao diện quản lý (có tách riêng Onyomi và Kunyomi)'
+    })
+    @ApiQuery({ type: GetKanjiListQuerySwaggerDTO })
+    @ZodSerializerDto(KanjiManagementListResDTO)
+    getKanjiManagementList(@Query() query: GetKanjiListQueryDTO) {
+        return this.kanjiService.getKanjiManagementList(query)
     }
 
     @Get('stats')
@@ -191,7 +193,7 @@ export class KanjiController {
     })
     @ZodSerializerDto(KanjiWithMeaningsResDTO)
     createWithMeanings(
-        @Body() body: CreateKanjiWithMeaningsBodyType,
+        @Body() body: CreateKanjiWithMeaningsBodyDTO,
         @UploadedFile() image?: Express.Multer.File
     ) {
         return this.kanjiService.createWithMeanings(body, image)
@@ -218,10 +220,34 @@ export class KanjiController {
     @ZodSerializerDto(UpdateKanjiWithMeaningsResDTO)
     updateWithMeanings(
         @Param('identifier') identifier: string,
-        @Body() body: UpdateKanjiWithMeaningsBodyType,
+        @Body() body: UpdateKanjiWithMeaningsBodyDTO,
         @UploadedFile() image?: Express.Multer.File
     ) {
         return this.kanjiService.updateWithMeanings(identifier, body, image)
+    }
+
+    @Delete('all')
+    @HttpCode(HttpStatus.OK)
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Xóa toàn bộ dữ liệu Kanji và những thứ liên quan',
+        description: 'Xóa tất cả Kanji, cách đọc Kanji, liên kết từ vựng-Kanji, và các bản dịch liên quan. Thao tác này không thể hoàn tác!'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa toàn bộ dữ liệu Kanji thành công',
+        type: MessageResDTO
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Unauthorized - Cần đăng nhập'
+    })
+    @ApiResponse({
+        status: 403,
+        description: 'Forbidden - Không có quyền thực hiện thao tác này'
+    })
+    async deleteAllKanjiData() {
+        return this.kanjiService.deleteAllKanjiData()
     }
 
     @Delete(':id')
@@ -241,6 +267,39 @@ export class KanjiController {
     @HttpCode(HttpStatus.OK)
     delete(@Param() params: GetKanjiByIdParamsDTO) {
         return this.kanjiService.delete(params.id)
+    }
+
+    @Post('import')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiOperation({ summary: 'Import Kanji từ file Excel (.xlsx)' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: ImportKanjiSwaggerDTO })
+    @ApiResponse({ status: 201, description: 'Import Kanji thành công' })
+    async importKanji(
+        @UploadedFile() file: Express.Multer.File,
+        @Body('language') language?: string,
+        @ActiveUser('userId') userId?: number
+    ) {
+        return this.kanjiService.importFromXlsx(file, language || 'vi', userId)
+    }
+
+    @Post('import-txt')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiOperation({
+        summary: 'Import Kanji từ file TXT (tab-separated)',
+        description: 'Import Kanji từ file TXT với cấu trúc tab-separated: kanji	mean	detail	kun	on	jlpt	strokes. Cập nhật thông tin thiếu cho Kanji đã tồn tại (strokeCount, jlptLevel).'
+    })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: ImportKanjiSwaggerDTO })
+    @ApiResponse({
+        status: 201,
+        description: 'Import Kanji từ TXT thành công'
+    })
+    async importKanjiFromTxt(
+        @UploadedFile() file: Express.Multer.File,
+        @Body('language') language?: string
+    ) {
+        return this.kanjiService.importFromTxt(file, language || 'en')
     }
 
 }

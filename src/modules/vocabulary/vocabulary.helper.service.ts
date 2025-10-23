@@ -380,13 +380,19 @@ export class VocabularyHelperService {
                     value: t.value
                 }))))
 
+                // Nếu meaning cũ không có translations, bỏ qua (không phải duplicate)
+                if (possibleMeaningTranslations.length === 0) {
+                    this.logger.log(`Meaning ${meaning.id}: No translations found, skipping comparison`)
+                    continue
+                }
+
                 // So sánh số lượng translations
                 if (possibleMeaningTranslations.length !== translations.meaning.length) {
                     this.logger.log(`Meaning ${meaning.id}: Translation count mismatch (${possibleMeaningTranslations.length} vs ${translations.meaning.length})`)
                     continue
                 }
 
-                // So sánh nội dung translations
+                // So sánh nội dung translations bằng value (không phải key)
                 let isDuplicate = true
                 for (const newTranslation of translations.meaning) {
                     const existingTranslation = possibleMeaningTranslations.find(t =>
@@ -562,14 +568,28 @@ export class VocabularyHelperService {
                     throw new Error(`Vocabulary with id ${vocabularyId} not found`)
                 }
 
-                // Kiểm tra xem đã có meaning tương tự chưa
-                this.logger.log(`About to check duplicate meaning...`)
-                const existingMeaning = await this.checkDuplicateMeaning(prisma, vocabularyId, translations)
-                if (existingMeaning) {
-                    this.logger.log(`Duplicate meaning found with ID: ${existingMeaning.id}, throwing error`)
-                    throw MeaningAlreadyExistsException
+                // Kiểm tra trực tiếp bằng value trong DB: có translation nào trùng value không?
+                this.logger.log(`Checking for existing translation by value...`)
+
+                for (const newTrans of translations.meaning) {
+                    const languageId = await this.getLanguageId(newTrans.language_code)
+                    const duplicateTranslation = await prisma.translation.findFirst({
+                        where: {
+                            languageId,
+                            value: newTrans.value,
+                            key: {
+                                startsWith: `vocabulary.${vocabularyId}.meaning.`
+                            }
+                        }
+                    })
+
+                    if (duplicateTranslation) {
+                        this.logger.log(`Found duplicate translation with same value: "${newTrans.value}" (key: ${duplicateTranslation.key})`)
+                        throw MeaningAlreadyExistsException
+                    }
                 }
-                this.logger.log(`No duplicate found, proceeding to create new meaning`)
+
+                this.logger.log(`No duplicate translation value found, proceeding to create new meaning`)
 
                 // Đếm số meanings hiện có
                 const existingMeaningsCount = await prisma.meaning.count({

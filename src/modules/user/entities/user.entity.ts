@@ -34,7 +34,8 @@ export const UpdateUserBodySchema = UserSchema.pick({
   status: true,
   roleId: true,
   levelId: true,
-  password: true
+  password: true,
+  exp: true
 })
   .partial()
   .strict()

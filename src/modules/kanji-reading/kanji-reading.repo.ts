@@ -1,6 +1,7 @@
 import { KanjiReading, CreateKanjiReadingBodyType, UpdateKanjiReadingBodyType } from './entities/kanji-reading.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
+import { KanjiReadingSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class KanjiReadingRepository {
@@ -11,8 +12,10 @@ export class KanjiReadingRepository {
         limit: number
         kanjiId?: number
         readingType?: string
+        sortBy?: KanjiReadingSortField
+        sort?: SortOrder
     }) {
-        const { page, limit, kanjiId, readingType } = params
+        const { page, limit, kanjiId, readingType, sortBy = KanjiReadingSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -30,7 +33,7 @@ export class KanjiReadingRepository {
                 where,
                 skip,
                 take: limit,
-                orderBy: { id: 'asc' },
+                orderBy: { [sortBy]: sort },
                 include: {
                     kanji: true
                 }

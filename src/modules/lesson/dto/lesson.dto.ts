@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { LessonSortField, SortOrder } from '@/common/enum/enum'
 
 export class LessonResponseSwaggerDTO {
     @ApiProperty({
@@ -6,12 +7,6 @@ export class LessonResponseSwaggerDTO {
         description: 'ID của bài học'
     })
     id: number
-
-    @ApiProperty({
-        example: 'aisatsu-no-kihon',
-        description: 'URL slug của bài học'
-    })
-    slug: string
 
     @ApiProperty({
         example: 'lesson.1.title',
@@ -117,11 +112,6 @@ export class LessonListResponseSwaggerDTO {
 
 // Request DTOs
 export class CreateLessonSwaggerDTO {
-    @ApiPropertyOptional({
-        example: 'aisatsu-no-kihon',
-        description: 'URL slug của bài học (tự động tạo nếu không cung cấp)'
-    })
-    slug?: string
 
     @ApiProperty({
         example: '挨拶の基本',
@@ -259,12 +249,12 @@ export class UpdateLessonSwaggerDTO {
 export class GetLessonListQuerySwaggerDTO {
     @ApiProperty({
         example: 1,
-        description: 'Số trang',
+        description: 'Số trang hiện tại',
         required: false,
         default: 1,
         minimum: 1
     })
-    page?: number
+    currentPage?: number
 
     @ApiProperty({
         example: 10,
@@ -274,7 +264,7 @@ export class GetLessonListQuerySwaggerDTO {
         minimum: 1,
         maximum: 100
     })
-    limit?: number
+    pageSize?: number
 
     @ApiProperty({
         example: 'greetings',
@@ -304,4 +294,20 @@ export class GetLessonListQuerySwaggerDTO {
         required: false
     })
     isPublished?: boolean
+
+    @ApiProperty({
+        enum: LessonSortField,
+        example: LessonSortField.CREATED_AT,
+        description: 'Field để sắp xếp theo slug, titleKey, levelJlpt, lessonOrder, isPublished, createdAt, updatedAt',
+        required: false
+    })
+    sortBy?: LessonSortField
+
+    @ApiProperty({
+        enum: SortOrder,
+        example: SortOrder.DESC,
+        description: 'Sắp xếp theo thứ tự tăng dần (asc) hoặc giảm dần (desc)',
+        required: false
+    })
+    sort?: SortOrder
 }
