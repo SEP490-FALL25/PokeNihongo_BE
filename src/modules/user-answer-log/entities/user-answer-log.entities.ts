@@ -17,7 +17,6 @@ export const UserAnswerLogSchema = z.object({
 })
 
 export const CreateUserAnswerLogBodySchema = UserAnswerLogSchema.pick({
-    isCorrect: true,
     userExerciseAttemptId: true,
     questionId: true,
     answerId: true

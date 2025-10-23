@@ -24,9 +24,6 @@ export class UserAnswerLogSwaggerDTO {
 }
 
 export class CreateUserAnswerLogSwaggerDTO {
-    @ApiProperty({ example: true, description: 'Câu trả lời có đúng không' })
-    isCorrect: boolean
-
     @ApiProperty({ example: 1, description: 'ID lần thử bài tập' })
     userExerciseAttemptId: number
 

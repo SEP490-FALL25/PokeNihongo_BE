@@ -68,13 +68,24 @@ export class UserAnswerLogRepository {
     }
 
     async create(data: {
-        isCorrect: boolean
         userExerciseAttemptId: number
         questionId: number
         answerId: number
     }): Promise<UserAnswerLogType> {
+        // Lấy thông tin answer để kiểm tra isCorrect
+        const answer = await this.prismaService.answer.findUnique({
+            where: { id: data.answerId }
+        })
+
+        if (!answer) {
+            throw new Error('Answer not found')
+        }
+
         const result = await this.prismaService.userAnswerLog.create({
-            data
+            data: {
+                ...data,
+                isCorrect: answer.isCorrect
+            }
         })
         return this.transformUserAnswerLog(result)
     }

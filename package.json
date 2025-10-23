@@ -30,6 +30,8 @@
     "prisma:generate": "npx prisma generate",
     "migrate:dev": "npx prisma migrate dev --create-only",
     "migrate:apply": "npx prisma migrate dev",
+    "migrate:reset": "npx prisma migrate reset",
+    "migrate:deploy": "npx prisma migrate deploy",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

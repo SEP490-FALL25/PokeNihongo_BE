@@ -1,5 +1,6 @@
 import envConfig from '@/config/env.config'
 import { AuthRepository } from '@/modules/auth/auth.repo'
+import { UserProgressService } from '@/modules/user-progress/user-progress.service'
 import { SharedRoleRepository } from '@/shared/repositories/shared-role.repo'
 import { Injectable } from '@nestjs/common'
 import { google } from 'googleapis'
@@ -15,7 +16,8 @@ export class GoogleService {
     private readonly hashingService: HashingService,
     private readonly authService: AuthService,
     private readonly authRepository: AuthRepository,
-    private readonly sharedRoleRepo: SharedRoleRepository
+    private readonly sharedRoleRepo: SharedRoleRepository,
+    private readonly userProgressService: UserProgressService
   ) {
     this.oauth2Client = new google.auth.OAuth2(
       envConfig.GOOGLE_CLIENT_ID,
@@ -89,6 +91,9 @@ export class GoogleService {
           ...createdUser,
           password: hashedPassword
         }
+
+        // Khởi tạo UserProgress cho user mới (chỉ khi tạo user mới)
+        await this.userProgressService.initUserProgress(user.id)
       }
       // 4. Tạo mới device
       const device = await this.authRepository.createDevice({
