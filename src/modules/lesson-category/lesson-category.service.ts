@@ -12,6 +12,8 @@ import {
 } from './dto/lesson-category.error'
 import { LessonCategoryRepository } from './lesson-category.repo'
 import { TranslationService } from '../translation/translation.service'
+import { LanguagesService } from '../languages/languages.service'
+import { I18nService } from '@/i18n/i18n.service'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 
 @Injectable()
@@ -20,22 +22,58 @@ export class LessonCategoryService {
 
   constructor(
     private readonly lessonCategoryRepository: LessonCategoryRepository,
-    private readonly translationService: TranslationService
+    private readonly translationService: TranslationService,
+    private readonly languagesService: LanguagesService,
+    private readonly i18nService: I18nService
   ) { }
 
-  async getLessonCategoryList(params: GetLessonCategoryListQueryType) {
+  async getLessonCategoryList(params: GetLessonCategoryListQueryType, lang: string = 'vi') {
     try {
       this.logger.log('Getting lesson category list with params:', params)
 
       const result = await this.lessonCategoryRepository.findMany(params)
 
+      // Resolve translation values for nameKey per requested language
+      let languageId: number | undefined
+      try {
+        this.logger.log(`Looking up language for code: ${lang}`)
+        const language = await this.languagesService.findByCode({ code: lang })
+        languageId = language?.data?.id
+        this.logger.log(`Found languageId: ${languageId}`)
+      } catch (error) {
+        this.logger.warn(`Failed to find language for code ${lang}:`, error)
+        languageId = undefined
+      }
+
+      const resultsWithName = result.data.map((item) => {
+        // For now, just return the basic data without translation
+        // TODO: Implement proper translation logic
+        return {
+          id: item.id,
+          nameKey: item.nameKey,
+          name: item.nameKey, // Use nameKey as fallback
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt
+        }
+      })
+
       this.logger.log(`Found ${result.data.length} lesson categories`)
       return {
-        ...result,
-        message: 'Lấy danh sách danh mục bài học thành công'
+        statusCode: 200,
+        message: 'Lấy danh sách danh mục bài học thành công',
+        data: {
+          results: resultsWithName,
+          pagination: {
+            current: result.page,
+            pageSize: result.limit,
+            totalPage: result.totalPages,
+            totalItem: result.total
+          }
+        }
       }
     } catch (error) {
       this.logger.error('Error getting lesson category list:', error)
+      this.logger.error('Error details:', JSON.stringify(error, null, 2))
       throw error
     }
   }

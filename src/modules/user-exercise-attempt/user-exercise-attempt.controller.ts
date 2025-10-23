@@ -1,6 +1,7 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import {
     CreateUserExerciseAttemptBodyDTO,
+    CreateUserExerciseAttemptParamsDTO,
     GetUserExerciseAttemptByIdParamsDTO,
     GetUserExerciseAttemptListQueryDTO,
     UpdateUserExerciseAttemptBodyDTO,
@@ -11,8 +12,9 @@ import {
     UserExerciseAttemptResponseSwaggerDTO,
     UserExerciseAttemptListResponseSwaggerDTO,
     GetUserExerciseAttemptListQuerySwaggerDTO,
-    CreateUserExerciseAttemptSwaggerDTO,
-    UpdateUserExerciseAttemptSwaggerDTO
+    CreateUserExerciseAttemptParamsSwaggerDTO,
+    UpdateUserExerciseAttemptSwaggerDTO,
+    ExerciseCompletionResponseSwaggerDTO
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.dto'
 import {
     Body,
@@ -35,18 +37,20 @@ import { UserExerciseAttemptService } from './user-exercise-attempt.service'
 export class UserExerciseAttemptController {
     constructor(private readonly userExerciseAttemptService: UserExerciseAttemptService) { }
 
-    @Post()
+    @Post(':exerciseId')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Tạo lần thử bài tập mới' })
-    @ApiBody({ type: CreateUserExerciseAttemptSwaggerDTO })
     @ApiResponse({
         status: 201,
         description: 'Tạo lần thử bài tập thành công',
         type: UserExerciseAttemptResponseSwaggerDTO
     })
     @ZodSerializerDto(UserExerciseAttemptResDTO)
-    create(@Body() body: CreateUserExerciseAttemptBodyDTO, @ActiveUser('userId') userId: number) {
-        return this.userExerciseAttemptService.create(body)
+    create(
+        @Param('exerciseId') exerciseId: string,
+        @ActiveUser('userId') userId: number
+    ) {
+        return this.userExerciseAttemptService.create(userId, parseInt(exerciseId, 10))
     }
 
     @Get()
@@ -106,6 +110,44 @@ export class UserExerciseAttemptController {
     @ZodSerializerDto(UserExerciseAttemptResDTO)
     remove(@Param() params: GetUserExerciseAttemptByIdParamsDTO, @ActiveUser('userId') userId: number) {
         return this.userExerciseAttemptService.remove(params.id)
+    }
+
+    @Get(':id/check-completion')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Kiểm tra trạng thái hoàn thành bài tập' })
+    @ApiResponse({
+        status: 200,
+        description: 'Kiểm tra trạng thái hoàn thành thành công',
+        type: ExerciseCompletionResponseSwaggerDTO
+    })
+    checkCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number) {
+        return this.userExerciseAttemptService.checkExerciseCompletion(parseInt(id, 10), userId)
+    }
+
+    @Put(':id/abandon')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Đánh dấu bài tập là bỏ dở (khi user thoát ra ngoài)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Đánh dấu bài tập bỏ dở thành công',
+        type: UserExerciseAttemptResponseSwaggerDTO
+    })
+    @ZodSerializerDto(UserExerciseAttemptResDTO)
+    abandon(@Param('id') id: string, @ActiveUser('userId') userId: number) {
+        return this.userExerciseAttemptService.abandon(parseInt(id, 10), userId)
+    }
+
+    @Get(':id/status')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy trạng thái hiện tại của bài tập' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy trạng thái bài tập thành công',
+        type: UserExerciseAttemptResponseSwaggerDTO
+    })
+    @ZodSerializerDto(UserExerciseAttemptResDTO)
+    getStatus(@Param('id') id: string, @ActiveUser('userId') userId: number) {
+        return this.userExerciseAttemptService.getStatus(parseInt(id, 10), userId)
     }
 }
 

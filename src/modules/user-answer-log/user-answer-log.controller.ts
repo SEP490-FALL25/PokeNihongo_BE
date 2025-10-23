@@ -49,6 +49,20 @@ export class UserAnswerLogController {
         return this.userAnswerLogService.create(body)
     }
 
+    @Post('upsert')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Tạo hoặc cập nhật log câu trả lời (nếu chưa có thì tạo, có rồi thì update)' })
+    @ApiBody({ type: CreateUserAnswerLogSwaggerDTO })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo/cập nhật log câu trả lời thành công',
+        type: UserAnswerLogResponseSwaggerDTO
+    })
+    @ZodSerializerDto(UserAnswerLogResDTO)
+    upsert(@Body() body: CreateUserAnswerLogBodyDTO, @ActiveUser('userId') userId: number) {
+        return this.userAnswerLogService.upsert(body)
+    }
+
     @Get()
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Lấy danh sách log câu trả lời với phân trang và lọc' })

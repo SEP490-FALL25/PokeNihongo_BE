@@ -434,5 +434,30 @@ export class QuestionService {
             throw error
         }
     }
+
+    async findByExerciseId(exerciseId: number) {
+        try {
+            this.logger.log(`Finding questions for exercise: ${exerciseId}`)
+
+            const result = await this.questionRepository.findByExerciseId(exerciseId)
+
+            return {
+                statusCode: 200,
+                message: 'Lấy danh sách câu hỏi thành công',
+                data: {
+                    results: result,
+                    pagination: {
+                        current: 1,
+                        pageSize: result.length,
+                        totalPage: 1,
+                        totalItem: result.length
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error finding questions by exercise:', error)
+            throw error
+        }
+    }
     //#endregion
 }

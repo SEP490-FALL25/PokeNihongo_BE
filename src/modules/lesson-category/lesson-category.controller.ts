@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { UseGuards } from '@nestjs/common'
 import { LessonCategoryService } from './lesson-category.service'
@@ -93,8 +94,8 @@ export class LessonCategoryController {
     @ApiOperation({ summary: 'Lấy danh sách danh mục bài học' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách danh mục bài học thành công', type: LessonCategoryListResponseSwaggerDTO })
     @ZodSerializerDto(LessonCategoryListResponseDTO)
-    async getLessonCategoryList(@Query() query: GetLessonCategoryListQueryDTO) {
-        return await this.lessonCategoryService.getLessonCategoryList(query)
+    async getLessonCategoryList(@Query() query: GetLessonCategoryListQueryDTO, @I18nLang() lang: string) {
+        return await this.lessonCategoryService.getLessonCategoryList(query, lang)
     }
 
     @Get(':id')

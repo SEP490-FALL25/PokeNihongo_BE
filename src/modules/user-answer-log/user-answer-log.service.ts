@@ -33,6 +33,20 @@ export class UserAnswerLogService {
         }
     }
 
+    async upsert(body: CreateUserAnswerLogBodyType) {
+        try {
+            const userAnswerLog = await this.userAnswerLogRepository.upsert(body)
+
+            return {
+                data: userAnswerLog,
+                message: USER_ANSWER_LOG_MESSAGE.CREATE_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error upserting user answer log:', error)
+            throw InvalidUserAnswerLogDataException
+        }
+    }
+
     async findAll(query: GetUserAnswerLogListQueryType) {
         const { currentPage, pageSize, userExerciseAttemptId, questionId, isCorrect } = query
 
@@ -105,6 +119,31 @@ export class UserAnswerLogService {
             }
             this.logger.error('Error deleting user answer log:', error)
             throw InvalidUserAnswerLogDataException
+        }
+    }
+
+    async findByUserExerciseAttemptId(userExerciseAttemptId: number) {
+        try {
+            this.logger.log(`Finding user answer logs for attempt: ${userExerciseAttemptId}`)
+
+            const result = await this.userAnswerLogRepository.findByUserExerciseAttemptId(userExerciseAttemptId)
+
+            return {
+                statusCode: 200,
+                message: 'Lấy danh sách log câu trả lời thành công',
+                data: {
+                    results: result,
+                    pagination: {
+                        current: 1,
+                        pageSize: result.length,
+                        totalPage: 1,
+                        totalItem: result.length
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error finding user answer logs by attempt:', error)
+            throw error
         }
     }
 }

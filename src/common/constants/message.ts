@@ -289,3 +289,40 @@ export const LESSON_MESSAGE = {
   ESTIMATED_TIME_INVALID: 'Thời gian ước tính không hợp lệ (1-480 phút)',
   VERSION_INVALID: 'Phiên bản không hợp lệ'
 }
+
+export const USER_EXERCISE_ATTEMPT_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo lần thử bài tập thành công',
+  UPDATE_SUCCESS: 'Cập nhật lần thử bài tập thành công',
+  DELETE_SUCCESS: 'Xóa lần thử bài tập thành công',
+  GET_SUCCESS: 'Lấy thông tin lần thử bài tập thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách lần thử bài tập thành công',
+  NOT_FOUND: 'Không tìm thấy lần thử bài tập',
+  ALREADY_EXISTS: 'Lần thử bài tập đã tồn tại',
+  INVALID_DATA: 'Dữ liệu lần thử bài tập không hợp lệ',
+  EXERCISE_NOT_FOUND: 'Không tìm thấy bài tập',
+  LESSON_BLOCKED: 'Bạn đang học lesson khác. Chỉ có thể làm bài tập trong lesson hiện tại',
+  EXERCISE_COMPLETED: 'Bài tập đã hoàn thành',
+  EXERCISE_ABANDONED: 'Bài tập đã bị bỏ dở',
+  CHECK_COMPLETION_SUCCESS: 'Kiểm tra trạng thái hoàn thành thành công',
+  ABANDON_SUCCESS: 'Đánh dấu bài tập bỏ dở thành công',
+  GET_STATUS_SUCCESS: 'Lấy trạng thái bài tập thành công'
+}
+
+export const EXERCISES_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo bài tập thành công',
+  UPDATE_SUCCESS: 'Cập nhật bài tập thành công',
+  DELETE_SUCCESS: 'Xóa bài tập thành công',
+  GET_SUCCESS: 'Lấy thông tin bài tập thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách bài tập thành công',
+  NOT_FOUND: 'Không tìm thấy bài tập',
+  ALREADY_EXISTS: 'Bài tập đã tồn tại',
+  INVALID_DATA: 'Dữ liệu bài tập không hợp lệ',
+  LESSON_NOT_FOUND: 'Không tìm thấy bài học',
+  CONTENT_REQUIRED: 'Nội dung bài tập không được để trống',
+  EXERCISE_TYPE_REQUIRED: 'Loại bài tập không được để trống',
+  LESSON_ID_REQUIRED: 'ID bài học không được để trống',
+  CONTENT_TOO_LONG: 'Nội dung bài tập quá dài (tối đa 2000 ký tự)',
+  PRICE_INVALID: 'Giá bài tập không hợp lệ (phải >= 0)',
+  AUDIO_URL_INVALID: 'URL audio không hợp lệ',
+  EXERCISE_TYPE_INVALID: 'Loại bài tập không hợp lệ'
+}
