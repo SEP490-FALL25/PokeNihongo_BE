@@ -20,14 +20,18 @@ export class AchievementGroupRepo {
     return this.prismaService.$transaction(fn)
   }
 
-  create({
-    createdById,
-    data
-  }: {
-    createdById: number | null
-    data: CreateAchievementGroupBodyType
-  }): Promise<AchievementGroupType> {
-    return this.prismaService.achievementGroup.create({
+  create(
+    {
+      createdById,
+      data
+    }: {
+      createdById: number | null
+      data: CreateAchievementGroupBodyType
+    },
+    prismaTx?: PrismaClient
+  ): Promise<AchievementGroupType> {
+    const client = prismaTx || this.prismaService
+    return client.achievementGroup.create({
       data: {
         ...data,
         createdById
@@ -35,16 +39,20 @@ export class AchievementGroupRepo {
     })
   }
 
-  update({
-    id,
-    updatedById,
-    data
-  }: {
-    id: number
-    updatedById?: number
-    data: UpdateAchievementGroupBodyType
-  }): Promise<AchievementGroupType> {
-    return this.prismaService.achievementGroup.update({
+  update(
+    {
+      id,
+      updatedById,
+      data
+    }: {
+      id: number
+      updatedById?: number
+      data: UpdateAchievementGroupBodyType
+    },
+    prismaTx?: PrismaClient
+  ): Promise<AchievementGroupType> {
+    const client = prismaTx || this.prismaService
+    return client.achievementGroup.update({
       where: {
         id,
         deletedAt: null
@@ -64,15 +72,17 @@ export class AchievementGroupRepo {
       id: number
       deletedById: number
     },
+    prismaTx?: PrismaClient,
     isHard?: boolean
   ): Promise<AchievementGroupType> {
+    const client = prismaTx || this.prismaService
     return isHard
-      ? this.prismaService.achievementGroup.delete({
+      ? client.achievementGroup.delete({
           where: {
             id
           }
         })
-      : this.prismaService.achievementGroup.update({
+      : client.achievementGroup.update({
           where: {
             id,
             deletedAt: null
