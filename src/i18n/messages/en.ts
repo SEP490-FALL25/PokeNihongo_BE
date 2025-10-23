@@ -262,5 +262,14 @@ export const enMessages = {
     NOT_FOUND: 'User daily request not found',
     ALREADY_EXISTS: 'User daily request already exists',
     USER_ALREADY_ATTENDED_TODAY: 'User has already attended today'
+  },
+  achievement: {
+    CREATE_SUCCESS: 'Achievement created successfully',
+    UPDATE_SUCCESS: 'Achievement updated successfully',
+    DELETE_SUCCESS: 'Achievement deleted successfully',
+    GET_SUCCESS: 'Achievement retrieved successfully',
+    GET_LIST_SUCCESS: 'Achievement list retrieved successfully',
+    NOT_FOUND: 'Achievement not found',
+    ALREADY_EXISTS: 'Achievement already exists'
   }
 }

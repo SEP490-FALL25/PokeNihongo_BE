@@ -260,5 +260,14 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy yêu cầu hàng ngày cho người dùng',
     ALREADY_EXISTS: 'Yêu cầu hàng ngày cho người dùng đã tồn tại',
     USER_ALREADY_ATTENDED_TODAY: 'Người dùng đã điểm danh hôm nay'
+  },
+  achievement: {
+    CREATE_SUCCESS: 'Tạo thành tích thành công',
+    UPDATE_SUCCESS: 'Cập nhật thành tích thành công',
+    DELETE_SUCCESS: 'Xóa thành tích thành công',
+    GET_SUCCESS: 'Lấy chi tiết thành tích thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách thành tích thành công',
+    NOT_FOUND: 'Không tìm thấy thành tích',
+    ALREADY_EXISTS: 'Thành tích đã tồn tại'
   }
 }

@@ -811,7 +811,7 @@ model Achievement {
   // Điều kiện để nhận
   conditionType       AchievementType // Loại điều kiện, VD: LEARNING_STREAK
   conditionValue      Int? // Giá trị cần đạt, VD: 3 (cho 3 ngày)
-  conditionMeta       Json? // Dữ liệu phức tạp, VD: {"pokemon_type": "FIRE"} hoặc {"pokemon_name": "Charizard"}
+  conditionMeta       Json // Dữ liệu phức tạp, VD: {"pokemon_type": "FIRE"} hoặc {"pokemon_name": "Charizard"}
 
   // Phần thưởng (nếu có)
   rewardId Int? // Liên kết tới bảng Reward

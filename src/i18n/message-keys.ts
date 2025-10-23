@@ -274,3 +274,14 @@ export const UserDailyRequestMessage = {
   ALREADY_EXISTS: 'user_daily_request.ALREADY_EXISTS',
   USER_ALREADY_ATTENDED_TODAY: 'user_daily_request.USER_ALREADY_ATTENDED_TODAY'
 } as const
+
+export const AchievementMessage = {
+  CREATE_SUCCESS: 'achievement.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'achievement.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'achievement.DELETE_SUCCESS',
+  GET_SUCCESS: 'achievement.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'achievement.GET_LIST_SUCCESS',
+  NOT_FOUND: 'achievement.NOT_FOUND',
+  ALREADY_EXISTS: 'achievement.ALREADY_EXISTS',
+  INVALID_DATA: 'achievement.INVALID_DATA'
+}
