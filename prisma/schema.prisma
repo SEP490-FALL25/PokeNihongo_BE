@@ -649,6 +649,7 @@ model Answer {
 enum ExerciseAttemptStatus {
   IN_PROGRESS // Đang làm
   COMPLETED // Đã hoàn thành
+  FAIL // Đã hoàn thành nhưng sai
   ABANDONED // Đã bỏ dở
 }
 

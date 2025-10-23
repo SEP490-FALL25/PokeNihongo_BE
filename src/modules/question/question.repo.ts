@@ -172,4 +172,25 @@ export class QuestionRepository {
 
         return (result._max.questionOrder || 0) + 1
     }
+
+    async findByExerciseId(exerciseId: number) {
+        const result = await this.prismaService.question.findMany({
+            where: {
+                exercisesId: exerciseId
+            },
+            orderBy: {
+                questionOrder: 'asc'
+            }
+        })
+
+        return result.map(item => ({
+            id: item.id,
+            exercisesId: item.exercisesId,
+            questionJp: item.questionJp,
+            questionKey: item.questionKey,
+            questionOrder: item.questionOrder,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt
+        }))
+    }
 }

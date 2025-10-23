@@ -197,4 +197,23 @@ export class ExercisesRepository {
         return count > 0
     }
 
+    async findByLessonId(lessonId: number) {
+        const result = await this.prismaService.exercises.findMany({
+            where: { lessonId: lessonId },
+            orderBy: { createdAt: 'asc' }
+        })
+
+        return result.map(item => ({
+            id: item.id,
+            lessonId: item.lessonId,
+            exerciseType: item.exerciseType,
+            content: item.content,
+            audioUrl: item.audioUrl,
+            isBlocked: item.isBlocked,
+            price: item.price,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt
+        }))
+    }
+
 }

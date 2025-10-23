@@ -13,7 +13,8 @@ import {
     UserExerciseAttemptListResponseSwaggerDTO,
     GetUserExerciseAttemptListQuerySwaggerDTO,
     CreateUserExerciseAttemptParamsSwaggerDTO,
-    UpdateUserExerciseAttemptSwaggerDTO
+    UpdateUserExerciseAttemptSwaggerDTO,
+    ExerciseCompletionResponseSwaggerDTO
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.dto'
 import {
     Body,
@@ -109,6 +110,44 @@ export class UserExerciseAttemptController {
     @ZodSerializerDto(UserExerciseAttemptResDTO)
     remove(@Param() params: GetUserExerciseAttemptByIdParamsDTO, @ActiveUser('userId') userId: number) {
         return this.userExerciseAttemptService.remove(params.id)
+    }
+
+    @Get(':id/check-completion')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Kiểm tra trạng thái hoàn thành bài tập' })
+    @ApiResponse({
+        status: 200,
+        description: 'Kiểm tra trạng thái hoàn thành thành công',
+        type: ExerciseCompletionResponseSwaggerDTO
+    })
+    checkCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number) {
+        return this.userExerciseAttemptService.checkExerciseCompletion(parseInt(id, 10), userId)
+    }
+
+    @Put(':id/abandon')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Đánh dấu bài tập là bỏ dở (khi user thoát ra ngoài)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Đánh dấu bài tập bỏ dở thành công',
+        type: UserExerciseAttemptResponseSwaggerDTO
+    })
+    @ZodSerializerDto(UserExerciseAttemptResDTO)
+    abandon(@Param('id') id: string, @ActiveUser('userId') userId: number) {
+        return this.userExerciseAttemptService.abandon(parseInt(id, 10), userId)
+    }
+
+    @Get(':id/status')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy trạng thái hiện tại của bài tập' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy trạng thái bài tập thành công',
+        type: UserExerciseAttemptResponseSwaggerDTO
+    })
+    @ZodSerializerDto(UserExerciseAttemptResDTO)
+    getStatus(@Param('id') id: string, @ActiveUser('userId') userId: number) {
+        return this.userExerciseAttemptService.getStatus(parseInt(id, 10), userId)
     }
 }
 

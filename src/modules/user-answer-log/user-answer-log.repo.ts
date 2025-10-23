@@ -169,5 +169,18 @@ export class UserAnswerLogRepository {
             updatedAt: userAnswerLog.updatedAt
         }
     }
+
+    async findByUserExerciseAttemptId(userExerciseAttemptId: number): Promise<UserAnswerLogType[]> {
+        const result = await this.prismaService.userAnswerLog.findMany({
+            where: {
+                userExerciseAttemptId: userExerciseAttemptId
+            },
+            orderBy: {
+                createdAt: 'asc'
+            }
+        })
+
+        return result.map(item => this.transformUserAnswerLog(item))
+    }
 }
 

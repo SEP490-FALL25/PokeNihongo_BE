@@ -128,6 +128,51 @@ export class UserExerciseAttemptRepository {
             updatedAt: userExerciseAttempt.updatedAt
         }
     }
+
+    async findById(id: number): Promise<UserExerciseAttemptType | null> {
+        const result = await this.prismaService.userExerciseAttempt.findUnique({
+            where: { id },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                exercise: true,
+                userAnswerLogs: true
+            }
+        })
+
+        if (!result) {
+            return null
+        }
+
+        return this.transformUserExerciseAttempt(result)
+    }
+
+    async findCompletedExercisesByLesson(userId: number, lessonId: number) {
+        // Lấy tất cả exercises của lesson
+        const lessonExercises = await this.prismaService.exercises.findMany({
+            where: { lessonId: lessonId },
+            select: { id: true }
+        })
+
+        const exerciseIds = lessonExercises.map(ex => ex.id)
+
+        // Lấy tất cả attempts COMPLETED của user trong lesson này
+        const completedAttempts = await this.prismaService.userExerciseAttempt.findMany({
+            where: {
+                userId: userId,
+                exerciseId: { in: exerciseIds },
+                status: 'COMPLETED'
+            },
+            select: { exerciseId: true }
+        })
+
+        return completedAttempts.map(attempt => attempt.exerciseId)
+    }
 }
 
 

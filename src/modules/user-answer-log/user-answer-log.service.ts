@@ -121,5 +121,30 @@ export class UserAnswerLogService {
             throw InvalidUserAnswerLogDataException
         }
     }
+
+    async findByUserExerciseAttemptId(userExerciseAttemptId: number) {
+        try {
+            this.logger.log(`Finding user answer logs for attempt: ${userExerciseAttemptId}`)
+
+            const result = await this.userAnswerLogRepository.findByUserExerciseAttemptId(userExerciseAttemptId)
+
+            return {
+                statusCode: 200,
+                message: 'Lấy danh sách log câu trả lời thành công',
+                data: {
+                    results: result,
+                    pagination: {
+                        current: 1,
+                        pageSize: result.length,
+                        totalPage: 1,
+                        totalItem: result.length
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error finding user answer logs by attempt:', error)
+            throw error
+        }
+    }
 }
 

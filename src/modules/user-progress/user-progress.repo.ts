@@ -153,6 +153,7 @@ export class UserProgressRepository {
         data: {
             status?: string
             progressPercentage?: number
+            completedAt?: Date | null
         }
     ): Promise<UserProgressType> {
         const updateData: any = { ...data }
@@ -309,5 +310,20 @@ export class UserProgressRepository {
                 isPublished: true
             } : undefined
         }
+    }
+
+    async findInProgressByUser(userId: number) {
+        const result = await this.prismaService.userProgress.findFirst({
+            where: {
+                userId: userId,
+                status: 'IN_PROGRESS'
+            }
+        })
+
+        if (!result) {
+            return null
+        }
+
+        return this.transformUserProgress(result)
     }
 }
