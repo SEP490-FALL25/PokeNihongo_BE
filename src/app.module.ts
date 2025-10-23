@@ -88,7 +88,7 @@ import { AchievementModule } from './modules/achievement/achievement.module';
     UserAnswerLogModule,
     QuestionBankModule,
     UserExerciseAttemptModule,
-    UserProgressModule
+    UserProgressModule,
     AchievementModule
 
   ],
