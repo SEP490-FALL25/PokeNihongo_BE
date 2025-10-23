@@ -1,5 +1,5 @@
 import { I18nService } from '@/i18n/i18n.service'
-import { DailyRequestMessage } from '@/i18n/message-keys'
+import { DailyRequestCategoryMessage } from '@/i18n/message-keys'
 import {
   LanguageNotExistToTranslateException,
   NotFoundRecordException
@@ -11,64 +11,119 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
+import { DailyRequestRepo } from '../daily-request/daily-request.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
-import { DailyRequestRepo } from './daily-request.repo'
-import { DailyRequestAlreadyExistsException } from './dto/daily-request.error'
+import { DailyRequestCategoryRepo } from './daily-request-category.repo'
+import { DailyRequestCategoryAlreadyExistsException } from './dto/daily-request-category.error'
 import {
-  CreateDailyRequestBodyInputType,
-  CreateDailyRequestBodyType,
-  UpdateDailyRequestBodyInputType,
-  UpdateDailyRequestBodyType
-} from './entities/daily-request.entity'
+  CreateDailyRequestCategoryBodyInputType,
+  CreateDailyRequestCategoryBodyType,
+  UpdateDailyRequestCategoryBodyInputType
+} from './entities/daily-request-category.entity'
 
 @Injectable()
-export class DailyRequestService {
+export class DailyRequestCategoryService {
   constructor(
-    private dailyRequestRepo: DailyRequestRepo,
+    private DailyRequestCategoryRepo: DailyRequestCategoryRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
-    private readonly translationRepo: TranslationRepository
+    private readonly translationRepo: TranslationRepository,
+    private readonly dailyRequestRepo: DailyRequestRepo
   ) {}
-
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const langId = await this.languageRepo.getIdByCode(lang)
     if (!langId) {
       throw new NotFoundRecordException()
     }
-    const data = await this.dailyRequestRepo.list(pagination, langId)
+    const data = await this.DailyRequestCategoryRepo.list(pagination, langId)
     return {
       data,
-      message: this.i18nService.translate(DailyRequestMessage.GET_LIST_SUCCESS, lang)
+      message: this.i18nService.translate(
+        DailyRequestCategoryMessage.GET_LIST_SUCCESS,
+        lang
+      )
+    }
+  }
+
+  /**
+   * Return categories with their dailyRequests (with translations)
+   */
+  async listWithDailyRequest(pagination: PaginationQueryType, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    if (!langId) {
+      throw new NotFoundRecordException()
+    }
+
+    const data = await this.DailyRequestCategoryRepo.list(pagination, langId)
+
+    // Attach dailyRequests for categories in this page
+    const categoryIds = data.results.map((c: any) => c.id)
+    if (categoryIds.length > 0) {
+      const dailyRequests = await this.dailyRequestRepo.findByWhere({
+        dailyRequestCategoryIds: { in: categoryIds }
+      })
+
+      const translationKeys: string[] = []
+      dailyRequests.forEach((dr: any) => {
+        if (dr.nameKey) translationKeys.push(dr.nameKey)
+        if (dr.descriptionKey) translationKeys.push(dr.descriptionKey)
+      })
+
+      const translations = await this.translationRepo.findByKeysAndLanguage(
+        Array.from(new Set(translationKeys)),
+        langId
+      )
+      const translationMap = new Map<string, string>()
+      translations.forEach((t) => translationMap.set(t.key, t.value))
+
+      const grouped = dailyRequests.reduce((acc: any, dr: any) => {
+        const list = acc[dr.dailyRequestCategoryId] || []
+        list.push({
+          ...dr,
+          nameTranslation: translationMap.get(dr.nameKey) || '',
+          descriptionTranslation: translationMap.get(dr.descriptionKey) || null
+        })
+        acc[dr.dailyRequestCategoryId] = list
+        return acc
+      }, {})
+
+      data.results = data.results.map((c: any) => ({
+        ...c,
+        dailyRequests: grouped[c.id] || []
+      }))
+    }
+
+    return {
+      data,
+      message: this.i18nService.translate(
+        DailyRequestCategoryMessage.GET_LIST_SUCCESS,
+        lang
+      )
     }
   }
 
   async findById(id: number, lang: string = 'vi') {
-    const dailyRequest = await this.dailyRequestRepo.findById(id)
+    const DailyRequestCategory = await this.DailyRequestCategoryRepo.findById(id)
     const langId = await this.languageRepo.getIdByCode(lang)
-    if (!langId || !dailyRequest) {
+    if (!langId || !DailyRequestCategory) {
       throw new NotFoundRecordException()
     }
 
     const nameTranslation = await this.translationRepo.findByLangAndKey(
       langId,
-      dailyRequest.nameKey
-    )
-    const descriptionTranslation = await this.translationRepo.findByLangAndKey(
-      langId,
-      dailyRequest.descriptionKey
+      DailyRequestCategory.nameKey
     )
 
     const resultRes = {
-      ...dailyRequest,
-      nameTranslation: nameTranslation?.value ?? null,
-      descriptionTranslation: descriptionTranslation?.value ?? null
+      ...DailyRequestCategory,
+      nameTranslation: nameTranslation?.value ?? null
     }
     return {
       statusCode: HttpStatus.OK,
       data: resultRes,
-      message: this.i18nService.translate(DailyRequestMessage.GET_SUCCESS, lang)
+      message: this.i18nService.translate(DailyRequestCategoryMessage.GET_SUCCESS, lang)
     }
   }
 
@@ -77,29 +132,24 @@ export class DailyRequestService {
       data,
       createdById
     }: {
-      data: CreateDailyRequestBodyInputType
+      data: CreateDailyRequestCategoryBodyInputType
       createdById: number
     },
     lang: string = 'vi'
   ) {
-    let createdDailyRequest: any = null
+    let createdDailyRequestCategory: any = null
 
     try {
-      return await this.dailyRequestRepo.withTransaction(async (prismaTx) => {
-        const nameKey = `daily_request.name.${Date.now()}`
-        const descKey = `daily_request.description.${Date.now()}`
+      return await this.DailyRequestCategoryRepo.withTransaction(async (prismaTx) => {
+        const nameKey = `daily_request_category.name.${Date.now()}`
 
         //convert data cho create
-        const dataCreate: CreateDailyRequestBodyType = {
-          dailyRequestCategoryId: data.dailyRequestCategoryId,
-          conditionValue: data.conditionValue,
-          nameKey,
-          descriptionKey: descKey,
-          rewardId: data.rewardId,
-          isActive: data.isActive
+        const dataCreate: CreateDailyRequestCategoryBodyType = {
+          nameKey: nameKey,
+          isStreat: data.isStreat
         }
 
-        createdDailyRequest = await this.dailyRequestRepo.create(
+        createdDailyRequestCategory = await this.DailyRequestCategoryRepo.create(
           {
             createdById,
             data: dataCreate
@@ -108,14 +158,12 @@ export class DailyRequestService {
         )
 
         // co id, tao nameKey chuan
-        const fNameKey = `daily_request.name.${createdDailyRequest.id}`
-        const fDescKey = `daily_request.description.${createdDailyRequest.id}`
+        const fNameKey = `daily_request_category.name.${createdDailyRequestCategory.id}`
 
         const nameList = data.nameTranslations.map((t) => t.key)
-        const desList = data.descriptionTranslations?.map((t) => t.key) ?? []
 
         // Gộp & loại bỏ trùng key
-        const allLangCodes = Array.from(new Set([...nameList, ...desList]))
+        const allLangCodes = Array.from(new Set([...nameList]))
 
         // Lấy danh sách ngôn ngữ tương ứng với các key
         const languages = await this.languageRepo.getWithListCode(allLangCodes)
@@ -144,15 +192,6 @@ export class DailyRequestService {
         //check khong cho trung name
         await this.translationRepo.validateTranslationRecords(translationRecords)
 
-        // descriptionTranslations → key = descriptionKey
-        for (const item of data.descriptionTranslations ?? []) {
-          translationRecords.push({
-            languageId: langMap[item.key],
-            key: fDescKey,
-            value: item.value
-          })
-        }
-
         // Sử dụng createOrUpdate thay vì createMany
         // và dùng transaction
 
@@ -161,12 +200,11 @@ export class DailyRequestService {
         )
         await Promise.all(translationPromises)
         // Thêm bản dịch và update lại daily request
-        const result = await this.dailyRequestRepo.update(
+        const result = await this.DailyRequestCategoryRepo.update(
           {
-            id: createdDailyRequest.id,
+            id: createdDailyRequestCategory.id,
             data: {
-              nameKey: fNameKey,
-              descriptionKey: fDescKey
+              nameKey: fNameKey
             }
           },
           prismaTx
@@ -175,16 +213,19 @@ export class DailyRequestService {
         return {
           statusCode: HttpStatus.CREATED,
           data: result,
-          message: this.i18nService.translate(DailyRequestMessage.CREATE_SUCCESS, lang)
+          message: this.i18nService.translate(
+            DailyRequestCategoryMessage.CREATE_SUCCESS,
+            lang
+          )
         }
       })
     } catch (error) {
       // Rollback: Xóa daily request đã tạo nếu có lỗi
-      if (createdDailyRequest?.id) {
+      if (createdDailyRequestCategory?.id) {
         try {
-          await this.dailyRequestRepo.delete(
+          await this.DailyRequestCategoryRepo.delete(
             {
-              id: createdDailyRequest.id,
+              id: createdDailyRequestCategory.id,
               deletedById: createdById
             },
             true
@@ -193,7 +234,7 @@ export class DailyRequestService {
       }
 
       if (isUniqueConstraintPrismaError(error)) {
-        throw new DailyRequestAlreadyExistsException()
+        throw new DailyRequestCategoryAlreadyExistsException()
       }
       if (isNotFoundPrismaError(error)) {
         throw new NotFoundRecordException()
@@ -212,33 +253,24 @@ export class DailyRequestService {
       updatedById
     }: {
       id: number
-      data: UpdateDailyRequestBodyInputType
+      data: UpdateDailyRequestCategoryBodyInputType
       updatedById: number
     },
     lang: string = 'vi'
   ) {
-    let existingDailyRequest: any = null
+    let existingDailyRequestCategory: any = null
 
     try {
-      return await this.dailyRequestRepo.withTransaction(async (prismaTx) => {
+      return await this.DailyRequestCategoryRepo.withTransaction(async (prismaTx) => {
         // --- 1. Lấy bản ghi hiện tại ---
-        existingDailyRequest = await this.dailyRequestRepo.findById(id)
-        if (!existingDailyRequest) throw new NotFoundRecordException()
-
-        // --- 2. Chuẩn bị data update ---
-        const dataUpdate: UpdateDailyRequestBodyType = {
-          dailyRequestCategoryId: data.dailyRequestCategoryId,
-          conditionValue: data.conditionValue,
-          rewardId: data.rewardId,
-          isActive: data.isActive
-        }
+        existingDailyRequestCategory = await this.DailyRequestCategoryRepo.findById(id)
+        if (!existingDailyRequestCategory) throw new NotFoundRecordException()
 
         // --- 3. Handle translations nếu có ---
-        if (data.nameTranslations || data.descriptionTranslations) {
+        if (data.nameTranslations) {
           const nameList = data.nameTranslations?.map((t) => t.key) ?? []
-          const descList = data.descriptionTranslations?.map((t) => t.key) ?? []
 
-          const allLangCodes = Array.from(new Set([...nameList, ...descList]))
+          const allLangCodes = Array.from(new Set([...nameList]))
 
           if (allLangCodes.length > 0) {
             // Lấy languages tương ứng
@@ -256,22 +288,13 @@ export class DailyRequestService {
             for (const t of data.nameTranslations ?? []) {
               translationRecords.push({
                 languageId: langMap[t.key],
-                key: existingDailyRequest.nameKey,
+                key: existingDailyRequestCategory.nameKey,
                 value: t.value
               })
             }
 
             // --- 5. Validate translation records: check name la dc, desc cho trung---
             await this.translationRepo.validateTranslationRecords(translationRecords)
-
-            // descriptionTranslations
-            for (const t of data.descriptionTranslations ?? []) {
-              translationRecords.push({
-                languageId: langMap[t.key],
-                key: existingDailyRequest.descriptionKey,
-                value: t.value
-              })
-            }
 
             // --- 6. Update translations với transaction ---
             const translationPromises = translationRecords.map((record) =>
@@ -281,27 +304,32 @@ export class DailyRequestService {
           }
         }
 
-        // --- 7. Update DailyRequest chính ---
-        const updatedDailyRequest = await this.dailyRequestRepo.update(
+        // --- 7. Update DailyRequestCategory chính ---
+        const updatedDailyRequestCategory = await this.DailyRequestCategoryRepo.update(
           {
             id,
             updatedById,
-            data: dataUpdate
+            data: {
+              isStreat: data.isStreat
+            }
           },
           prismaTx
         )
 
         return {
           statusCode: HttpStatus.OK,
-          data: updatedDailyRequest,
-          message: this.i18nService.translate(DailyRequestMessage.UPDATE_SUCCESS, lang)
+          data: updatedDailyRequestCategory,
+          message: this.i18nService.translate(
+            DailyRequestCategoryMessage.UPDATE_SUCCESS,
+            lang
+          )
         }
       })
     } catch (error) {
       // --- 8. Xử lý lỗi ---
       if (isNotFoundPrismaError(error)) throw new NotFoundRecordException()
       if (isUniqueConstraintPrismaError(error))
-        throw new DailyRequestAlreadyExistsException()
+        throw new DailyRequestCategoryAlreadyExistsException()
       if (isForeignKeyConstraintPrismaError(error)) {
         throw new NotFoundRecordException()
       }
@@ -314,30 +342,33 @@ export class DailyRequestService {
     lang: string = 'vi'
   ) {
     try {
-      const [langId, existingDailyRequest] = await Promise.all([
+      const [langId, existingDailyRequestCategory] = await Promise.all([
         this.languageRepo.getIdByCode(lang),
-        this.dailyRequestRepo.findById(id)
+        this.DailyRequestCategoryRepo.findById(id)
       ])
       if (!langId) {
         throw new NotFoundRecordException()
       }
 
-      if (!existingDailyRequest) {
+      if (!existingDailyRequestCategory) {
         throw new NotFoundRecordException()
       }
 
       const [,] = await Promise.all([
-        this.dailyRequestRepo.delete({
+        this.DailyRequestCategoryRepo.delete({
           id,
           deletedById
         }),
-        this.translationRepo.deleteByKey(existingDailyRequest.nameKey)
+        this.translationRepo.deleteByKey(existingDailyRequestCategory.nameKey)
       ])
 
       return {
         statusCode: HttpStatus.OK,
         data: null,
-        message: this.i18nService.translate(DailyRequestMessage.DELETE_SUCCESS, lang)
+        message: this.i18nService.translate(
+          DailyRequestCategoryMessage.DELETE_SUCCESS,
+          lang
+        )
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {

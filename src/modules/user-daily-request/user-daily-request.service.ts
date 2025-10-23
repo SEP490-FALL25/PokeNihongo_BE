@@ -1,4 +1,4 @@
-import { DailyConditionType } from '@/common/constants/daily-request.constant'
+// DailyConditionType enum replaced by DailyRequestCategory.nameKey and DailyRequestCategory.isStreat
 import { I18nService } from '@/i18n/i18n.service'
 import { UserDailyRequestMessage } from '@/i18n/message-keys'
 import { UserService } from '@/modules/user/user.service'
@@ -293,6 +293,22 @@ export class UserDailyRequestService {
           : undefined
       }))
 
+      // 8. Sắp xếp: ưu tiên những mục có dailyRequestCategoryId = 18 lên đầu
+      // 8. Sắp xếp theo field `dailyRequestCategoryId` (numeric ascending).
+      // Nếu response chứa relation `dailyRequestCategory`, dùng `dailyRequestCategory.id` làm fallback.
+      // const sortedResult = result.sort((a, b) => {
+      //   const aCat =
+      //     (a.dailyRequest as any)?.dailyRequestCategoryId ??
+      //     (a.dailyRequest as any)?.dailyRequestCategory?.id ??
+      //     0
+      //   const bCat =
+      //     (b.dailyRequest as any)?.dailyRequestCategoryId ??
+      //     (b.dailyRequest as any)?.dailyRequestCategory?.id ??
+      //     0
+
+      //   return aCat - bCat
+      // })
+
       return {
         statusCode: HttpStatus.OK,
         data: result,
@@ -318,9 +334,7 @@ export class UserDailyRequestService {
       }
 
       // Lấy các daily request LOGIN để kiểm tra điểm danh
-      const loginDailyRequests = await this.dailyReqRepo.findByWhere({
-        conditionTypes: [DailyConditionType.LOGIN]
-      })
+      const loginDailyRequests = await this.dailyReqRepo.findByCategoryNameKeys(['LOGIN'])
 
       // Kiểm tra xem user đã điểm danh hôm nay chưa
       let hasAttended = false
@@ -343,10 +357,11 @@ export class UserDailyRequestService {
         throw new UserAlreadyAttendedTodayException()
       }
 
-      // Lấy tất cả daily requests login và streak login
-      const dailyRequests = await this.dailyReqRepo.findByWhere({
-        conditionTypes: [DailyConditionType.STREAK_LOGIN, DailyConditionType.LOGIN]
-      })
+      // Lấy tất cả daily requests login và streak login (bằng nameKey của category)
+      const dailyRequests = await this.dailyReqRepo.findByCategoryNameKeys([
+        'STREAK_LOGIN',
+        'LOGIN'
+      ])
 
       const rewardsToGive: Array<{
         id: number
@@ -366,10 +381,10 @@ export class UserDailyRequestService {
 
         if (!existingUserDailyRequest) {
           // Tạo user daily request mới
-          let progress = 1 // Điểm danh = 1 progress
+          let progress = 0 // progress starts at 0
 
-          // Check nếu là streak type thì tính progress từ streak
-          if (dailyRequest.conditionType === DailyConditionType.STREAK_LOGIN) {
+          // Check nếu là streak type (category.isStreat) thì tính progress từ streak
+          if ((dailyRequest as any).dailyRequestCategory?.isStreat) {
             progress = await this.checkStreakComplete(userId, dailyRequest.id)
           }
 
@@ -403,7 +418,7 @@ export class UserDailyRequestService {
           if (!existingUserDailyRequest.isCompleted) {
             let newProgress = existingUserDailyRequest.progress
 
-            if (dailyRequest.conditionType === DailyConditionType.STREAK_LOGIN) {
+            if ((dailyRequest as any).dailyRequestCategory?.isStreat) {
               newProgress = await this.checkStreakComplete(userId, dailyRequest.id)
             } else {
               newProgress = existingUserDailyRequest.progress + 1

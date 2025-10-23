@@ -44,3 +44,8 @@ export function todayUTCFromVN() {
   // 0h VN
   return now
 }
+
+export function mapConditionMeta(meta?: { type?: number } | null) {
+  if (!meta) return Prisma.JsonNull
+  return meta
+}

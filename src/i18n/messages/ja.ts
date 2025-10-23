@@ -261,5 +261,14 @@ export const jaMessages = {
     GET_LIST_SUCCESS: '実績リストを取得しました',
     NOT_FOUND: '実績が見つかりません',
     ALREADY_EXISTS: '実績は既に存在します'
+  },
+  daily_request_category: {
+    CREATE_SUCCESS: 'デイリーリクエストカテゴリの作成が完了しました',
+    UPDATE_SUCCESS: 'デイリーリクエストカテゴリの更新が完了しました',
+    DELETE_SUCCESS: 'デイリーリクエストカテゴリの削除が完了しました',
+    GET_SUCCESS: 'デイリーリクエストカテゴリ情報を取得しました',
+    GET_LIST_SUCCESS: 'デイリーリクエストカテゴリリストを取得しました',
+    NOT_FOUND: 'デイリーリクエストカテゴリが見つかりません',
+    ALREADY_EXISTS: 'デイリーリクエストカテゴリは既に存在します'
   }
 }

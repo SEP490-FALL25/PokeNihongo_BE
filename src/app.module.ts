@@ -44,6 +44,8 @@ import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.m
 import { QuestionBankModule } from './modules/question-bank/question-bank.module';
 import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-exercise-attempt.module';
 import { UserProgressModule } from './modules/user-progress/user-progress.module';
+import { AchievementModule } from './modules/achievement/achievement.module';
+import { DailyRequestCategoryModule } from './modules/daily-request-category/daily-request-category.module';
 
 
 @Module({
@@ -89,7 +91,9 @@ import { UserProgressModule } from './modules/user-progress/user-progress.module
     QuestionBankModule,
     UserExerciseAttemptModule,
     UserProgressModule,
-    AchievementGroupModule
+    AchievementGroupModule,
+    AchievementModule,
+    DailyRequestCategoryModule
 
   ],
 

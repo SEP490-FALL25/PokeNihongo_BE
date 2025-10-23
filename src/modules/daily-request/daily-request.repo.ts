@@ -1,7 +1,7 @@
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
-import { DailyConditionType } from '@/common/constants/daily-request.constant'
+// conditionType was replaced by dailyRequestCategoryId (foreign key to DailyRequestCategory)
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
@@ -14,10 +14,7 @@ import {
 
 export type WhereDailyRequestType = {
   id?: number
-  conditionTypes?:
-    | DailyConditionType
-    | DailyConditionType[]
-    | { in: DailyConditionType[] }
+  dailyRequestCategoryIds?: number | number[] | { in: number[] }
 }
 
 @Injectable()
@@ -110,8 +107,10 @@ export class DailyRequestRepo {
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
 
-    // --- 2. Xử lý filter nameTranslation ---
+    // --- 2. Xử lý filter nameTranslation và descriptionTranslation ---
     let nameKeys: string[] | undefined
+    let descriptionKeys: string[] | undefined
+
     if (rawWhere.nameTranslation) {
       // Nếu rawWhere.nameTranslation là object { contains, mode }
       const searchValue =
@@ -134,11 +133,33 @@ export class DailyRequestRepo {
       delete rawWhere.nameTranslation
     }
 
+    if (rawWhere.descriptionTranslation) {
+      const searchValue =
+        typeof rawWhere.descriptionTranslation === 'object'
+          ? rawWhere.descriptionTranslation.contains
+          : rawWhere.descriptionTranslation
+
+      const translations = await this.prismaService.translation.findMany({
+        where: {
+          languageId: langId,
+          value: {
+            contains: searchValue,
+            mode: 'insensitive'
+          }
+        },
+        select: { key: true }
+      })
+
+      descriptionKeys = translations.map((t) => t.key)
+      delete rawWhere.descriptionTranslation
+    }
+
     // --- 3. Build final where ---
     const where: any = {
       deletedAt: null,
       ...rawWhere,
-      ...(nameKeys ? { nameKey: { in: nameKeys } } : {})
+      ...(nameKeys ? { nameKey: { in: nameKeys } } : {}),
+      ...(descriptionKeys ? { descriptionKey: { in: descriptionKeys } } : {})
     }
 
     // --- 4. Query tổng số + data ---
@@ -152,19 +173,25 @@ export class DailyRequestRepo {
       })
     ])
 
-    // --- 5. Include nameTranslation ---
-    const nameTranslations = await this.prismaService.translation.findMany({
+    // --- 5. Include nameTranslation và descriptionTranslation ---
+    const allKeys = Array.from(
+      new Set(data.flatMap((d) => [d.nameKey, (d as any).descriptionKey]))
+    )
+
+    const translations = await this.prismaService.translation.findMany({
       where: {
-        key: { in: data.map((d) => d.nameKey) },
-        languageId: 1 // hoặc lấy từ request/user
+        key: { in: allKeys },
+        languageId: langId // dùng langId từ param
       },
       select: { key: true, value: true }
     })
 
     const results = data.map((d) => ({
       ...d,
-      nameTranslation:
-        nameTranslations.find((t) => t.key === d.nameKey)?.value || d.nameKey
+      nameTranslation: translations.find((t) => t.key === d.nameKey)?.value || d.nameKey,
+      descriptionTranslation:
+        translations.find((t) => t.key === (d as any).descriptionKey)?.value ||
+        (d as any).descriptionKey
     }))
 
     // --- 6. Trả kết quả ---
@@ -198,21 +225,19 @@ export class DailyRequestRepo {
       }
     })
   }
-
   checkDailyRequestIsStreak(id: number): Promise<DailyRequestType | null> {
-    return this.prismaService.dailyRequest.findUnique({
-      where: {
-        id,
-        conditionType: {
-          in: [
-            DailyConditionType.STREAK_LOGIN,
-            DailyConditionType.STREAK_COMPLETE_LESSON,
-            DailyConditionType.STREAK_EXERCISE
-          ]
+    // Return the dailyRequest only if its category has isStreat = true
+    return this.prismaService.dailyRequest
+      .findUnique({
+        where: {
+          id,
+          deletedAt: null
         },
-        deletedAt: null
-      }
-    })
+        include: {
+          dailyRequestCategory: true
+        }
+      })
+      .then((dr) => (dr && (dr as any).dailyRequestCategory?.isStreat ? dr : null))
   }
 
   findByWhere(where: WhereDailyRequestType): Promise<DailyRequestType[]> {
@@ -222,17 +247,36 @@ export class DailyRequestRepo {
 
     if (where.id) prismaWhere.id = where.id
 
-    if (where.conditionTypes) {
-      // Nếu là mảng enum thì wrap lại bằng { in: [...] }
-      prismaWhere.conditionType = Array.isArray(where.conditionTypes)
-        ? { in: where.conditionTypes }
-        : where.conditionTypes
+    if (where.dailyRequestCategoryIds) {
+      // nếu là mảng thì wrap in
+      prismaWhere.dailyRequestCategoryId = Array.isArray(where.dailyRequestCategoryIds)
+        ? { in: where.dailyRequestCategoryIds }
+        : where.dailyRequestCategoryIds
     }
 
     return this.prismaService.dailyRequest.findMany({
       where: prismaWhere,
       include: {
         reward: true
+      }
+    })
+  }
+
+  /**
+   * Find daily requests by their category name keys (e.g. 'LOGIN', 'STREAK_LOGIN')
+   * Includes reward and category relation.
+   */
+  findByCategoryNameKeys(keys: string[]): Promise<DailyRequestType[]> {
+    return this.prismaService.dailyRequest.findMany({
+      where: {
+        deletedAt: null,
+        dailyRequestCategory: {
+          nameKey: { in: keys }
+        }
+      },
+      include: {
+        reward: true,
+        dailyRequestCategory: true
       }
     })
   }

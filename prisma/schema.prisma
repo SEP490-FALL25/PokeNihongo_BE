@@ -24,56 +24,58 @@ model User {
   levelId      Int?
   level        Level?     @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  createdPermissions         Permission[]        @relation("PermissionCreatedBy")
-  updatedPermissions         Permission[]        @relation("PermissionUpdatedBy")
-  deletedPermissions         Permission[]        @relation("PermissionDeletedBy")
-  createdRoles               Role[]              @relation("RoleCreatedBy")
-  updatedRoles               Role[]              @relation("RoleUpdatedBy")
-  deletedRoles               Role[]              @relation("RoleDeletedBy")
-  createdLevels              Level[]             @relation("LevelCreatedBy")
-  updatedLevels              Level[]             @relation("LevelUpdatedBy")
-  deletedLevels              Level[]             @relation("LevelDeletedBy")
-  createdRewards             Reward[]            @relation("RewardCreatedBy")
-  updatedRewards             Reward[]            @relation("RewardUpdatedBy")
-  deletedRewards             Reward[]            @relation("RewardDeletedBy")
-  createdVocabularies        Vocabulary[]        @relation("VocabularyCreatedBy")
-  createdLessons             Lesson[]            @relation("LessonCreatedBy")
-  createdPokemons            Pokemon[]           @relation("PokemonCreatedBy")
-  updatedPokemons            Pokemon[]           @relation("PokemonUpdatedBy")
-  deletedPokemons            Pokemon[]           @relation("PokemonDeletedBy")
-  createdElementalTypes      ElementalType[]     @relation("ElementalTypeCreatedBy")
-  updatedElementalTypes      ElementalType[]     @relation("ElementalTypeUpdatedBy")
-  deletedElementalTypes      ElementalType[]     @relation("ElementalTypeDeletedBy")
-  createdTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessCreatedBy")
-  updatedTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessUpdatedBy")
-  deletedTypeEffectivenesses TypeEffectiveness[] @relation("TypeEffectivenessDeletedBy")
-  createdDailyRequest        DailyRequest[]      @relation("DailyRequestCreatedBy")
-  updatedDailyRequest        DailyRequest[]      @relation("DailyRequestUpdatedBy")
-  deletedDailyRequest        DailyRequest[]      @relation("DailyRequestDeletedBy")
-  createdUserDailyRequest    UserDailyRequest[]  @relation("UserDailyRequestCreatedBy")
-  updatedUserDailyRequest    UserDailyRequest[]  @relation("UserDailyRequestUpdatedBy")
-  deletedUserDailyRequest    UserDailyRequest[]  @relation("UserDailyRequestDeletedBy")
-  createdAchievements        Achievement[]       @relation("AchievementCreatedBy")
-  updatedAchievements        Achievement[]       @relation("AchievementUpdatedBy")
-  deletedAchievements        Achievement[]       @relation("AchievementDeletedBy")
-  createdUserAchievements    UserAchievement[]   @relation("UserAchievementCreatedBy")
-  updatedUserAchievements    UserAchievement[]   @relation("UserAchievementUpdatedBy")
-  deletedUserAchievements    UserAchievement[]   @relation("UserAchievementDeletedBy")
-  createdAchievementGroups   AchievementGroup[]  @relation("AchievementGroupCreatedBy")
-  updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
-  deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
-  createdQuestionBanks       Question_Bank[]     @relation("QuestionBankCreatedBy")
-
+  createdPermissions         Permission[]           @relation("PermissionCreatedBy")
+  updatedPermissions         Permission[]           @relation("PermissionUpdatedBy")
+  deletedPermissions         Permission[]           @relation("PermissionDeletedBy")
+  createdRoles               Role[]                 @relation("RoleCreatedBy")
+  updatedRoles               Role[]                 @relation("RoleUpdatedBy")
+  deletedRoles               Role[]                 @relation("RoleDeletedBy")
+  createdLevels              Level[]                @relation("LevelCreatedBy")
+  updatedLevels              Level[]                @relation("LevelUpdatedBy")
+  deletedLevels              Level[]                @relation("LevelDeletedBy")
+  createdRewards             Reward[]               @relation("RewardCreatedBy")
+  updatedRewards             Reward[]               @relation("RewardUpdatedBy")
+  deletedRewards             Reward[]               @relation("RewardDeletedBy")
+  createdVocabularies        Vocabulary[]           @relation("VocabularyCreatedBy")
+  createdLessons             Lesson[]               @relation("LessonCreatedBy")
+  createdPokemons            Pokemon[]              @relation("PokemonCreatedBy")
+  updatedPokemons            Pokemon[]              @relation("PokemonUpdatedBy")
+  deletedPokemons            Pokemon[]              @relation("PokemonDeletedBy")
+  createdElementalTypes      ElementalType[]        @relation("ElementalTypeCreatedBy")
+  updatedElementalTypes      ElementalType[]        @relation("ElementalTypeUpdatedBy")
+  deletedElementalTypes      ElementalType[]        @relation("ElementalTypeDeletedBy")
+  createdTypeEffectivenesses TypeEffectiveness[]    @relation("TypeEffectivenessCreatedBy")
+  updatedTypeEffectivenesses TypeEffectiveness[]    @relation("TypeEffectivenessUpdatedBy")
+  deletedTypeEffectivenesses TypeEffectiveness[]    @relation("TypeEffectivenessDeletedBy")
+  createdDailyRequest        DailyRequest[]         @relation("DailyRequestCreatedBy")
+  updatedDailyRequest        DailyRequest[]         @relation("DailyRequestUpdatedBy")
+  deletedDailyRequest        DailyRequest[]         @relation("DailyRequestDeletedBy")
+  createdUserDailyRequest    UserDailyRequest[]     @relation("UserDailyRequestCreatedBy")
+  updatedUserDailyRequest    UserDailyRequest[]     @relation("UserDailyRequestUpdatedBy")
+  deletedUserDailyRequest    UserDailyRequest[]     @relation("UserDailyRequestDeletedBy")
+  createdAchievements        Achievement[]          @relation("AchievementCreatedBy")
+  updatedAchievements        Achievement[]          @relation("AchievementUpdatedBy")
+  deletedAchievements        Achievement[]          @relation("AchievementDeletedBy")
+  createdUserAchievements    UserAchievement[]      @relation("UserAchievementCreatedBy")
+  updatedUserAchievements    UserAchievement[]      @relation("UserAchievementUpdatedBy")
+  deletedUserAchievements    UserAchievement[]      @relation("UserAchievementDeletedBy")
+  createdAchievementGroups   AchievementGroup[]     @relation("AchievementGroupCreatedBy")
+  updatedAchievementGroups   AchievementGroup[]     @relation("AchievementGroupUpdatedBy")
+  deletedAchievementGroups   AchievementGroup[]     @relation("AchievementGroupDeletedBy")
+  createdQuestionBanks       Question_Bank[]        @relation("QuestionBankCreatedBy")
+  createdDailyRequestTypes   DailyRequestCategory[] @relation("DailyRequestCategoryCreatedBy")
+  updatedDailyRequestTypes   DailyRequestCategory[] @relation("DailyRequestCategoryUpdatedBy")
+  deletedDailyRequestTypes   DailyRequestCategory[] @relation("DailyRequestCategoryDeletedBy")
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
   // Tự quan hệ 1-n
-  devices              Device[] // Liên kết 1-n với Device
-  refreshTokens        RefreshToken[]
-  userDailyRequests    UserDailyRequest[]
-  userPokemons         UserPokemon[]
-  userAchievements     UserAchievement[]
-  userExerciseAttempts UserExerciseAttempt[]
-  userProgresses       UserProgress[]
+  devices                    Device[] // Liên kết 1-n với Device
+  refreshTokens              RefreshToken[]
+  userDailyRequests          UserDailyRequest[]
+  userPokemons               UserPokemon[]
+  userAchievements           UserAchievement[]
+  userExerciseAttempts       UserExerciseAttempt[]
+  userProgresses             UserProgress[]
 
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -447,6 +449,9 @@ model ElementalType {
   // Quan hệ nhiều-nhiều với Pokémon
   pokemons Pokemon[]
 
+  //1-n
+  achievement Achievement[]
+
   // Quan hệ tấn công / phòng thủ
   attacking_relations TypeEffectiveness[] @relation("Attacker")
   defending_relations TypeEffectiveness[] @relation("Defender")
@@ -731,14 +736,17 @@ model GrammarUsage {
 }
 
 model DailyRequest {
-  id             Int                @id @default(autoincrement())
-  nameKey        String             @db.VarChar(200)
-  descriptionKey String             @db.VarChar(500)
-  conditionType  DailyConditionType // Loại điều kiện (LOGIN, COMPLETE_LESSON, STREAK_LOGIN, ...)
+  id             Int    @id @default(autoincrement())
+  nameKey        String @db.VarChar(200)
+  descriptionKey String @db.VarChar(500)
+
+  dailyRequestCategory   DailyRequestCategory @relation(fields: [dailyRequestCategoryId], references: [id], onDelete: NoAction)
+  dailyRequestCategoryId Int
+
   conditionValue Int // Giá trị cần đạt (VD: 1, 7, ...)
   rewardId       Int? // Liên kết tới Reward
-  reward         Reward?            @relation(fields: [rewardId], references: [id], onDelete: SetNull)
-  isActive       Boolean            @default(true)
+  reward         Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+  isActive       Boolean @default(true)
 
   userDailyRequests UserDailyRequest[]
 
@@ -815,11 +823,11 @@ model Achievement {
   // Điều kiện để nhận
   conditionType       AchievementType // Loại điều kiện, VD: LEARNING_STREAK
   conditionValue      Int? // Giá trị cần đạt, VD: 3 (cho 3 ngày)
-  conditionMeta       Json // Dữ liệu phức tạp, VD: {"pokemon_type": "FIRE"} hoặc {"pokemon_name": "Charizard"}
-
+  conditionElementId  Int? // Yếu tố liên quan (nếu có)
+  elementalType       ElementalType?       @relation(fields: [conditionElementId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   // Phần thưởng (nếu có)
-  rewardId Int? // Liên kết tới bảng Reward
-  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  rewardId            Int? // Liên kết tới bảng Reward
+  reward              Reward?              @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   groupId Int
   group   AchievementGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -890,6 +898,24 @@ model UserProgress {
   @@index([status])
   @@index([progressPercentage])
   @@index([completedAt])
+}
+
+model DailyRequestCategory {
+  id            Int            @id @default(autoincrement())
+  nameKey       String
+  isStreat      Boolean        @default(false)
+  dailyRequests DailyRequest[]
+
+  createdById Int?
+  createdBy   User? @relation("DailyRequestCategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("DailyRequestCategoryUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("DailyRequestCategoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 enum ProgressStatus {

@@ -1,4 +1,3 @@
-import { DailyConditionType } from '@/common/constants/daily-request.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { RewardSchema } from '@/modules/reward/entities/reward.entity'
@@ -12,14 +11,7 @@ export const DailyRequestSchema = z.object({
   id: z.number(),
   nameKey: z.string(),
   descriptionKey: z.string(),
-  conditionType: z.enum([
-    DailyConditionType.LOGIN,
-    DailyConditionType.COMPLETE_LESSON,
-    DailyConditionType.STREAK_LOGIN,
-    DailyConditionType.EXCERCISE,
-    DailyConditionType.STREAK_COMPLETE_LESSON,
-    DailyConditionType.STREAK_EXERCISE
-  ]),
+  dailyRequestCategoryId: z.number(),
   conditionValue: z.number().min(1),
   rewardId: z.number().nullable().optional(),
   isActive: z.boolean().default(true),
@@ -32,7 +24,7 @@ export const DailyRequestSchema = z.object({
 })
 
 export const CreateDailyRequestBodyInputSchema = DailyRequestSchema.pick({
-  conditionType: true,
+  dailyRequestCategoryId: true,
   conditionValue: true,
   rewardId: true,
   isActive: true
@@ -46,7 +38,7 @@ export const CreateDailyRequestBodyInputSchema = DailyRequestSchema.pick({
 export const CreateDailyRequestBodySchema = DailyRequestSchema.pick({
   nameKey: true,
   descriptionKey: true,
-  conditionType: true,
+  dailyRequestCategoryId: true,
   conditionValue: true,
   rewardId: true,
   isActive: true

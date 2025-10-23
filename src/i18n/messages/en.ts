@@ -271,5 +271,14 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Achievement list retrieved successfully',
     NOT_FOUND: 'Achievement not found',
     ALREADY_EXISTS: 'Achievement already exists'
+  },
+  daily_request_category: {
+    CREATE_SUCCESS: 'Daily request category created successfully',
+    UPDATE_SUCCESS: 'Daily request category updated successfully',
+    DELETE_SUCCESS: 'Daily request category deleted successfully',
+    GET_SUCCESS: 'Daily request category retrieved successfully',
+    GET_LIST_SUCCESS: 'Daily request category list retrieved successfully',
+    NOT_FOUND: 'Daily request category not found',
+    ALREADY_EXISTS: 'Daily request category already exists'
   }
 }

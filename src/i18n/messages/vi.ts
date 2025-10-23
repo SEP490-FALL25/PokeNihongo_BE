@@ -269,5 +269,14 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách thành tích thành công',
     NOT_FOUND: 'Không tìm thấy thành tích',
     ALREADY_EXISTS: 'Thành tích đã tồn tại'
+  },
+  daily_request_category: {
+    CREATE_SUCCESS: 'Tạo danh mục yêu cầu hàng ngày thành công',
+    UPDATE_SUCCESS: 'Cập nhật danh mục yêu cầu hàng ngày thành công',
+    DELETE_SUCCESS: 'Xóa danh mục yêu cầu hàng ngày thành công',
+    GET_SUCCESS: 'Lấy chi tiết danh mục yêu cầu hàng ngày thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách danh mục yêu cầu hàng ngày thành công',
+    NOT_FOUND: 'Không tìm thấy danh mục yêu cầu hàng ngày',
+    ALREADY_EXISTS: 'Danh mục yêu cầu hàng ngày đã tồn tại'
   }
 }
