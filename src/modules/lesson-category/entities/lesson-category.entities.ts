@@ -10,12 +10,7 @@ export const LessonCategoryType = z.object({
 })
 
 export const LessonCategoryWithRelationsType = LessonCategoryType.extend({
-    lessons: z.array(z.object({
-        id: z.number(),
-        slug: z.string(),
-        titleKey: z.string(),
-        isPublished: z.boolean(),
-    })).optional(),
+    name: z.string().optional(), // Translated name
 })
 
 // Request/Response Types
@@ -39,6 +34,23 @@ export const GetLessonCategoryListQueryType = z.object({
     search: z.string().optional(),
 })
 
+// Response schemas
+export const LessonCategoryListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(LessonCategoryType),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
 // Type exports
 export type LessonCategoryType = z.infer<typeof LessonCategoryType>
 export type LessonCategoryWithRelationsType = z.infer<typeof LessonCategoryWithRelationsType>
@@ -46,3 +58,4 @@ export type CreateLessonCategoryBodyType = z.infer<typeof CreateLessonCategoryBo
 export type UpdateLessonCategoryBodyType = z.infer<typeof UpdateLessonCategoryBodyType>
 export type GetLessonCategoryByIdParamsType = z.infer<typeof GetLessonCategoryByIdParamsType>
 export type GetLessonCategoryListQueryType = z.infer<typeof GetLessonCategoryListQueryType>
+export type LessonCategoryListResType = z.infer<typeof LessonCategoryListResSchema>

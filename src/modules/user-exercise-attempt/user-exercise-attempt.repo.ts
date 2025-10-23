@@ -1,0 +1,178 @@
+import { UserExerciseAttemptType } from '@/modules/user-exercise-attempt/entities/user-exercise-attempt.entities'
+import { PrismaService } from '@/shared/services/prisma.service'
+import { Injectable } from '@nestjs/common'
+
+@Injectable()
+export class UserExerciseAttemptRepository {
+    constructor(private readonly prismaService: PrismaService) { }
+
+    async findMany(params: {
+        currentPage: number
+        pageSize: number
+        userId?: number
+        exerciseId?: number
+        status?: string
+    }) {
+        const { currentPage, pageSize, userId, exerciseId, status } = params
+        const skip = (currentPage - 1) * pageSize
+
+        const where: any = {}
+
+        if (userId) {
+            where.userId = userId
+        }
+
+        if (exerciseId) {
+            where.exerciseId = exerciseId
+        }
+
+        if (status) {
+            where.status = status
+        }
+
+        const [items, total] = await Promise.all([
+            this.prismaService.userExerciseAttempt.findMany({
+                where,
+                skip,
+                take: pageSize,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true
+                        }
+                    },
+                    exercise: true,
+                    userAnswerLogs: true
+                }
+            }),
+            this.prismaService.userExerciseAttempt.count({ where })
+        ])
+
+        return {
+            items: items.map(item => this.transformUserExerciseAttempt(item)),
+            total,
+            page: currentPage,
+            limit: pageSize
+        }
+    }
+
+    async findUnique(where: { id?: number }): Promise<UserExerciseAttemptType | null> {
+        if (!where.id) return null
+
+        const result = await this.prismaService.userExerciseAttempt.findUnique({
+            where: { id: where.id },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                exercise: true,
+                userAnswerLogs: true
+            }
+        })
+        return result ? this.transformUserExerciseAttempt(result) : null
+    }
+
+    async create(data: {
+        userId: number
+        exerciseId: number
+    }): Promise<UserExerciseAttemptType> {
+        const result = await this.prismaService.userExerciseAttempt.create({
+            data: {
+                ...data,
+                status: 'IN_PROGRESS'
+            }
+        })
+        return this.transformUserExerciseAttempt(result)
+    }
+
+    async update(
+        where: { id: number },
+        data: {
+            status?: string
+        }
+    ): Promise<UserExerciseAttemptType> {
+        const result = await this.prismaService.userExerciseAttempt.update({
+            where,
+            data: {
+                status: data.status as any
+            }
+        })
+        return this.transformUserExerciseAttempt(result)
+    }
+
+    async delete(where: { id: number }): Promise<UserExerciseAttemptType> {
+        const result = await this.prismaService.userExerciseAttempt.delete({
+            where
+        })
+        return this.transformUserExerciseAttempt(result)
+    }
+
+    async count(where?: any): Promise<number> {
+        return this.prismaService.userExerciseAttempt.count({ where })
+    }
+
+    private transformUserExerciseAttempt(userExerciseAttempt: any): UserExerciseAttemptType {
+        return {
+            id: userExerciseAttempt.id,
+            userId: userExerciseAttempt.userId,
+            exerciseId: userExerciseAttempt.exerciseId,
+            status: userExerciseAttempt.status,
+            createdAt: userExerciseAttempt.createdAt,
+            updatedAt: userExerciseAttempt.updatedAt
+        }
+    }
+
+    async findById(id: number): Promise<UserExerciseAttemptType | null> {
+        const result = await this.prismaService.userExerciseAttempt.findUnique({
+            where: { id },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                exercise: true,
+                userAnswerLogs: true
+            }
+        })
+
+        if (!result) {
+            return null
+        }
+
+        return this.transformUserExerciseAttempt(result)
+    }
+
+    async findCompletedExercisesByLesson(userId: number, lessonId: number) {
+        // Lấy tất cả exercises của lesson
+        const lessonExercises = await this.prismaService.exercises.findMany({
+            where: { lessonId: lessonId },
+            select: { id: true }
+        })
+
+        const exerciseIds = lessonExercises.map(ex => ex.id)
+
+        // Lấy tất cả attempts COMPLETED của user trong lesson này
+        const completedAttempts = await this.prismaService.userExerciseAttempt.findMany({
+            where: {
+                userId: userId,
+                exerciseId: { in: exerciseIds },
+                status: 'COMPLETED'
+            },
+            select: { exerciseId: true }
+        })
+
+        return completedAttempts.map(attempt => attempt.exerciseId)
+    }
+}
+
+

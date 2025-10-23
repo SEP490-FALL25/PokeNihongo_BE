@@ -7,6 +7,7 @@
   "private": true,
   "license": "LICENSED",
   "scripts": {
+    "reset-sequences": "ts-node initialScript/reset-sequences.ts",
     "init-seed-data": "ts-node initialScript/index.ts && ts-node initialScript/import-elemental-types.ts && ts-node initialScript/import-type-effectiveness.ts",
     "seed-kanji-vocabulary": "ts-node initialScript/seed-default-data.ts",
     "create-permissions": "ts-node initialScript/create-permissions.ts",
@@ -29,6 +30,8 @@
     "prisma:generate": "npx prisma generate",
     "migrate:dev": "npx prisma migrate dev --create-only",
     "migrate:apply": "npx prisma migrate dev",
+    "migrate:reset": "npx prisma migrate reset",
+    "migrate:deploy": "npx prisma migrate deploy",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -88,6 +91,7 @@
     "socket.io": "^4.8.1",
     "typeorm": "^0.3.26",
     "uuid": "^11.1.0",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.17"
   },
   "devDependencies": {
@@ -141,5 +145,6 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
-  }
+  },
+  "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b"
 }

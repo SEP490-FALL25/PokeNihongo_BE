@@ -5,6 +5,7 @@ import {
 } from './entities/kanji.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
+import { KanjiSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class KanjiRepository {
@@ -12,16 +13,16 @@ export class KanjiRepository {
 
     // Kanji CRUD operations
     async findMany(params: {
-        page: number
-        limit: number
+        currentPage: number
+        pageSize: number
         search?: string
         jlptLevel?: number
         strokeCount?: number
-        sortBy?: string
-        sortOrder?: 'asc' | 'desc'
+        sortBy?: KanjiSortField
+        sortOrder?: SortOrder
     }) {
-        const { page, limit, search, jlptLevel, strokeCount, sortBy = 'id', sortOrder = 'asc' } = params
-        const skip = (page - 1) * limit
+        const { currentPage, pageSize, search, jlptLevel, strokeCount, sortBy = KanjiSortField.CREATED_AT, sortOrder = SortOrder.DESC } = params
+        const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
 
@@ -47,9 +48,19 @@ export class KanjiRepository {
             this.prismaService.kanji.findMany({
                 where,
                 skip,
-                take: limit,
+                take: pageSize,
                 orderBy,
                 include: {
+                    readings: {
+                        select: {
+                            id: true,
+                            kanjiId: true,
+                            readingType: true,
+                            reading: true,
+                            createdAt: true,
+                            updatedAt: true
+                        }
+                    },
                     _count: {
                         select: {
                             vocabularies: true,
@@ -64,9 +75,9 @@ export class KanjiRepository {
         return {
             data: data.map(item => this.transformKanji(item)),
             total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit)
+            currentPage,
+            pageSize,
+            totalPages: Math.ceil(total / pageSize)
         }
     }
 
@@ -197,6 +208,10 @@ export class KanjiRepository {
     }
 
     async exists(id: number): Promise<boolean> {
+        if (!id || isNaN(id)) {
+            return false
+        }
+
         const count = await this.prismaService.kanji.count({
             where: { id }
         })
@@ -248,8 +263,53 @@ export class KanjiRepository {
             jlptLevel: kanji.jlptLevel,
             img: kanji.img || null, // Handle case where img column doesn't exist
             createdAt: kanji.createdAt,
-            updatedAt: kanji.updatedAt
+            updatedAt: kanji.updatedAt,
+            readings: kanji.readings || []
         }
+    }
+
+    // Transaction method for deleting all Kanji data
+    async deleteAllKanjiData() {
+        return await this.prismaService.$transaction(async (tx) => {
+            // 1. Đếm số lượng bản ghi sẽ bị xóa
+            const kanjiCount = await tx.kanji.count()
+            const readingCount = await tx.kanji_Reading.count()
+            const vocabularyKanjiCount = await tx.vocabulary_Kanji.count()
+
+            // 2. Lấy danh sách các meaningKey của Kanji để xóa Translation
+            const kanjiMeaningKeys = await tx.kanji.findMany({
+                select: { meaningKey: true }
+            })
+            const meaningKeys = kanjiMeaningKeys.map(k => k.meaningKey)
+
+            // 3. Xóa các bản ghi theo thứ tự để tránh lỗi foreign key constraint
+            // Xóa Vocabulary_Kanji trước (bảng nối)
+            await tx.vocabulary_Kanji.deleteMany()
+
+            // Xóa Kanji_Reading
+            await tx.kanji_Reading.deleteMany()
+
+            // Xóa Translation liên quan đến Kanji
+            if (meaningKeys.length > 0) {
+                await tx.translation.deleteMany({
+                    where: {
+                        key: {
+                            in: meaningKeys
+                        }
+                    }
+                })
+            }
+
+            // Xóa Kanji
+            await tx.kanji.deleteMany()
+
+            return {
+                kanjiDeleted: kanjiCount,
+                readingDeleted: readingCount,
+                vocabularyKanjiDeleted: vocabularyKanjiCount,
+                translationDeleted: meaningKeys.length
+            }
+        })
     }
 
 }

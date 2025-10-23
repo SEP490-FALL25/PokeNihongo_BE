@@ -75,8 +75,34 @@ export {
     GetWordTypeByIdParamsDTO,
     GetWordTypeListQueryDTO,
     GetWordTypeByNameKeyParamsDTO,
-    WordTypeResponseDTO
+    WordTypeResponseDTO,
+    WordTypeListResDTO
 } from './zod/wordtype-zod.dto'
+
+// Query Swagger DTO
+export class GetWordTypeListQuerySwaggerDTO {
+    @ApiProperty({ example: 1, description: 'Số trang hiện tại', required: false })
+    page?: number
+
+    @ApiProperty({ example: 10, description: 'Số lượng loại từ mỗi trang', required: false })
+    limit?: number
+
+    @ApiProperty({
+        enum: ['id', 'nameKey', 'createdAt', 'updatedAt'],
+        example: 'createdAt',
+        description: 'Field để sắp xếp: id | nameKey | createdAt | updatedAt',
+        required: false
+    })
+    sortBy?: 'id' | 'nameKey' | 'createdAt' | 'updatedAt'
+
+    @ApiProperty({
+        enum: ['asc', 'desc'],
+        example: 'desc',
+        description: 'Thứ tự sắp xếp: asc hoặc desc',
+        required: false
+    })
+    sortOrder?: 'asc' | 'desc'
+}
 
 // List Response DTO (not Zod)
 export class WordTypeListResponseDTO {

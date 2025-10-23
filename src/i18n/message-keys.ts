@@ -55,6 +55,16 @@ export const RewardMessage = {
   NAME_REQUIRED: 'reward.NAME_REQUIRED'
 } as const
 
+export const WordTypeMessage = {
+  CREATE_SUCCESS: 'wordtype.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'wordtype.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'wordtype.DELETE_SUCCESS',
+  GET_SUCCESS: 'wordtype.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'wordtype.GET_LIST_SUCCESS',
+  GET_STATS_SUCCESS: 'wordtype.GET_STATS_SUCCESS',
+  CREATE_DEFAULT_SUCCESS: 'wordtype.CREATE_DEFAULT_SUCCESS'
+} as const
+
 export const SystemMessage = {
   NOT_FOUND: 'system.NOT_FOUND',
   INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'system.INVALID_NEW_PASSWORD_CONFIRM_PASSWORD',
@@ -144,6 +154,7 @@ export const PokemonMessage = {
 } as const
 
 export const UserPokemonMessage = {
+  GET_STATS_SUCCESS: 'user_pokemon.GET_STATS_SUCCESS',
   CREATE_SUCCESS: 'user_pokemon.CREATE_SUCCESS',
   UPDATE_SUCCESS: 'user_pokemon.UPDATE_SUCCESS',
   DELETE_SUCCESS: 'user_pokemon.DELETE_SUCCESS',
@@ -214,5 +225,63 @@ export const CommonMessage = {
   ERROR: 'common.ERROR',
   INVALID_DATA: 'common.INVALID_DATA',
   UNAUTHORIZED: 'common.UNAUTHORIZED',
-  FORBIDDEN: 'common.FORBIDDEN'
+  FORBIDDEN: 'common.FORBIDDEN',
+  LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'common.LANGUAGE_NOT_EXIST_TO_TRANSLATE'
 } as const
+
+export const ENTITY_MESSAGE = {
+  INVALID_DATA: 'entity.INVALID_DATA',
+  NOT_FOUND: 'entity.NOT_FOUND',
+  ALREADY_EXISTS: 'entity.ALREADY_EXISTS',
+  INVALID_ID: 'entity.INVALID_ID'
+} as const
+
+export const AchievementGroupMessage = {
+  CREATE_SUCCESS: 'achievement_group.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'achievement_group.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'achievement_group.DELETE_SUCCESS',
+  GET_SUCCESS: 'achievement_group.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'achievement_group.GET_LIST_SUCCESS',
+  NOT_FOUND: 'achievement_group.NOT_FOUND',
+  ALREADY_EXISTS: 'achievement_group.ALREADY_EXISTS',
+  INVALID_DATA: 'achievement_group.INVALID_DATA',
+  NAME_REQUIRED: 'achievement_group.NAME_REQUIRED'
+} as const
+
+export const DailyRequestMessage = {
+  CREATE_SUCCESS: 'daily_request.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'daily_request.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'daily_request.DELETE_SUCCESS',
+  GET_SUCCESS: 'daily_request.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'daily_request.GET_LIST_SUCCESS',
+  NOT_FOUND: 'daily_request.NOT_FOUND',
+  ALREADY_EXISTS: 'daily_request.ALREADY_EXISTS'
+} as const
+
+export const TranslationMessage = {
+  DUPLICATE_LANGUAGE: 'translation.DUPLICATE_LANGUAGE',
+  ALREADY_EXISTS: 'translation.ALREADY_EXISTS',
+  DUPLICATE_VALUE: 'translation.DUPLICATE_VALUE'
+} as const
+
+export const UserDailyRequestMessage = {
+  CREATE_SUCCESS: 'user_daily_request.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'user_daily_request.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'user_daily_request.DELETE_SUCCESS',
+  GET_SUCCESS: 'user_daily_request.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'user_daily_request.GET_LIST_SUCCESS',
+  NOT_FOUND: 'user_daily_request.NOT_FOUND',
+  ALREADY_EXISTS: 'user_daily_request.ALREADY_EXISTS',
+  USER_ALREADY_ATTENDED_TODAY: 'user_daily_request.USER_ALREADY_ATTENDED_TODAY'
+} as const
+
+export const AchievementMessage = {
+  CREATE_SUCCESS: 'achievement.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'achievement.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'achievement.DELETE_SUCCESS',
+  GET_SUCCESS: 'achievement.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'achievement.GET_LIST_SUCCESS',
+  NOT_FOUND: 'achievement.NOT_FOUND',
+  ALREADY_EXISTS: 'achievement.ALREADY_EXISTS',
+  INVALID_DATA: 'achievement.INVALID_DATA'
+}

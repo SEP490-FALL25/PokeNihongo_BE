@@ -5,13 +5,14 @@ import {
     UpdateGrammarUsageBodyType,
     GetGrammarUsageListQueryType,
 } from './entities/grammar-usage.entities'
+import { GrammarUsageSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class GrammarUsageRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetGrammarUsageListQueryType) {
-        const { page, limit, grammarId } = params
+        const { page, limit, grammarId, sortBy = GrammarUsageSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (page - 1) * limit
 
         const where: any = {}
@@ -32,10 +33,7 @@ export class GrammarUsageRepository {
                         }
                     }
                 },
-                orderBy: [
-                    { grammarId: 'asc' },
-                    { createdAt: 'desc' }
-                ],
+                orderBy: { [sortBy]: sort },
                 skip,
                 take: limit,
             }),

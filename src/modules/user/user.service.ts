@@ -1,6 +1,7 @@
 import { MailService } from '@/3rdService/mail/mail.service'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserMessage } from '@/i18n/message-keys'
+import { LevelRepo } from '@/modules/level/level.repo'
 import { UserPokemonRepo } from '@/modules/user-pokemon/user-pokemon.repo'
 import { NotFoundRecordException } from '@/shared/error'
 import {
@@ -27,7 +28,8 @@ export class UserService {
     private userRepo: UserRepo,
     private mailService: MailService,
     private userPokemonRepo: UserPokemonRepo,
-    private i18nService: I18nService
+    private i18nService: I18nService,
+    private levelRepo: LevelRepo
   ) {}
 
   /**
@@ -249,6 +251,167 @@ export class UserService {
         statusCode: HttpStatus.OK,
         data: null,
         message: this.i18nService.translate(UserMessage.SET_MAIN_POKEMON_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new UserNotFoundException()
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Add experience to user and handle level up progression
+   * Similar to Pokemon handleLevelUp logic but for user levels
+   *
+   * @param userId - User ID to add experience to
+   * @param expToAdd - Amount of experience to add
+   * @param lang - Language for response messages
+   * @returns User level up result with details
+   */
+  async userAddExp(userId: number, expToAdd: number, lang: string = 'vi') {
+    try {
+      // Find user with current level
+      const user = await this.userRepo.findById(userId)
+      if (!user) {
+        throw new UserNotFoundException()
+      }
+
+      // If user doesn't have a level, assign first user level
+      if (!(user as any).level) {
+        const firstLevel = await this.levelRepo.getFirstLevelUser()
+        if (firstLevel) {
+          await this.userRepo.update({
+            id: userId,
+            updatedById: userId,
+            data: { levelId: firstLevel.id, exp: 0 }
+          })
+          // Reload user with level
+          const updatedUser = await this.userRepo.findById(userId)
+          if (updatedUser) {
+            ;(user as any).level = (updatedUser as any).level
+            user.levelId = updatedUser.levelId
+          }
+        }
+      }
+
+      const newTotalExp = user.exp + expToAdd
+      const levelUpResult = await this.handleUserLevelUp(user, newTotalExp)
+
+      return {
+        statusCode: HttpStatus.OK,
+        data: levelUpResult,
+        message: this.i18nService.translate(UserMessage.UPDATE_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new UserNotFoundException()
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Handle user level up logic with recursive progression
+   * Similar to Pokemon handleLevelUp but for user levels
+   *
+   * @param user - User object with current level
+   * @param newExp - New total experience amount
+   * @returns Level up result with progression details
+   */
+  private async handleUserLevelUp(user: any, newExp: number) {
+    let currentLevel = (user as any).level
+    let currentExp = newExp
+    let leveledUp = false
+    let levelsGained = 0
+    let expUpdated = false
+
+    // Keep checking for level ups while EXP is sufficient
+    while (currentLevel && currentExp >= currentLevel.requiredExp) {
+      // Find next level
+      const nextLevel = await this.levelRepo.findByLevelAndType(
+        currentLevel.levelNumber + 1,
+        currentLevel.levelType as any
+      )
+
+      if (!nextLevel) {
+        // No more levels available, keep remaining EXP
+        await this.userRepo.update({
+          id: user.id,
+          updatedById: user.id,
+          data: { exp: currentExp }
+        })
+        expUpdated = true
+        break
+      }
+
+      // Level up! Calculate remaining EXP after leveling up
+      const remainingExp = currentExp - currentLevel.requiredExp
+
+      // Update user level and continue with remaining EXP
+      await this.userRepo.update({
+        id: user.id,
+        updatedById: user.id,
+        data: {
+          levelId: nextLevel.id,
+          exp: remainingExp
+        }
+      })
+
+      currentLevel = nextLevel
+      currentExp = remainingExp
+      leveledUp = true
+      levelsGained++
+    }
+
+    // If there's remaining EXP but no level up happened, just update EXP
+    if (!leveledUp && !expUpdated) {
+      await this.userRepo.update({
+        id: user.id,
+        updatedById: user.id,
+        data: { exp: currentExp }
+      })
+    } else if (leveledUp && currentExp > 0 && currentLevel && !expUpdated) {
+      // If leveled up but still has remaining EXP, ensure it doesn't exceed current level's requiredExp
+      const finalExp = Math.min(currentExp, currentLevel.requiredExp)
+      await this.userRepo.update({
+        id: user.id,
+        updatedById: user.id,
+        data: { exp: finalExp }
+      })
+      currentExp = finalExp
+    }
+
+    // Get updated user data
+    const updatedUser = await this.userRepo.findById(user.id)
+
+    return {
+      ...updatedUser,
+      leveledUp,
+      levelsGained,
+      finalExp: currentExp
+    }
+  }
+
+  /**
+   * Add free coins to user
+   * @param userId - User ID to add coins to
+   * @param amount - Amount of coins to add
+   * @param lang - Language for response messages
+   */
+  async addFreeCoins(userId: number, amount: number, lang: string = 'vi') {
+    try {
+      const user = await this.userRepo.findById(userId)
+      if (!user) {
+        throw new UserNotFoundException()
+      }
+
+      const updatedUser = await this.userRepo.incrementFreeCoins(userId, amount)
+
+      return {
+        statusCode: HttpStatus.OK,
+        data: updatedUser,
+        message: this.i18nService.translate(UserMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {

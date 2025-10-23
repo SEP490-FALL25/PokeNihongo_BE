@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { VocabularySortField, VocabularySortOrder } from '@/common/enum/enum'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -34,6 +35,13 @@ const isHiraganaText = (text: string): boolean => {
 const JAPANESE_TEXT_ERROR = 'Phải là văn bản tiếng Nhật thuần túy (CHỈ chứa Hiragana, Katakana, hoặc Kanji - không cho phép số hoặc ký tự Latin)'
 const HIRAGANA_TEXT_ERROR = 'Phải là cách đọc Hiragana (chỉ chứa ký tự Hiragana và dấu câu cơ bản)'
 
+// WordType schema for nested relation
+export const WordTypeSchema = z.object({
+    id: z.number(),
+    nameKey: z.string(),
+    name: z.string().optional() // Resolved translation value
+})
+
 export const VocabularySchema = z.object({
     id: z.number(),
     wordJp: z
@@ -46,12 +54,11 @@ export const VocabularySchema = z.object({
     reading: z
         .string()
         .min(1, 'Cách đọc không được để trống')
-        .max(500, 'Cách đọc quá dài (tối đa 500 ký tự)')
-        .refine(isHiraganaText, {
-            message: HIRAGANA_TEXT_ERROR
-        }),
+        .max(500, 'Cách đọc quá dài (tối đa 500 ký tự)'),
     imageUrl: z.string().url().nullable().optional(),
     audioUrl: z.string().url().nullable().optional(),
+    levelN: z.number().min(1).max(5).nullable().optional(),
+    wordType: WordTypeSchema.nullable().optional(),
     createdById: z.number().nullable().optional(),
     createdAt: z.date(),
     updatedAt: z.date()
@@ -83,10 +90,13 @@ export const VocabularyListResSchema = z
     .object({
         statusCode: z.number(),
         data: z.object({
-            items: z.array(VocabularySchema),
-            total: z.number(),
-            page: z.number(),
-            limit: z.number()
+            results: z.array(VocabularySchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
         }),
         message: z.string()
     })
@@ -100,11 +110,31 @@ export const GetVocabularyByIdParamsSchema = z
 
 export const GetVocabularyListQuerySchema = z
     .object({
-        page: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
-        limit: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
+        currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
+        pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         search: z.string().optional(),
-        wordJp: z.string().optional(),
-        reading: z.string().optional()
+        levelN: z.string().transform((val) => parseInt(val, 10)).optional(),
+        sortBy: z.nativeEnum(VocabularySortField).optional().default(VocabularySortField.CREATED_AT),
+        sort: z.nativeEnum(VocabularySortOrder).optional().default(VocabularySortOrder.DESC)
+    })
+    .strict()
+
+// Statistics Schema
+export const VocabularyStatisticsSchema = z.object({
+    totalVocabulary: z.number(),
+    totalKanji: z.number(),
+    vocabularyN5: z.number(),
+    vocabularyN4: z.number(),
+    vocabularyN3: z.number(),
+    vocabularyN2: z.number(),
+    vocabularyN1: z.number()
+})
+
+export const VocabularyStatisticsResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: VocabularyStatisticsSchema,
+        message: z.string()
     })
     .strict()
 
@@ -116,3 +146,5 @@ export type VocabularyResType = z.infer<typeof VocabularyResSchema>
 export type VocabularyListResType = z.infer<typeof VocabularyListResSchema>
 export type GetVocabularyByIdParamsType = z.infer<typeof GetVocabularyByIdParamsSchema>
 export type GetVocabularyListQueryType = z.infer<typeof GetVocabularyListQuerySchema>
+export type VocabularyStatisticsType = z.infer<typeof VocabularyStatisticsSchema>
+export type VocabularyStatisticsResType = z.infer<typeof VocabularyStatisticsResSchema>

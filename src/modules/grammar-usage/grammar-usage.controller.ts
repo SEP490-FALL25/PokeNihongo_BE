@@ -10,7 +10,7 @@ import {
     Put,
     Query,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { UseGuards } from '@nestjs/common'
@@ -57,6 +57,7 @@ export class GrammarUsageController {
 
     @Get()
     @ApiOperation({ summary: 'Lấy danh sách cách sử dụng ngữ pháp' })
+    @ApiQuery({ type: GetGrammarUsageListQuerySwaggerDTO })
     @ApiResponse({ status: 200, description: 'Lấy danh sách cách sử dụng ngữ pháp thành công', type: GrammarUsageListResponseSwaggerDTO })
     @ZodSerializerDto(GrammarUsageListResponseDTO)
     async getGrammarUsageList(@Query() query: GetGrammarUsageListQueryDTO) {

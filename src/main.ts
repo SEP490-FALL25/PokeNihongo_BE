@@ -10,7 +10,7 @@ async function bootstrap() {
 
   const corsOrigin = envConfig.APP_CORS_ORIGIN
   app.enableCors({
-    origin: corsOrigin,
+    origin: 'http://localhost:5173',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true

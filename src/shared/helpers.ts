@@ -30,3 +30,17 @@ export const generateRandomFilename = (filename: string) => {
   const ext = path.extname(filename)
   return `${uuidv4()}${ext}`
 }
+
+export function todayUTCFromVN() {
+  const now = new Date()
+
+  // Lấy ngày hiện tại ở múi giờ VN
+  const vnYear = now.getUTCFullYear()
+  const vnMonth = now.getUTCMonth()
+  const vnDate = now.getUTCDate()
+  now.setHours(0, 0, 0, 0)
+  now.setHours(now.getHours() + 7)
+
+  // 0h VN
+  return now
+}

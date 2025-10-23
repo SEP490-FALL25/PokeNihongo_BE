@@ -5,8 +5,10 @@ import {
   CreateUserPokemonResSchema,
   EvolvePokemonBodySchema,
   EvolvePokemonResSchema,
+  GetUserPokemonAddExpDetailResSchema,
   GetUserPokemonDetailResSchema,
   GetUserPokemonParamsSchema,
+  GetUserPokemonStatsResSchema,
   UpdateUserPokemonBodySchema,
   UpdateUserPokemonResSchema
 } from '../entities/user-pokemon.entity'
@@ -25,3 +27,9 @@ export class GetUserPokemonDetailResDTO extends createZodDto(
   GetUserPokemonDetailResSchema
 ) {}
 export class EvolvePokemonResDTO extends createZodDto(EvolvePokemonResSchema) {}
+
+export class GetUserPokemonAddExpDetailResDTO extends createZodDto(
+  GetUserPokemonAddExpDetailResSchema
+) {}
+
+export class GetUserPokemonStatsResDTO extends createZodDto(GetUserPokemonStatsResSchema) {}

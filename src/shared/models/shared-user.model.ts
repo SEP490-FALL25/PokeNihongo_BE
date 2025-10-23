@@ -16,6 +16,7 @@ export const UserSchema = z.object({
     .optional()
     .nullable(),
   avatar: z.string().nullable(),
+  exp: z.number().min(0).optional().default(0),
   status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]),
   levelId: z.number().min(1).optional().nullable(),
   roleId: z.number().positive(),

@@ -1,7 +1,29 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { VocabularySortField, VocabularySortOrder } from '@/common/enum/enum'
 
 
 
+
+export class WordTypeResponseSwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'ID của loại từ'
+    })
+    id: number
+
+    @ApiProperty({
+        example: 'word_type.noun',
+        description: 'Key để dịch tên loại từ'
+    })
+    nameKey: string
+
+    @ApiProperty({
+        example: 'Danh từ',
+        description: 'Tên loại từ đã được dịch',
+        nullable: true
+    })
+    name?: string
+}
 
 export class VocabularyResponseSwaggerDTO {
     @ApiProperty({
@@ -27,14 +49,35 @@ export class VocabularyResponseSwaggerDTO {
         description: 'URL hình ảnh minh họa từ vựng',
         nullable: true
     })
-    imageUrl?: File
+    imageUrl?: string
 
     @ApiProperty({
         example: 'https://example.com/audio/konnichiwa.mp3',
         description: 'URL âm thanh phát âm từ vựng',
         nullable: true
     })
-    audioUrl?: File
+    audioUrl?: string
+
+    @ApiProperty({
+        example: 5,
+        description: 'Cấp độ JLPT (1-5)',
+        nullable: true
+    })
+    levelN?: number
+
+    @ApiProperty({
+        type: WordTypeResponseSwaggerDTO,
+        description: 'Thông tin loại từ',
+        nullable: true
+    })
+    wordType?: WordTypeResponseSwaggerDTO
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID người tạo',
+        nullable: true
+    })
+    createdById?: number
 
     @ApiProperty({
         example: '2025-01-01T10:00:00.000Z',
@@ -75,16 +118,68 @@ export class VocabularyListResponseSwaggerDTO {
     limit: number
 }
 
+export class VocabularyStatisticsSwaggerDTO {
+    @ApiProperty({
+        example: 100,
+        description: 'Tổng số từ vựng'
+    })
+    totalVocabulary: number
+
+    @ApiProperty({
+        example: 50,
+        description: 'Tổng số Kanji'
+    })
+    totalKanji: number
+
+    @ApiProperty({
+        example: 20,
+        description: 'Số từ vựng cấp độ N5'
+    })
+    vocabularyN5: number
+
+    @ApiProperty({
+        example: 25,
+        description: 'Số từ vựng cấp độ N4'
+    })
+    vocabularyN4: number
+
+    @ApiProperty({
+        example: 30,
+        description: 'Số từ vựng cấp độ N3'
+    })
+    vocabularyN3: number
+
+    @ApiProperty({
+        example: 15,
+        description: 'Số từ vựng cấp độ N2'
+    })
+    vocabularyN2: number
+
+    @ApiProperty({
+        example: 10,
+        description: 'Số từ vựng cấp độ N1'
+    })
+    vocabularyN1: number
+}
+
+export class VocabularyStatisticsResponseSwaggerDTO {
+    @ApiProperty({
+        type: VocabularyStatisticsSwaggerDTO,
+        description: 'Thống kê từ vựng'
+    })
+    data: VocabularyStatisticsSwaggerDTO
+}
+
 //Get
 export class GetVocabularyListQuerySwaggerDTO {
     @ApiProperty({
         example: 1,
-        description: 'Số trang',
+        description: 'Số trang hiện tại',
         required: false,
         default: 1,
         minimum: 1
     })
-    page?: number
+    currentPage?: number
 
     @ApiProperty({
         example: 10,
@@ -94,7 +189,7 @@ export class GetVocabularyListQuerySwaggerDTO {
         minimum: 1,
         maximum: 100
     })
-    limit?: number
+    pageSize?: number
 
     @ApiProperty({
         example: 'こん',
@@ -105,20 +200,31 @@ export class GetVocabularyListQuerySwaggerDTO {
     search?: string
 
     @ApiProperty({
-        example: 'こんにちは',
-        description: 'Tìm kiếm theo từ tiếng Nhật cụ thể',
+        example: 5,
+        description: 'Lọc theo cấp độ JLPT (1-5, trong đó 5 là N5, 4 là N4, ..., 1 là N1)',
         required: false,
-        maxLength: 500
+        minimum: 1,
+        maximum: 5
     })
-    wordJp?: string
+    levelN?: number
 
     @ApiProperty({
-        example: 'konnichiwa',
-        description: 'Tìm kiếm theo cách đọc cụ thể',
+        enum: VocabularySortField,
+        example: VocabularySortField.CREATED_AT,
+        description: 'Field để sắp xếp theo createdAt, updatedAt, id, levelN',
         required: false,
-        maxLength: 500
     })
-    reading?: string
+    sortBy?: VocabularySortField
+
+    @ApiProperty({
+        enum: VocabularySortOrder,
+        example: VocabularySortOrder.DESC,
+        description: 'Sắp xếp theo thứ tự tăng dần (asc) hoặc giảm dần (desc)',
+        required: false,
+    })
+    sort?: VocabularySortOrder
+
+
 }
 
 // Multipart DTOs for file uploads
@@ -199,5 +305,24 @@ export class MeaningDTO {
 
     @ApiProperty({ example: 'Xin chào', description: 'Nghĩa của từ' })
     meaning_text: string
+}
+
+// Import DTOs
+export class ImportVocabularyXlsxSwaggerDTO {
+    @ApiProperty({
+        type: 'string',
+        format: 'binary',
+        description: 'File Excel với các cột: word, phonetic, mean'
+    })
+    file: any
+}
+
+export class ImportVocabularyTxtSwaggerDTO {
+    @ApiProperty({
+        type: 'string',
+        format: 'binary',
+        description: 'TXT có các cột: Category\tword\treading\tmeaning\texample_jp\texample_vi'
+    })
+    file: any
 }
 

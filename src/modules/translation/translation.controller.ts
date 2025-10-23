@@ -15,7 +15,8 @@ import {
     UpdateTranslationSwaggerDTO,
     TranslationSwaggerResponseDTO,
     TranslationListSwaggerResponseDTO,
-    TranslationByKeySwaggerResponseDTO
+    TranslationByKeySwaggerResponseDTO,
+    GetTranslationListQuerySwaggerDTO
 } from './dto/translation.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -53,33 +54,7 @@ export class TranslationController {
         summary: 'Lấy danh sách bản dịch',
         description: 'Lấy danh sách bản dịch với phân trang và tìm kiếm'
     })
-    @ApiQuery({
-        name: 'page',
-        required: false,
-        description: 'Trang hiện tại',
-        example: 1
-    })
-    @ApiQuery({
-        name: 'limit',
-        required: false,
-        description: 'Số lượng bản dịch mỗi trang',
-        example: 10
-    })
-    @ApiQuery({
-        name: 'search',
-        required: false,
-        description: 'Tìm kiếm theo key hoặc value'
-    })
-    @ApiQuery({
-        name: 'languageCode',
-        required: false,
-        description: 'Lọc theo mã ngôn ngữ'
-    })
-    @ApiQuery({
-        name: 'key',
-        required: false,
-        description: 'Lọc theo key cụ thể'
-    })
+    @ApiQuery({ type: GetTranslationListQuerySwaggerDTO })
     @ApiResponse({
         status: 200,
         description: 'Lấy danh sách bản dịch thành công',

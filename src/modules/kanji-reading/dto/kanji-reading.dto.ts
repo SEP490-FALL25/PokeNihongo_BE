@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { KanjiReadingSortField, SortOrder } from '@/common/enum/enum'
 
 // Swagger DTOs for API documentation
 export class CreateKanjiReadingSwaggerDTO {
@@ -99,6 +100,40 @@ export {
     GetKanjiReadingsByTypeParamsDTO,
     KanjiReadingResponseDTO
 } from './zod/kanji-reading-zod.dto'
+// Query parameter DTOs
+export class GetKanjiReadingListQuerySwaggerDTO {
+    @ApiProperty({ example: 1, description: 'Số trang hiện tại', required: false })
+    currentPage?: number
+
+    @ApiProperty({ example: 10, description: 'Số item mỗi trang', required: false })
+    pageSize?: number
+
+    @ApiProperty({ example: 'にち', description: 'Tìm kiếm theo cách đọc', required: false })
+    search?: string
+
+    @ApiProperty({ example: 1, description: 'Lọc theo ID Kanji', required: false })
+    kanjiId?: number
+
+    @ApiProperty({ example: 'onyomi', description: 'Lọc theo loại cách đọc', required: false })
+    readingType?: string
+
+    @ApiProperty({
+        enum: KanjiReadingSortField,
+        example: KanjiReadingSortField.CREATED_AT,
+        description: 'Field để sắp xếp theo id, kanjiId, readingType, reading, createdAt, updatedAt',
+        required: false
+    })
+    sortBy?: KanjiReadingSortField
+
+    @ApiProperty({
+        enum: SortOrder,
+        example: SortOrder.DESC,
+        description: 'Sắp xếp theo thứ tự tăng dần (asc) hoặc giảm dần (desc)',
+        required: false
+    })
+    sort?: SortOrder
+}
+
 // List Response DTO (not Zod)
 export class KanjiReadingListResponseDTO {
     data: any[]

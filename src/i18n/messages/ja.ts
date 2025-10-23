@@ -161,7 +161,8 @@ export const jaMessages = {
     SET_MAIN_POKEMON_SUCCESS: 'メインポケモンの設定が完了しました',
     EVOLVE_SUCCESS: 'ポケモンの進化が完了しました',
     ADD_EXP_SUCCESS: 'ポケモンへのEXP追加が完了しました',
-    LEVEL_UP_SUCCESS: 'ポケモンがレベルアップしました！'
+    LEVEL_UP_SUCCESS: 'ポケモンがレベルアップしました！',
+    GET_STATS_SUCCESS: 'ユーザーポケモンの統計情報が取得されました'
   },
   user: {
     GET_LIST_SUCCESS: 'ユーザーリストの取得に成功しました',
@@ -208,6 +209,57 @@ export const jaMessages = {
     ERROR: 'エラーが発生しました',
     INVALID_DATA: '無効なデータが提供されました',
     UNAUTHORIZED: '認証されていないアクセス',
-    FORBIDDEN: 'アクセスが禁止されています'
+    FORBIDDEN: 'アクセスが禁止されています',
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: '翻訳する言語が存在しません'
+  },
+  entity: {
+    INVALID_DATA: '無効なデータが提供されました',
+    NOT_FOUND: 'レコードが見つかりません',
+    ALREADY_EXISTS: 'レコードは既に存在します',
+    INVALID_ID: '無効なIDです'
+  },
+  achievement_group: {
+    CREATE_SUCCESS: '実績グループの作成が完了しました',
+    UPDATE_SUCCESS: '実績グループの更新が完了しました',
+    DELETE_SUCCESS: '実績グループの削除が完了しました',
+    GET_SUCCESS: '実績グループ情報を取得しました',
+    GET_LIST_SUCCESS: '実績グループリストを取得しました',
+    NOT_FOUND: '実績グループが見つかりません',
+    ALREADY_EXISTS: '実績グループは既に存在します',
+    INVALID_DATA: '無効な実績グループデータです',
+    NAME_REQUIRED: '実績グループ名は必須です'
+  },
+  daily_request: {
+    CREATE_SUCCESS: 'デイリーリクエストの作成が完了しました',
+    UPDATE_SUCCESS: 'デイリーリクエストの更新が完了しました',
+    DELETE_SUCCESS: 'デイリーリクエストの削除が完了しました',
+    GET_SUCCESS: 'デイリーリクエスト情報を取得しました',
+    GET_LIST_SUCCESS: 'デイリーリクエストリストを取得しました',
+    NOT_FOUND: 'デイリーリクエストが見つかりません',
+    ALREADY_EXISTS: 'デイリーリクエストは既に存在します'
+  },
+  translation: {
+    DUPLICATE_LANGUAGE: '言語が重複しています',
+    ALREADY_EXISTS: '翻訳は既に存在します',
+    DUPLICATE_VALUE: '翻訳値が重複しています'
+  },
+  user_daily_request: {
+    CREATE_SUCCESS: 'ユーザーデイリーリクエストの作成が完了しました',
+    UPDATE_SUCCESS: 'ユーザーデイリーリクエストの更新が完了しました',
+    DELETE_SUCCESS: 'ユーザーデイリーリクエストの削除が完了しました',
+    GET_SUCCESS: 'ユーザーデイリーリクエスト情報を取得しました',
+    GET_LIST_SUCCESS: 'ユーザーデイリーリクエストリストを取得しました',
+    NOT_FOUND: 'ユーザーデイリーリクエストが見つかりません',
+    ALREADY_EXISTS: 'ユーザーデイリーリクエストは既に存在します',
+    USER_ALREADY_ATTENDED_TODAY: 'ユーザーは本日既に出席しています'
+  },
+  achievement: {
+    CREATE_SUCCESS: '実績の作成が完了しました',
+    UPDATE_SUCCESS: '実績の更新が完了しました',
+    DELETE_SUCCESS: '実績の削除が完了しました',
+    GET_SUCCESS: '実績情報を取得しました',
+    GET_LIST_SUCCESS: '実績リストを取得しました',
+    NOT_FOUND: '実績が見つかりません',
+    ALREADY_EXISTS: '実績は既に存在します'
   }
 }

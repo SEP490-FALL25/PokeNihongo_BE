@@ -42,6 +42,7 @@ import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/c
 import { Queue } from 'bull'
 import Redis from 'ioredis'
 import { LevelService } from '../level/level.service'
+import { UserProgressService } from '../user-progress/user-progress.service'
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name)
@@ -55,10 +56,11 @@ export class AuthService {
     private readonly bullQueueService: BullQueueService,
     private readonly uploadService: UploadService,
     private readonly i18nService: I18nService,
+    private readonly userProgressService: UserProgressService,
     @InjectQueue('user-deletion') private readonly deletionQueue: Queue,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
     private readonly tokenService: TokenService
-  ) {}
+  ) { }
 
   async login(
     body: LoginBodyType & { userAgent: string; ip: string },
@@ -150,6 +152,10 @@ export class AuthService {
       const device = await this.createUserDevice(user.id, userAgent, ip)
       // nhan role
       const role = await this.sharedRoleRepository.getRoleById(roleId)
+
+      // Khởi tạo UserProgress cho tất cả lesson
+      await this.userProgressService.initUserProgress(user.id)
+
       // 4. Tạo mới accessToken và refreshToken
       const tokens = await this.generateTokens({
         userId: user.id,
@@ -328,7 +334,7 @@ export class AuthService {
       email
     })
     if (!user) {
-      throw InvalidOTPExceptionForEmail
+      throw new InvalidOTPExceptionForEmail()
     }
 
     // Verify OTP
@@ -636,7 +642,7 @@ export class AuthService {
       email
     })
     if (!user) {
-      throw InvalidOTPExceptionForEmail
+      throw new InvalidOTPExceptionForEmail()
     }
 
     // 2. Xóa tất cả refreshToken và device cũ của user

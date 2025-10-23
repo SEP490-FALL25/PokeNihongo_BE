@@ -4,7 +4,7 @@ import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { PaginationResponseSchema } from '@/shared/models/response.model'
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreatedRewardBodyDTO,
@@ -15,8 +15,12 @@ import {
   UpdateRewardResDTO
 } from './dto/reward.zod-dto'
 import { RewardService } from './reward.service'
+import { AuthenticationGuard } from '@/common/guards/authentication.guard'
+import { ApiBearerAuth } from '@nestjs/swagger'
 
 @Controller('reward')
+@UseGuards(AuthenticationGuard)
+@ApiBearerAuth()
 export class RewardController {
   constructor(private readonly rewardService: RewardService) {}
 

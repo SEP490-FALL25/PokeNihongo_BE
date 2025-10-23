@@ -57,6 +57,15 @@ export const enMessages = {
     INVALID_DATA: 'Invalid reward data',
     NAME_REQUIRED: 'Reward name is required'
   },
+  wordtype: {
+    CREATE_SUCCESS: 'Word type created successfully',
+    UPDATE_SUCCESS: 'Word type updated successfully',
+    DELETE_SUCCESS: 'Word type deleted successfully',
+    GET_SUCCESS: 'Word type retrieved successfully',
+    GET_LIST_SUCCESS: 'Word type list retrieved successfully',
+    GET_STATS_SUCCESS: 'Word type statistics retrieved successfully',
+    CREATE_DEFAULT_SUCCESS: 'Default word types created successfully'
+  },
   system: {
     NOT_FOUND: 'Record not found',
     INVALID_NEW_PASSWORD_CONFIRM_PASSWORD:
@@ -162,7 +171,8 @@ export const enMessages = {
     SET_MAIN_POKEMON_SUCCESS: 'Main Pokemon set successfully',
     EVOLVE_SUCCESS: 'Pokemon evolved successfully',
     ADD_EXP_SUCCESS: 'EXP added to Pokemon successfully',
-    LEVEL_UP_SUCCESS: 'Pokemon leveled up successfully'
+    LEVEL_UP_SUCCESS: 'Pokemon leveled up successfully',
+    GET_STATS_SUCCESS: 'User Pokemon stats retrieved successfully'
   },
   user: {
     GET_LIST_SUCCESS: 'User list retrieved successfully',
@@ -209,6 +219,57 @@ export const enMessages = {
     ERROR: 'An error occurred',
     INVALID_DATA: 'Invalid data provided',
     UNAUTHORIZED: 'Unauthorized access',
-    FORBIDDEN: 'Access forbidden'
+    FORBIDDEN: 'Access forbidden',
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'Language does not exist to translate'
+  },
+  entity: {
+    INVALID_DATA: 'Invalid data provided',
+    NOT_FOUND: 'Record not found',
+    ALREADY_EXISTS: 'Record already exists',
+    INVALID_ID: 'Invalid ID'
+  },
+  achievement_group: {
+    CREATE_SUCCESS: 'Achievement group created successfully',
+    UPDATE_SUCCESS: 'Achievement group updated successfully',
+    DELETE_SUCCESS: 'Achievement group deleted successfully',
+    GET_SUCCESS: 'Achievement group retrieved successfully',
+    GET_LIST_SUCCESS: 'Achievement group list retrieved successfully',
+    NOT_FOUND: 'Achievement group not found',
+    ALREADY_EXISTS: 'Achievement group already exists',
+    INVALID_DATA: 'Invalid achievement group data',
+    NAME_REQUIRED: 'Achievement group name is required'
+  },
+  daily_request: {
+    CREATE_SUCCESS: 'Daily request created successfully',
+    UPDATE_SUCCESS: 'Daily request updated successfully',
+    DELETE_SUCCESS: 'Daily request deleted successfully',
+    GET_SUCCESS: 'Daily request retrieved successfully',
+    GET_LIST_SUCCESS: 'Daily request list retrieved successfully',
+    NOT_FOUND: 'Daily request not found',
+    ALREADY_EXISTS: 'Daily request already exists'
+  },
+  translation: {
+    DUPLICATE_LANGUAGE: 'Duplicate language',
+    ALREADY_EXISTS: 'Translation already exists',
+    DUPLICATE_VALUE: 'Duplicate translation value'
+  },
+  user_daily_request: {
+    CREATE_SUCCESS: 'User daily request created successfully',
+    UPDATE_SUCCESS: 'User daily request updated successfully',
+    DELETE_SUCCESS: 'User daily request deleted successfully',
+    GET_SUCCESS: 'User daily request retrieved successfully',
+    GET_LIST_SUCCESS: 'User daily request list retrieved successfully',
+    NOT_FOUND: 'User daily request not found',
+    ALREADY_EXISTS: 'User daily request already exists',
+    USER_ALREADY_ATTENDED_TODAY: 'User has already attended today'
+  },
+  achievement: {
+    CREATE_SUCCESS: 'Achievement created successfully',
+    UPDATE_SUCCESS: 'Achievement updated successfully',
+    DELETE_SUCCESS: 'Achievement deleted successfully',
+    GET_SUCCESS: 'Achievement retrieved successfully',
+    GET_LIST_SUCCESS: 'Achievement list retrieved successfully',
+    NOT_FOUND: 'Achievement not found',
+    ALREADY_EXISTS: 'Achievement already exists'
   }
 }

@@ -69,6 +69,9 @@ export type DisplayNameType = z.infer<typeof DisplayNameSchema>
 
 // Fields for query parsing
 type ElementalTypeFieldType = keyof z.infer<typeof ElementalTypeSchema>
-export const ELEMENTAL_TYPE_FIELDS = Object.keys(
-  ElementalTypeSchema.shape
-) as ElementalTypeFieldType[]
+export const ELEMENTAL_TYPE_FIELDS = [
+  ...Object.keys(ElementalTypeSchema.shape),
+  'display_name.en',
+  'display_name.vi',
+  'display_name.ja'
+] as ElementalTypeFieldType[]

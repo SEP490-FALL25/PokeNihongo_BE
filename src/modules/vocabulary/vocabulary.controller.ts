@@ -1,11 +1,14 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
+import { IsPublic } from '@/common/decorators/auth.decorator'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import {
     CreateVocabularyBodyDTO,
     GetVocabularyByIdParamsDTO,
     GetVocabularyListQueryDTO,
     UpdateVocabularyBodyDTO,
     VocabularyListResDTO,
-    VocabularyResDTO
+    VocabularyResDTO,
+    VocabularyStatisticsResDTO
 } from '@/modules/vocabulary/dto/vocabulary.zod-dto'
 import { VocabularyNotFoundException } from '@/modules/vocabulary/dto/vocabulary.error'
 import {
@@ -13,6 +16,9 @@ import {
     VocabularyListResponseSwaggerDTO,
     GetVocabularyListQuerySwaggerDTO,
     UpdateVocabularyMultipartSwaggerDTO,
+    VocabularyStatisticsResponseSwaggerDTO,
+    ImportVocabularyXlsxSwaggerDTO,
+    ImportVocabularyTxtSwaggerDTO,
 } from '@/modules/vocabulary/dto/vocabulary.dto'
 import { AddMeaningToVocabularyDTO, AddMeaningSwaggerDTO } from '@/modules/vocabulary/dto/add-meaning.dto'
 import {
@@ -106,6 +112,34 @@ export class VocabularyController {
         )
     }
 
+    @Post('import')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Import từ vựng từ file Excel (.xlsx)' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: ImportVocabularyXlsxSwaggerDTO as any })
+    @ApiResponse({ status: 201, description: 'Import thành công' })
+    async importVocabulary(
+        @UploadedFile() file: Express.Multer.File,
+        @ActiveUser('userId') userId?: number
+    ) {
+        return this.vocabularyService.importFromXlsx(file, userId)
+    }
+
+    @Post('import-txt')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Import từ vựng từ file TXT (tab-separated)' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: ImportVocabularyTxtSwaggerDTO as any })
+    @ApiResponse({ status: 201, description: 'Import TXT thành công' })
+    async importVocabularyTxt(
+        @UploadedFile() file: Express.Multer.File,
+        @ActiveUser('userId') userId?: number
+    ) {
+        return this.vocabularyService.importFromTxt(file, userId)
+    }
+
     @Get()
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Lấy danh sách từ vựng với phân trang và tìm kiếm' })
@@ -114,22 +148,23 @@ export class VocabularyController {
         description: 'Lấy danh sách từ vựng thành công',
         type: VocabularyListResponseSwaggerDTO
     })
+    @ApiQuery({ type: GetVocabularyListQuerySwaggerDTO })
     @ZodSerializerDto(VocabularyListResDTO)
-    findAll(@Query() query: GetVocabularyListQueryDTO) {
-        return this.vocabularyService.findAll(query)
+    findAll(@Query() query: GetVocabularyListQueryDTO, @I18nLang() lang: string) {
+        return this.vocabularyService.findAll(query, lang)
     }
 
-    @Get('search/:word')
+    @Get('statistics')
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Tìm kiếm từ vựng theo từ khóa' })
+    @ApiOperation({ summary: 'Lấy thống kê từ vựng tổng hợp' })
     @ApiResponse({
         status: 200,
-        description: 'Tìm kiếm từ vựng thành công',
-        type: VocabularyListResponseSwaggerDTO
+        description: 'Lấy thống kê từ vựng thành công',
+        type: VocabularyStatisticsResponseSwaggerDTO
     })
-    @ZodSerializerDto(VocabularyListResDTO)
-    searchByWord(@Param('word') word: string) {
-        return this.vocabularyService.searchByWord(word)
+    @ZodSerializerDto(VocabularyStatisticsResDTO)
+    getStatistics() {
+        return this.vocabularyService.getStatistics()
     }
 
     @Get(':id')
@@ -141,8 +176,8 @@ export class VocabularyController {
         type: VocabularyResponseSwaggerDTO
     })
     @ZodSerializerDto(VocabularyResDTO)
-    findOne(@Param() params: GetVocabularyByIdParamsDTO) {
-        return this.vocabularyService.findOne(params)
+    findOne(@Param() params: GetVocabularyByIdParamsDTO, @I18nLang() lang: string) {
+        return this.vocabularyService.findOne(params, lang)
     }
 
     @Delete(':id')
@@ -229,5 +264,27 @@ export class VocabularyController {
         return this.vocabularyService.createFullVocabularyWithFiles(data, audioFile, imageFile, userId)
     }
 
+    //#endregion
+
+    //#region Create Multiple Sample Vocabularies
+    @Post('create-sample-vocabularies')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Tạo nhiều từ vựng mẫu với dữ liệu mặc định',
+        description: 'Tạo một bộ từ vựng tiếng Nhật cơ bản với nghĩa tiếng Việt và tiếng Anh'
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo từ vựng mẫu thành công',
+        type: VocabularyListResponseSwaggerDTO
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Dữ liệu không hợp lệ'
+    })
+    @ZodSerializerDto(VocabularyListResDTO)
+    async createSampleVocabularies(@ActiveUser('userId') userId?: number) {
+        return this.vocabularyService.createSampleVocabularies(userId)
+    }
     //#endregion
 }

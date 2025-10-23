@@ -56,6 +56,15 @@ export const viMessages = {
     INVALID_DATA: 'Dữ liệu phần thưởng không hợp lệ',
     NAME_REQUIRED: 'Tên phần thưởng không được để trống'
   },
+  wordtype: {
+    CREATE_SUCCESS: 'Tạo loại từ thành công',
+    UPDATE_SUCCESS: 'Cập nhật loại từ thành công',
+    DELETE_SUCCESS: 'Xóa loại từ thành công',
+    GET_SUCCESS: 'Lấy thông tin loại từ thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách loại từ thành công',
+    GET_STATS_SUCCESS: 'Lấy thống kê loại từ thành công',
+    CREATE_DEFAULT_SUCCESS: 'Tạo loại từ mặc định thành công'
+  },
   system: {
     NOT_FOUND: 'Không tìm thấy bản ghi',
     INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'Mật khẩu mới và mật khẩu xác nhận không khớp',
@@ -159,7 +168,8 @@ export const viMessages = {
     SET_MAIN_POKEMON_SUCCESS: 'Đặt Pokemon chính thành công',
     EVOLVE_SUCCESS: 'Tiến hóa Pokemon thành công',
     ADD_EXP_SUCCESS: 'Thêm EXP cho Pokemon thành công',
-    LEVEL_UP_SUCCESS: 'Pokemon đã lên cấp!'
+    LEVEL_UP_SUCCESS: 'Pokemon đã lên cấp!',
+    GET_STATS_SUCCESS: 'Lấy thống kê User Pokemon thành công'
   },
   user: {
     GET_LIST_SUCCESS: 'Lấy danh sách người dùng thành công',
@@ -207,6 +217,57 @@ export const viMessages = {
     ERROR: 'Đã xảy ra lỗi',
     INVALID_DATA: 'Dữ liệu không hợp lệ',
     UNAUTHORIZED: 'Không có quyền truy cập',
-    FORBIDDEN: 'Truy cập bị cấm'
+    FORBIDDEN: 'Truy cập bị cấm',
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'Ngôn ngữ không tồn tại để dịch'
+  },
+  entity: {
+    INVALID_DATA: 'Dữ liệu không hợp lệ',
+    NOT_FOUND: 'Không tìm thấy bản ghi',
+    ALREADY_EXISTS: 'Bản ghi đã tồn tại',
+    INVALID_ID: 'ID không hợp lệ'
+  },
+  achievement_group: {
+    CREATE_SUCCESS: 'Tạo nhóm thành tích thành công',
+    UPDATE_SUCCESS: 'Cập nhật nhóm thành tích thành công',
+    DELETE_SUCCESS: 'Xóa nhóm thành tích thành công',
+    GET_SUCCESS: 'Lấy chi tiết nhóm thành tích thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách nhóm thành tích thành công',
+    NOT_FOUND: 'Không tìm thấy nhóm thành tích',
+    ALREADY_EXISTS: 'Nhóm thành tích đã tồn tại',
+    INVALID_DATA: 'Dữ liệu nhóm thành tích không hợp lệ',
+    NAME_REQUIRED: 'Tên nhóm thành tích không được để trống'
+  },
+  daily_request: {
+    CREATE_SUCCESS: 'Tạo nhiệm vụ hàng ngày thành công',
+    UPDATE_SUCCESS: 'Cập nhật nhiệm vụ hàng ngày thành công',
+    DELETE_SUCCESS: 'Xóa nhiệm vụ hàng ngày thành công',
+    GET_SUCCESS: 'Lấy thông tin nhiệm vụ hàng ngày thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách nhiệm vụ hàng ngày thành công',
+    NOT_FOUND: 'Không tìm thấy nhiệm vụ hàng ngày',
+    ALREADY_EXISTS: 'Nhiệm vụ hàng ngày đã tồn tại'
+  },
+  translation: {
+    DUPLICATE_LANGUAGE: 'Ngôn ngữ bị trùng lặp',
+    ALREADY_EXISTS: 'Bản dịch đã tồn tại',
+    DUPLICATE_VALUE: 'Giá trị bản dịch bị trùng lặp'
+  },
+  user_daily_request: {
+    CREATE_SUCCESS: 'Tạo yêu cầu hàng ngày cho người dùng thành công',
+    UPDATE_SUCCESS: 'Cập nhật yêu cầu hàng ngày cho người dùng thành công',
+    DELETE_SUCCESS: 'Xóa yêu cầu hàng ngày cho người dùng thành công',
+    GET_SUCCESS: 'Lấy thông tin yêu cầu hàng ngày cho người dùng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách yêu cầu hàng ngày cho người dùng thành công',
+    NOT_FOUND: 'Không tìm thấy yêu cầu hàng ngày cho người dùng',
+    ALREADY_EXISTS: 'Yêu cầu hàng ngày cho người dùng đã tồn tại',
+    USER_ALREADY_ATTENDED_TODAY: 'Người dùng đã điểm danh hôm nay'
+  },
+  achievement: {
+    CREATE_SUCCESS: 'Tạo thành tích thành công',
+    UPDATE_SUCCESS: 'Cập nhật thành tích thành công',
+    DELETE_SUCCESS: 'Xóa thành tích thành công',
+    GET_SUCCESS: 'Lấy chi tiết thành tích thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách thành tích thành công',
+    NOT_FOUND: 'Không tìm thấy thành tích',
+    ALREADY_EXISTS: 'Thành tích đã tồn tại'
   }
 }

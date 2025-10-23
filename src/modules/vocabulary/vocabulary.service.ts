@@ -9,15 +9,21 @@ import {
     InvalidVocabularyDataException,
     VocabularyAlreadyExistsException,
     VocabularyNotFoundException,
-    MeaningAlreadyExistsException
+    MeaningAlreadyExistsException,
+    VocabularyJapaneseTextInvalidException
 } from '@/modules/vocabulary/dto/vocabulary.error'
 import { VocabularyRepository } from '@/modules/vocabulary/vocabulary.repo'
 import { VocabularyHelperService } from '@/modules/vocabulary/vocabulary.helper.service'
 import { VOCABULARY_MESSAGE } from '@/common/constants/message'
 import { UploadService } from '@/3rdService/upload/upload.service'
 import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
+import { TranslationService } from '@/modules/translation/translation.service'
+import { LanguagesService } from '@/modules/languages/languages.service'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 import { Injectable, Logger } from '@nestjs/common'
+import * as XLSX from 'xlsx'
+import { WordTypeService } from '@/modules/wordtype/wordtype.service'
+import e from 'express'
 
 @Injectable()
 export class VocabularyService {
@@ -27,32 +33,474 @@ export class VocabularyService {
         private readonly vocabularyRepository: VocabularyRepository,
         private readonly uploadService: UploadService,
         private readonly textToSpeechService: TextToSpeechService,
-        private readonly vocabularyHelperService: VocabularyHelperService
+        private readonly vocabularyHelperService: VocabularyHelperService,
+        private readonly translationService: TranslationService,
+        private readonly languagesService: LanguagesService,
+        private readonly wordTypeService: WordTypeService
     ) { }
 
     // Removed old create method - use createFullVocabularyWithFiles instead
 
     //#region Find All
-    async findAll(query: GetVocabularyListQueryType) {
-        const { page, limit, search, wordJp, reading } = query
+    async findAll(query: GetVocabularyListQueryType, lang: string) {
+        try {
+            const { currentPage, pageSize, search, levelN, sortBy, sort } = query
 
-        const result = await this.vocabularyRepository.findMany({
-            page,
-            limit,
-            search,
-            wordJp,
-            reading
-        })
+            const result = await this.vocabularyRepository.findMany({
+                currentPage,
+                pageSize,
+                search,
+                levelN,
+                sortBy,
+                sort
+            })
+
+            // Resolve translation values for wordType.nameKey per requested language
+            let languageId: number | undefined
+            try {
+                const language = await this.languagesService.findByCode({ code: lang })
+                languageId = language?.data?.id
+            } catch {
+                languageId = undefined
+            }
+
+            const resultsWithWordType = await Promise.all(
+                result.items.map(async (item) => {
+                    if (!item.wordType || !languageId) {
+                        return item
+                    }
+
+                    try {
+                        const translation = await this.translationService.findByKeyAndLanguage(
+                            item.wordType.nameKey,
+                            languageId as number
+                        )
+                        const name = translation?.value || item.wordType.nameKey
+                        return {
+                            ...item,
+                            wordType: {
+                                ...item.wordType,
+                                name
+                            }
+                        }
+                    } catch {
+                        return {
+                            ...item,
+                            wordType: {
+                                ...item.wordType,
+                                name: item.wordType.nameKey
+                            }
+                        }
+                    }
+                })
+            )
+
+            return {
+                statusCode: 200,
+                message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS,
+                data: {
+                    results: resultsWithWordType,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: Math.ceil(result.total / result.limit),
+                        totalItem: result.total
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error in findAll vocabulary:', error)
+            throw error
+        }
+    }
+    //#endregion
+
+    //#region Import from XLSX
+    /**
+     * Import vocabularies from an Excel file (.xlsx) with columns:
+     * kanji, mean (English), detail (English), kun, on
+     */
+    async importFromXlsx(file: Express.Multer.File, createdById?: number) {
+        try {
+            if (!file || !file.buffer) {
+                throw new Error('File không hợp lệ')
+            }
+
+            const workbook = XLSX.read(file.buffer, { type: 'buffer' })
+            const sheetName = workbook.SheetNames[0]
+            const sheet = workbook.Sheets[sheetName]
+            const rows: Array<Record<string, any>> = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+
+            const created: any[] = []
+            const skipped: Array<{ word: string; reason: string }> = []
+
+            for (const row of rows) {
+                const kanji = (row.kanji || '').toString().trim()
+                const meanEn = (row.mean || '').toString().trim()
+                const detailEn = (row.detail || '').toString().trim()
+                const kun = (row.kun || '').toString().trim()
+                const on = (row.on || '').toString().trim()
+
+                // Tạo reading từ kun và on
+                const reading = [kun, on].filter(r => r).join(', ')
+
+                if (!kanji) {
+                    skipped.push({ word: kanji || 'N/A', reason: 'Thiếu ký tự kanji' })
+                    continue
+                }
+
+                if (!meanEn) {
+                    skipped.push({ word: kanji, reason: 'Thiếu nghĩa tiếng Anh' })
+                    continue
+                }
+
+                try {
+                    // Tạo danh sách nghĩa
+                    const meanings: Array<{ language_code: string; value: string }> = []
+
+                    if (meanEn) {
+                        meanings.push({ language_code: 'en', value: meanEn })
+                    }
+
+                    // Tạo danh sách chi tiết nghĩa (nếu có)
+                    const examples: Array<{ language_code: string; sentence: string; original_sentence: string }> = []
+
+                    if (detailEn) {
+                        examples.push({
+                            language_code: 'en',
+                            sentence: detailEn,
+                            original_sentence: kanji
+                        })
+                    }
+
+                    const result = await this.createFullVocabularyWithFiles(
+                        {
+                            word_jp: kanji,
+                            reading: reading || kanji, // Fallback to kanji if no reading
+                            translations: {
+                                meaning: meanings,
+                                examples: examples.length > 0 ? examples : undefined
+                            }
+                        },
+                        undefined,
+                        undefined,
+                        createdById
+                    )
+                    created.push(result.data)
+                } catch (err: any) {
+                    skipped.push({ word: kanji, reason: err?.message || 'Lỗi không xác định' })
+                }
+            }
+
+            return {
+                statusCode: 201,
+                message: `Import từ vựng thành công: ${created.length} mục, bỏ qua ${skipped.length} mục`,
+                data: {
+                    created,
+                    skipped
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error importing vocabularies from xlsx:', error)
+            throw InvalidVocabularyDataException
+        }
+    }
+    //#endregion
+
+    //#region Import from TXT (tab-separated)
+    /**
+     * Import vocabularies from a tab-separated TXT file with columns:
+     * Category	word	reading	meaning	example_jp	example_vi
+     */
+    async importFromTxt(file: Express.Multer.File, createdById?: number) {
+        try {
+            if (!file || !file.buffer) {
+                throw new Error('File không hợp lệ')
+            }
+
+            const content = file.buffer.toString('utf8')
+            const linesAll = content.split(/\r?\n/)
+            const lines = linesAll.filter(l => l.trim().length > 0)
+
+            const created: any[] = []
+            const skipped: Array<{ word: string; reason: string }> = []
+
+            // Detect header
+            const headerCols = lines[0]?.split('\t') || []
+            const hasHeaderWord = headerCols.some(h => /^(word|từ|kanji)$/i.test(h.trim()))
+
+            let startIndex = 0
+            let idxWord = 0
+            let idxReading = 1
+            let idxMeaning = 2
+            let idxExampleJp = 3
+            let idxExampleVi = 4
+            let idxJlpt = -1
+            let idxWordType = -1
+            let legacyCategory = false
+
+            if (hasHeaderWord) {
+                // New cleaned format with header
+                startIndex = 1
+                const map = new Map<string, number>()
+                headerCols.forEach((h, i) => map.set(h.trim().toLowerCase(), i))
+                idxWord = map.get('word') ?? 0
+                idxReading = map.get('reading') ?? 1
+                idxMeaning = map.get('meaning') ?? 2
+                idxExampleJp = map.get('example_jp') ?? 3
+                idxExampleVi = map.get('example_vi') ?? 4
+                idxJlpt = map.get('jlpt') ?? -1
+                idxWordType = map.get('word_type') ?? -1
+            } else {
+                // Legacy format: Category, word, reading, meaning, example_jp, example_vi
+                legacyCategory = true
+                startIndex = 0
+            }
+
+            // (moved) resolveWordTypeId helper is now a class method
+
+            for (let li = startIndex; li < lines.length; li++) {
+                const line = lines[li]
+                const cols = line.split('\t')
+                if (legacyCategory) {
+                    if (cols.length < 4) {
+                        skipped.push({ word: '', reason: 'Dòng không đúng định dạng (>=4 cột)' })
+                        continue
+                    }
+                } else {
+                    if (cols.length < 3) {
+                        skipped.push({ word: '', reason: 'Dòng không đúng định dạng (>=3 cột)' })
+                        continue
+                    }
+                }
+
+                let levelN: number | undefined
+                let wordTypeId: number | undefined
+                let exampleJp: string | undefined
+                let exampleVi: string | undefined
+
+                let word = ''
+                let reading = ''
+                let meaningVi = ''
+
+                if (legacyCategory) {
+                    const category = (cols[0] || '').trim()
+                    word = (cols[1] || '').trim()
+                    reading = (cols[2] || '').trim()
+                    meaningVi = (cols[3] || '').trim()
+                    exampleJp = (cols[4] || '').trim() || undefined
+                    exampleVi = (cols[5] || '').trim() || undefined
+
+                    const m = category.match(/N([1-5])/i)
+                    if (m) levelN = parseInt(m[1], 10)
+                } else {
+                    word = (cols[idxWord] || '').trim()
+                    reading = (cols[idxReading] || '').trim()
+                    meaningVi = (cols[idxMeaning] || '').trim()
+                    exampleJp = idxExampleJp >= 0 ? (cols[idxExampleJp] || '').trim() : ''
+                    exampleVi = idxExampleVi >= 0 ? (cols[idxExampleVi] || '').trim() : ''
+                    if (idxJlpt >= 0) {
+                        const j = (cols[idxJlpt] || '').trim()
+                        if (/^[1-5]$/.test(j)) levelN = parseInt(j, 10)
+                    }
+                    if (idxWordType >= 0) {
+                        const wt = (cols[idxWordType] || '').trim()
+                        wordTypeId = await this.resolveWordTypeId(wt)
+                        if (wt && !wordTypeId) {
+                            throw new Error(`Word type not found in system: '${wt}' at line ${li + 1}`)
+                        }
+                    }
+                }
+
+                if (!word || !reading || !meaningVi) {
+                    skipped.push({ word, reason: 'Thiếu dữ liệu (word/reading/meaning)' })
+                    continue
+                }
+
+                try {
+                    // Check if vocabulary exists (same word_jp + reading)
+                    const existingCheck2 = await this.vocabularyHelperService.checkVocabularyExists(word, reading)
+
+                    if (existingCheck2.exists && existingCheck2.vocabularyId) {
+                        const existing = await this.vocabularyRepository.findUnique({ id: existingCheck2.vocabularyId })
+                        if (!existing) {
+                            // fallback: proceed to create
+                        } else {
+                            this.logger.log(`[Import TXT] Found existing vocab ${existing.id}: word="${existing.wordJp}", reading_db="${existing.reading}", reading_file="${reading}"`)
+                            // Prepare updates for NULL fields or changed reading
+                            const updateData: any = {}
+                            if (existing.levelN == null && typeof levelN === 'number') {
+                                updateData.levelN = levelN
+                                this.logger.log(`[Vocab ${existing.id}] Updating levelN: null → ${levelN}`)
+                            }
+                            if ((existing as any).wordTypeId == null && typeof wordTypeId === 'number') {
+                                updateData.wordTypeId = wordTypeId
+                                this.logger.log(`[Vocab ${existing.id}] Updating wordTypeId: null → ${wordTypeId}`)
+                            }
+                            // Update reading if different (và không rỗng)
+                            if (reading && existing.reading !== reading) {
+                                updateData.reading = reading
+                                this.logger.log(`[Vocab ${existing.id}] Updating reading: "${existing.reading}" → "${reading}"`)
+                            }
+                            if (!existing.audioUrl) {
+                                try {
+                                    const tts = await this.textToSpeechService.convertTextToSpeech(
+                                        word,
+                                        { languageCode: 'ja-JP', audioEncoding: 'MP3' }
+                                    )
+                                    const audioBuffer = tts.audioContent
+                                    const fileName = `vocabulary_${word}_${Date.now()}.mp3`
+                                    const generatedAudioFile: Express.Multer.File = {
+                                        buffer: audioBuffer,
+                                        originalname: fileName,
+                                        mimetype: 'audio/mpeg',
+                                        fieldname: 'audioFile',
+                                        encoding: '7bit',
+                                        size: audioBuffer.length,
+                                        stream: null as any,
+                                        destination: '',
+                                        filename: fileName,
+                                        path: ''
+                                    }
+                                    const upload = await this.uploadService.uploadFile(generatedAudioFile, 'vocabulary/audio')
+                                    updateData.audioUrl = upload.url
+                                } catch { /* ignore TTS failure */ }
+                            }
+
+                            if (Object.keys(updateData).length > 0) {
+                                this.logger.log(`[Vocab ${existing.id}] Applying updates: ${JSON.stringify(updateData)}`)
+                                await this.vocabularyRepository.update({ id: existing.id }, updateData)
+                                this.logger.log(`[Vocab ${existing.id}] Update completed successfully`)
+                            } else {
+                                this.logger.log(`[Vocab ${existing.id}] No fields to update`)
+                            }
+
+                            // Skip adding meaning if it already exists (helper throws MeaningAlreadyExistsException)
+                            try {
+                                await this.vocabularyHelperService.addMeaningWithTranslations(
+                                    existing.id,
+                                    {
+                                        meaning: [{ language_code: 'vi', value: meaningVi }],
+                                        examples: exampleVi ? [{ language_code: 'vi', sentence: exampleVi, original_sentence: exampleJp || '' }] : undefined
+                                    },
+                                    wordTypeId
+                                )
+                            } catch (e: any) {
+                                // If meaning already exists, silently skip (don't create duplicate)
+                                if (e === MeaningAlreadyExistsException) {
+                                    this.logger.log(`Meaning already exists for vocabulary ${existing.id}, skipping`)
+                                } else {
+                                    throw e
+                                }
+                            }
+
+                            created.push({
+                                vocabulary: { ...existing },
+                                message: 'Skipped create; updated null fields and/or added translations if needed'
+                            })
+                            continue
+                        }
+                    }
+
+                    // Not existing → create full
+                    const result = await this.createFullVocabularyWithFiles(
+                        {
+                            word_jp: word,
+                            reading,
+                            level_n: levelN,
+                            word_type_id: wordTypeId,
+                            translations: {
+                                meaning: [
+                                    { language_code: 'vi', value: meaningVi }
+                                ],
+                                examples: exampleVi ? [
+                                    { language_code: 'vi', sentence: exampleVi, original_sentence: exampleJp || '' }
+                                ] : undefined
+                            }
+                        },
+                        undefined,
+                        undefined,
+                        createdById
+                    )
+                    created.push(result.data)
+                } catch (err: any) {
+                    skipped.push({ word, reason: err?.message || 'Lỗi không xác định' })
+                }
+            }
+
+            return {
+                statusCode: 201,
+                message: `Import TXT thành công: ${created.length} mục, bỏ qua ${skipped.length} mục`,
+                data: { created, skipped }
+            }
+        } catch (error) {
+            this.logger.error('Error importing vocabularies from txt:', error)
+            throw InvalidVocabularyDataException
+        }
+    }
+    //#endregion
+
+    /**
+     * Chuẩn hóa và ánh xạ chuỗi word_type từ file TXT sang WordTypeId trong hệ thống.
+     */
+    private async resolveWordTypeId(wordType?: string): Promise<number | undefined> {
+        if (!wordType) return undefined
+        const type = wordType.toLowerCase()
+        try {
+            if (type.includes('ichidan')) {
+                try {
+                    const r = await this.wordTypeService.findByNameKey('wordtype.ichidan_verb.name')
+                    return r.data.id
+                } catch { /* fallback */ }
+                const rAlias = await this.wordTypeService.findByNameKey('wordtype.verb_ichidan.name')
+                return rAlias.data.id
+            }
+            if (type.includes('godan')) {
+                try {
+                    const r = await this.wordTypeService.findByNameKey('wordtype.godan_verb.name')
+                    return r.data.id
+                } catch { /* fallback */ }
+                const rAlias = await this.wordTypeService.findByNameKey('wordtype.verb_godan.name')
+                return rAlias.data.id
+            }
+            if (type.includes('i_adjective') || type.includes('i-adjective')) {
+                const r = await this.wordTypeService.findByNameKey('wordtype.i_adjective.name')
+                return r.data.id
+            }
+            if (type.includes('na_adjective') || type.includes('na-adjective')) {
+                const r = await this.wordTypeService.findByNameKey('wordtype.na_adjective.name')
+                return r.data.id
+            }
+            if (type.includes('adverb')) {
+                const r = await this.wordTypeService.findByNameKey('wordtype.adverb.name')
+                return r.data.id
+            }
+            if (type.includes('particle')) {
+                const r = await this.wordTypeService.findByNameKey('wordtype.particle.name')
+                return r.data.id
+            }
+            if (type.includes('noun')) {
+                const r = await this.wordTypeService.findByNameKey('wordtype.noun.name')
+                return r.data.id
+            }
+        } catch { /* ignore */ }
+        return undefined
+    }
+
+    //#region Statistics
+    async getStatistics() {
+        const stats = await this.vocabularyRepository.getStatistics()
 
         return {
-            data: result,
-            message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS
+            statusCode: 200,
+            message: VOCABULARY_MESSAGE.GET_STATS_SUCCESS,
+            data: stats
         }
     }
     //#endregion
 
     //#region Find One
-    async findOne(params: GetVocabularyByIdParamsType) {
+    async findOne(params: GetVocabularyByIdParamsType, lang: string) {
         const vocabulary = await this.vocabularyRepository.findUnique({
             id: params.id
         })
@@ -61,8 +509,39 @@ export class VocabularyService {
             throw VocabularyNotFoundException
         }
 
+        // Resolve wordType translation if present
+        let vocabularyWithWordType = vocabulary
+        if (vocabulary.wordType) {
+            try {
+                const language = await this.languagesService.findByCode({ code: lang })
+                if (language?.data?.id) {
+                    const translation = await this.translationService.findByKeyAndLanguage(
+                        vocabulary.wordType.nameKey,
+                        language.data.id
+                    )
+                    const name = translation?.value || vocabulary.wordType.nameKey
+                    vocabularyWithWordType = {
+                        ...vocabulary,
+                        wordType: {
+                            ...vocabulary.wordType,
+                            name
+                        }
+                    }
+                }
+            } catch {
+                // Keep original wordType if translation fails
+                vocabularyWithWordType = {
+                    ...vocabulary,
+                    wordType: {
+                        ...vocabulary.wordType,
+                        name: vocabulary.wordType.nameKey
+                    }
+                }
+            }
+        }
+
         return {
-            data: vocabulary,
+            data: vocabularyWithWordType,
             message: VOCABULARY_MESSAGE.GET_SUCCESS
         }
     }
@@ -205,21 +684,6 @@ export class VocabularyService {
     }
     //#endregion
 
-    //#region Search By Word
-    async searchByWord(word: string) {
-        const vocabularies = await this.vocabularyRepository.findMany({
-            page: 1,
-            limit: 10,
-            search: word
-        })
-
-        return {
-            data: vocabularies,
-            message: VOCABULARY_MESSAGE.SEARCH_SUCCESS
-        }
-    }
-    //#endregion
-
     //#region File Upload Methods
     async uploadVocabularyImage(imageFile: Express.Multer.File, oldImageUrl?: string) {
         try {
@@ -271,7 +735,6 @@ export class VocabularyService {
     }
 
     //#endregion
-
 
     //#region Add Meaning to Existing Vocabulary
     /**
@@ -335,6 +798,10 @@ export class VocabularyService {
         createdById?: number
     ) {
         try {
+            // Validate word_jp must be Japanese (Hiragana/Katakana/Kanji)
+            if (!this.isJapaneseText(data.word_jp)) {
+                throw VocabularyJapaneseTextInvalidException
+            }
             this.logger.log('Creating full vocabulary with file uploads')
 
             // Parse translations if it's a string (from multipart/form-data)
@@ -444,8 +911,8 @@ export class VocabularyService {
                     data: {
                         vocabulary: {
                             ...vocabulary,
-                            imageUrl: imageUrl || vocabulary.imageUrl,
-                            audioUrl: audioUrl || vocabulary.audioUrl
+                            imageUrl: (imageUrl ?? vocabulary.imageUrl) ?? null,
+                            audioUrl: (audioUrl ?? vocabulary.audioUrl) ?? null
                         },
                         meaning: {
                             id: result.meaning.id,
@@ -490,8 +957,8 @@ export class VocabularyService {
                     data: {
                         vocabulary: {
                             ...result.vocabulary,
-                            imageUrl,
-                            audioUrl
+                            imageUrl: imageUrl ?? null,
+                            audioUrl: audioUrl ?? null
                         },
                         meaning: {
                             id: result.meaning.id,
@@ -506,10 +973,312 @@ export class VocabularyService {
             }
         } catch (error) {
             this.logger.error('Error creating full vocabulary with files:', error)
-            // Let MeaningAlreadyExistsException bubble up, only catch other errors
-            if (error && error.status === 409 && error.response?.error === 'MEANING_ALREADY_EXISTS') {
+            // Let specific exceptions bubble up
+            if (
+                error === VocabularyJapaneseTextInvalidException ||
+                (error && error.status === 409 && error.response?.error === 'MEANING_ALREADY_EXISTS')
+            ) {
                 throw error
             }
+            throw InvalidVocabularyDataException
+        }
+    }
+    //#endregion
+
+    // Helper: validate Japanese text (Hiragana/Katakana/Kanji)
+    private isJapaneseText(text: string): boolean {
+        if (!text || typeof text !== 'string') return false
+        // Reject obvious Latin letters, digits, common symbols
+        const hasNonJapanese = /[a-zA-Z0-9@#$%^&*()_+=\[\]{}|\\:\";'<>?,./`~]/.test(text)
+        if (hasNonJapanese) return false
+        // Require at least one Japanese character
+        const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF\uF900-\uFAFF\u2F800-\u2FA1F]/
+        return japaneseRegex.test(text)
+    }
+
+    //#region Create Sample Vocabularies
+    /**
+     * Tạo nhiều từ vựng mẫu với dữ liệu mặc định
+     */
+    async createSampleVocabularies(userId?: number) {
+        try {
+            this.logger.log('Creating sample vocabularies...')
+
+            // Dữ liệu mẫu cho các từ vựng tiếng Nhật cơ bản
+            // word_jp: Hán tự (Kanji) hoặc Hiragana/Katakana nếu không có Kanji
+            // reading: Hiragana (cách đọc)
+            const sampleVocabularies = [
+                {
+                    word_jp: '水',
+                    reading: 'みず',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Nước' },
+                            { language_code: 'en', value: 'Water' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '山',
+                    reading: 'やま',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Núi' },
+                            { language_code: 'en', value: 'Mountain' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '人',
+                    reading: 'ひと',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Người' },
+                            { language_code: 'en', value: 'Person' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '家',
+                    reading: 'いえ',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Nhà' },
+                            { language_code: 'en', value: 'House / Home' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '学校',
+                    reading: 'がっこう',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Trường học' },
+                            { language_code: 'en', value: 'School' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '電話',
+                    reading: 'でんわ',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Điện thoại' },
+                            { language_code: 'en', value: 'Telephone' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '車',
+                    reading: 'くるま',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Xe ô tô' },
+                            { language_code: 'en', value: 'Car' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '飛行機',
+                    reading: 'ひこうき',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Máy bay' },
+                            { language_code: 'en', value: 'Airplane' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '犬',
+                    reading: 'いぬ',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Con chó' },
+                            { language_code: 'en', value: 'Dog' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '猫',
+                    reading: 'ねこ',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Con mèo' },
+                            { language_code: 'en', value: 'Cat' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '食べ物',
+                    reading: 'たべもの',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Đồ ăn' },
+                            { language_code: 'en', value: 'Food' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '私',
+                    reading: 'わたし',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Tôi' },
+                            { language_code: 'en', value: 'I / Me' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: 'あなた',
+                    reading: 'あなた',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Bạn / Anh / Chị' },
+                            { language_code: 'en', value: 'You' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '本',
+                    reading: 'ほん',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Sách' },
+                            { language_code: 'en', value: 'Book' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '友達',
+                    reading: 'ともだち',
+                    level_n: 5,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Bạn bè' },
+                            { language_code: 'en', value: 'Friend' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '先生',
+                    reading: 'せんせい',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Giáo viên / Thầy cô' },
+                            { language_code: 'en', value: 'Teacher' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '学生',
+                    reading: 'がくせい',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Học sinh / Sinh viên' },
+                            { language_code: 'en', value: 'Student' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '日本語',
+                    reading: 'にほんご',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Tiếng Nhật' },
+                            { language_code: 'en', value: 'Japanese language' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '英語',
+                    reading: 'えいご',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Tiếng Anh' },
+                            { language_code: 'en', value: 'English language' }
+                        ]
+                    }
+                },
+                {
+                    word_jp: '時間',
+                    reading: 'じかん',
+                    level_n: 4,
+                    translations: {
+                        meaning: [
+                            { language_code: 'vi', value: 'Thời gian' },
+                            { language_code: 'en', value: 'Time' }
+                        ]
+                    }
+                }
+            ]
+
+            const createdVocabularies: any[] = []
+            const errors: Array<{ word: string; error: string }> = []
+
+            // Tạo từng từ vựng một cách tuần tự để tránh conflict
+            for (const vocabData of sampleVocabularies) {
+                try {
+                    this.logger.log(`Creating vocabulary: ${vocabData.word_jp}`)
+
+                    const result = await this.createFullVocabularyWithFiles(
+                        vocabData,
+                        undefined, // no audio file
+                        undefined, // no image file
+                        userId
+                    )
+
+                    createdVocabularies.push(result.data)
+                    this.logger.log(`Successfully created: ${vocabData.word_jp}`)
+                } catch (error) {
+                    this.logger.warn(`Failed to create vocabulary ${vocabData.word_jp}:`, error.message)
+                    errors.push({
+                        word: vocabData.word_jp,
+                        error: error.message || 'Unknown error'
+                    })
+                }
+            }
+
+            this.logger.log(`Sample vocabularies creation completed. Created: ${createdVocabularies.length}, Errors: ${errors.length}`)
+
+            return {
+                statusCode: 201,
+                message: `${VOCABULARY_MESSAGE.CREATE_SAMPLE_SUCCESS}. Đã tạo ${createdVocabularies.length} từ vựng`,
+                data: {
+                    results: createdVocabularies,
+                    pagination: {
+                        current: 1,
+                        pageSize: createdVocabularies.length,
+                        totalPage: 1,
+                        totalItem: createdVocabularies.length
+                    },
+                    summary: {
+                        totalAttempted: sampleVocabularies.length,
+                        successfullyCreated: createdVocabularies.length,
+                        failed: errors.length,
+                        errors: errors
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error creating sample vocabularies:', error)
             throw InvalidVocabularyDataException
         }
     }

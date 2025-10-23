@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { TranslationSortField, SortOrder } from '@/common/enum/enum'
 
 // Export Zod DTOs from subfolder
 export {
@@ -83,6 +84,40 @@ export class TranslationByKeySwaggerResponseDTO {
         description: 'Các bản dịch theo ngôn ngữ'
     })
     translations: Record<string, string>
+}
+
+// Query parameter DTOs
+export class GetTranslationListQuerySwaggerDTO {
+    @ApiProperty({ example: 1, description: 'Số trang hiện tại', required: false })
+    currentPage?: number
+
+    @ApiProperty({ example: 10, description: 'Số item mỗi trang', required: false })
+    pageSize?: number
+
+    @ApiProperty({ example: 'lesson', description: 'Tìm kiếm theo key hoặc value', required: false })
+    search?: string
+
+    @ApiProperty({ example: 1, description: 'Lọc theo ID ngôn ngữ', required: false })
+    languageId?: number
+
+    @ApiProperty({ example: 'lesson.1.title', description: 'Lọc theo key cụ thể', required: false })
+    key?: string
+
+    @ApiProperty({
+        enum: TranslationSortField,
+        example: TranslationSortField.CREATED_AT,
+        description: 'Field để sắp xếp theo id, languageId, key, value, createdAt, updatedAt',
+        required: false
+    })
+    sortBy?: TranslationSortField
+
+    @ApiProperty({
+        enum: SortOrder,
+        example: SortOrder.DESC,
+        description: 'Sắp xếp theo thứ tự tăng dần (asc) hoặc giảm dần (desc)',
+        required: false
+    })
+    sort?: SortOrder
 }
 
 // Export for controller (aliases for backward compatibility)

@@ -28,13 +28,14 @@ export const AUTH_MESSAGE = {
 export const VOCABULARY_MESSAGE = {
   CREATE_SUCCESS: 'Tạo từ vựng thành công',
   CREATE_FULL_SUCCESS: 'Tạo từ vựng mới thành công với nghĩa và translations',
+  CREATE_SAMPLE_SUCCESS: 'Tạo từ vựng mẫu thành công',
   ADD_MEANING_SUCCESS: 'Từ vựng đã tồn tại. Đã thêm nghĩa mới với translations',
   MEANING_ALREADY_EXISTS: 'Nghĩa này đã tồn tại trong hệ thống',
   UPDATE_SUCCESS: 'Cập nhật từ vựng thành công',
   DELETE_SUCCESS: 'Xóa từ vựng thành công',
   GET_SUCCESS: 'Lấy thông tin từ vựng thành công',
   GET_LIST_SUCCESS: 'Lấy danh sách từ vựng thành công',
-  SEARCH_SUCCESS: 'Tìm kiếm từ vựng thành công',
+  GET_STATS_SUCCESS: 'Lấy thống kê từ vựng thành công',
   NOT_FOUND: 'Không tìm thấy từ vựng',
   ALREADY_EXISTS: 'Từ vựng đã tồn tại',
   INVALID_DATA: 'Dữ liệu từ vựng không hợp lệ',
@@ -287,4 +288,41 @@ export const LESSON_MESSAGE = {
   LEVEL_JLPT_INVALID: 'Cấp độ JLPT không hợp lệ (1-5)',
   ESTIMATED_TIME_INVALID: 'Thời gian ước tính không hợp lệ (1-480 phút)',
   VERSION_INVALID: 'Phiên bản không hợp lệ'
+}
+
+export const USER_EXERCISE_ATTEMPT_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo lần thử bài tập thành công',
+  UPDATE_SUCCESS: 'Cập nhật lần thử bài tập thành công',
+  DELETE_SUCCESS: 'Xóa lần thử bài tập thành công',
+  GET_SUCCESS: 'Lấy thông tin lần thử bài tập thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách lần thử bài tập thành công',
+  NOT_FOUND: 'Không tìm thấy lần thử bài tập',
+  ALREADY_EXISTS: 'Lần thử bài tập đã tồn tại',
+  INVALID_DATA: 'Dữ liệu lần thử bài tập không hợp lệ',
+  EXERCISE_NOT_FOUND: 'Không tìm thấy bài tập',
+  LESSON_BLOCKED: 'Bạn đang học lesson khác. Chỉ có thể làm bài tập trong lesson hiện tại',
+  EXERCISE_COMPLETED: 'Bài tập đã hoàn thành',
+  EXERCISE_ABANDONED: 'Bài tập đã bị bỏ dở',
+  CHECK_COMPLETION_SUCCESS: 'Kiểm tra trạng thái hoàn thành thành công',
+  ABANDON_SUCCESS: 'Đánh dấu bài tập bỏ dở thành công',
+  GET_STATUS_SUCCESS: 'Lấy trạng thái bài tập thành công'
+}
+
+export const EXERCISES_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo bài tập thành công',
+  UPDATE_SUCCESS: 'Cập nhật bài tập thành công',
+  DELETE_SUCCESS: 'Xóa bài tập thành công',
+  GET_SUCCESS: 'Lấy thông tin bài tập thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách bài tập thành công',
+  NOT_FOUND: 'Không tìm thấy bài tập',
+  ALREADY_EXISTS: 'Bài tập đã tồn tại',
+  INVALID_DATA: 'Dữ liệu bài tập không hợp lệ',
+  LESSON_NOT_FOUND: 'Không tìm thấy bài học',
+  CONTENT_REQUIRED: 'Nội dung bài tập không được để trống',
+  EXERCISE_TYPE_REQUIRED: 'Loại bài tập không được để trống',
+  LESSON_ID_REQUIRED: 'ID bài học không được để trống',
+  CONTENT_TOO_LONG: 'Nội dung bài tập quá dài (tối đa 2000 ký tự)',
+  PRICE_INVALID: 'Giá bài tập không hợp lệ (phải >= 0)',
+  AUDIO_URL_INVALID: 'URL audio không hợp lệ',
+  EXERCISE_TYPE_INVALID: 'Loại bài tập không hợp lệ'
 }

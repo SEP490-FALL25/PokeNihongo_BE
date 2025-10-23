@@ -5,7 +5,7 @@ import {
     WordType
 } from './entities/wordtype.entities'
 
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { WordTypeRepository } from './wordtype.repo'
 import {
     WordTypeNotFoundException,
@@ -14,18 +14,31 @@ import {
 } from './dto/wordtype.error'
 import { TranslationService } from '@/modules/translation/translation.service'
 import { LanguagesService } from '@/modules/languages/languages.service'
+import { I18nService } from '@/i18n/i18n.service'
+import { WordTypeMessage } from '@/i18n/message-keys'
 
 @Injectable()
-export class WordTypeService {
+export class WordTypeService implements OnModuleInit {
     private readonly logger = new Logger(WordTypeService.name)
 
     constructor(
         private readonly wordTypeRepository: WordTypeRepository,
         private readonly translationService: TranslationService,
-        private readonly languagesService: LanguagesService
+        private readonly languagesService: LanguagesService,
+        private readonly i18nService: I18nService
     ) { }
 
-    async findMany(params: GetWordTypeListQueryType) {
+    async onModuleInit(): Promise<void> {
+        // Best-effort: ensure default word types exist so other modules (imports) don't fail
+        try {
+            await this.createDefaultWordTypes('vi')
+        } catch (error) {
+            // Avoid breaking app startup if migration not yet applied; just log
+            this.logger.warn('Skip creating default word types on init (might be before migration).', error as any)
+        }
+    }
+
+    async findAll(params: GetWordTypeListQueryType, lang: string = 'vi') {
         try {
             this.logger.log(`Finding word types with params: ${JSON.stringify(params)}`)
 
@@ -33,19 +46,56 @@ export class WordTypeService {
             const queryParams = {
                 page: params.page || 1,
                 limit: params.limit || 10,
-                search: params.search,
                 sortBy: params.sortBy as 'id' | 'createdAt' | 'updatedAt' | 'nameKey' | undefined,
                 sortOrder: params.sortOrder
             }
 
-            return await this.wordTypeRepository.findMany(queryParams)
+            const result = await this.wordTypeRepository.findMany(queryParams)
+
+            // Resolve translation values for nameKey per requested language
+            let languageId: number | undefined
+            try {
+                const language = await this.languagesService.findByCode({ code: lang })
+                languageId = language?.data?.id
+            } catch {
+                languageId = undefined
+            }
+
+            const resultsWithName = await Promise.all(
+                result.data.map(async (item) => {
+                    if (!languageId) {
+                        return { id: item.id, name: item.nameKey, createdAt: item.createdAt, updatedAt: item.updatedAt }
+                    }
+                    try {
+                        const translation = await this.translationService.findByKeyAndLanguage(item.nameKey, languageId as number)
+                        const value = translation?.value || item.nameKey
+                        return { id: item.id, name: value, createdAt: item.createdAt, updatedAt: item.updatedAt }
+                    } catch {
+                        return { id: item.id, name: item.nameKey, createdAt: item.createdAt, updatedAt: item.updatedAt }
+                    }
+                })
+            )
+
+            return {
+                statusCode: 200,
+                message: this.i18nService.translate(WordTypeMessage.GET_LIST_SUCCESS, lang),
+                data: {
+                    results: resultsWithName,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: result.totalPages,
+                        totalItem: result.total
+                    }
+                }
+            }
         } catch (error) {
             this.logger.error('Error finding word types:', error)
             throw error
         }
     }
 
-    async findById(id: number): Promise<WordType> {
+    async findById(id: number, lang: string = 'vi') {
         try {
             this.logger.log(`Finding word type by id: ${id}`)
             const wordType = await this.wordTypeRepository.findById(id)
@@ -54,14 +104,17 @@ export class WordTypeService {
                 throw WordTypeNotFoundException
             }
 
-            return wordType
+            return {
+                data: wordType,
+                message: this.i18nService.translate(WordTypeMessage.GET_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error finding word type by id:', error)
             throw error
         }
     }
 
-    async findByNameKey(nameKey: string): Promise<WordType> {
+    async findByNameKey(nameKey: string, lang: string = 'vi') {
         try {
             this.logger.log(`Finding word type by name key: ${nameKey}`)
             const wordType = await this.wordTypeRepository.findByNameKey(nameKey)
@@ -70,14 +123,17 @@ export class WordTypeService {
                 throw WordTypeNotFoundException
             }
 
-            return wordType
+            return {
+                data: wordType,
+                message: this.i18nService.translate(WordTypeMessage.GET_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error finding word type by name key:', error)
             throw error
         }
     }
 
-    async create(data: CreateWordTypeBodyType): Promise<WordType> {
+    async create(data: CreateWordTypeBodyType, lang: string = 'vi') {
         try {
             this.logger.log(`Creating word type with nameKey: ${data.nameKey}`)
 
@@ -89,7 +145,10 @@ export class WordTypeService {
 
             const wordType = await this.wordTypeRepository.create(data)
             this.logger.log(`Word type created successfully: ${wordType.id}`)
-            return wordType
+            return {
+                data: wordType,
+                message: this.i18nService.translate(WordTypeMessage.CREATE_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error creating word type:', error)
             if (error.message.includes('đã tồn tại')) {
@@ -99,7 +158,7 @@ export class WordTypeService {
         }
     }
 
-    async update(id: number, data: UpdateWordTypeBodyType): Promise<WordType> {
+    async update(id: number, data: UpdateWordTypeBodyType, lang: string = 'vi') {
         try {
             this.logger.log(`Updating word type: ${id}`)
 
@@ -119,7 +178,10 @@ export class WordTypeService {
 
             const wordType = await this.wordTypeRepository.update(id, data)
             this.logger.log(`Word type updated successfully: ${wordType.id}`)
-            return wordType
+            return {
+                data: wordType,
+                message: this.i18nService.translate(WordTypeMessage.UPDATE_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error updating word type:', error)
             if (error.message.includes('không tồn tại') || error.message.includes('đã tồn tại')) {
@@ -129,7 +191,7 @@ export class WordTypeService {
         }
     }
 
-    async delete(id: number): Promise<void> {
+    async delete(id: number, lang: string = 'vi') {
         try {
             this.logger.log(`Deleting word type: ${id}`)
 
@@ -141,6 +203,9 @@ export class WordTypeService {
 
             await this.wordTypeRepository.delete(id)
             this.logger.log(`Word type deleted successfully: ${id}`)
+            return {
+                message: this.i18nService.translate(WordTypeMessage.DELETE_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error deleting word type:', error)
             if (error.message.includes('không tồn tại')) {
@@ -150,10 +215,14 @@ export class WordTypeService {
         }
     }
 
-    async getStats() {
+    async getStats(lang: string = 'vi') {
         try {
             this.logger.log('Getting word type statistics')
-            return await this.wordTypeRepository.getStats()
+            const stats = await this.wordTypeRepository.getStats()
+            return {
+                data: stats,
+                message: this.i18nService.translate(WordTypeMessage.GET_STATS_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error getting word type statistics:', error)
             throw error
@@ -163,7 +232,7 @@ export class WordTypeService {
     /**
      * Tạo loại từ mặc định nếu chưa có
      */
-    async createDefaultWordTypes(): Promise<void> {
+    async createDefaultWordTypes(lang: string = 'vi') {
         try {
             this.logger.log('Creating default word types')
 
@@ -179,41 +248,23 @@ export class WordTypeService {
                 { id: 8, key: 'counter', translations: { vi: 'lượng từ', en: 'counter' } },
                 { id: 9, key: 'prefix', translations: { vi: 'tiền tố', en: 'prefix' } },
                 { id: 10, key: 'suffix', translations: { vi: 'hậu tố', en: 'suffix' } },
-
                 // Tính từ tiếng Nhật
                 { id: 11, key: 'i_adjective', translations: { vi: 'tính từ i', en: 'i-adjective' } },
                 { id: 12, key: 'na_adjective', translations: { vi: 'tính từ na', en: 'na-adjective' } },
                 { id: 13, key: 'no_adjective', translations: { vi: 'tính từ no', en: 'no-adjective' } },
-
-                // Động từ tiếng Nhật - các thể
-                { id: 14, key: 'verb_ichidan', translations: { vi: 'động từ ichidan', en: 'ichidan verb' } },
-                { id: 15, key: 'verb_godan', translations: { vi: 'động từ godan', en: 'godan verb' } },
-                { id: 16, key: 'verb_irregular', translations: { vi: 'động từ bất quy tắc', en: 'irregular verb' } },
-                { id: 17, key: 'verb_suru', translations: { vi: 'động từ suru', en: 'suru verb' } },
-                { id: 18, key: 'verb_kuru', translations: { vi: 'động từ kuru', en: 'kuru verb' } },
-
-                // Thể động từ
-                { id: 19, key: 'verb_dict_form', translations: { vi: 'thể từ điển', en: 'dictionary form' } },
-                { id: 20, key: 'verb_masu_form', translations: { vi: 'thể masu', en: 'masu form' } },
-                { id: 21, key: 'verb_te_form', translations: { vi: 'thể te', en: 'te form' } },
-                { id: 22, key: 'verb_ta_form', translations: { vi: 'thể ta', en: 'ta form' } },
-                { id: 23, key: 'verb_ba_form', translations: { vi: 'thể ba', en: 'ba form' } },
-                { id: 24, key: 'verb_potential', translations: { vi: 'thể khả năng', en: 'potential form' } },
-                { id: 25, key: 'verb_passive', translations: { vi: 'thể bị động', en: 'passive form' } },
-                { id: 26, key: 'verb_causative', translations: { vi: 'thể sai khiến', en: 'causative form' } },
-                { id: 27, key: 'verb_causative_passive', translations: { vi: 'thể sai khiến bị động', en: 'causative passive form' } },
-                { id: 28, key: 'verb_volitional', translations: { vi: 'thể ý chí', en: 'volitional form' } },
-                { id: 29, key: 'verb_conditional', translations: { vi: 'thể điều kiện', en: 'conditional form' } },
-                { id: 30, key: 'verb_imperative', translations: { vi: 'thể mệnh lệnh', en: 'imperative form' } },
-                { id: 31, key: 'verb_prohibitive', translations: { vi: 'thể cấm', en: 'prohibitive form' } },
-
+                // Động từ tiếng Nhật
+                { id: 14, key: 'verb', translations: { vi: 'động từ', en: 'verb' } },
+                { id: 15, key: 'godan_verb', translations: { vi: 'động từ ngũ đoạn', en: 'godan verb' } },
+                { id: 16, key: 'ichidan_verb', translations: { vi: 'động từ nhất đoạn', en: 'ichidan verb' } },
+                { id: 17, key: 'transitive_verb', translations: { vi: 'tha động từ', en: 'transitive verb' } },
+                { id: 18, key: 'intransitive_verb', translations: { vi: 'tự động từ', en: 'intransitive verb' } },
                 // Từ đặc biệt tiếng Nhật
-                { id: 32, key: 'onomatopoeia', translations: { vi: 'từ tượng thanh', en: 'onomatopoeia' } },
-                { id: 33, key: 'mimetic_word', translations: { vi: 'từ tượng hình', en: 'mimetic word' } },
-                { id: 34, key: 'honorific', translations: { vi: 'kính ngữ', en: 'honorific' } },
-                { id: 35, key: 'humble', translations: { vi: 'khiêm nhường ngữ', en: 'humble form' } },
-                { id: 36, key: 'polite', translations: { vi: 'lịch sự ngữ', en: 'polite form' } },
-                { id: 37, key: 'casual', translations: { vi: 'thân mật ngữ', en: 'casual form' } }
+                { id: 19, key: 'onomatopoeia', translations: { vi: 'từ tượng thanh', en: 'onomatopoeia' } },
+                { id: 20, key: 'mimetic_word', translations: { vi: 'từ tượng hình', en: 'mimetic word' } },
+                { id: 21, key: 'honorific', translations: { vi: 'kính ngữ', en: 'honorific' } },
+                { id: 22, key: 'humble', translations: { vi: 'khiêm nhường ngữ', en: 'humble form' } },
+                { id: 23, key: 'polite', translations: { vi: 'lịch sự ngữ', en: 'polite form' } },
+                { id: 24, key: 'casual', translations: { vi: 'thân mật ngữ', en: 'casual form' } }
             ]
 
             for (const wordType of defaultWordTypes) {
@@ -234,6 +285,9 @@ export class WordTypeService {
             }
 
             this.logger.log('Default word types creation completed')
+            return {
+                message: this.i18nService.translate(WordTypeMessage.CREATE_DEFAULT_SUCCESS, lang)
+            }
         } catch (error) {
             this.logger.error('Error creating default word types:', error)
             throw InvalidWordTypeDataException
@@ -251,17 +305,17 @@ export class WordTypeService {
                 try {
                     // Tìm ngôn ngữ theo code
                     const languages = await this.languagesService.findMany({
-                        page: 1,
-                        limit: 100,
+                        currentPage: 1,
+                        pageSize: 100,
                         code: langCode
                     })
 
-                    if (!languages.data?.items || languages.data.items.length === 0) {
+                    if (!languages.data?.results || languages.data.results.length === 0) {
                         this.logger.warn(`Language ${langCode} not found, skipping translation`)
                         continue
                     }
 
-                    const language = languages.data.items[0]
+                    const language = languages.data.results[0]
 
                     // Kiểm tra translation đã tồn tại chưa
                     const existingTranslation = await this.translationService.findByKeyAndLanguage(

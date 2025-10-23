@@ -58,13 +58,37 @@ export const GetWordTypeListQuerySchema = z.object({
     limit: z.string().transform((val) => parseInt(val, 10)).optional(),
     sortBy: z.enum(['id', 'nameKey', 'createdAt', 'updatedAt']).optional(),
     sortOrder: z.enum(['asc', 'desc']).optional(),
-    search: z.string().optional()
 })
 
 // Get WordType by nameKey params schema
 export const GetWordTypeByNameKeyParamsSchema = z.object({
     nameKey: z.string().min(1, 'Name key không được để trống')
 })
+
+// Response schemas
+// View schema for responses: expose translated value as `name`
+export const WordTypeViewSchema = z.object({
+    id: z.number(),
+    name: z.string(),
+    createdAt: z.date(),
+    updatedAt: z.date()
+})
+
+export const WordTypeListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(WordTypeViewSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
 
 // Type exports
 export type WordType = z.infer<typeof WordTypeSchema>
@@ -73,3 +97,4 @@ export type UpdateWordTypeBodyType = z.infer<typeof UpdateWordTypeSchema>
 export type GetWordTypeByIdParamsType = z.infer<typeof GetWordTypeByIdParamsSchema>
 export type GetWordTypeListQueryType = z.infer<typeof GetWordTypeListQuerySchema>
 export type GetWordTypeByNameKeyParamsType = z.infer<typeof GetWordTypeByNameKeyParamsSchema>
+export type WordTypeListResType = z.infer<typeof WordTypeListResSchema>

@@ -70,6 +70,7 @@ export const LoginResSchema = z
         email: true,
         status: true,
         phoneNumber: true,
+        exp: true,
         roleId: true,
         avatar: true
       }).shape,

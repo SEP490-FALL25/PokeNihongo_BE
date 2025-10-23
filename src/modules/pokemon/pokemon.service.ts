@@ -64,17 +64,72 @@ export class PokemonService {
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.pokemonRepo.list(pagination)
 
-    // Calculate weaknesses for each Pokemon in the list
+    // Optimize: Calculate weaknesses for all Pokemon in batch
     if (data.results && data.results.length > 0) {
-      const pokemonWithWeaknesses = await Promise.all(
-        data.results.map(async (pokemon: any) => {
-          const weaknesses = await this.getWeaknessesForPokemon(pokemon.types)
-          return {
-            ...pokemon,
-            weaknesses
-          }
+      // Get all unique type IDs from all Pokemon
+      const allTypeIds = new Set<number>()
+      data.results.forEach((pokemon: any) => {
+        pokemon.types?.forEach((type: any) => {
+          allTypeIds.add(type.id)
         })
-      )
+      })
+
+      // Batch load all type effectiveness data once
+      const allTypeEffectiveness = await this.prismaService.typeEffectiveness.findMany({
+        where: {
+          defenderId: {
+            in: Array.from(allTypeIds)
+          },
+          multiplier: {
+            gt: 1 // Only get super effective (weaknesses)
+          }
+        },
+        include: {
+          attacker: {
+            select: {
+              id: true,
+              type_name: true,
+              display_name: true,
+              color_hex: true
+            }
+          }
+        }
+      })
+
+      // Create lookup map for faster access
+      const effectivenessMap = new Map<number, any[]>()
+      allTypeEffectiveness.forEach((eff) => {
+        if (!effectivenessMap.has(eff.defenderId)) {
+          effectivenessMap.set(eff.defenderId, [])
+        }
+        effectivenessMap.get(eff.defenderId)!.push({
+          ...eff.attacker,
+          effectiveness_multiplier: eff.multiplier
+        })
+      })
+
+      // Calculate weaknesses for each Pokemon using cached data
+      const pokemonWithWeaknesses = data.results.map((pokemon: any) => {
+        const allWeaknesses = new Map<number, any>()
+
+        pokemon.types?.forEach((type: any) => {
+          const weaknesses = effectivenessMap.get(type.id) || []
+          weaknesses.forEach((weakness) => {
+            if (
+              !allWeaknesses.has(weakness.id) ||
+              allWeaknesses.get(weakness.id).effectiveness_multiplier <
+                weakness.effectiveness_multiplier
+            ) {
+              allWeaknesses.set(weakness.id, weakness)
+            }
+          })
+        })
+
+        return {
+          ...pokemon,
+          weaknesses: Array.from(allWeaknesses.values())
+        }
+      })
 
       data.results = pokemonWithWeaknesses
     }

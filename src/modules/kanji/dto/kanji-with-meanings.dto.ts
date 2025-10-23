@@ -61,10 +61,7 @@ export const CreateKanjiWithMeaningsSchema = z.object({
     character: z
         .string()
         .min(1, 'Ký tự Kanji không được để trống')
-        .max(10, 'Ký tự Kanji quá dài (tối đa 10 ký tự)')
-        .refine(isKanjiCharacter, {
-            message: 'Phải là một ký tự Kanji duy nhất'
-        }),
+        .max(10, 'Ký tự Kanji quá dài (tối đa 10 ký tự)'),
     strokeCount: z
         .union([z.number(), z.string()])
         .transform((val) => typeof val === 'string' ? parseInt(val) : val)
@@ -89,9 +86,36 @@ export const CreateKanjiWithMeaningsSchema = z.object({
         .max(500, 'URL hình ảnh quá dài (tối đa 500 ký tự)')
         .url('URL hình ảnh không hợp lệ')
         .optional(),
-    readings: z.array(ReadingSchema).min(1, 'Phải có ít nhất một cách đọc').max(10, 'Tối đa 10 cách đọc').optional(),
+    readings: z
+        .union([z.array(ReadingSchema), z.string()])
+        .transform((val) => {
+            if (typeof val === 'string') {
+                try {
+                    const parsed = JSON.parse(val)
+                    return Array.isArray(parsed) ? parsed : [parsed]
+                } catch {
+                    // Nếu không phải JSON hợp lệ, coi như không hợp lệ để Zod báo lỗi
+                    return val
+                }
+            }
+            return val
+        })
+        .pipe(z.array(ReadingSchema).min(1, 'Phải có ít nhất một cách đọc').max(10, 'Tối đa 10 cách đọc'))
+        .optional(),
     meanings: z
-        .union([MeaningSchema, z.array(MeaningSchema)])
+        .union([MeaningSchema, z.array(MeaningSchema), z.string()])
+        .transform((val) => {
+            if (typeof val === 'string') {
+                try {
+                    const parsed = JSON.parse(val)
+                    return parsed
+                } catch {
+                    return val
+                }
+            }
+            return val
+        })
+        .pipe(z.union([MeaningSchema, z.array(MeaningSchema)]))
         .optional()
         .describe('Meaning object hoặc array of meanings. Chỉ lấy meaning đầu tiên để tạo meaningKey chính.')
 })

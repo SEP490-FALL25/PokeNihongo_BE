@@ -1,0 +1,442 @@
+import { Injectable, Logger } from '@nestjs/common'
+import {
+    CreateAnswerBodyType,
+    UpdateAnswerBodyType,
+    GetAnswerByIdParamsType,
+    GetAnswerListQueryType,
+} from './entities/answer.entities'
+import {
+    AnswerNotFoundException,
+    AnswerAlreadyExistsException,
+    InvalidAnswerDataException,
+    QuestionNotFoundException,
+    AnswerContentAlreadyExistsException,
+    InvalidJapaneseContentException,
+} from './dto/answer.error'
+import { AnswerRepository } from './answer.repo'
+import { TranslationService } from '@/modules/translation/translation.service'
+import { LanguagesService } from '@/modules/languages/languages.service'
+import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
+
+@Injectable()
+export class AnswerService {
+    private readonly logger = new Logger(AnswerService.name)
+
+    constructor(
+        private readonly answerRepository: AnswerRepository,
+        private readonly translationService: TranslationService,
+        private readonly languagesService: LanguagesService,
+    ) { }
+
+    //#region Get Answer
+    async getAnswerList(params: GetAnswerListQueryType, lang: string) {
+        try {
+            this.logger.log('Getting answer list with params:', params)
+
+            const result = await this.answerRepository.findMany(params)
+
+            // Get language ID for translations
+            let languageId: number | undefined
+            try {
+                const language = await this.languagesService.findByCode({ code: lang })
+                languageId = language?.data?.id
+            } catch {
+                languageId = undefined
+            }
+
+            // Add translations for each answer
+            const resultsWithTranslations = await Promise.all(
+                result.items.map(async (answer) => {
+                    if (!languageId) {
+                        // If no language, return answer without answerKey
+                        const { answerKey, ...answerWithoutKey } = answer
+                        return answerWithoutKey
+                    }
+
+                    try {
+                        if (!answer.answerKey) {
+                            // If no answerKey, return answer without translation
+                            const { answerKey, ...answerWithoutKey } = answer
+                            return answerWithoutKey
+                        }
+
+                        const translationResult = await this.translationService.findByKeyAndLanguage(
+                            answer.answerKey,
+                            languageId as number
+                        )
+                        const translatedText = translationResult?.value || answer.answerJp
+
+                        // Remove answerKey and add translatedText
+                        const { answerKey, ...answerWithoutKey } = answer
+                        return {
+                            ...answerWithoutKey,
+                            translatedText
+                        }
+                    } catch {
+                        // Remove answerKey and fallback to original Japanese text
+                        const { answerKey, ...answerWithoutKey } = answer
+                        return {
+                            ...answerWithoutKey,
+                            translatedText: answer.answerJp
+                        }
+                    }
+                })
+            )
+
+            this.logger.log(`Found ${result.items.length} answer entries`)
+            return {
+                statusCode: 200,
+                message: 'Lấy danh sách câu trả lời thành công',
+                data: {
+                    results: resultsWithTranslations,
+                    pagination: {
+                        currentPage: result.page,
+                        pageSize: result.limit,
+                        totalPage: Math.ceil(result.total / result.limit),
+                        totalItem: result.total
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error getting answer list:', error)
+            throw error
+        }
+    }
+
+    async getAnswerById(params: GetAnswerByIdParamsType) {
+        try {
+            this.logger.log(`Getting answer by id: ${params.id}`)
+
+            const answer = await this.answerRepository.findById(params.id)
+
+            if (!answer) {
+                throw new AnswerNotFoundException()
+            }
+
+            this.logger.log(`Found answer: ${answer.id}`)
+            return {
+                statusCode: 200,
+                data: answer,
+                message: 'Lấy thông tin câu trả lời thành công'
+            }
+        } catch (error) {
+            this.logger.error(`Error getting answer by id ${params.id}:`, error)
+
+            if (error instanceof AnswerNotFoundException) {
+                throw error
+            }
+
+            throw new InvalidAnswerDataException('Lỗi khi lấy thông tin câu trả lời')
+        }
+    }
+    //#endregion
+
+    //#region Create Answer
+    async createAnswer(data: CreateAnswerBodyType) {
+        try {
+            this.logger.log('Creating answer with data:', data)
+
+            // Validate Japanese content
+            if (!this.isJapanese(data.answerJp)) {
+                throw new InvalidJapaneseContentException()
+            }
+
+            // Check if question exists
+            const questionExists = await this.answerRepository.checkQuestionExists(data.questionId)
+            if (!questionExists) {
+                throw new QuestionNotFoundException()
+            }
+
+            // Check if answer content already exists in this question
+            const existingAnswer = await this.answerRepository.checkAnswerExists(data.questionId, data.answerJp)
+            if (existingAnswer) {
+                throw new AnswerContentAlreadyExistsException()
+            }
+
+            // Remove translations from data before passing to Prisma
+            const { translations, ...answerData } = data
+
+            // Create answer with auto-generated answerKey
+            const tempData = { ...answerData, answerKey: 'temp' }
+            const answer = await this.answerRepository.create(tempData)
+
+            // Generate answerKey with actual ID
+            const answerKey = `answer.${answer.id}.text`
+
+            // Update with correct answerKey
+            const updatedAnswer = await this.answerRepository.update(answer.id, { answerKey } as any)
+
+            // Create translation keys if provided
+            if (translations) {
+                try {
+                    // Check if it's simple format (direct object) or complex format (with meaning array)
+                    if ('language_code' in translations && 'value' in translations) {
+                        // Simple format: { language_code: "vi", value: "text" }
+                        const languageId = this.getLanguageIdByCode(translations.language_code)
+                        if (languageId) {
+                            await this.translationService.create({
+                                key: answerKey,
+                                languageId: languageId,
+                                value: translations.value
+                            })
+                            this.logger.log(`Created simple translation for answer: ${answer.id}`)
+                        }
+                    } else if ('meaning' in translations && translations.meaning && translations.meaning.length > 0) {
+                        // Complex format: { meaning: [{ language_code: "vi", value: "text" }] }
+                        await this.createTranslationKeys(answer.id, answerKey, data.answerJp, translations)
+                        this.logger.log(`Translation keys created for answer: ${answer.id}`)
+                    }
+                } catch (translationError) {
+                    this.logger.warn(`Failed to create translation for answer ${answer.id}:`, translationError)
+                    // Don't throw error as answer was created successfully
+                }
+            } else {
+                // Create default Vietnamese translation if no translations provided
+                try {
+                    await this.translationService.create({
+                        key: answerKey,
+                        languageId: 1, // Vietnamese
+                        value: data.answerJp
+                    })
+                    this.logger.log(`Created default Vietnamese translation for answer: ${answer.id}`)
+                } catch (translationError) {
+                    this.logger.warn(`Failed to create default translation for answer ${answer.id}:`, translationError)
+                }
+            }
+
+            // Fetch the answer with translations for response
+            const answerWithTranslations = await this.getAnswerWithTranslations(updatedAnswer.id)
+
+            this.logger.log(`Created answer: ${updatedAnswer.id}`)
+            return {
+                statusCode: 201,
+                data: answerWithTranslations,
+                message: 'Tạo câu trả lời thành công'
+            }
+        } catch (error) {
+            this.logger.error('Error creating answer:', error)
+
+            if (error instanceof QuestionNotFoundException ||
+                error instanceof AnswerAlreadyExistsException ||
+                error instanceof AnswerContentAlreadyExistsException ||
+                error instanceof InvalidJapaneseContentException) {
+                throw error
+            }
+
+            if (isUniqueConstraintPrismaError(error)) {
+                throw new AnswerAlreadyExistsException()
+            }
+
+            throw new InvalidAnswerDataException('Lỗi khi tạo câu trả lời')
+        }
+    }
+    //#endregion
+
+    //#region Update Answer
+    async updateAnswer(id: number, data: UpdateAnswerBodyType) {
+        try {
+            this.logger.log(`Updating answer ${id} with data:`, data)
+
+            // Check if answer exists
+            const answer = await this.answerRepository.findById(id)
+            if (!answer) {
+                throw new AnswerNotFoundException()
+            }
+
+            // Check if question exists (if updating questionId)
+            if (data.questionId) {
+                const questionExists = await this.answerRepository.checkQuestionExists(data.questionId)
+                if (!questionExists) {
+                    throw new QuestionNotFoundException()
+                }
+            }
+
+            // Update answer first
+            const updatedAnswer = await this.answerRepository.update(id, data)
+
+            // Generate new answerKey if answerJp changed
+            if (data.answerJp) {
+                const newAnswerKey = `answer.${id}.text`
+
+                // Update with new answerKey
+                const finalUpdatedAnswer = await this.answerRepository.update(id, { answerKey: newAnswerKey } as any)
+                return {
+                    statusCode: 200,
+                    data: finalUpdatedAnswer,
+                    message: 'Cập nhật câu trả lời thành công'
+                }
+            }
+
+            this.logger.log(`Updated answer: ${updatedAnswer.id}`)
+            return {
+                statusCode: 200,
+                data: updatedAnswer,
+                message: 'Cập nhật câu trả lời thành công'
+            }
+        } catch (error) {
+            this.logger.error(`Error updating answer ${id}:`, error)
+
+            if (error instanceof AnswerNotFoundException ||
+                error instanceof QuestionNotFoundException ||
+                error instanceof AnswerAlreadyExistsException) {
+                throw error
+            }
+
+            throw new InvalidAnswerDataException('Lỗi khi cập nhật câu trả lời')
+        }
+    }
+    //#endregion
+
+    //#region Delete Answer
+    async deleteAnswer(id: number) {
+        try {
+            this.logger.log(`Deleting answer ${id}`)
+
+            // Check if answer exists
+            const answer = await this.answerRepository.findById(id)
+            if (!answer) {
+                throw new AnswerNotFoundException()
+            }
+
+            await this.answerRepository.delete(id)
+
+            this.logger.log(`Deleted answer ${id}`)
+            return {
+                statusCode: 204,
+                message: 'Xóa câu trả lời thành công'
+            }
+        } catch (error) {
+            this.logger.error(`Error deleting answer ${id}:`, error)
+
+            if (error instanceof AnswerNotFoundException) {
+                throw error
+            }
+
+            if (isNotFoundPrismaError(error)) {
+                throw new AnswerNotFoundException()
+            }
+
+            throw new InvalidAnswerDataException('Lỗi khi xóa câu trả lời')
+        }
+    }
+    //#endregion
+
+    //#region Helper Methods
+    /**
+     * Check if text contains Japanese characters
+     */
+    private isJapanese(text: string): boolean {
+        const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/
+        return japaneseRegex.test(text)
+    }
+
+    /**
+     * Get language ID from language code
+     */
+    private getLanguageIdByCode(languageCode: string): number | null {
+        // Hardcode language IDs (usually vi=1, en=2, ja=3)
+        const languageMap: { [key: string]: number } = {
+            'vi': 1,
+            'en': 2,
+            'ja': 3
+        }
+        return languageMap[languageCode] || null
+    }
+
+    /**
+     * Get language_code from languageId
+     */
+    private getLanguageCodeById(languageId: number): string | null {
+        // Hardcode language mappings (usually vi=1, en=2, ja=3)
+        const languageMap: { [key: number]: string } = {
+            1: 'vi',
+            2: 'en',
+            3: 'ja'
+        }
+        return languageMap[languageId] || null
+    }
+
+    /**
+     * Create translation keys for answer
+     */
+    private async createTranslationKeys(answerId: number, answerKey: string, answerJp: string, translations: { meaning: Array<{ language_code: string; value: string }> }) {
+        try {
+            // Create translations from provided data
+            const translationPromises = translations.meaning.map(async (translation) => {
+                // Get languageId from language_code
+                const languageId = this.getLanguageIdByCode(translation.language_code)
+                if (languageId) {
+                    return this.translationService.create({
+                        key: answerKey,
+                        languageId: languageId,
+                        value: translation.value
+                    }).catch(error => {
+                        this.logger.warn(`Failed to create translation for ${translation.language_code}:`, error)
+                        return null
+                    })
+                }
+                return null
+            })
+
+            await Promise.all(translationPromises.filter(Boolean))
+            this.logger.log(`Custom translations created for answer ${answerId}: ${answerKey}`)
+        } catch (error) {
+            this.logger.error(`Error creating translation keys for answer ${answerId}:`, error)
+            throw error
+        }
+    }
+
+    /**
+     * Get answer with translations
+     */
+    private async getAnswerWithTranslations(answerId: number) {
+        try {
+            // Get the answer
+            const answer = await this.answerRepository.findById(answerId)
+            if (!answer) {
+                throw new AnswerNotFoundException()
+            }
+
+            // Get translations for this answer
+            let response = { ...answer }
+
+            try {
+                if (!answer.answerKey) {
+                    // If no answerKey, return answer without translations
+                    return {
+                        ...answer,
+                        translations: {
+                            answer: []
+                        }
+                    }
+                }
+
+                const translationResult = await this.translationService.findByKey({ key: answer.answerKey })
+
+                if (translationResult.translations && translationResult.translations.length > 0) {
+                    // Format translations for response
+                    const formattedTranslations = translationResult.translations.map(t => ({
+                        language_code: this.getLanguageCodeById(t.languageId),
+                        value: t.value
+                    }))
+
+                    response = {
+                        ...answer,
+                        translations: {
+                            meaning: formattedTranslations
+                        }
+                    } as any
+                }
+            } catch (translationError) {
+                this.logger.warn(`Failed to fetch translations for answer ${answerId}:`, translationError)
+                // Continue without translations if fetching fails
+            }
+
+            return response
+        } catch (error) {
+            this.logger.error(`Error getting answer with translations for ID ${answerId}:`, error)
+            throw error
+        }
+    }
+    //#endregion
+}

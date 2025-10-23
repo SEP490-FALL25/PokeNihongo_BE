@@ -12,6 +12,8 @@ import {
 } from './dto/lesson-category.error'
 import { LessonCategoryRepository } from './lesson-category.repo'
 import { TranslationService } from '../translation/translation.service'
+import { LanguagesService } from '../languages/languages.service'
+import { I18nService } from '@/i18n/i18n.service'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 
 @Injectable()
@@ -20,22 +22,58 @@ export class LessonCategoryService {
 
   constructor(
     private readonly lessonCategoryRepository: LessonCategoryRepository,
-    private readonly translationService: TranslationService
+    private readonly translationService: TranslationService,
+    private readonly languagesService: LanguagesService,
+    private readonly i18nService: I18nService
   ) { }
 
-  async getLessonCategoryList(params: GetLessonCategoryListQueryType) {
+  async getLessonCategoryList(params: GetLessonCategoryListQueryType, lang: string = 'vi') {
     try {
       this.logger.log('Getting lesson category list with params:', params)
 
       const result = await this.lessonCategoryRepository.findMany(params)
 
+      // Resolve translation values for nameKey per requested language
+      let languageId: number | undefined
+      try {
+        this.logger.log(`Looking up language for code: ${lang}`)
+        const language = await this.languagesService.findByCode({ code: lang })
+        languageId = language?.data?.id
+        this.logger.log(`Found languageId: ${languageId}`)
+      } catch (error) {
+        this.logger.warn(`Failed to find language for code ${lang}:`, error)
+        languageId = undefined
+      }
+
+      const resultsWithName = result.data.map((item) => {
+        // For now, just return the basic data without translation
+        // TODO: Implement proper translation logic
+        return {
+          id: item.id,
+          nameKey: item.nameKey,
+          name: item.nameKey, // Use nameKey as fallback
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt
+        }
+      })
+
       this.logger.log(`Found ${result.data.length} lesson categories`)
       return {
-        ...result,
-        message: 'Lấy danh sách danh mục bài học thành công'
+        statusCode: 200,
+        message: 'Lấy danh sách danh mục bài học thành công',
+        data: {
+          results: resultsWithName,
+          pagination: {
+            current: result.page,
+            pageSize: result.limit,
+            totalPage: result.totalPages,
+            totalItem: result.total
+          }
+        }
       }
     } catch (error) {
       this.logger.error('Error getting lesson category list:', error)
+      this.logger.error('Error details:', JSON.stringify(error, null, 2))
       throw error
     }
   }
@@ -291,16 +329,21 @@ export class LessonCategoryService {
         },
         {
           id: 3,
+          nameKey: 'category.jlpt_n3',
+          slug: 'jlpt-n3'
+        },
+        {
+          id: 4,
           nameKey: 'category.grammar',
           slug: 'grammar'
         },
         {
-          id: 4,
+          id: 5,
           nameKey: 'category.vocabulary',
           slug: 'vocabulary'
         },
         {
-          id: 5,
+          id: 6,
           nameKey: 'category.listening',
           slug: 'listening'
         }
@@ -314,6 +357,10 @@ export class LessonCategoryService {
         // JLPT N4
         { key: 'category.jlpt_n4', languageId: 1, value: 'Trình độ JLPT N4' },
         { key: 'category.jlpt_n4', languageId: 2, value: 'JLPT N4 Level' },
+
+        // JLPT N3
+        { key: 'category.jlpt_n3', languageId: 1, value: 'Trình độ JLPT N3' },
+        { key: 'category.jlpt_n3', languageId: 2, value: 'JLPT N3 Level' },
 
         // Grammar
         { key: 'category.grammar', languageId: 1, value: 'Ngữ pháp' },

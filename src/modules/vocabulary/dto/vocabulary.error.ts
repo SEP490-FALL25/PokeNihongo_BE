@@ -36,3 +36,12 @@ export const MeaningAlreadyExistsException = new HttpException(
     },
     HttpStatus.CONFLICT
 )
+
+export const VocabularyJapaneseTextInvalidException = new HttpException(
+    {
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Từ vựng phải là tiếng Nhật thuần (Hiragana/Katakana/Kanji)',
+        error: 'INVALID_JAPANESE_TEXT'
+    },
+    HttpStatus.BAD_REQUEST
+)

@@ -142,4 +142,18 @@ export class UserRepo {
       }
     })
   }
+
+  async incrementFreeCoins(userId: number, amount: number): Promise<UserType> {
+    return this.prismaService.user.update({
+      where: {
+        id: userId,
+        deletedAt: null
+      },
+      data: {
+        freeCoins: {
+          increment: amount
+        }
+      }
+    })
+  }
 }
