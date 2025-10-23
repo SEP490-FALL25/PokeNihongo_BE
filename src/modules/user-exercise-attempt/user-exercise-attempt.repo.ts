@@ -11,8 +11,9 @@ export class UserExerciseAttemptRepository {
         pageSize: number
         userId?: number
         exerciseId?: number
+        status?: string
     }) {
-        const { currentPage, pageSize, userId, exerciseId } = params
+        const { currentPage, pageSize, userId, exerciseId, status } = params
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -23,6 +24,10 @@ export class UserExerciseAttemptRepository {
 
         if (exerciseId) {
             where.exerciseId = exerciseId
+        }
+
+        if (status) {
+            where.status = status
         }
 
         const [items, total] = await Promise.all([
@@ -79,7 +84,10 @@ export class UserExerciseAttemptRepository {
         exerciseId: number
     }): Promise<UserExerciseAttemptType> {
         const result = await this.prismaService.userExerciseAttempt.create({
-            data
+            data: {
+                ...data,
+                status: 'IN_PROGRESS'
+            }
         })
         return this.transformUserExerciseAttempt(result)
     }
@@ -87,13 +95,14 @@ export class UserExerciseAttemptRepository {
     async update(
         where: { id: number },
         data: {
-            userId?: number
-            exerciseId?: number
+            status?: string
         }
     ): Promise<UserExerciseAttemptType> {
         const result = await this.prismaService.userExerciseAttempt.update({
             where,
-            data
+            data: {
+                status: data.status as any
+            }
         })
         return this.transformUserExerciseAttempt(result)
     }
@@ -114,6 +123,7 @@ export class UserExerciseAttemptRepository {
             id: userExerciseAttempt.id,
             userId: userExerciseAttempt.userId,
             exerciseId: userExerciseAttempt.exerciseId,
+            status: userExerciseAttempt.status,
             createdAt: userExerciseAttempt.createdAt,
             updatedAt: userExerciseAttempt.updatedAt
         }

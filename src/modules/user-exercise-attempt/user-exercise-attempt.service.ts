@@ -19,9 +19,12 @@ export class UserExerciseAttemptService {
 
     constructor(private readonly userExerciseAttemptRepository: UserExerciseAttemptRepository) { }
 
-    async create(body: CreateUserExerciseAttemptBodyType) {
+    async create(userId: number, exerciseId: number) {
         try {
-            const userExerciseAttempt = await this.userExerciseAttemptRepository.create(body)
+            const userExerciseAttempt = await this.userExerciseAttemptRepository.create({
+                userId: userId,
+                exerciseId: exerciseId
+            })
 
             return {
                 data: userExerciseAttempt,
@@ -34,13 +37,14 @@ export class UserExerciseAttemptService {
     }
 
     async findAll(query: GetUserExerciseAttemptListQueryType) {
-        const { currentPage, pageSize, userId, exerciseId } = query
+        const { currentPage, pageSize, userId, exerciseId, status } = query
 
         const result = await this.userExerciseAttemptRepository.findMany({
             currentPage,
             pageSize,
             userId,
-            exerciseId
+            exerciseId,
+            status
         })
 
         return {

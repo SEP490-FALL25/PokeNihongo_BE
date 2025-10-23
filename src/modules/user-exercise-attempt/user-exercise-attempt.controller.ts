@@ -1,6 +1,7 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import {
     CreateUserExerciseAttemptBodyDTO,
+    CreateUserExerciseAttemptParamsDTO,
     GetUserExerciseAttemptByIdParamsDTO,
     GetUserExerciseAttemptListQueryDTO,
     UpdateUserExerciseAttemptBodyDTO,
@@ -11,7 +12,7 @@ import {
     UserExerciseAttemptResponseSwaggerDTO,
     UserExerciseAttemptListResponseSwaggerDTO,
     GetUserExerciseAttemptListQuerySwaggerDTO,
-    CreateUserExerciseAttemptSwaggerDTO,
+    CreateUserExerciseAttemptParamsSwaggerDTO,
     UpdateUserExerciseAttemptSwaggerDTO
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.dto'
 import {
@@ -35,18 +36,20 @@ import { UserExerciseAttemptService } from './user-exercise-attempt.service'
 export class UserExerciseAttemptController {
     constructor(private readonly userExerciseAttemptService: UserExerciseAttemptService) { }
 
-    @Post()
+    @Post(':exerciseId')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Tạo lần thử bài tập mới' })
-    @ApiBody({ type: CreateUserExerciseAttemptSwaggerDTO })
     @ApiResponse({
         status: 201,
         description: 'Tạo lần thử bài tập thành công',
         type: UserExerciseAttemptResponseSwaggerDTO
     })
     @ZodSerializerDto(UserExerciseAttemptResDTO)
-    create(@Body() body: CreateUserExerciseAttemptBodyDTO, @ActiveUser('userId') userId: number) {
-        return this.userExerciseAttemptService.create(body)
+    create(
+        @Param('exerciseId') exerciseId: string,
+        @ActiveUser('userId') userId: number
+    ) {
+        return this.userExerciseAttemptService.create(userId, parseInt(exerciseId, 10))
     }
 
     @Get()

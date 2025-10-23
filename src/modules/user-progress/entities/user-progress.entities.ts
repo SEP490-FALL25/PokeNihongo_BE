@@ -41,11 +41,6 @@ export const UpdateUserProgressBodySchema = z.object({
 
 // UserProgress with relations schema
 export const UserProgressWithRelationsSchema = UserProgressSchema.extend({
-    user: z.object({
-        id: z.number(),
-        name: z.string(),
-        email: z.string()
-    }).optional(),
     lesson: LessonInfoSchema.optional()
 })
 

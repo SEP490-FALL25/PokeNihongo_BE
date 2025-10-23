@@ -33,6 +33,20 @@ export class UserAnswerLogService {
         }
     }
 
+    async upsert(body: CreateUserAnswerLogBodyType) {
+        try {
+            const userAnswerLog = await this.userAnswerLogRepository.upsert(body)
+
+            return {
+                data: userAnswerLog,
+                message: USER_ANSWER_LOG_MESSAGE.CREATE_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error upserting user answer log:', error)
+            throw InvalidUserAnswerLogDataException
+        }
+    }
+
     async findAll(query: GetUserAnswerLogListQueryType) {
         const { currentPage, pageSize, userExerciseAttemptId, questionId, isCorrect } = query
 

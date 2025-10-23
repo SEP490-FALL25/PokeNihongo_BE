@@ -9,12 +9,17 @@ export const LessonCategoryResponseSchema = z.object({
 })
 
 export const LessonCategoryListResponseSchema = z.object({
-  data: z.array(LessonCategoryWithRelationsType),
-  page: z.number(),
-  limit: z.number(),
-  total: z.number(),
-  totalPages: z.number(),
-  message: z.string()
+  statusCode: z.number(),
+  message: z.string(),
+  data: z.object({
+    results: z.array(LessonCategoryWithRelationsType),
+    pagination: z.object({
+      current: z.number(),
+      pageSize: z.number(),
+      totalPage: z.number(),
+      totalItem: z.number()
+    })
+  })
 })
 
 // DTO Classes

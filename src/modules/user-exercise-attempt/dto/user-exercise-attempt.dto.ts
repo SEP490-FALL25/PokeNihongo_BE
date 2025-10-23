@@ -10,6 +10,13 @@ export class UserExerciseAttemptSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID bài tập' })
     exerciseId: number
 
+    @ApiProperty({
+        example: 'IN_PROGRESS',
+        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), ABANDONED (bỏ dở)',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'ABANDONED']
+    })
+    status: string
+
     @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Ngày tạo' })
     createdAt: Date
 
@@ -17,20 +24,14 @@ export class UserExerciseAttemptSwaggerDTO {
     updatedAt: Date
 }
 
-export class CreateUserExerciseAttemptSwaggerDTO {
-    @ApiProperty({ example: 1, description: 'ID người dùng' })
-    userId: number
-
-    @ApiProperty({ example: 1, description: 'ID bài tập' })
-    exerciseId: number
-}
-
 export class UpdateUserExerciseAttemptSwaggerDTO {
-    @ApiProperty({ example: 1, description: 'ID người dùng', required: false })
-    userId?: number
-
-    @ApiProperty({ example: 1, description: 'ID bài tập', required: false })
-    exerciseId?: number
+    @ApiProperty({
+        example: 'COMPLETED',
+        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), ABANDONED (bỏ dở)',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'ABANDONED'],
+        required: false
+    })
+    status?: string
 }
 
 export class UserExerciseAttemptResponseSwaggerDTO {
@@ -80,6 +81,11 @@ export class UserExerciseAttemptListResponseSwaggerDTO {
     message: string
 }
 
+export class CreateUserExerciseAttemptParamsSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID bài tập' })
+    exerciseId: number
+}
+
 export class GetUserExerciseAttemptListQuerySwaggerDTO {
     @ApiProperty({ example: 1, description: 'Trang hiện tại', required: false })
     currentPage?: number
@@ -92,6 +98,14 @@ export class GetUserExerciseAttemptListQuerySwaggerDTO {
 
     @ApiProperty({ example: 1, description: 'ID bài tập', required: false })
     exerciseId?: number
+
+    @ApiProperty({
+        example: 'IN_PROGRESS',
+        description: 'Lọc theo trạng thái: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), ABANDONED (bỏ dở)',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'ABANDONED'],
+        required: false
+    })
+    status?: string
 }
 
 
