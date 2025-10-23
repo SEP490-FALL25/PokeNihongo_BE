@@ -1,9 +1,50 @@
+version: '3.8'
+
 services:
-  myapp:
-    build: .
-    container_name: myapp
-    ports:
-      - "80:4000" 
+  backend:
+    container_name: pokenihongo-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
     env_file:
-      - .env
-    restart: always
+      - .env.production
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - pokenihongo-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: pokenihongo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pokemonnihon2025
+      POSTGRES_DB: pokenihongo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - pokenihongo-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: pokenihongo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - pokenihongo-network
+
+networks:
+  pokenihongo-network:
+    external: true
+
+volumes:
+  pgdata:
+  redisdata:

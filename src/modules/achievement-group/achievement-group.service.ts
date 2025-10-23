@@ -67,13 +67,15 @@ export class AchievementGroupService {
   }
 
   async findById(id: number, lang: string = 'vi') {
-    const achievementGroup = await this.achievementGroupRepo.findById(id)
-    if (!achievementGroup) {
+    const [achievementGroup, langId] = await Promise.all([
+      this.achievementGroupRepo.findById(id),
+      this.languageRepo.getIdByCode(lang)
+    ])
+
+    if (!langId) {
       throw new NotFoundRecordException()
     }
-
-    const langId = await this.languageRepo.getIdByCode(lang)
-    if (!langId) {
+    if (!achievementGroup) {
       throw new NotFoundRecordException()
     }
 
@@ -110,80 +112,88 @@ export class AchievementGroupService {
     lang: string = 'vi'
   ) {
     try {
-      // tạo trước để lấy id rồi update lại nameKey và descriptionKey
-      const initData: CreateAchievementGroupBodyType = {
-        nameKey: `achievement_group.name.${Date.now()}`,
-        descriptionKey: `achievement_group.description.${Date.now()}`,
-        displayOrder: data.displayOrder
-      }
+      return await this.achievementGroupRepo.withTransaction(async (prismaTx) => {
+        // tạo trước để lấy id rồi update lại nameKey và descriptionKey
+        const initData: CreateAchievementGroupBodyType = {
+          nameKey: `achievement_group.name.${Date.now()}`,
+          descriptionKey: `achievement_group.description.${Date.now()}`,
+          displayOrder: data.displayOrder
+        }
 
-      const achievementGroupResult = await this.achievementGroupRepo.create({
-        createdById,
-        data: initData
+        const achievementGroupResult = await this.achievementGroupRepo.create(
+          {
+            createdById,
+            data: initData
+          },
+          prismaTx
+        )
+
+        //final key để add cho translation và update lại bảng achievementGroup
+        const nameKey = `achievement_group.name.${achievementGroupResult.id}`
+        const descriptionKey = `achievement_group.description.${achievementGroupResult.id}`
+
+        const nameList = data.nameTranslations.map((t) => t.key)
+        const desList = data.descriptionTranslations?.map((t) => t.key) ?? []
+
+        // Gộp & loại bỏ trùng key
+        const allLangCodes = Array.from(new Set([...nameList, ...desList]))
+
+        // Lấy danh sách ngôn ngữ tương ứng với các key
+        const languages = await this.languageRepo.getWithListCode(allLangCodes)
+
+        // Tạo map { code: id } để truy cập nhanh
+        const langMap = Object.fromEntries(languages.map((l) => [l.code, l.id]))
+
+        // Kiểm tra có ngôn ngữ nào bị thiếu không
+        const missingLangs = allLangCodes.filter((code) => !langMap[code])
+        if (missingLangs.length > 0) {
+          throw new LanguageNotExistToTranslateException()
+        }
+
+        // Tạo danh sách bản dịch
+        const translationRecords: CreateTranslationBodyType[] = []
+
+        // nameTranslations → key = nameKey
+        for (const item of data.nameTranslations) {
+          translationRecords.push({
+            languageId: langMap[item.key],
+            key: nameKey,
+            value: item.value
+          })
+        }
+
+        //check khong cho trung name
+        await this.translationRepo.validateTranslationRecords(translationRecords)
+
+        // descriptionTranslations → key = descriptionKey
+        for (const item of data.descriptionTranslations ?? []) {
+          translationRecords.push({
+            languageId: langMap[item.key],
+            key: descriptionKey,
+            value: item.value
+          })
+        }
+
+        // Thêm bản dịch và update lại achievementGroup
+        const [, result] = await Promise.all([
+          this.translationRepo.createMany(translationRecords),
+          await this.achievementGroupRepo.update({
+            id: achievementGroupResult.id,
+            data: {
+              nameKey,
+              descriptionKey
+            }
+          })
+        ])
+
+        return {
+          data: result,
+          message: this.i18nService.translate(
+            AchievementGroupMessage.CREATE_SUCCESS,
+            lang
+          )
+        }
       })
-
-      //final key để add cho translation và update lại bảng achievementGroup
-      const nameKey = `achievement_group.name.${achievementGroupResult.id}`
-      const descriptionKey = `achievement_group.description.${achievementGroupResult.id}`
-
-      const nameList = data.nameTranslations.map((t) => t.key)
-      const desList = data.descriptionTranslations?.map((t) => t.key) ?? []
-
-      // Gộp & loại bỏ trùng key
-      const allLangCodes = Array.from(new Set([...nameList, ...desList]))
-
-      // Lấy danh sách ngôn ngữ tương ứng với các key
-      const languages = await this.languageRepo.getWithListCode(allLangCodes)
-
-      // Tạo map { code: id } để truy cập nhanh
-      const langMap = Object.fromEntries(languages.map((l) => [l.code, l.id]))
-
-      // Kiểm tra có ngôn ngữ nào bị thiếu không
-      const missingLangs = allLangCodes.filter((code) => !langMap[code])
-      if (missingLangs.length > 0) {
-        throw new LanguageNotExistToTranslateException()
-      }
-
-      // Tạo danh sách bản dịch
-      const translationRecords: CreateTranslationBodyType[] = []
-
-      // nameTranslations → key = nameKey
-
-      for (const item of data.nameTranslations) {
-        translationRecords.push({
-          languageId: langMap[item.key],
-          key: nameKey,
-          value: item.value
-        })
-      }
-      //check khong cho trung name
-      await this.translationRepo.validateTranslationRecords(translationRecords)
-
-      // descriptionTranslations → key = descriptionKey
-      for (const item of data.descriptionTranslations ?? []) {
-        translationRecords.push({
-          languageId: langMap[item.key],
-          key: descriptionKey,
-          value: item.value
-        })
-      }
-
-      // Thêm bản dịch và update lại achievementGroup
-      const [, result] = await Promise.all([
-        this.translationRepo.createMany(translationRecords),
-        await this.achievementGroupRepo.update({
-          id: achievementGroupResult.id,
-          data: {
-            nameKey,
-            descriptionKey
-          }
-        })
-      ])
-
-      return {
-        data: result,
-        message: this.i18nService.translate(AchievementGroupMessage.CREATE_SUCCESS, lang)
-      }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
         throw new AchievementGroupAlreadyExistsException()
