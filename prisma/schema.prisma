@@ -73,6 +73,7 @@ model User {
   userPokemons         UserPokemon[]
   userAchievements     UserAchievement[]
   userExerciseAttempts UserExerciseAttempt[]
+  userProgresses       UserProgress[]
 
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -535,6 +536,9 @@ model Lesson {
   // Quan hệ với Exercises
   exercises Exercises[]
 
+  // Quan hệ với UserProgress
+  userProgresses UserProgress[]
+
   @@index([slug])
   @@index([titleKey])
   @@index([levelJlpt])
@@ -863,6 +867,35 @@ model UserAchievement {
 
   // Đảm bảo một user chỉ nhận 1 huy hiệu 1 lần duy nhất
   @@unique([userId, achievementId])
+}
+
+// Model UserProgress (Tiến độ học tập của user)
+model UserProgress {
+  id                 Int            @id @default(autoincrement())
+  userId             Int
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lessonId           Int
+  lesson             Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  status             ProgressStatus @default(NOT_STARTED)
+  progressPercentage Int            @default(0) // Phần trăm hoàn thành (0-100)
+  completedAt        DateTime? // Thời điểm hoàn thành
+  lastAccessedAt     DateTime       @default(now()) // Thời điểm truy cập cuối
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, lessonId]) // Một user chỉ có 1 tiến độ cho 1 lesson
+  @@index([userId])
+  @@index([lessonId])
+  @@index([status])
+  @@index([progressPercentage])
+  @@index([completedAt])
+}
+
+enum ProgressStatus {
+  NOT_STARTED // Chưa bắt đầu
+  IN_PROGRESS // Đang học
+  COMPLETED // Đã hoàn thành
 }
 
 enum VerificationCodeType {
