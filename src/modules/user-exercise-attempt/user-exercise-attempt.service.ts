@@ -33,20 +33,25 @@ export class UserExerciseAttemptService {
 
     async create(userId: number, exerciseId: number) {
         try {
-            // 1. Kiểm tra xem user có đang có lesson IN_PROGRESS không
+            // 1. Lấy thông tin Exercise để biết lessonId
+            const exercise = await this.exercisesService.findById(exerciseId)
+            if (!exercise || !exercise.data) {
+                throw ExerciseNotFoundException
+            }
+
+            const targetLessonId = exercise.data.lessonId
+
+            // 2. Kiểm tra xem user có đang có lesson IN_PROGRESS không
             const currentInProgressLesson = await this.userProgressService.getCurrentInProgressLesson(userId)
             if (currentInProgressLesson) {
-                // 2. Lấy thông tin Exercise để biết lessonId
-                const exercise = await this.exercisesService.findById(exerciseId)
-                if (!exercise || !exercise.data) {
-                    throw ExerciseNotFoundException
-                }
-
-                const targetLessonId = exercise.data.lessonId
-
-                // 3. Kiểm tra xem exercise có thuộc về lesson đang IN_PROGRESS không
+                // 3. Nếu có lesson IN_PROGRESS, kiểm tra xem có phải lesson target không
                 if (currentInProgressLesson.lessonId !== targetLessonId) {
-                    throw LessonBlockedException
+                    // 4. Nếu không phải lesson target, kiểm tra xem lesson target có COMPLETED không
+                    const targetLessonProgress = await this.userProgressService.getUserProgressByLesson(userId, targetLessonId)
+                    if (!targetLessonProgress || targetLessonProgress.status !== 'COMPLETED') {
+                        throw LessonBlockedException
+                    }
+                    // Nếu lesson target đã COMPLETED, cho phép tạo attempt
                 }
             }
 
