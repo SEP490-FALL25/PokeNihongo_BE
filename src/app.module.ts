@@ -43,6 +43,7 @@ import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-
 import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.module';
 import { QuestionBankModule } from './modules/question-bank/question-bank.module';
 import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-exercise-attempt.module';
+import { AchievementModule } from './modules/achievement/achievement.module';
 
 @Module({
   imports: [
@@ -85,7 +86,8 @@ import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-
     UserDailyRequestModule,
     UserAnswerLogModule,
     QuestionBankModule,
-    UserExerciseAttemptModule
+    UserExerciseAttemptModule,
+    AchievementModule
   ],
 
   controllers: [],

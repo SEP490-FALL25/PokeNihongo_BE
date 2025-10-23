@@ -252,5 +252,14 @@ export const jaMessages = {
     NOT_FOUND: 'ユーザーデイリーリクエストが見つかりません',
     ALREADY_EXISTS: 'ユーザーデイリーリクエストは既に存在します',
     USER_ALREADY_ATTENDED_TODAY: 'ユーザーは本日既に出席しています'
+  },
+  achievement: {
+    CREATE_SUCCESS: '実績の作成が完了しました',
+    UPDATE_SUCCESS: '実績の更新が完了しました',
+    DELETE_SUCCESS: '実績の削除が完了しました',
+    GET_SUCCESS: '実績情報を取得しました',
+    GET_LIST_SUCCESS: '実績リストを取得しました',
+    NOT_FOUND: '実績が見つかりません',
+    ALREADY_EXISTS: '実績は既に存在します'
   }
 }
