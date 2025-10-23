@@ -452,4 +452,24 @@ export class UserProgressService {
             throw error
         }
     }
+
+    async getUserProgressByLesson(userId: number, lessonId: number) {
+        try {
+            this.logger.log(`Getting user progress for user: ${userId}, lesson: ${lessonId}`)
+
+            const userProgress = await this.userProgressRepository.findByUserAndLesson(userId, lessonId)
+
+            if (userProgress) {
+                this.logger.log(`Found user progress for user ${userId}, lesson ${lessonId}: ${userProgress.status}`)
+                return userProgress
+            }
+
+            this.logger.log(`No user progress found for user ${userId}, lesson ${lessonId}`)
+            return null
+
+        } catch (error) {
+            this.logger.error('Error getting user progress by lesson:', error)
+            throw error
+        }
+    }
 }
