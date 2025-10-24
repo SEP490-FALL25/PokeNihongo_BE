@@ -47,12 +47,6 @@ import { UserProgressModule } from './modules/user-progress/user-progress.module
 import { UserModule } from './modules/user/user.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
-import { DailyRequestModule } from './modules/daily-request/daily-request.module';
-import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-request.module';
-import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.module';
-import { QuestionBankModule } from './modules/question-bank/question-bank.module';
-import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-exercise-attempt.module';
-import { UserProgressModule } from './modules/user-progress/user-progress.module';
 import { TestSetModule } from './modules/testset/testset.module';
 import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module';
 import { SpeakingModule } from './modules/speaking/speaking.module';

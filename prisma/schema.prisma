@@ -63,15 +63,14 @@ model User {
   updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
   deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
 
-  createdQuestionBanks       Question_Bank[]     @relation("QuestionBankCreatedBy")
-  createdAttendanceConfigs   AttendanceConfig[]  @relation("AttendanceConfigCreatedBy")
-  updatedAttendanceConfigs   AttendanceConfig[]  @relation("AttendanceConfigUpdatedBy")
-  deletedAttendanceConfigs   AttendanceConfig[]  @relation("AttendanceConfigDeletedBy")
-  createdAttendances         Attendance[]        @relation("AttendanceCreatedBy")
-  updatedAttendances         Attendance[]        @relation("AttendanceUpdatedBy")
-  deletedAttendances         Attendance[]        @relation("AttendanceDeletedBy")
-  createdTestSets            TestSet[]           @relation("TestSetCreatedBy")
-
+  createdQuestionBanks     QuestionBank[]     @relation("QuestionBankCreatedBy")
+  createdAttendanceConfigs AttendanceConfig[] @relation("AttendanceConfigCreatedBy")
+  updatedAttendanceConfigs AttendanceConfig[] @relation("AttendanceConfigUpdatedBy")
+  deletedAttendanceConfigs AttendanceConfig[] @relation("AttendanceConfigDeletedBy")
+  createdAttendances       Attendance[]       @relation("AttendanceCreatedBy")
+  updatedAttendances       Attendance[]       @relation("AttendanceUpdatedBy")
+  deletedAttendances       Attendance[]       @relation("AttendanceDeletedBy")
+  createdTestSets          TestSet[]          @relation("TestSetCreatedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -618,6 +617,10 @@ model QuestionBank {
   pronunciation String? @db.VarChar(1000) // Phiên âm (romaji)
   levelN        Int?    @default(1) // Độ khó (1-5)
 
+  // Audit fields
+  createdById Int?
+  createdBy   User? @relation("QuestionBankCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
   createdAt DateTime @default(now()) @db.Timestamp(3)
   updatedAt DateTime @updatedAt @db.Timestamp(3)
 
@@ -634,6 +637,7 @@ model QuestionBank {
 
   @@index([questionType])
   @@index([questionKey])
+  @@index([createdById])
 }
 
 // Model TestSet (Bộ đề)
@@ -1123,7 +1127,6 @@ enum TestSetStatus {
   INACTIVE // Không hoạt động
 }
 
-
 enum WeekDay {
   SUNDAY
   MONDAY
@@ -1137,7 +1140,8 @@ enum WeekDay {
 enum AttendanceStatus {
   PRESENT
   ABSENT
-=======
+}
+
 enum QuestionType {
   VOCABULARY // Từ vựng
   GRAMMAR // Ngữ pháp
