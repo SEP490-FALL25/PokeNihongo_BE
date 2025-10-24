@@ -31,7 +31,6 @@ import { LessonModule } from './modules/lesson/lesson.module'
 import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
-import { QuestionModule } from './modules/question/question.module'
 import { RewardModule } from './modules/reward/reward.module'
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module'
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
@@ -44,6 +43,9 @@ import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.m
 import { QuestionBankModule } from './modules/question-bank/question-bank.module';
 import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-exercise-attempt.module';
 import { UserProgressModule } from './modules/user-progress/user-progress.module';
+import { TestSetModule } from './modules/testset/testset.module';
+import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module';
+import { SpeakingModule } from './modules/speaking/speaking.module';
 
 
 @Module({
@@ -79,7 +81,6 @@ import { UserProgressModule } from './modules/user-progress/user-progress.module
     GrammarModule,
     GrammarUsageModule,
     ExercisesModule,
-    QuestionModule,
     AnswerModule,
     UserModule,
     AchievementGroupModule,
@@ -89,6 +90,9 @@ import { UserProgressModule } from './modules/user-progress/user-progress.module
     QuestionBankModule,
     UserExerciseAttemptModule,
     UserProgressModule,
+    TestSetModule,
+    TestSetQuestionBankModule,
+    SpeakingModule,
     AchievementGroupModule
 
   ],

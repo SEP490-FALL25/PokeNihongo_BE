@@ -11,20 +11,14 @@ export class CreateExercisesSwaggerDTO {
     })
     exerciseType: string
 
-    @ApiProperty({ example: 'この練習では文法を学びます', description: 'Nội dung mô tả bài tập', required: false })
-    content?: string
-
-    @ApiProperty({ example: 'https://example.com/audio.mp3', description: 'URL file âm thanh', required: false })
-    audioUrl?: string
-
-    @ApiProperty({ example: false, description: 'Trạng thái bị chặn', required: false })
+    @ApiProperty({ example: false, description: 'Trạng thái bị chặn' })
     isBlocked?: boolean
-
-    @ApiProperty({ example: 0.99, description: 'Giá bài tập (nếu có)', required: false })
-    price?: number
 
     @ApiProperty({ example: 1, description: 'ID bài học' })
     lessonId: number
+
+    @ApiProperty({ example: 1, description: 'ID bộ đề' })
+    testSetId: number
 }
 
 export class UpdateExercisesSwaggerDTO {
@@ -37,17 +31,8 @@ export class UpdateExercisesSwaggerDTO {
     })
     exerciseType?: string
 
-    @ApiProperty({ example: 'この練習では文法を学びます', description: 'Nội dung mô tả bài tập', required: false })
-    content?: string
-
-    @ApiProperty({ example: 'https://example.com/audio.mp3', description: 'URL file âm thanh', required: false })
-    audioUrl?: string
-
     @ApiProperty({ example: false, description: 'Trạng thái bị chặn', required: false })
     isBlocked?: boolean
-
-    @ApiProperty({ example: 0.99, description: 'Giá bài tập (nếu có)', required: false })
-    price?: number
 
     @ApiProperty({ example: 1, description: 'ID bài học', required: false })
     lessonId?: number

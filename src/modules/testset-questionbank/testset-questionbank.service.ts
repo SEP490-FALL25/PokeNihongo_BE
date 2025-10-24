@@ -1,0 +1,243 @@
+import {
+    CreateTestSetQuestionBankBodyType,
+    UpdateTestSetQuestionBankBodyType,
+    TestSetQuestionBankType
+} from './entities/testset-questionbank.entities'
+import { TestSetQuestionBankRepository } from './testset-questionbank.repo'
+import { TestSetService } from '@/modules/testset/testset.service'
+import { QuestionBankService } from '@/modules/question-bank/question-bank.service'
+import { MessageResDTO } from '@/shared/dtos/response.dto'
+import { TEST_SET_QUESTIONBANK_MESSAGE } from '@/common/constants/message'
+import { Injectable, Logger, HttpException } from '@nestjs/common'
+import {
+    TestSetQuestionBankNotFoundException,
+    TestSetQuestionBankAlreadyExistsException,
+    InvalidTestSetQuestionBankDataException,
+    TestSetNotFoundException,
+    QuestionBankNotFoundException
+} from './dto/testset-questionbank.error'
+
+@Injectable()
+export class TestSetQuestionBankService {
+    private readonly logger = new Logger(TestSetQuestionBankService.name)
+
+    constructor(
+        private readonly testSetQuestionBankRepository: TestSetQuestionBankRepository,
+        private readonly testSetService: TestSetService,
+        private readonly questionBankService: QuestionBankService
+    ) { }
+
+    async create(data: CreateTestSetQuestionBankBodyType): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Creating TestSetQuestionBank with data: ${JSON.stringify(data)}`)
+
+            // Validate TestSet exists
+            const testSet = await this.testSetService.getTestSetById(data.testSetId)
+            if (!testSet) {
+                throw TestSetNotFoundException
+            }
+
+            // Validate QuestionBank exists
+            const questionBank = await this.questionBankService.findOne({ id: data.questionBankId })
+            if (!questionBank) {
+                throw QuestionBankNotFoundException
+            }
+
+            // Check if TestSetQuestionBank already exists
+            const existing = await this.testSetQuestionBankRepository.findByTestSetAndQuestionBank(
+                data.testSetId,
+                data.questionBankId
+            )
+            if (existing) {
+                throw TestSetQuestionBankAlreadyExistsException
+            }
+
+            const testSetQuestionBank = await this.testSetQuestionBankRepository.create(data)
+
+            return {
+                statusCode: 201,
+                data: testSetQuestionBank,
+                message: TEST_SET_QUESTIONBANK_MESSAGE.CREATE_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error creating TestSetQuestionBank:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại') || error.message?.includes('đã tồn tại')) {
+                throw error
+            }
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+
+    async findById(id: number): Promise<TestSetQuestionBankType> {
+        try {
+            this.logger.log(`Finding TestSetQuestionBank by id: ${id}`)
+
+            const testSetQuestionBank = await this.testSetQuestionBankRepository.findById(id)
+            if (!testSetQuestionBank) {
+                throw TestSetQuestionBankNotFoundException
+            }
+
+            return testSetQuestionBank
+        } catch (error) {
+            this.logger.error('Error finding TestSetQuestionBank by id:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+
+    async findByTestSetId(testSetId: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Finding TestSetQuestionBank by testSetId: ${testSetId}`)
+
+            // Validate TestSet exists
+            const testSet = await this.testSetService.getTestSetById(testSetId)
+            if (!testSet) {
+                throw TestSetNotFoundException
+            }
+
+            const testSetQuestionBanks = await this.testSetQuestionBankRepository.findByTestSetId(testSetId)
+
+            return {
+                statusCode: 200,
+                data: testSetQuestionBanks,
+                message: TEST_SET_QUESTIONBANK_MESSAGE.GET_LIST_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error finding TestSetQuestionBank by testSetId:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+
+    async update(id: number, data: UpdateTestSetQuestionBankBodyType): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Updating TestSetQuestionBank with id: ${id}, data: ${JSON.stringify(data)}`)
+
+            // Check if TestSetQuestionBank exists
+            const existing = await this.testSetQuestionBankRepository.findById(id)
+            if (!existing) {
+                throw TestSetQuestionBankNotFoundException
+            }
+
+            // Validate TestSet exists if testSetId is being updated
+            if (data.testSetId) {
+                const testSet = await this.testSetService.getTestSetById(data.testSetId)
+                if (!testSet) {
+                    throw TestSetNotFoundException
+                }
+            }
+
+            // Validate QuestionBank exists if questionBankId is being updated
+            if (data.questionBankId) {
+                const questionBank = await this.questionBankService.findOne({ id: data.questionBankId })
+                if (!questionBank) {
+                    throw QuestionBankNotFoundException
+                }
+            }
+
+            const updatedTestSetQuestionBank = await this.testSetQuestionBankRepository.update(id, data)
+
+            return {
+                statusCode: 200,
+                data: updatedTestSetQuestionBank,
+                message: TEST_SET_QUESTIONBANK_MESSAGE.UPDATE_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error updating TestSetQuestionBank:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+
+    async updateQuestionOrder(id: number, questionOrder: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Updating question order for TestSetQuestionBank with id: ${id}, order: ${questionOrder}`)
+
+            // Check if TestSetQuestionBank exists
+            const existing = await this.testSetQuestionBankRepository.findById(id)
+            if (!existing) {
+                throw TestSetQuestionBankNotFoundException
+            }
+
+            const updatedTestSetQuestionBank = await this.testSetQuestionBankRepository.updateQuestionOrder(id, questionOrder)
+
+            return {
+                statusCode: 200,
+                data: updatedTestSetQuestionBank,
+                message: TEST_SET_QUESTIONBANK_MESSAGE.UPDATE_QUESTION_ORDER_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error updating question order:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+
+    async delete(id: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Deleting TestSetQuestionBank with id: ${id}`)
+
+            // Check if TestSetQuestionBank exists
+            const existing = await this.testSetQuestionBankRepository.findById(id)
+            if (!existing) {
+                throw TestSetQuestionBankNotFoundException
+            }
+
+            await this.testSetQuestionBankRepository.delete(id)
+
+            return {
+                statusCode: 200,
+                data: null,
+                message: TEST_SET_QUESTIONBANK_MESSAGE.DELETE_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error deleting TestSetQuestionBank:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+
+    async deleteByTestSetId(testSetId: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Deleting TestSetQuestionBank by testSetId: ${testSetId}`)
+
+            const result = await this.testSetQuestionBankRepository.deleteByTestSetId(testSetId)
+
+            return {
+                statusCode: 200,
+                data: { deletedCount: result.count },
+                message: TEST_SET_QUESTIONBANK_MESSAGE.DELETE_BY_TESTSET_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error deleting TestSetQuestionBank by testSetId:', error)
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+
+    async deleteByQuestionBankId(questionBankId: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Deleting TestSetQuestionBank by questionBankId: ${questionBankId}`)
+
+            const result = await this.testSetQuestionBankRepository.deleteByQuestionBankId(questionBankId)
+
+            return {
+                statusCode: 200,
+                data: { deletedCount: result.count },
+                message: TEST_SET_QUESTIONBANK_MESSAGE.DELETE_BY_QUESTIONBANK_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error deleting TestSetQuestionBank by questionBankId:', error)
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+}

@@ -38,7 +38,7 @@ export class UserAnswerLogRepository {
                 orderBy: { createdAt: 'desc' },
                 include: {
                     userExerciseAttempt: true,
-                    question: true,
+                    questionBank: true,
                     answer: true
                 }
             }),
@@ -60,7 +60,7 @@ export class UserAnswerLogRepository {
             where: { id: where.id },
             include: {
                 userExerciseAttempt: true,
-                question: true,
+                questionBank: true,
                 answer: true
             }
         })
@@ -84,6 +84,7 @@ export class UserAnswerLogRepository {
         const result = await this.prismaService.userAnswerLog.create({
             data: {
                 ...data,
+                questionBankId: data.questionId,
                 isCorrect: answer.isCorrect
             }
         })
@@ -108,7 +109,7 @@ export class UserAnswerLogRepository {
         const existingLog = await this.prismaService.userAnswerLog.findFirst({
             where: {
                 userExerciseAttemptId: data.userExerciseAttemptId,
-                questionId: data.questionId
+                questionBankId: data.questionId
             }
         })
 
@@ -127,6 +128,7 @@ export class UserAnswerLogRepository {
             const result = await this.prismaService.userAnswerLog.create({
                 data: {
                     ...data,
+                    questionBankId: data.questionId,
                     isCorrect: answer.isCorrect
                 }
             })

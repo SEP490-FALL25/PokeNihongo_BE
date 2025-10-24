@@ -10,11 +10,9 @@ patchNestJsSwagger()
 export const ExercisesType = z.object({
     id: z.number(),
     exerciseType: z.string(),
-    content: z.string().nullable(),
-    audioUrl: z.string().nullable(),
     isBlocked: z.boolean(),
-    price: z.number().nullable(),
     lessonId: z.number(),
+    testSetId: z.number().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
 })
@@ -22,20 +20,16 @@ export const ExercisesType = z.object({
 // Request/Response Types
 export const CreateExercisesBodyType = z.object({
     exerciseType: z.string().min(1, 'Loại bài tập không được để trống').max(100, 'Loại bài tập không được vượt quá 100 ký tự'),
-    content: z.string().max(5000, 'Nội dung không được vượt quá 5000 ký tự').optional(),
-    audioUrl: z.string().url('URL âm thanh không hợp lệ').max(1000, 'URL âm thanh không được vượt quá 1000 ký tự').optional(),
     isBlocked: z.boolean().default(false),
-    price: z.number().min(0, 'Giá không được âm').max(999999.99, 'Giá quá lớn').optional(),
     lessonId: z.number().min(1, 'ID bài học không hợp lệ'),
+    testSetId: z.number().min(1, 'ID bộ đề không hợp lệ'),
 })
 
 export const UpdateExercisesBodyType = z.object({
     exerciseType: z.string().min(1, 'Loại bài tập không được để trống').max(100, 'Loại bài tập không được vượt quá 100 ký tự').optional(),
-    content: z.string().max(5000, 'Nội dung không được vượt quá 5000 ký tự').optional(),
-    audioUrl: z.string().url('URL âm thanh không hợp lệ').max(1000, 'URL âm thanh không được vượt quá 1000 ký tự').optional(),
     isBlocked: z.boolean().optional(),
-    price: z.number().min(0, 'Giá không được âm').max(999999.99, 'Giá quá lớn').optional(),
     lessonId: z.number().min(1, 'ID bài học không hợp lệ').optional(),
+    testSetId: z.number().min(1, 'ID bộ đề không hợp lệ').optional(),
 })
 
 export const GetExercisesByIdParamsType = z.object({

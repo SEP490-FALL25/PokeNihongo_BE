@@ -12,7 +12,7 @@ import {
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.error'
 import { USER_EXERCISE_ATTEMPT_MESSAGE } from '@/common/constants/message'
 import { UserExerciseAttemptRepository } from '@/modules/user-exercise-attempt/user-exercise-attempt.repo'
-import { QuestionService } from '@/modules/question/question.service'
+import { QuestionBankService } from '@/modules/question-bank/question-bank.service'
 import { UserAnswerLogService } from '@/modules/user-answer-log/user-answer-log.service'
 import { UserProgressService } from '@/modules/user-progress/user-progress.service'
 import { ExercisesService } from '@/modules/exercises/exercises.service'
@@ -25,7 +25,7 @@ export class UserExerciseAttemptService {
 
     constructor(
         private readonly userExerciseAttemptRepository: UserExerciseAttemptRepository,
-        private readonly questionService: QuestionService,
+        private readonly questionBankService: QuestionBankService,
         private readonly userAnswerLogService: UserAnswerLogService,
         private readonly userProgressService: UserProgressService,
         private readonly exercisesService: ExercisesService
@@ -35,11 +35,11 @@ export class UserExerciseAttemptService {
         try {
             // 1. Lấy thông tin Exercise để biết lessonId
             const exercise = await this.exercisesService.findById(exerciseId)
-            if (!exercise || !exercise.data) {
+            if (!exercise) {
                 throw ExerciseNotFoundException
             }
 
-            const targetLessonId = exercise.data.lessonId
+            const targetLessonId = exercise.lessonId
 
             // 2. Kiểm tra xem user có đang có lesson IN_PROGRESS không
             const currentInProgressLesson = await this.userProgressService.getCurrentInProgressLesson(userId)
@@ -126,10 +126,10 @@ export class UserExerciseAttemptService {
                 message: USER_EXERCISE_ATTEMPT_MESSAGE.UPDATE_SUCCESS
             }
         } catch (error) {
-            if (isNotFoundPrismaError(error)) {
-                throw UserExerciseAttemptNotFoundException
-            }
             this.logger.error('Error updating user exercise attempt:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại') || error.message?.includes('đã tồn tại')) {
+                throw error
+            }
             throw InvalidUserExerciseAttemptDataException
         }
     }
@@ -143,10 +143,10 @@ export class UserExerciseAttemptService {
                 message: USER_EXERCISE_ATTEMPT_MESSAGE.DELETE_SUCCESS
             }
         } catch (error) {
-            if (isNotFoundPrismaError(error)) {
-                throw UserExerciseAttemptNotFoundException
-            }
             this.logger.error('Error deleting user exercise attempt:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
             throw InvalidUserExerciseAttemptDataException
         }
     }
@@ -161,17 +161,23 @@ export class UserExerciseAttemptService {
                 throw UserExerciseAttemptNotFoundException
             }
 
-            // 2. Lấy tất cả Question của Exercise
-            const questionsResult = await this.questionService.findByExerciseId(attempt.exerciseId)
+            // 2. Lấy thông tin Exercise để biết testSetId
+            const exercise = await this.exercisesService.findById(attempt.exerciseId)
+            if (!exercise || !exercise.testSetId) {
+                throw new Error('Exercise không có test set')
+            }
+
+            // 3. Lấy tất cả Question của TestSet
+            const questionsResult = await this.questionBankService.findByTestSetId(exercise.testSetId)
             const allQuestions = questionsResult.data.results
             this.logger.log(`Found ${allQuestions.length} questions for exercise ${attempt.exerciseId}`)
 
-            // 3. Lấy tất cả UserAnswerLog của attempt này
+            // 4. Lấy tất cả UserAnswerLog của attempt này
             const answerLogsResult = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
             const userAnswers = answerLogsResult.data.results
             this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userExerciseAttemptId}`)
 
-            // 4. Kiểm tra xem đã trả lời hết chưa
+            // 5. Kiểm tra xem đã trả lời hết chưa
             const answeredQuestionIds = new Set(userAnswers.map(log => log.questionId))
             const unansweredQuestions = allQuestions.filter(q => !answeredQuestionIds.has(q.id))
             if (unansweredQuestions.length > 0) {
@@ -191,10 +197,10 @@ export class UserExerciseAttemptService {
                 }
             }
 
-            // 5. Kiểm tra xem tất cả câu trả lời có đúng không
+            // 6. Kiểm tra xem tất cả câu trả lời có đúng không
             const allCorrect = userAnswers.every(log => log.isCorrect)
 
-            // 6. Update status dựa trên kết quả
+            // 7. Update status dựa trên kết quả
             let newStatus: string
             let message: string
 
@@ -319,12 +325,12 @@ export class UserExerciseAttemptService {
                 return
             }
 
-            const lessonId = exercise.data.lessonId
+            const lessonId = exercise.lessonId
             this.logger.log(`Exercise ${exerciseId} belongs to lesson ${lessonId}`)
 
             // 2. Lấy tất cả exercises của lesson này
             const lessonExercises = await this.exercisesService.findByLessonId(lessonId)
-            const totalExercises = lessonExercises.data.results.length
+            const totalExercises = lessonExercises.length
             this.logger.log(`Lesson ${lessonId} has ${totalExercises} exercises`)
 
             // 3. Đếm số exercises đã COMPLETED của user trong lesson này
@@ -358,7 +364,7 @@ export class UserExerciseAttemptService {
                 return
             }
 
-            const lessonId = exercise.data.lessonId
+            const lessonId = exercise.lessonId
             this.logger.log(`Exercise ${exerciseId} belongs to lesson ${lessonId}`)
 
             // 2. Cập nhật UserProgress status thành IN_PROGRESS

@@ -62,7 +62,7 @@ model User {
   createdAchievementGroups   AchievementGroup[]  @relation("AchievementGroupCreatedBy")
   updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
   deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
-  createdQuestionBanks       Question_Bank[]     @relation("QuestionBankCreatedBy")
+  createdTestSets            TestSet[]           @relation("TestSetCreatedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -73,6 +73,7 @@ model User {
   userPokemons         UserPokemon[]
   userAchievements     UserAchievement[]
   userExerciseAttempts UserExerciseAttempt[]
+  userSpeakingAttempts UserSpeakingAttempt[]
   userProgresses       UserProgress[]
 
   createdById  Int?
@@ -575,72 +576,122 @@ model LessonContents {
 model Exercises {
   id           Int      @id @default(autoincrement())
   exerciseType String   @db.VarChar(100) // Loại bài tập (multiple_choice, fill_blank, etc.)
-  content      String?  @db.Text // Nội dung mô tả bài tập
-  audioUrl     String?  @db.VarChar(1000) // URL file âm thanh
   isBlocked    Boolean  @default(false) // Trạng thái bị chặn
-  price        Decimal? @db.Decimal(10, 2) // Giá bài tập (nếu có)
   createdAt    DateTime @default(now()) @db.Timestamp(3)
   updatedAt    DateTime @updatedAt @db.Timestamp(3)
-  lessonId     Int // Foreign key đến Lesson
 
-  // Quan hệ với Lesson
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lessonId Int // Foreign key đến Lesson
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  // Quan hệ với Question
-  questions Question[]
+  testSetId Int?     @unique // Foreign key đến TestSet 
+  testSet   TestSet? @relation(fields: [testSetId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  // Quan hệ với UserExerciseAttempt
   userExerciseAttempts UserExerciseAttempt[]
 
   @@index([lessonId])
+  @@index([testSetId])
   @@index([exerciseType])
   @@index([isBlocked])
 }
 
-// Model Question (Câu hỏi)
-model Question {
-  id            Int      @id @default(autoincrement())
-  questionJp    String?  @db.VarChar(1000) // Nội dung câu hỏi bằng tiếng Nhật
-  questionOrder Int      @default(0) // Thứ tự câu hỏi trong bài tập
-  questionKey   String?  @db.VarChar(200) // Key để dịch câu hỏi
-  createdAt     DateTime @default(now()) @db.Timestamp(3)
-  updatedAt     DateTime @updatedAt @db.Timestamp(3)
-  exercisesId   Int // Foreign key đến Exercises
+// Model QuestionBank (Ngân hàng câu hỏi)
+model QuestionBank {
+  id           Int          @id @default(autoincrement())
+  questionJp   String?      @db.VarChar(1000) // Nội dung câu hỏi bằng tiếng Nhật (cũng là expectedText)
+  questionType QuestionType @default(VOCABULARY) // Loại câu hỏi (VOCABULARY, GRAMMAR, KANJI, LISTENING, etc.)
+  audioUrl     String?      @db.VarChar(1000) // URL file âm thanh
+  questionKey  String?      @db.VarChar(200) // Key để dịch câu hỏi
 
-  // Quan hệ với Exercises
-  exercises Exercises @relation(fields: [exercisesId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pronunciation String? @db.VarChar(1000) // Phiên âm (romaji)
+  levelN        Int?    @default(1) // Độ khó (1-5)
+
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @updatedAt @db.Timestamp(3)
 
   // Quan hệ với Answer
-  answers Answer[]
-
+  answers        Answer[]
   // Quan hệ với UserAnswerLog
   userAnswerLogs UserAnswerLog[]
 
-  // Quan hệ với Question_Bank
-  questionBanks Question_Bank[]
+  // Quan hệ với UserSpeakingAttempt
+  userSpeakingAttempts UserSpeakingAttempt[]
 
-  @@index([exercisesId])
-  @@index([questionOrder])
+  // Quan hệ với TestSetQuestionBank (bảng nối)
+  testSetQuestionBanks TestSetQuestionBank[]
+
+  @@index([questionType])
   @@index([questionKey])
+}
+
+// Model TestSet (Bộ đề)
+model TestSet {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(200) // Tên bộ đề
+  description String?       @db.Text // Mô tả bộ đề
+  content     String?       @db.Text // Nội dung mô tả bộ đề
+  audioUrl    String?       @db.VarChar(1000) // URL file âm thanh
+  price       Decimal?      @db.Decimal(10, 2) // Giá bộ đề (nếu có)
+  levelN      Int? // Cấp độ JLPT (1-5)
+  testType    String        @db.VarChar(50) // Loại đề thi (vocabulary, grammar, kanji, listening, etc.)
+  status      TestSetStatus @default(DRAFT) // Trạng thái (DRAFT, ACTIVE, INACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  exercises Exercises[] // Quan hệ ngược lại với Exercises
+
+  // Quan hệ với TestSetQuestionBank (bảng nối)
+  testSetQuestionBanks TestSetQuestionBank[]
+
+  // Quan hệ với User
+  creatorId Int?
+  creator   User? @relation("TestSetCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([levelN])
+  @@index([testType])
+  @@index([status])
+  @@index([creatorId])
+}
+
+// Model TestSetQuestionBank (Bảng nối giữa TestSet và QuestionBank)
+model TestSetQuestionBank {
+  id             Int          @id @default(autoincrement())
+  testSetId      Int // Foreign key đến TestSet
+  questionBankId Int // Foreign key đến QuestionBank
+  questionType   QuestionType @default(VOCABULARY) // Loại câu hỏi (VOCABULARY, GRAMMAR, KANJI, LISTENING, etc.)
+  questionOrder  Int          @default(0) // Thứ tự câu hỏi trong bộ đề
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Quan hệ với TestSet
+  testSet TestSet @relation(fields: [testSetId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Quan hệ với QuestionBank
+  questionBank QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([testSetId, questionBankId]) // Tránh trùng lặp
+  @@index([testSetId])
+  @@index([questionBankId])
+  @@index([questionType])
+  @@index([questionOrder])
 }
 
 // Model Answer (Câu trả lời)
 model Answer {
-  id         Int      @id @default(autoincrement())
-  answerJp   String?  @db.VarChar(1000) // Nội dung câu trả lời bằng tiếng Nhật
-  answerKey  String?  @db.VarChar(200) // Key để dịch câu trả lời
-  isCorrect  Boolean  @default(false) // Đánh dấu câu trả lời đúng
-  createdAt  DateTime @default(now()) @db.Timestamp(3)
-  updatedAt  DateTime @updatedAt @db.Timestamp(3)
-  questionId Int // Foreign key đến Question
+  id             Int      @id @default(autoincrement())
+  answerJp       String?  @db.VarChar(1000) // Nội dung câu trả lời bằng tiếng Nhật
+  answerKey      String?  @db.VarChar(200) // Key để dịch câu trả lời
+  isCorrect      Boolean  @default(false) // Đánh dấu câu trả lời đúng
+  createdAt      DateTime @default(now()) @db.Timestamp(3)
+  updatedAt      DateTime @updatedAt @db.Timestamp(3)
+  questionBankId Int // Foreign key đến QuestionBank
 
-  // Quan hệ với Question
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  // Quan hệ với QuestionBank
+  questionBank QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   // Quan hệ với UserAnswerLog
   userAnswerLogs UserAnswerLog[]
 
-  @@index([questionId])
+  @@index([questionBankId])
   @@index([answerKey])
   @@index([isCorrect])
 }
@@ -678,36 +729,47 @@ model UserAnswerLog {
   isCorrect             Boolean             @default(false)
   userExerciseAttemptId Int
   userExerciseAttempt   UserExerciseAttempt @relation(fields: [userExerciseAttemptId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  questionId            Int
-  question              Question            @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  questionBankId        Int
+  questionBank          QuestionBank        @relation(fields: [questionBankId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   answerId              Int
   answer                Answer              @relation(fields: [answerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 
   @@index([userExerciseAttemptId])
-  @@index([questionId])
+  @@index([questionBankId])
   @@index([answerId])
 }
 
-// Model Question_Bank (Ngân hàng câu hỏi)
-model Question_Bank {
-  id         Int                @id @default(autoincrement())
-  levelN     Int? // Cấp độ JLPT (1-5)
-  bankType   String             @db.VarChar(50) // Loại đề thi thử JLPT (vocabulary, grammar, kanji, listening, etc.)
-  status     QuestionBankStatus @default(DRAFT) // Trạng thái (DRAFT, ACTIVE, INACTIVE)
-  questionId Int
-  question   Question           @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  creatorId  Int?
-  creator    User?              @relation("QuestionBankCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+// Model UserSpeakingAttempt (Lịch sử đánh giá phát âm của user)
+model UserSpeakingAttempt {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  questionBankId Int
+  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([levelN])
-  @@index([bankType])
-  @@index([status])
-  @@index([questionId])
-  @@index([creatorId])
+  // Audio từ user
+  userAudioUrl      String  @db.VarChar(1000) // URL file âm thanh user gửi
+  userTranscription String? @db.VarChar(1000) // Văn bản được chuyển đổi từ audio
+  confidence        Float? // Độ tin cậy của Google API (0-1)
+
+  // Kết quả chấm điểm
+  accuracy      Float? // Độ chính xác (0-100)
+  pronunciation Float? // Điểm phát âm (0-100)
+  fluency       Float? // Điểm độ trôi chảy (0-100)
+  overallScore  Float? // Điểm tổng (0-100)
+
+  // Metadata
+  processingTime    Int? // Thời gian xử lý (ms)
+  googleApiResponse Json? // Response từ Google API
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([questionBankId])
+  @@index([overallScore])
+  @@index([createdAt])
 }
 
 model Grammar {
@@ -990,8 +1052,18 @@ enum AchievementType {
   EVOLVE_POKEMON_FINAL // Tiến hóa Pokémon lên dạng cuối (meta: {"pokemon_name": "Charizard"})
 }
 
-enum QuestionBankStatus {
+enum TestSetStatus {
   DRAFT // Bản nháp
   ACTIVE // Đang hoạt động
   INACTIVE // Không hoạt động
+}
+
+enum QuestionType {
+  VOCABULARY // Từ vựng
+  GRAMMAR // Ngữ pháp
+  KANJI // Kanji
+  LISTENING // Nghe hiểu
+  READING // Đọc hiểu
+  SPEAKING // Nói
+  GENERAL // Tổng hợp
 }

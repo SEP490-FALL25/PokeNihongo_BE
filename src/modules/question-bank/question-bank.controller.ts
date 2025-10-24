@@ -1,6 +1,7 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import {
     CreateQuestionBankBodyDTO,
+    CreateQuestionBankWithMeaningsBodyDTO,
     GetQuestionBankByIdParamsDTO,
     GetQuestionBankListQueryDTO,
     UpdateQuestionBankBodyDTO,
@@ -11,7 +12,7 @@ import {
     QuestionBankResponseSwaggerDTO,
     QuestionBankListResponseSwaggerDTO,
     GetQuestionBankListQuerySwaggerDTO,
-    CreateQuestionBankSwaggerDTO,
+    CreateQuestionBankWithMeaningsSwaggerDTO,
     UpdateQuestionBankSwaggerDTO
 } from '@/modules/question-bank/dto/question-bank.dto'
 import {
@@ -29,46 +30,58 @@ import {
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { QuestionBankService } from './question-bank.service'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('Question Bank')
 @Controller('question-bank')
 export class QuestionBankController {
     constructor(private readonly questionBankService: QuestionBankService) { }
 
-    @Post()
+
+
+    @Post('with-meanings')
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Tạo ngân hàng câu hỏi mới' })
-    @ApiBody({ type: CreateQuestionBankSwaggerDTO })
+    @ApiOperation({
+        summary: 'Tạo câu hỏi mới với nghĩa và bản dịch',
+        description: `Tạo câu hỏi mới với nghĩa và bản dịch. 
+        
+**Quy tắc đặc biệt:**
+- **audioUrl**: Optional - chỉ khi questionType là LISTENING và không truyền thì hệ thống sẽ tự động gen text-to-speech từ questionJp
+- **SPEAKING**: Bắt buộc phải có pronunciation (cách phát âm romaji)
+- **Các loại khác**: audioUrl và pronunciation là tùy chọn
+
+**Loại câu hỏi hỗ trợ:** VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING` })
+    @ApiBody({ type: CreateQuestionBankWithMeaningsSwaggerDTO })
     @ApiResponse({
         status: 201,
-        description: 'Tạo ngân hàng câu hỏi thành công',
+        description: 'Tạo câu hỏi với nghĩa thành công',
         type: QuestionBankResponseSwaggerDTO
     })
     @ZodSerializerDto(QuestionBankResDTO)
-    create(@Body() body: CreateQuestionBankBodyDTO, @ActiveUser('userId') userId?: number) {
-        return this.questionBankService.create(body, userId)
+    createWithMeanings(@Body() body: CreateQuestionBankWithMeaningsBodyDTO, @ActiveUser('userId') userId: number) {
+        return this.questionBankService.createWithMeanings(body, userId)
     }
 
     @Get()
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Lấy danh sách ngân hàng câu hỏi với phân trang và lọc' })
+    @ApiOperation({ summary: 'Lấy danh sách câu hỏi với phân trang và lọc' })
     @ApiResponse({
         status: 200,
-        description: 'Lấy danh sách ngân hàng câu hỏi thành công',
+        description: 'Lấy danh sách câu hỏi thành công',
         type: QuestionBankListResponseSwaggerDTO
     })
     @ApiQuery({ type: GetQuestionBankListQuerySwaggerDTO })
-    @ZodSerializerDto(QuestionBankListResDTO)
-    findAll(@Query() query: GetQuestionBankListQueryDTO) {
-        return this.questionBankService.findAll(query)
+    // @ZodSerializerDto(QuestionBankListResDTO)
+    findAll(@Query() query: GetQuestionBankListQueryDTO, @I18nLang() lang: string) {
+        return this.questionBankService.findAll(query, lang)
     }
 
     @Get(':id')
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Lấy thông tin ngân hàng câu hỏi theo ID' })
+    @ApiOperation({ summary: 'Lấy thông tin câu hỏi theo ID' })
     @ApiResponse({
         status: 200,
-        description: 'Lấy thông tin ngân hàng câu hỏi thành công',
+        description: 'Lấy thông tin câu hỏi thành công',
         type: QuestionBankResponseSwaggerDTO
     })
     @ZodSerializerDto(QuestionBankResDTO)
@@ -78,18 +91,17 @@ export class QuestionBankController {
 
     @Put(':id')
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Cập nhật ngân hàng câu hỏi theo ID' })
+    @ApiOperation({ summary: 'Cập nhật câu hỏi theo ID' })
     @ApiBody({ type: UpdateQuestionBankSwaggerDTO })
     @ApiResponse({
         status: 200,
-        description: 'Cập nhật ngân hàng câu hỏi thành công',
+        description: 'Cập nhật câu hỏi thành công',
         type: QuestionBankResponseSwaggerDTO
     })
     @ZodSerializerDto(QuestionBankResDTO)
     update(
         @Param() params: GetQuestionBankByIdParamsDTO,
-        @Body() body: UpdateQuestionBankBodyDTO,
-        @ActiveUser('userId') userId?: number
+        @Body() body: UpdateQuestionBankBodyDTO
     ) {
         return this.questionBankService.update(params.id, body)
     }
@@ -97,14 +109,14 @@ export class QuestionBankController {
     @Delete(':id')
     @ApiBearerAuth()
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Xóa ngân hàng câu hỏi theo ID' })
+    @ApiOperation({ summary: 'Xóa câu hỏi theo ID' })
     @ApiResponse({
         status: 200,
-        description: 'Xóa ngân hàng câu hỏi thành công',
+        description: 'Xóa câu hỏi thành công',
         type: QuestionBankResponseSwaggerDTO
     })
     @ZodSerializerDto(QuestionBankResDTO)
-    remove(@Param() params: GetQuestionBankByIdParamsDTO, @ActiveUser('userId') userId?: number) {
+    remove(@Param() params: GetQuestionBankByIdParamsDTO) {
         return this.questionBankService.remove(params.id)
     }
 }

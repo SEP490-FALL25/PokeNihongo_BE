@@ -1,40 +1,51 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { QuestionType } from '@prisma/client'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
 
-// QuestionBankStatus enum
-export enum QuestionBankStatusEnum {
-    DRAFT = 'DRAFT', // Bản nháp
-    ACTIVE = 'ACTIVE', // Hoạt động
-    INACTIVE = 'INACTIVE' // Không hoạt động
-}
-
-// Question_Bank schema
+// QuestionBank schema (updated to match new schema)
 export const QuestionBankSchema = z.object({
     id: z.number(),
+    questionJp: z.string().nullable().optional(),
+    questionType: z.nativeEnum(QuestionType),
+    audioUrl: z.string().url().nullable().optional(),
+    questionKey: z.string().nullable().optional(),
+    pronunciation: z.string().nullable().optional(),
     levelN: z.number().min(1).max(5).nullable().optional(),
-    bankType: z.string().min(1, 'Bank type không được để trống').max(50, 'Bank type quá dài'), // Loại bài tập
-    status: z.nativeEnum(QuestionBankStatusEnum),
-    questionId: z.number(),
-    creatorId: z.number().nullable().optional(),
     createdAt: z.date(),
     updatedAt: z.date()
 })
 
+// Schema cho response với _count field và meaning
+export const QuestionBankWithCountSchema = QuestionBankSchema.extend({
+    _count: z.object({
+        answers: z.number(),
+        userAnswerLogs: z.number(),
+        userSpeakingAttempts: z.number(),
+        testSetQuestionBanks: z.number()
+    }),
+    meaning: z.string().nullable().optional()
+})
+
 export const CreateQuestionBankBodySchema = QuestionBankSchema.pick({
-    levelN: true,
-    bankType: true,
-    status: true,
-    questionId: true
+    questionJp: true,
+    questionType: true,
+    audioUrl: true,
+    questionKey: true,
+    pronunciation: true,
+    levelN: true
 }).strict()
 
 export const UpdateQuestionBankBodySchema = QuestionBankSchema.pick({
-    levelN: true,
-    bankType: true,
-    status: true
+    questionJp: true,
+    questionType: true,
+    audioUrl: true,
+    questionKey: true,
+    pronunciation: true,
+    levelN: true
 }).partial().strict()
 
 export const QuestionBankResSchema = z
@@ -49,7 +60,7 @@ export const QuestionBankListResSchema = z
     .object({
         statusCode: z.number(),
         data: z.object({
-            results: z.array(QuestionBankSchema),
+            results: z.array(QuestionBankWithCountSchema),
             pagination: z.object({
                 current: z.number(),
                 pageSize: z.number(),
@@ -72,11 +83,25 @@ export const GetQuestionBankListQuerySchema = z
         currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
         pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         levelN: z.string().transform((val) => parseInt(val, 10)).optional(),
-        bankType: z.string().optional(),
-        status: z.nativeEnum(QuestionBankStatusEnum).optional(),
+        questionType: z.nativeEnum(QuestionType).optional(),
         search: z.string().optional()
     })
     .strict()
+
+// Types
+// Schema for creating question bank with meanings
+export const CreateQuestionBankWithMeaningsBodySchema = z.object({
+    questionJp: z.string(),
+    questionType: z.nativeEnum(QuestionType),
+    audioUrl: z.string().nullable().optional(),
+    questionKey: z.string().nullable().optional(),
+    pronunciation: z.string().nullable().optional(),
+    levelN: z.number().min(1).max(5).nullable().optional(),
+    meanings: z.array(z.object({
+        meaningKey: z.string().nullable().optional(),
+        translations: z.record(z.string())
+    })).optional()
+}).strict()
 
 // Types
 export type QuestionBankType = z.infer<typeof QuestionBankSchema>
@@ -86,4 +111,5 @@ export type QuestionBankResType = z.infer<typeof QuestionBankResSchema>
 export type QuestionBankListResType = z.infer<typeof QuestionBankListResSchema>
 export type GetQuestionBankByIdParamsType = z.infer<typeof GetQuestionBankByIdParamsSchema>
 export type GetQuestionBankListQueryType = z.infer<typeof GetQuestionBankListQuerySchema>
+export type CreateQuestionBankWithMeaningsBodyType = z.infer<typeof CreateQuestionBankWithMeaningsBodySchema>
 
