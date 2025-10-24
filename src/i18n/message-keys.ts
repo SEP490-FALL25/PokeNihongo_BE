@@ -322,3 +322,14 @@ export const AttendanceMessage = {
   INVALID_DATA: 'attendance.INVALID_DATA',
   CHECKIN_ALREADY: 'attendance.CHECKIN_ALREADY'
 } as const
+
+export const WalletMessage = {
+  CREATE_SUCCESS: 'wallet.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'wallet.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'wallet.DELETE_SUCCESS',
+  GET_SUCCESS: 'wallet.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'wallet.GET_LIST_SUCCESS',
+  NOT_FOUND: 'wallet.NOT_FOUND',
+  ALREADY_EXISTS: 'wallet.ALREADY_EXISTS',
+  INVALID_DATA: 'wallet.INVALID_DATA'
+}

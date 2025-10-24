@@ -47,6 +47,7 @@ import { UserProgressModule } from './modules/user-progress/user-progress.module
 import { UserModule } from './modules/user/user.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
+import { WalletModule } from './modules/wallet/wallet.module';
 
 @Module({
   imports: [
@@ -94,7 +95,8 @@ import { SharedModule } from './shared/shared.module'
     AchievementGroupModule,
     AchievementModule,
     AttendenceConfigModule,
-    AttendanceModule
+    AttendanceModule,
+    WalletModule
   ],
 
   controllers: [],
