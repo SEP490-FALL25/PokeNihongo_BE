@@ -188,6 +188,9 @@ export class UserDailyRequestRepo {
           }
         },
         user: true
+      },
+      orderBy: {
+        isCompleted: 'asc'
       }
     })
   }

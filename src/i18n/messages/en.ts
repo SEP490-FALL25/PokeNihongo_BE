@@ -226,7 +226,12 @@ export const enMessages = {
     INVALID_DATA: 'Invalid data provided',
     NOT_FOUND: 'Record not found',
     ALREADY_EXISTS: 'Record already exists',
-    INVALID_ID: 'Invalid ID'
+    INVALID_ID: 'Invalid ID',
+    GET_LIST_SUCCESS: 'Record list retrieved successfully',
+    GET_SUCCESS: 'Record retrieved successfully',
+    CREATE_SUCCESS: 'Record created successfully',
+    UPDATE_SUCCESS: 'Record updated successfully',
+    DELETE_SUCCESS: 'Record deleted successfully'
   },
   achievement_group: {
     CREATE_SUCCESS: 'Achievement group created successfully',
@@ -271,5 +276,33 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Achievement list retrieved successfully',
     NOT_FOUND: 'Achievement not found',
     ALREADY_EXISTS: 'Achievement already exists'
+  },
+  daily_request_category: {
+    CREATE_SUCCESS: 'Daily request category created successfully',
+    UPDATE_SUCCESS: 'Daily request category updated successfully',
+    DELETE_SUCCESS: 'Daily request category deleted successfully',
+    GET_SUCCESS: 'Daily request category retrieved successfully',
+    GET_LIST_SUCCESS: 'Daily request category list retrieved successfully',
+    NOT_FOUND: 'Daily request category not found',
+    ALREADY_EXISTS: 'Daily request category already exists'
+  },
+  attendence_config: {
+    CREATE_SUCCESS: 'Attendance configuration created successfully',
+    UPDATE_SUCCESS: 'Attendance configuration updated successfully',
+    DELETE_SUCCESS: 'Attendance configuration deleted successfully',
+    GET_SUCCESS: 'Attendance configuration retrieved successfully',
+    GET_LIST_SUCCESS: 'Attendance configuration list retrieved successfully',
+    NOT_FOUND: 'Attendance configuration not found',
+    ALREADY_EXISTS: 'Attendance configuration already exists'
+  },
+  attendance: {
+    CREATE_SUCCESS: 'Attendance record created successfully',
+    UPDATE_SUCCESS: 'Attendance record updated successfully',
+    DELETE_SUCCESS: 'Attendance record deleted successfully',
+    GET_SUCCESS: 'Attendance record retrieved successfully',
+    GET_LIST_SUCCESS: 'Attendance record list retrieved successfully',
+    NOT_FOUND: 'Attendance record not found',
+    ALREADY_EXISTS: 'Attendance record already exists',
+    CHECKIN_SUCCESS: 'Check-in successful'
   }
 }
