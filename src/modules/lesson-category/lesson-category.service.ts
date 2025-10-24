@@ -45,17 +45,30 @@ export class LessonCategoryService {
         languageId = undefined
       }
 
-      const resultsWithName = result.data.map((item) => {
-        // For now, just return the basic data without translation
-        // TODO: Implement proper translation logic
-        return {
-          id: item.id,
-          nameKey: item.nameKey,
-          name: item.nameKey, // Use nameKey as fallback
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt
-        }
-      })
+      const resultsWithName = await Promise.all(
+        result.data.map(async (item) => {
+          let translatedName = item.nameKey // Fallback to nameKey
+
+          if (languageId) {
+            try {
+              const translation = await this.translationService.findByKeyAndLanguage(item.nameKey, languageId)
+              if (translation?.value) {
+                translatedName = translation.value
+              }
+            } catch (translationError) {
+              this.logger.warn(`Failed to get translation for ${item.nameKey}:`, translationError)
+            }
+          }
+
+          return {
+            id: item.id,
+            slug: item.slug,
+            name: translatedName,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt
+          }
+        })
+      )
 
       this.logger.log(`Found ${result.data.length} lesson categories`)
       return {
