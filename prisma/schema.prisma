@@ -63,6 +63,12 @@ model User {
   updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
   deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
   createdQuestionBanks       Question_Bank[]     @relation("QuestionBankCreatedBy")
+  createdAttendanceConfigs   AttendanceConfig[]  @relation("AttendanceConfigCreatedBy")
+  updatedAttendanceConfigs   AttendanceConfig[]  @relation("AttendanceConfigUpdatedBy")
+  deletedAttendanceConfigs   AttendanceConfig[]  @relation("AttendanceConfigDeletedBy")
+  createdAttendances         Attendance[]        @relation("AttendanceCreatedBy")
+  updatedAttendances         Attendance[]        @relation("AttendanceUpdatedBy")
+  deletedAttendances         Attendance[]        @relation("AttendanceDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -74,6 +80,7 @@ model User {
   userAchievements     UserAchievement[]
   userExerciseAttempts UserExerciseAttempt[]
   userProgresses       UserProgress[]
+  attendances          Attendance[]
 
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -447,6 +454,9 @@ model ElementalType {
   // Quan hệ nhiều-nhiều với Pokémon
   pokemons Pokemon[]
 
+  //1-n
+  achievement Achievement[]
+
   // Quan hệ tấn công / phòng thủ
   attacking_relations TypeEffectiveness[] @relation("Attacker")
   defending_relations TypeEffectiveness[] @relation("Defender")
@@ -741,14 +751,18 @@ model GrammarUsage {
 }
 
 model DailyRequest {
-  id             Int                @id @default(autoincrement())
-  nameKey        String             @db.VarChar(200)
-  descriptionKey String             @db.VarChar(500)
-  conditionType  DailyConditionType // Loại điều kiện (LOGIN, COMPLETE_LESSON, STREAK_LOGIN, ...)
-  conditionValue Int // Giá trị cần đạt (VD: 1, 7, ...)
-  rewardId       Int? // Liên kết tới Reward
-  reward         Reward?            @relation(fields: [rewardId], references: [id], onDelete: SetNull)
-  isActive       Boolean            @default(true)
+  id             Int    @id @default(autoincrement())
+  nameKey        String @db.VarChar(200)
+  descriptionKey String @db.VarChar(500)
+
+  dailyRequestType DailyRequestType @default(DAILY_LESSON)
+  conditionValue   Int // Giá trị cần đạt (VD: 1, 7, ...)
+
+  rewardId Int? // Liên kết tới Reward
+  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+
+  isStreak Boolean @default(false)
+  isActive Boolean @default(true)
 
   userDailyRequests UserDailyRequest[]
 
@@ -825,11 +839,11 @@ model Achievement {
   // Điều kiện để nhận
   conditionType       AchievementType // Loại điều kiện, VD: LEARNING_STREAK
   conditionValue      Int? // Giá trị cần đạt, VD: 3 (cho 3 ngày)
-  conditionMeta       Json // Dữ liệu phức tạp, VD: {"pokemon_type": "FIRE"} hoặc {"pokemon_name": "Charizard"}
-
+  conditionElementId  Int? // Yếu tố liên quan (nếu có)
+  elementalType       ElementalType?       @relation(fields: [conditionElementId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   // Phần thưởng (nếu có)
-  rewardId Int? // Liên kết tới bảng Reward
-  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  rewardId            Int? // Liên kết tới bảng Reward
+  reward              Reward?              @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   groupId Int
   group   AchievementGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -902,6 +916,48 @@ model UserProgress {
   @@index([completedAt])
 }
 
+model AttendanceConfig {
+  id        Int     @id @default(autoincrement())
+  dayOfWeek WeekDay @unique
+  bonusCoin Int     @default(0)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  baseCoin  Int       @default(0)
+
+  createdById Int?
+  createdBy   User? @relation("AttendanceConfigCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("AttendanceConfigDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("AttendanceConfigUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+}
+
+model Attendance {
+  id        Int              @id @default(autoincrement())
+  date      DateTime
+  status    AttendanceStatus
+  coin      Int              @default(0)
+  bonusCoin Int              @default(0)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  createdById Int?
+  createdBy   User? @relation("AttendanceCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("AttendanceDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("AttendanceUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, date])
+}
+
 enum ProgressStatus {
   NOT_STARTED // Chưa bắt đầu
   IN_PROGRESS // Đang học
@@ -962,13 +1018,19 @@ enum RarityPokemon {
   LEGENDARY
 }
 
-enum DailyConditionType {
-  LOGIN // Đăng nhập hằng ngày
-  COMPLETE_LESSON // Hoàn thành 1 bài học
-  EXCERCISE
-  STREAK_LOGIN // Đăng nhập liên tục X ngày
-  STREAK_COMPLETE_LESSON // Hoàn thành liên tục X bài học
-  STREAK_EXERCISE // Hoàn thành liên tục X bài tập
+enum DailyRequestType {
+  DAILY_LOGIN
+  DAILY_LESSON
+  DAILY_EXERCISE
+  STREAK_LOGIN
+  STREAK_LESSON
+  STREAK_EXCERCISE
+}
+
+enum DailyRequestCategoryType {
+  DAILY
+  WEEKLY
+  MONTHLY
 }
 
 enum AchievementTierType {
@@ -994,4 +1056,19 @@ enum QuestionBankStatus {
   DRAFT // Bản nháp
   ACTIVE // Đang hoạt động
   INACTIVE // Không hoạt động
+}
+
+enum WeekDay {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
 }
