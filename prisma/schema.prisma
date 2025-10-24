@@ -649,7 +649,7 @@ model TestSet {
   audioUrl    String?       @db.VarChar(1000) // URL file âm thanh
   price       Decimal?      @db.Decimal(10, 2) // Giá bộ đề (nếu có)
   levelN      Int? // Cấp độ JLPT (1-5)
-  testType    String        @db.VarChar(50) // Loại đề thi (vocabulary, grammar, kanji, listening, etc.)
+  testType    QuestionType  @default(VOCABULARY) // Loại đề thi (vocabulary, grammar, kanji, listening, etc.)
   status      TestSetStatus @default(DRAFT) // Trạng thái (DRAFT, ACTIVE, INACTIVE)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -671,13 +671,12 @@ model TestSet {
 
 // Model TestSetQuestionBank (Bảng nối giữa TestSet và QuestionBank)
 model TestSetQuestionBank {
-  id             Int          @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   testSetId      Int // Foreign key đến TestSet
   questionBankId Int // Foreign key đến QuestionBank
-  questionType   QuestionType @default(VOCABULARY) // Loại câu hỏi (VOCABULARY, GRAMMAR, KANJI, LISTENING, etc.)
-  questionOrder  Int          @default(0) // Thứ tự câu hỏi trong bộ đề
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  questionOrder  Int      @default(0) // Thứ tự câu hỏi trong bộ đề
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Quan hệ với TestSet
   testSet TestSet @relation(fields: [testSetId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -688,7 +687,6 @@ model TestSetQuestionBank {
   @@unique([testSetId, questionBankId]) // Tránh trùng lặp
   @@index([testSetId])
   @@index([questionBankId])
-  @@index([questionType])
   @@index([questionOrder])
 }
 
@@ -1150,4 +1148,5 @@ enum QuestionType {
   READING // Đọc hiểu
   SPEAKING // Nói
   GENERAL // Tổng hợp
+  MATCHING // Ghép cặp
 }

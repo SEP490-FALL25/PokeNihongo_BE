@@ -262,6 +262,22 @@ export class ExercisesRepository {
         return count > 0
     }
 
+    async getLessonLevelJlpt(lessonId: number): Promise<number | null> {
+        const lesson = await this.prismaService.lesson.findUnique({
+            where: { id: lessonId },
+            select: { levelJlpt: true }
+        })
+        return lesson?.levelJlpt || null
+    }
+
+    async getTestSetLevelN(testSetId: number): Promise<number | null> {
+        const testSet = await this.prismaService.testSet.findUnique({
+            where: { id: testSetId },
+            select: { levelN: true }
+        })
+        return testSet?.levelN || null
+    }
+
     async findByLessonId(lessonId: number) {
         const result = await this.prismaService.exercises.findMany({
             where: { lessonId: lessonId },

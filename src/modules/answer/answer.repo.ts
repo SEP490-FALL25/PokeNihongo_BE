@@ -12,13 +12,13 @@ export class AnswerRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetAnswerListQueryType) {
-        const { currentPage, pageSize, questionId, isCorrect, search, sortBy = AnswerSortField.CREATED_AT, sort = SortOrder.DESC } = params
+        const { currentPage, pageSize, questionBankId, isCorrect, search, sortBy = AnswerSortField.CREATED_AT, sort = SortOrder.DESC } = params
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
 
-        if (questionId) {
-            where.questionId = questionId
+        if (questionBankId) {
+            where.questionBankId = questionBankId
         }
 
         if (isCorrect !== undefined) {
@@ -135,14 +135,21 @@ export class AnswerRepository {
         return count > 0
     }
 
+    async updateAnswerKey(id: number, answerKey: string) {
+        return this.prismaService.answer.update({
+            where: { id },
+            data: { answerKey }
+        })
+    }
+
     async checkAnswerExistsById(id: number) {
         const count = await this.prismaService.answer.count({ where: { id } })
         return count > 0
     }
 
-    async checkAnswerExists(questionId: number, answerJp: string, excludeId?: number) {
+    async checkAnswerExists(questionBankId: number, answerJp: string, excludeId?: number) {
         const where: any = {
-            questionId,
+            questionBankId,
             answerJp
         }
         if (excludeId) {
@@ -154,5 +161,19 @@ export class AnswerRepository {
     async checkQuestionExists(questionId: number) {
         const count = await this.prismaService.questionBank.count({ where: { id: questionId } })
         return count > 0
+    }
+
+    async getQuestionType(questionBankId: number) {
+        const question = await this.prismaService.questionBank.findUnique({
+            where: { id: questionBankId },
+            select: { questionType: true }
+        })
+        return question?.questionType || null
+    }
+
+    async countAnswersByQuestionId(questionBankId: number) {
+        return await this.prismaService.answer.count({
+            where: { questionBankId: questionBankId }
+        })
     }
 }

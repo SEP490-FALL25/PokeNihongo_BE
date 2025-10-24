@@ -12,12 +12,6 @@ export class TestSetQuestionBankSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của QuestionBank' })
     questionBankId: number
 
-    @ApiProperty({
-        enum: QuestionType,
-        example: QuestionType.VOCABULARY,
-        description: 'Loại câu hỏi'
-    })
-    questionType: QuestionType
 
     @ApiProperty({ example: 1, description: 'Thứ tự câu hỏi trong bộ đề' })
     questionOrder: number
@@ -35,17 +29,6 @@ export class CreateTestSetQuestionBankSwaggerDTO {
 
     @ApiProperty({ example: 1, description: 'ID của QuestionBank' })
     questionBankId: number
-
-    @ApiProperty({
-        enum: QuestionType,
-        example: QuestionType.VOCABULARY,
-        description: 'Loại câu hỏi',
-        default: QuestionType.VOCABULARY
-    })
-    questionType?: QuestionType
-
-    @ApiProperty({ example: 1, description: 'Thứ tự câu hỏi trong bộ đề', default: 0 })
-    questionOrder?: number
 }
 
 export class UpdateTestSetQuestionBankSwaggerDTO {
@@ -55,13 +38,6 @@ export class UpdateTestSetQuestionBankSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của QuestionBank', required: false })
     questionBankId?: number
 
-    @ApiProperty({
-        enum: QuestionType,
-        example: QuestionType.VOCABULARY,
-        description: 'Loại câu hỏi',
-        required: false
-    })
-    questionType?: QuestionType
 
     @ApiProperty({ example: 1, description: 'Thứ tự câu hỏi trong bộ đề', required: false })
     questionOrder?: number
@@ -70,6 +46,18 @@ export class UpdateTestSetQuestionBankSwaggerDTO {
 export class UpdateQuestionOrderSwaggerDTO {
     @ApiProperty({ example: 1, description: 'Thứ tự câu hỏi mới trong bộ đề' })
     questionOrder: number
+}
+
+export class CreateMultipleTestSetQuestionBankSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID của TestSet' })
+    testSetId: number
+
+    @ApiProperty({
+        example: [1, 2, 3, 4, 5],
+        description: 'Mảng ID của các QuestionBank cần thêm vào TestSet',
+        type: [Number]
+    })
+    questionBankIds: number[]
 }
 
 export class TestSetQuestionBankResponseSwaggerDTO {
@@ -98,4 +86,40 @@ export class TestSetQuestionBankListResponseSwaggerDTO {
 
     @ApiProperty({ example: 'Lấy danh sách thành công', description: 'Thông báo kết quả' })
     message: string
+}
+
+export class CreateMultipleTestSetQuestionBankResponseSwaggerDTO {
+    @ApiProperty({ example: 201, description: 'Mã trạng thái HTTP' })
+    statusCode: number
+
+    @ApiProperty({ example: 'Tạo thành công 3/5 liên kết', description: 'Thông báo kết quả' })
+    message: string
+
+    @ApiProperty({
+        description: 'Dữ liệu kết quả tạo nhiều TestSetQuestionBank',
+        example: {
+            created: [
+                { id: 1, testSetId: 1, questionBankId: 1, questionOrder: 1, createdAt: '2025-01-01T00:00:00Z', updatedAt: '2025-01-01T00:00:00Z' },
+                { id: 2, testSetId: 1, questionBankId: 2, questionOrder: 2, createdAt: '2025-01-01T00:00:00Z', updatedAt: '2025-01-01T00:00:00Z' }
+            ],
+            failed: [
+                { questionBankId: 3, reason: 'Level không phù hợp: TestSet có level 3 nhưng QuestionBank có level 4' },
+                { questionBankId: 4, reason: 'Loại không tương thích: TestSet có loại "VOCABULARY" nhưng QuestionBank có loại "GRAMMAR"' }
+            ],
+            summary: {
+                total: 4,
+                success: 2,
+                failed: 2
+            }
+        }
+    })
+    data: {
+        created: TestSetQuestionBankSwaggerDTO[]
+        failed: { questionBankId: number; reason: string }[]
+        summary: {
+            total: number
+            success: number
+            failed: number
+        }
+    }
 }

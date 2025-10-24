@@ -64,6 +64,7 @@ export const TEST_SET_QUESTIONBANK_MESSAGE = {
   NOT_FOUND: 'Không tìm thấy TestSetQuestionBank',
   ALREADY_EXISTS: 'TestSetQuestionBank đã tồn tại',
   INVALID_DATA: 'Dữ liệu TestSetQuestionBank không hợp lệ',
+  TYPE_INCOMPATIBLE: 'Loại TestSet và QuestionBank không tương thích. Chỉ có thể liên kết khi TestSet có loại GENERAL hoặc khớp với loại QuestionBank',
   UPDATE_QUESTION_ORDER_SUCCESS: 'Cập nhật thứ tự câu hỏi thành công',
   DELETE_BY_TESTSET_SUCCESS: 'Xóa TestSetQuestionBank theo TestSet thành công',
   DELETE_BY_QUESTIONBANK_SUCCESS: 'Xóa TestSetQuestionBank theo QuestionBank thành công'

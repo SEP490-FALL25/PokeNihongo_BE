@@ -43,7 +43,7 @@ export class CreateAnswerSwaggerDTO {
         example: 1,
         description: 'ID câu hỏi'
     })
-    questionId: number
+    questionBankId: number
 
     @ApiProperty({
         type: TranslationSwaggerDTO,
@@ -91,7 +91,7 @@ export class GetAnswerListQuerySwaggerDTO {
     pageSize?: number
 
     @ApiProperty({ example: 1, description: 'Lọc theo ID câu hỏi', required: false })
-    questionId?: number
+    questionBankId?: number
 
     @ApiProperty({ example: true, description: 'Lọc theo câu trả lời đúng', required: false })
     isCorrect?: boolean
@@ -142,7 +142,7 @@ export class AnswerDataSwaggerDTO {
         example: 1,
         description: 'ID câu hỏi'
     })
-    questionId: number
+    questionBankId: number
 
     @ApiProperty({
         example: '2024-01-01T00:00:00.000Z',
@@ -202,7 +202,7 @@ export class AnswerWithTranslationSwaggerDTO {
         example: 1,
         description: 'ID câu hỏi'
     })
-    questionId: number
+    questionBankId: number
 
     @ApiProperty({
         example: '2024-01-01T00:00:00.000Z',
@@ -264,6 +264,81 @@ export class AnswerListResponseSwaggerDTO {
 
     @ApiProperty({
         example: 'Lấy danh sách câu trả lời thành công',
+        description: 'Thông báo kết quả'
+    })
+    message: string
+}
+
+// Swagger DTOs for multiple answers creation
+export class CreateMultipleAnswersSwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'ID câu hỏi'
+    })
+    questionBankId: number
+
+    @ApiProperty({
+        type: [CreateAnswerSwaggerDTO],
+        description: 'Danh sách câu trả lời cần tạo (tối đa 10 câu)',
+        example: [
+            {
+                answerJp: 'これは本です。',
+                isCorrect: true,
+                translations: {
+                    meaning: [
+                        { language_code: 'vi', value: 'Đây là quyển sách' },
+                        { language_code: 'en', value: 'This is a book' }
+                    ]
+                }
+            },
+            {
+                answerJp: 'これはペンです。',
+                isCorrect: false,
+                translations: {
+                    meaning: [
+                        { language_code: 'vi', value: 'Đây là cây bút' },
+                        { language_code: 'en', value: 'This is a pen' }
+                    ]
+                }
+            }
+        ]
+    })
+    answers: CreateAnswerSwaggerDTO[]
+}
+
+export class CreateMultipleAnswersResponseSwaggerDTO {
+    @ApiProperty({ example: 201, description: 'HTTP status code' })
+    statusCode: number
+
+    @ApiProperty({
+        description: 'Dữ liệu kết quả tạo nhiều câu trả lời',
+        example: {
+            created: [
+                { id: 1, answerJp: 'これは本です。', answerKey: 'answer.1.text', isCorrect: true, questionBankId: 1, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+                { id: 2, answerJp: 'これはペンです。', answerKey: 'answer.2.text', isCorrect: false, questionBankId: 1, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' }
+            ],
+            failed: [
+                { answerJp: 'これは机です。', reason: 'Câu trả lời đã tồn tại cho câu hỏi này' }
+            ],
+            summary: {
+                total: 3,
+                success: 2,
+                failed: 1
+            }
+        }
+    })
+    data: {
+        created: AnswerDataSwaggerDTO[]
+        failed: { answerJp: string; reason: string }[]
+        summary: {
+            total: number
+            success: number
+            failed: number
+        }
+    }
+
+    @ApiProperty({
+        example: 'Tạo thành công 2/3 câu trả lời',
         description: 'Thông báo kết quả'
     })
     message: string
