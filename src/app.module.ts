@@ -18,7 +18,11 @@ import { TranslationModule } from './modules/translation/translation.module'
 import { VocabularyModule } from './modules/vocabulary/vocabulary.module'
 
 import { AchievementGroupModule } from './modules/achievement-group/achievement-group.module'
+import { AchievementModule } from './modules/achievement/achievement.module'
 import { AnswerModule } from './modules/answer/answer.module'
+import { AttendanceModule } from './modules/attendance/attendance.module'
+import { AttendenceConfigModule } from './modules/attendence-config/attendence-config.module'
+import { DailyRequestModule } from './modules/daily-request/daily-request.module'
 import { ElementalTypeModule } from './modules/elemental-type/elemental-type.module'
 import { ExercisesModule } from './modules/exercises/exercises.module'
 import { GrammarUsageModule } from './modules/grammar-usage/grammar-usage.module'
@@ -31,22 +35,18 @@ import { LessonModule } from './modules/lesson/lesson.module'
 import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
+import { QuestionBankModule } from './modules/question-bank/question-bank.module'
 import { QuestionModule } from './modules/question/question.module'
 import { RewardModule } from './modules/reward/reward.module'
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module'
+import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.module'
+import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-request.module'
+import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-exercise-attempt.module'
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
+import { UserProgressModule } from './modules/user-progress/user-progress.module'
 import { UserModule } from './modules/user/user.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
-import { DailyRequestModule } from './modules/daily-request/daily-request.module';
-import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-request.module';
-import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.module';
-import { QuestionBankModule } from './modules/question-bank/question-bank.module';
-import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-exercise-attempt.module';
-import { UserProgressModule } from './modules/user-progress/user-progress.module';
-import { AchievementModule } from './modules/achievement/achievement.module';
-import { DailyRequestCategoryModule } from './modules/daily-request-category/daily-request-category.module';
-
 
 @Module({
   imports: [
@@ -93,8 +93,8 @@ import { DailyRequestCategoryModule } from './modules/daily-request-category/dai
     UserProgressModule,
     AchievementGroupModule,
     AchievementModule,
-    DailyRequestCategoryModule
-
+    AttendenceConfigModule,
+    AttendanceModule
   ],
 
   controllers: [],

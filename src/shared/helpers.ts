@@ -1,3 +1,4 @@
+import { WeekDay, WeekDayType } from '@/common/constants/attendence-config.constant'
 import { Prisma } from '@prisma/client'
 import { randomInt } from 'crypto'
 import path from 'path'
@@ -48,4 +49,33 @@ export function todayUTCFromVN() {
 export function mapConditionMeta(meta?: { type?: number } | null) {
   if (!meta) return Prisma.JsonNull
   return meta
+}
+
+export function getWeekDay(date: Date): WeekDayType {
+  const days: WeekDayType[] = [
+    WeekDay.SUNDAY, // 0
+    WeekDay.MONDAY, // 1
+    WeekDay.TUESDAY, // 2
+    WeekDay.WEDNESDAY, // 3
+    WeekDay.THURSDAY, // 4
+    WeekDay.FRIDAY, // 5
+    WeekDay.SATURDAY // 6
+  ]
+
+  return days[date.getDay()]
+}
+
+export function todayUTCWith0000() {
+  const now = new Date()
+
+  // Lấy thành phần ngày/tháng/năm theo UTC
+  const vnYear = now.getUTCFullYear()
+  const vnMonth = now.getUTCMonth() // chú ý: tháng trong JS bắt đầu từ 0
+  const vnDate = now.getUTCDate()
+
+  // Tạo 1 Date mới ở mốc 00:00:00 UTC
+  const dateUTC = new Date(Date.UTC(vnYear, vnMonth, vnDate, 0, 0, 0, 0))
+
+  // 0h VN
+  return dateUTC
 }

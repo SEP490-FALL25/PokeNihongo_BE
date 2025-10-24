@@ -14,7 +14,6 @@ import {
 
 export type WhereDailyRequestType = {
   id?: number
-  dailyRequestCategoryIds?: number | number[] | { in: number[] }
 }
 
 @Injectable()
@@ -225,19 +224,19 @@ export class DailyRequestRepo {
       }
     })
   }
-  checkDailyRequestIsStreak(id: number): Promise<DailyRequestType | null> {
-    // Return the dailyRequest only if its category has isStreat = true
+  checkDailyRequestIsStreak(id: number): Promise<boolean> {
+    // Return true if the daily request has isStreak = true
     return this.prismaService.dailyRequest
       .findUnique({
         where: {
           id,
           deletedAt: null
         },
-        include: {
-          dailyRequestCategory: true
+        select: {
+          isStreak: true
         }
       })
-      .then((dr) => (dr && (dr as any).dailyRequestCategory?.isStreat ? dr : null))
+      .then((dr) => !!dr?.isStreak)
   }
 
   findByWhere(where: WhereDailyRequestType): Promise<DailyRequestType[]> {
@@ -247,12 +246,7 @@ export class DailyRequestRepo {
 
     if (where.id) prismaWhere.id = where.id
 
-    if (where.dailyRequestCategoryIds) {
-      // nếu là mảng thì wrap in
-      prismaWhere.dailyRequestCategoryId = Array.isArray(where.dailyRequestCategoryIds)
-        ? { in: where.dailyRequestCategoryIds }
-        : where.dailyRequestCategoryIds
-    }
+    // no category-based filtering in current schema
 
     return this.prismaService.dailyRequest.findMany({
       where: prismaWhere,
@@ -262,21 +256,21 @@ export class DailyRequestRepo {
     })
   }
 
+  // category-based queries removed — schema uses isStreak and dailyRequestType fields
+
   /**
-   * Find daily requests by their category name keys (e.g. 'LOGIN', 'STREAK_LOGIN')
-   * Includes reward and category relation.
+   * Find daily requests by their `dailyRequestType` field (e.g. 'LOGIN', 'EXERCISE')
    */
-  findByCategoryNameKeys(keys: string[]): Promise<DailyRequestType[]> {
+  findByType(type: string | string[]): Promise<DailyRequestType[]> {
     return this.prismaService.dailyRequest.findMany({
       where: {
         deletedAt: null,
-        dailyRequestCategory: {
-          nameKey: { in: keys }
-        }
+        ...(Array.isArray(type)
+          ? { dailyRequestType: { in: type as any } }
+          : { dailyRequestType: type as any })
       },
       include: {
-        reward: true,
-        dailyRequestCategory: true
+        reward: true
       }
     })
   }

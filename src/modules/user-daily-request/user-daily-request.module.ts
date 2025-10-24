@@ -10,6 +10,7 @@ import { UserDailyRequestService } from './user-daily-request.service'
 @Module({
   imports: [DailyRequestModule, LanguagesModule, TranslationModule, UserModule],
   controllers: [UserDailyRequestController],
-  providers: [UserDailyRequestService, UserDailyRequestRepo]
+  providers: [UserDailyRequestService, UserDailyRequestRepo],
+  exports: [UserDailyRequestService, UserDailyRequestRepo]
 })
 export class UserDailyRequestModule {}

@@ -233,7 +233,12 @@ export const ENTITY_MESSAGE = {
   INVALID_DATA: 'entity.INVALID_DATA',
   NOT_FOUND: 'entity.NOT_FOUND',
   ALREADY_EXISTS: 'entity.ALREADY_EXISTS',
-  INVALID_ID: 'entity.INVALID_ID'
+  INVALID_ID: 'entity.INVALID_ID',
+  GET_LIST_SUCCESS: 'entity.GET_LIST_SUCCESS',
+  GET_SUCCESS: 'entity.GET_SUCCESS',
+  CREATE_SUCCESS: 'entity.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'entity.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'entity.DELETE_SUCCESS'
 } as const
 
 export const AchievementGroupMessage = {
@@ -294,4 +299,26 @@ export const DailyRequestCategoryMessage = {
   GET_LIST_SUCCESS: 'daily_request_category.GET_LIST_SUCCESS',
   NOT_FOUND: 'daily_request_category.NOT_FOUND',
   ALREADY_EXISTS: 'daily_request_category.ALREADY_EXISTS'
+} as const
+
+export const AttendenceConfigMessage = {
+  CREATE_SUCCESS: 'attendence_config.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'attendence_config.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'attendence_config.DELETE_SUCCESS',
+  GET_SUCCESS: 'attendence_config.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'attendence_config.GET_LIST_SUCCESS',
+  NOT_FOUND: 'attendence_config.NOT_FOUND',
+  ALREADY_EXISTS: 'attendence_config.ALREADY_EXISTS',
+  INVALID_DATA: 'attendence_config.INVALID_DATA'
+} as const
+export const AttendanceMessage = {
+  CREATE_SUCCESS: 'attendance.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'attendance.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'attendance.DELETE_SUCCESS',
+  GET_SUCCESS: 'attendance.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'attendance.GET_LIST_SUCCESS',
+  NOT_FOUND: 'attendance.NOT_FOUND',
+  ALREADY_EXISTS: 'attendance.ALREADY_EXISTS',
+  INVALID_DATA: 'attendance.INVALID_DATA',
+  CHECKIN_ALREADY: 'attendance.CHECKIN_ALREADY'
 } as const

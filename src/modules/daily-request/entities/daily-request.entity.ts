@@ -1,3 +1,4 @@
+import { dailyRequestType } from '@/common/constants/achievement.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { RewardSchema } from '@/modules/reward/entities/reward.entity'
@@ -11,10 +12,20 @@ export const DailyRequestSchema = z.object({
   id: z.number(),
   nameKey: z.string(),
   descriptionKey: z.string(),
-  dailyRequestCategoryId: z.number(),
+  dailyRequestType: z
+    .enum([
+      dailyRequestType.DAILY_LOGIN,
+      dailyRequestType.DAILY_LESSON,
+      dailyRequestType.DAILY_EXERCISE,
+      dailyRequestType.STREAK_LOGIN,
+      dailyRequestType.STREAK_LESSON,
+      dailyRequestType.STREAK_EXCERCISE
+    ])
+    .default(dailyRequestType.DAILY_LESSON),
   conditionValue: z.number().min(1),
   rewardId: z.number().nullable().optional(),
   isActive: z.boolean().default(true),
+  isStreak: z.boolean().default(false),
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
   deletedById: z.number().nullable(),
@@ -24,10 +35,11 @@ export const DailyRequestSchema = z.object({
 })
 
 export const CreateDailyRequestBodyInputSchema = DailyRequestSchema.pick({
-  dailyRequestCategoryId: true,
+  dailyRequestType: true,
   conditionValue: true,
   rewardId: true,
-  isActive: true
+  isActive: true,
+  isStreak: true
 })
   .extend({
     nameTranslations: TranslationInputSchema,
@@ -38,10 +50,11 @@ export const CreateDailyRequestBodyInputSchema = DailyRequestSchema.pick({
 export const CreateDailyRequestBodySchema = DailyRequestSchema.pick({
   nameKey: true,
   descriptionKey: true,
-  dailyRequestCategoryId: true,
+  dailyRequestType: true,
   conditionValue: true,
   rewardId: true,
-  isActive: true
+  isActive: true,
+  isStreak: true
 }).strict()
 
 export const CreateDailyRequestResSchema = z.object({

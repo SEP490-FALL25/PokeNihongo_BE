@@ -190,9 +190,7 @@ export class UserDailyRequestRepo {
         user: true
       },
       orderBy: {
-        dailyRequest: {
-          dailyRequestCategoryId: 'asc'
-        }
+        isCompleted: 'asc'
       }
     })
   }

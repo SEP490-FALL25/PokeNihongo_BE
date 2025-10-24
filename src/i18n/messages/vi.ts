@@ -224,7 +224,12 @@ export const viMessages = {
     INVALID_DATA: 'Dữ liệu không hợp lệ',
     NOT_FOUND: 'Không tìm thấy bản ghi',
     ALREADY_EXISTS: 'Bản ghi đã tồn tại',
-    INVALID_ID: 'ID không hợp lệ'
+    INVALID_ID: 'ID không hợp lệ',
+    GET_LIST_SUCCESS: 'Lấy danh sách bản ghi thành công',
+    GET_SUCCESS: 'Lấy chi tiết bản ghi thành công',
+    CREATE_SUCCESS: 'Tạo bản ghi thành công',
+    UPDATE_SUCCESS: 'Cập nhật bản ghi thành công',
+    DELETE_SUCCESS: 'Xóa bản ghi thành công'
   },
   achievement_group: {
     CREATE_SUCCESS: 'Tạo nhóm thành tích thành công',
@@ -278,5 +283,24 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách danh mục yêu cầu hàng ngày thành công',
     NOT_FOUND: 'Không tìm thấy danh mục yêu cầu hàng ngày',
     ALREADY_EXISTS: 'Danh mục yêu cầu hàng ngày đã tồn tại'
+  },
+  attendence_config: {
+    CREATE_SUCCESS: 'Tạo cấu hình điểm danh thành công',
+    UPDATE_SUCCESS: 'Cập nhật cấu hình điểm danh thành công',
+    DELETE_SUCCESS: 'Xóa cấu hình điểm danh thành công',
+    GET_SUCCESS: 'Lấy chi tiết cấu hình điểm danh thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách cấu hình điểm danh thành công',
+    NOT_FOUND: 'Không tìm thấy cấu hình điểm danh',
+    ALREADY_EXISTS: 'Cấu hình điểm danh đã tồn tại'
+  },
+  attendance: {
+    CREATE_SUCCESS: 'Điểm danh thành công',
+    UPDATE_SUCCESS: 'Cập nhật điểm danh thành công',
+    DELETE_SUCCESS: 'Xóa điểm danh thành công',
+    GET_SUCCESS: 'Lấy chi tiết điểm danh thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách điểm danh thành công',
+    NOT_FOUND: 'Không tìm thấy điểm danh',
+    ALREADY_EXISTS: 'Điểm danh đã tồn tại',
+    CHECKIN_ALREADY: 'Bạn đã điểm danh hôm nay'
   }
 }

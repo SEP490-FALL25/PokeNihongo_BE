@@ -91,12 +91,13 @@ export class DailyRequestService {
 
         //convert data cho create
         const dataCreate: CreateDailyRequestBodyType = {
-          dailyRequestCategoryId: data.dailyRequestCategoryId,
           conditionValue: data.conditionValue,
           nameKey,
           descriptionKey: descKey,
+          dailyRequestType: data.dailyRequestType,
           rewardId: data.rewardId,
-          isActive: data.isActive
+          isActive: data.isActive,
+          isStreak: data.isStreak
         }
 
         createdDailyRequest = await this.dailyRequestRepo.create(
@@ -226,12 +227,16 @@ export class DailyRequestService {
         if (!existingDailyRequest) throw new NotFoundRecordException()
 
         // --- 2. Chuẩn bị data update ---
-        const dataUpdate: UpdateDailyRequestBodyType = {
-          dailyRequestCategoryId: data.dailyRequestCategoryId,
-          conditionValue: data.conditionValue,
-          rewardId: data.rewardId,
-          isActive: data.isActive
-        }
+        // Chỉ include những field thực sự được gửi (không để undefined)
+        const dataUpdate: Partial<UpdateDailyRequestBodyType> = {}
+
+        if (data.isStreak !== undefined) dataUpdate.isStreak = data.isStreak
+        if (data.conditionValue !== undefined)
+          dataUpdate.conditionValue = data.conditionValue
+        if (data.dailyRequestType !== undefined)
+          dataUpdate.dailyRequestType = data.dailyRequestType
+        if (data.rewardId !== undefined) dataUpdate.rewardId = data.rewardId
+        if (data.isActive !== undefined) dataUpdate.isActive = data.isActive
 
         // --- 3. Handle translations nếu có ---
         if (data.nameTranslations || data.descriptionTranslations) {
@@ -286,7 +291,10 @@ export class DailyRequestService {
           {
             id,
             updatedById,
-            data: dataUpdate
+            data: {
+              // ...existingDailyRequest,
+              ...dataUpdate
+            }
           },
           prismaTx
         )
