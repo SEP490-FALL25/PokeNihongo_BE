@@ -735,6 +735,26 @@ model GrammarUsage {
   @@index([explanationKey])
 }
 
+model DailyRequestCategory {
+  id           Int                      @id @default(autoincrement())
+  nameKey      String
+  isStreat     Boolean                  @default(false)
+  categoryType DailyRequestCategoryType @default(DAILY)
+
+  dailyRequests DailyRequest[]
+
+  createdById Int?
+  createdBy   User? @relation("DailyRequestCategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("DailyRequestCategoryUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("DailyRequestCategoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model DailyRequest {
   id             Int    @id @default(autoincrement())
   nameKey        String @db.VarChar(200)
@@ -743,10 +763,11 @@ model DailyRequest {
   dailyRequestCategory   DailyRequestCategory @relation(fields: [dailyRequestCategoryId], references: [id], onDelete: NoAction)
   dailyRequestCategoryId Int
 
-  conditionValue Int // Giá trị cần đạt (VD: 1, 7, ...)
-  rewardId       Int? // Liên kết tới Reward
-  reward         Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull)
-  isActive       Boolean @default(true)
+  dailyRequestType DailyRequestType
+  conditionValue   Int // Giá trị cần đạt (VD: 1, 7, ...)
+  rewardId         Int? // Liên kết tới Reward
+  reward           Reward?          @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+  isActive         Boolean          @default(true)
 
   userDailyRequests UserDailyRequest[]
 
@@ -900,24 +921,6 @@ model UserProgress {
   @@index([completedAt])
 }
 
-model DailyRequestCategory {
-  id            Int            @id @default(autoincrement())
-  nameKey       String
-  isStreat      Boolean        @default(false)
-  dailyRequests DailyRequest[]
-
-  createdById Int?
-  createdBy   User? @relation("DailyRequestCategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  updatedById Int?
-  updatedBy   User? @relation("DailyRequestCategoryUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  deletedById Int?
-  deletedBy   User? @relation("DailyRequestCategoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
-
 enum ProgressStatus {
   NOT_STARTED // Chưa bắt đầu
   IN_PROGRESS // Đang học
@@ -978,13 +981,16 @@ enum RarityPokemon {
   LEGENDARY
 }
 
-enum DailyConditionType {
-  LOGIN // Đăng nhập hằng ngày
-  COMPLETE_LESSON // Hoàn thành 1 bài học
-  EXCERCISE
-  STREAK_LOGIN // Đăng nhập liên tục X ngày
-  STREAK_COMPLETE_LESSON // Hoàn thành liên tục X bài học
-  STREAK_EXERCISE // Hoàn thành liên tục X bài tập
+enum DailyRequestType {
+  LOGIN
+  EXERCISE
+  LESSON
+}
+
+enum DailyRequestCategoryType {
+  DAILY
+  WEEKLY
+  MONTHLY
 }
 
 enum AchievementTierType {
