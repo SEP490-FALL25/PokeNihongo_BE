@@ -1,6 +1,7 @@
 import { createZodDto } from 'nestjs-zod'
 import {
     CreateQuestionBankBodySchema,
+    CreateQuestionBankWithMeaningsBodySchema,
     UpdateQuestionBankBodySchema,
     GetQuestionBankByIdParamsSchema,
     GetQuestionBankListQuerySchema,
@@ -9,6 +10,7 @@ import {
 } from '../entities/question-bank.entities'
 
 export class CreateQuestionBankBodyDTO extends createZodDto(CreateQuestionBankBodySchema) { }
+export class CreateQuestionBankWithMeaningsBodyDTO extends createZodDto(CreateQuestionBankWithMeaningsBodySchema) { }
 export class UpdateQuestionBankBodyDTO extends createZodDto(UpdateQuestionBankBodySchema) { }
 export class GetQuestionBankByIdParamsDTO extends createZodDto(GetQuestionBankByIdParamsSchema) { }
 export class GetQuestionBankListQueryDTO extends createZodDto(GetQuestionBankListQuerySchema) { }

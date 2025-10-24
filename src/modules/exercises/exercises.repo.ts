@@ -12,7 +12,7 @@ export class ExercisesRepository {
 
     async findMany(params: GetExercisesListQueryType) {
         const { currentPage, pageSize, exerciseType, lessonId, isBlocked, search, sortBy, sort } = params
-        const skip = (currentPage - 1) * pageSize
+        const skip = (Number(currentPage) - 1) * Number(pageSize)
 
         const where: any = {}
 
@@ -31,9 +31,19 @@ export class ExercisesRepository {
         if (search) {
             where.OR = [
                 {
-                    content: {
-                        contains: search,
-                        mode: 'insensitive'
+                    testSet: {
+                        name: {
+                            contains: search,
+                            mode: 'insensitive'
+                        }
+                    }
+                },
+                {
+                    testSet: {
+                        description: {
+                            contains: search,
+                            mode: 'insensitive'
+                        }
                     }
                 }
             ]
@@ -50,9 +60,17 @@ export class ExercisesRepository {
                             slug: true
                         }
                     },
-                    questions: {
-                        include: {
-                            answers: true
+                    testSet: {
+                        select: {
+                            id: true,
+                            name: true,
+                            description: true,
+                            content: true,
+                            audioUrl: true,
+                            price: true,
+                            levelN: true,
+                            testType: true,
+                            status: true
                         }
                     }
                 },
@@ -71,7 +89,7 @@ export class ExercisesRepository {
                     }
                 )(),
                 skip,
-                take: pageSize,
+                take: Number(pageSize),
             }),
             this.prismaService.exercises.count({ where })
         ])
@@ -95,12 +113,29 @@ export class ExercisesRepository {
                         slug: true
                     }
                 },
-                questions: {
-                    include: {
-                        answers: true
-                    },
-                    orderBy: {
-                        questionOrder: 'asc'
+                testSet: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                        content: true,
+                        audioUrl: true,
+                        price: true,
+                        levelN: true,
+                        testType: true,
+                        status: true,
+                        testSetQuestionBanks: {
+                            include: {
+                                questionBank: {
+                                    include: {
+                                        answers: true
+                                    }
+                                }
+                            },
+                            orderBy: {
+                                questionOrder: 'asc'
+                            }
+                        }
                     }
                 }
             }
@@ -117,6 +152,19 @@ export class ExercisesRepository {
                         id: true,
                         titleKey: true,
                         slug: true
+                    }
+                },
+                testSet: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                        content: true,
+                        audioUrl: true,
+                        price: true,
+                        levelN: true,
+                        testType: true,
+                        status: true
                     }
                 }
             }
@@ -135,12 +183,17 @@ export class ExercisesRepository {
                         slug: true
                     }
                 },
-                questions: {
-                    include: {
-                        answers: true
-                    },
-                    orderBy: {
-                        questionOrder: 'asc'
+                testSet: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                        content: true,
+                        audioUrl: true,
+                        price: true,
+                        levelN: true,
+                        testType: true,
+                        status: true
                     }
                 }
             }
@@ -164,12 +217,17 @@ export class ExercisesRepository {
                         slug: true
                     }
                 },
-                questions: {
-                    include: {
-                        answers: true
-                    },
-                    orderBy: {
-                        questionOrder: 'asc'
+                testSet: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                        content: true,
+                        audioUrl: true,
+                        price: true,
+                        levelN: true,
+                        testType: true,
+                        status: true
                     }
                 }
             }
@@ -197,6 +255,13 @@ export class ExercisesRepository {
         return count > 0
     }
 
+    async checkTestSetExists(testSetId: number) {
+        const count = await this.prismaService.testSet.count({
+            where: { id: testSetId }
+        })
+        return count > 0
+    }
+
     async findByLessonId(lessonId: number) {
         const result = await this.prismaService.exercises.findMany({
             where: { lessonId: lessonId },
@@ -207,10 +272,8 @@ export class ExercisesRepository {
             id: item.id,
             lessonId: item.lessonId,
             exerciseType: item.exerciseType,
-            content: item.content,
-            audioUrl: item.audioUrl,
             isBlocked: item.isBlocked,
-            price: item.price,
+            testSetId: item.testSetId,
             createdAt: item.createdAt,
             updatedAt: item.updatedAt
         }))

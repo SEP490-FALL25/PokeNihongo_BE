@@ -25,6 +25,50 @@ export const AUTH_MESSAGE = {
   CHANGE_PASSWORD_SUCCESS: 'Đổi mật khẩu thành công'
 }
 
+export const TEST_SET_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo bộ đề thành công',
+  UPDATE_SUCCESS: 'Cập nhật bộ đề thành công',
+  DELETE_SUCCESS: 'Xóa bộ đề thành công',
+  GET_SUCCESS: 'Lấy thông tin bộ đề thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách bộ đề thành công',
+  NOT_FOUND: 'Không tìm thấy bộ đề',
+  ALREADY_EXISTS: 'Bộ đề đã tồn tại',
+  INVALID_DATA: 'Dữ liệu bộ đề không hợp lệ',
+  NAME_REQUIRED: 'Tên bộ đề không được để trống',
+  NAME_TOO_LONG: 'Tên bộ đề quá dài (tối đa 200 ký tự)',
+  TEST_TYPE_REQUIRED: 'Loại đề thi không được để trống',
+  TEST_TYPE_TOO_LONG: 'Loại đề thi quá dài (tối đa 50 ký tự)',
+  AUDIO_URL_INVALID: 'URL âm thanh không hợp lệ',
+  PRICE_INVALID: 'Giá bộ đề không hợp lệ',
+  LEVEL_INVALID: 'Cấp độ JLPT không hợp lệ (1-5)',
+  PERMISSION_DENIED: 'Bạn không có quyền thực hiện hành động này'
+}
+
+export const QUESTION_BANK_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo câu hỏi thành công',
+  UPDATE_SUCCESS: 'Cập nhật câu hỏi thành công',
+  DELETE_SUCCESS: 'Xóa câu hỏi thành công',
+  GET_SUCCESS: 'Lấy thông tin câu hỏi thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách câu hỏi thành công',
+  NOT_FOUND: 'Không tìm thấy câu hỏi',
+  ALREADY_EXISTS: 'Câu hỏi đã tồn tại',
+  INVALID_DATA: 'Dữ liệu câu hỏi không hợp lệ'
+}
+
+export const TEST_SET_QUESTIONBANK_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo TestSetQuestionBank thành công',
+  UPDATE_SUCCESS: 'Cập nhật TestSetQuestionBank thành công',
+  DELETE_SUCCESS: 'Xóa TestSetQuestionBank thành công',
+  GET_SUCCESS: 'Lấy thông tin TestSetQuestionBank thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách TestSetQuestionBank thành công',
+  NOT_FOUND: 'Không tìm thấy TestSetQuestionBank',
+  ALREADY_EXISTS: 'TestSetQuestionBank đã tồn tại',
+  INVALID_DATA: 'Dữ liệu TestSetQuestionBank không hợp lệ',
+  UPDATE_QUESTION_ORDER_SUCCESS: 'Cập nhật thứ tự câu hỏi thành công',
+  DELETE_BY_TESTSET_SUCCESS: 'Xóa TestSetQuestionBank theo TestSet thành công',
+  DELETE_BY_QUESTIONBANK_SUCCESS: 'Xóa TestSetQuestionBank theo QuestionBank thành công'
+}
+
 export const VOCABULARY_MESSAGE = {
   CREATE_SUCCESS: 'Tạo từ vựng thành công',
   CREATE_FULL_SUCCESS: 'Tạo từ vựng mới thành công với nghĩa và translations',
