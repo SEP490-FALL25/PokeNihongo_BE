@@ -43,7 +43,7 @@ export class TestSetController {
     @ApiBearerAuth()
     @ApiOperation({
         summary: 'Tạo bộ đề mới với',
-        description: 'testType: VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL'
+        description: 'testType: VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, MATCHING'
 
     })
     @ApiBody({ type: CreateTestSetSwaggerDTO })

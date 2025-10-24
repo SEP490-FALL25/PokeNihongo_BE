@@ -50,7 +50,7 @@ export class QuestionBankController {
 - **SPEAKING**: Bắt buộc phải có pronunciation (cách phát âm romaji)
 - **Các loại khác**: audioUrl và pronunciation là tùy chọn
 
-**Loại câu hỏi hỗ trợ:** VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING` })
+**Loại câu hỏi hỗ trợ:** VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, MATCHING` })
     @ApiBody({ type: CreateQuestionBankWithMeaningsSwaggerDTO })
     @ApiResponse({
         status: 201,

@@ -15,19 +15,39 @@ export class ExercisesService {
         try {
             this.logger.log(`Creating exercise: ${JSON.stringify(data)}`)
 
-            // Check if lesson exists
+            // Check if lesson exists and get levelJlpt
+            let lessonLevelJlpt: number | null = null
             if (data.lessonId) {
                 const lessonExists = await this.exercisesRepository.checkLessonExists(data.lessonId)
                 if (!lessonExists) {
                     throw LessonNotFoundException
                 }
+                // Get lesson levelJlpt for validation
+                lessonLevelJlpt = await this.exercisesRepository.getLessonLevelJlpt(data.lessonId)
             }
 
-            // Check if testSet exists (if provided)
+            // Check if testSet exists and get levelN
+            let testSetLevelN: number | null = null
             if (data.testSetId) {
                 const testSetExists = await this.exercisesRepository.checkTestSetExists(data.testSetId)
                 if (!testSetExists) {
                     throw InvalidExercisesDataException
+                }
+                // Get testSet levelN for validation
+                testSetLevelN = await this.exercisesRepository.getTestSetLevelN(data.testSetId)
+            }
+
+            // Validate level compatibility: lesson levelJlpt must match testSet levelN
+            if (lessonLevelJlpt !== null && testSetLevelN !== null) {
+                if (lessonLevelJlpt !== testSetLevelN) {
+                    throw new HttpException(
+                        {
+                            statusCode: 400,
+                            message: `Level không tương thích: Lesson có level JLPT ${lessonLevelJlpt} nhưng TestSet có level ${testSetLevelN}. Chỉ có thể tạo Exercise khi level của Lesson và TestSet khớp nhau`,
+                            error: 'LEVEL_INCOMPATIBLE'
+                        },
+                        400
+                    )
                 }
             }
 

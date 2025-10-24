@@ -16,11 +16,15 @@ export class ExercisesController {
     @Post()
     @ApiOperation({
         summary: 'Tạo bài tập mới',
-        description: 'Tạo một bài tập mới với loại bài tập, nội dung và liên kết với bài học'
+        description: 'Tạo một bài tập mới với loại bài tập, nội dung và liên kết với bài học. Hệ thống sẽ kiểm tra tính tương thích level giữa Lesson và TestSet.'
     })
     @ApiBody({
         type: CreateExercisesSwaggerDTO,
-        description: 'Dữ liệu bài tập mới cần tạo =====loại bài tập QUIZ, multiple_choice, matching, listening, speaking====='
+        description: 'Dữ liệu bài tập mới cần tạo. Hệ thống sẽ tự động kiểm tra level tương thích:' +
+            '\n\nQuy tắc Level:' +
+            '\n• Lesson.levelJlpt phải khớp với TestSet.levelN' +
+            '\n• Chỉ có thể tạo Exercise khi level của Lesson và TestSet khớp nhau' +
+            '\n\nLoại bài tập: QUIZ, multiple_choice, matching, listening, speaking'
     })
     @ApiResponse({
         status: 201,

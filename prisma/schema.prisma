@@ -687,7 +687,6 @@ model TestSetQuestionBank {
   @@unique([testSetId, questionBankId]) // Tránh trùng lặp
   @@index([testSetId])
   @@index([questionBankId])
-
   @@index([questionOrder])
 }
 
@@ -1149,4 +1148,5 @@ enum QuestionType {
   READING // Đọc hiểu
   SPEAKING // Nói
   GENERAL // Tổng hợp
+  MATCHING // Ghép cặp
 }

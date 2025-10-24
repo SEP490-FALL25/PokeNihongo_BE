@@ -18,22 +18,24 @@ import { UseGuards } from '@nestjs/common'
 import { AnswerService } from './answer.service'
 import {
     CreateAnswerBodyDTO,
+    CreateMultipleAnswersBodyDTO,
     UpdateAnswerBodyDTO,
     GetAnswerByIdParamsDTO,
     GetAnswerListQueryDTO,
+    AnswerResponseDTO,
+    AnswerListResDTO,
+    CreateMultipleAnswersResponseDTO,
 } from './dto/answer.zod-dto'
 import {
     AnswerResponseSwaggerDTO,
     AnswerListResponseSwaggerDTO,
     CreateAnswerSwaggerDTO,
+    CreateMultipleAnswersSwaggerDTO,
+    CreateMultipleAnswersResponseSwaggerDTO,
     UpdateAnswerSwaggerDTO,
     GetAnswerListQuerySwaggerDTO,
 } from './dto/answer.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
-import {
-    AnswerResponseDTO,
-    AnswerListResponseDTO,
-} from './dto/answer.response.dto'
 
 @ApiTags('Answers')
 @Controller('answers')
@@ -44,7 +46,13 @@ export class AnswerController {
 
     @Post()
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Tạo câu trả lời mới' })
+    @ApiOperation({
+        summary: 'Tạo câu trả lời mới',
+        description: 'Tạo câu trả lời mới cho câu hỏi. Hệ thống sẽ kiểm tra loại câu hỏi và áp dụng quy tắc tương ứng.' +
+            '\n\nQuy tắc đặc biệt:' +
+            '\n• MATCHING type: Chỉ cho phép tạo 1 answer duy nhất' +
+            '\n• Các loại khác: Không giới hạn số lượng answer'
+    })
     @ApiResponse({ status: 201, description: 'Tạo câu trả lời thành công', type: AnswerResponseSwaggerDTO })
     @ApiBody({ type: CreateAnswerSwaggerDTO })
     @ZodSerializerDto(AnswerResponseDTO)
@@ -52,11 +60,43 @@ export class AnswerController {
         return await this.answerService.createAnswer(body)
     }
 
+    @Post('multiple')
+    @HttpCode(HttpStatus.CREATED)
+    @ApiOperation({
+        summary: 'Tạo nhiều câu trả lời cùng lúc',
+        description: 'Tạo nhiều câu trả lời cho một câu hỏi cùng lúc. Hệ thống sẽ kiểm tra từng câu trả lời và báo cáo kết quả chi tiết.' +
+            '\n\nQuy tắc đặc biệt:' +
+            '\n• MATCHING type: Chỉ cho phép tạo 1 answer duy nhất' +
+            '\n• Các loại khác: Không giới hạn số lượng answer' +
+            '\n• Tối đa 10 câu trả lời mỗi lần tạo' +
+            '\n• Hệ thống sẽ báo cáo câu trả lời nào thành công, câu nào thất bại và lý do'
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo câu trả lời thành công',
+        type: CreateMultipleAnswersResponseSwaggerDTO
+    })
+    @ApiResponse({
+        status: 207,
+        description: 'Tạo một phần câu trả lời thành công (Multi-status)',
+        type: CreateMultipleAnswersResponseSwaggerDTO
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Không thể tạo câu trả lời nào',
+        type: CreateMultipleAnswersResponseSwaggerDTO
+    })
+    @ApiBody({ type: CreateMultipleAnswersSwaggerDTO })
+    @ZodSerializerDto(CreateMultipleAnswersResponseDTO)
+    async createMultipleAnswers(@Body() body: CreateMultipleAnswersBodyDTO) {
+        return await this.answerService.createMultiple(body)
+    }
+
     @Get()
     @ApiOperation({ summary: 'Lấy danh sách câu trả lời với phân trang và tìm kiếm' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách câu trả lời thành công', type: AnswerListResponseSwaggerDTO })
     @ApiQuery({ type: GetAnswerListQuerySwaggerDTO })
-    @ZodSerializerDto(AnswerListResponseDTO)
+    @ZodSerializerDto(AnswerListResDTO)
     async getAnswerList(@Query() query: GetAnswerListQueryDTO, @I18nLang() lang: string) {
         return await this.answerService.getAnswerList(query, lang)
     }
