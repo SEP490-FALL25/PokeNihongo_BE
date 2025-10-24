@@ -1,7 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
-import { TestSetStatus } from '@prisma/client'
+import { TestSetStatus, QuestionType } from '@prisma/client'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -15,31 +15,13 @@ export const TestSetSchema = z.object({
     audioUrl: z.string().nullable().optional(),
     price: z.number().nullable().optional(),
     levelN: z.number().nullable().optional(),
-    testType: z.string(),
+    testType: z.nativeEnum(QuestionType),
     status: z.nativeEnum(TestSetStatus),
     creatorId: z.number().nullable().optional(),
     createdAt: z.date(),
     updatedAt: z.date()
 })
 
-// QuestionBank Schema for nested relation
-export const QuestionBankSchema = z.object({
-    id: z.number(),
-    questionJp: z.string().nullable().optional(),
-    questionType: z.string(),
-    audioUrl: z.string().nullable().optional(),
-    pronunciation: z.string().nullable().optional(),
-    levelN: z.number().nullable().optional(),
-})
-
-// TestSet with Questions Schema
-export const TestSetWithQuestionsSchema = TestSetSchema.extend({
-    testSetQuestionBanks: z.array(z.object({
-        id: z.number(),
-        questionOrder: z.number(),
-        questionBank: QuestionBankSchema
-    }))
-})
 
 // Create TestSet Schema
 export const CreateTestSetBodySchema = z.object({
@@ -49,7 +31,7 @@ export const CreateTestSetBodySchema = z.object({
     audioUrl: z.string().nullable().optional(),
     price: z.number().nullable().optional(),
     levelN: z.number().nullable().optional(),
-    testType: z.string(),
+    testType: z.nativeEnum(QuestionType),
     status: z.nativeEnum(TestSetStatus).default(TestSetStatus.DRAFT)
 }).strict()
 
@@ -82,14 +64,6 @@ export const TestSetListResSchema = z
     })
     .strict()
 
-// TestSet with Questions Response Schema
-export const TestSetWithQuestionsResSchema = z
-    .object({
-        statusCode: z.number(),
-        data: TestSetWithQuestionsSchema,
-        message: z.string()
-    })
-    .strict()
 
 // Get TestSet by ID Params Schema
 export const GetTestSetByIdParamsSchema = z
@@ -105,7 +79,7 @@ export const GetTestSetListQuerySchema = z
         pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         search: z.string().optional(),
         levelN: z.string().transform((val) => parseInt(val, 10)).optional(),
-        testType: z.string().optional(),
+        testType: z.nativeEnum(QuestionType).optional(),
         status: z.nativeEnum(TestSetStatus).optional(),
         creatorId: z.string().transform((val) => parseInt(val, 10)).optional()
     })
@@ -114,11 +88,9 @@ export const GetTestSetListQuerySchema = z
 
 // Types
 export type TestSetType = z.infer<typeof TestSetSchema>
-export type TestSetWithQuestionsType = z.infer<typeof TestSetWithQuestionsSchema>
 export type CreateTestSetBodyType = z.infer<typeof CreateTestSetBodySchema>
 export type UpdateTestSetBodyType = z.infer<typeof UpdateTestSetBodySchema>
 export type TestSetResType = z.infer<typeof TestSetResSchema>
 export type TestSetListResType = z.infer<typeof TestSetListResSchema>
-export type TestSetWithQuestionsResType = z.infer<typeof TestSetWithQuestionsResSchema>
 export type GetTestSetByIdParamsType = z.infer<typeof GetTestSetByIdParamsSchema>
 export type GetTestSetListQueryType = z.infer<typeof GetTestSetListQuerySchema>

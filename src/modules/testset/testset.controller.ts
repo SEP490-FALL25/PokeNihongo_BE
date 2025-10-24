@@ -8,7 +8,6 @@ import {
     UpdateTestSetBodyDTO,
     TestSetResDTO,
     TestSetListResDTO,
-    TestSetWithQuestionsResDTO
 } from './dto/testset.zod-dto'
 import {
     TestSetResponseSwaggerDTO,
@@ -42,7 +41,11 @@ export class TestSetController {
 
     @Post()
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Tạo bộ đề mới với' })
+    @ApiOperation({
+        summary: 'Tạo bộ đề mới với',
+        description: 'testType: VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL'
+
+    })
     @ApiBody({ type: CreateTestSetSwaggerDTO })
     @ApiResponse({
         status: 201,
@@ -79,9 +82,8 @@ export class TestSetController {
         description: 'Lấy thông tin bộ đề thành công',
         type: TestSetWithQuestionsResponseSwaggerDTO
     })
-    @ZodSerializerDto(TestSetWithQuestionsResDTO)
-    findOne(@Param() params: GetTestSetByIdParamsDTO, @I18nLang() lang: string) {
-        return this.testSetService.findOne(params, lang)
+    findOne(@Param('id') id: string, @I18nLang() lang: string) {
+        return this.testSetService.findOne(parseInt(id), lang)
     }
 
     @Put(':id')

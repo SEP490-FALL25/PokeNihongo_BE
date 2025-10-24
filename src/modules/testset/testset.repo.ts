@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { TestSetType, CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, TestSetWithQuestionsType } from './entities/testset.entities'
+import { TestSetType, CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType } from './entities/testset.entities'
+import { QuestionType } from '@prisma/client'
 
 @Injectable()
 export class TestSetRepository {
@@ -9,13 +10,21 @@ export class TestSetRepository {
     async create(data: CreateTestSetBodyType & { creatorId?: number }): Promise<TestSetType> {
         const result = await this.prisma.testSet.create({
             data: {
-                ...data,
+                name: data.name,
+                description: data.description,
+                content: data.content,
+                audioUrl: data.audioUrl,
+                price: data.price,
+                levelN: data.levelN,
+                testType: data.testType,
+                status: data.status,
                 creatorId: data.creatorId,
             },
         })
         return {
             ...result,
             price: result.price ? Number(result.price) : null,
+            testType: result.testType as QuestionType,
         }
     }
 
@@ -27,34 +36,10 @@ export class TestSetRepository {
         return {
             ...result,
             price: result.price ? Number(result.price) : null,
+            testType: result.testType as QuestionType,
         }
     }
 
-    async findByIdWithQuestions(id: number): Promise<TestSetWithQuestionsType | null> {
-        const result = await this.prisma.testSet.findUnique({
-            where: { id },
-            include: {
-                testSetQuestionBanks: {
-                    include: {
-                        questionBank: true,
-                    },
-                    orderBy: { questionOrder: 'asc' },
-                },
-                creator: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-            },
-        })
-        if (!result) return null
-        return {
-            ...result,
-            price: result.price ? Number(result.price) : null,
-        }
-    }
 
     async findMany(query: GetTestSetListQueryType): Promise<{ data: TestSetType[]; total: number }> {
         const { currentPage, pageSize, search, levelN, testType, status, creatorId } = query
@@ -114,6 +99,10 @@ export class TestSetRepository {
         const data = rawData.map(item => ({
             ...item,
             price: item.price ? Number(item.price) : null,
+            testType: item.testType as QuestionType,
+            // Remove _count and creator from the response
+            _count: undefined,
+            creator: undefined,
         }))
 
         return { data, total }
@@ -122,11 +111,21 @@ export class TestSetRepository {
     async update(id: number, data: UpdateTestSetBodyType): Promise<TestSetType> {
         const result = await this.prisma.testSet.update({
             where: { id },
-            data,
+            data: {
+                ...(data.name && { name: data.name }),
+                ...(data.description !== undefined && { description: data.description }),
+                ...(data.content !== undefined && { content: data.content }),
+                ...(data.audioUrl !== undefined && { audioUrl: data.audioUrl }),
+                ...(data.price !== undefined && { price: data.price }),
+                ...(data.levelN !== undefined && { levelN: data.levelN }),
+                ...(data.testType && { testType: data.testType }),
+                ...(data.status && { status: data.status }),
+            },
         })
         return {
             ...result,
             price: result.price ? Number(result.price) : null,
+            testType: result.testType as QuestionType,
         }
     }
 
@@ -137,6 +136,7 @@ export class TestSetRepository {
         return {
             ...result,
             price: result.price ? Number(result.price) : null,
+            testType: result.testType as QuestionType,
         }
     }
 

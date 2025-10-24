@@ -71,7 +71,6 @@ export class QuestionBankController {
         type: QuestionBankListResponseSwaggerDTO
     })
     @ApiQuery({ type: GetQuestionBankListQuerySwaggerDTO })
-    // @ZodSerializerDto(QuestionBankListResDTO)
     findAll(@Query() query: GetQuestionBankListQueryDTO, @I18nLang() lang: string) {
         return this.questionBankService.findAll(query, lang)
     }
