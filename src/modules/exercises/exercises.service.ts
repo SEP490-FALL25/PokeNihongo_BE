@@ -69,7 +69,7 @@ export class ExercisesService {
             const exercises = await this.exercisesRepository.findById(params.id)
 
             if (!exercises) {
-                throw new ExercisesNotFoundException()
+                throw ExercisesNotFoundException
             }
 
             this.logger.log(`Found exercises: ${exercises.id}`)
@@ -87,11 +87,11 @@ export class ExercisesService {
         } catch (error) {
             this.logger.error(`Error getting exercises by id ${params.id}:`, error)
 
-            if (error instanceof ExercisesNotFoundException) {
+            if (error === ExercisesNotFoundException) {
                 throw error
             }
 
-            throw new InvalidExercisesDataException('Lỗi khi lấy thông tin bài tập')
+            throw InvalidExercisesDataException
         }
     }
     //#endregion
@@ -133,7 +133,7 @@ export class ExercisesService {
             // Check if lesson exists
             const lessonExists = await this.exercisesRepository.checkLessonExists(lessonId)
             if (!lessonExists) {
-                throw new LessonNotFoundException()
+                throw LessonNotFoundException
             }
 
             // Upload audio file nếu có
@@ -186,18 +186,18 @@ export class ExercisesService {
             // Handle Zod validation errors
             if (error.name === 'ZodError') {
                 const errorMessage = error.errors.map((err: any) => err.message).join(', ')
-                throw new InvalidExercisesDataException(`Dữ liệu không hợp lệ: ${errorMessage}`)
+                throw InvalidExercisesDataException
             }
 
-            if (error instanceof LessonNotFoundException || error instanceof ExercisesAlreadyExistsException) {
+            if (error === LessonNotFoundException || error === ExercisesAlreadyExistsException) {
                 throw error
             }
 
             if (isUniqueConstraintPrismaError(error)) {
-                throw new ExercisesAlreadyExistsException()
+                throw ExercisesAlreadyExistsException
             }
 
-            throw new InvalidExercisesDataException('Lỗi khi tạo bài tập')
+            throw InvalidExercisesDataException
         }
     }
     //#endregion
@@ -241,11 +241,11 @@ export class ExercisesService {
                 // Nếu là số, tìm bằng ID
                 existingExercises = await this.exercisesRepository.findById(parseInt(identifier))
             } else {
-                throw new InvalidExercisesDataException('Chỉ có thể cập nhật exercises bằng ID')
+                throw InvalidExercisesDataException
             }
 
             if (!existingExercises) {
-                throw new ExercisesNotFoundException()
+                throw ExercisesNotFoundException
             }
 
             // All fields should already be parsed by Zod validation, but add fallback conversion
@@ -257,7 +257,7 @@ export class ExercisesService {
             if (parsedLessonId) {
                 const lessonExists = await this.exercisesRepository.checkLessonExists(parsedLessonId)
                 if (!lessonExists) {
-                    throw new LessonNotFoundException()
+                    throw LessonNotFoundException
                 }
             }
 
@@ -311,7 +311,7 @@ export class ExercisesService {
             if (error.message.includes('không tồn tại') || error.message.includes('đã tồn tại')) {
                 throw error
             }
-            throw new InvalidExercisesDataException('Lỗi khi cập nhật bài tập')
+            throw InvalidExercisesDataException
         }
     }
 
@@ -325,7 +325,7 @@ export class ExercisesService {
             // Check if exercises exists
             const exercises = await this.exercisesRepository.findById(id)
             if (!exercises) {
-                throw new ExercisesNotFoundException()
+                throw ExercisesNotFoundException
             }
 
             await this.exercisesRepository.delete(id)
@@ -338,15 +338,61 @@ export class ExercisesService {
         } catch (error) {
             this.logger.error(`Error deleting exercises ${id}:`, error)
 
-            if (error instanceof ExercisesNotFoundException) {
+            if (error === ExercisesNotFoundException) {
                 throw error
             }
 
             if (isNotFoundPrismaError(error)) {
-                throw new ExercisesNotFoundException()
+                throw ExercisesNotFoundException
             }
 
-            throw new InvalidExercisesDataException('Lỗi khi xóa bài tập')
+            throw InvalidExercisesDataException
+        }
+    }
+
+    async findById(id: number) {
+        try {
+            this.logger.log(`Finding exercise by id: ${id}`)
+
+            const exercise = await this.exercisesRepository.findById(id)
+
+            if (!exercise) {
+                throw ExercisesNotFoundException
+            }
+
+            return {
+                statusCode: 200,
+                message: 'Lấy thông tin bài tập thành công',
+                data: exercise
+            }
+        } catch (error) {
+            this.logger.error('Error finding exercise by id:', error)
+            throw error
+        }
+    }
+
+    async findByLessonId(lessonId: number) {
+        try {
+            this.logger.log(`Finding exercises by lesson id: ${lessonId}`)
+
+            const exercises = await this.exercisesRepository.findByLessonId(lessonId)
+
+            return {
+                statusCode: 200,
+                message: 'Lấy danh sách bài tập thành công',
+                data: {
+                    results: exercises,
+                    pagination: {
+                        current: 1,
+                        pageSize: exercises.length,
+                        totalPage: 1,
+                        totalItem: exercises.length
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error finding exercises by lesson id:', error)
+            throw error
         }
     }
     //#endregion

@@ -49,13 +49,6 @@ export class UserProgressRepository {
                 take: pageSize,
                 orderBy: { updatedAt: 'desc' },
                 include: {
-                    user: {
-                        select: {
-                            id: true,
-                            name: true,
-                            email: true
-                        }
-                    },
                     lesson: {
                         select: {
                             id: true,
@@ -92,13 +85,6 @@ export class UserProgressRepository {
         const result = await this.prismaService.userProgress.findUnique({
             where: { id: where.id },
             include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true
-                    }
-                },
                 lesson: {
                     select: {
                         id: true,
@@ -167,6 +153,7 @@ export class UserProgressRepository {
         data: {
             status?: string
             progressPercentage?: number
+            completedAt?: Date | null
         }
     ): Promise<UserProgressType> {
         const updateData: any = { ...data }
@@ -316,11 +303,6 @@ export class UserProgressRepository {
             lastAccessedAt: userProgress.lastAccessedAt,
             createdAt: userProgress.createdAt,
             updatedAt: userProgress.updatedAt,
-            user: userProgress.user ? {
-                id: userProgress.user.id,
-                name: userProgress.user.name,
-                email: userProgress.user.email
-            } : undefined,
             lesson: userProgress.lesson ? {
                 id: userProgress.lesson.id,
                 titleJp: userProgress.lesson.titleJp,
@@ -328,5 +310,20 @@ export class UserProgressRepository {
                 isPublished: true
             } : undefined
         }
+    }
+
+    async findInProgressByUser(userId: number) {
+        const result = await this.prismaService.userProgress.findFirst({
+            where: {
+                userId: userId,
+                status: 'IN_PROGRESS'
+            }
+        })
+
+        if (!result) {
+            return null
+        }
+
+        return this.transformUserProgress(result)
     }
 }

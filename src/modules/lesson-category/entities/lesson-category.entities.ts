@@ -10,12 +10,7 @@ export const LessonCategoryType = z.object({
 })
 
 export const LessonCategoryWithRelationsType = LessonCategoryType.extend({
-    lessons: z.array(z.object({
-        id: z.number(),
-        slug: z.string(),
-        titleKey: z.string(),
-        isPublished: z.boolean(),
-    })).optional(),
+    name: z.string().optional(), // Translated name
 })
 
 // Request/Response Types

@@ -395,4 +395,81 @@ export class UserProgressService {
             throw InvalidUserProgressDataException
         }
     }
+
+    async updateProgressByLesson(userId: number, lessonId: number, progressPercentage: number, status?: string) {
+        try {
+            this.logger.log(`Updating progress for user ${userId}, lesson ${lessonId}: ${progressPercentage}%`)
+
+            // Tìm UserProgress record
+            const userProgress = await this.userProgressRepository.findByUserAndLesson(userId, lessonId)
+
+            if (!userProgress) {
+                this.logger.warn(`UserProgress not found for user ${userId}, lesson ${lessonId}`)
+                return
+            }
+
+            // Xác định status
+            let finalStatus = status
+            if (!finalStatus) {
+                finalStatus = progressPercentage === 100 ? 'COMPLETED' : 'IN_PROGRESS'
+            }
+
+            // Cập nhật progress percentage
+            await this.userProgressRepository.update(
+                { id: userProgress.id },
+                {
+                    progressPercentage: progressPercentage,
+                    status: finalStatus,
+                    completedAt: progressPercentage === 100 ? new Date() : null
+                }
+            )
+
+            this.logger.log(`Updated UserProgress for user ${userId}, lesson ${lessonId}: ${progressPercentage}% (${finalStatus})`)
+
+        } catch (error) {
+            this.logger.error('Error updating progress by lesson:', error)
+            throw error
+        }
+    }
+
+    async getCurrentInProgressLesson(userId: number) {
+        try {
+            this.logger.log(`Getting current in-progress lesson for user: ${userId}`)
+
+            // Tìm UserProgress có status IN_PROGRESS
+            const inProgressLesson = await this.userProgressRepository.findInProgressByUser(userId)
+
+            if (inProgressLesson) {
+                this.logger.log(`Found in-progress lesson ${inProgressLesson.lessonId} for user ${userId}`)
+                return inProgressLesson
+            }
+
+            this.logger.log(`No in-progress lesson found for user ${userId}`)
+            return null
+
+        } catch (error) {
+            this.logger.error('Error getting current in-progress lesson:', error)
+            throw error
+        }
+    }
+
+    async getUserProgressByLesson(userId: number, lessonId: number) {
+        try {
+            this.logger.log(`Getting user progress for user: ${userId}, lesson: ${lessonId}`)
+
+            const userProgress = await this.userProgressRepository.findByUserAndLesson(userId, lessonId)
+
+            if (userProgress) {
+                this.logger.log(`Found user progress for user ${userId}, lesson ${lessonId}: ${userProgress.status}`)
+                return userProgress
+            }
+
+            this.logger.log(`No user progress found for user ${userId}, lesson ${lessonId}`)
+            return null
+
+        } catch (error) {
+            this.logger.error('Error getting user progress by lesson:', error)
+            throw error
+        }
+    }
 }

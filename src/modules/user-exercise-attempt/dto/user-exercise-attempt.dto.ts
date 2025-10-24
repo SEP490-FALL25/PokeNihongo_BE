@@ -10,6 +10,13 @@ export class UserExerciseAttemptSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID bài tập' })
     exerciseId: number
 
+    @ApiProperty({
+        example: 'IN_PROGRESS',
+        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED']
+    })
+    status: string
+
     @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Ngày tạo' })
     createdAt: Date
 
@@ -17,20 +24,14 @@ export class UserExerciseAttemptSwaggerDTO {
     updatedAt: Date
 }
 
-export class CreateUserExerciseAttemptSwaggerDTO {
-    @ApiProperty({ example: 1, description: 'ID người dùng' })
-    userId: number
-
-    @ApiProperty({ example: 1, description: 'ID bài tập' })
-    exerciseId: number
-}
-
 export class UpdateUserExerciseAttemptSwaggerDTO {
-    @ApiProperty({ example: 1, description: 'ID người dùng', required: false })
-    userId?: number
-
-    @ApiProperty({ example: 1, description: 'ID bài tập', required: false })
-    exerciseId?: number
+    @ApiProperty({
+        example: 'COMPLETED',
+        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED'],
+        required: false
+    })
+    status?: string
 }
 
 export class UserExerciseAttemptResponseSwaggerDTO {
@@ -80,6 +81,11 @@ export class UserExerciseAttemptListResponseSwaggerDTO {
     message: string
 }
 
+export class CreateUserExerciseAttemptParamsSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID bài tập' })
+    exerciseId: number
+}
+
 export class GetUserExerciseAttemptListQuerySwaggerDTO {
     @ApiProperty({ example: 1, description: 'Trang hiện tại', required: false })
     currentPage?: number
@@ -92,6 +98,55 @@ export class GetUserExerciseAttemptListQuerySwaggerDTO {
 
     @ApiProperty({ example: 1, description: 'ID bài tập', required: false })
     exerciseId?: number
+
+    @ApiProperty({
+        example: 'IN_PROGRESS',
+        description: 'Lọc theo trạng thái: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED'],
+        required: false
+    })
+    status?: string
 }
 
+export class ExerciseCompletionStatusSwaggerDTO {
+    @ApiProperty({ example: true, description: 'Bài tập đã hoàn thành chưa' })
+    isCompleted: boolean
 
+    @ApiProperty({ example: 10, description: 'Tổng số câu hỏi' })
+    totalQuestions: number
+
+    @ApiProperty({ example: 8, description: 'Số câu đã trả lời' })
+    answeredQuestions: number
+
+    @ApiProperty({ example: 2, description: 'Số câu chưa trả lời' })
+    unansweredQuestions: number
+
+    @ApiProperty({
+        example: [9, 10],
+        description: 'Danh sách ID câu hỏi chưa trả lời',
+        type: [Number],
+        required: false
+    })
+    unansweredQuestionIds?: number[]
+
+    @ApiProperty({ example: true, description: 'Tất cả câu trả lời có đúng không' })
+    allCorrect: boolean
+
+    @ApiProperty({
+        example: 'COMPLETED',
+        description: 'Trạng thái hiện tại của attempt',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED']
+    })
+    status: string
+}
+
+export class ExerciseCompletionResponseSwaggerDTO {
+    @ApiProperty({ example: 200, description: 'Mã trạng thái' })
+    statusCode: number
+
+    @ApiProperty({ example: 'Bài tập đã hoàn thành và đúng hết', description: 'Thông báo' })
+    message: string
+
+    @ApiProperty({ type: ExerciseCompletionStatusSwaggerDTO, description: 'Dữ liệu trạng thái hoàn thành' })
+    data: ExerciseCompletionStatusSwaggerDTO
+}

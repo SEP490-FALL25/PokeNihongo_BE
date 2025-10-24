@@ -650,21 +650,31 @@ model Answer {
   @@index([isCorrect])
 }
 
+// Enum cho trạng thái làm bài tập
+enum ExerciseAttemptStatus {
+  IN_PROGRESS // Đang làm
+  COMPLETED // Đã hoàn thành
+  FAIL // Đã hoàn thành nhưng sai
+  ABANDONED // Đã bỏ dở
+}
+
 // Model UserExerciseAttempt (Lần thử bài tập của user)
 model UserExerciseAttempt {
-  id         Int       @id @default(autoincrement())
+  id         Int                   @id @default(autoincrement())
   userId     Int
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   exerciseId Int
-  exercise   Exercises @relation(fields: [exerciseId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  exercise   Exercises             @relation(fields: [exerciseId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  status     ExerciseAttemptStatus @default(IN_PROGRESS)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
 
   // Quan hệ với UserAnswerLog
   userAnswerLogs UserAnswerLog[]
 
   @@index([userId])
   @@index([exerciseId])
+  @@index([status])
 }
 
 // Model UserAnswerLog (Log câu trả lời của user)
