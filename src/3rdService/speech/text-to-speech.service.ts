@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { TextToSpeechClient } from '@google-cloud/text-to-speech'
+import { UploadService } from '../upload/upload.service'
 
 export interface TextToSpeechResult {
     audioContent: Buffer
@@ -24,7 +25,10 @@ export class TextToSpeechService {
     private readonly logger = new Logger(TextToSpeechService.name)
     private textToSpeechClient: TextToSpeechClient | null
 
-    constructor(private readonly configService: ConfigService) {
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly uploadService: UploadService
+    ) {
         // Check if credentials are available before initializing
         const clientEmail = this.configService.get('GOOGLE_CLOUD_CLIENT_EMAIL')
         const privateKey = this.configService.get('GOOGLE_CLOUD_PRIVATE_KEY')
@@ -122,6 +126,51 @@ export class TextToSpeechService {
         } catch (error) {
             this.logger.error('Failed to get supported voices:', error)
             throw new Error(`Failed to get supported voices: ${error.message}`)
+        }
+    }
+
+    /**
+     * Generate audio from text and upload to Cloudinary
+     * @param text Text to convert to speech
+     * @param folder Folder to upload audio to
+     * @param prefix Prefix for the filename
+     * @returns Promise<string | null> - URL of uploaded audio or null if failed
+     */
+    async generateAudioFromText(text: string, folder: string, prefix: string = 'audio'): Promise<string | null> {
+        this.logger.log(`Generating text-to-speech from: ${text}`)
+        try {
+            // 1. Generate audio using TTS
+            const ttsResult = await this.convertTextToSpeech(
+                text,
+                { languageCode: 'ja-JP', audioEncoding: 'MP3' }
+            )
+
+            // 2. Create a buffer file to upload
+            const audioBuffer = ttsResult.audioContent
+            const fileName = `${prefix}_${Date.now()}.mp3`
+
+            // Convert buffer to Multer file-like object
+            const generatedAudioFile: Express.Multer.File = {
+                buffer: audioBuffer,
+                originalname: fileName,
+                mimetype: 'audio/mpeg',
+                fieldname: 'audio',
+                encoding: '7bit',
+                size: audioBuffer.length,
+                destination: '',
+                filename: fileName,
+                path: '',
+                stream: null as any
+            }
+
+            // 3. Upload the generated audio file
+            const audioResult = await this.uploadService.uploadFile(generatedAudioFile, `${folder}/audio`)
+            this.logger.log(`Generated audioUrl: ${audioResult.url}`)
+            return audioResult.url
+        } catch (ttsError) {
+            this.logger.error('Error generating text-to-speech:', ttsError)
+            // Nếu không thể tạo audio, return null
+            return null
         }
     }
 }

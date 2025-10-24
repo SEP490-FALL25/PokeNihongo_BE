@@ -1,139 +1,225 @@
-import { QuestionBankType, QuestionBankStatusEnum } from '@/modules/question-bank/entities/question-bank.entities'
+import { QuestionBankType, CreateQuestionBankBodyType, CreateQuestionBankWithMeaningsBodyType, UpdateQuestionBankBodyType, GetQuestionBankListQueryType } from '@/modules/question-bank/entities/question-bank.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
+import { QuestionType } from '@prisma/client'
 
 @Injectable()
 export class QuestionBankRepository {
-    constructor(private readonly prismaService: PrismaService) { }
+    private readonly logger = new Logger(QuestionBankRepository.name)
 
-    async findMany(params: {
-        currentPage: number
-        pageSize: number
-        levelN?: number
-        bankType?: string
-        status?: QuestionBankStatusEnum
-        search?: string
-    }) {
-        const { currentPage, pageSize, levelN, bankType, status, search } = params
+    constructor(private readonly prisma: PrismaService) { }
+
+    async findMany(query: GetQuestionBankListQueryType): Promise<{ data: QuestionBankType[]; total: number }> {
+        const { currentPage, pageSize, levelN, questionType, search } = query
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
+
+        if (search) {
+            where.OR = [
+                { questionJp: { contains: search, mode: 'insensitive' } },
+                { questionKey: { contains: search, mode: 'insensitive' } },
+                { pronunciation: { contains: search, mode: 'insensitive' } },
+            ]
+        }
 
         if (levelN) {
             where.levelN = levelN
         }
 
-        if (bankType) {
-            where.bankType = bankType
+        if (questionType) {
+            where.questionType = questionType
         }
 
-        if (status) {
-            where.status = status
-        }
-
-        if (search) {
-            where.OR = [
-                { bankType: { contains: search, mode: 'insensitive' } }
-            ]
-        }
-
-        const [items, total] = await Promise.all([
-            this.prismaService.question_Bank.findMany({
+        const [data, total] = await Promise.all([
+            this.prisma.questionBank.findMany({
                 where,
                 skip,
                 take: pageSize,
                 orderBy: { createdAt: 'desc' },
                 include: {
-                    question: true,
-                    creator: {
+                    _count: {
                         select: {
-                            id: true,
-                            name: true,
-                            email: true
+                            answers: true,
+                            userAnswerLogs: true,
+                            userSpeakingAttempts: true,
+                            testSetQuestionBanks: true,
+                        },
+                    },
+                },
+            }),
+            this.prisma.questionBank.count({ where }),
+        ])
+
+        return { data, total }
+    }
+
+    async findById(id: number): Promise<QuestionBankType | null> {
+        return await this.prisma.questionBank.findUnique({
+            where: { id },
+            include: {
+                answers: true,
+                userAnswerLogs: true,
+                userSpeakingAttempts: true,
+                testSetQuestionBanks: {
+                    include: {
+                        testSet: {
+                            select: {
+                                id: true,
+                                name: true,
+                                testType: true,
+                            },
+                        },
+                    },
+                },
+            },
+        })
+    }
+
+    async create(data: CreateQuestionBankBodyType): Promise<QuestionBankType> {
+        return await this.prisma.questionBank.create({
+            data,
+        })
+    }
+
+    async createWithMeanings(data: CreateQuestionBankWithMeaningsBodyType, userId: number): Promise<QuestionBankType> {
+        const { meanings, ...questionBankData } = data
+
+        return await this.prisma.$transaction(async (tx) => {
+            // Tạo question bank
+            const questionBank = await tx.questionBank.create({
+                data: questionBankData,
+            })
+
+            // Tạo translations nếu có
+            if (meanings && meanings.length > 0) {
+                for (const meaning of meanings) {
+                    // Tạo translations cho từng ngôn ngữ
+                    for (const [languageCode, translation] of Object.entries(meaning.translations)) {
+                        // Tìm languageId từ languageCode
+                        const language = await tx.languages.findFirst({
+                            where: { code: languageCode }
+                        })
+
+                        if (language) {
+                            await tx.translation.upsert({
+                                where: {
+                                    languageId_key: {
+                                        languageId: language.id,
+                                        key: meaning.meaningKey!
+                                    }
+                                },
+                                update: {
+                                    value: translation
+                                },
+                                create: {
+                                    languageId: language.id,
+                                    key: meaning.meaningKey!,
+                                    value: translation
+                                }
+                            })
                         }
                     }
                 }
+            }
+
+            return questionBank
+        })
+    }
+
+    async update(id: number, data: UpdateQuestionBankBodyType): Promise<QuestionBankType> {
+        return await this.prisma.questionBank.update({
+            where: { id },
+            data,
+        })
+    }
+
+    async delete(id: number): Promise<QuestionBankType> {
+        return await this.prisma.questionBank.delete({
+            where: { id },
+        })
+    }
+
+    async findByQuestionType(questionType: QuestionType): Promise<QuestionBankType[]> {
+        return await this.prisma.questionBank.findMany({
+            where: { questionType },
+            orderBy: { id: 'asc' },
+        })
+    }
+
+    async findByLevelN(levelN: number): Promise<QuestionBankType[]> {
+        return await this.prisma.questionBank.findMany({
+            where: { levelN },
+            orderBy: { id: 'asc' },
+        })
+    }
+
+    async findByTestSetId(testSetId: number): Promise<QuestionBankType[]> {
+        return await this.prisma.questionBank.findMany({
+            where: {
+                testSetQuestionBanks: {
+                    some: {
+                        testSetId: testSetId
+                    }
+                }
+            },
+            orderBy: { id: 'asc' },
+        })
+    }
+
+    async getStatistics() {
+        const [total, byType, byLevel] = await Promise.all([
+            this.prisma.questionBank.count(),
+            this.prisma.questionBank.groupBy({
+                by: ['questionType'],
+                _count: { questionType: true },
             }),
-            this.prismaService.question_Bank.count({ where })
+            this.prisma.questionBank.groupBy({
+                by: ['levelN'],
+                _count: { levelN: true },
+            }),
         ])
 
         return {
-            items: items.map(item => this.transformQuestionBank(item)),
             total,
-            page: currentPage,
-            limit: pageSize
+            byType: byType.reduce((acc, item) => {
+                acc[item.questionType] = item._count.questionType
+                return acc
+            }, {}),
+            byLevel: byLevel.reduce((acc, item) => {
+                acc[`N${item.levelN}`] = item._count.levelN
+                return acc
+            }, {}),
         }
     }
 
-    async findUnique(where: { id?: number }): Promise<QuestionBankType | null> {
-        if (!where.id) return null
-
-        const result = await this.prismaService.question_Bank.findUnique({
-            where: { id: where.id },
-            include: {
-                question: true,
-                creator: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true
-                    }
-                }
-            }
+    /**
+     * Cập nhật questionKey cho question bank
+     */
+    async updateQuestionKey(id: number, questionKey: string): Promise<void> {
+        await this.prisma.questionBank.update({
+            where: { id },
+            data: { questionKey }
         })
-        return result ? this.transformQuestionBank(result) : null
     }
 
-    async create(data: {
-        levelN?: number | null
-        bankType: string
-        status: QuestionBankStatusEnum
-        questionId: number
-        creatorId?: number
-    }): Promise<QuestionBankType> {
-        const result = await this.prismaService.question_Bank.create({
-            data
+    /**
+     * Kiểm tra questionJp đã tồn tại chưa
+     */
+    async checkQuestionJpExists(questionJp: string): Promise<boolean> {
+        const existing = await this.prisma.questionBank.findFirst({
+            where: { questionJp }
         })
-        return this.transformQuestionBank(result)
+        return !!existing
     }
 
-    async update(
-        where: { id: number },
-        data: {
-            levelN?: number | null
-            bankType?: string
-            status?: QuestionBankStatusEnum
-        }
-    ): Promise<QuestionBankType> {
-        const result = await this.prismaService.question_Bank.update({
-            where,
-            data
+    /**
+     * Cập nhật key của translations
+     */
+    async updateTranslationKeys(oldKey: string, newKey: string): Promise<void> {
+        await this.prisma.translation.updateMany({
+            where: { key: oldKey },
+            data: { key: newKey }
         })
-        return this.transformQuestionBank(result)
-    }
-
-    async delete(where: { id: number }): Promise<QuestionBankType> {
-        const result = await this.prismaService.question_Bank.delete({
-            where
-        })
-        return this.transformQuestionBank(result)
-    }
-
-    async count(where?: any): Promise<number> {
-        return this.prismaService.question_Bank.count({ where })
-    }
-
-    private transformQuestionBank(questionBank: any): QuestionBankType {
-        return {
-            id: questionBank.id,
-            levelN: questionBank.levelN || null,
-            bankType: questionBank.bankType,
-            status: questionBank.status,
-            questionId: questionBank.questionId,
-            creatorId: questionBank.creatorId || null,
-            createdAt: questionBank.createdAt,
-            updatedAt: questionBank.updatedAt
-        }
     }
 }
-

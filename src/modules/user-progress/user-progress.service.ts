@@ -11,7 +11,7 @@ import {
 } from '@/modules/user-progress/dto/user-progress.error'
 import { UserProgressRepository } from '@/modules/user-progress/user-progress.repo'
 import { isNotFoundPrismaError } from '@/shared/helpers'
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, HttpException } from '@nestjs/common'
 
 @Injectable()
 export class UserProgressService {
@@ -35,6 +35,9 @@ export class UserProgressService {
             }
         } catch (error) {
             this.logger.error('Error creating user progress:', error)
+            if (error instanceof HttpException || error.message?.includes('đã tồn tại') || error.message?.includes('không tồn tại')) {
+                throw error
+            }
             throw InvalidUserProgressDataException
         }
     }
@@ -139,10 +142,10 @@ export class UserProgressService {
                 message: USER_PROGRESS_MESSAGE.UPDATE_SUCCESS
             }
         } catch (error) {
-            if (isNotFoundPrismaError(error)) {
-                throw UserProgressNotFoundException
-            }
             this.logger.error('Error updating user progress:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại') || error.message?.includes('đã tồn tại')) {
+                throw error
+            }
             throw InvalidUserProgressDataException
         }
     }
@@ -163,10 +166,10 @@ export class UserProgressService {
                 message: USER_PROGRESS_MESSAGE.UPDATE_SUCCESS
             }
         } catch (error) {
-            if (isNotFoundPrismaError(error)) {
-                throw UserProgressNotFoundException
-            }
             this.logger.error('Error updating user progress by user and lesson:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại') || error.message?.includes('đã tồn tại')) {
+                throw error
+            }
             throw InvalidUserProgressDataException
         }
     }
@@ -180,10 +183,10 @@ export class UserProgressService {
                 message: USER_PROGRESS_MESSAGE.DELETE_SUCCESS
             }
         } catch (error) {
-            if (isNotFoundPrismaError(error)) {
-                throw UserProgressNotFoundException
-            }
             this.logger.error('Error deleting user progress:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
             throw InvalidUserProgressDataException
         }
     }

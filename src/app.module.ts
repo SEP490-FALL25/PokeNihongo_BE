@@ -35,9 +35,12 @@ import { LessonModule } from './modules/lesson/lesson.module'
 import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
+
 import { QuestionBankModule } from './modules/question-bank/question-bank.module'
-import { QuestionModule } from './modules/question/question.module'
 import { RewardModule } from './modules/reward/reward.module'
+import { SpeakingModule } from './modules/speaking/speaking.module'
+import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module'
+import { TestSetModule } from './modules/testset/testset.module'
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module'
 import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.module'
 import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-request.module'
@@ -45,9 +48,9 @@ import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserProgressModule } from './modules/user-progress/user-progress.module'
 import { UserModule } from './modules/user/user.module'
+import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
-import { WalletModule } from './modules/wallet/wallet.module';
 
 @Module({
   imports: [
@@ -82,7 +85,6 @@ import { WalletModule } from './modules/wallet/wallet.module';
     GrammarModule,
     GrammarUsageModule,
     ExercisesModule,
-    QuestionModule,
     AnswerModule,
     UserModule,
     AchievementGroupModule,
@@ -96,6 +98,9 @@ import { WalletModule } from './modules/wallet/wallet.module';
     AchievementModule,
     AttendenceConfigModule,
     AttendanceModule,
+    TestSetModule,
+    TestSetQuestionBankModule,
+    SpeakingModule,
     WalletModule
   ],
 

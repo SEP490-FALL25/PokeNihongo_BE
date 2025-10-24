@@ -36,12 +36,11 @@ export class AnswerRepository {
             this.prismaService.answer.findMany({
                 where,
                 include: {
-                    question: {
+                    questionBank: {
                         select: {
                             id: true,
                             questionJp: true,
-                            questionKey: true,
-                            questionOrder: true
+                            questionKey: true
                         }
                     }
                 },
@@ -76,12 +75,11 @@ export class AnswerRepository {
         return this.prismaService.answer.findUnique({
             where: { id },
             include: {
-                question: {
+                questionBank: {
                     select: {
                         id: true,
                         questionJp: true,
                         questionKey: true,
-                        questionOrder: true
                     }
                 }
             }
@@ -92,12 +90,11 @@ export class AnswerRepository {
         return this.prismaService.answer.create({
             data,
             include: {
-                question: {
+                questionBank: {
                     select: {
                         id: true,
                         questionJp: true,
                         questionKey: true,
-                        questionOrder: true
                     }
                 }
             }
@@ -109,12 +106,11 @@ export class AnswerRepository {
             where: { id },
             data,
             include: {
-                question: {
+                questionBank: {
                     select: {
                         id: true,
                         questionJp: true,
                         questionKey: true,
-                        questionOrder: true
                     }
                 }
             }
@@ -156,7 +152,7 @@ export class AnswerRepository {
     }
 
     async checkQuestionExists(questionId: number) {
-        const count = await this.prismaService.question.count({ where: { id: questionId } })
+        const count = await this.prismaService.questionBank.count({ where: { id: questionId } })
         return count > 0
     }
 }
