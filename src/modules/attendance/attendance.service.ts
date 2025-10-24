@@ -86,16 +86,21 @@ export class AttendanceService {
     date: Date = todayUTCWith0000(),
     lang: string = 'vi'
   ) {
-    await this.getLand(lang)
-    const weekly = await this.findWeekAttendances(userId, date, true)
-    const userInfo = await this.shareUserRepo.findUnique({ id: userId })
+    const [, weekly, totalStreak, userInfo] = await Promise.all([
+      this.getLand(lang),
+      this.findWeekAttendances(userId, date, true),
+      this.findMaxStreakFromToday(userId),
+      this.shareUserRepo.findUnique({ id: userId })
+    ])
+
     if (!userInfo) {
       throw new NotFoundRecordException()
     }
     const data = {
       user: userInfo,
       attendances: weekly.attendances,
-      count: weekly.count
+      count: weekly.count,
+      totalStreak
     }
     return {
       statusCode: HttpStatus.OK,
@@ -323,6 +328,51 @@ export class AttendanceService {
     const isFullWeek = count >= 7
 
     return { count, isFullWeek, attendances }
+  }
+
+  /**
+   * Tính tổng số streak liên tiếp từ hôm nay về trước
+   * Bao gồm cả hôm nay nếu đã điểm danh
+   */
+  async findMaxStreakFromToday(userId: number) {
+    const today = todayUTCWith0000()
+
+    // Lấy tất cả điểm danh của user
+    const allAttendances = await this.attendanceRepo.findByUserId(userId)
+
+    // Sắp xếp theo ngày giảm dần
+    const sortedAttendances = allAttendances
+      .filter((att) => {
+        const attDate = new Date(att.date)
+        attDate.setHours(0, 0, 0, 0)
+        return attDate <= today // Lấy các ngày <= hôm nay
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+    if (sortedAttendances.length === 0) {
+      return 0
+    }
+
+    // Đếm streak liên tiếp từ hôm nay
+    let streakCount = 0
+    let expectedDate = new Date(today)
+    expectedDate.setHours(0, 0, 0, 0)
+
+    for (const att of sortedAttendances) {
+      const attDate = new Date(att.date)
+      attDate.setHours(0, 0, 0, 0)
+
+      if (attDate.getTime() === expectedDate.getTime()) {
+        streakCount++
+        // Kiểm tra ngày trước đó
+        expectedDate.setDate(expectedDate.getDate() - 1)
+      } else if (attDate.getTime() < expectedDate.getTime()) {
+        // Có khoảng trống, dừng streak
+        break
+      }
+    }
+
+    return streakCount
   }
 
   async getLand(lang: string) {

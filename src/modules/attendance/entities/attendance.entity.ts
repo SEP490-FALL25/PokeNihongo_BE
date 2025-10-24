@@ -120,7 +120,8 @@ export const GetAttendanceWithUserStreakResSchema = GetAttendanceResSchema.exten
           .nullable()
       })
     ),
-    count: z.number()
+    count: z.number(),
+    totalStreak: z.number()
   })
 })
 
