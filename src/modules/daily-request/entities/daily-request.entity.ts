@@ -2,6 +2,7 @@ import { dailyRequestType } from '@/common/constants/achievement.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { RewardSchema } from '@/modules/reward/entities/reward.entity'
+import { TranslationSchema } from '@/modules/translation/entities/translation.entities'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -78,14 +79,28 @@ export const GetParamsDailyRequestSchema = z.object({
 export const GetDailyRequestDetailResSchema = z.object({
   statusCode: z.number(),
   data: DailyRequestSchema.extend({
-    nameTranslation: z.string().nullable().optional(),
-    descriptionTranslation: z.string().nullable().optional(),
-    reward: RewardSchema.pick({
-      id: true,
-      nameKey: true,
-      rewardItem: true,
-      rewardTarget: true,
-      rewardType: true
+    nameTranslations: z.array(
+      TranslationSchema.pick({
+        id: true,
+        languageId: true,
+        value: true
+      })
+    ),
+    descriptionTranslations: z.array(
+      TranslationSchema.pick({
+        id: true,
+        languageId: true,
+        value: true
+      })
+    ),
+    reward: RewardSchema.extend({
+      nameTranslations: TranslationSchema.pick({
+        id: true,
+        languageId: true,
+        value: true
+      })
+        .nullable()
+        .optional()
     })
       .nullable()
       .optional()
