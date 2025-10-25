@@ -304,5 +304,16 @@ export const jaMessages = {
     NOT_FOUND: 'ウォレットが見つかりません',
     ALREADY_EXISTS: 'ウォレットは既に存在します',
     INVALID_DATA: '無効なウォレットデータです'
+  },
+  wallet_transaction: {
+    CREATE_SUCCESS: 'ウォレット取引の作成に成功しました',
+    UPDATE_SUCCESS: 'ウォレット取引の更新に成功しました',
+    DELETE_SUCCESS: 'ウォレット取引の削除に成功しました',
+    GET_SUCCESS: 'ウォレット取引情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ウォレット取引リストの取得に成功しました',
+    NOT_FOUND: 'ウォレット取引が見つかりません',
+
+    ALREADY_EXISTS: 'ウォレット取引は既に存在します',
+    INVALID_DATA: '無効なウォレット取引データです'
   }
 }

@@ -15,7 +15,7 @@ type RewardPrismaType = Omit<RewardType, 'nameKey'> & { name: string }
 
 @Injectable()
 export class RewardRepo {
-  constructor(private prismaService: PrismaService) { }
+  constructor(private prismaService: PrismaService) {}
 
   // Wrapper cho transaction
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
@@ -80,24 +80,24 @@ export class RewardRepo {
     const client = prismaTx || this.prismaService
     const result = isHard
       ? await this.prismaService.reward.delete({
-        where: {
-          id
-        }
-      })
+          where: {
+            id
+          }
+        })
       : await client.reward.update({
-        where: {
-          id,
-          deletedAt: null
-        },
-        data: {
-          deletedAt: new Date(),
-          deletedById
-        }
-      })
+          where: {
+            id,
+            deletedAt: null
+          },
+          data: {
+            deletedAt: new Date(),
+            deletedById
+          }
+        })
     return result
   }
 
-  async list(pagination: PaginationQueryType) {
+  async list(pagination: PaginationQueryType, langId?: number) {
     const { where, orderBy } = parseQs(pagination.qs, REWARD_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
@@ -115,6 +115,34 @@ export class RewardRepo {
       })
     ])
 
+    // If langId is provided, fetch translations
+    if (langId && data.length > 0) {
+      const allKeys = Array.from(new Set(data.map((d) => d.nameKey)))
+
+      const translations = await this.prismaService.translation.findMany({
+        where: {
+          key: { in: allKeys },
+          languageId: langId
+        },
+        select: { key: true, value: true }
+      })
+
+      const results = data.map((d) => ({
+        ...d,
+        nameTranslation: translations.find((t) => t.key === d.nameKey)?.value ?? null
+      }))
+
+      return {
+        results,
+        pagination: {
+          current: pagination.currentPage,
+          pageSize: pagination.pageSize,
+          totalPage: Math.ceil(totalItems / pagination.pageSize),
+          totalItem: totalItems
+        }
+      }
+    }
+
     return {
       results: data,
       pagination: {
@@ -127,12 +155,11 @@ export class RewardRepo {
   }
 
   findById(id: number): Promise<RewardType | null> {
-    return this.prismaService.reward
-      .findUnique({
-        where: {
-          id,
-          deletedAt: null
-        }
-      })
+    return this.prismaService.reward.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      }
+    })
   }
 }

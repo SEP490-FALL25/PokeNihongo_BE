@@ -51,6 +51,7 @@ import { UserModule } from './modules/user/user.module'
 import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
+import { WalletTransactionModule } from './modules/wallet-transaction/wallet-transaction.module';
 
 @Module({
   imports: [
@@ -101,7 +102,8 @@ import { SharedModule } from './shared/shared.module'
     TestSetModule,
     TestSetQuestionBankModule,
     SpeakingModule,
-    WalletModule
+    WalletModule,
+    WalletTransactionModule
   ],
 
   controllers: [],

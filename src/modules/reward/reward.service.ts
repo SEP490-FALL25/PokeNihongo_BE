@@ -1,6 +1,9 @@
 import { I18nService } from '@/i18n/i18n.service'
 import { RewardMessage } from '@/i18n/message-keys'
-import { LanguageNotExistToTranslateException, NotFoundRecordException } from '@/shared/error'
+import {
+  LanguageNotExistToTranslateException,
+  NotFoundRecordException
+} from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError,
@@ -27,10 +30,11 @@ export class RewardService {
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
     private readonly translationRepo: TranslationRepository
-  ) { }
+  ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
-    const data = await this.rewardRepo.list(pagination)
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const data = await this.rewardRepo.list(pagination, langId ?? undefined)
     return {
       data,
       message: this.i18nService.translate(RewardMessage.GET_LIST_SUCCESS, lang)
@@ -44,18 +48,17 @@ export class RewardService {
     }
 
     const langId = await this.languageRepo.getIdByCode(lang)
+
     if (!langId) {
       return {
         data: reward,
         message: this.i18nService.translate(RewardMessage.GET_SUCCESS, lang)
       }
     }
-
     const nameTranslation = await this.translationRepo.findByLangAndKey(
       langId,
       reward.nameKey
     )
-
     const resultRes = {
       ...reward,
       nameTranslation: nameTranslation?.value ?? null
@@ -169,7 +172,7 @@ export class RewardService {
             },
             true
           )
-        } catch (rollbackError) { }
+        } catch (rollbackError) {}
       }
 
       if (isUniqueConstraintPrismaError(error)) {
