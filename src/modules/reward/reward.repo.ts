@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
+import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import {
   CreateRewardBodyType,
   REWARD_FIELDS,
@@ -41,7 +42,7 @@ export class RewardRepo {
     })
   }
 
-  update(
+  async update(
     {
       id,
       updatedById,
@@ -49,21 +50,48 @@ export class RewardRepo {
     }: {
       id: number
       updatedById?: number
-      data: UpdateRewardBodyType
+      data: UpdateRewardBodyType & {
+        nameTranslations: CreateTranslationBodyType[]
+        rewardNameKey: string
+      }
     },
     prismaTx?: PrismaClient
   ): Promise<RewardType> {
     const client = prismaTx || this.prismaService
-    return client.reward.update({
-      where: {
-        id,
-        deletedAt: null
-      },
+    const { nameTranslations, rewardNameKey, ...rewardData } = data
+
+    const updatedReward = await client.reward.update({
+      where: { id, deletedAt: null },
       data: {
-        ...data,
+        ...rewardData,
         updatedById
       }
     })
+
+    // Upsert translations riêng
+    await Promise.all(
+      nameTranslations.map((tr) =>
+        client.translation.upsert({
+          where: {
+            languageId_key: {
+              languageId: tr.languageId,
+              key: rewardNameKey
+            }
+          },
+          create: {
+            languageId: tr.languageId,
+            key: rewardNameKey,
+            value: tr.value,
+            rewardNameKey
+          },
+          update: {
+            value: tr.value
+          }
+        })
+      )
+    )
+
+    return updatedReward
   }
 
   async delete(
@@ -109,39 +137,16 @@ export class RewardRepo {
       }),
       this.prismaService.reward.findMany({
         where: { deletedAt: null, ...where },
+        include: {
+          nameTranslations: {
+            where: langId ? { languageId: langId } : {}
+          }
+        },
         orderBy,
         skip,
         take
       })
     ])
-
-    // If langId is provided, fetch translations
-    if (langId && data.length > 0) {
-      const allKeys = Array.from(new Set(data.map((d) => d.nameKey)))
-
-      const translations = await this.prismaService.translation.findMany({
-        where: {
-          key: { in: allKeys },
-          languageId: langId
-        },
-        select: { key: true, value: true }
-      })
-
-      const results = data.map((d) => ({
-        ...d,
-        nameTranslation: translations.find((t) => t.key === d.nameKey)?.value ?? null
-      }))
-
-      return {
-        results,
-        pagination: {
-          current: pagination.currentPage,
-          pageSize: pagination.pageSize,
-          totalPage: Math.ceil(totalItems / pagination.pageSize),
-          totalItem: totalItems
-        }
-      }
-    }
 
     return {
       results: data,
@@ -159,6 +164,22 @@ export class RewardRepo {
       where: {
         id,
         deletedAt: null
+      }
+    })
+  }
+
+  findByIdWithLangId(id: number, langId: number): Promise<RewardType | null> {
+    return this.prismaService.reward.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        nameTranslations: {
+          where: {
+            languageId: langId
+          }
+        }
       }
     })
   }

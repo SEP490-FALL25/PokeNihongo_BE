@@ -21,7 +21,6 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreatedRewardBodyInputDTO,
   CreateRewardResDTO,
-  GetRewardDetailResDTO,
   GetRewardParamsDTO,
   UpdateRewardBodyInputDTO,
   UpdateRewardResDTO
@@ -43,7 +42,7 @@ export class RewardController {
 
   @Get(':rewardId')
   @IsPublic()
-  @ZodSerializerDto(GetRewardDetailResDTO)
+  // @ZodSerializerDto(GetRewardDetailResDTO)
   findById(@Param() params: GetRewardParamsDTO, @I18nLang() lang: string) {
     return this.rewardService.findById(params.rewardId, lang)
   }
