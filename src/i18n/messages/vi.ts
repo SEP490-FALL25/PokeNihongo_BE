@@ -302,5 +302,25 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy điểm danh',
     ALREADY_EXISTS: 'Điểm danh đã tồn tại',
     CHECKIN_ALREADY: 'Bạn đã điểm danh hôm nay'
+  },
+  wallet: {
+    CREATE_SUCCESS: 'Tạo ví thành công',
+    UPDATE_SUCCESS: 'Cập nhật ví thành công',
+    DELETE_SUCCESS: 'Xóa ví thành công',
+    GET_SUCCESS: 'Lấy thông tin ví thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách ví thành công',
+    NOT_FOUND: 'Không tìm thấy ví',
+    ALREADY_EXISTS: 'Ví đã tồn tại',
+    INVALID_DATA: 'Dữ liệu ví không hợp lệ'
+  },
+  wallet_transaction: {
+    CREATE_SUCCESS: 'Tạo giao dịch ví thành công',
+    UPDATE_SUCCESS: 'Cập nhật giao dịch ví thành công',
+    DELETE_SUCCESS: 'Xóa giao dịch ví thành công',
+    GET_SUCCESS: 'Lấy thông tin giao dịch ví thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách giao dịch ví thành công',
+    NOT_FOUND: 'Không tìm thấy giao dịch ví',
+    ALREADY_EXISTS: 'Giao dịch ví đã tồn tại',
+    INVALID_DATA: 'Dữ liệu giao dịch ví không hợp lệ'
   }
 }

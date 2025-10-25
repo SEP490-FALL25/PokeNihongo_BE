@@ -304,5 +304,25 @@ export const enMessages = {
     NOT_FOUND: 'Attendance record not found',
     ALREADY_EXISTS: 'Attendance record already exists',
     CHECKIN_SUCCESS: 'Check-in successful'
+  },
+  wallet: {
+    CREATE_SUCCESS: 'Wallet created successfully',
+    UPDATE_SUCCESS: 'Wallet updated successfully',
+    DELETE_SUCCESS: 'Wallet deleted successfully',
+    GET_SUCCESS: 'Wallet retrieved successfully',
+    GET_LIST_SUCCESS: 'Wallet list retrieved successfully',
+    NOT_FOUND: 'Wallet not found',
+    ALREADY_EXISTS: 'Wallet already exists',
+    INVALID_DATA: 'Invalid wallet data'
+  },
+  wallet_transaction: {
+    CREATE_SUCCESS: 'Wallet transaction created successfully',
+    UPDATE_SUCCESS: 'Wallet transaction updated successfully',
+    DELETE_SUCCESS: 'Wallet transaction deleted successfully',
+    GET_SUCCESS: 'Wallet transaction retrieved successfully',
+    GET_LIST_SUCCESS: 'Wallet transaction list retrieved successfully',
+    NOT_FOUND: 'Wallet transaction not found',
+    ALREADY_EXISTS: 'Wallet transaction already exists',
+    INVALID_DATA: 'Invalid wallet transaction data'
   }
 }

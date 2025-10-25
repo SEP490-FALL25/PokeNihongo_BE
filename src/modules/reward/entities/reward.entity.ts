@@ -38,9 +38,10 @@ export const CreateRewardBodyInputSchema = RewardSchema.pick({
   rewardType: true,
   rewardItem: true,
   rewardTarget: true
-}).strict()
+})
+  .strict()
   .extend({
-    nameTranslations: TranslationInputSchema,
+    nameTranslations: TranslationInputSchema
   })
 
 export const CreateRewardBodySchema = RewardSchema.pick({
@@ -68,7 +69,13 @@ export const GetRewardParamsSchema = z
   })
   .strict()
 
-export const GetRewardDetailResSchema = CreateRewardResSchema
+export const GetRewardDetailResSchema = z.object({
+  statusCode: z.number(),
+  data: RewardSchema.extend({
+    nameTranslation: z.string()
+  }),
+  message: z.string()
+})
 
 export type RewardType = z.infer<typeof RewardSchema>
 export type CreateRewardBodyInputType = z.infer<typeof CreateRewardBodyInputSchema>
@@ -79,4 +86,7 @@ export type GetRewardParamsType = z.infer<typeof GetRewardParamsSchema>
 export type GetRewardDetailResType = z.infer<typeof GetRewardDetailResSchema>
 
 type RewardFieldType = keyof z.infer<typeof RewardSchema>
-export const REWARD_FIELDS = [...Object.keys(RewardSchema.shape), 'nameTranslation'] as RewardFieldType[]
+export const REWARD_FIELDS = [
+  ...Object.keys(RewardSchema.shape),
+  'nameTranslation'
+] as RewardFieldType[]
