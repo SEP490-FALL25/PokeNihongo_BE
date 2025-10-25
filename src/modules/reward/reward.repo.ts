@@ -126,21 +126,51 @@ export class RewardRepo {
   }
 
   async list(pagination: PaginationQueryType, langId?: number) {
-    const { where, orderBy } = parseQs(pagination.qs, REWARD_FIELDS)
+    const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, REWARD_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
 
+    // Build base where
+    const where: any = { deletedAt: null, ...rawWhere }
+
+    // Support filtering by nameTranslation/nameTranslations via relational filter
+    const nameFilterRaw =
+      (rawWhere as any).nameTranslation ?? (rawWhere as any).nameTranslations
+    let childNameIncludeWhere: any = {}
+    if (nameFilterRaw && langId) {
+      const toContainsFilter = (raw: any) => {
+        if (typeof raw === 'object' && raw !== null) {
+          const val = (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
+          return { contains: String(val), mode: 'insensitive' as const }
+        }
+        return { contains: String(raw), mode: 'insensitive' as const }
+      }
+      const searchFilter = toContainsFilter(nameFilterRaw)
+      delete (where as any).nameTranslation
+      delete (where as any).nameTranslations
+      where.nameTranslations = {
+        some: {
+          languageId: langId,
+          value: searchFilter
+        }
+      }
+      childNameIncludeWhere = { languageId: langId, value: searchFilter }
+    } else if (langId) {
+      childNameIncludeWhere = { languageId: langId }
+    }
+
     const [totalItems, data] = await Promise.all([
-      this.prismaService.reward.count({
-        where: { deletedAt: null, ...where }
-      }),
+      this.prismaService.reward.count({ where }),
       this.prismaService.reward.findMany({
-        where: { deletedAt: null, ...where },
+        where,
         include: {
-          nameTranslations: {
-            where: langId ? { languageId: langId } : {}
-          }
+          nameTranslations: langId
+            ? {
+                where: childNameIncludeWhere,
+                select: { value: true }
+              }
+            : undefined
         },
         orderBy,
         skip,

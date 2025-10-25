@@ -213,6 +213,12 @@ model Translation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  dailyRequestNameKey String?
+  dailyRequestName    DailyRequest? @relation("DailyRequestNameRelation", fields: [dailyRequestNameKey], references: [nameKey], onDelete: Cascade)
+
+  dailyRequestDescriptionKey String?
+  dailyRequestDescription    DailyRequest? @relation("DailyRequestDescriptionRelation", fields: [dailyRequestDescriptionKey], references: [descriptionKey], onDelete: Cascade)
+
   @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
   @@index([languageId])
   @@index([key])
@@ -835,8 +841,8 @@ model GrammarUsage {
 
 model DailyRequest {
   id             Int    @id @default(autoincrement())
-  nameKey        String @db.VarChar(200)
-  descriptionKey String @db.VarChar(500)
+  nameKey        String @unique @db.VarChar(200)
+  descriptionKey String @unique @db.VarChar(500)
 
   dailyRequestType DailyRequestType @default(DAILY_LESSON)
   conditionValue   Int // Giá trị cần đạt (VD: 1, 7, ...)
@@ -848,6 +854,10 @@ model DailyRequest {
   isActive Boolean @default(true)
 
   userDailyRequests UserDailyRequest[]
+
+  //translation
+  nameTranslations        Translation[] @relation("DailyRequestNameRelation")
+  descriptionTranslations Translation[] @relation("DailyRequestDescriptionRelation")
 
   //
   createdById Int?
