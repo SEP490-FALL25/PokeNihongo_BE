@@ -11,7 +11,6 @@ export const TestSetQuestionBankSchema = z.object({
     id: z.number(),
     testSetId: z.number(),
     questionBankId: z.number(),
-    questionType: z.nativeEnum(QuestionType),
     questionOrder: z.number(),
     createdAt: z.date(),
     updatedAt: z.date()
@@ -21,12 +20,17 @@ export const TestSetQuestionBankSchema = z.object({
 export const CreateTestSetQuestionBankBodySchema = z.object({
     testSetId: z.number(),
     questionBankId: z.number(),
-    questionType: z.nativeEnum(QuestionType).default(QuestionType.VOCABULARY),
-    questionOrder: z.number().default(0)
+    questionOrder: z.number().optional() // Optional - will be auto-calculated
 }).strict()
 
 // Update TestSetQuestionBank Schema
 export const UpdateTestSetQuestionBankBodySchema = CreateTestSetQuestionBankBodySchema.partial().strict()
+
+// Create Multiple TestSetQuestionBank Schema
+export const CreateMultipleTestSetQuestionBankBodySchema = z.object({
+    testSetId: z.number(),
+    questionBankIds: z.array(z.number()).min(1, 'Phải có ít nhất 1 QuestionBank')
+}).strict()
 
 // Get TestSetQuestionBank by TestSet ID Params Schema
 export const GetTestSetQuestionBankByTestSetIdParamsSchema = z
@@ -53,6 +57,23 @@ export const UpdateQuestionOrderSchema = z
 export type TestSetQuestionBankType = z.infer<typeof TestSetQuestionBankSchema>
 export type CreateTestSetQuestionBankBodyType = z.infer<typeof CreateTestSetQuestionBankBodySchema>
 export type UpdateTestSetQuestionBankBodyType = z.infer<typeof UpdateTestSetQuestionBankBodySchema>
+export type CreateMultipleTestSetQuestionBankBodyType = z.infer<typeof CreateMultipleTestSetQuestionBankBodySchema>
+
+// Response schema for multiple creation
+export const CreateMultipleTestSetQuestionBankResponseSchema = z.object({
+    created: z.array(TestSetQuestionBankSchema),
+    failed: z.array(z.object({
+        questionBankId: z.number(),
+        reason: z.string()
+    })),
+    summary: z.object({
+        total: z.number(),
+        success: z.number(),
+        failed: z.number()
+    })
+})
+
+export type CreateMultipleTestSetQuestionBankResponseType = z.infer<typeof CreateMultipleTestSetQuestionBankResponseSchema>
 export type GetTestSetQuestionBankByTestSetIdParamsType = z.infer<typeof GetTestSetQuestionBankByTestSetIdParamsSchema>
 export type GetTestSetQuestionBankByIdParamsType = z.infer<typeof GetTestSetQuestionBankByIdParamsSchema>
 export type UpdateQuestionOrderType = z.infer<typeof UpdateQuestionOrderSchema>

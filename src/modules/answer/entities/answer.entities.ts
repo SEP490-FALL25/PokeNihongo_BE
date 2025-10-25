@@ -12,7 +12,7 @@ export const AnswerType = z.object({
     answerJp: z.string(),
     answerKey: z.string(),
     isCorrect: z.boolean(),
-    questionId: z.number(),
+    questionBankId: z.number(),
     createdAt: z.date(),
     updatedAt: z.date(),
 })
@@ -26,7 +26,7 @@ export const AnswerWithTranslationType = AnswerType.omit({ answerKey: true }).ex
 export const CreateAnswerBodyType = z.object({
     answerJp: z.string().min(1, 'Nội dung câu trả lời không được để trống').max(1000, 'Nội dung câu trả lời không được vượt quá 1000 ký tự'),
     isCorrect: z.boolean().default(false),
-    questionId: z.number().min(1, 'ID câu hỏi không hợp lệ'),
+    questionBankId: z.number().min(1, 'ID câu hỏi không hợp lệ'),
     translations: z.union([
         // Format 1: Simple object with language_code and value
         z.object({
@@ -43,10 +43,33 @@ export const CreateAnswerBodyType = z.object({
     ]).optional(),
 })
 
+// Schema for creating multiple answers
+export const CreateMultipleAnswersBodyType = z.object({
+    questionBankId: z.number().min(1, 'ID câu hỏi không hợp lệ'),
+    answers: z.array(z.object({
+        answerJp: z.string().min(1, 'Nội dung câu trả lời không được để trống').max(1000, 'Nội dung câu trả lời không được vượt quá 1000 ký tự'),
+        isCorrect: z.boolean().default(false),
+        translations: z.union([
+            // Format 1: Simple object with language_code and value
+            z.object({
+                language_code: z.string(),
+                value: z.string()
+            }),
+            // Format 2: Complex object with meaning array
+            z.object({
+                meaning: z.array(z.object({
+                    language_code: z.string(),
+                    value: z.string()
+                }))
+            })
+        ]).optional(),
+    })).min(1, 'Phải có ít nhất 1 câu trả lời').max(10, 'Tối đa 10 câu trả lời')
+})
+
 export const UpdateAnswerBodyType = z.object({
     answerJp: z.string().min(1, 'Nội dung câu trả lời không được để trống').max(1000, 'Nội dung câu trả lời không được vượt quá 1000 ký tự').optional(),
     isCorrect: z.boolean().optional(),
-    questionId: z.number().min(1, 'ID câu hỏi không hợp lệ').optional(),
+    questionBankId: z.number().min(1, 'ID câu hỏi không hợp lệ').optional(),
     translations: z.union([
         // Format 1: Simple object with language_code and value
         z.object({
@@ -70,7 +93,7 @@ export const GetAnswerByIdParamsType = z.object({
 export const GetAnswerListQueryType = z.object({
     currentPage: z.string().transform(Number).default('1'),
     pageSize: z.string().transform(Number).default('10'),
-    questionId: z.string().transform(Number).optional(),
+    questionBankId: z.string().transform(Number).optional(),
     isCorrect: z.string().transform(val => val === 'true').optional(),
     search: z.string().optional(),
     sortBy: z.nativeEnum(AnswerSortField).optional().default(AnswerSortField.CREATED_AT),
@@ -78,6 +101,14 @@ export const GetAnswerListQueryType = z.object({
 })
 
 // Response schemas
+export const AnswerResponseSchema = z
+    .object({
+        statusCode: z.number(),
+        data: AnswerType,
+        message: z.string()
+    })
+    .strict()
+
 export const AnswerListResSchema = z
     .object({
         statusCode: z.number(),
@@ -94,11 +125,34 @@ export const AnswerListResSchema = z
     })
     .strict()
 
+// Response schema for multiple answers creation
+export const CreateMultipleAnswersResponseSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            created: z.array(AnswerType),
+            failed: z.array(z.object({
+                answerJp: z.string(),
+                reason: z.string()
+            })),
+            summary: z.object({
+                total: z.number(),
+                success: z.number(),
+                failed: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
 // Type exports
 export type AnswerType = z.infer<typeof AnswerType>
 export type AnswerWithTranslationType = z.infer<typeof AnswerWithTranslationType>
 export type CreateAnswerBodyType = z.infer<typeof CreateAnswerBodyType>
+export type CreateMultipleAnswersBodyType = z.infer<typeof CreateMultipleAnswersBodyType>
 export type UpdateAnswerBodyType = z.infer<typeof UpdateAnswerBodyType>
 export type GetAnswerByIdParamsType = z.infer<typeof GetAnswerByIdParamsType>
 export type GetAnswerListQueryType = z.infer<typeof GetAnswerListQueryType>
+export type AnswerResponseType = z.infer<typeof AnswerResponseSchema>
 export type AnswerListResType = z.infer<typeof AnswerListResSchema>
+export type CreateMultipleAnswersResponseType = z.infer<typeof CreateMultipleAnswersResponseSchema>

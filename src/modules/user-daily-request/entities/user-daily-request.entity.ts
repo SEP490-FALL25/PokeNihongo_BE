@@ -57,7 +57,7 @@ export const UserDailyRequestDetailSchema = UserDailyRequestSchema.extend({
     descriptionTranslation: z.string().optional().nullable(),
     reward: RewardSchema.pick({
       id: true,
-      name: true,
+      nameKey: true,
       rewardItem: true,
       rewardTarget: true,
       rewardType: true

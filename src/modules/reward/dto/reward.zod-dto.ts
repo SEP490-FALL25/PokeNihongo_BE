@@ -1,18 +1,18 @@
 import { createZodDto } from 'nestjs-zod'
 import {
-  CreateRewardBodySchema,
+  CreateRewardBodyInputSchema,
   CreateRewardResSchema,
   GetRewardDetailResSchema,
   GetRewardParamsSchema,
-  UpdateRewardBodySchema,
+  UpdateRewardBodyInputSchema,
   UpdateRewardResSchema
 } from '../entities/reward.entity'
 
-export class CreatedRewardBodyDTO extends createZodDto(CreateRewardBodySchema) {}
+export class CreatedRewardBodyInputDTO extends createZodDto(CreateRewardBodyInputSchema) {}
 
 export class CreateRewardResDTO extends createZodDto(CreateRewardResSchema) {}
 
-export class UpdateRewardBodyDTO extends createZodDto(UpdateRewardBodySchema) {}
+export class UpdateRewardBodyInputDTO extends createZodDto(UpdateRewardBodyInputSchema) {}
 
 export class UpdateRewardResDTO extends createZodDto(UpdateRewardResSchema) {}
 

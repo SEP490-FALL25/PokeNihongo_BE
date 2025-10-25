@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { TestSetRepository } from './testset.repo'
-import { CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, GetTestSetByIdParamsType, TestSetWithQuestionsType } from './entities/testset.entities'
+import { CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, GetTestSetByIdParamsType } from './entities/testset.entities'
 import { TestSetNotFoundException, TestSetPermissionDeniedException, TestSetAlreadyExistsException } from './dto/testset.error'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
@@ -35,11 +35,8 @@ export class TestSetService {
         }
 
         if (data.testType !== undefined) {
-            if (!data.testType || data.testType.trim().length === 0) {
+            if (!data.testType) {
                 throw new BadRequestException('Loại đề thi không được để trống')
-            }
-            if (data.testType.length > 50) {
-                throw new BadRequestException('Loại đề thi quá dài (tối đa 50 ký tự)')
             }
         }
 
@@ -61,7 +58,7 @@ export class TestSetService {
             if (!createData.name || createData.name.trim().length === 0) {
                 throw new BadRequestException('Tên bộ đề không được để trống')
             }
-            if (!createData.testType || createData.testType.trim().length === 0) {
+            if (!createData.testType) {
                 throw new BadRequestException('Loại đề thi không được để trống')
             }
         }
@@ -91,7 +88,7 @@ export class TestSetService {
     }
 
     async getTestSetById(id: number): Promise<MessageResDTO> {
-        const testSet = await this.testSetRepo.findByIdWithQuestions(id)
+        const testSet = await this.testSetRepo.findById(id)
 
         if (!testSet) {
             throw TestSetNotFoundException
@@ -149,9 +146,9 @@ export class TestSetService {
         }
     }
 
-    async findOne(params: GetTestSetByIdParamsType, lang: string) {
+    async findOne(id: number, lang: string) {
         try {
-            const testSet = await this.testSetRepo.findByIdWithQuestions(params.id)
+            const testSet = await this.testSetRepo.findById(id)
 
             if (!testSet) {
                 throw TestSetNotFoundException

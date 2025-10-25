@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { QuestionBankStatusEnum } from '@/common/enum/enum'
+import { QuestionBankStatusEnum, QuestionType } from '@/common/enum/enum'
 
 export class QuestionBankSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của ngân hàng câu hỏi' })
@@ -154,8 +154,13 @@ export class GetQuestionBankListQuerySwaggerDTO {
     @ApiProperty({ example: 5, description: 'Cấp độ JLPT', required: false })
     levelN?: number
 
-    @ApiProperty({ example: 'vocabulary', description: 'Loại đề thi thử JLPT', required: false })
-    bankType?: string
+    @ApiProperty({
+        example: QuestionType.VOCABULARY,
+        enum: QuestionType,
+        description: 'Loại câu hỏi: VOCABULARY (từ vựng), GRAMMAR (ngữ pháp), KANJI (hán tự), LISTENING (nghe hiểu), READING (đọc hiểu), SPEAKING (nói)',
+        required: false
+    })
+    questionType?: string
 
     @ApiProperty({
         example: QuestionBankStatusEnum.ACTIVE,

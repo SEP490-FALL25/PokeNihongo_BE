@@ -13,7 +13,7 @@ import {
 
 @Injectable()
 export class UserDailyRequestRepo {
-  constructor(private prismaService: PrismaService) {}
+  constructor(private prismaService: PrismaService) { }
 
   create({
     createdById,
@@ -71,20 +71,20 @@ export class UserDailyRequestRepo {
   ): Promise<UserDailyRequestType> {
     return isHard
       ? this.prismaService.userDailyRequest.delete({
-          where: {
-            id
-          }
-        })
+        where: {
+          id
+        }
+      })
       : this.prismaService.userDailyRequest.update({
-          where: {
-            id,
-            deletedAt: null
-          },
-          data: {
-            deletedAt: new Date(),
-            deletedById
-          }
-        })
+        where: {
+          id,
+          deletedAt: null
+        },
+        data: {
+          deletedAt: new Date(),
+          deletedById
+        }
+      })
   }
 
   async list(pagination: PaginationQueryType) {
@@ -167,7 +167,7 @@ export class UserDailyRequestRepo {
     userId: number,
     date: Date
   ): Promise<UserDailyRequestDetailType[]> {
-    return this.prismaService.userDailyRequest.findMany({
+    const results = await this.prismaService.userDailyRequest.findMany({
       where: {
         userId,
         date,
@@ -176,15 +176,7 @@ export class UserDailyRequestRepo {
       include: {
         dailyRequest: {
           include: {
-            reward: {
-              select: {
-                id: true,
-                name: true,
-                rewardItem: true,
-                rewardTarget: true,
-                rewardType: true
-              }
-            }
+            reward: true
           }
         },
         user: true
@@ -193,5 +185,17 @@ export class UserDailyRequestRepo {
         isCompleted: 'asc'
       }
     })
+
+    // Map name -> nameKey
+    return results.map(item => ({
+      ...item,
+      dailyRequest: {
+        ...item.dailyRequest,
+        reward: item.dailyRequest.reward ? {
+          ...item.dailyRequest.reward,
+          nameKey: (item.dailyRequest.reward as any).name
+        } : null
+      } as any
+    })) as any
   }
 }

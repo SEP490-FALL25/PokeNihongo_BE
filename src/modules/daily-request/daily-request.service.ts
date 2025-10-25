@@ -30,7 +30,7 @@ export class DailyRequestService {
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
     private readonly translationRepo: TranslationRepository
-  ) {}
+  ) { }
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const langId = await this.languageRepo.getIdByCode(lang)
@@ -190,7 +190,7 @@ export class DailyRequestService {
             },
             true
           )
-        } catch (rollbackError) {}
+        } catch (rollbackError) { }
       }
 
       if (isUniqueConstraintPrismaError(error)) {

@@ -1,9 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, BadRequestException } from '@nestjs/common'
+import { QuestionType } from '@prisma/client'
 import {
     CreateAnswerBodyType,
+    CreateMultipleAnswersBodyType,
     UpdateAnswerBodyType,
     GetAnswerByIdParamsType,
     GetAnswerListQueryType,
+    CreateMultipleAnswersResponseType
 } from './entities/answer.entities'
 import {
     AnswerNotFoundException,
@@ -142,13 +145,24 @@ export class AnswerService {
             }
 
             // Check if question exists
-            const questionExists = await this.answerRepository.checkQuestionExists(data.questionId)
+            const questionExists = await this.answerRepository.checkQuestionExists(data.questionBankId)
             if (!questionExists) {
                 throw new QuestionNotFoundException()
             }
 
+            // Get question type for validation
+            const questionType = await this.answerRepository.getQuestionType(data.questionBankId)
+
+            // Validate MATCHING type: only 1 answer allowed
+            if (questionType === QuestionType.MATCHING) {
+                const existingAnswerCount = await this.answerRepository.countAnswersByQuestionId(data.questionBankId)
+                if (existingAnswerCount >= 1) {
+                    throw new BadRequestException('MATCHING type chỉ cho phép tạo 1 answer duy nhất')
+                }
+            }
+
             // Check if answer content already exists in this question
-            const existingAnswer = await this.answerRepository.checkAnswerExists(data.questionId, data.answerJp)
+            const existingAnswer = await this.answerRepository.checkAnswerExists(data.questionBankId, data.answerJp)
             if (existingAnswer) {
                 throw new AnswerContentAlreadyExistsException()
             }
@@ -219,7 +233,8 @@ export class AnswerService {
             if (error instanceof QuestionNotFoundException ||
                 error instanceof AnswerAlreadyExistsException ||
                 error instanceof AnswerContentAlreadyExistsException ||
-                error instanceof InvalidJapaneseContentException) {
+                error instanceof InvalidJapaneseContentException ||
+                error instanceof BadRequestException) {
                 throw error
             }
 
@@ -243,9 +258,9 @@ export class AnswerService {
                 throw new AnswerNotFoundException()
             }
 
-            // Check if question exists (if updating questionId)
-            if (data.questionId) {
-                const questionExists = await this.answerRepository.checkQuestionExists(data.questionId)
+            // Check if question exists (if updating questionBankId)
+            if (data.questionBankId) {
+                const questionExists = await this.answerRepository.checkQuestionExists(data.questionBankId)
                 if (!questionExists) {
                     throw new QuestionNotFoundException()
                 }
@@ -436,6 +451,132 @@ export class AnswerService {
         } catch (error) {
             this.logger.error(`Error getting answer with translations for ID ${answerId}:`, error)
             throw error
+        }
+    }
+
+    async createMultiple(data: CreateMultipleAnswersBodyType): Promise<CreateMultipleAnswersResponseType> {
+        try {
+            this.logger.log(`Creating multiple answers for questionBankId: ${data.questionBankId}`)
+
+            // Check if question exists
+            const questionExists = await this.answerRepository.checkQuestionExists(data.questionBankId)
+            if (!questionExists) {
+                throw new QuestionNotFoundException()
+            }
+
+            // Get question type for validation
+            const questionType = await this.answerRepository.getQuestionType(data.questionBankId)
+
+            const createdAnswers: any[] = []
+            const failedAnswers: { answerJp: string; reason: string }[] = []
+
+            for (const answerData of data.answers) {
+                try {
+                    // Validate Japanese content
+                    if (!this.isJapanese(answerData.answerJp)) {
+                        failedAnswers.push({
+                            answerJp: answerData.answerJp,
+                            reason: 'Nội dung câu trả lời phải là tiếng Nhật'
+                        })
+                        continue
+                    }
+
+                    // Validate MATCHING type: only 1 answer allowed
+                    if (questionType === QuestionType.MATCHING) {
+                        const existingAnswerCount = await this.answerRepository.countAnswersByQuestionId(data.questionBankId)
+                        if (existingAnswerCount >= 1) {
+                            failedAnswers.push({
+                                answerJp: answerData.answerJp,
+                                reason: 'MATCHING type chỉ cho phép tạo 1 answer duy nhất'
+                            })
+                            continue
+                        }
+                    }
+
+                    // Check if answer content already exists in this question
+                    const existingAnswer = await this.answerRepository.checkAnswerExists(data.questionBankId, answerData.answerJp)
+                    if (existingAnswer) {
+                        failedAnswers.push({
+                            answerJp: answerData.answerJp,
+                            reason: 'Câu trả lời đã tồn tại cho câu hỏi này'
+                        })
+                        continue
+                    }
+
+                    // Create answer with auto-generated answerKey
+                    const tempData = { ...answerData, questionBankId: data.questionBankId, answerKey: 'temp' }
+                    const answer = await this.answerRepository.create(tempData)
+
+                    // Generate answerKey with actual ID
+                    const answerKey = `answer.${answer.id}.text`
+                    await this.answerRepository.updateAnswerKey(answer.id, answerKey)
+                    answer.answerKey = answerKey
+
+                    // Create translations
+                    if (answerData.translations && 'meaning' in answerData.translations && answerData.translations.meaning && answerData.translations.meaning.length > 0) {
+                        await this.createTranslationKeys(answer.id, answerKey, answer.answerJp || '', answerData.translations)
+                    } else {
+                        // Create default Vietnamese translation if none provided
+                        try {
+                            await this.translationService.create({
+                                key: answerKey,
+                                languageId: 1, // Vietnamese
+                                value: answer.answerJp || ''
+                            })
+                        } catch (translationError) {
+                            this.logger.warn(`Failed to create default translation for answer ${answer.id}:`, translationError)
+                        }
+                    }
+
+                    const answerWithTranslations = await this.answerRepository.findById(answer.id)
+                    if (answerWithTranslations) {
+                        createdAnswers.push(answerWithTranslations)
+                    }
+
+                } catch (error: any) {
+                    this.logger.error(`Error creating answer "${answerData.answerJp}":`, error)
+                    failedAnswers.push({
+                        answerJp: answerData.answerJp,
+                        reason: error?.message || 'Lỗi không xác định khi tạo câu trả lời'
+                    })
+                }
+            }
+
+            const total = data.answers.length
+            const success = createdAnswers.length
+            const failed = failedAnswers.length
+
+            let statusCode = 201
+            let message = `Tạo thành công ${success}/${total} câu trả lời`
+
+            if (success === 0) {
+                statusCode = 400
+                message = 'Không thể tạo câu trả lời nào'
+            } else if (failed > 0) {
+                statusCode = 207 // Multi-status
+                message = `Tạo thành công ${success}/${total} câu trả lời`
+            }
+
+            return {
+                statusCode,
+                data: {
+                    created: createdAnswers,
+                    failed: failedAnswers,
+                    summary: {
+                        total,
+                        success,
+                        failed
+                    }
+                },
+                message
+            }
+
+        } catch (error) {
+            this.logger.error('Error creating multiple answers:', error)
+            if (error instanceof QuestionNotFoundException) {
+                throw error
+            }
+            throw new InvalidAnswerDataException('Lỗi khi tạo nhiều câu trả lời')
         }
     }
     //#endregion

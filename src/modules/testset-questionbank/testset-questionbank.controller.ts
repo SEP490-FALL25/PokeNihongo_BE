@@ -13,7 +13,8 @@ import {
     UpdateTestSetQuestionBankBodyType,
     GetTestSetQuestionBankByIdParamsType,
     GetTestSetQuestionBankByTestSetIdParamsType,
-    UpdateQuestionOrderType
+    UpdateQuestionOrderType,
+    CreateMultipleTestSetQuestionBankBodyType
 } from './entities/testset-questionbank.entities'
 import {
     TestSetQuestionBankSwaggerDTO,
@@ -21,7 +22,9 @@ import {
     UpdateTestSetQuestionBankSwaggerDTO,
     UpdateQuestionOrderSwaggerDTO,
     TestSetQuestionBankResponseSwaggerDTO,
-    TestSetQuestionBankListResponseSwaggerDTO
+    TestSetQuestionBankListResponseSwaggerDTO,
+    CreateMultipleTestSetQuestionBankSwaggerDTO,
+    CreateMultipleTestSetQuestionBankResponseSwaggerDTO
 } from './dto/testset-questionbank.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -47,11 +50,18 @@ export class TestSetQuestionBankController {
     @ApiBearerAuth()
     @ApiOperation({
         summary: 'Tạo liên kết TestSet và QuestionBank',
-        description: 'Tạo liên kết giữa một TestSet và một QuestionBank với thứ tự câu hỏi'
+        description: 'Tạo liên kết giữa một TestSet và một QuestionBank"'
     })
     @ApiBody({
         type: CreateTestSetQuestionBankSwaggerDTO,
-        description: 'Dữ liệu liên kết TestSet và QuestionBank mới'
+        description: 'Tạo liên kết giữa TestSet và QuestionBank. Hệ thống sẽ tự động kiểm tra tính tương thích giữa testsetType và questionType.' +
+            '\n\nQuy tắc tương thích:' +
+            '\n• Nếu testsetType = GENERAL → Cho phép mọi questionType' +
+            '\n• Nếu testsetType ≠ GENERAL → testsetType phải khớp với questionType' +
+            '\n\nQuy tắc Level:' +
+            '\n• Nếu testsetType = GENERAL → QuestionBank levelN ≤ TestSet levelN' +
+            '\n• Nếu testsetType ≠ GENERAL → QuestionBank levelN = TestSet levelN' +
+            '\n\nCác loại có sẵn: VOCABULARY | GRAMMAR | KANJI | LISTENING | READING | SPEAKING | GENERAL'
     })
     @ApiResponse({
         status: 201,
@@ -64,6 +74,46 @@ export class TestSetQuestionBankController {
     ): Promise<MessageResDTO> {
         return this.testSetQuestionBankService.create(body)
     }
+
+    @Post('multiple')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Tạo liên kết TestSet và nhiều QuestionBank',
+        description: 'Tạo liên kết giữa một TestSet và nhiều QuestionBank cùng lúc'
+    })
+    @ApiBody({
+        type: CreateMultipleTestSetQuestionBankSwaggerDTO,
+        description: 'Tạo liên kết giữa TestSet và nhiều QuestionBank cùng lúc. Hệ thống sẽ tự động kiểm tra tính tương thích giữa testsetType và questionType cho từng QuestionBank.' +
+            '\n\nQuy tắc tương thích:' +
+            '\n• Nếu testsetType = GENERAL → Cho phép mọi questionType' +
+            '\n• Nếu testsetType ≠ GENERAL → testsetType phải khớp với questionType' +
+            '\n\nQuy tắc Level:' +
+            '\n• Nếu testsetType = GENERAL → QuestionBank levelN ≤ TestSet levelN' +
+            '\n• Nếu testsetType ≠ GENERAL → QuestionBank levelN = TestSet levelN' +
+            '\n\nAuto-calculation:' +
+            '\n• questionOrder sẽ tự động tăng lên dựa trên số câu hỏi hiện có trong TestSet' +
+            '\n• Các QuestionBank sẽ được thêm theo thứ tự trong mảng' +
+            '\n\nResponse sẽ bao gồm:' +
+            '\n• Danh sách các liên kết tạo thành công' +
+            '\n• Danh sách các QuestionBank không thể tạo (với lý do)' +
+            '\n• Thống kê tổng quan' +
+            '\n\nCác loại có sẵn: VOCABULARY | GRAMMAR | KANJI | LISTENING | READING | SPEAKING | GENERAL'
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo liên kết thành công',
+        type: CreateMultipleTestSetQuestionBankResponseSwaggerDTO
+    })
+    async createMultiple(
+        @Body() body: CreateMultipleTestSetQuestionBankBodyType,
+        @ActiveUser('userId') userId: number
+    ): Promise<MessageResDTO> {
+        return this.testSetQuestionBankService.createMultiple(body)
+    }
+
+
+
+
 
     @Get(':id')
     @ApiBearerAuth()
@@ -81,8 +131,8 @@ export class TestSetQuestionBankController {
         description: 'Lấy thông tin thành công',
         type: TestSetQuestionBankResponseSwaggerDTO
     })
-    async findById(@Param() params: GetTestSetQuestionBankByIdParamsType): Promise<TestSetQuestionBankSwaggerDTO> {
-        return this.testSetQuestionBankService.findById(params.id)
+    async findById(@Param('id') id: string): Promise<TestSetQuestionBankSwaggerDTO> {
+        return this.testSetQuestionBankService.findById(Number(id))
     }
 
     @Get('testset/:testSetId')
@@ -91,18 +141,13 @@ export class TestSetQuestionBankController {
         summary: 'Lấy danh sách TestSetQuestionBank theo TestSet ID',
         description: 'Lấy tất cả liên kết TestSet và QuestionBank của một TestSet cụ thể'
     })
-    @ApiParam({
-        name: 'testSetId',
-        description: 'ID của TestSet',
-        example: 1
-    })
     @ApiResponse({
         status: 200,
         description: 'Lấy danh sách thành công',
         type: TestSetQuestionBankListResponseSwaggerDTO
     })
-    async findByTestSetId(@Param() params: GetTestSetQuestionBankByTestSetIdParamsType): Promise<MessageResDTO> {
-        return this.testSetQuestionBankService.findByTestSetId(params.testSetId)
+    async findByTestSetId(@Param('testSetId') testSetId: string): Promise<MessageResDTO> {
+        return this.testSetQuestionBankService.findByTestSetId(Number(testSetId))
     }
 
     @Put(':id')
@@ -110,11 +155,6 @@ export class TestSetQuestionBankController {
     @ApiOperation({
         summary: 'Cập nhật TestSetQuestionBank',
         description: 'Cập nhật thông tin liên kết giữa TestSet và QuestionBank'
-    })
-    @ApiParam({
-        name: 'id',
-        description: 'ID của TestSetQuestionBank',
-        example: 1
     })
     @ApiBody({
         type: UpdateTestSetQuestionBankSwaggerDTO,
@@ -126,10 +166,10 @@ export class TestSetQuestionBankController {
         type: TestSetQuestionBankResponseSwaggerDTO
     })
     async update(
-        @Param() params: GetTestSetQuestionBankByIdParamsType,
+        @Param('id') id: string,
         @Body() body: UpdateTestSetQuestionBankBodyType
     ): Promise<MessageResDTO> {
-        return this.testSetQuestionBankService.update(params.id, body)
+        return this.testSetQuestionBankService.update(Number(id), body)
     }
 
     @Put(':id/question-order')
@@ -165,19 +205,14 @@ export class TestSetQuestionBankController {
         summary: 'Xóa TestSetQuestionBank',
         description: 'Xóa liên kết giữa TestSet và QuestionBank'
     })
-    @ApiParam({
-        name: 'id',
-        description: 'ID của TestSetQuestionBank',
-        example: 1
-    })
     @ApiResponse({
         status: 200,
         description: 'Xóa thành công',
         type: TestSetQuestionBankResponseSwaggerDTO
     })
     @HttpCode(HttpStatus.OK)
-    async delete(@Param() params: GetTestSetQuestionBankByIdParamsType): Promise<MessageResDTO> {
-        return this.testSetQuestionBankService.delete(params.id)
+    async delete(@Param('id') id: string): Promise<MessageResDTO> {
+        return this.testSetQuestionBankService.delete(Number(id))
     }
 
     @Delete('testset/:testSetId')
@@ -186,18 +221,14 @@ export class TestSetQuestionBankController {
         summary: 'Xóa tất cả TestSetQuestionBank theo TestSet ID',
         description: 'Xóa tất cả liên kết TestSet và QuestionBank của một TestSet cụ thể'
     })
-    @ApiParam({
-        name: 'testSetId',
-        description: 'ID của TestSet',
-        example: 1
-    })
+  
     @ApiResponse({
         status: 200,
         description: 'Xóa thành công',
         type: TestSetQuestionBankResponseSwaggerDTO
     })
     @HttpCode(HttpStatus.OK)
-    async deleteByTestSetId(@Param() params: GetTestSetQuestionBankByTestSetIdParamsType): Promise<MessageResDTO> {
-        return this.testSetQuestionBankService.deleteByTestSetId(params.testSetId)
+    async deleteByTestSetId(@Param('testSetId') testSetId: string): Promise<MessageResDTO> {
+        return this.testSetQuestionBankService.deleteByTestSetId(Number(testSetId))
     }
 }

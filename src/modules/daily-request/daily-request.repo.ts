@@ -18,7 +18,7 @@ export type WhereDailyRequestType = {
 
 @Injectable()
 export class DailyRequestRepo {
-  constructor(private prismaService: PrismaService) {}
+  constructor(private prismaService: PrismaService) { }
 
   // Wrapper cho transaction
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
@@ -83,20 +83,20 @@ export class DailyRequestRepo {
     const client = prismaTx || this.prismaService
     return isHard
       ? this.prismaService.dailyRequest.delete({
-          where: {
-            id
-          }
-        })
+        where: {
+          id
+        }
+      })
       : this.prismaService.dailyRequest.update({
-          where: {
-            id,
-            deletedAt: null
-          },
-          data: {
-            deletedAt: new Date(),
-            deletedById
-          }
-        })
+        where: {
+          id,
+          deletedAt: null
+        },
+        data: {
+          deletedAt: new Date(),
+          deletedById
+        }
+      })
   }
 
   async list(pagination: PaginationQueryType, langId: number) {
@@ -212,15 +212,7 @@ export class DailyRequestRepo {
         deletedAt: null
       },
       include: {
-        reward: {
-          select: {
-            id: true,
-            name: true,
-            rewardItem: true,
-            rewardTarget: true,
-            rewardType: true
-          }
-        }
+        reward: true
       }
     })
   }

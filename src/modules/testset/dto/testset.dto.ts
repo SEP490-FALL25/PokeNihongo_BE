@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { TestSetStatus } from '@prisma/client'
+import { TestSetStatus, QuestionType } from '@prisma/client'
 
 export class TestSetSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của bộ đề thi' })
@@ -23,8 +23,8 @@ export class TestSetSwaggerDTO {
     @ApiPropertyOptional({ example: 3, description: 'Cấp độ JLPT (1-5)' })
     levelN?: number
 
-    @ApiProperty({ example: 'vocabulary', description: 'Loại đề thi (vocabulary, grammar, kanji, listening, reading, writing, speaking)' })
-    testType: string
+    @ApiProperty({ enum: QuestionType, example: QuestionType.VOCABULARY, description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL)' })
+    testType: QuestionType
 
     @ApiProperty({ enum: TestSetStatus, example: TestSetStatus.ACTIVE, description: 'Trạng thái bộ đề thi' })
     status: TestSetStatus
@@ -140,10 +140,11 @@ export class CreateTestSetSwaggerDTO {
     levelN?: number | null
 
     @ApiProperty({
-        example: 'vocabulary',
-        description: 'Loại đề thi (vocabulary, grammar, kanji, listening, reading, writing, speaking)'
+        enum: QuestionType,
+        example: QuestionType.VOCABULARY,
+        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL)'
     })
-    testType: string
+    testType: QuestionType
 
     @ApiPropertyOptional({
         enum: TestSetStatus,
@@ -192,10 +193,11 @@ export class UpdateTestSetSwaggerDTO {
     levelN?: number | null
 
     @ApiPropertyOptional({
-        example: 'grammar',
-        description: 'Loại đề thi (vocabulary, grammar, kanji, listening, reading, writing, speaking)'
+        enum: QuestionType,
+        example: QuestionType.GRAMMAR,
+        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL)'
     })
-    testType?: string
+    testType?: QuestionType
 
     @ApiPropertyOptional({
         enum: TestSetStatus,
@@ -218,8 +220,8 @@ export class GetTestSetListQuerySwaggerDTO {
     @ApiPropertyOptional({ example: '3', description: 'Lọc theo cấp độ JLPT (1-5)' })
     levelN?: string
 
-    @ApiPropertyOptional({ example: 'vocabulary', description: 'Lọc theo loại đề thi (vocabulary, grammar, kanji, listening, reading, writing, speaking)' })
-    testType?: string
+    @ApiPropertyOptional({ enum: QuestionType, example: QuestionType.VOCABULARY, description: 'Lọc theo loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL)' })
+    testType?: QuestionType
 
     @ApiPropertyOptional({ enum: TestSetStatus, example: TestSetStatus.ACTIVE, description: 'Lọc theo trạng thái bộ đề thi' })
     status?: TestSetStatus
@@ -253,7 +255,7 @@ export class TestSetListResponseSwaggerDTO {
                     id: 1,
                     name: 'Đề thi từ vựng N3 - Phần 1',
                     description: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản trong tiếng Nhật',
-                    testType: 'vocabulary',
+                    testType: 'VOCABULARY',
                     levelN: 3,
                     status: 'ACTIVE',
                     price: 50000

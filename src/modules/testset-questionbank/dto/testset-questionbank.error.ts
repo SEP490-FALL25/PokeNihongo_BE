@@ -28,6 +28,15 @@ export const InvalidTestSetQuestionBankDataException = new HttpException(
     HttpStatus.BAD_REQUEST
 )
 
+export const TestSetQuestionBankTypeIncompatibleException = new HttpException(
+    {
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: TEST_SET_QUESTIONBANK_MESSAGE.TYPE_INCOMPATIBLE,
+        error: 'TESTSET_QUESTIONBANK_TYPE_INCOMPATIBLE'
+    },
+    HttpStatus.BAD_REQUEST
+)
+
 export const TestSetNotFoundException = new HttpException(
     {
         statusCode: HttpStatus.NOT_FOUND,
