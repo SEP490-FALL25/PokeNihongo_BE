@@ -33,16 +33,11 @@ export class RewardRepo {
     prismaTx?: PrismaClient
   ): Promise<RewardType> {
     const client = prismaTx || this.prismaService
-    const { nameKey, ...restData } = data
     return client.reward.create({
       data: {
-        ...restData,
-        name: nameKey as any, // Map nameKey to name for Prisma
+        ...data,
         createdById
-      } as any
-    }).then((result: any) => {
-      const { name, ...rest } = result
-      return { ...rest, nameKey: name } as RewardType
+      }
     })
   }
 
@@ -59,20 +54,15 @@ export class RewardRepo {
     prismaTx?: PrismaClient
   ): Promise<RewardType> {
     const client = prismaTx || this.prismaService
-    const { nameKey, ...restData } = data
-    const updateData: any = { ...restData, updatedById }
-    if (nameKey !== undefined) {
-      updateData.name = nameKey
-    }
     return client.reward.update({
       where: {
         id,
         deletedAt: null
       },
-      data: updateData
-    } as any).then((result: any) => {
-      const { name, ...rest } = result
-      return { ...rest, nameKey: name } as RewardType
+      data: {
+        ...data,
+        updatedById
+      }
     })
   }
 
@@ -103,9 +93,8 @@ export class RewardRepo {
           deletedAt: new Date(),
           deletedById
         }
-      } as any)
-    const { name, ...rest } = result as any
-    return { ...rest, nameKey: name } as RewardType
+      })
+    return result
   }
 
   async list(pagination: PaginationQueryType) {
@@ -144,11 +133,6 @@ export class RewardRepo {
           id,
           deletedAt: null
         }
-      })
-      .then((result: any) => {
-        if (!result) return null
-        const { name, ...rest } = result
-        return { ...rest, nameKey: name } as RewardType
       })
   }
 }
