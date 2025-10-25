@@ -4,12 +4,6 @@ on:
   push:
     branches:
       - main
-      
-# --- THÊM PHẦN NÀY ---
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-# ---------------------
 
 jobs:
   build-and-deploy:
