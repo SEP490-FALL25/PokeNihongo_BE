@@ -42,31 +42,31 @@ export class RewardService {
   }
 
   async findById(id: number, lang: string = 'vi') {
-    const reward = await this.rewardRepo.findById(id)
-    if (!reward) {
-      throw new NotFoundRecordException()
-    }
-
     const langId = await this.languageRepo.getIdByCode(lang)
 
     if (!langId) {
       return {
-        data: reward,
+        data: null,
         message: this.i18nService.translate(RewardMessage.GET_SUCCESS, lang)
       }
     }
-    const nameTranslation = await this.translationRepo.findByLangAndKey(
-      langId,
-      reward.nameKey
-    )
-    const resultRes = {
-      ...reward,
-      nameTranslation: nameTranslation?.value ?? null
+
+    const reward = await this.rewardRepo.findByIdWithLangId(id, langId)
+    if (!reward) {
+      throw new NotFoundRecordException()
     }
+    // const nameTranslation = await this.translationRepo.findByLangAndKey(
+    //   langId,
+    //   reward.nameKey
+    // )
+    // const resultRes = {
+    //   ...reward,
+    //   nameTranslation: nameTranslation?.value ?? null
+    // }
 
     return {
       statusCode: HttpStatus.OK,
-      data: resultRes,
+      data: reward,
       message: this.i18nService.translate(RewardMessage.GET_SUCCESS, lang)
     }
   }
@@ -139,17 +139,19 @@ export class RewardService {
         await this.translationRepo.validateTranslationRecords(translationRecords)
 
         // Create or update translations with transaction
-        const translationPromises = translationRecords.map((record) =>
-          this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
-        )
-        await Promise.all(translationPromises)
+        // const translationPromises = translationRecords.map((record) =>
+        //   this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
+        // )
+        // await Promise.all(translationPromises)
 
         // Update reward with final nameKey
         const result = await this.rewardRepo.update(
           {
             id: createdReward.id,
             data: {
-              nameKey: fNameKey
+              nameKey: fNameKey,
+              nameTranslations: translationRecords,
+              rewardNameKey: fNameKey
             }
           },
           prismaTx
@@ -204,6 +206,7 @@ export class RewardService {
 
     try {
       return await this.rewardRepo.withTransaction(async (prismaTx) => {
+        let translationRecords: CreateTranslationBodyType[] = []
         // Get current record
         existingReward = await this.rewardRepo.findById(id)
         if (!existingReward) throw new NotFoundRecordException()
@@ -230,7 +233,7 @@ export class RewardService {
             if (missingLangs.length > 0) throw new LanguageNotExistToTranslateException()
 
             // Create translation records
-            const translationRecords: CreateTranslationBodyType[] = []
+            // const translationRecords: CreateTranslationBodyType[] = []
 
             // nameTranslations
             for (const t of data.nameTranslations) {
@@ -245,10 +248,10 @@ export class RewardService {
             await this.translationRepo.validateTranslationRecords(translationRecords)
 
             // Update translations with transaction
-            const translationPromises = translationRecords.map((record) =>
-              this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
-            )
-            await Promise.all(translationPromises)
+            // const translationPromises = translationRecords.map((record) =>
+            //   this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
+            // )
+            // await Promise.all(translationPromises)
           }
         }
 
@@ -257,7 +260,11 @@ export class RewardService {
           {
             id,
             updatedById,
-            data: dataUpdate
+            data: {
+              ...dataUpdate,
+              nameTranslations: data.nameTranslations ? translationRecords : [],
+              rewardNameKey: existingReward.nameKey
+            }
           },
           prismaTx
         )
