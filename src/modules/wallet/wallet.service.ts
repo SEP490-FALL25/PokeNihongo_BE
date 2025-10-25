@@ -1,5 +1,7 @@
+import { walletType } from '@/common/constants/wallet.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { WalletMessage } from '@/i18n/message-keys'
+import { UserRepo } from '@/modules/user/user.repo'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -7,7 +9,7 @@ import {
   isUniqueConstraintPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
-import { Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { WalletAlreadyExistsException } from './dto/wallet.error'
 import { CreateWalletBodyType, UpdateWalletBodyType } from './entities/wallet.entity'
 import { WalletRepo } from './wallet.repo'
@@ -16,8 +18,47 @@ import { WalletRepo } from './wallet.repo'
 export class WalletService {
   constructor(
     private walletRepo: WalletRepo,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly userRepo: UserRepo
   ) {}
+
+  // Generate wallets for all users (create missing wallet types per user)
+  async generateWalletForAllUsers(
+    { createdById }: { createdById: number },
+    lang: string = 'vi'
+  ) {
+    // We'll paginate through users to avoid loading all users into memory
+    const pageSize = 1000
+    let currentPage = 1
+
+    while (true) {
+      const usersPage = await this.userRepo.list({
+        currentPage,
+        pageSize,
+        qs: ''
+      })
+
+      for (const user of usersPage.results) {
+        // Reuse existing helper to ensure both wallets
+        // generateWalletByUserId is idempotent
+        try {
+          await this.generateWalletByUserId(user.id)
+        } catch (err) {
+          // ignore per-user errors so the batch continues; collect/logging could be added
+          continue
+        }
+      }
+
+      if (currentPage >= usersPage.pagination.totalPage) break
+      currentPage++
+    }
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: null,
+      message: this.i18nService.translate(WalletMessage.CREATE_SUCCESS, lang)
+    }
+  }
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.walletRepo.list(pagination)
@@ -54,6 +95,7 @@ export class WalletService {
         data
       })
       return {
+        statusCode: HttpStatus.CREATED,
         data: result,
         message: this.i18nService.translate(WalletMessage.CREATE_SUCCESS, lang)
       }
@@ -90,6 +132,7 @@ export class WalletService {
         data
       })
       return {
+        statusCode: HttpStatus.OK,
         data: wallet,
         message: this.i18nService.translate(WalletMessage.UPDATE_SUCCESS, lang)
       }
@@ -117,6 +160,7 @@ export class WalletService {
         deletedById
       })
       return {
+        statusCode: HttpStatus.OK,
         data: null,
         message: this.i18nService.translate(WalletMessage.DELETE_SUCCESS, lang)
       }
@@ -125,6 +169,55 @@ export class WalletService {
         throw new NotFoundRecordException()
       }
       throw error
+    }
+  }
+
+  async generateWalletByUserId(userId: number) {
+    const types = [walletType.FREE_COIN, walletType.COIN]
+    console.log(';log ne')
+
+    for (const type of types) {
+      try {
+        console.log('vo ne')
+
+        // Use dedicated repo method to check existence
+        const existing = await this.walletRepo.findByUserIdAndType(userId, type as any)
+        console.log('exist', existing)
+
+        if (existing) continue
+
+        await this.walletRepo.create({
+          createdById: userId,
+          data: {
+            userId,
+            type: type as any,
+            balance: 0
+          }
+        })
+      } catch (error) {
+        // If another process created the wallet concurrently, ignore unique constraint error
+        if (isUniqueConstraintPrismaError(error)) {
+          continue
+        }
+        console.error(
+          'Error in generateWalletByUserId for user',
+          userId,
+          'type',
+          type,
+          error
+        )
+        throw error
+      }
+    }
+  }
+
+  async getWalletsByUser(userId: number, lang: string = 'vi') {
+    const wallets = await this.walletRepo.findByUserId(userId)
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: wallets,
+      message: this.i18nService.translate(WalletMessage.GET_LIST_SUCCESS, lang)
     }
   }
 }

@@ -23,6 +23,7 @@ import {
   CreateWalletResDTO,
   GetWalletDetailResDTO,
   GetWalletParamsDTO,
+  GetWalletsWithUserResDTO,
   UpdateWalletBodyDTO,
   UpdateWalletResDTO
 } from './dto/walletzod-dto'
@@ -41,11 +42,32 @@ export class WalletController {
     return this.walletService.list(query, lang)
   }
 
+  @Get('user')
+  @IsPublic()
+  @ZodSerializerDto(GetWalletsWithUserResDTO)
+  getWalletsByUser(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
+    return this.walletService.getWalletsByUser(userId, lang)
+  }
+
   @Get(':walletId')
   @IsPublic()
   @ZodSerializerDto(GetWalletDetailResDTO)
   findById(@Param() params: GetWalletParamsDTO, @I18nLang() lang: string) {
     return this.walletService.findById(params.walletId, lang)
+  }
+
+  @Post('generate/users')
+  @ZodSerializerDto(MessageResDTO)
+  generateWalletForAllUsers(
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.walletService.generateWalletForAllUsers(
+      {
+        createdById: userId
+      },
+      lang
+    )
   }
 
   @Post()

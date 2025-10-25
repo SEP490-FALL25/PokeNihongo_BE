@@ -4,6 +4,7 @@ import {
   CreateWalletResSchema,
   GetWalletDetailResSchema,
   GetWalletParamsSchema,
+  GetWalletsWithUserResSchema,
   UpdateWalletBodySchema,
   UpdateWalletResSchema
 } from '../entities/wallet.entity'
@@ -19,3 +20,5 @@ export class UpdateWalletResDTO extends createZodDto(UpdateWalletResSchema) {}
 export class GetWalletParamsDTO extends createZodDto(GetWalletParamsSchema) {}
 
 export class GetWalletDetailResDTO extends createZodDto(GetWalletDetailResSchema) {}
+
+export class GetWalletsWithUserResDTO extends createZodDto(GetWalletsWithUserResSchema) {}

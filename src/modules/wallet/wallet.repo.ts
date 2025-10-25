@@ -1,6 +1,7 @@
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
+import { WalletTypeType } from '@/common/constants/wallet.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
@@ -111,6 +112,25 @@ export class WalletRepo {
     return this.prismaService.wallet.findUnique({
       where: {
         id,
+        deletedAt: null
+      }
+    })
+  }
+
+  findByUserIdAndType(userId: number, type: WalletTypeType): Promise<WalletType | null> {
+    return this.prismaService.wallet.findFirst({
+      where: {
+        userId,
+        type,
+        deletedAt: null
+      }
+    })
+  }
+
+  findByUserId(userId: number): Promise<WalletType[] | null> {
+    return this.prismaService.wallet.findMany({
+      where: {
+        userId,
         deletedAt: null
       }
     })

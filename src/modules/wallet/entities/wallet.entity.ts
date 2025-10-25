@@ -45,6 +45,11 @@ export const GetWalletParamsSchema = z
 
 export const GetWalletDetailResSchema = CreateWalletResSchema
 
+export const GetWalletsWithUserResSchema = z.object({
+  statusCode: z.number(),
+  data: z.array(WalletSchema),
+  message: z.string()
+})
 export type WalletType = z.infer<typeof WalletSchema>
 export type CreateWalletBodyType = z.infer<typeof CreateWalletBodySchema>
 export type UpdateWalletBodyType = z.infer<typeof UpdateWalletBodySchema>
