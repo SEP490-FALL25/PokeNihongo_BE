@@ -193,9 +193,9 @@ export class DailyRequestService {
         } catch (rollbackError) {}
       }
 
-      if (isUniqueConstraintPrismaError(error)) {
-        throw new DailyRequestAlreadyExistsException()
-      }
+      // if (isUniqueConstraintPrismaError(error)) {
+      //   throw new DailyRequestAlreadyExistsException()
+      // }
       if (isNotFoundPrismaError(error)) {
         throw new NotFoundRecordException()
       }

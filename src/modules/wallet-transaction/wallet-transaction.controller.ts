@@ -11,7 +11,6 @@ import {
   Delete,
   Get,
   Param,
-  Post,
   Put,
   Query,
   UseGuards
@@ -19,79 +18,61 @@ import {
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
-  CreatedRewardBodyInputDTO,
-  CreateRewardResDTO,
-  GetRewardDetailResDTO,
-  GetRewardParamsDTO,
-  UpdateRewardBodyInputDTO,
-  UpdateRewardResDTO
-} from './dto/reward.zod-dto'
-import { RewardService } from './reward.service'
+  GetWalletTransactionDetailResDTO,
+  GetWalletTransactionParamsDTO,
+  UpdateWalletTransactionBodyDTO,
+  UpdateWalletTransactionResDTO
+} from './dto/wallet-transaction.zod-dto'
+import { WalletTransactionService } from './wallet-transaction.service'
 
-@Controller('reward')
+@Controller('wallet-transaction')
 @UseGuards(AuthenticationGuard)
 @ApiBearerAuth()
-export class RewardController {
-  constructor(private readonly rewardService: RewardService) {}
+export class WalletTransactionController {
+  constructor(private readonly walletTransactionService: WalletTransactionService) {}
 
   @Get()
   @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
-    return this.rewardService.list(query, lang)
+    return this.walletTransactionService.list(query, lang)
   }
 
-  @Get(':rewardId')
+  @Get(':walletTransactionId')
   @IsPublic()
-  @ZodSerializerDto(GetRewardDetailResDTO)
-  findById(@Param() params: GetRewardParamsDTO, @I18nLang() lang: string) {
-    return this.rewardService.findById(params.rewardId, lang)
+  @ZodSerializerDto(GetWalletTransactionDetailResDTO)
+  findById(@Param() params: GetWalletTransactionParamsDTO, @I18nLang() lang: string) {
+    return this.walletTransactionService.findById(params.walletTransactionId, lang)
   }
 
-  @Post()
-  @ZodSerializerDto(CreateRewardResDTO)
-  create(
-    @Body() body: CreatedRewardBodyInputDTO,
-    @ActiveUser('userId') userId: number,
-    @I18nLang() lang: string
-  ) {
-    return this.rewardService.create(
-      {
-        data: body,
-        createdById: userId
-      },
-      lang
-    )
-  }
-
-  @Put(':rewardId')
-  @ZodSerializerDto(UpdateRewardResDTO)
+  @Put(':walletTransactionId')
+  @ZodSerializerDto(UpdateWalletTransactionResDTO)
   update(
-    @Body() body: UpdateRewardBodyInputDTO,
-    @Param() params: GetRewardParamsDTO,
+    @Body() body: UpdateWalletTransactionBodyDTO,
+    @Param() params: GetWalletTransactionParamsDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.rewardService.update(
+    return this.walletTransactionService.update(
       {
         data: body,
-        id: params.rewardId,
+        id: params.walletTransactionId,
         updatedById: userId
       },
       lang
     )
   }
 
-  @Delete(':rewardId')
+  @Delete(':walletTransactionId')
   @ZodSerializerDto(MessageResDTO)
   delete(
-    @Param() params: GetRewardParamsDTO,
+    @Param() params: GetWalletTransactionParamsDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.rewardService.delete(
+    return this.walletTransactionService.delete(
       {
-        id: params.rewardId,
+        id: params.walletTransactionId,
         deletedById: userId
       },
       lang

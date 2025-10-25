@@ -82,7 +82,7 @@ export const GetDailyRequestDetailResSchema = z.object({
     descriptionTranslation: z.string().nullable().optional(),
     reward: RewardSchema.pick({
       id: true,
-      name: true,
+      nameKey: true,
       rewardItem: true,
       rewardTarget: true,
       rewardType: true
