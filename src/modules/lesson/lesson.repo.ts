@@ -48,15 +48,7 @@ export class LessonRepository {
                             slug: true,
                         }
                     },
-                    reward: {
-                        select: {
-                            id: true,
-                            name: true,
-                            rewardType: true,
-                            rewardItem: true,
-                            rewardTarget: true,
-                        }
-                    },
+                    reward: true,
                     createdBy: {
                         select: {
                             id: true,
@@ -92,15 +84,7 @@ export class LessonRepository {
                         slug: true,
                     }
                 },
-                reward: {
-                    select: {
-                        id: true,
-                        name: true,
-                        rewardType: true,
-                        rewardItem: true,
-                        rewardTarget: true,
-                    }
-                },
+                reward: true,
                 createdBy: {
                     select: {
                         id: true,
@@ -123,15 +107,7 @@ export class LessonRepository {
                         slug: true,
                     }
                 },
-                reward: {
-                    select: {
-                        id: true,
-                        name: true,
-                        rewardType: true,
-                        rewardItem: true,
-                        rewardTarget: true,
-                    }
-                },
+                reward: true,
                 createdBy: {
                     select: {
                         id: true,
@@ -157,15 +133,7 @@ export class LessonRepository {
                         slug: true,
                     }
                 },
-                reward: {
-                    select: {
-                        id: true,
-                        name: true,
-                        rewardType: true,
-                        rewardItem: true,
-                        rewardTarget: true,
-                    }
-                },
+                reward: true,
                 createdBy: {
                     select: {
                         id: true,
@@ -209,15 +177,7 @@ export class LessonRepository {
                         slug: true,
                     }
                 },
-                reward: {
-                    select: {
-                        id: true,
-                        name: true,
-                        rewardType: true,
-                        rewardItem: true,
-                        rewardTarget: true,
-                    }
-                },
+                reward: true,
                 createdBy: {
                     select: {
                         id: true,

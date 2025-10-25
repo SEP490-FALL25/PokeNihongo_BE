@@ -1,6 +1,7 @@
 import { RewardTarget, RewardType } from '@/common/constants/reward.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { RewardMessage } from '@/i18n/message-keys'
+import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
@@ -9,7 +10,7 @@ patchNestJsSwagger()
 
 export const RewardSchema = z.object({
   id: z.number(),
-  name: z.string().nonempty(RewardMessage.NAME_REQUIRED),
+  nameKey: z.string(),
   rewardType: z.enum([
     RewardType.LESSON,
     RewardType.DAILY_REQUEST,
@@ -33,8 +34,17 @@ export const RewardSchema = z.object({
   updatedAt: z.date()
 })
 
+export const CreateRewardBodyInputSchema = RewardSchema.pick({
+  rewardType: true,
+  rewardItem: true,
+  rewardTarget: true
+}).strict()
+  .extend({
+    nameTranslations: TranslationInputSchema,
+  })
+
 export const CreateRewardBodySchema = RewardSchema.pick({
-  name: true,
+  nameKey: true,
   rewardType: true,
   rewardItem: true,
   rewardTarget: true
@@ -46,7 +56,9 @@ export const CreateRewardResSchema = z.object({
   message: z.string()
 })
 
-export const UpdateRewardBodySchema = CreateRewardBodySchema
+export const UpdateRewardBodyInputSchema = CreateRewardBodyInputSchema.partial().strict()
+
+export const UpdateRewardBodySchema = CreateRewardBodySchema.partial().strict()
 
 export const UpdateRewardResSchema = CreateRewardResSchema
 
@@ -59,10 +71,12 @@ export const GetRewardParamsSchema = z
 export const GetRewardDetailResSchema = CreateRewardResSchema
 
 export type RewardType = z.infer<typeof RewardSchema>
+export type CreateRewardBodyInputType = z.infer<typeof CreateRewardBodyInputSchema>
 export type CreateRewardBodyType = z.infer<typeof CreateRewardBodySchema>
+export type UpdateRewardBodyInputType = z.infer<typeof UpdateRewardBodyInputSchema>
 export type UpdateRewardBodyType = z.infer<typeof UpdateRewardBodySchema>
 export type GetRewardParamsType = z.infer<typeof GetRewardParamsSchema>
 export type GetRewardDetailResType = z.infer<typeof GetRewardDetailResSchema>
 
 type RewardFieldType = keyof z.infer<typeof RewardSchema>
-export const REWARD_FIELDS = Object.keys(RewardSchema.shape) as RewardFieldType[]
+export const REWARD_FIELDS = [...Object.keys(RewardSchema.shape), 'nameTranslation'] as RewardFieldType[]
