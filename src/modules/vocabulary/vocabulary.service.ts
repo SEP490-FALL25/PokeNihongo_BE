@@ -831,39 +831,8 @@ export class VocabularyService {
             } else {
                 // Generate audio using text-to-speech if no audio file provided
                 this.logger.log('No audio file provided, generating audio using TTS...')
-                try {
-                    // 1. Generate audio using TTS
-                    const ttsResult = await this.textToSpeechService.convertTextToSpeech(
-                        data.word_jp,
-                        { languageCode: 'ja-JP', audioEncoding: 'MP3' }
-                    )
-
-                    // 2. Create a buffer file to upload
-                    const audioBuffer = ttsResult.audioContent
-                    const fileName = `vocabulary_${data.word_jp}_${Date.now()}.mp3`
-
-                    // Convert buffer to Multer file-like object
-                    const generatedAudioFile: Express.Multer.File = {
-                        buffer: audioBuffer,
-                        originalname: fileName,
-                        mimetype: 'audio/mpeg',
-                        fieldname: 'audioFile',
-                        encoding: '7bit',
-                        size: audioBuffer.length,
-                        stream: null as any,
-                        destination: '',
-                        filename: fileName,
-                        path: ''
-                    }
-
-                    // 3. Upload to Cloudinary
-                    const uploadResult = await this.uploadService.uploadFile(generatedAudioFile, 'vocabulary/audio')
-                    audioUrl = uploadResult.url
-                    this.logger.log(`Audio generated via TTS and uploaded: ${audioUrl}`)
-                } catch (ttsError) {
-                    this.logger.warn('Failed to generate audio using TTS:', ttsError)
-                    // Continue without audio if TTS fails
-                }
+                const generatedAudioUrl = await this.textToSpeechService.generateAudioFromText(data.word_jp, 'vocabulary', 'vocabulary')
+                audioUrl = generatedAudioUrl || undefined
             }
 
             if (imageFile) {

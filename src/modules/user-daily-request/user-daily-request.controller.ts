@@ -22,7 +22,6 @@ import {
   CreatedUserDailyRequestBodyDTO,
   CreateUserDailyRequestResDTO,
   GetListUserDailyRequestTodayDetailResDTO,
-  GetRewardListUserDailyRequestTodayDetailResDTO,
   GetUserDailyRequestDetailResDTO,
   GetUserDailyRequestParamsDTO,
   UpdateUserDailyRequestBodyDTO,
@@ -41,12 +40,6 @@ export class UserDailyRequestController {
   @ZodSerializerDto(PaginationResponseSchema)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.userDailyReqService.list(query, lang)
-  }
-
-  @Post('attendence')
-  @ZodSerializerDto(GetRewardListUserDailyRequestTodayDetailResDTO)
-  presentUserToday(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
-    return this.userDailyReqService.presentUserToday(userId, lang)
   }
 
   @Get('user-today')

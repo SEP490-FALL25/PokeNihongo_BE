@@ -216,7 +216,12 @@ export const jaMessages = {
     INVALID_DATA: '無効なデータが提供されました',
     NOT_FOUND: 'レコードが見つかりません',
     ALREADY_EXISTS: 'レコードは既に存在します',
-    INVALID_ID: '無効なIDです'
+    INVALID_ID: '無効なIDです',
+    GET_LIST_SUCCESS: 'レコードリストの取得に成功しました',
+    GET_SUCCESS: 'レコードの取得に成功しました',
+    CREATE_SUCCESS: 'レコードの作成に成功しました',
+    UPDATE_SUCCESS: 'レコードの更新に成功しました',
+    DELETE_SUCCESS: 'レコードの削除に成功しました'
   },
   achievement_group: {
     CREATE_SUCCESS: '実績グループの作成が完了しました',
@@ -261,5 +266,33 @@ export const jaMessages = {
     GET_LIST_SUCCESS: '実績リストを取得しました',
     NOT_FOUND: '実績が見つかりません',
     ALREADY_EXISTS: '実績は既に存在します'
+  },
+  daily_request_category: {
+    CREATE_SUCCESS: 'デイリーリクエストカテゴリの作成が完了しました',
+    UPDATE_SUCCESS: 'デイリーリクエストカテゴリの更新が完了しました',
+    DELETE_SUCCESS: 'デイリーリクエストカテゴリの削除が完了しました',
+    GET_SUCCESS: 'デイリーリクエストカテゴリ情報を取得しました',
+    GET_LIST_SUCCESS: 'デイリーリクエストカテゴリリストを取得しました',
+    NOT_FOUND: 'デイリーリクエストカテゴリが見つかりません',
+    ALREADY_EXISTS: 'デイリーリクエストカテゴリは既に存在します'
+  },
+  attendance_config: {
+    CREATE_SUCCESS: '出席設定の作成が完了しました',
+    UPDATE_SUCCESS: '出席設定の更新が完了しました',
+    DELETE_SUCCESS: '出席設定の削除が完了しました',
+    GET_SUCCESS: '出席設定情報を取得しました',
+    GET_LIST_SUCCESS: '出席設定リストを取得しました',
+    NOT_FOUND: '出席設定が見つかりません',
+    ALREADY_EXISTS: '出席設定は既に存在します'
+  },
+  attendance: {
+    CREATE_SUCCESS: '出席記録の作成が完了しました',
+    UPDATE_SUCCESS: '出席記録の更新が完了しました',
+    DELETE_SUCCESS: '出席記録の削除が完了しました',
+    GET_SUCCESS: '出席記録情報を取得しました',
+    GET_LIST_SUCCESS: '出席記録リストを取得しました',
+    NOT_FOUND: '出席記録が見つかりません',
+    ALREADY_EXISTS: '出席記録は既に存在します',
+    CHECKIN_ALREADY: '本日は既に出席しています'
   }
 }

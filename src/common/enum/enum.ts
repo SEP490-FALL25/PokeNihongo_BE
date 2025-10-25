@@ -125,3 +125,23 @@ export enum VocabularySortOrder {
     ASC = 'asc',
     DESC = 'desc'
 }
+
+// QuestionType enum
+export enum QuestionType {
+    VOCABULARY = 'VOCABULARY', // Từ vựng
+    GRAMMAR = 'GRAMMAR', // Ngữ pháp
+    KANJI = 'KANJI', // Kanji
+    LISTENING = 'LISTENING', // Nghe hiểu
+    READING = 'READING', // Đọc hiểu
+    WRITING = 'WRITING', // Viết
+    SPEAKING = 'SPEAKING', // Nói
+    CONVERSATION = 'CONVERSATION', // Hội thoại
+    GENERAL = 'GENERAL' // Tổng hợp
+}
+
+// QuestionBankStatus enum
+export enum QuestionBankStatusEnum {
+    DRAFT = 'DRAFT', // Bản nháp
+    ACTIVE = 'ACTIVE', // Đang hoạt động
+    INACTIVE = 'INACTIVE' // Không hoạt động
+}

@@ -282,13 +282,40 @@ export class TranslationRepository {
 
     // Check conflicts với existing records
     for (const existing of existingTranslations) {
-      const conflictRecord = translationRecords.find(
-        (r) =>
-          r.value.trim().toLowerCase() === existing.value.toLowerCase() &&
-          !(r.languageId === existing.languageId && r.key === existing.key)
-      )
+      const conflictRecord = translationRecords.find((r) => {
+        // value must match (case-insensitive) and language must be the same
+        if (r.value.trim().toLowerCase() !== existing.value.toLowerCase()) return false
+        if (r.languageId !== existing.languageId) return false
+
+        // if exact same key -> it's the same translation record, allow
+        if (r.key === existing.key) return false
+
+        // try to parse keys as table.field.id
+        const parse = (k: string) => {
+          const parts = k.split('.')
+          if (parts.length < 3) return null
+          const table = parts[0]
+          const field = parts[1]
+          const id = parts.slice(2).join('.') // allow ids with dots, but last part(s)
+          return { table, field, id }
+        }
+
+        const a = parse(r.key)
+        const b = parse(existing.key)
+
+        // If both parsed successfully, conflict only when same table+field but different id
+        if (a && b) {
+          if (a.table === b.table && a.field === b.field && a.id !== b.id) return true
+          return false
+        }
+
+        // If parsing failed for either key, fallback: do not treat as conflict unless keys are exactly equal (already handled)
+        return false
+      })
 
       if (conflictRecord) {
+        console.log(existing)
+
         throw new DuplicateRecordException() // conflict với database
       }
     }

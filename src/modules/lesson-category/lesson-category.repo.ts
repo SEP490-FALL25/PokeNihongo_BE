@@ -26,16 +26,6 @@ export class LessonCategoryRepository {
     const [data, total] = await Promise.all([
       this.prismaService.lessonCategory.findMany({
         where,
-        include: {
-          lessons: {
-            select: {
-              id: true,
-              slug: true,
-              titleKey: true,
-              isPublished: true,
-            }
-          }
-        },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,

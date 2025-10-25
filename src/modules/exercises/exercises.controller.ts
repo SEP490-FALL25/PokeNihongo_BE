@@ -1,130 +1,113 @@
-import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Param,
-    Post,
-    Put,
-    Query,
-} from '@nestjs/common'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiConsumes } from '@nestjs/swagger'
-import { UploadedFile, UseInterceptors } from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
-import { ZodSerializerDto } from 'nestjs-zod'
-import { AuthenticationGuard } from '@/common/guards/authentication.guard'
-import { UseGuards } from '@nestjs/common'
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiQuery } from '@nestjs/swagger'
+import { AccessTokenGuard } from '@/common/guards/access-token.guard'
+import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { ExercisesService } from './exercises.service'
-import {
-    GetExercisesByIdParamsDTO,
-    GetExercisesListQueryDTO,
-} from './dto/exercises.zod-dto'
-import {
-    ExercisesResponseSwaggerDTO,
-    ExercisesListResponseSwaggerDTO,
-    GetExercisesListQuerySwaggerDTO,
-} from './dto/exercises.dto'
-import {
-    CreateExercisesWithMeaningsBodyDTO,
-    CreateExercisesWithMeaningsBodyType,
-    ExercisesWithMeaningsResponseDTO,
-    ExercisesWithMeaningsResDTO,
-    CreateExercisesWithMeaningsSwaggerDTO,
-    ExercisesWithMeaningsResponseSwaggerDTO
-} from './dto/exercises-with-meanings.dto'
-import {
-    UpdateExercisesWithMeaningsBodyDTO,
-    UpdateExercisesWithMeaningsBodyType,
-    UpdateExercisesWithMeaningsResponseDTO,
-    UpdateExercisesWithMeaningsResDTO,
-    UpdateExercisesWithMeaningsSwaggerDTO,
-    UpdateExercisesWithMeaningsResponseSwaggerDTO
-} from './dto/update-exercises-with-meanings.dto'
-import { MessageResDTO } from '@/shared/dtos/response.dto'
-import {
-    ExercisesResponseDTO,
-    ExercisesListResponseDTO,
-} from './dto/exercises.response.dto'
+import { CreateExercisesSwaggerDTO, UpdateExercisesSwaggerDTO, GetExercisesListQuerySwaggerDTO, ExercisesResponseSwaggerDTO, ExercisesListResponseSwaggerDTO } from './dto/exercises.dto'
+import { CreateExercisesBodyType, UpdateExercisesBodyType, GetExercisesListQueryType } from './entities/exercises.entities'
 
 @ApiTags('Exercises')
 @Controller('exercises')
-@UseGuards(AuthenticationGuard)
+@UseGuards(AccessTokenGuard)
 @ApiBearerAuth()
 export class ExercisesController {
     constructor(private readonly exercisesService: ExercisesService) { }
 
-    @Post('with-meanings')
-    @UseInterceptors(FileInterceptor('audioFile'))
+    @Post()
     @ApiOperation({
         summary: 'Tạo bài tập mới',
-        description: 'Tạo một bài tập mới trong một lần gọi API. Có thể upload file âm thanh cùng lúc.'
+        description: 'Tạo một bài tập mới với loại bài tập, nội dung và liên kết với bài học. Hệ thống sẽ kiểm tra tính tương thích level giữa Lesson và TestSet.'
     })
-    @ApiConsumes('multipart/form-data')
-    @ApiBody({ type: CreateExercisesWithMeaningsSwaggerDTO })
+    @ApiBody({
+        type: CreateExercisesSwaggerDTO,
+        description: 'Dữ liệu bài tập mới cần tạo. Hệ thống sẽ tự động kiểm tra level tương thích:' +
+            '\n\nQuy tắc Level:' +
+            '\n• Lesson.levelJlpt phải khớp với TestSet.levelN' +
+            '\n• Chỉ có thể tạo Exercise khi level của Lesson và TestSet khớp nhau' +
+            '\n\nLoại bài tập: QUIZ, multiple_choice, matching, listening, speaking'
+    })
     @ApiResponse({
         status: 201,
-        description: 'Tạo bài tập cùng với nghĩa thành công',
-        type: ExercisesWithMeaningsResponseSwaggerDTO
+        description: 'Tạo bài tập thành công',
+        type: ExercisesResponseSwaggerDTO
     })
-    @ZodSerializerDto(ExercisesWithMeaningsResDTO)
-    async createExercisesWithMeanings(
-        @Body() body: CreateExercisesWithMeaningsBodyType,
-        @UploadedFile() audioFile?: Express.Multer.File
-    ) {
-        return await this.exercisesService.createExercisesWithMeanings(body, audioFile)
+    async create(@Body() body: CreateExercisesBodyType, @ActiveUser('userId') userId: number) {
+        return await this.exercisesService.create(body, userId)
     }
 
-
     @Get()
-    @ApiOperation({ summary: 'Lấy danh sách bài tập với phân trang và tìm kiếm' })
-    @ApiResponse({ status: 200, description: 'Lấy danh sách bài tập thành công', type: ExercisesListResponseSwaggerDTO })
+    @ApiOperation({
+        summary: 'Lấy danh sách bài tập với phân trang và tìm kiếm',
+        description: 'Lấy danh sách tất cả bài tập với khả năng phân trang, lọc theo loại bài tập, bài học và tìm kiếm'
+    })
     @ApiQuery({ type: GetExercisesListQuerySwaggerDTO })
-    @ZodSerializerDto(ExercisesListResponseDTO)
-    async getExercisesList(@Query() query: GetExercisesListQueryDTO) {
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách bài tập thành công',
+        type: ExercisesListResponseSwaggerDTO
+    })
+    async getExercisesList(@Query() query: GetExercisesListQueryType) {
         return await this.exercisesService.getExercisesList(query)
     }
 
     @Get(':id')
-    @ApiOperation({ summary: 'Lấy thông tin bài tập theo ID' })
-    @ApiResponse({ status: 200, description: 'Lấy thông tin bài tập thành công', type: ExercisesResponseSwaggerDTO })
-    @ZodSerializerDto(ExercisesResponseDTO)
-    async getExercisesById(@Param() params: GetExercisesByIdParamsDTO) {
-        return await this.exercisesService.getExercisesById(params)
-    }
-
-    @Put(':identifier/with-meanings')
-    @UseInterceptors(FileInterceptor('audioFile'))
     @ApiOperation({
-        summary: 'Cập nhật bài tập',
-        description: 'Cập nhật thông tin bài tập trong một lần gọi API. Chỉ có thể sử dụng ID (số) để cập nhật. Có thể upload file âm thanh cùng lúc.'
-    })
-    @ApiConsumes('multipart/form-data')
-    @ApiBody({
-        type: UpdateExercisesWithMeaningsSwaggerDTO,
-        description: 'Dữ liệu cập nhật bài tập'
+        summary: 'Lấy thông tin bài tập theo ID',
+        description: 'Lấy thông tin chi tiết của một bài tập cụ thể theo ID'
     })
     @ApiResponse({
         status: 200,
-        description: 'Cập nhật bài tập cùng với nghĩa thành công',
-        type: UpdateExercisesWithMeaningsResponseSwaggerDTO
+        description: 'Lấy thông tin bài tập thành công',
+        type: ExercisesResponseSwaggerDTO
     })
-    @ZodSerializerDto(UpdateExercisesWithMeaningsResDTO)
-    async updateExercisesWithMeanings(
-        @Param('identifier') identifier: string,
-        @Body() body: UpdateExercisesWithMeaningsBodyType,
-        @UploadedFile() audioFile?: Express.Multer.File
-    ) {
-        return await this.exercisesService.updateExercisesWithMeanings(identifier, body, audioFile)
+    async getExercisesById(@Param('id', ParseIntPipe) id: number) {
+        return await this.exercisesService.getExercisesById(id)
+    }
+
+    @Get('lesson/:lessonId')
+    @ApiOperation({
+        summary: 'Lấy danh sách bài tập theo bài học',
+        description: 'Lấy tất cả bài tập thuộc về một bài học cụ thể'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách bài tập theo bài học thành công',
+        type: [ExercisesResponseSwaggerDTO]
+    })
+    async getExercisesByLessonId(@Param('lessonId', ParseIntPipe) lessonId: number) {
+        return await this.exercisesService.getExercisesByLessonId(lessonId)
+    }
+
+    @Put(':id')
+    @ApiOperation({
+        summary: 'Cập nhật bài tập',
+        description: 'Cập nhật thông tin của một bài tập cụ thể theo ID'
+    })
+    @ApiBody({
+        type: UpdateExercisesSwaggerDTO,
+        description: 'Dữ liệu bài tập cần cập nhật'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật bài tập thành công',
+        type: ExercisesResponseSwaggerDTO
+    })
+    async update(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateExercisesBodyType) {
+        return await this.exercisesService.update(id, body)
     }
 
     @Delete(':id')
-    @HttpCode(HttpStatus.NO_CONTENT)
-    @ApiOperation({ summary: 'Xóa bài tập' })
-    @ApiResponse({ status: 204, description: 'Xóa bài tập thành công' })
-    @ZodSerializerDto(MessageResDTO)
-    async deleteExercises(@Param() params: GetExercisesByIdParamsDTO) {
-        return await this.exercisesService.deleteExercises(params.id)
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Xóa bài tập',
+        description: 'Xóa một bài tập cụ thể theo ID'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa bài tập thành công',
+        type: ExercisesResponseSwaggerDTO
+    })
+    async delete(@Param('id', ParseIntPipe) id: number) {
+        return await this.exercisesService.delete(id)
     }
 }

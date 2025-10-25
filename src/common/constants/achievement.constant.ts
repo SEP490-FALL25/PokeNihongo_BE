@@ -20,3 +20,21 @@ export const AchievementType = {
 } as const
 
 export type AchievementTypeType = keyof typeof AchievementType
+
+export const dailyRequestType = {
+  DAILY_LOGIN: 'DAILY_LOGIN',
+  DAILY_LESSON: 'DAILY_LESSON',
+  DAILY_EXERCISE: 'DAILY_EXERCISE',
+  STREAK_LOGIN: 'STREAK_LOGIN',
+  STREAK_LESSON: 'STREAK_LESSON',
+  STREAK_EXCERCISE: 'STREAK_EXCERCISE'
+} as const
+
+export type DailyRequestTypeType = keyof typeof dailyRequestType
+
+export const categoryType = {
+  DAILY: 'DAILY',
+  WEEKLY: 'WEEKLY',
+  MONTHLY: 'MONTHLY'
+} as const
+export type CategoryTypeType = keyof typeof categoryType
