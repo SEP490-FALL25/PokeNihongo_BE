@@ -324,7 +324,7 @@ model Vocabulary {
 
 model Reward {
   id           Int          @id @default(autoincrement())
-  name         String
+  nameKey         String
   rewardType   RewardType   @default(LESSON)
   rewardItem   Int
   rewardTarget RewardTarget @default(EXP)

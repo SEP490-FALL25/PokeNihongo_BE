@@ -32,7 +32,7 @@ import {
 @UseGuards(AuthenticationGuard)
 @ApiBearerAuth()
 export class DailyRequestController {
-  constructor(private readonly dailyRequestService: DailyRequestService) {}
+  constructor(private readonly dailyRequestService: DailyRequestService) { }
 
   @Get()
   @IsPublic()

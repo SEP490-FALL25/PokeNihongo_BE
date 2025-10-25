@@ -7,11 +7,11 @@ import { PaginationResponseSchema } from '@/shared/models/response.model'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
-  CreatedRewardBodyDTO,
+  CreatedRewardBodyInputDTO,
   CreateRewardResDTO,
   GetRewardDetailResDTO,
   GetRewardParamsDTO,
-  UpdateRewardBodyDTO,
+  UpdateRewardBodyInputDTO,
   UpdateRewardResDTO
 } from './dto/reward.zod-dto'
 import { RewardService } from './reward.service'
@@ -41,7 +41,7 @@ export class RewardController {
   @Post()
   @ZodSerializerDto(CreateRewardResDTO)
   create(
-    @Body() body: CreatedRewardBodyDTO,
+    @Body() body: CreatedRewardBodyInputDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
@@ -57,7 +57,7 @@ export class RewardController {
   @Put(':rewardId')
   @ZodSerializerDto(UpdateRewardResDTO)
   update(
-    @Body() body: UpdateRewardBodyDTO,
+    @Body() body: UpdateRewardBodyInputDTO,
     @Param() params: GetRewardParamsDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
