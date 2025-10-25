@@ -37,16 +37,6 @@ export class QuestionBankRepository {
                 skip,
                 take: pageSize,
                 orderBy: { createdAt: 'desc' },
-                include: {
-                    _count: {
-                        select: {
-                            answers: true,
-                            userAnswerLogs: true,
-                            userSpeakingAttempts: true,
-                            testSetQuestionBanks: true,
-                        },
-                    },
-                },
             }),
             this.prisma.questionBank.count({ where }),
         ])
