@@ -30,13 +30,6 @@ jobs:
       - name: Build project
         run: pnpm run build
 
-      - name: 🧪 Debug secrets
-        run: |
-          echo "Host: ${{ secrets.VPS_HOST }}"
-          echo "User: ${{ secrets.VPS_USER }}"
-          echo "Key length: $(echo "${{ secrets.VPS_SSH_KEY }}" | wc -c)"
-
-
       - name: Upload dist folder to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
