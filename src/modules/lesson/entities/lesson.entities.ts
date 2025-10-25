@@ -1,130 +1,136 @@
-import { z } from 'zod'
 import { LessonSortField, SortOrder } from '@/common/enum/enum'
+import { RewardSchema } from '@/modules/reward/entities/reward.entity'
+import { z } from 'zod'
 
 // Lesson Entity Types
 export const LessonType = z.object({
-    id: z.number(),
-    slug: z.string(),
-    titleKey: z.string(),
-    levelJlpt: z.number().nullable(),
-    estimatedTimeMinutes: z.number(),
-    lessonOrder: z.number(),
-    isPublished: z.boolean(),
-    publishedAt: z.date().nullable(),
-    version: z.string(),
-    lessonCategoryId: z.number(),
-    rewardId: z.number().nullable(),
-    createdById: z.number(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
+  id: z.number(),
+  slug: z.string(),
+  titleKey: z.string(),
+  levelJlpt: z.number().nullable(),
+  estimatedTimeMinutes: z.number(),
+  lessonOrder: z.number(),
+  isPublished: z.boolean(),
+  publishedAt: z.date().nullable(),
+  version: z.string(),
+  lessonCategoryId: z.number(),
+  rewardId: z.number().nullable(),
+  createdById: z.number(),
+  createdAt: z.date(),
+  updatedAt: z.date()
 })
 
 export const LessonWithRelationsType = LessonType.extend({
-    lessonCategory: z.object({
-        id: z.number(),
-        nameKey: z.string(),
-        slug: z.string(),
-    }).optional(),
-    reward: z.object({
-        id: z.number(),
-        name: z.string(),
-        rewardType: z.string(),
-        rewardItem: z.number(),
-        rewardTarget: z.string(),
-    }).nullable(),
-    createdBy: z.object({
-        id: z.number(),
-        name: z.string(),
-        email: z.string(),
-    }).optional(),
+  lessonCategory: z
+    .object({
+      id: z.number(),
+      nameKey: z.string(),
+      slug: z.string()
+    })
+    .optional(),
+  reward: RewardSchema.nullable(),
+  createdBy: z
+    .object({
+      id: z.number(),
+      name: z.string(),
+      email: z.string()
+    })
+    .optional()
 })
 
 // Request/Response Types
 export const CreateLessonBodyType = z.object({
-    slug: z.preprocess(
-        (val) => val === '' ? undefined : val,
-        z.string().min(1).max(200).optional()
-    ),
-    titleJp: z.string().min(1).max(500),
-    levelJlpt: z.number().min(1).max(5).optional(),
-    estimatedTimeMinutes: z.number().min(1).max(480).default(30),
-    lessonOrder: z.number().min(0).default(0),
-    isPublished: z.boolean().default(false),
-    version: z.string().default('1.0.0'),
-    lessonCategoryId: z.number(),
-    rewardId: z.number().optional(),
-    translations: z.object({
-        meaning: z.array(z.object({
-            language_code: z.string(),
-            value: z.string()
-        }))
-    }).optional(),
+  slug: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.string().min(1).max(200).optional()
+  ),
+  titleJp: z.string().min(1).max(500),
+  levelJlpt: z.number().min(1).max(5).optional(),
+  estimatedTimeMinutes: z.number().min(1).max(480).default(30),
+  lessonOrder: z.number().min(0).default(0),
+  isPublished: z.boolean().default(false),
+  version: z.string().default('1.0.0'),
+  lessonCategoryId: z.number(),
+  rewardId: z.number().optional(),
+  translations: z
+    .object({
+      meaning: z.array(
+        z.object({
+          language_code: z.string(),
+          value: z.string()
+        })
+      )
+    })
+    .optional()
 })
 
 // Default values for Minna no Nihongo Lesson 1
 export const MinnaNoNihongoLesson1Data = {
-    slug: "aisatsu-no-kihon",
-    titleJp: "挨拶の基本",
-    levelJlpt: 5,
-    estimatedTimeMinutes: 45,
-    lessonOrder: 1,
-    isPublished: false,
-    version: "1.0.0",
-    lessonCategoryId: 1,
-    rewardId: 1,
-    translations: {
-        meaning: [
-            {
-                language_code: "vi",
-                value: "Cách chào hỏi cơ bản"
-            },
-            {
-                language_code: "en",
-                value: "Basic Greetings"
-            },
-            {
-                language_code: "ja",
-                value: "挨拶の基本"
-            }
-        ]
-    }
+  slug: 'aisatsu-no-kihon',
+  titleJp: '挨拶の基本',
+  levelJlpt: 5,
+  estimatedTimeMinutes: 45,
+  lessonOrder: 1,
+  isPublished: false,
+  version: '1.0.0',
+  lessonCategoryId: 1,
+  rewardId: 1,
+  translations: {
+    meaning: [
+      {
+        language_code: 'vi',
+        value: 'Cách chào hỏi cơ bản'
+      },
+      {
+        language_code: 'en',
+        value: 'Basic Greetings'
+      },
+      {
+        language_code: 'ja',
+        value: '挨拶の基本'
+      }
+    ]
+  }
 }
 
 export const UpdateLessonBodyType = CreateLessonBodyType.partial().extend({
-    titleKey: z.string().min(1).max(500).optional()
+  titleKey: z.string().min(1).max(500).optional()
 })
 
 export const GetLessonByIdParamsType = z.object({
-    id: z.string().transform(Number),
+  id: z.string().transform(Number)
 })
 
 export const GetLessonListQueryType = z.object({
-    currentPage: z.string().transform(Number).default('1'),
-    pageSize: z.string().transform(Number).default('10'),
-    search: z.string().optional(),
-    lessonCategoryId: z.string().transform(Number).optional(),
-    levelJlpt: z.string().transform(Number).optional(),
-    isPublished: z.string().transform((val) => val === 'true').optional(),
-    sortBy: z.nativeEnum(LessonSortField).optional().default(LessonSortField.CREATED_AT),
-    sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
+  currentPage: z.string().transform(Number).default('1'),
+  pageSize: z.string().transform(Number).default('10'),
+  search: z.string().optional(),
+  lessonCategoryId: z.string().transform(Number).optional(),
+  levelJlpt: z.string().transform(Number).optional(),
+  isPublished: z
+    .string()
+    .transform((val) => val === 'true')
+    .optional(),
+  sortBy: z.nativeEnum(LessonSortField).optional().default(LessonSortField.CREATED_AT),
+  sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC)
 })
 
 // Response Schemas
 export const LessonListResSchema = z
-    .object({
-        statusCode: z.number(),
-        data: z.object({
-            results: z.array(LessonWithRelationsType),
-            pagination: z.object({
-                current: z.number(),
-                pageSize: z.number(),
-                totalPage: z.number(),
-                totalItem: z.number()
-            })
-        }),
-        message: z.string()
-    })
-    .strict()
+  .object({
+    statusCode: z.number(),
+    data: z.object({
+      results: z.array(LessonWithRelationsType),
+      pagination: z.object({
+        current: z.number(),
+        pageSize: z.number(),
+        totalPage: z.number(),
+        totalItem: z.number()
+      })
+    }),
+    message: z.string()
+  })
+  .strict()
 
 // Type exports
 export type LessonType = z.infer<typeof LessonType>
