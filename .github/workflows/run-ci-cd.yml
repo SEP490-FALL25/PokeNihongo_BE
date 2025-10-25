@@ -1,49 +1,50 @@
-name: Build and Run with Docker Compose
+name: CI/CD Deploy Backend to VPS
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Use Node.js
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20.18.0
+          node-version: 20
 
       - name: Install pnpm
         run: npm install -g pnpm
 
-      - name: Debug lock file
+      - name: Install dependencies and build
         run: |
-          echo "Current Directory: $(pwd)"
-          ls -la
-          if [ -f pnpm-lock.yaml ]; then
-            echo "pnpm-lock.yaml found"
-          else
-            echo "pnpm-lock.yaml not found"
-            exit 1
-          fi
+          pnpm install --frozen-lockfile
+          pnpm build
 
-      - name: Cache pnpm dependencies
-        uses: actions/cache@v3
+      - name: Upload dist folder to VPS
+        uses: appleboy/scp-action@v0.1.7
         with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "dist/*"
+          target: "/home/root/BE/dist"
 
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Prisma generate
-        run: npx prisma generate
-
-      - name: Build the project
-        run: pnpm build
+      - name: Restart backend container
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "=== Restarting backend container ==="
+            cd /home/root/BE
+            docker stop pokenihongo-backend || true
+            docker rm pokenihongo-backend || true
+            docker compose up -d --build
+            echo "✅ Deployment completed!"
