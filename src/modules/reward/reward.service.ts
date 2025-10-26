@@ -293,11 +293,21 @@ export class RewardService {
     lang: string = 'vi'
   ) {
     try {
-      await this.rewardRepo.delete({
-        id,
-        deletedById
-      })
+      const existingReward = await this.rewardRepo.findById(id)
+      if (!existingReward) {
+        throw new NotFoundRecordException()
+      }
+
+      await Promise.all([
+        this.rewardRepo.delete({
+          id,
+          deletedById
+        }),
+        this.translationRepo.deleteByKey(existingReward.nameKey)
+      ])
+
       return {
+        statusCode: HttpStatus.OK,
         data: null,
         message: this.i18nService.translate(RewardMessage.DELETE_SUCCESS, lang)
       }

@@ -5,14 +5,6 @@ export type QSResult = {
   orderBy?: Record<string, 'asc' | 'desc'>
 }
 
-/**
- * parseQs
- * @param qs query string, ví dụ:
- * qs=sort:-createdAt,rarity:eq=LEGENDARY,types:some=1|2,nameTranslations.vi:like=Shishiko
- * @param validFields danh sách field hợp lệ
- * @param relationFields array của relation fields (Prisma some)
- * @param arrayFields array của scalar array fields (Prisma has/hasSome)
- */
 export function parseQs(
   qs?: string,
   validFields?: string[],
@@ -28,6 +20,15 @@ export function parseQs(
     .split(',')
     .map((p) => p.trim())
     .filter(Boolean)
+
+  const operatorMap: Record<string, string> = {
+    eq: 'equals',
+    like: 'contains',
+    gt: 'gt',
+    gte: 'gte',
+    lt: 'lt',
+    lte: 'lte'
+  }
 
   for (const part of parts) {
     // --- SORT ---
@@ -49,7 +50,7 @@ export function parseQs(
     const [left, value] = part.split('=')
     if (!left || value === undefined) continue
 
-    const tokens = left.split(':') // [field, operator/option]
+    const tokens = left.split(':')
     const field = tokens[0]
     const opOrOption = tokens[1] || 'eq'
 
@@ -60,19 +61,33 @@ export function parseQs(
     }
 
     // --- Parse value ---
+    // --- Parse value ---
     let parsedValue: any
     if (value.includes('|')) {
-      parsedValue = value.split('|').map((v) => {
-        if (v === 'true') return true
-        if (v === 'false') return false
-        if (!isNaN(Number(v))) return Number(v)
-        return v
-      })
+      parsedValue = value.split('|').map((v) => parseSingleValue(v))
     } else {
-      if (value === 'true') parsedValue = true
-      else if (value === 'false') parsedValue = false
-      else if (!isNaN(Number(value))) parsedValue = Number(value)
-      else parsedValue = value
+      parsedValue = parseSingleValue(value)
+    }
+
+    function parseSingleValue(v: string) {
+      if (v === 'true') return true
+      if (v === 'false') return false
+      if (!isNaN(Number(v))) return Number(v)
+
+      // ✅ Nếu là chuỗi dạng YYYY-MM-DD → parse về Date (0h00 UTC)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(`${v}T00:00:00Z`)
+
+      // ✅ Nếu là dạng đầy đủ có giờ phút giây (ISO hoặc tương tự)
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?/.test(v)) {
+        const d = new Date(v)
+        if (!isNaN(d.getTime())) return d
+      }
+
+      // ✅ Nếu là chuỗi ISO hợp lệ bất kỳ
+      const tryDate = new Date(v)
+      if (!isNaN(tryDate.getTime())) return tryDate
+
+      return v
     }
 
     // --- Relation array field (Prisma some) ---
@@ -118,7 +133,6 @@ export function parseQs(
 
     if (arrayFields.includes(field) || isAutoArrayField) {
       if (Array.isArray(parsedValue)) {
-        // OR logic
         where.OR = where.OR || []
         for (const val of parsedValue) {
           where.OR.push({ [field]: { has: val } })
@@ -145,10 +159,12 @@ export function parseQs(
     }
 
     // --- Scalar normal fields ---
+    const prismaOp = operatorMap[opOrOption] || 'equals'
+
     if (opOrOption === 'like') {
-      where[field] = { contains: parsedValue, mode: 'insensitive' }
+      where[field] = { [prismaOp]: parsedValue, mode: 'insensitive' }
     } else {
-      where[field] = parsedValue
+      where[field] = { [prismaOp]: parsedValue }
     }
   }
 

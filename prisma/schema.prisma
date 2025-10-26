@@ -78,6 +78,15 @@ model User {
   createdWalletTransactions WalletTransaction[] @relation("WalletTransactionCreatedBy")
   updatedWalletTransactions WalletTransaction[] @relation("WalletTransactionUpdatedBy")
   deletedWalletTransactions WalletTransaction[] @relation("WalletTransactionDeletedBy")
+  createdShopBanners        ShopBanner[]        @relation("ShopBannerCreatedBy")
+  updatedShopBanners        ShopBanner[]        @relation("ShopBannerUpdatedBy")
+  deletedShopBanners        ShopBanner[]        @relation("ShopBannerDeletedBy")
+  createdShopPurchases      ShopPurchase[]      @relation("ShopPurchaseCreatedBy")
+  updatedShopPurchases      ShopPurchase[]      @relation("ShopPurchaseUpdatedBy")
+  deletedShopPurchases      ShopPurchase[]      @relation("ShopPurchaseDeletedBy")
+  createdShopItems          ShopItem[]          @relation("ShopItemCreatedBy")
+  updatedShopItems          ShopItem[]          @relation("ShopItemUpdatedBy")
+  deletedShopItems          ShopItem[]          @relation("ShopItemDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -108,6 +117,7 @@ model User {
   updatedAt         DateTime            @updatedAt
   Wallet            Wallet[]
   WalletTransaction WalletTransaction[]
+  shopPurchases     ShopPurchase[]
 
   @@index([deletedAt])
 }
@@ -218,6 +228,9 @@ model Translation {
 
   dailyRequestDescriptionKey String?
   dailyRequestDescription    DailyRequest? @relation("DailyRequestDescriptionRelation", fields: [dailyRequestDescriptionKey], references: [descriptionKey], onDelete: Cascade)
+
+  shopBannerNameKey String?
+  shopBanner        ShopBanner? @relation("ShopBannerNameRelation", fields: [shopBannerNameKey], references: [nameKey], onDelete: Cascade)
 
   @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
   @@index([languageId])
@@ -436,8 +449,9 @@ model Pokemon {
   deletedBy   User? @relation("PokemonDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  ShopItem  ShopItem[]
 }
 
 model UserPokemon {
@@ -1104,12 +1118,100 @@ model WalletTransaction {
   updatedById Int?
   updatedBy   User? @relation("WalletTransactionUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
 
+  deletedAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  ShopPurchase ShopPurchase[]
+
+  @@index([walletId])
+  @@index([userId])
+}
+
+model ShopBanner {
+  id        Int       @id @default(autoincrement())
+  nameKey   String    @unique @db.VarChar(200)
+  startDate DateTime?
+  endDate   DateTime?
+  isActive  Boolean   @default(true)
+
+  // Quan hệ với ShopItem
+  shopItems ShopItem[]
+
+  //translate
+  nameTranslations Translation[] @relation("ShopBannerNameRelation")
+
+  createdById Int?
+  createdBy   User? @relation("ShopBannerCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("ShopBannerDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("ShopBannerUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ShopItem {
+  id             Int        @id @default(autoincrement())
+  shopBannerId   Int
+  shopBanner     ShopBanner @relation(fields: [shopBannerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pokemonId      Int
+  pokemon        Pokemon    @relation(fields: [pokemonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  price          Int
+  purchaseLimit  Int? // Giới hạn mua (null = không giới hạn)
+  purchasedCount Int        @default(0) // Số lượng đã bán
+  isActive       Boolean    @default(true)
+
+  //
+  shopPurchases ShopPurchase[]
+
+  createdById Int?
+  createdBy   User? @relation("ShopItemCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("ShopItemDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("ShopItemUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@index([walletId])
+  @@index([shopBannerId])
+  @@index([pokemonId])
+}
+
+model ShopPurchase {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  shopItemId Int
+  shopItem   ShopItem @relation(fields: [shopItemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  walletTransId Int? // Gắn với WalletTransaction (nếu có)
+  walletTrans   WalletTransaction? @relation(fields: [walletTransId], references: [id], onDelete: SetNull)
+
+  quantity    Int      @default(1)
+  totalPrice  Int
+  purchasedAt DateTime @default(now())
+
+  // meta
+  createdById Int?
+  createdBy   User? @relation("ShopPurchaseCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("ShopPurchaseDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("ShopPurchaseUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
   @@index([userId])
+  @@index([shopItemId])
+  @@index([walletTransId])
 }
 
 enum ProgressStatus {
