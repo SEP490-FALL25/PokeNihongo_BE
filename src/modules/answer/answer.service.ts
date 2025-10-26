@@ -106,11 +106,11 @@ export class AnswerService {
         }
     }
 
-    async getAnswerById(params: GetAnswerByIdParamsType) {
+    async getAnswerById(id: number) {
         try {
-            this.logger.log(`Getting answer by id: ${params.id}`)
+            this.logger.log(`Getting answer by id: ${id}`)
 
-            const answer = await this.answerRepository.findById(params.id)
+            const answer = await this.answerRepository.findById(id)
 
             if (!answer) {
                 throw new AnswerNotFoundException()
@@ -123,7 +123,7 @@ export class AnswerService {
                 message: 'Lấy thông tin câu trả lời thành công'
             }
         } catch (error) {
-            this.logger.error(`Error getting answer by id ${params.id}:`, error)
+            this.logger.error(`Error getting answer by id ${id}:`, error)
 
             if (error instanceof AnswerNotFoundException) {
                 throw error

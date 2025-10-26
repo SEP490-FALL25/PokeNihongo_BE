@@ -44,7 +44,7 @@ import { LessonService } from './lesson.service'
 @UseGuards(AuthenticationGuard)
 @ApiBearerAuth()
 export class LessonController {
-  constructor(private readonly lessonService: LessonService) {}
+  constructor(private readonly lessonService: LessonService) { }
 
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách bài học với phân trang và tìm kiếm' })
@@ -112,10 +112,10 @@ export class LessonController {
   })
   @ZodSerializerDto(LessonResponseDTO)
   async updateLesson(
-    @Param() params: GetLessonByIdParamsDTO,
+    @Param('id') id: string,
     @Body() body: UpdateLessonBodyDTO
   ) {
-    return await this.lessonService.updateLesson(params.id, body)
+    return await this.lessonService.updateLesson(Number(id), body)
   }
 
   @Patch(':id/toggle-publish')
@@ -127,8 +127,8 @@ export class LessonController {
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy bài học' })
   @ZodSerializerDto(LessonResponseDTO)
-  async togglePublishLesson(@Param() params: GetLessonByIdParamsDTO) {
-    return await this.lessonService.togglePublishLesson(params.id)
+  async togglePublishLesson(@Param('id') id: string) {
+    return await this.lessonService.togglePublishLesson(Number(id))
   }
 
   @Delete(':id')
@@ -137,7 +137,7 @@ export class LessonController {
   @ApiResponse({ status: 204, description: 'Xóa bài học thành công' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy bài học' })
   @ZodSerializerDto(MessageResDTO)
-  async deleteLesson(@Param() params: GetLessonByIdParamsDTO) {
-    return await this.lessonService.deleteLesson(params.id)
+  async deleteLesson(@Param('id') id: string) {
+    return await this.lessonService.deleteLesson(Number(id))
   }
 }
