@@ -335,5 +335,15 @@ export const jaMessages = {
     NOT_FOUND: 'ショップアイテムが見つかりません',
     ALREADY_EXISTS: 'ショップアイテムは既に存在します',
     INVALID_DATA: '無効なショップアイテムデータです'
+  },
+  shop_purchase: {
+    CREATE_SUCCESS: 'ショップ購入の作成に成功しました',
+    UPDATE_SUCCESS: 'ショップ購入の更新に成功しました',
+    DELETE_SUCCESS: 'ショップ購入の削除に成功しました',
+    GET_SUCCESS: 'ショップ購入情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ショップ購入リストの取得に成功しました',
+    NOT_FOUND: 'ショップ購入が見つかりません',
+    ALREADY_EXISTS: 'ショップ購入は既に存在します',
+    INVALID_DATA: '無効なショップ購入データです'
   }
 }

@@ -54,6 +54,7 @@ import { SharedModule } from './shared/shared.module'
 import { WalletTransactionModule } from './modules/wallet-transaction/wallet-transaction.module';
 import { ShopBannerModule } from './modules/shop-banner/shop-banner.module';
 import { ShopItemModule } from './modules/shop-item/shop-item.module';
+import { ShopPurchaseModule } from './modules/shop-purchase/shop-purchase.module';
 
 @Module({
   imports: [
@@ -107,7 +108,8 @@ import { ShopItemModule } from './modules/shop-item/shop-item.module';
     WalletModule,
     WalletTransactionModule,
     ShopBannerModule,
-    ShopItemModule
+    ShopItemModule,
+    ShopPurchaseModule
   ],
 
   controllers: [],

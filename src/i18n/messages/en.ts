@@ -344,5 +344,15 @@ export const enMessages = {
     NOT_FOUND: 'Shop item not found',
     ALREADY_EXISTS: 'Shop item already exists',
     INVALID_DATA: 'Invalid shop item data'
+  },
+  shop_purchase: {
+    CREATE_SUCCESS: 'Shop purchase created successfully',
+    UPDATE_SUCCESS: 'Shop purchase updated successfully',
+    DELETE_SUCCESS: 'Shop purchase deleted successfully',
+    GET_SUCCESS: 'Shop purchase retrieved successfully',
+    GET_LIST_SUCCESS: 'Shop purchase list retrieved successfully',
+    NOT_FOUND: 'Shop purchase not found',
+    ALREADY_EXISTS: 'Shop purchase already exists',
+    INVALID_DATA: 'Invalid shop purchase data'
   }
 }

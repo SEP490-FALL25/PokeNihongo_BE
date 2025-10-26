@@ -5,6 +5,7 @@ import { ShopItemService } from './shop-item.service'
 
 @Module({
   controllers: [ShopItemController],
-  providers: [ShopItemService, ShopItemRepo]
+  providers: [ShopItemService, ShopItemRepo],
+  exports: [ShopItemService, ShopItemRepo]
 })
 export class ShopItemModule {}

@@ -342,5 +342,16 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy mặt hàng cửa hàng',
     ALREADY_EXISTS: 'Mặt hàng cửa hàng đã tồn tại',
     INVALID_DATA: 'Dữ liệu mặt hàng cửa hàng không hợp lệ'
+  },
+  shop_purchase: {
+    CREATE_SUCCESS: 'Tạo giao dịch mua hàng thành công',
+    UPDATE_SUCCESS: 'Cập nhật giao dịch mua hàng thành công',
+    DELETE_SUCCESS: 'Xóa giao dịch mua hàng thành công',
+
+    GET_SUCCESS: 'Lấy thông tin giao dịch mua hàng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách giao dịch mua hàng thành công',
+    NOT_FOUND: 'Không tìm thấy giao dịch mua hàng',
+    ALREADY_EXISTS: 'Giao dịch mua hàng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu giao dịch mua hàng không hợp lệ'
   }
 }
