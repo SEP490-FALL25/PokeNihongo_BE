@@ -174,3 +174,143 @@ export class GetQuestionBankListQuerySwaggerDTO {
     search?: string
 }
 
+export class AnswerSwaggerDTO {
+    @ApiProperty({ example: '田中太郎です', description: 'Câu trả lời bằng tiếng Nhật' })
+    answerJp: string
+
+    @ApiProperty({ example: true, description: 'Có phải câu trả lời đúng không' })
+    isCorrect: boolean
+
+    @ApiProperty({
+        example: {
+            meaning: [
+                { language_code: 'vi', value: 'Tôi là Tanaka Taro' },
+                { language_code: 'en', value: 'I am Tanaka Taro' }
+            ]
+        },
+        description: 'Bản dịch của câu trả lời',
+        required: false
+    })
+    translations?: {
+        meaning: Array<{
+            language_code: string
+            value: string
+        }>
+    } | {
+        language_code: string
+        value: string
+    }
+}
+
+export class CreateQuestionBankWithAnswersSwaggerDTO {
+    @ApiProperty({
+        example: 'あなたの名前は何ですか？',
+        description: 'Câu hỏi bằng tiếng Nhật. Nếu type là LISTENING, hệ thống sẽ tự động chuyển thành text-to-speech'
+    })
+    questionJp: string
+
+    @ApiProperty({
+        example: 'VOCABULARY',
+        enum: ['VOCABULARY', 'GRAMMAR', 'KANJI', 'LISTENING', 'READING', 'SPEAKING', 'MATCHING'],
+        description: 'Loại câu hỏi: VOCABULARY (từ vựng), GRAMMAR (ngữ pháp), KANJI (hán tự), LISTENING (nghe hiểu), READING (đọc hiểu), SPEAKING (nói), MATCHING (ghép cặp)'
+    })
+    questionType: string
+
+    @ApiProperty({
+        example: 'https://example.com/audio.mp3',
+        description: 'URL file âm thanh. Optional - chỉ khi questionType là LISTENING và không truyền thì hệ thống sẽ tự động gen text-to-speech từ questionJp',
+        required: false
+    })
+    audioUrl?: string
+
+
+    @ApiProperty({
+        example: 'anata no namae wa nan desu ka',
+        description: 'Cách phát âm romaji. Bắt buộc khi questionType là SPEAKING',
+        required: false
+    })
+    pronunciation?: string
+
+    @ApiProperty({
+        example: 3,
+        description: 'Cấp độ JLPT (1-5)',
+        required: false
+    })
+    levelN?: number
+
+    @ApiProperty({
+        description: 'Danh sách nghĩa và bản dịch của câu hỏi',
+        type: [Object],
+        required: false,
+        example: [
+            {
+                translations: {
+                    vi: 'Tên bạn là gì?',
+                    en: 'What is your name?'
+                }
+            }
+        ]
+    })
+    meanings?: Array<{
+        meaningKey?: string
+        translations: Record<string, string>
+    }>
+
+    @ApiProperty({
+        description: 'Danh sách câu trả lời (1-4 câu)',
+        type: [AnswerSwaggerDTO],
+        minItems: 1,
+        maxItems: 4,
+        example: [
+            {
+                answerJp: '田中太郎です',
+                isCorrect: true,
+                translations: {
+                    meaning: [
+                        { language_code: 'vi', value: 'Tôi là Tanaka Taro' }
+                    ]
+                }
+            },
+            {
+                answerJp: '佐藤花子です',
+                isCorrect: false,
+                translations: {
+                    meaning: [
+                        { language_code: 'vi', value: 'Tôi là Sato Hanako' }
+                    ]
+                }
+            }
+        ]
+    })
+    answers: AnswerSwaggerDTO[]
+}
+
+export class CreateQuestionBankWithAnswersResponseSwaggerDTO {
+    @ApiProperty({ example: 201, description: 'Status code' })
+    statusCode: number
+
+    @ApiProperty({
+        description: 'Dữ liệu câu hỏi và câu trả lời đã tạo',
+        type: 'object',
+        properties: {
+            questionBank: { type: 'object', additionalProperties: true },
+            answers: {
+                type: 'array',
+                items: { type: 'object', additionalProperties: true }
+            },
+            createdCount: { type: 'number', example: 4 },
+            failedCount: { type: 'number', example: 0 }
+        },
+        additionalProperties: true
+    })
+    data: {
+        questionBank: QuestionBankSwaggerDTO
+        answers: AnswerSwaggerDTO[]
+        createdCount: number
+        failedCount: number
+    }
+
+    @ApiProperty({ example: 'Tạo câu hỏi và câu trả lời thành công', description: 'Thông báo' })
+    message: string
+}
+
