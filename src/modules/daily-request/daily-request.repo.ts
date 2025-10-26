@@ -177,11 +177,14 @@ export class DailyRequestRepo {
     ])
 
     // 4) Map to include nameTranslation/descriptionTranslation fields
-    const results = data.map((d: any) => ({
-      ...d,
-      nameTranslation: d.nameTranslations?.[0]?.value ?? d.nameKey,
-      descriptionTranslation: d.descriptionTranslations?.[0]?.value ?? d.descriptionKey
-    }))
+    const results = data.map((d: any) => {
+      const { nameTranslations, descriptionTranslations, ...rest } = d
+      return {
+        ...rest,
+        nameTranslation: nameTranslations?.[0]?.value ?? d.nameKey,
+        descriptionTranslation: descriptionTranslations?.[0]?.value ?? d.descriptionKey
+      }
+    })
 
     return {
       results,
