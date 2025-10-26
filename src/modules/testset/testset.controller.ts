@@ -83,7 +83,7 @@ export class TestSetController {
         type: TestSetWithQuestionsResponseSwaggerDTO
     })
     findOne(@Param('id') id: string, @I18nLang() lang: string) {
-        return this.testSetService.findOne(parseInt(id), lang)
+        return this.testSetService.findOne(Number(id), lang)
     }
 
     @Put(':id')
@@ -95,11 +95,11 @@ export class TestSetController {
         type: TestSetResponseSwaggerDTO
     })
     async updateTestSet(
-        @Param() params: GetTestSetByIdParamsDTO,
+        @Param('id') id: string,
         @Body() body: UpdateTestSetBodyDTO,
         @ActiveUser('userId') userId: number
     ): Promise<MessageResDTO> {
-        return this.testSetService.updateTestSet(params.id, body, userId)
+        return this.testSetService.updateTestSet(Number(id), body, userId)
     }
 
     @Delete(':id')
@@ -112,10 +112,10 @@ export class TestSetController {
         type: TestSetResponseSwaggerDTO
     })
     async deleteTestSet(
-        @Param() params: GetTestSetByIdParamsDTO,
+        @Param('id') id: string,
         @ActiveUser('userId') userId: number
     ): Promise<MessageResDTO> {
-        return this.testSetService.deleteTestSet(params.id, userId)
+        return this.testSetService.deleteTestSet(Number(id), userId)
     }
 
 }
