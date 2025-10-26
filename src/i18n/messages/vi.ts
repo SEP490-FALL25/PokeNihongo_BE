@@ -332,5 +332,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy banner cửa hàng',
     ALREADY_EXISTS: 'Banner cửa hàng đã tồn tại',
     INVALID_DATA: 'Dữ liệu banner cửa hàng không hợp lệ'
+  },
+  shop_item: {
+    CREATE_SUCCESS: 'Tạo mặt hàng cửa hàng thành công',
+    UPDATE_SUCCESS: 'Cập nhật mặt hàng cửa hàng thành công',
+    DELETE_SUCCESS: 'Xóa mặt hàng cửa hàng thành công',
+    GET_SUCCESS: 'Lấy thông tin mặt hàng cửa hàng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách mặt hàng cửa hàng thành công',
+    NOT_FOUND: 'Không tìm thấy mặt hàng cửa hàng',
+    ALREADY_EXISTS: 'Mặt hàng cửa hàng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu mặt hàng cửa hàng không hợp lệ'
   }
 }

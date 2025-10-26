@@ -1,5 +1,6 @@
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ShopBannerMessage } from '@/i18n/message-keys'
+import { ShopItemSchema } from '@/modules/shop-item/entities/shop-item.entity'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -61,7 +62,12 @@ export const GetShopBannerParamsSchema = z
 export const GetShopBannerDetailResSchema = z.object({
   statusCode: z.number(),
   data: ShopBannerSchema.extend({
-    nameTranslation: z.string()
+    nameTranslation: z.string(),
+    shopItems: z.array(
+      z.object({
+        ...ShopItemSchema.shape
+      })
+    )
   }),
   message: z.string()
 })

@@ -325,5 +325,15 @@ export const jaMessages = {
     NOT_FOUND: 'ショップバナーが見つかりません',
     ALREADY_EXISTS: 'ショップバナーは既に存在します',
     INVALID_DATA: '無効なショップバナーデータです'
+  },
+  shop_item: {
+    CREATE_SUCCESS: 'ショップアイテムの作成に成功しました',
+    UPDATE_SUCCESS: 'ショップアイテムの更新に成功しました',
+    DELETE_SUCCESS: 'ショップアイテムの削除に成功しました',
+    GET_SUCCESS: 'ショップアイテム情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ショップアイテムリストの取得に成功しました',
+    NOT_FOUND: 'ショップアイテムが見つかりません',
+    ALREADY_EXISTS: 'ショップアイテムは既に存在します',
+    INVALID_DATA: '無効なショップアイテムデータです'
   }
 }

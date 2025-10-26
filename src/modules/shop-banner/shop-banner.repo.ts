@@ -140,7 +140,12 @@ export class ShopBannerRepo {
                 where: childNameIncludeWhere,
                 select: { value: true }
               }
-            : undefined
+            : undefined,
+          shopItems: {
+            include: {
+              pokemon: true
+            }
+          }
         },
         orderBy,
         skip,
@@ -188,7 +193,8 @@ export class ShopBannerRepo {
           where: {
             languageId: langId
           }
-        }
+        },
+        shopItems: true
       }
     })
   }
