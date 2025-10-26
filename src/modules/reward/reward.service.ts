@@ -55,18 +55,17 @@ export class RewardService {
     if (!reward) {
       throw new NotFoundRecordException()
     }
-    // const nameTranslation = await this.translationRepo.findByLangAndKey(
-    //   langId,
-    //   reward.nameKey
-    // )
-    // const resultRes = {
-    //   ...reward,
-    //   nameTranslation: nameTranslation?.value ?? null
-    // }
+
+    const data = {}
+    const result = {
+      ...reward,
+      nameTranslation: (reward as any).nameTranslations?.[0]?.value ?? null,
+      descriptionTranslation: (reward as any).descriptionTranslations?.[0]?.value ?? null
+    }
 
     return {
       statusCode: HttpStatus.OK,
-      data: reward,
+      data: result,
       message: this.i18nService.translate(RewardMessage.GET_SUCCESS, lang)
     }
   }

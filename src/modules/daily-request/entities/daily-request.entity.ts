@@ -79,20 +79,8 @@ export const GetParamsDailyRequestSchema = z.object({
 export const GetDailyRequestDetailResSchema = z.object({
   statusCode: z.number(),
   data: DailyRequestSchema.extend({
-    nameTranslations: z.array(
-      TranslationSchema.pick({
-        id: true,
-        languageId: true,
-        value: true
-      })
-    ),
-    descriptionTranslations: z.array(
-      TranslationSchema.pick({
-        id: true,
-        languageId: true,
-        value: true
-      })
-    ),
+    nameTranslation: z.string().nullable().optional(),
+    descriptionTranslation: z.string().nullable().optional(),
     reward: RewardSchema.extend({
       nameTranslations: TranslationSchema.pick({
         id: true,

@@ -54,8 +54,11 @@ export class DailyRequestService {
     if (!dailyRequest) {
       throw new NotFoundRecordException()
     }
+    const dr: any = dailyRequest
     const resultRes = {
-      ...dailyRequest
+      ...dailyRequest,
+      nameTranslation: dr.nameTranslations?.[0]?.value ?? null,
+      descriptionTranslation: dr.descriptionTranslations?.[0]?.value ?? null
     }
     return {
       statusCode: HttpStatus.OK,
