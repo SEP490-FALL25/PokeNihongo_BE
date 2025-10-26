@@ -176,4 +176,14 @@ export class AnswerRepository {
             where: { questionBankId: questionBankId }
         })
     }
+
+    async hasCorrectAnswer(questionBankId: number) {
+        const count = await this.prismaService.answer.count({
+            where: {
+                questionBankId: questionBankId,
+                isCorrect: true
+            }
+        })
+        return count > 0
+    }
 }

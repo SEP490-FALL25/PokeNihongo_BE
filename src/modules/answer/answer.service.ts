@@ -153,11 +153,29 @@ export class AnswerService {
             // Get question type for validation
             const questionType = await this.answerRepository.getQuestionType(data.questionBankId)
 
-            // Validate MATCHING type: only 1 answer allowed
+            // Validate MATCHING type: only 1 answer allowed and must be correct
             if (questionType === QuestionType.MATCHING) {
                 const existingAnswerCount = await this.answerRepository.countAnswersByQuestionId(data.questionBankId)
                 if (existingAnswerCount >= 1) {
                     throw new BadRequestException('MATCHING type chỉ cho phép tạo 1 answer duy nhất')
+                }
+                // MATCHING type answer must be correct
+                if (!data.isCorrect) {
+                    throw new BadRequestException('MATCHING type bắt buộc phải có isCorrect = true')
+                }
+            } else {
+                // Other types: max 4 answers, only 1 can be correct
+                const existingAnswerCount = await this.answerRepository.countAnswersByQuestionId(data.questionBankId)
+                if (existingAnswerCount >= 4) {
+                    throw new BadRequestException('Mỗi câu hỏi chỉ được tạo tối đa 4 câu trả lời')
+                }
+
+                // Check if there's already a correct answer
+                if (data.isCorrect) {
+                    const hasCorrectAnswer = await this.answerRepository.hasCorrectAnswer(data.questionBankId)
+                    if (hasCorrectAnswer) {
+                        throw new BadRequestException('Mỗi câu hỏi chỉ được có 1 câu trả lời đúng')
+                    }
                 }
             }
 
@@ -481,7 +499,7 @@ export class AnswerService {
                         continue
                     }
 
-                    // Validate MATCHING type: only 1 answer allowed
+                    // Validate MATCHING type: only 1 answer allowed and must be correct
                     if (questionType === QuestionType.MATCHING) {
                         const existingAnswerCount = await this.answerRepository.countAnswersByQuestionId(data.questionBankId)
                         if (existingAnswerCount >= 1) {
@@ -490,6 +508,36 @@ export class AnswerService {
                                 reason: 'MATCHING type chỉ cho phép tạo 1 answer duy nhất'
                             })
                             continue
+                        }
+                        // MATCHING type answer must be correct
+                        if (!answerData.isCorrect) {
+                            failedAnswers.push({
+                                answerJp: answerData.answerJp,
+                                reason: 'MATCHING type bắt buộc phải có isCorrect = true'
+                            })
+                            continue
+                        }
+                    } else {
+                        // Other types: max 4 answers, only 1 can be correct
+                        const existingAnswerCount = await this.answerRepository.countAnswersByQuestionId(data.questionBankId)
+                        if (existingAnswerCount >= 4) {
+                            failedAnswers.push({
+                                answerJp: answerData.answerJp,
+                                reason: 'Mỗi câu hỏi chỉ được tạo tối đa 4 câu trả lời'
+                            })
+                            continue
+                        }
+
+                        // Check if there's already a correct answer
+                        if (answerData.isCorrect) {
+                            const hasCorrectAnswer = await this.answerRepository.hasCorrectAnswer(data.questionBankId)
+                            if (hasCorrectAnswer) {
+                                failedAnswers.push({
+                                    answerJp: answerData.answerJp,
+                                    reason: 'Mỗi câu hỏi chỉ được có 1 câu trả lời đúng'
+                                })
+                                continue
+                            }
                         }
                     }
 
