@@ -50,7 +50,6 @@ export class ShopBannerController {
   }
 
   @Get('today/user')
-  @IsPublic()
   @ZodSerializerDto(GetShopBannerByTodayResDTO)
   getByToday(@I18nLang() lang: string, @ActiveUser('userId') userId?: number) {
     return this.shopBannerService.getByToday(lang, userId)

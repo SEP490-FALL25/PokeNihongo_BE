@@ -5,11 +5,20 @@ export type QSResult = {
   orderBy?: Record<string, 'asc' | 'desc'>
 }
 
+/**
+ * parseQs hỗ trợ:
+ * - sort:id hoặc sort:-id
+ * - name:like=B
+ * - startDate:gte=2025-10-25
+ * - status=PREVIEW
+ * - status:in=ACTIVE,PREVIEW
+ */
 export function parseQs(
   qs?: string,
   validFields?: string[],
   relationFields: string[] = [],
-  arrayFields: string[] = []
+  arrayFields: string[] = [],
+  enumFields: string[] = [] // 👈 thêm enumFields
 ): QSResult {
   if (!qs) return {}
 
@@ -27,7 +36,9 @@ export function parseQs(
     gt: 'gt',
     gte: 'gte',
     lt: 'lt',
-    lte: 'lte'
+    lte: 'lte',
+    in: 'in',
+    notIn: 'notIn'
   }
 
   for (const part of parts) {
@@ -61,10 +72,11 @@ export function parseQs(
     }
 
     // --- Parse value ---
-    // --- Parse value ---
     let parsedValue: any
     if (value.includes('|')) {
-      parsedValue = value.split('|').map((v) => parseSingleValue(v))
+      parsedValue = value.split('|').map(parseSingleValue)
+    } else if (value.includes(',')) {
+      parsedValue = value.split(',').map(parseSingleValue)
     } else {
       parsedValue = parseSingleValue(value)
     }
@@ -73,33 +85,19 @@ export function parseQs(
       if (v === 'true') return true
       if (v === 'false') return false
       if (!isNaN(Number(v))) return Number(v)
-
-      // ✅ Nếu là chuỗi dạng YYYY-MM-DD → parse về Date (0h00 UTC)
       if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(`${v}T00:00:00Z`)
-
-      // ✅ Nếu là dạng đầy đủ có giờ phút giây (ISO hoặc tương tự)
-      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?/.test(v)) {
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) {
         const d = new Date(v)
         if (!isNaN(d.getTime())) return d
       }
-
-      // ✅ Nếu là chuỗi ISO hợp lệ bất kỳ
-      const tryDate = new Date(v)
-      if (!isNaN(tryDate.getTime())) return tryDate
-
+      const d = new Date(v)
+      if (!isNaN(d.getTime())) return d
       return v
     }
 
-    // --- Relation array field (Prisma some) ---
+    // --- Relation fields ---
     if (relationFields.includes(field)) {
       let targetField = 'id'
-      if (field === 'types')
-        targetField =
-          typeof parsedValue === 'number' ||
-          (Array.isArray(parsedValue) && typeof parsedValue[0] === 'number')
-            ? 'id'
-            : 'type_name'
-
       if (Array.isArray(parsedValue)) {
         where.AND = where.AND || []
         for (const val of parsedValue) {
@@ -111,27 +109,13 @@ export function parseQs(
       continue
     }
 
-    // --- Scalar array fields ---
-    const arrayFieldPatterns = [
-      'rarities',
-      'tags',
-      'categories',
-      'skills',
-      'abilities',
-      'items',
-      'languages',
-      'statuses',
-      'codes',
-      'values'
-    ]
-    const isAutoArrayField = arrayFieldPatterns.some(
-      (pattern) =>
-        field === pattern ||
-        field.endsWith('Ids') ||
-        (field.endsWith('s') && !relationFields.includes(field))
-    )
+    // --- Array fields (tránh enum) ---
+    const isArrayField =
+      (arrayFields.includes(field) ||
+        (field.endsWith('Ids') && !relationFields.includes(field))) &&
+      !enumFields.includes(field)
 
-    if (arrayFields.includes(field) || isAutoArrayField) {
+    if (isArrayField) {
       if (Array.isArray(parsedValue)) {
         where.OR = where.OR || []
         for (const val of parsedValue) {
@@ -143,7 +127,7 @@ export function parseQs(
       continue
     }
 
-    // --- Nested JSON fields ---
+    // --- JSON fields ---
     if (field.includes('.')) {
       const [root, nested] = field.split('.')
       if (opOrOption === 'like') {
@@ -158,10 +142,19 @@ export function parseQs(
       continue
     }
 
-    // --- Scalar normal fields ---
+    // --- Normal or enum fields ---
     const prismaOp = operatorMap[opOrOption] || 'equals'
 
-    if (opOrOption === 'like') {
+    if (['in', 'notIn'].includes(opOrOption)) {
+      const values =
+        typeof parsedValue === 'string'
+          ? parsedValue.split('|').map((v) => v.trim()) // 👈 đổi từ ',' sang '|'
+          : Array.isArray(parsedValue)
+            ? parsedValue
+            : [parsedValue]
+
+      where[field] = { [prismaOp]: values }
+    } else if (opOrOption === 'like') {
       where[field] = { [prismaOp]: parsedValue, mode: 'insensitive' }
     } else {
       where[field] = { [prismaOp]: parsedValue }

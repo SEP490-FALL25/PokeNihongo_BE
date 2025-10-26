@@ -337,6 +337,9 @@ export const jaMessages = {
     ALREADY_EXISTS: 'ショップアイテムは既に存在します',
     INVALID_DATA: '無効なショップアイテムデータです',
     SHOP_BANNER_INVALID: 'ショップバナーが無効または期限切れです',
+    SHOP_BANNER_INACTIVE: 'ショップバナーは非アクティブです',
+    SHOP_BANNER_ACTIVE: 'ショップバナーはアクティブです',
+    SHOP_BANNER_EXPIRED: 'ショップバナーは期限切れです',
     POKEMON_DUPLICATE: 'このバナーにはすでにポケモンが存在します',
     MAX_ITEMS_EXCEEDED: 'アイテム数がバナーの制限を超えています'
   },
