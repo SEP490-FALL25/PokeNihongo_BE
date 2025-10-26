@@ -353,6 +353,7 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách giao dịch mua hàng thành công',
     NOT_FOUND: 'Không tìm thấy giao dịch mua hàng',
     ALREADY_EXISTS: 'Giao dịch mua hàng đã tồn tại',
-    INVALID_DATA: 'Dữ liệu giao dịch mua hàng không hợp lệ'
+    INVALID_DATA: 'Dữ liệu giao dịch mua hàng không hợp lệ',
+    PURCHASE_LIMIT_REACHED: 'Đã đạt giới hạn mua hàng cho mặt hàng này'
   }
 }

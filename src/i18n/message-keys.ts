@@ -377,5 +377,6 @@ export const ShopPurchaseMessage = {
   NOT_FOUND: 'shop_purchase.NOT_FOUND',
 
   ALREADY_EXISTS: 'shop_purchase.ALREADY_EXISTS',
-  INVALID_DATA: 'shop_purchase.INVALID_DATA'
+  INVALID_DATA: 'shop_purchase.INVALID_DATA',
+  PURCHASE_LIMIT_REACHED: 'shop_purchase.PURCHASE_LIMIT_REACHED'
 } as const

@@ -197,6 +197,104 @@ export class DailyRequestRepo {
     }
   }
 
+  async getListwithAllLang(pagination: PaginationQueryType, langId?: number) {
+    // 1) Parse QS
+    const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, DAILY_REQUEST_FIELDS)
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    // 2) Build relational filters for translations directly
+    const where: any = { deletedAt: null, ...rawWhere }
+
+    // Accept both 'nameTranslation' and 'nameTranslations' to be flexible
+    const nameFilterRaw =
+      (rawWhere as any).nameTranslation ?? (rawWhere as any).nameTranslations
+    if (nameFilterRaw) {
+      const toContainsFilter = (raw: any) => {
+        if (typeof raw === 'object' && raw !== null) {
+          const val =
+            (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
+          return { contains: String(val), mode: 'insensitive' as const }
+        }
+        return { contains: String(raw), mode: 'insensitive' as const }
+      }
+      const searchFilter = toContainsFilter(nameFilterRaw)
+      delete (where as any).nameTranslation
+      delete (where as any).nameTranslations
+      where.nameTranslations = langId
+        ? {
+            some: {
+              languageId: langId,
+              value: searchFilter
+            }
+          }
+        : {
+            some: {
+              value: searchFilter
+            }
+          }
+    }
+
+    const descFilterRaw =
+      (rawWhere as any).descriptionTranslation ??
+      (rawWhere as any).descriptionTranslations
+    if (descFilterRaw) {
+      const toContainsFilter = (raw: any) => {
+        if (typeof raw === 'object' && raw !== null) {
+          const val =
+            (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
+          return { contains: String(val), mode: 'insensitive' as const }
+        }
+        return { contains: String(raw), mode: 'insensitive' as const }
+      }
+      const searchFilter = toContainsFilter(descFilterRaw)
+      delete (where as any).descriptionTranslation
+      delete (where as any).descriptionTranslations
+      where.descriptionTranslations = langId
+        ? {
+            some: {
+              languageId: langId,
+              value: searchFilter
+            }
+          }
+        : {
+            some: {
+              value: searchFilter
+            }
+          }
+    }
+
+    // 3) Query count + data with include for all translations
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.dailyRequest.count({ where }),
+      this.prismaService.dailyRequest.findMany({
+        where,
+        orderBy,
+        skip,
+        take,
+        include: {
+          nameTranslations: {
+            select: { id: true, languageId: true, key: true, value: true }
+          },
+          descriptionTranslations: {
+            select: { id: true, languageId: true, key: true, value: true }
+          }
+        }
+      })
+    ])
+
+    return {
+      results: data,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
+    }
+  }
+
   findById(id: number): Promise<DailyRequestType | null> {
     return this.prismaService.dailyRequest.findUnique({
       where: {
@@ -241,6 +339,24 @@ export class DailyRequestRepo {
             value: true
           }
         }
+      }
+    })
+  }
+
+  findByIdWithAllLang(id: number) {
+    return this.prismaService.dailyRequest.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        reward: {
+          include: {
+            nameTranslations: true
+          }
+        },
+        nameTranslations: true,
+        descriptionTranslations: true
       }
     })
   }

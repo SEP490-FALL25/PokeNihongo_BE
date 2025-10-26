@@ -345,6 +345,7 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'ショップ購入リストの取得に成功しました',
     NOT_FOUND: 'ショップ購入が見つかりません',
     ALREADY_EXISTS: 'ショップ購入は既に存在します',
-    INVALID_DATA: '無効なショップ購入データです'
+    INVALID_DATA: '無効なショップ購入データです',
+    PURCHASE_LIMIT_REACHED: 'このアイテムの購入制限に達しました'
   }
 }

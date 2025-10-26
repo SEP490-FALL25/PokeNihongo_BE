@@ -23,6 +23,7 @@ import {
   CreateDailyRequestBodyInputDTO,
   CreateDailyRequestResDTO,
   GetDailyRequestDetailResDTO,
+  GetDailyRequestDetailwithAllLangResDTO,
   GetDailyRequestParamsDTO,
   UpdateDailyRequestBodyInputDTO,
   UpdateDailyRequestResDTO
@@ -39,6 +40,23 @@ export class DailyRequestController {
   @ZodSerializerDto(PaginationResponseSchema)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.dailyRequestService.list(query, lang)
+  }
+
+  @Get('admin/:dailyRequestId')
+  @IsPublic()
+  @ZodSerializerDto(GetDailyRequestDetailwithAllLangResDTO)
+  findByIdWithAllLang(
+    @Param() params: GetDailyRequestParamsDTO,
+    @I18nLang() lang: string
+  ) {
+    return this.dailyRequestService.findByIdWithAllLang(params.dailyRequestId, lang)
+  }
+
+  @Get('admin')
+  @IsPublic()
+  @ZodSerializerDto(PaginationResponseSchema)
+  getListwithAllLang(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
+    return this.dailyRequestService.getListwithAllLang(query, lang)
   }
 
   @Get(':dailyRequestId')

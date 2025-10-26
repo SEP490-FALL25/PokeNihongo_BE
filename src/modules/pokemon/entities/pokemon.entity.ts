@@ -300,6 +300,12 @@ export const GetPokemonParamsSchema = z.object({
   pokemonId: checkIdSchema(PokemonMessage.INVALID_ID)
 })
 
+export const GetPokemonResSchema = z.object({
+  statusCode: z.number(),
+  data: z.array(PokemonSchema),
+  message: z.string()
+})
+
 export const GetPokemonDetailResSchema = z.object({
   statusCode: z.number(),
   data: PokemonSchema.omit({ nextPokemonsId: true }).extend({

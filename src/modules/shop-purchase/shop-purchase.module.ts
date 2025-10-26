@@ -10,6 +10,7 @@ import { ShopPurchaseService } from './shop-purchase.service'
 @Module({
   imports: [ShopItemModule, UserPokemonModule, WalletTransactionModule, WalletModule],
   controllers: [ShopPurchaseController],
-  providers: [ShopPurchaseService, ShopPurchaseRepo]
+  providers: [ShopPurchaseService, ShopPurchaseRepo],
+  exports: [ShopPurchaseRepo, ShopPurchaseService]
 })
 export class ShopPurchaseModule {}

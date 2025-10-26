@@ -21,6 +21,7 @@ import { WalletTransactionRepo } from '../wallet-transaction/wallet-transaction.
 import { WalletRepo } from '../wallet/wallet.repo'
 import {
   NotEnoughBalanceException,
+  PurchaseLimitReachedException,
   ShopPurchaseNotFoundException
 } from './dto/shop-purchase.error'
 import {
@@ -77,13 +78,17 @@ export class ShopPurchaseService {
       const totalPrice = data.quantity * shopItem.price
 
       // 3)may co du tien ko ?
-      const [userWallet, existed] = await Promise.all([
+      const [userWallet, existed, totalPurchased] = await Promise.all([
         this.walletRepo.checkEnoughBalance({
           userId,
           type: walletType.FREE_COIN,
           amount: totalPrice
         }),
-        this.userPokemonRepo.findByUserAndPokemon(userId, shopItem.pokemonId)
+        this.userPokemonRepo.findByUserAndPokemon(userId, shopItem.pokemonId),
+        this.shopPurchaseRepo.getTotalPurchasedQuantityByUserAndItem(
+          userId,
+          data.shopItemId
+        )
       ])
       // ko du ma doi mua ha ?
       if (!userWallet) throw new NotEnoughBalanceException()
@@ -91,6 +96,14 @@ export class ShopPurchaseService {
       // 3.5) user da co pokemon nay chua
       if (existed) {
         throw new UserHasPokemonException()
+      }
+
+      // 3.6) Check purchase limit (nếu có giới hạn)
+      if (shopItem.purchaseLimit !== null) {
+        const newTotal = totalPurchased + data.quantity
+        if (newTotal > shopItem.purchaseLimit) {
+          throw new PurchaseLimitReachedException()
+        }
       }
 
       // 4) transaction
@@ -152,6 +165,11 @@ export class ShopPurchaseService {
           await this.userPokemonService.addPokemonByShop(
             { userId, pokemonId: shopItem.pokemonId },
             prismaTx as any
+          ),
+          this.shopItemRepo.incrementPurchasedCount(
+            data.shopItemId,
+            data.quantity,
+            prismaTx
           )
         ])
 

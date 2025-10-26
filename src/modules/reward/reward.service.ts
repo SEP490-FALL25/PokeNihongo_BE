@@ -41,6 +41,32 @@ export class RewardService {
     }
   }
 
+  async getListWithAllLang(pagination: PaginationQueryType, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const data = await this.rewardRepo.getListWithAllLang(pagination, langId ?? undefined)
+
+    // Build language code map for all referenced languageIds
+    const allLangIds = new Set<number>()
+    for (const item of data.results as any[]) {
+      for (const t of item.nameTranslations ?? []) allLangIds.add(t.languageId)
+    }
+    const languages = await this.languageRepo.getWithListId(Array.from(allLangIds))
+    const codeMap = Object.fromEntries(languages.map((l) => [l.id, l.code]))
+
+    const results = (data.results as any[]).map((item) => ({
+      ...item,
+      nameTranslations: (item.nameTranslations ?? []).map((t: any) => ({
+        key: codeMap[t.languageId] ?? String(t.languageId),
+        value: t.value
+      }))
+    }))
+
+    return {
+      data: { ...data, results },
+      message: this.i18nService.translate(RewardMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
   async findById(id: number, lang: string = 'vi') {
     const langId = await this.languageRepo.getIdByCode(lang)
 
@@ -61,6 +87,41 @@ export class RewardService {
       ...reward,
       nameTranslation: (reward as any).nameTranslations?.[0]?.value ?? null,
       descriptionTranslation: (reward as any).descriptionTranslations?.[0]?.value ?? null
+    }
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: result,
+      message: this.i18nService.translate(RewardMessage.GET_SUCCESS, lang)
+    }
+  }
+
+  async findByIdWithAllLang(id: number, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+
+    const reward: any = await this.rewardRepo.findByIdWithAllLang(id)
+    if (!reward) {
+      throw new NotFoundRecordException()
+    }
+
+    // derive single-language name for current lang if available
+    const nameTranslation = langId
+      ? (reward.nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
+        null)
+      : null
+
+    // map array to { key: code, value }
+    const languages = await this.languageRepo.getWithListId(
+      Array.from(new Set((reward.nameTranslations ?? []).map((t: any) => t.languageId)))
+    )
+    const codeMap = Object.fromEntries(languages.map((l) => [l.id, l.code]))
+
+    const result = {
+      ...reward,
+      nameTranslations: (reward.nameTranslations ?? []).map((t: any) => ({
+        key: codeMap[t.languageId] ?? String(t.languageId),
+        value: t.value
+      }))
     }
 
     return {

@@ -22,6 +22,7 @@ import {
   CreatedRewardBodyInputDTO,
   CreateRewardResDTO,
   GetRewardDetailResDTO,
+  GetRewardDetailWithAllLangResDTO,
   GetRewardParamsDTO,
   UpdateRewardBodyInputDTO,
   UpdateRewardResDTO
@@ -41,11 +42,11 @@ export class RewardController {
     return this.rewardService.list(query, lang)
   }
 
-  @Get(':rewardId')
+  @Get('admin')
   @IsPublic()
-  @ZodSerializerDto(GetRewardDetailResDTO)
-  findById(@Param() params: GetRewardParamsDTO, @I18nLang() lang: string) {
-    return this.rewardService.findById(params.rewardId, lang)
+  @ZodSerializerDto(PaginationResponseSchema)
+  getListWithAllLang(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
+    return this.rewardService.getListWithAllLang(query, lang)
   }
 
   @Post()
@@ -62,6 +63,20 @@ export class RewardController {
       },
       lang
     )
+  }
+
+  @Get('admin/:rewardId')
+  @IsPublic()
+  @ZodSerializerDto(GetRewardDetailWithAllLangResDTO)
+  findByIdWithAllLang(@Param() params: GetRewardParamsDTO, @I18nLang() lang: string) {
+    return this.rewardService.findByIdWithAllLang(params.rewardId, lang)
+  }
+
+  @Get(':rewardId')
+  @IsPublic()
+  @ZodSerializerDto(GetRewardDetailResDTO)
+  findById(@Param() params: GetRewardParamsDTO, @I18nLang() lang: string) {
+    return this.rewardService.findById(params.rewardId, lang)
   }
 
   @Put(':rewardId')

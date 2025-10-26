@@ -69,10 +69,25 @@ export const GetRewardParamsSchema = z
   })
   .strict()
 
+export const GetRewardDetailWithAllLangResSchema = z.object({
+  statusCode: z.number(),
+  data: RewardSchema.extend({
+    nameTranslations: z
+      .array(
+        z.object({
+          key: z.string(),
+          value: z.string()
+        })
+      )
+      .optional()
+  }),
+  message: z.string()
+})
+
 export const GetRewardDetailResSchema = z.object({
   statusCode: z.number(),
   data: RewardSchema.extend({
-    nameTranslation: z.string()
+    nameTranslation: z.string().nullable().optional()
   }),
   message: z.string()
 })

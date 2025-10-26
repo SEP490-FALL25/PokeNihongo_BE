@@ -145,4 +145,23 @@ export class ShopItemRepo {
       }
     })
   }
+
+  incrementPurchasedCount(
+    id: number,
+    quantity: number,
+    prismaTx?: PrismaClient
+  ): Promise<ShopItemType> {
+    const client = prismaTx || this.prismaService
+    return client.shopItem.update({
+      where: {
+        id,
+        deletedAt: null
+      },
+      data: {
+        purchasedCount: {
+          increment: quantity
+        }
+      }
+    })
+  }
 }

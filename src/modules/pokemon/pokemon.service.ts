@@ -686,4 +686,14 @@ export class PokemonService {
       throw error
     }
   }
+
+  async getListPokeWithStartEvolu(lang: string = 'vi') {
+    const data = await this.pokemonRepo.getPokemonsWithoutPreviousEvolution()
+
+    return {
+      statusCode: 200,
+      data,
+      message: this.i18nService.translate(PokemonMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
 }

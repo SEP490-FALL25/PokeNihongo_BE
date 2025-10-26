@@ -149,4 +149,23 @@ export class ShopPurchaseRepo {
       }
     })
   }
+
+  // Tính tổng số lượng user đã mua cho 1 shop item cụ thể
+  async getTotalPurchasedQuantityByUserAndItem(
+    userId: number,
+    shopItemId: number
+  ): Promise<number> {
+    const purchases = await this.prismaService.shopPurchase.findMany({
+      where: {
+        userId,
+        shopItemId,
+        deletedAt: null
+      },
+      select: {
+        quantity: true
+      }
+    })
+
+    return purchases.reduce((total, purchase) => total + purchase.quantity, 0)
+  }
 }

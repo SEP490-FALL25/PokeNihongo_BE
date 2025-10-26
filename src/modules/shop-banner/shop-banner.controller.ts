@@ -21,6 +21,7 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreatedShopBannerBodyInputDTO,
   CreateShopBannerResDTO,
+  GetShopBannerByTodayResDTO,
   GetShopBannerDetailResDTO,
   GetShopBannerParamsDTO,
   UpdateShopBannerBodyInputDTO,
@@ -39,6 +40,13 @@ export class ShopBannerController {
   @ZodSerializerDto(PaginationResponseSchema)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.shopBannerService.list(query, lang)
+  }
+
+  @Get('today/user')
+  @IsPublic()
+  @ZodSerializerDto(GetShopBannerByTodayResDTO)
+  getByToday(@I18nLang() lang: string, @ActiveUser('userId') userId?: number) {
+    return this.shopBannerService.getByToday(lang, userId)
   }
 
   @Get(':shopBannerId')

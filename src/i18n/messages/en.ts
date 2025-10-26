@@ -354,6 +354,7 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Shop purchase list retrieved successfully',
     NOT_FOUND: 'Shop purchase not found',
     ALREADY_EXISTS: 'Shop purchase already exists',
-    INVALID_DATA: 'Invalid shop purchase data'
+    INVALID_DATA: 'Invalid shop purchase data',
+    PURCHASE_LIMIT_REACHED: 'Purchase limit reached for this item'
   }
 }

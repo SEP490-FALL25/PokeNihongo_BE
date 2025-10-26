@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod'
 import {
   CreateShopBannerBodyInputSchema,
   CreateShopBannerResSchema,
+  GetShopBannerByTodayResSchema,
   GetShopBannerDetailResSchema,
   GetShopBannerParamsSchema,
   UpdateShopBannerBodyInputSchema,
@@ -24,4 +25,8 @@ export class GetShopBannerParamsDTO extends createZodDto(GetShopBannerParamsSche
 
 export class GetShopBannerDetailResDTO extends createZodDto(
   GetShopBannerDetailResSchema
+) {}
+
+export class GetShopBannerByTodayResDTO extends createZodDto(
+  GetShopBannerByTodayResSchema
 ) {}
