@@ -122,6 +122,15 @@ export class QuestionBankService {
         if (body.questionType === 'SPEAKING' && (!body.pronunciation || body.pronunciation.trim().length === 0)) {
             throw new BadRequestException('SPEAKING type bắt buộc phải có pronunciation (cách phát âm romaji)')
         }
+
+        // Rule 3: LISTENING - audioUrl must be a valid URL if provided
+        if (body.questionType === 'LISTENING' && body.audioUrl && body.audioUrl.trim().length > 0) {
+            try {
+                new URL(body.audioUrl)
+            } catch {
+                throw new BadRequestException('audioUrl phải là một URL hợp lệ')
+            }
+        }
     }
 
 
