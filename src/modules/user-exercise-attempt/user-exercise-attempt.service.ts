@@ -102,9 +102,9 @@ export class UserExerciseAttemptService {
         }
     }
 
-    async findOne(params: GetUserExerciseAttemptByIdParamsType) {
+    async findOne(id: number) {
         const userExerciseAttempt = await this.userExerciseAttemptRepository.findUnique({
-            id: params.id
+            id: id
         })
 
         if (!userExerciseAttempt) {

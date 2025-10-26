@@ -68,8 +68,8 @@ export class LessonController {
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy bài học' })
   @ZodSerializerDto(LessonResponseDTO)
-  async getLessonById(@Param() params: GetLessonByIdParamsDTO) {
-    return await this.lessonService.getLessonById(params)
+  async getLessonById(@Param('id') id: string) {
+    return await this.lessonService.getLessonById(Number(id))
   }
 
   @Get('slug/:slug')

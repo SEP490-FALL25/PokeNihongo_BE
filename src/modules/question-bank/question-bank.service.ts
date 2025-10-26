@@ -197,8 +197,8 @@ export class QuestionBankService {
         }
     }
 
-    async findOne(params: GetQuestionBankByIdParamsType): Promise<MessageResDTO> {
-        const questionBank = await this.questionBankRepository.findById(params.id)
+    async findOne(id: number): Promise<MessageResDTO> {
+        const questionBank = await this.questionBankRepository.findById(id)
 
         if (!questionBank) {
             throw QuestionBankNotFoundException

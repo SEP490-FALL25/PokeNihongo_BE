@@ -41,7 +41,8 @@ export class TestSetQuestionBankService {
             }
 
             // Validate QuestionBank exists and get questionType
-            const questionBank = await this.questionBankService.findOne({ id: data.questionBankId })
+
+            const questionBank = await this.questionBankService.findOne(Number(data.questionBankId))
             if (!questionBank) {
                 throw QuestionBankNotFoundException
             }
@@ -127,7 +128,7 @@ export class TestSetQuestionBankService {
             for (const questionBankId of data.questionBankIds) {
                 try {
                     // Validate QuestionBank exists and get questionType
-                    const questionBank = await this.questionBankService.findOne({ id: questionBankId })
+                    const questionBank = await this.questionBankService.findOne(Number(questionBankId))
                     if (!questionBank) {
                         failedItems.push({
                             questionBankId,
@@ -305,7 +306,7 @@ export class TestSetQuestionBankService {
 
             // Validate QuestionBank exists if questionBankId is being updated
             if (data.questionBankId) {
-                const questionBank = await this.questionBankService.findOne({ id: data.questionBankId })
+                const questionBank = await this.questionBankService.findOne(Number(data.questionBankId))
                 if (!questionBank) {
                     throw QuestionBankNotFoundException
                 }
