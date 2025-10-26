@@ -1,7 +1,6 @@
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { PokemonSchema } from '@/modules/pokemon/entities/pokemon.entity'
-import { ShopBannerSchema } from '@/modules/shop-banner/entities/shop-banner.entity'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
@@ -58,7 +57,9 @@ export const GetShopItemParamsSchema = z.object({
 
 export const GetShopItemDetailSchema = ShopItemSchema.extend({
   // Use lazy to break circular dependency with ShopBannerSchema
-  shopBanner: z.lazy(() => ShopBannerSchema).optional(),
+  shopBanner: z
+    .lazy(() => require('../../shop-banner/entities/shop-banner.entity').ShopBannerSchema)
+    .optional(),
   pokemon: PokemonSchema.optional()
 })
 

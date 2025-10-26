@@ -313,7 +313,8 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Wallet list retrieved successfully',
     NOT_FOUND: 'Wallet not found',
     ALREADY_EXISTS: 'Wallet already exists',
-    INVALID_DATA: 'Invalid wallet data'
+    INVALID_DATA: 'Invalid wallet data',
+    INSUFFICIENT_BALANCE: 'Insufficient wallet balance'
   },
   wallet_transaction: {
     CREATE_SUCCESS: 'Wallet transaction created successfully',
@@ -344,5 +345,16 @@ export const enMessages = {
     NOT_FOUND: 'Shop item not found',
     ALREADY_EXISTS: 'Shop item already exists',
     INVALID_DATA: 'Invalid shop item data'
+  },
+  shop_purchase: {
+    CREATE_SUCCESS: 'Shop purchase created successfully',
+    UPDATE_SUCCESS: 'Shop purchase updated successfully',
+    DELETE_SUCCESS: 'Shop purchase deleted successfully',
+    GET_SUCCESS: 'Shop purchase retrieved successfully',
+    GET_LIST_SUCCESS: 'Shop purchase list retrieved successfully',
+    NOT_FOUND: 'Shop purchase not found',
+    ALREADY_EXISTS: 'Shop purchase already exists',
+    INVALID_DATA: 'Invalid shop purchase data',
+    PURCHASE_LIMIT_REACHED: 'Purchase limit reached for this item'
   }
 }

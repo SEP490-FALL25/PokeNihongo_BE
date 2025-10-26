@@ -526,4 +526,22 @@ export class PokemonRepo {
       }
     })
   }
+
+  // Get Pokemons that have no previous evolution (starter evolution list)
+  getPokemonsWithoutPreviousEvolution(): Promise<PokemonBasic[]> {
+    return this.prismaService.pokemon.findMany({
+      where: {
+        deletedAt: null,
+        previousPokemons: {
+          none: {
+            deletedAt: null
+          }
+        }
+      },
+
+      orderBy: {
+        pokedex_number: 'asc'
+      }
+    })
+  }
 }

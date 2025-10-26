@@ -331,7 +331,8 @@ export const WalletMessage = {
   GET_LIST_SUCCESS: 'wallet.GET_LIST_SUCCESS',
   NOT_FOUND: 'wallet.NOT_FOUND',
   ALREADY_EXISTS: 'wallet.ALREADY_EXISTS',
-  INVALID_DATA: 'wallet.INVALID_DATA'
+  INVALID_DATA: 'wallet.INVALID_DATA',
+  INSUFFICIENT_BALANCE: 'wallet.INSUFFICIENT_BALANCE'
 } as const
 
 export const WalletTransactionMessage = {
@@ -365,4 +366,17 @@ export const ShopItemMessage = {
   NOT_FOUND: 'shop_item.NOT_FOUND',
   ALREADY_EXISTS: 'shop_item.ALREADY_EXISTS',
   INVALID_DATA: 'shop_item.INVALID_DATA'
+} as const
+
+export const ShopPurchaseMessage = {
+  CREATE_SUCCESS: 'shop_purchase.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'shop_purchase.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'shop_purchase.DELETE_SUCCESS',
+  GET_SUCCESS: 'shop_purchase.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'shop_purchase.GET_LIST_SUCCESS',
+  NOT_FOUND: 'shop_purchase.NOT_FOUND',
+
+  ALREADY_EXISTS: 'shop_purchase.ALREADY_EXISTS',
+  INVALID_DATA: 'shop_purchase.INVALID_DATA',
+  PURCHASE_LIMIT_REACHED: 'shop_purchase.PURCHASE_LIMIT_REACHED'
 } as const

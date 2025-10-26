@@ -199,6 +199,71 @@ export class RewardRepo {
     }
   }
 
+  async getListWithAllLang(pagination: PaginationQueryType, langId?: number) {
+    const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, REWARD_FIELDS)
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    // Build base where
+    const where: any = { deletedAt: null, ...rawWhere }
+
+    // Support filtering by name value in a specific language (if provided)
+    const nameFilterRaw =
+      (rawWhere as any).nameTranslation ?? (rawWhere as any).nameTranslations
+    if (nameFilterRaw) {
+      const toContainsFilter = (raw: any) => {
+        if (typeof raw === 'object' && raw !== null) {
+          const val =
+            (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
+          return { contains: String(val), mode: 'insensitive' as const }
+        }
+        return { contains: String(raw), mode: 'insensitive' as const }
+      }
+      const searchFilter = toContainsFilter(nameFilterRaw)
+      delete (where as any).nameTranslation
+      delete (where as any).nameTranslations
+      where.nameTranslations = langId
+        ? {
+            some: {
+              languageId: langId,
+              value: searchFilter
+            }
+          }
+        : {
+            some: {
+              value: searchFilter
+            }
+          }
+    }
+
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.reward.count({ where }),
+      this.prismaService.reward.findMany({
+        where,
+        include: {
+          // Return all language translations for admin view
+          nameTranslations: {
+            select: { languageId: true, value: true, key: true, id: true }
+          }
+        },
+        orderBy,
+        skip,
+        take
+      })
+    ])
+
+    return {
+      results: data,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
+    }
+  }
+
   findById(id: number): Promise<RewardType | null> {
     return this.prismaService.reward.findUnique({
       where: {
@@ -219,6 +284,20 @@ export class RewardRepo {
           where: {
             languageId: langId
           }
+        }
+      }
+    })
+  }
+
+  findByIdWithAllLang(id: number) {
+    return this.prismaService.reward.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        nameTranslations: {
+          select: { id: true, languageId: true, key: true, value: true }
         }
       }
     })

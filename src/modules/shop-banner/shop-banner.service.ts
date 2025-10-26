@@ -9,11 +9,13 @@ import {
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError,
   isUniqueConstraintPrismaError,
+  todayUTCWith0000,
   todayUTCWith0000ByDate
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
+import { ShopPurchaseRepo } from '../shop-purchase/shop-purchase.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
 import {
@@ -34,7 +36,8 @@ export class ShopBannerService {
     private shopBannerRepo: ShopBannerRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
-    private readonly translationRepo: TranslationRepository
+    private readonly translationRepo: TranslationRepository,
+    private readonly shopPurchaseRepo: ShopPurchaseRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -366,6 +369,73 @@ export class ShopBannerService {
       if (isNotFoundPrismaError(error)) {
         throw new NotFoundRecordException()
       }
+      throw error
+    }
+  }
+
+  async getByToday(lang: string = 'vi', userId?: number) {
+    try {
+      const date = todayUTCWith0000()
+      const langId = await this.languageRepo.getIdByCode(lang)
+
+      if (!langId) {
+        return {
+          statusCode: HttpStatus.OK,
+          data: [],
+          message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+        }
+      }
+
+      const banners = await this.shopBannerRepo.findValidByDateWithLangId(date, langId)
+
+      // If we have a userId, compute canBuy per item based on their total purchased quantities
+      if (userId) {
+        // Collect unique item IDs
+        const itemIds = Array.from(
+          new Set(banners.flatMap((b: any) => (b.shopItems || []).map((i: any) => i.id)))
+        )
+
+        // Fetch totals in parallel
+        const totals = await Promise.all(
+          itemIds.map(async (itemId) => ({
+            itemId,
+            total: await this.shopPurchaseRepo.getTotalPurchasedQuantityByUserAndItem(
+              userId,
+              itemId
+            )
+          }))
+        )
+        const totalMap = new Map<number, number>(totals.map((t) => [t.itemId, t.total]))
+
+        const data = banners.map((b: any) => ({
+          ...b,
+          shopItems: (b.shopItems || []).map((it: any) => {
+            const limit = it.purchaseLimit
+            const bought = totalMap.get(it.id) ?? 0
+            const canBuy = limit == null ? true : bought < limit
+            return { ...it, canBuy }
+          })
+        }))
+
+        return {
+          statusCode: HttpStatus.OK,
+          data,
+          message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+        }
+      }
+
+      // No user: default canBuy to true for all items
+      const data = banners.map((b: any) => ({
+        ...b,
+        shopItems: (b.shopItems || []).map((it: any) => ({ ...it, canBuy: true }))
+      }))
+
+      return {
+        statusCode: HttpStatus.OK,
+        data,
+        message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+      }
+    } catch (error) {
       throw error
     }
   }

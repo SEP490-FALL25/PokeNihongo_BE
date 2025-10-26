@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common'
 
 import { WalletTypeType } from '@/common/constants/wallet.constant'
 import { parseQs } from '@/common/utils/qs-parser'
+import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
   CreateWalletBodyType,
@@ -15,14 +16,22 @@ import {
 export class WalletRepo {
   constructor(private prismaService: PrismaService) {}
 
-  create({
-    createdById,
-    data
-  }: {
-    createdById: number | null
-    data: CreateWalletBodyType
-  }): Promise<WalletType> {
-    return this.prismaService.wallet.create({
+  async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
+    return this.prismaService.$transaction(callback)
+  }
+
+  create(
+    {
+      createdById,
+      data
+    }: {
+      createdById: number | null
+      data: CreateWalletBodyType
+    },
+    prismaTx?: PrismaClient
+  ): Promise<WalletType> {
+    const client = prismaTx || this.prismaService
+    return client.wallet.create({
       data: {
         ...data,
         createdById
@@ -30,16 +39,20 @@ export class WalletRepo {
     })
   }
 
-  update({
-    id,
-    updatedById,
-    data
-  }: {
-    id: number
-    updatedById: number
-    data: UpdateWalletBodyType
-  }): Promise<WalletType> {
-    return this.prismaService.wallet.update({
+  update(
+    {
+      id,
+      updatedById,
+      data
+    }: {
+      id: number
+      updatedById: number
+      data: UpdateWalletBodyType
+    },
+    prismaTx?: PrismaClient
+  ): Promise<WalletType> {
+    const client = prismaTx || this.prismaService
+    return client.wallet.update({
       where: {
         id,
         deletedAt: null
@@ -59,15 +72,17 @@ export class WalletRepo {
       id: number
       deletedById: number
     },
-    isHard?: boolean
+    isHard?: boolean,
+    prismaTx?: PrismaClient
   ): Promise<WalletType> {
+    const client = prismaTx || this.prismaService
     return isHard
-      ? this.prismaService.wallet.delete({
+      ? client.wallet.delete({
           where: {
             id
           }
         })
-      : this.prismaService.wallet.update({
+      : client.wallet.update({
           where: {
             id,
             deletedAt: null
@@ -132,6 +147,96 @@ export class WalletRepo {
       where: {
         userId,
         deletedAt: null
+      }
+    })
+  }
+
+  checkEnoughBalance({
+    userId,
+    type,
+    amount
+  }: {
+    userId: number
+    type: WalletTypeType
+    amount: number
+  }): Promise<WalletType | null> {
+    return this.prismaService.wallet.findFirst({
+      where: {
+        userId,
+        type,
+        deletedAt: null,
+        balance: {
+          gte: amount
+        }
+      }
+    })
+  }
+  async addBalanceToWalletWithType(
+    {
+      userId,
+      type,
+      amount
+    }: {
+      userId: number
+      type: WalletTypeType
+      amount: number
+    },
+    prismaTx?: PrismaClient
+  ): Promise<WalletType | null> {
+    const client = prismaTx || this.prismaService
+    const wallet = await client.wallet.findFirst({
+      where: {
+        userId,
+        type,
+        deletedAt: null
+      }
+    })
+
+    if (!wallet) return null
+
+    return client.wallet.update({
+      where: {
+        id: wallet.id
+      },
+      data: {
+        balance: {
+          increment: amount
+        }
+      }
+    })
+  }
+
+  async minusBalanceToWalletWithTypeUserId(
+    {
+      userId,
+      type,
+      amount
+    }: {
+      userId: number
+      type: WalletTypeType
+      amount: number
+    },
+    prismaTx?: PrismaClient
+  ): Promise<WalletType | null> {
+    const client = prismaTx || this.prismaService
+    const wallet = await client.wallet.findFirst({
+      where: {
+        userId,
+        type,
+        deletedAt: null
+      }
+    })
+
+    if (!wallet) return null
+
+    return client.wallet.update({
+      where: {
+        id: wallet.id
+      },
+      data: {
+        balance: {
+          decrement: amount
+        }
       }
     })
   }

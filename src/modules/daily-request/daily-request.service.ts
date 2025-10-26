@@ -45,6 +45,40 @@ export class DailyRequestService {
     }
   }
 
+  async getListwithAllLang(pagination: PaginationQueryType, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const data = await this.dailyRequestRepo.getListwithAllLang(
+      pagination,
+      langId ?? undefined
+    )
+    // Build language code map for all referenced languageIds
+    const allLangIds = new Set<number>()
+    for (const item of data.results as any[]) {
+      for (const t of item.nameTranslations ?? []) allLangIds.add(t.languageId)
+      for (const t of item.descriptionTranslations ?? []) allLangIds.add(t.languageId)
+    }
+    const languages = await this.languageRepo.getWithListId(Array.from(allLangIds))
+    const codeMap = Object.fromEntries(languages.map((l) => [l.id, l.code]))
+
+    const results = (data.results as any[]).map((item) => ({
+      ...item,
+      nameTranslations: (item.nameTranslations ?? []).map((t: any) => ({
+        key: codeMap[t.languageId] ?? String(t.languageId),
+        value: t.value
+      })),
+      descriptionTranslations: (item.descriptionTranslations ?? []).map((t: any) => ({
+        key: codeMap[t.languageId] ?? String(t.languageId),
+        value: t.value
+      }))
+    }))
+
+    return {
+      status: HttpStatus.OK,
+      data: { ...data, results },
+      message: this.i18nService.translate(DailyRequestMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
   async findById(id: number, lang: string = 'vi') {
     const langId = await this.languageRepo.getIdByCode(lang)
     if (!langId) {
@@ -59,6 +93,52 @@ export class DailyRequestService {
       ...dailyRequest,
       nameTranslation: dr.nameTranslations?.[0]?.value ?? null,
       descriptionTranslation: dr.descriptionTranslations?.[0]?.value ?? null
+    }
+    return {
+      statusCode: HttpStatus.OK,
+      data: resultRes,
+      message: this.i18nService.translate(DailyRequestMessage.GET_SUCCESS, lang)
+    }
+  }
+
+  async findByIdWithAllLang(id: number, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const dailyRequest: any = await this.dailyRequestRepo.findByIdWithAllLang(id)
+    if (!dailyRequest) {
+      throw new NotFoundRecordException()
+    }
+    // derive single-language translations
+    const nameTranslation = langId
+      ? (dailyRequest.nameTranslations?.find((t: any) => t.languageId === langId)
+          ?.value ?? null)
+      : null
+    const descriptionTranslation = langId
+      ? (dailyRequest.descriptionTranslations?.find((t: any) => t.languageId === langId)
+          ?.value ?? null)
+      : null
+
+    // map arrays to { key: code, value }
+    const langIds = new Set<number>([
+      ...(dailyRequest.nameTranslations ?? []).map((t: any) => t.languageId),
+      ...(dailyRequest.descriptionTranslations ?? []).map((t: any) => t.languageId)
+    ])
+    const languages = await this.languageRepo.getWithListId(Array.from(langIds))
+    const codeMap = Object.fromEntries(languages.map((l) => [l.id, l.code]))
+
+    const resultRes = {
+      ...dailyRequest,
+      nameTranslations: (dailyRequest.nameTranslations ?? []).map((t: any) => ({
+        key: codeMap[t.languageId] ?? String(t.languageId),
+        value: t.value
+      })),
+      descriptionTranslations: (dailyRequest.descriptionTranslations ?? []).map(
+        (t: any) => ({
+          key: codeMap[t.languageId] ?? String(t.languageId),
+          value: t.value
+        })
+      ),
+      nameTranslation,
+      descriptionTranslation
     }
     return {
       statusCode: HttpStatus.OK,

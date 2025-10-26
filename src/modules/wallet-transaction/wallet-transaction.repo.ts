@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common'
 
 import { WalletTransactionTypeType } from '@/common/constants/wallet-transaction.constant'
 import { parseQs } from '@/common/utils/qs-parser'
+import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
   CreateWalletTransactionBodyType,
@@ -14,15 +15,21 @@ import {
 @Injectable()
 export class WalletTransactionRepo {
   constructor(private prismaService: PrismaService) {}
-
-  create({
-    createdById,
-    data
-  }: {
-    createdById: number | null
-    data: CreateWalletTransactionBodyType
-  }): Promise<WalletTransactionType> {
-    return this.prismaService.walletTransaction.create({
+  async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
+    return this.prismaService.$transaction(callback)
+  }
+  create(
+    {
+      createdById,
+      data
+    }: {
+      createdById?: number | null
+      data: CreateWalletTransactionBodyType
+    },
+    prismaTx?: PrismaClient
+  ): Promise<WalletTransactionType> {
+    const client = prismaTx || this.prismaService
+    return client.walletTransaction.create({
       data: {
         ...data,
         createdById
@@ -30,16 +37,20 @@ export class WalletTransactionRepo {
     })
   }
 
-  update({
-    id,
-    updatedById,
-    data
-  }: {
-    id: number
-    updatedById: number
-    data: UpdateWalletTransactionBodyType
-  }): Promise<WalletTransactionType> {
-    return this.prismaService.walletTransaction.update({
+  update(
+    {
+      id,
+      updatedById,
+      data
+    }: {
+      id: number
+      updatedById: number
+      data: UpdateWalletTransactionBodyType
+    },
+    prismaTx?: PrismaClient
+  ): Promise<WalletTransactionType> {
+    const client = prismaTx || this.prismaService
+    return client.walletTransaction.update({
       where: {
         id,
         deletedAt: null
@@ -59,15 +70,17 @@ export class WalletTransactionRepo {
       id: number
       deletedById: number
     },
-    isHard?: boolean
+    isHard?: boolean,
+    prismaTx?: PrismaClient
   ): Promise<WalletTransactionType> {
+    const client = prismaTx || this.prismaService
     return isHard
-      ? this.prismaService.walletTransaction.delete({
+      ? client.walletTransaction.delete({
           where: {
             id
           }
         })
-      : this.prismaService.walletTransaction.update({
+      : client.walletTransaction.update({
           where: {
             id,
             deletedAt: null
