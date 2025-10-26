@@ -15,10 +15,10 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
-import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import { ShopPurchaseRepo } from '../shop-purchase/shop-purchase.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
+import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import {
   ShopBannerAlreadyExistsException,
   ShopBannerInvalidDateRangeException
@@ -414,6 +414,8 @@ export class ShopBannerService {
 
   async getByToday(lang: string = 'vi', userId?: number) {
     try {
+      console.log(userId)
+
       const date = todayUTCWith0000()
       const langId = await this.languageRepo.getIdByCode(lang)
 
@@ -425,7 +427,7 @@ export class ShopBannerService {
         }
       }
 
-  const banners = await this.shopBannerRepo.findValidByDateWithLangId(date, langId)
+      const banners = await this.shopBannerRepo.findValidByDateWithLangId(date, langId)
 
       // If we have a userId, compute canBuy per item based on their total purchased quantities
       if (userId) {
@@ -455,18 +457,38 @@ export class ShopBannerService {
         const data = banners.map((b: any) => ({
           ...b,
           shopItems: (b.shopItems || []).map((it: any) => {
+            // 1. Nếu user đã sở hữu pokemon này → canBuy = false
+            const ownsTarget = ownedPokemonIds.has(it.pokemonId)
+            if (ownsTarget) {
+              return { ...it, canBuy: false }
+            }
+
+            // 2. Kiểm tra previousPokemons
+            const prevList = it.pokemon?.previousPokemons || []
+
+            // 2a. Nếu previousPokemons là [] (không có tiền nhiệm) → canBuy = true (nếu đủ limit)
+            if (prevList.length === 0) {
+              const limit = it.purchaseLimit
+              const bought = totalMap.get(it.id) ?? 0
+              const withinLimit = limit == null ? true : bought < limit
+              return { ...it, canBuy: withinLimit }
+            }
+
+            // 2b. Nếu có previousPokemons, check xem user có sở hữu ít nhất 1 con trong list không
+            const ownsPrev = prevList.some(
+              (prev: any) => prev?.id && ownedPokemonIds.has(prev.id)
+            )
+
+            // Nếu không sở hữu bất kỳ pokemon tiền nhiệm nào → canBuy = false
+            if (!ownsPrev) {
+              return { ...it, canBuy: false }
+            }
+
+            // 3. Nếu sở hữu pokemon tiền nhiệm, kiểm tra purchase limit
             const limit = it.purchaseLimit
             const bought = totalMap.get(it.id) ?? 0
             const withinLimit = limit == null ? true : bought < limit
-            const ownsTarget = ownedPokemonIds.has(it.pokemonId)
-            const prevList = it.pokemon?.previousPokemons || []
-            const requiresPrev = prevList.length > 0
-            const ownsPrev = !requiresPrev
-              ? true
-              : prevList.some((prev: any) => prev?.id && ownedPokemonIds.has(prev.id))
-
-            const canBuy = withinLimit && !ownsTarget && ownsPrev
-            return { ...it, canBuy }
+            return { ...it, canBuy: withinLimit }
           })
         }))
 
