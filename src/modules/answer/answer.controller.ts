@@ -105,8 +105,8 @@ export class AnswerController {
     @ApiOperation({ summary: 'Lấy thông tin câu trả lời theo ID' })
     @ApiResponse({ status: 200, description: 'Lấy thông tin câu trả lời thành công', type: AnswerResponseSwaggerDTO })
     @ZodSerializerDto(AnswerResponseDTO)
-    async getAnswerById(@Param() params: GetAnswerByIdParamsDTO) {
-        return await this.answerService.getAnswerById(params)
+    async getAnswerById(@Param('id') id: string) {
+        return await this.answerService.getAnswerById(Number(id))
     }
 
     @Put(':id')
@@ -115,10 +115,10 @@ export class AnswerController {
     @ApiResponse({ status: 200, description: 'Cập nhật câu trả lời thành công', type: AnswerResponseSwaggerDTO })
     @ZodSerializerDto(AnswerResponseDTO)
     async updateAnswer(
-        @Param() params: GetAnswerByIdParamsDTO,
+        @Param('id') id: string,
         @Body() body: UpdateAnswerBodyDTO
     ) {
-        return await this.answerService.updateAnswer(params.id, body)
+        return await this.answerService.updateAnswer(Number(id), body)
     }
 
     @Delete(':id')
@@ -126,7 +126,7 @@ export class AnswerController {
     @ApiOperation({ summary: 'Xóa câu trả lời' })
     @ApiResponse({ status: 204, description: 'Xóa câu trả lời thành công' })
     @ZodSerializerDto(MessageResDTO)
-    async deleteAnswer(@Param() params: GetAnswerByIdParamsDTO) {
-        return await this.answerService.deleteAnswer(params.id)
+    async deleteAnswer(@Param('id') id: string) {
+        return await this.answerService.deleteAnswer(Number(id))
     }
 }
