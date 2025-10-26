@@ -15,6 +15,7 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
+import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import { ShopPurchaseRepo } from '../shop-purchase/shop-purchase.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
@@ -37,7 +38,8 @@ export class ShopBannerService {
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
     private readonly translationRepo: TranslationRepository,
-    private readonly shopPurchaseRepo: ShopPurchaseRepo
+    private readonly shopPurchaseRepo: ShopPurchaseRepo,
+    private readonly userPokemonRepo: UserPokemonRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -423,7 +425,7 @@ export class ShopBannerService {
         }
       }
 
-      const banners = await this.shopBannerRepo.findValidByDateWithLangId(date, langId)
+  const banners = await this.shopBannerRepo.findValidByDateWithLangId(date, langId)
 
       // If we have a userId, compute canBuy per item based on their total purchased quantities
       if (userId) {
@@ -444,12 +446,26 @@ export class ShopBannerService {
         )
         const totalMap = new Map<number, number>(totals.map((t) => [t.itemId, t.total]))
 
+        // Fetch user's owned pokemons
+        const userPokemons = await this.userPokemonRepo.getByUserId(userId)
+        const ownedPokemonIds = new Set<number>(
+          (userPokemons || []).map((up: any) => up.pokemonId)
+        )
+
         const data = banners.map((b: any) => ({
           ...b,
           shopItems: (b.shopItems || []).map((it: any) => {
             const limit = it.purchaseLimit
             const bought = totalMap.get(it.id) ?? 0
-            const canBuy = limit == null ? true : bought < limit
+            const withinLimit = limit == null ? true : bought < limit
+            const ownsTarget = ownedPokemonIds.has(it.pokemonId)
+            const prevList = it.pokemon?.previousPokemons || []
+            const requiresPrev = prevList.length > 0
+            const ownsPrev = !requiresPrev
+              ? true
+              : prevList.some((prev: any) => prev?.id && ownedPokemonIds.has(prev.id))
+
+            const canBuy = withinLimit && !ownsTarget && ownsPrev
             return { ...it, canBuy }
           })
         }))
