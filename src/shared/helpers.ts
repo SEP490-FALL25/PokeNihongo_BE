@@ -79,3 +79,31 @@ export function todayUTCWith0000() {
   // 0h VN
   return dateUTC
 }
+
+export function todayUTCWith0000ByDate(inputDate: Date) {
+  const now = inputDate
+
+  // Lấy thành phần ngày/tháng/năm theo UTC
+  const vnYear = now.getUTCFullYear()
+  const vnMonth = now.getUTCMonth() // chú ý: tháng trong JS bắt đầu từ 0
+  const vnDate = now.getUTCDate()
+
+  // Tạo 1 Date mới ở mốc 00:00:00 UTC
+  const dateUTC = new Date(Date.UTC(vnYear, vnMonth, vnDate, 0, 0, 0, 0))
+
+  // 0h VN
+  return dateUTC
+}
+
+export function addDaysUTC0000(date, days) {
+  const utc = Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate() + days,
+    0, // giờ = 0
+    0, // phút = 0
+    0, // giây = 0
+    0 // mili-giây = 0
+  )
+  return new Date(utc)
+}

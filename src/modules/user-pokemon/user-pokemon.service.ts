@@ -9,6 +9,7 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { Injectable } from '@nestjs/common'
+import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { LevelRepo } from '../level/level.repo'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
@@ -38,7 +39,7 @@ export class UserPokemonService {
     private readonly sharedUserRepository: SharedUserRepository,
     private readonly i18nService: I18nService,
     private prismaService: PrismaService
-  ) { }
+  ) {}
 
   async list(pagination: PaginationQueryType, userId: number, lang: string = 'vi') {
     const data = await this.userPokemonRepo.list(pagination, userId)
@@ -47,6 +48,43 @@ export class UserPokemonService {
       data,
       message: this.i18nService.translate(UserPokemonMessage.GET_LIST_SUCCESS, lang)
     }
+  }
+
+  // Add Pokemon for user via Shop purchase (nickname = null, isMain = false, level = first Pokemon level)
+  async addPokemonByShop(
+    { userId, pokemonId }: { userId: number; pokemonId: number },
+    prismaTx?: PrismaClient
+  ) {
+    // Ensure user doesn't already own this Pokemon
+    // Get first Pokemon level
+    const [existing, firstPokemonLevel] = await Promise.all([
+      this.userPokemonRepo.findByUserAndPokemon(userId, pokemonId),
+      this.levelRepo.getFirstLevelPokemon()
+    ])
+
+    if (existing) {
+      throw new UserHasPokemonException()
+    }
+
+    if (!firstPokemonLevel) {
+      throw new ErrorInitLevelPokemonException()
+    }
+
+    // Create user pokemon with starting level, nickname null, isMain false
+    const result = await this.userPokemonRepo.create(
+      {
+        userId,
+        data: {
+          pokemonId,
+          nickname: null,
+          isMain: false,
+          levelId: firstPokemonLevel.id
+        }
+      },
+      prismaTx
+    )
+
+    return result
   }
 
   async getUserPokemonStats(userId: number, lang: string = 'vi') {
@@ -77,7 +115,6 @@ export class UserPokemonService {
     // 2. Lấy danh sách pokemon của user
     const userPokemons = await this.userPokemonRepo.getByUserId(userId)
     const userPokemonIds = new Set(userPokemons.map((up) => up.pokemonId))
-
 
     // 4. Optimize: Calculate weaknesses for all Pokemon in batch
     if (pokemonData.results && pokemonData.results.length > 0) {
@@ -139,7 +176,6 @@ export class UserPokemonService {
         //     }
         //   })
         // })
-
 
         return {
           ...pokemon,
@@ -219,7 +255,7 @@ export class UserPokemonService {
             if (
               !allWeaknesses.has(weakness.id) ||
               allWeaknesses.get(weakness.id).effectiveness_multiplier <
-              weakness.effectiveness_multiplier
+                weakness.effectiveness_multiplier
             ) {
               allWeaknesses.set(weakness.id, weakness)
             }
@@ -382,11 +418,11 @@ export class UserPokemonService {
       ...userPokemon,
       pokemon: userPokemon.pokemon
         ? {
-          ...userPokemon.pokemon,
-          weaknesses,
-          nextPokemons: nextPokemonsWithDetails,
-          previousPokemons: previousPokemonsWithWeaknesses
-        }
+            ...userPokemon.pokemon,
+            weaknesses,
+            nextPokemons: nextPokemonsWithDetails,
+            previousPokemons: previousPokemonsWithWeaknesses
+          }
         : userPokemon.pokemon
     }
 

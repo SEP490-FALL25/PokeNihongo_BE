@@ -84,8 +84,8 @@ export class QuestionBankController {
         type: QuestionBankResponseSwaggerDTO
     })
     @ZodSerializerDto(QuestionBankResDTO)
-    findOne(@Param() params: GetQuestionBankByIdParamsDTO) {
-        return this.questionBankService.findOne(params)
+    findOne(@Param('id') id: string) {
+        return this.questionBankService.findOne(Number(id))
     }
 
     @Put(':id')
@@ -99,10 +99,10 @@ export class QuestionBankController {
     })
     @ZodSerializerDto(QuestionBankResDTO)
     update(
-        @Param() params: GetQuestionBankByIdParamsDTO,
+        @Param('id') id: string,
         @Body() body: UpdateQuestionBankBodyDTO
     ) {
-        return this.questionBankService.update(params.id, body)
+        return this.questionBankService.update(Number(id), body)
     }
 
     @Delete(':id')
@@ -115,8 +115,8 @@ export class QuestionBankController {
         type: QuestionBankResponseSwaggerDTO
     })
     @ZodSerializerDto(QuestionBankResDTO)
-    remove(@Param() params: GetQuestionBankByIdParamsDTO) {
-        return this.questionBankService.remove(params.id)
+    remove(@Param('id') id: string) {
+        return this.questionBankService.remove(Number(id))
     }
 }
 

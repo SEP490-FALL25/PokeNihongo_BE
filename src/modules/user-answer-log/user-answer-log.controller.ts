@@ -86,8 +86,8 @@ export class UserAnswerLogController {
         type: UserAnswerLogResponseSwaggerDTO
     })
     @ZodSerializerDto(UserAnswerLogResDTO)
-    findOne(@Param() params: GetUserAnswerLogByIdParamsDTO) {
-        return this.userAnswerLogService.findOne(params)
+    findOne(@Param('id') id: string) {
+        return this.userAnswerLogService.findOne(Number(id))
     }
 
     @Put(':id')
@@ -101,11 +101,11 @@ export class UserAnswerLogController {
     })
     @ZodSerializerDto(UserAnswerLogResDTO)
     update(
-        @Param() params: GetUserAnswerLogByIdParamsDTO,
+        @Param('id') id: string,
         @Body() body: UpdateUserAnswerLogBodyDTO,
         @ActiveUser('userId') userId: number
     ) {
-        return this.userAnswerLogService.update(params.id, body)
+        return this.userAnswerLogService.update(Number(id), body)
     }
 
     @Delete(':id')
@@ -118,8 +118,8 @@ export class UserAnswerLogController {
         type: UserAnswerLogResponseSwaggerDTO
     })
     @ZodSerializerDto(UserAnswerLogResDTO)
-    remove(@Param() params: GetUserAnswerLogByIdParamsDTO, @ActiveUser('userId') userId: number) {
-        return this.userAnswerLogService.remove(params.id)
+    remove(@Param('id') id: string) {
+        return this.userAnswerLogService.remove(Number(id))
     }
 }
 

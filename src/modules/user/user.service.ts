@@ -14,6 +14,7 @@ import { HttpStatus, Injectable } from '@nestjs/common'
 import { UserStatus } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
 import { UserPokemonNotFoundException } from '../user-pokemon/dto/user-pokemon.error'
+import { WalletService } from '../wallet/wallet.service'
 import { EmailAlreadyExistsException, UserNotFoundException } from './dto/user.error'
 import {
   CreateUserBodyType,
@@ -29,7 +30,8 @@ export class UserService {
     private mailService: MailService,
     private userPokemonRepo: UserPokemonRepo,
     private i18nService: I18nService,
-    private levelRepo: LevelRepo
+    private levelRepo: LevelRepo,
+    private walletSer: WalletService
   ) {}
 
   /**
@@ -108,6 +110,9 @@ export class UserService {
 
       // Remove password from response
       const { password, ...userWithoutPassword } = result
+
+      //tao wallet
+      await this.walletSer.generateWalletByUserId(userWithoutPassword.id)
 
       return {
         statusCode: 201,

@@ -188,4 +188,15 @@ export class LanguagesRepository {
 
     return language?.id ?? null
   }
+
+  async getWithListId(ids: number[]): Promise<Array<Pick<LanguagesType, 'id' | 'code'>>> {
+    if (!ids || ids.length === 0) return []
+
+    const languages = await this.prismaService.languages.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, code: true }
+    })
+
+    return languages
+  }
 }

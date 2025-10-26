@@ -13,6 +13,7 @@ import {
   GetEvolutionOptionsResDTO,
   GetPokemonDetailResDTO,
   GetPokemonParamsDTO,
+  GetPokemonResDTO,
   GetPokemonWeaknessResDTO,
   UpdatePokemonBodyDTO,
   UpdatePokemonResDTO
@@ -47,6 +48,12 @@ export class PokemonController {
   // getByType(@Param('typeName') typeName: string) {
   //   return this.pokemonService.getPokemonsByType(typeName)
   // }
+
+  @Get('start-evolution')
+  @ZodSerializerDto(GetPokemonResDTO)
+  getListPokeWithStartEvolu(@I18nLang() lang: string) {
+    return this.pokemonService.getListPokeWithStartEvolu(lang)
+  }
 
   @Get(':pokemonId/weaknesses')
   @IsPublic()

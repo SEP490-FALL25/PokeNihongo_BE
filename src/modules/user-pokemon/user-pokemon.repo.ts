@@ -1,6 +1,7 @@
 import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
+import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
   CreateUserPokemonBodyType,
@@ -79,14 +80,18 @@ type UserPokemonBasic = UserPokemonType
 export class UserPokemonRepo {
   constructor(private prismaService: PrismaService) {}
 
-  create({
-    userId,
-    data
-  }: {
-    userId: number
-    data: CreateUserPokemonBodyType & { levelId?: number }
-  }): Promise<UserPokemonBasic> {
-    return this.prismaService.userPokemon.create({
+  create(
+    {
+      userId,
+      data
+    }: {
+      userId: number
+      data: CreateUserPokemonBodyType & { levelId?: number }
+    },
+    prismaTx?: PrismaClient
+  ): Promise<UserPokemonBasic> {
+    const client = prismaTx || this.prismaService
+    return client.userPokemon.create({
       data: {
         ...data,
         userId,

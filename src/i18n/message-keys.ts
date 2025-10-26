@@ -322,3 +322,61 @@ export const AttendanceMessage = {
   INVALID_DATA: 'attendance.INVALID_DATA',
   CHECKIN_ALREADY: 'attendance.CHECKIN_ALREADY'
 } as const
+
+export const WalletMessage = {
+  CREATE_SUCCESS: 'wallet.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'wallet.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'wallet.DELETE_SUCCESS',
+  GET_SUCCESS: 'wallet.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'wallet.GET_LIST_SUCCESS',
+  NOT_FOUND: 'wallet.NOT_FOUND',
+  ALREADY_EXISTS: 'wallet.ALREADY_EXISTS',
+  INVALID_DATA: 'wallet.INVALID_DATA',
+  INSUFFICIENT_BALANCE: 'wallet.INSUFFICIENT_BALANCE'
+} as const
+
+export const WalletTransactionMessage = {
+  CREATE_SUCCESS: 'wallet_transaction.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'wallet_transaction.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'wallet_transaction.DELETE_SUCCESS',
+  GET_SUCCESS: 'wallet_transaction.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'wallet_transaction.GET_LIST_SUCCESS',
+  NOT_FOUND: 'wallet_transaction.NOT_FOUND',
+  ALREADY_EXISTS: 'wallet_transaction.ALREADY_EXISTS',
+  INVALID_DATA: 'wallet_transaction.INVALID_DATA'
+} as const
+
+export const ShopBannerMessage = {
+  CREATE_SUCCESS: 'shop_banner.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'shop_banner.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'shop_banner.DELETE_SUCCESS',
+  GET_SUCCESS: 'shop_banner.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'shop_banner.GET_LIST_SUCCESS',
+  NOT_FOUND: 'shop_banner.NOT_FOUND',
+  ALREADY_EXISTS: 'shop_banner.ALREADY_EXISTS',
+  INVALID_DATA: 'shop_banner.INVALID_DATA'
+} as const
+
+export const ShopItemMessage = {
+  CREATE_SUCCESS: 'shop_item.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'shop_item.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'shop_item.DELETE_SUCCESS',
+  GET_SUCCESS: 'shop_item.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'shop_item.GET_LIST_SUCCESS',
+  NOT_FOUND: 'shop_item.NOT_FOUND',
+  ALREADY_EXISTS: 'shop_item.ALREADY_EXISTS',
+  INVALID_DATA: 'shop_item.INVALID_DATA'
+} as const
+
+export const ShopPurchaseMessage = {
+  CREATE_SUCCESS: 'shop_purchase.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'shop_purchase.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'shop_purchase.DELETE_SUCCESS',
+  GET_SUCCESS: 'shop_purchase.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'shop_purchase.GET_LIST_SUCCESS',
+  NOT_FOUND: 'shop_purchase.NOT_FOUND',
+
+  ALREADY_EXISTS: 'shop_purchase.ALREADY_EXISTS',
+  INVALID_DATA: 'shop_purchase.INVALID_DATA',
+  PURCHASE_LIMIT_REACHED: 'shop_purchase.PURCHASE_LIMIT_REACHED'
+} as const

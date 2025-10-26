@@ -1,22 +1,33 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { IsPublic } from '@/common/decorators/auth.decorator'
+import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { PaginationResponseSchema } from '@/shared/models/response.model'
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards
+} from '@nestjs/common'
+import { ApiBearerAuth } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreatedRewardBodyInputDTO,
   CreateRewardResDTO,
   GetRewardDetailResDTO,
+  GetRewardDetailWithAllLangResDTO,
   GetRewardParamsDTO,
   UpdateRewardBodyInputDTO,
   UpdateRewardResDTO
 } from './dto/reward.zod-dto'
 import { RewardService } from './reward.service'
-import { AuthenticationGuard } from '@/common/guards/authentication.guard'
-import { ApiBearerAuth } from '@nestjs/swagger'
 
 @Controller('reward')
 @UseGuards(AuthenticationGuard)
@@ -31,11 +42,11 @@ export class RewardController {
     return this.rewardService.list(query, lang)
   }
 
-  @Get(':rewardId')
+  @Get('admin')
   @IsPublic()
-  @ZodSerializerDto(GetRewardDetailResDTO)
-  findById(@Param() params: GetRewardParamsDTO, @I18nLang() lang: string) {
-    return this.rewardService.findById(params.rewardId, lang)
+  @ZodSerializerDto(PaginationResponseSchema)
+  getListWithAllLang(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
+    return this.rewardService.getListWithAllLang(query, lang)
   }
 
   @Post()
@@ -52,6 +63,20 @@ export class RewardController {
       },
       lang
     )
+  }
+
+  @Get('admin/:rewardId')
+  @IsPublic()
+  @ZodSerializerDto(GetRewardDetailWithAllLangResDTO)
+  findByIdWithAllLang(@Param() params: GetRewardParamsDTO, @I18nLang() lang: string) {
+    return this.rewardService.findByIdWithAllLang(params.rewardId, lang)
+  }
+
+  @Get(':rewardId')
+  @IsPublic()
+  @ZodSerializerDto(GetRewardDetailResDTO)
+  findById(@Param() params: GetRewardParamsDTO, @I18nLang() lang: string) {
+    return this.rewardService.findById(params.rewardId, lang)
   }
 
   @Put(':rewardId')

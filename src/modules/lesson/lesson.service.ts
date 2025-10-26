@@ -59,11 +59,11 @@ export class LessonService {
         }
     }
 
-    async getLessonById(params: GetLessonByIdParamsType) {
+    async getLessonById(id: number) {
         try {
-            this.logger.log(`Getting lesson by id: ${params.id}`)
+            this.logger.log(`Getting lesson by id: ${id}`)
 
-            const lesson = await this.lessonRepository.findById(params.id)
+            const lesson = await this.lessonRepository.findById(id)
 
             if (!lesson) {
                 throw new LessonNotFoundException()
@@ -75,7 +75,7 @@ export class LessonService {
                 message: LESSON_MESSAGE.GET_BY_ID_SUCCESS
             }
         } catch (error) {
-            this.logger.error(`Error getting lesson by id ${params.id}:`, error)
+            this.logger.error(`Error getting lesson by id ${id}:`, error)
 
             if (error instanceof LessonNotFoundException) {
                 throw error

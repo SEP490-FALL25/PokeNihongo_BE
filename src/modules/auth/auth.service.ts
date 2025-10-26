@@ -43,6 +43,7 @@ import { Queue } from 'bull'
 import Redis from 'ioredis'
 import { LevelService } from '../level/level.service'
 import { UserProgressService } from '../user-progress/user-progress.service'
+import { WalletService } from '../wallet/wallet.service'
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name)
@@ -59,8 +60,9 @@ export class AuthService {
     private readonly userProgressService: UserProgressService,
     @InjectQueue('user-deletion') private readonly deletionQueue: Queue,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
-    private readonly tokenService: TokenService
-  ) { }
+    private readonly tokenService: TokenService,
+    private readonly walletSer: WalletService
+  ) {}
 
   async login(
     body: LoginBodyType & { userAgent: string; ip: string },
@@ -163,6 +165,9 @@ export class AuthService {
         roleId: user.roleId,
         roleName: role?.name || RoleName.Learner
       })
+
+      // tao wallets
+      await this.walletSer.generateWalletByUserId(user.id)
 
       const { ...userWithoutPassword } = user
       const data = {

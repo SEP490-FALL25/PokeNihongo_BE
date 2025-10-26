@@ -304,5 +304,57 @@ export const enMessages = {
     NOT_FOUND: 'Attendance record not found',
     ALREADY_EXISTS: 'Attendance record already exists',
     CHECKIN_SUCCESS: 'Check-in successful'
+  },
+  wallet: {
+    CREATE_SUCCESS: 'Wallet created successfully',
+    UPDATE_SUCCESS: 'Wallet updated successfully',
+    DELETE_SUCCESS: 'Wallet deleted successfully',
+    GET_SUCCESS: 'Wallet retrieved successfully',
+    GET_LIST_SUCCESS: 'Wallet list retrieved successfully',
+    NOT_FOUND: 'Wallet not found',
+    ALREADY_EXISTS: 'Wallet already exists',
+    INVALID_DATA: 'Invalid wallet data',
+    INSUFFICIENT_BALANCE: 'Insufficient wallet balance'
+  },
+  wallet_transaction: {
+    CREATE_SUCCESS: 'Wallet transaction created successfully',
+    UPDATE_SUCCESS: 'Wallet transaction updated successfully',
+    DELETE_SUCCESS: 'Wallet transaction deleted successfully',
+    GET_SUCCESS: 'Wallet transaction retrieved successfully',
+    GET_LIST_SUCCESS: 'Wallet transaction list retrieved successfully',
+    NOT_FOUND: 'Wallet transaction not found',
+    ALREADY_EXISTS: 'Wallet transaction already exists',
+    INVALID_DATA: 'Invalid wallet transaction data'
+  },
+  shop_banner: {
+    CREATE_SUCCESS: 'Shop banner created successfully',
+    UPDATE_SUCCESS: 'Shop banner updated successfully',
+    DELETE_SUCCESS: 'Shop banner deleted successfully',
+    GET_SUCCESS: 'Shop banner retrieved successfully',
+    GET_LIST_SUCCESS: 'Shop banner list retrieved successfully',
+    NOT_FOUND: 'Shop banner not found',
+    ALREADY_EXISTS: 'Shop banner already exists',
+    INVALID_DATA: 'Invalid shop banner data'
+  },
+  shop_item: {
+    CREATE_SUCCESS: 'Shop item created successfully',
+    UPDATE_SUCCESS: 'Shop item updated successfully',
+    DELETE_SUCCESS: 'Shop item deleted successfully',
+    GET_SUCCESS: 'Shop item retrieved successfully',
+    GET_LIST_SUCCESS: 'Shop item list retrieved successfully',
+    NOT_FOUND: 'Shop item not found',
+    ALREADY_EXISTS: 'Shop item already exists',
+    INVALID_DATA: 'Invalid shop item data'
+  },
+  shop_purchase: {
+    CREATE_SUCCESS: 'Shop purchase created successfully',
+    UPDATE_SUCCESS: 'Shop purchase updated successfully',
+    DELETE_SUCCESS: 'Shop purchase deleted successfully',
+    GET_SUCCESS: 'Shop purchase retrieved successfully',
+    GET_LIST_SUCCESS: 'Shop purchase list retrieved successfully',
+    NOT_FOUND: 'Shop purchase not found',
+    ALREADY_EXISTS: 'Shop purchase already exists',
+    INVALID_DATA: 'Invalid shop purchase data',
+    PURCHASE_LIMIT_REACHED: 'Purchase limit reached for this item'
   }
 }

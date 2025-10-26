@@ -294,5 +294,58 @@ export const jaMessages = {
     NOT_FOUND: '出席記録が見つかりません',
     ALREADY_EXISTS: '出席記録は既に存在します',
     CHECKIN_ALREADY: '本日は既に出席しています'
+  },
+  wallet: {
+    CREATE_SUCCESS: 'ウォレットの作成に成功しました',
+    UPDATE_SUCCESS: 'ウォレットの更新に成功しました',
+    DELETE_SUCCESS: 'ウォレットの削除に成功しました',
+    GET_SUCCESS: 'ウォレット情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ウォレットリストの取得に成功しました',
+    NOT_FOUND: 'ウォレットが見つかりません',
+    ALREADY_EXISTS: 'ウォレットは既に存在します',
+    INVALID_DATA: '無効なウォレットデータです',
+    INSUFFICIENT_BALANCE: 'ウォレットの残高が不足しています'
+  },
+  wallet_transaction: {
+    CREATE_SUCCESS: 'ウォレット取引の作成に成功しました',
+    UPDATE_SUCCESS: 'ウォレット取引の更新に成功しました',
+    DELETE_SUCCESS: 'ウォレット取引の削除に成功しました',
+    GET_SUCCESS: 'ウォレット取引情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ウォレット取引リストの取得に成功しました',
+    NOT_FOUND: 'ウォレット取引が見つかりません',
+
+    ALREADY_EXISTS: 'ウォレット取引は既に存在します',
+    INVALID_DATA: '無効なウォレット取引データです'
+  },
+  shop_banner: {
+    CREATE_SUCCESS: 'ショップバナーの作成に成功しました',
+    UPDATE_SUCCESS: 'ショップバナーの更新に成功しました',
+    DELETE_SUCCESS: 'ショップバナーの削除に成功しました',
+    GET_SUCCESS: 'ショップバナー情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ショップバナーリストの取得に成功しました',
+    NOT_FOUND: 'ショップバナーが見つかりません',
+    ALREADY_EXISTS: 'ショップバナーは既に存在します',
+    INVALID_DATA: '無効なショップバナーデータです'
+  },
+  shop_item: {
+    CREATE_SUCCESS: 'ショップアイテムの作成に成功しました',
+    UPDATE_SUCCESS: 'ショップアイテムの更新に成功しました',
+    DELETE_SUCCESS: 'ショップアイテムの削除に成功しました',
+    GET_SUCCESS: 'ショップアイテム情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ショップアイテムリストの取得に成功しました',
+    NOT_FOUND: 'ショップアイテムが見つかりません',
+    ALREADY_EXISTS: 'ショップアイテムは既に存在します',
+    INVALID_DATA: '無効なショップアイテムデータです'
+  },
+  shop_purchase: {
+    CREATE_SUCCESS: 'ショップ購入の作成に成功しました',
+    UPDATE_SUCCESS: 'ショップ購入の更新に成功しました',
+    DELETE_SUCCESS: 'ショップ購入の削除に成功しました',
+    GET_SUCCESS: 'ショップ購入情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ショップ購入リストの取得に成功しました',
+    NOT_FOUND: 'ショップ購入が見つかりません',
+    ALREADY_EXISTS: 'ショップ購入は既に存在します',
+    INVALID_DATA: '無効なショップ購入データです',
+    PURCHASE_LIMIT_REACHED: 'このアイテムの購入制限に達しました'
   }
 }

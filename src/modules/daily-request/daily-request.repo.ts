@@ -18,7 +18,7 @@ export type WhereDailyRequestType = {
 
 @Injectable()
 export class DailyRequestRepo {
-  constructor(private prismaService: PrismaService) { }
+  constructor(private prismaService: PrismaService) {}
 
   // Wrapper cho transaction
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
@@ -83,119 +83,209 @@ export class DailyRequestRepo {
     const client = prismaTx || this.prismaService
     return isHard
       ? this.prismaService.dailyRequest.delete({
-        where: {
-          id
-        }
-      })
+          where: {
+            id
+          }
+        })
       : this.prismaService.dailyRequest.update({
-        where: {
-          id,
-          deletedAt: null
-        },
-        data: {
-          deletedAt: new Date(),
-          deletedById
-        }
-      })
+          where: {
+            id,
+            deletedAt: null
+          },
+          data: {
+            deletedAt: new Date(),
+            deletedById
+          }
+        })
   }
 
   async list(pagination: PaginationQueryType, langId: number) {
-    // --- 1. Parse QS bình thường ---
+    // 1) Parse QS
     const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, DAILY_REQUEST_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
 
-    // --- 2. Xử lý filter nameTranslation và descriptionTranslation ---
-    let nameKeys: string[] | undefined
-    let descriptionKeys: string[] | undefined
+    // 2) Build relational filters for translations directly
+    const where: any = { deletedAt: null, ...rawWhere }
 
-    if (rawWhere.nameTranslation) {
-      // Nếu rawWhere.nameTranslation là object { contains, mode }
-      const searchValue =
-        typeof rawWhere.nameTranslation === 'object'
-          ? rawWhere.nameTranslation.contains
-          : rawWhere.nameTranslation
-
-      const translations = await this.prismaService.translation.findMany({
-        where: {
-          languageId: langId, // từ param
-          value: {
-            contains: searchValue,
-            mode: 'insensitive'
-          }
-        },
-        select: { key: true }
-      })
-
-      nameKeys = translations.map((t) => t.key)
-      delete rawWhere.nameTranslation
-    }
-
-    if (rawWhere.descriptionTranslation) {
-      const searchValue =
-        typeof rawWhere.descriptionTranslation === 'object'
-          ? rawWhere.descriptionTranslation.contains
-          : rawWhere.descriptionTranslation
-
-      const translations = await this.prismaService.translation.findMany({
-        where: {
+    // Accept both 'nameTranslation' and 'nameTranslations' to be flexible
+    const nameFilterRaw =
+      (rawWhere as any).nameTranslation ?? (rawWhere as any).nameTranslations
+    if (nameFilterRaw) {
+      const toContainsFilter = (raw: any) => {
+        if (typeof raw === 'object' && raw !== null) {
+          const val =
+            (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
+          return { contains: String(val), mode: 'insensitive' as const }
+        }
+        return { contains: String(raw), mode: 'insensitive' as const }
+      }
+      const searchFilter = toContainsFilter(nameFilterRaw)
+      delete (where as any).nameTranslation
+      delete (where as any).nameTranslations
+      where.nameTranslations = {
+        some: {
           languageId: langId,
-          value: {
-            contains: searchValue,
-            mode: 'insensitive'
-          }
-        },
-        select: { key: true }
-      })
-
-      descriptionKeys = translations.map((t) => t.key)
-      delete rawWhere.descriptionTranslation
+          value: searchFilter
+        }
+      }
     }
 
-    // --- 3. Build final where ---
-    const where: any = {
-      deletedAt: null,
-      ...rawWhere,
-      ...(nameKeys ? { nameKey: { in: nameKeys } } : {}),
-      ...(descriptionKeys ? { descriptionKey: { in: descriptionKeys } } : {})
+    const descFilterRaw =
+      (rawWhere as any).descriptionTranslation ??
+      (rawWhere as any).descriptionTranslations
+    if (descFilterRaw) {
+      const toContainsFilter = (raw: any) => {
+        if (typeof raw === 'object' && raw !== null) {
+          const val =
+            (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
+          return { contains: String(val), mode: 'insensitive' as const }
+        }
+        return { contains: String(raw), mode: 'insensitive' as const }
+      }
+      const searchFilter = toContainsFilter(descFilterRaw)
+      delete (where as any).descriptionTranslation
+      delete (where as any).descriptionTranslations
+      where.descriptionTranslations = {
+        some: {
+          languageId: langId,
+          value: searchFilter
+        }
+      }
     }
 
-    // --- 4. Query tổng số + data ---
+    // 3) Query count + data with include for translations (lang-specific)
     const [totalItems, data] = await Promise.all([
       this.prismaService.dailyRequest.count({ where }),
       this.prismaService.dailyRequest.findMany({
         where,
         orderBy,
         skip,
-        take
+        take,
+        include: {
+          nameTranslations: {
+            where: { languageId: langId },
+            select: { value: true }
+          },
+          descriptionTranslations: {
+            where: { languageId: langId },
+            select: { value: true }
+          }
+        }
       })
     ])
 
-    // --- 5. Include nameTranslation và descriptionTranslation ---
-    const allKeys = Array.from(
-      new Set(data.flatMap((d) => [d.nameKey, (d as any).descriptionKey]))
-    )
-
-    const translations = await this.prismaService.translation.findMany({
-      where: {
-        key: { in: allKeys },
-        languageId: langId // dùng langId từ param
-      },
-      select: { key: true, value: true }
+    // 4) Map to include nameTranslation/descriptionTranslation fields
+    const results = data.map((d: any) => {
+      const { nameTranslations, descriptionTranslations, ...rest } = d
+      return {
+        ...rest,
+        nameTranslation: nameTranslations?.[0]?.value ?? d.nameKey,
+        descriptionTranslation: descriptionTranslations?.[0]?.value ?? d.descriptionKey
+      }
     })
 
-    const results = data.map((d) => ({
-      ...d,
-      nameTranslation: translations.find((t) => t.key === d.nameKey)?.value || d.nameKey,
-      descriptionTranslation:
-        translations.find((t) => t.key === (d as any).descriptionKey)?.value ||
-        (d as any).descriptionKey
-    }))
-
-    // --- 6. Trả kết quả ---
     return {
       results,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
+    }
+  }
+
+  async getListwithAllLang(pagination: PaginationQueryType, langId?: number) {
+    // 1) Parse QS
+    const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, DAILY_REQUEST_FIELDS)
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    // 2) Build relational filters for translations directly
+    const where: any = { deletedAt: null, ...rawWhere }
+
+    // Accept both 'nameTranslation' and 'nameTranslations' to be flexible
+    const nameFilterRaw =
+      (rawWhere as any).nameTranslation ?? (rawWhere as any).nameTranslations
+    if (nameFilterRaw) {
+      const toContainsFilter = (raw: any) => {
+        if (typeof raw === 'object' && raw !== null) {
+          const val =
+            (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
+          return { contains: String(val), mode: 'insensitive' as const }
+        }
+        return { contains: String(raw), mode: 'insensitive' as const }
+      }
+      const searchFilter = toContainsFilter(nameFilterRaw)
+      delete (where as any).nameTranslation
+      delete (where as any).nameTranslations
+      where.nameTranslations = langId
+        ? {
+            some: {
+              languageId: langId,
+              value: searchFilter
+            }
+          }
+        : {
+            some: {
+              value: searchFilter
+            }
+          }
+    }
+
+    const descFilterRaw =
+      (rawWhere as any).descriptionTranslation ??
+      (rawWhere as any).descriptionTranslations
+    if (descFilterRaw) {
+      const toContainsFilter = (raw: any) => {
+        if (typeof raw === 'object' && raw !== null) {
+          const val =
+            (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
+          return { contains: String(val), mode: 'insensitive' as const }
+        }
+        return { contains: String(raw), mode: 'insensitive' as const }
+      }
+      const searchFilter = toContainsFilter(descFilterRaw)
+      delete (where as any).descriptionTranslation
+      delete (where as any).descriptionTranslations
+      where.descriptionTranslations = langId
+        ? {
+            some: {
+              languageId: langId,
+              value: searchFilter
+            }
+          }
+        : {
+            some: {
+              value: searchFilter
+            }
+          }
+    }
+
+    // 3) Query count + data with include for all translations
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.dailyRequest.count({ where }),
+      this.prismaService.dailyRequest.findMany({
+        where,
+        orderBy,
+        skip,
+        take,
+        include: {
+          nameTranslations: {
+            select: { id: true, languageId: true, key: true, value: true }
+          },
+          descriptionTranslations: {
+            select: { id: true, languageId: true, key: true, value: true }
+          }
+        }
+      })
+    ])
+
+    return {
+      results: data,
       pagination: {
         current: pagination.currentPage,
         pageSize: pagination.pageSize,
@@ -212,7 +302,61 @@ export class DailyRequestRepo {
         deletedAt: null
       },
       include: {
-        reward: true
+        reward: true,
+        nameTranslations: {
+          where: {}
+        },
+        descriptionTranslations: true
+      }
+    })
+  }
+
+  findByIdwithLangId(id: number, langId: number): Promise<DailyRequestType | null> {
+    return this.prismaService.dailyRequest.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        reward: true,
+        nameTranslations: {
+          where: {
+            languageId: langId
+          },
+          select: {
+            id: true,
+            languageId: true,
+            value: true
+          }
+        },
+        descriptionTranslations: {
+          where: {
+            languageId: langId
+          },
+          select: {
+            id: true,
+            languageId: true,
+            value: true
+          }
+        }
+      }
+    })
+  }
+
+  findByIdWithAllLang(id: number) {
+    return this.prismaService.dailyRequest.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        reward: {
+          include: {
+            nameTranslations: true
+          }
+        },
+        nameTranslations: true,
+        descriptionTranslations: true
       }
     })
   }

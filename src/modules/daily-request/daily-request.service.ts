@@ -30,7 +30,7 @@ export class DailyRequestService {
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
     private readonly translationRepo: TranslationRepository
-  ) { }
+  ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const langId = await this.languageRepo.getIdByCode(lang)
@@ -39,31 +39,106 @@ export class DailyRequestService {
     }
     const data = await this.dailyRequestRepo.list(pagination, langId)
     return {
+      status: HttpStatus.OK,
       data,
       message: this.i18nService.translate(DailyRequestMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number, lang: string = 'vi') {
-    const dailyRequest = await this.dailyRequestRepo.findById(id)
+  async getListwithAllLang(pagination: PaginationQueryType, lang: string = 'vi') {
     const langId = await this.languageRepo.getIdByCode(lang)
-    if (!langId || !dailyRequest) {
+    const data = await this.dailyRequestRepo.getListwithAllLang(
+      pagination,
+      langId ?? undefined
+    )
+    // Build language code map for all referenced languageIds
+    const allLangIds = new Set<number>()
+    for (const item of data.results as any[]) {
+      for (const t of item.nameTranslations ?? []) allLangIds.add(t.languageId)
+      for (const t of item.descriptionTranslations ?? []) allLangIds.add(t.languageId)
+    }
+    const languages = await this.languageRepo.getWithListId(Array.from(allLangIds))
+    const codeMap = Object.fromEntries(languages.map((l) => [l.id, l.code]))
+
+    const results = (data.results as any[]).map((item) => ({
+      ...item,
+      nameTranslations: (item.nameTranslations ?? []).map((t: any) => ({
+        key: codeMap[t.languageId] ?? String(t.languageId),
+        value: t.value
+      })),
+      descriptionTranslations: (item.descriptionTranslations ?? []).map((t: any) => ({
+        key: codeMap[t.languageId] ?? String(t.languageId),
+        value: t.value
+      }))
+    }))
+
+    return {
+      status: HttpStatus.OK,
+      data: { ...data, results },
+      message: this.i18nService.translate(DailyRequestMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  async findById(id: number, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    if (!langId) {
       throw new NotFoundRecordException()
     }
+    const dailyRequest = await this.dailyRequestRepo.findByIdwithLangId(id, langId)
+    if (!dailyRequest) {
+      throw new NotFoundRecordException()
+    }
+    const dr: any = dailyRequest
+    const resultRes = {
+      ...dailyRequest,
+      nameTranslation: dr.nameTranslations?.[0]?.value ?? null,
+      descriptionTranslation: dr.descriptionTranslations?.[0]?.value ?? null
+    }
+    return {
+      statusCode: HttpStatus.OK,
+      data: resultRes,
+      message: this.i18nService.translate(DailyRequestMessage.GET_SUCCESS, lang)
+    }
+  }
 
-    const nameTranslation = await this.translationRepo.findByLangAndKey(
-      langId,
-      dailyRequest.nameKey
-    )
-    const descriptionTranslation = await this.translationRepo.findByLangAndKey(
-      langId,
-      dailyRequest.descriptionKey
-    )
+  async findByIdWithAllLang(id: number, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const dailyRequest: any = await this.dailyRequestRepo.findByIdWithAllLang(id)
+    if (!dailyRequest) {
+      throw new NotFoundRecordException()
+    }
+    // derive single-language translations
+    const nameTranslation = langId
+      ? (dailyRequest.nameTranslations?.find((t: any) => t.languageId === langId)
+          ?.value ?? null)
+      : null
+    const descriptionTranslation = langId
+      ? (dailyRequest.descriptionTranslations?.find((t: any) => t.languageId === langId)
+          ?.value ?? null)
+      : null
+
+    // map arrays to { key: code, value }
+    const langIds = new Set<number>([
+      ...(dailyRequest.nameTranslations ?? []).map((t: any) => t.languageId),
+      ...(dailyRequest.descriptionTranslations ?? []).map((t: any) => t.languageId)
+    ])
+    const languages = await this.languageRepo.getWithListId(Array.from(langIds))
+    const codeMap = Object.fromEntries(languages.map((l) => [l.id, l.code]))
 
     const resultRes = {
       ...dailyRequest,
-      nameTranslation: nameTranslation?.value ?? null,
-      descriptionTranslation: descriptionTranslation?.value ?? null
+      nameTranslations: (dailyRequest.nameTranslations ?? []).map((t: any) => ({
+        key: codeMap[t.languageId] ?? String(t.languageId),
+        value: t.value
+      })),
+      descriptionTranslations: (dailyRequest.descriptionTranslations ?? []).map(
+        (t: any) => ({
+          key: codeMap[t.languageId] ?? String(t.languageId),
+          value: t.value
+        })
+      ),
+      nameTranslation,
+      descriptionTranslation
     }
     return {
       statusCode: HttpStatus.OK,
@@ -154,21 +229,37 @@ export class DailyRequestService {
           })
         }
 
-        // Sử dụng createOrUpdate thay vì createMany
-        // và dùng transaction
+        // Tạo nested upsert cho translations (giống Reward)
+        const nameUpserts = data.nameTranslations.map((item) => ({
+          where: {
+            languageId_key: { languageId: langMap[item.key], key: fNameKey }
+          },
+          update: { value: item.value },
+          create: { languageId: langMap[item.key], key: fNameKey, value: item.value }
+        }))
 
-        const translationPromises = translationRecords.map((record) =>
-          this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
-        )
-        await Promise.all(translationPromises)
-        // Thêm bản dịch và update lại daily request
+        const descUpserts = (data.descriptionTranslations ?? []).map((item) => ({
+          where: {
+            languageId_key: { languageId: langMap[item.key], key: fDescKey }
+          },
+          update: { value: item.value },
+          create: { languageId: langMap[item.key], key: fDescKey, value: item.value }
+        }))
+
+        // Update lại DailyRequest với key cuối cùng và nested translations
         const result = await this.dailyRequestRepo.update(
           {
             id: createdDailyRequest.id,
             data: {
               nameKey: fNameKey,
-              descriptionKey: fDescKey
-            }
+              descriptionKey: fDescKey,
+              ...(nameUpserts.length
+                ? { nameTranslations: { upsert: nameUpserts as any } }
+                : {}),
+              ...(descUpserts.length
+                ? { descriptionTranslations: { upsert: descUpserts as any } }
+                : {})
+            } as any
           },
           prismaTx
         )
@@ -190,12 +281,12 @@ export class DailyRequestService {
             },
             true
           )
-        } catch (rollbackError) { }
+        } catch (rollbackError) {}
       }
 
-      if (isUniqueConstraintPrismaError(error)) {
-        throw new DailyRequestAlreadyExistsException()
-      }
+      // if (isUniqueConstraintPrismaError(error)) {
+      //   throw new DailyRequestAlreadyExistsException()
+      // }
       if (isNotFoundPrismaError(error)) {
         throw new NotFoundRecordException()
       }
@@ -239,6 +330,8 @@ export class DailyRequestService {
         if (data.isActive !== undefined) dataUpdate.isActive = data.isActive
 
         // --- 3. Handle translations nếu có ---
+        let nameUpserts: any[] = []
+        let descUpserts: any[] = []
         if (data.nameTranslations || data.descriptionTranslations) {
           const nameList = data.nameTranslations?.map((t) => t.key) ?? []
           const descList = data.descriptionTranslations?.map((t) => t.key) ?? []
@@ -278,11 +371,36 @@ export class DailyRequestService {
               })
             }
 
-            // --- 6. Update translations với transaction ---
-            const translationPromises = translationRecords.map((record) =>
-              this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
-            )
-            await Promise.all(translationPromises)
+            // --- 6. Thực hiện nested upsert translations thay vì gọi repo translation ---
+            nameUpserts = (data.nameTranslations ?? []).map((t) => ({
+              where: {
+                languageId_key: {
+                  languageId: (t.key && (langMap as any)[t.key]) as number,
+                  key: existingDailyRequest.nameKey
+                }
+              },
+              update: { value: t.value },
+              create: {
+                languageId: (t.key && (langMap as any)[t.key]) as number,
+                key: existingDailyRequest.nameKey,
+                value: t.value
+              }
+            }))
+
+            descUpserts = (data.descriptionTranslations ?? []).map((t) => ({
+              where: {
+                languageId_key: {
+                  languageId: (t.key && (langMap as any)[t.key]) as number,
+                  key: existingDailyRequest.descriptionKey
+                }
+              },
+              update: { value: t.value },
+              create: {
+                languageId: (t.key && (langMap as any)[t.key]) as number,
+                key: existingDailyRequest.descriptionKey,
+                value: t.value
+              }
+            }))
           }
         }
 
@@ -293,8 +411,14 @@ export class DailyRequestService {
             updatedById,
             data: {
               // ...existingDailyRequest,
-              ...dataUpdate
-            }
+              ...dataUpdate,
+              ...(nameUpserts.length
+                ? { nameTranslations: { upsert: nameUpserts as any } }
+                : {}),
+              ...(descUpserts.length
+                ? { descriptionTranslations: { upsert: descUpserts as any } }
+                : {})
+            } as any
           },
           prismaTx
         )
@@ -339,7 +463,8 @@ export class DailyRequestService {
           id,
           deletedById
         }),
-        this.translationRepo.deleteByKey(existingDailyRequest.nameKey)
+        this.translationRepo.deleteByKey(existingDailyRequest.nameKey),
+        this.translationRepo.deleteByKey(existingDailyRequest.descriptionKey)
       ])
 
       return {

@@ -1,6 +1,9 @@
 import { I18nService } from '@/i18n/i18n.service'
 import { RewardMessage } from '@/i18n/message-keys'
-import { LanguageNotExistToTranslateException, NotFoundRecordException } from '@/shared/error'
+import {
+  LanguageNotExistToTranslateException,
+  NotFoundRecordException
+} from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError,
@@ -27,43 +30,103 @@ export class RewardService {
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
     private readonly translationRepo: TranslationRepository
-  ) { }
+  ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
-    const data = await this.rewardRepo.list(pagination)
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const data = await this.rewardRepo.list(pagination, langId ?? undefined)
     return {
       data,
       message: this.i18nService.translate(RewardMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number, lang: string = 'vi') {
-    const reward = await this.rewardRepo.findById(id)
-    if (!reward) {
-      throw new NotFoundRecordException()
-    }
-
+  async getListWithAllLang(pagination: PaginationQueryType, lang: string = 'vi') {
     const langId = await this.languageRepo.getIdByCode(lang)
+    const data = await this.rewardRepo.getListWithAllLang(pagination, langId ?? undefined)
+
+    // Build language code map for all referenced languageIds
+    const allLangIds = new Set<number>()
+    for (const item of data.results as any[]) {
+      for (const t of item.nameTranslations ?? []) allLangIds.add(t.languageId)
+    }
+    const languages = await this.languageRepo.getWithListId(Array.from(allLangIds))
+    const codeMap = Object.fromEntries(languages.map((l) => [l.id, l.code]))
+
+    const results = (data.results as any[]).map((item) => ({
+      ...item,
+      nameTranslations: (item.nameTranslations ?? []).map((t: any) => ({
+        key: codeMap[t.languageId] ?? String(t.languageId),
+        value: t.value
+      }))
+    }))
+
+    return {
+      data: { ...data, results },
+      message: this.i18nService.translate(RewardMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  async findById(id: number, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+
     if (!langId) {
       return {
-        data: reward,
+        data: null,
         message: this.i18nService.translate(RewardMessage.GET_SUCCESS, lang)
       }
     }
 
-    const nameTranslation = await this.translationRepo.findByLangAndKey(
-      langId,
-      reward.nameKey
-    )
+    const reward = await this.rewardRepo.findByIdWithLangId(id, langId)
+    if (!reward) {
+      throw new NotFoundRecordException()
+    }
 
-    const resultRes = {
+    const data = {}
+    const result = {
       ...reward,
-      nameTranslation: nameTranslation?.value ?? null
+      nameTranslation: (reward as any).nameTranslations?.[0]?.value ?? null,
+      descriptionTranslation: (reward as any).descriptionTranslations?.[0]?.value ?? null
     }
 
     return {
       statusCode: HttpStatus.OK,
-      data: resultRes,
+      data: result,
+      message: this.i18nService.translate(RewardMessage.GET_SUCCESS, lang)
+    }
+  }
+
+  async findByIdWithAllLang(id: number, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+
+    const reward: any = await this.rewardRepo.findByIdWithAllLang(id)
+    if (!reward) {
+      throw new NotFoundRecordException()
+    }
+
+    // derive single-language name for current lang if available
+    const nameTranslation = langId
+      ? (reward.nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
+        null)
+      : null
+
+    // map array to { key: code, value }
+    const languages = await this.languageRepo.getWithListId(
+      Array.from(new Set((reward.nameTranslations ?? []).map((t: any) => t.languageId)))
+    )
+    const codeMap = Object.fromEntries(languages.map((l) => [l.id, l.code]))
+
+    const result = {
+      ...reward,
+      nameTranslations: (reward.nameTranslations ?? []).map((t: any) => ({
+        key: codeMap[t.languageId] ?? String(t.languageId),
+        value: t.value
+      }))
+    }
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: result,
       message: this.i18nService.translate(RewardMessage.GET_SUCCESS, lang)
     }
   }
@@ -136,17 +199,19 @@ export class RewardService {
         await this.translationRepo.validateTranslationRecords(translationRecords)
 
         // Create or update translations with transaction
-        const translationPromises = translationRecords.map((record) =>
-          this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
-        )
-        await Promise.all(translationPromises)
+        // const translationPromises = translationRecords.map((record) =>
+        //   this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
+        // )
+        // await Promise.all(translationPromises)
 
         // Update reward with final nameKey
         const result = await this.rewardRepo.update(
           {
             id: createdReward.id,
             data: {
-              nameKey: fNameKey
+              nameKey: fNameKey,
+              nameTranslations: translationRecords,
+              rewardNameKey: fNameKey
             }
           },
           prismaTx
@@ -169,7 +234,7 @@ export class RewardService {
             },
             true
           )
-        } catch (rollbackError) { }
+        } catch (rollbackError) {}
       }
 
       if (isUniqueConstraintPrismaError(error)) {
@@ -201,6 +266,7 @@ export class RewardService {
 
     try {
       return await this.rewardRepo.withTransaction(async (prismaTx) => {
+        let translationRecords: CreateTranslationBodyType[] = []
         // Get current record
         existingReward = await this.rewardRepo.findById(id)
         if (!existingReward) throw new NotFoundRecordException()
@@ -227,7 +293,7 @@ export class RewardService {
             if (missingLangs.length > 0) throw new LanguageNotExistToTranslateException()
 
             // Create translation records
-            const translationRecords: CreateTranslationBodyType[] = []
+            // const translationRecords: CreateTranslationBodyType[] = []
 
             // nameTranslations
             for (const t of data.nameTranslations) {
@@ -242,10 +308,10 @@ export class RewardService {
             await this.translationRepo.validateTranslationRecords(translationRecords)
 
             // Update translations with transaction
-            const translationPromises = translationRecords.map((record) =>
-              this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
-            )
-            await Promise.all(translationPromises)
+            // const translationPromises = translationRecords.map((record) =>
+            //   this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
+            // )
+            // await Promise.all(translationPromises)
           }
         }
 
@@ -254,7 +320,11 @@ export class RewardService {
           {
             id,
             updatedById,
-            data: dataUpdate
+            data: {
+              ...dataUpdate,
+              nameTranslations: data.nameTranslations ? translationRecords : [],
+              rewardNameKey: existingReward.nameKey
+            }
           },
           prismaTx
         )
@@ -284,11 +354,21 @@ export class RewardService {
     lang: string = 'vi'
   ) {
     try {
-      await this.rewardRepo.delete({
-        id,
-        deletedById
-      })
+      const existingReward = await this.rewardRepo.findById(id)
+      if (!existingReward) {
+        throw new NotFoundRecordException()
+      }
+
+      await Promise.all([
+        this.rewardRepo.delete({
+          id,
+          deletedById
+        }),
+        this.translationRepo.deleteByKey(existingReward.nameKey)
+      ])
+
       return {
+        statusCode: HttpStatus.OK,
         data: null,
         message: this.i18nService.translate(RewardMessage.DELETE_SUCCESS, lang)
       }

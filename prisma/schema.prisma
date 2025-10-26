@@ -72,6 +72,22 @@ model User {
   deletedAttendances       Attendance[]       @relation("AttendanceDeletedBy")
   createdTestSets          TestSet[]          @relation("TestSetCreatedBy")
 
+  createdWallets            Wallet[]            @relation("WalletCreatedBy")
+  updatedWallets            Wallet[]            @relation("WalletUpdatedBy")
+  deletedWallets            Wallet[]            @relation("WalletDeletedBy")
+  createdWalletTransactions WalletTransaction[] @relation("WalletTransactionCreatedBy")
+  updatedWalletTransactions WalletTransaction[] @relation("WalletTransactionUpdatedBy")
+  deletedWalletTransactions WalletTransaction[] @relation("WalletTransactionDeletedBy")
+  createdShopBanners        ShopBanner[]        @relation("ShopBannerCreatedBy")
+  updatedShopBanners        ShopBanner[]        @relation("ShopBannerUpdatedBy")
+  deletedShopBanners        ShopBanner[]        @relation("ShopBannerDeletedBy")
+  createdShopPurchases      ShopPurchase[]      @relation("ShopPurchaseCreatedBy")
+  updatedShopPurchases      ShopPurchase[]      @relation("ShopPurchaseUpdatedBy")
+  deletedShopPurchases      ShopPurchase[]      @relation("ShopPurchaseDeletedBy")
+  createdShopItems          ShopItem[]          @relation("ShopItemCreatedBy")
+  updatedShopItems          ShopItem[]          @relation("ShopItemUpdatedBy")
+  deletedShopItems          ShopItem[]          @relation("ShopItemDeletedBy")
+
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
   // Tự quan hệ 1-n
@@ -96,9 +112,12 @@ model User {
   deletedBy    User?  @relation("DeletorUsers", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
   deletedUsers User[] @relation("DeletorUsers")
 
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedAt         DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  Wallet            Wallet[]
+  WalletTransaction WalletTransaction[]
+  shopPurchases     ShopPurchase[]
 
   @@index([deletedAt])
 }
@@ -197,8 +216,21 @@ model Translation {
   // Quan hệ với Languages
   language Languages @relation(fields: [languageId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  //translate cho cac table khac
+  rewardNameKey String? // tên key của reward
+  reward        Reward? @relation(fields: [rewardNameKey], references: [nameKey], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  dailyRequestNameKey String?
+  dailyRequestName    DailyRequest? @relation("DailyRequestNameRelation", fields: [dailyRequestNameKey], references: [nameKey], onDelete: Cascade)
+
+  dailyRequestDescriptionKey String?
+  dailyRequestDescription    DailyRequest? @relation("DailyRequestDescriptionRelation", fields: [dailyRequestDescriptionKey], references: [descriptionKey], onDelete: Cascade)
+
+  shopBannerNameKey String?
+  shopBanner        ShopBanner? @relation("ShopBannerNameRelation", fields: [shopBannerNameKey], references: [nameKey], onDelete: Cascade)
 
   @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
   @@index([languageId])
@@ -324,10 +356,13 @@ model Vocabulary {
 
 model Reward {
   id           Int          @id @default(autoincrement())
-  nameKey         String
+  nameKey      String       @unique
   rewardType   RewardType   @default(LESSON)
   rewardItem   Int
   rewardTarget RewardTarget @default(EXP)
+
+  // Quan hệ với Translation
+  nameTranslations Translation[]
 
   // Quan hệ với Level
   levels Level[]
@@ -414,8 +449,9 @@ model Pokemon {
   deletedBy   User? @relation("PokemonDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  ShopItem  ShopItem[]
 }
 
 model UserPokemon {
@@ -595,7 +631,7 @@ model Exercises {
   lessonId Int // Foreign key đến Lesson
   lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  testSetId Int?     @unique // Foreign key đến TestSet 
+  testSetId Int?     @unique // Foreign key đến TestSet
   testSet   TestSet? @relation(fields: [testSetId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   userExerciseAttempts UserExerciseAttempt[]
@@ -819,8 +855,8 @@ model GrammarUsage {
 
 model DailyRequest {
   id             Int    @id @default(autoincrement())
-  nameKey        String @db.VarChar(200)
-  descriptionKey String @db.VarChar(500)
+  nameKey        String @unique @db.VarChar(200)
+  descriptionKey String @unique @db.VarChar(500)
 
   dailyRequestType DailyRequestType @default(DAILY_LESSON)
   conditionValue   Int // Giá trị cần đạt (VD: 1, 7, ...)
@@ -832,6 +868,10 @@ model DailyRequest {
   isActive Boolean @default(true)
 
   userDailyRequests UserDailyRequest[]
+
+  //translation
+  nameTranslations        Translation[] @relation("DailyRequestNameRelation")
+  descriptionTranslations Translation[] @relation("DailyRequestDescriptionRelation")
 
   //
   createdById Int?
@@ -1025,6 +1065,154 @@ model Attendance {
   @@unique([userId, date])
 }
 
+model Wallet {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  type    WalletType @default(COIN) // COIN | FREE_COIN
+  balance Int        @default(0)
+
+  transactions WalletTransaction[]
+
+  createdById Int?
+  createdBy   User? @relation("WalletCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("WalletDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("WalletUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, type]) // Một user chỉ có 1 ví cho mỗi loại tiền
+  @@index([userId])
+  @@index([type])
+}
+
+model WalletTransaction {
+  id Int @id @default(autoincrement())
+
+  walletId Int
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  purpose     TransactionPurpose // SUBSCRIPTION | GACHA | SHOP | QUIZ_ATTEMPT | REWARD | REFUND
+  referenceId Int? // liên kết đến entity cụ thể (vd: subscriptionId, shopOrderId,...)
+  // quan hệ cụ thể cho subscription (nếu là purpose = SUBSCRIPTION)
+  //todo sau này có mấy bảng liên quan thì thêm vào đây: ví dụ
+  // subscription    Subscription?     @relation(fields: [referenceId], references: [id])
+
+  amount      Int
+  type        WalletTransactionType // INCREASE | DECREASE
+  source      WalletSourceType // DAILY_CHECKIN | SUBSCRIPTION_DISCOUNT | etc.
+  description String?               @db.VarChar(500)
+
+  createdById Int?
+  createdBy   User? @relation("WalletTransactionCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("WalletTransactionDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("WalletTransactionUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  deletedAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  ShopPurchase ShopPurchase[]
+
+  @@index([walletId])
+  @@index([userId])
+}
+
+model ShopBanner {
+  id        Int       @id @default(autoincrement())
+  nameKey   String    @unique @db.VarChar(200)
+  startDate DateTime?
+  endDate   DateTime?
+  isActive  Boolean   @default(true)
+
+  // Quan hệ với ShopItem
+  shopItems ShopItem[]
+
+  //translate
+  nameTranslations Translation[] @relation("ShopBannerNameRelation")
+
+  createdById Int?
+  createdBy   User? @relation("ShopBannerCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("ShopBannerDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("ShopBannerUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ShopItem {
+  id             Int        @id @default(autoincrement())
+  shopBannerId   Int
+  shopBanner     ShopBanner @relation(fields: [shopBannerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pokemonId      Int
+  pokemon        Pokemon    @relation(fields: [pokemonId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  price          Int
+  purchaseLimit  Int? // Giới hạn mua (null = không giới hạn)
+  purchasedCount Int        @default(0) // Số lượng đã bán
+  isActive       Boolean    @default(true)
+
+  //
+  shopPurchases ShopPurchase[]
+
+  createdById Int?
+  createdBy   User? @relation("ShopItemCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("ShopItemDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("ShopItemUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([shopBannerId])
+  @@index([pokemonId])
+}
+
+model ShopPurchase {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  shopItemId Int
+  shopItem   ShopItem @relation(fields: [shopItemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  walletTransId Int? // Gắn với WalletTransaction (nếu có)
+  walletTrans   WalletTransaction? @relation(fields: [walletTransId], references: [id], onDelete: SetNull)
+
+  quantity   Int @default(1)
+  totalPrice Int
+
+  // meta
+  createdById Int?
+  createdBy   User? @relation("ShopPurchaseCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("ShopPurchaseDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("ShopPurchaseUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([shopItemId])
+  @@index([walletTransId])
+}
+
 enum ProgressStatus {
   NOT_STARTED // Chưa bắt đầu
   IN_PROGRESS // Đang học
@@ -1149,4 +1337,33 @@ enum QuestionType {
   SPEAKING // Nói
   GENERAL // Tổng hợp
   MATCHING // Ghép cặp
+}
+
+enum WalletType {
+  COIN
+  FREE_COIN
+}
+
+enum WalletTransactionType {
+  INCREASE
+  DECREASE
+}
+
+enum WalletSourceType {
+  DAILY_CHECKIN
+  EVENT_REWARD
+  RANK_REWARD
+  LESSON_PURCHASE
+  SHOP_PURCHASE
+  SUBSCRIPTION_DISCOUNT
+  ADMIN_ADJUST
+}
+
+enum TransactionPurpose {
+  SUBSCRIPTION
+  GACHA
+  SHOP
+  QUIZ_ATTEMPT
+  REWARD
+  REFUND
 }
