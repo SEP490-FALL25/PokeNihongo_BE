@@ -1128,11 +1128,13 @@ model WalletTransaction {
 }
 
 model ShopBanner {
-  id        Int       @id @default(autoincrement())
-  nameKey   String    @unique @db.VarChar(200)
+  id        Int          @id @default(autoincrement())
+  nameKey   String       @unique @db.VarChar(200)
   startDate DateTime?
   endDate   DateTime?
-  isActive  Boolean   @default(true)
+  status    BannerStatus @default(PREVIEW)
+  min       Int          @default(4)
+  max       Int          @default(8)
 
   // Quan hệ với ShopItem
   shopItems ShopItem[]
@@ -1366,4 +1368,11 @@ enum TransactionPurpose {
   QUIZ_ATTEMPT
   REWARD
   REFUND
+}
+
+enum BannerStatus {
+  ACTIVE // Đang áp dụng (hiển thị trên hệ thống)
+  INACTIVE // Ngưng sử dụng (ẩn hoặc tắt hiển thị)
+  EXPIRED // Hết hạn (đã qua thời gian kết thúc)
+  PREVIEW // Xem trước (chưa chính thức áp dụng)
 }

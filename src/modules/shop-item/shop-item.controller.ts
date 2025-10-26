@@ -7,10 +7,16 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateShopItemBodyDTO,
   CreateShopItemResDTO,
+  CreateWithListItemBodyDTO,
+  CreateWithListItemResDTO,
+  GetRamdomAmountShopItemBodyDTO,
+  GetRandomShopItemResDTO,
   GetShopItemDetailResDTO,
   GetShopItemParamsDTO,
   UpdateShopItemBodyDTO,
-  UpdateShopItemResDTO
+  UpdateShopItemResDTO,
+  UpdateWithListItemBodyDTO,
+  UpdateWithListItemResDTO
 } from './dto/shop-item.dto'
 import { ShopItemService } from './shop-item.service'
 
@@ -24,6 +30,16 @@ export class ShopItemController {
     return this.shopItemService.list(query, lang)
   }
 
+  @Get('random')
+  @ZodSerializerDto(GetRandomShopItemResDTO)
+  getRandomListItem(
+    @Body() body: GetRamdomAmountShopItemBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.shopItemService.getRandomListItem(body, lang)
+  }
+
   @Get(':shopItemId')
   @ZodSerializerDto(GetShopItemDetailResDTO)
   findById(
@@ -34,6 +50,22 @@ export class ShopItemController {
     return this.shopItemService.findById(params.shopItemId, lang)
   }
 
+  @Post('list')
+  @ZodSerializerDto(CreateWithListItemResDTO)
+  createByList(
+    @Body() body: CreateWithListItemBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.shopItemService.createByList(
+      {
+        userId,
+        data: body
+      },
+      lang
+    )
+  }
+
   @Post()
   @ZodSerializerDto(CreateShopItemResDTO)
   create(
@@ -42,6 +74,24 @@ export class ShopItemController {
     @I18nLang() lang: string
   ) {
     return this.shopItemService.create(
+      {
+        userId,
+        data: body
+      },
+      lang
+    )
+  }
+
+  @Put('list')
+  @ZodSerializerDto(UpdateWithListItemResDTO)
+  updateByList(
+    @Body() body: UpdateWithListItemBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    console.log('updatelist ne')
+
+    return this.shopItemService.updateByList(
       {
         userId,
         data: body

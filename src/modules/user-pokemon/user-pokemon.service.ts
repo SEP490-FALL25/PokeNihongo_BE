@@ -70,8 +70,47 @@ export class UserPokemonService {
       throw new ErrorInitLevelPokemonException()
     }
 
-    // Create user pokemon with starting level, nickname null, isMain false
-    const result = await this.userPokemonRepo.create(
+    // 1) Lấy thông tin pokemon và các pokemon tiền nhiệm
+    const pokemon = await this.pokemonRepo.findById(pokemonId)
+    if (!pokemon) {
+      throw new NotFoundRecordException()
+    }
+
+    // 2) Tìm 1 pokemon tiền nhiệm mà user đang sở hữu (nếu có)
+    let carryExp = 0
+    if (pokemon.previousPokemons && pokemon.previousPokemons.length > 0) {
+      // Kiểm tra theo thứ tự danh sách previousPokemons
+      for (const prev of pokemon.previousPokemons) {
+        if (!prev?.id) continue
+        const ownedPrevBasic = await this.userPokemonRepo.findByUserAndPokemon(
+          userId,
+          prev.id
+        )
+        if (ownedPrevBasic) {
+          // Lấy chi tiết để kiểm tra level hiện tại và exp
+          const ownedPrev = await this.userPokemonRepo.findById(ownedPrevBasic.id)
+          const prevConditionLevel = prev.conditionLevel
+
+          if (
+            prevConditionLevel &&
+            ownedPrev?.level &&
+            ownedPrev.level.levelNumber === prevConditionLevel
+          ) {
+            // Nếu đang ở level điều kiện, lấy exp hiện tại để chuyển
+            if (ownedPrev.exp && ownedPrev.exp > 0) {
+              carryExp = ownedPrev.exp
+              // Reset exp về 0 cho pokemon tiền nhiệm (ngoài transaction hiện tại)
+              await this.userPokemonRepo.update({ id: ownedPrev.id, data: { exp: 0 } })
+            }
+          }
+          // Dừng ở pokemon tiền nhiệm đầu tiên tìm thấy
+          break
+        }
+      }
+    }
+
+    // 3) Tạo pokemon mới cho user ở level khởi điểm
+    const created = await this.userPokemonRepo.create(
       {
         userId,
         data: {
@@ -84,7 +123,17 @@ export class UserPokemonService {
       prismaTx
     )
 
-    return result
+    // 4) Nếu có carryExp từ pokemon tiền nhiệm, áp dụng cho pokemon mới
+    if (carryExp > 0) {
+      // Set exp hiện tại trước, sau đó gọi handleLevelUp để xử lý tăng level + cap theo conditionLevel
+      await this.userPokemonRepo.update({ id: created.id, data: { exp: carryExp } })
+      const reloaded = await this.userPokemonRepo.findById(created.id)
+      if (reloaded) {
+        await this.handleLevelUp(reloaded, carryExp)
+      }
+    }
+
+    return created
   }
 
   async getUserPokemonStats(userId: number, lang: string = 'vi') {
