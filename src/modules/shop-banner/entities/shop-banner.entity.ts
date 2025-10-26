@@ -1,3 +1,4 @@
+import { ShopBannerStatus } from '@/common/constants/shop-banner.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ShopBannerMessage } from '@/i18n/message-keys'
 import { PokemonSchema } from '@/modules/pokemon/entities/pokemon.entity'
@@ -14,7 +15,16 @@ export const ShopBannerSchema = z.object({
   nameKey: z.string(),
   startDate: z.coerce.date().nullable(),
   endDate: z.coerce.date().nullable(),
-  isActive: z.boolean(),
+  status: z
+    .enum([
+      ShopBannerStatus.ACTIVE,
+      ShopBannerStatus.INACTIVE,
+      ShopBannerStatus.EXPIRED,
+      ShopBannerStatus.PREVIEW
+    ])
+    .default(ShopBannerStatus.PREVIEW),
+  min: z.number().default(4),
+  max: z.number().default(8),
 
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
@@ -26,8 +36,10 @@ export const ShopBannerSchema = z.object({
 
 export const CreateShopBannerBodyInputSchema = ShopBannerSchema.pick({
   startDate: true,
+  min: true,
+  max: true,
   endDate: true,
-  isActive: true
+  status: true
 })
   .strict()
   .extend({
@@ -38,7 +50,7 @@ export const CreateShopBannerBodySchema = ShopBannerSchema.pick({
   nameKey: true,
   startDate: true,
   endDate: true,
-  isActive: true
+  status: true
 }).strict()
 
 export const CreateShopBannerResSchema = z.object({

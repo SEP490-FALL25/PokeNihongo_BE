@@ -49,6 +49,43 @@ export class ShopBannerService {
     }
   }
 
+  async listwithDetail(pagination: PaginationQueryType, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const data = await this.shopBannerRepo.listwithDetail(pagination, langId ?? undefined)
+
+    // Build languageId -> code map for all translations present
+    const allLangIds: number[] = Array.from(
+      new Set(
+        (data.results || []).flatMap((item: any) =>
+          (item.nameTranslations || []).map((t: any) => t.languageId)
+        )
+      )
+    )
+    const langs = await this.languageRepo.getWithListId(allLangIds)
+    const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+
+    const results = (data.results || []).map((item: any) => {
+      const translationsAll = (item.nameTranslations || []).map((t: any) => ({
+        key: idToCode.get(t.languageId) || String(t.languageId),
+        value: t.value
+      }))
+      const { nameTranslations, ...rest } = item
+      return {
+        ...rest,
+        nameTranslations: translationsAll
+        // nameTranslation: item.nameTranslation // keep single current-lang value for compatibility
+      }
+    })
+
+    return {
+      data: {
+        ...data,
+        results
+      },
+      message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
   async findById(id: number, lang: string = 'vi') {
     const langId = await this.languageRepo.getIdByCode(lang)
 
@@ -119,7 +156,7 @@ export class ShopBannerService {
           nameKey,
           startDate: startDateNormalized,
           endDate: endDateNormalized,
-          isActive: data.isActive
+          status: data.status
         }
 
         createdShopBanner = await this.shopBannerRepo.create(
@@ -261,7 +298,7 @@ export class ShopBannerService {
 
         if (data.startDate !== undefined) dataUpdate.startDate = normalizedStart as any
         if (data.endDate !== undefined) dataUpdate.endDate = normalizedEnd as any
-        if (data.isActive !== undefined) dataUpdate.isActive = data.isActive
+        if (data.status !== undefined) dataUpdate.status = data.status
 
         // Handle translations if provided
         let nameUpserts: any[] = []

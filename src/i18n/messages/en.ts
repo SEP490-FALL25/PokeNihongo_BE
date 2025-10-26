@@ -344,7 +344,10 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Shop item list retrieved successfully',
     NOT_FOUND: 'Shop item not found',
     ALREADY_EXISTS: 'Shop item already exists',
-    INVALID_DATA: 'Invalid shop item data'
+    INVALID_DATA: 'Invalid shop item data',
+    SHOP_BANNER_INVALID: 'Shop banner is invalid or expired',
+    POKEMON_DUPLICATE: 'Pokémon already exists in this banner',
+    MAX_ITEMS_EXCEEDED: 'Number of items exceeds the banner limit'
   },
   shop_purchase: {
     CREATE_SUCCESS: 'Shop purchase created successfully',
@@ -355,6 +358,8 @@ export const enMessages = {
     NOT_FOUND: 'Shop purchase not found',
     ALREADY_EXISTS: 'Shop purchase already exists',
     INVALID_DATA: 'Invalid shop purchase data',
-    PURCHASE_LIMIT_REACHED: 'Purchase limit reached for this item'
+    PURCHASE_LIMIT_REACHED: 'Purchase limit reached for this item',
+    MISSING_PREVIOUS_POKEMON:
+      'You need to own the previous Pokémon before purchasing this one'
   }
 }

@@ -13,6 +13,7 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
+import { PokemonRepo } from '../pokemon/pokemon.repo'
 import { ShopItemRepo } from '../shop-item/shop-item.repo'
 import { UserHasPokemonException } from '../user-pokemon/dto/user-pokemon.error'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
@@ -20,6 +21,7 @@ import { UserPokemonService } from '../user-pokemon/user-pokemon.service'
 import { WalletTransactionRepo } from '../wallet-transaction/wallet-transaction.repo'
 import { WalletRepo } from '../wallet/wallet.repo'
 import {
+  MissingPreviousPokemonException,
   NotEnoughBalanceException,
   PurchaseLimitReachedException,
   ShopPurchaseNotFoundException
@@ -39,7 +41,8 @@ export class ShopPurchaseService {
     private readonly walletRepo: WalletRepo,
     private readonly walletTransRepo: WalletTransactionRepo,
     private readonly userPokemonRepo: UserPokemonRepo,
-    private readonly userPokemonService: UserPokemonService
+    private readonly userPokemonService: UserPokemonService,
+    private readonly pokemonRepo: PokemonRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -74,6 +77,10 @@ export class ShopPurchaseService {
       const shopItem = await this.shopItemRepo.findById(data.shopItemId)
       if (!shopItem) throw new NotFoundRecordException()
 
+      // 1.5) Lấy thông tin pokemon để check tiền nhiệm
+      const pokemon = await this.pokemonRepo.findById(shopItem.pokemonId)
+      if (!pokemon) throw new NotFoundRecordException()
+
       // 2)tong tien ne
       const totalPrice = data.quantity * shopItem.price
 
@@ -96,6 +103,31 @@ export class ShopPurchaseService {
       // 3.5) user da co pokemon nay chua
       if (existed) {
         throw new UserHasPokemonException()
+      }
+
+      // 3.55) Check pokemon tiền nhiệm: nếu pokemon này có previousPokemons
+      // thì user phải sở hữu ít nhất 1 pokemon trong list previousPokemons
+      if (pokemon.previousPokemons && pokemon.previousPokemons.length > 0) {
+        // Lấy danh sách pokemonId của các pokemon tiền nhiệm (filter out undefined)
+        const previousPokemonIds = pokemon.previousPokemons
+          .map((p) => p.id)
+          .filter((id): id is number => id !== undefined)
+
+        // Check xem user có sở hữu bất kỳ pokemon tiền nhiệm nào không
+        const hasPreviousPokemon = await Promise.any(
+          previousPokemonIds.map((pokemonId) =>
+            this.userPokemonRepo
+              .findByUserAndPokemon(userId, pokemonId)
+              .then((result) => {
+                if (result) return Promise.resolve(true)
+                return Promise.reject()
+              })
+          )
+        ).catch(() => false)
+
+        if (!hasPreviousPokemon) {
+          throw new MissingPreviousPokemonException()
+        }
       }
 
       // 3.6) Check purchase limit (nếu có giới hạn)
