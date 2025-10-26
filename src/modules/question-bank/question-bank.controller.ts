@@ -2,6 +2,7 @@ import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import {
     CreateQuestionBankBodyDTO,
     CreateQuestionBankWithMeaningsBodyDTO,
+    CreateQuestionBankWithAnswersBodyDTO,
     GetQuestionBankByIdParamsDTO,
     GetQuestionBankListQueryDTO,
     UpdateQuestionBankBodyDTO,
@@ -13,6 +14,8 @@ import {
     QuestionBankListResponseSwaggerDTO,
     GetQuestionBankListQuerySwaggerDTO,
     CreateQuestionBankWithMeaningsSwaggerDTO,
+    CreateQuestionBankWithAnswersSwaggerDTO,
+    CreateQuestionBankWithAnswersResponseSwaggerDTO,
     UpdateQuestionBankSwaggerDTO
 } from '@/modules/question-bank/dto/question-bank.dto'
 import {
@@ -60,6 +63,32 @@ export class QuestionBankController {
     @ZodSerializerDto(QuestionBankResDTO)
     createWithMeanings(@Body() body: CreateQuestionBankWithMeaningsBodyDTO, @ActiveUser('userId') userId: number) {
         return this.questionBankService.createWithMeanings(body, userId)
+    }
+
+    @Post('with-answers')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Tạo câu hỏi mới với 4 câu trả lời cùng lúc',
+        description: `Tạo câu hỏi mới với tối đa 4 câu trả lời cùng lúc. Hệ thống sẽ tự động tạo question bank và các câu trả lời tương ứng.
+        
+**Quy tắc đặc biệt:**
+- **MATCHING type**: Chỉ cho phép tạo 1 answer duy nhất và bắt buộc isCorrect = true
+- **Các loại khác**: Tối đa 4 answers, chỉ có 1 answer được phép có isCorrect = true
+- **audioUrl**: Optional - chỉ khi questionType là LISTENING và không truyền thì hệ thống sẽ tự động gen text-to-speech từ questionJp
+- **SPEAKING**: Bắt buộc phải có pronunciation (cách phát âm romaji)
+- **Validation**: Tất cả answers phải là tiếng Nhật hợp lệ
+
+**Loại câu hỏi hỗ trợ:** VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, MATCHING
+
+**Response:** Trả về thông tin câu hỏi đã tạo, danh sách answers thành công, số lượng tạo thành công/thất bại và chi tiết lỗi nếu có.` })
+    @ApiBody({ type: CreateQuestionBankWithAnswersSwaggerDTO })
+    @ApiResponse({
+        status: 201,
+        description: 'Tạo câu hỏi và câu trả lời thành công',
+        type: CreateQuestionBankWithAnswersResponseSwaggerDTO
+    })
+    createWithAnswers(@Body() body: CreateQuestionBankWithAnswersBodyDTO, @ActiveUser('userId') userId: number) {
+        return this.questionBankService.createWithAnswers(body, userId)
     }
 
     @Get()

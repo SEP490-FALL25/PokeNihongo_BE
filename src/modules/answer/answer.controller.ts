@@ -68,7 +68,7 @@ export class AnswerController {
             '\n\nQuy tắc đặc biệt:' +
             '\n• MATCHING type: Chỉ cho phép tạo 1 answer duy nhất' +
             '\n• Các loại khác: Không giới hạn số lượng answer' +
-            '\n• Tối đa 10 câu trả lời mỗi lần tạo' +
+            '\n• Tối đa 4 câu trả lời mỗi lần tạo' +
             '\n• Hệ thống sẽ báo cáo câu trả lời nào thành công, câu nào thất bại và lý do'
     })
     @ApiResponse({
