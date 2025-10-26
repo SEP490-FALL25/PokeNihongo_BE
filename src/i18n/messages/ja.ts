@@ -335,7 +335,10 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'ショップアイテムリストの取得に成功しました',
     NOT_FOUND: 'ショップアイテムが見つかりません',
     ALREADY_EXISTS: 'ショップアイテムは既に存在します',
-    INVALID_DATA: '無効なショップアイテムデータです'
+    INVALID_DATA: '無効なショップアイテムデータです',
+    SHOP_BANNER_INVALID: 'ショップバナーが無効または期限切れです',
+    POKEMON_DUPLICATE: 'このバナーにはすでにポケモンが存在します',
+    MAX_ITEMS_EXCEEDED: 'アイテム数がバナーの制限を超えています'
   },
   shop_purchase: {
     CREATE_SUCCESS: 'ショップ購入の作成に成功しました',
@@ -346,6 +349,8 @@ export const jaMessages = {
     NOT_FOUND: 'ショップ購入が見つかりません',
     ALREADY_EXISTS: 'ショップ購入は既に存在します',
     INVALID_DATA: '無効なショップ購入データです',
-    PURCHASE_LIMIT_REACHED: 'このアイテムの購入制限に達しました'
+    PURCHASE_LIMIT_REACHED: 'このアイテムの購入制限に達しました',
+    MISSING_PREVIOUS_POKEMON:
+      'このポケモンを購入する前に、前のポケモンを所有する必要があります'
   }
 }

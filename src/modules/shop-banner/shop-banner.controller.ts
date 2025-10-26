@@ -42,6 +42,13 @@ export class ShopBannerController {
     return this.shopBannerService.list(query, lang)
   }
 
+  @Get('all/details')
+  @IsPublic()
+  @ZodSerializerDto(PaginationResponseSchema)
+  listwithDetail(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
+    return this.shopBannerService.listwithDetail(query, lang)
+  }
+
   @Get('today/user')
   @IsPublic()
   @ZodSerializerDto(GetShopBannerByTodayResDTO)
