@@ -19,6 +19,33 @@ export class InvalidShopBannerTimeException extends BadRequestException {
   }
 }
 
+export class ShopBannerInactiveException extends BadRequestException {
+  constructor() {
+    super({
+      message: ShopItemMessage.SHOP_BANNER_INACTIVE,
+      errorKey: ShopItemMessage.SHOP_BANNER_INACTIVE
+    })
+  }
+}
+
+export class ShopBannerActiveException extends BadRequestException {
+  constructor() {
+    super({
+      message: ShopItemMessage.SHOP_BANNER_ACTIVE,
+      errorKey: ShopItemMessage.SHOP_BANNER_ACTIVE
+    })
+  }
+}
+
+export class ShopBannerExpiredException extends BadRequestException {
+  constructor() {
+    super({
+      message: ShopItemMessage.SHOP_BANNER_EXPIRED,
+      errorKey: ShopItemMessage.SHOP_BANNER_EXPIRED
+    })
+  }
+}
+
 export class PokemonDuplicateException extends BadRequestException {
   constructor() {
     super({

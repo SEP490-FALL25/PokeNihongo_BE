@@ -15,6 +15,9 @@ import {
   InvalidShopBannerTimeException,
   MaxItemsExceededException,
   PokemonDuplicateException,
+  ShopBannerActiveException,
+  ShopBannerExpiredException,
+  ShopBannerInactiveException,
   ShopItemNotFoundException
 } from './dto/shop-item.error'
 import {
@@ -65,7 +68,7 @@ export class ShopItemService {
   ) {
     try {
       // Validate shop banner
-      const banner = await this.validateShopBanner(data.shopBannerId)
+      const banner = await this.validateShopBannerForCreate(data.shopBannerId)
 
       // Check pokemon đã tồn tại trong banner chưa
       const existingItem = await this.shopItemRepo.findByBannerAndPokemon(
@@ -111,7 +114,7 @@ export class ShopItemService {
     try {
       // Validate shop banner (tất cả items cùng 1 shopBannerId)
       const shopBannerId = data.items[0].shopBannerId
-      const banner = await this.validateShopBanner(shopBannerId)
+      const banner = await this.validateShopBannerForCreate(shopBannerId)
 
       // Check pokemon trùng trong danh sách items mới
       const pokemonIds = data.items.map((item) => item.pokemonId)
@@ -300,36 +303,38 @@ export class ShopItemService {
    * Chỉ check: tồn tại, chưa xóa, đang active, trong thời hạn
    * Trả về banner nếu hợp lệ
    */
-  private async validateShopBanner(shopBannerId: number) {
-    const today = new Date()
+  private async validateShopBannerForCreate(shopBannerId: number) {
     const banner = await this.shopBannerRepo.findByIdForValidation(shopBannerId)
 
-    // Check tồn tại, chưa xóa, đang active
-    if (!banner || banner.deletedAt || banner.status !== ShopBannerStatus.ACTIVE) {
+    // Check tồn tại, chưa xóa
+    if (!banner || banner.deletedAt) {
       throw new InvalidShopBannerTimeException()
     }
 
-    // Check thời hạn
-    if (banner.startDate && banner.startDate > today) {
-      throw new InvalidShopBannerTimeException()
+    // Chỉ check theo status
+    switch (banner.status) {
+      case ShopBannerStatus.PREVIEW:
+        return banner // OK tạo item/random khi PREVIEW
+      case ShopBannerStatus.INACTIVE:
+        throw new ShopBannerInactiveException()
+      case ShopBannerStatus.ACTIVE:
+        throw new ShopBannerActiveException()
+      case ShopBannerStatus.EXPIRED:
+        throw new ShopBannerExpiredException()
+      default:
+        throw new InvalidShopBannerTimeException()
     }
-
-    if (banner.endDate && banner.endDate < today) {
-      throw new InvalidShopBannerTimeException()
-    }
-
-    return banner
   }
 
   async getRandomListItem(body: GetRamdomAmountShopItemBodyType, lang: string = 'vi') {
     try {
       // 1. Validate shop banner
-      const banner = await this.validateShopBanner(body.shopBannerId)
+      const banner = await this.validateShopBannerForCreate(body.shopBannerId)
 
       // 2. Xác định số lượng pokemon cần random
       const amount = body.amount ?? banner.max
       // Nếu client truyền amount và lớn hơn max của banner thì báo lỗi
-      if (body.amount != null && amount > banner.max && amount < banner.min) {
+      if (body.amount != null && amount > banner.max) {
         throw new MaxItemsExceededException()
       }
 

@@ -300,7 +300,13 @@ export class ShopBannerRepo {
         shopItems: {
           where: { deletedAt: null, isActive: true },
           include: {
-            pokemon: true
+            pokemon: {
+              include: {
+                previousPokemons: {
+                  select: { id: true }
+                }
+              }
+            }
           }
         }
       },

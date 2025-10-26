@@ -346,6 +346,9 @@ export const enMessages = {
     ALREADY_EXISTS: 'Shop item already exists',
     INVALID_DATA: 'Invalid shop item data',
     SHOP_BANNER_INVALID: 'Shop banner is invalid or expired',
+    SHOP_BANNER_INACTIVE: 'Shop banner is inactive',
+    SHOP_BANNER_ACTIVE: 'Shop banner is active',
+    SHOP_BANNER_EXPIRED: 'Shop banner is expired',
     POKEMON_DUPLICATE: 'Pokémon already exists in this banner',
     MAX_ITEMS_EXCEEDED: 'Number of items exceeds the banner limit'
   },

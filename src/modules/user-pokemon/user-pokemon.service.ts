@@ -50,35 +50,40 @@ export class UserPokemonService {
     }
   }
 
-  // Add Pokemon for user via Shop purchase (nickname = null, isMain = false, level = first Pokemon level)
+  // Add Pokemon for user via Shop purchase (nickname = null, isMain = false, level = conditionLevel if has prev, else first level)
   async addPokemonByShop(
     { userId, pokemonId }: { userId: number; pokemonId: number },
     prismaTx?: PrismaClient
   ) {
-    // Ensure user doesn't already own this Pokemon
-    // Get first Pokemon level
-    const [existing, firstPokemonLevel] = await Promise.all([
-      this.userPokemonRepo.findByUserAndPokemon(userId, pokemonId),
+    // 1) Check if user already owns this Pokemon
+    const existing = await this.userPokemonRepo.findByUserAndPokemon(userId, pokemonId)
+    if (existing) {
+      throw new UserHasPokemonException()
+    }
+
+    // 2) Lấy thông tin pokemon và first level
+    const [pokemon, firstPokemonLevel] = await Promise.all([
+      this.pokemonRepo.findById(pokemonId),
       this.levelRepo.getFirstLevelPokemon()
     ])
 
-    if (existing) {
-      throw new UserHasPokemonException()
+    if (!pokemon) {
+      throw new NotFoundRecordException()
     }
 
     if (!firstPokemonLevel) {
       throw new ErrorInitLevelPokemonException()
     }
 
-    // 1) Lấy thông tin pokemon và các pokemon tiền nhiệm
-    const pokemon = await this.pokemonRepo.findById(pokemonId)
-    if (!pokemon) {
-      throw new NotFoundRecordException()
-    }
-
-    // 2) Tìm 1 pokemon tiền nhiệm mà user đang sở hữu (nếu có)
+    // 3) Mặc định sử dụng first level
+    let startingLevelId = firstPokemonLevel.id
     let carryExp = 0
-    if (pokemon.previousPokemons && pokemon.previousPokemons.length > 0) {
+
+    // 4) Tìm 1 pokemon tiền nhiệm mà user đang sở hữu (nếu có)
+    const hasPreviousPokemons =
+      pokemon.previousPokemons && pokemon.previousPokemons.length > 0
+
+    if (hasPreviousPokemons && pokemon.previousPokemons) {
       // Kiểm tra theo thứ tự danh sách previousPokemons
       for (const prev of pokemon.previousPokemons) {
         if (!prev?.id) continue
@@ -99,8 +104,17 @@ export class UserPokemonService {
             // Nếu đang ở level điều kiện, lấy exp hiện tại để chuyển
             if (ownedPrev.exp && ownedPrev.exp > 0) {
               carryExp = ownedPrev.exp
-              // Reset exp về 0 cho pokemon tiền nhiệm (ngoài transaction hiện tại)
+              // Reset exp về 0 cho pokemon tiền nhiệm
               await this.userPokemonRepo.update({ id: ownedPrev.id, data: { exp: 0 } })
+            }
+
+            // Thay đổi level khởi điểm thành conditionLevel của pokemon tiền nhiệm
+            const conditionLevelData = await this.levelRepo.findByLevelAndType(
+              prevConditionLevel,
+              'POKEMON'
+            )
+            if (conditionLevelData) {
+              startingLevelId = conditionLevelData.id
             }
           }
           // Dừng ở pokemon tiền nhiệm đầu tiên tìm thấy
@@ -109,7 +123,7 @@ export class UserPokemonService {
       }
     }
 
-    // 3) Tạo pokemon mới cho user ở level khởi điểm
+    // 5) Tạo pokemon mới cho user ở level khởi điểm
     const created = await this.userPokemonRepo.create(
       {
         userId,
@@ -117,18 +131,22 @@ export class UserPokemonService {
           pokemonId,
           nickname: null,
           isMain: false,
-          levelId: firstPokemonLevel.id
+          levelId: startingLevelId
         }
       },
       prismaTx
     )
 
-    // 4) Nếu có carryExp từ pokemon tiền nhiệm, áp dụng cho pokemon mới
+    // 6) Nếu có carryExp từ pokemon tiền nhiệm, áp dụng cho pokemon mới
     if (carryExp > 0) {
+      console.log('exp du la', carryExp)
+
       // Set exp hiện tại trước, sau đó gọi handleLevelUp để xử lý tăng level + cap theo conditionLevel
       await this.userPokemonRepo.update({ id: created.id, data: { exp: carryExp } })
       const reloaded = await this.userPokemonRepo.findById(created.id)
       if (reloaded) {
+        console.log('level up ne')
+
         await this.handleLevelUp(reloaded, carryExp)
       }
     }
@@ -723,24 +741,12 @@ export class UserPokemonService {
     let currentExp = newExp
     let leveledUp = false
     let levelsGained = 0
-    let expUpdated = false // Flag to track if EXP was already updated
 
     // Get Pokemon condition level for level cap
     const pokemonConditionLevel = userPokemon.pokemon?.conditionLevel
 
     // Keep checking for level ups while EXP is sufficient
     while (currentLevel && currentExp >= currentLevel.requiredExp) {
-      // Check if Pokemon has reached its condition level limit
-      if (pokemonConditionLevel && currentLevel.levelNumber >= pokemonConditionLevel) {
-        // Pokemon has reached max allowed level, keep remaining EXP
-        await this.userPokemonRepo.update({
-          id: userPokemon.id,
-          data: { exp: currentExp }
-        })
-        expUpdated = true
-        break
-      }
-
       // Find next level
       const nextLevel = await this.levelRepo.findByLevelAndType(
         currentLevel.levelNumber + 1,
@@ -748,11 +754,21 @@ export class UserPokemonService {
       )
 
       if (!nextLevel) {
+        // No more levels available, keep remaining EXP
         await this.userPokemonRepo.update({
           id: userPokemon.id,
           data: { exp: currentExp }
         })
-        expUpdated = true
+        break
+      }
+
+      // Check if next level would exceed condition level limit
+      if (pokemonConditionLevel && nextLevel.levelNumber > pokemonConditionLevel) {
+        // Cannot level up beyond conditionLevel, keep remaining EXP
+        await this.userPokemonRepo.update({
+          id: userPokemon.id,
+          data: { exp: currentExp }
+        })
         break
       }
 
@@ -766,20 +782,18 @@ export class UserPokemonService {
       levelsGained++
     }
 
-    // If there's remaining EXP but no level up happened, just update EXP
-    if (!leveledUp && !expUpdated) {
+    // If no level up happened, just update EXP
+    if (!leveledUp) {
       await this.userPokemonRepo.update({
         id: userPokemon.id,
         data: { exp: currentExp }
       })
-    } else if (leveledUp && currentExp > 0 && currentLevel && !expUpdated) {
-      // If leveled up but still has remaining EXP, ensure it doesn't exceed current level's requiredExp
-      const finalExp = Math.min(currentExp, currentLevel.requiredExp)
+    } else if (currentExp > 0) {
+      // If leveled up and still has remaining EXP, update it
       await this.userPokemonRepo.update({
         id: userPokemon.id,
-        data: { exp: finalExp }
+        data: { exp: currentExp }
       })
-      currentExp = finalExp
     }
 
     // Get updated Pokemon data
