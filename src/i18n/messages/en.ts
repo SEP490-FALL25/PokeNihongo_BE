@@ -313,7 +313,8 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Wallet list retrieved successfully',
     NOT_FOUND: 'Wallet not found',
     ALREADY_EXISTS: 'Wallet already exists',
-    INVALID_DATA: 'Invalid wallet data'
+    INVALID_DATA: 'Invalid wallet data',
+    INSUFFICIENT_BALANCE: 'Insufficient wallet balance'
   },
   wallet_transaction: {
     CREATE_SUCCESS: 'Wallet transaction created successfully',

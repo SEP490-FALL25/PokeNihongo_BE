@@ -303,7 +303,8 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'ウォレットリストの取得に成功しました',
     NOT_FOUND: 'ウォレットが見つかりません',
     ALREADY_EXISTS: 'ウォレットは既に存在します',
-    INVALID_DATA: '無効なウォレットデータです'
+    INVALID_DATA: '無効なウォレットデータです',
+    INSUFFICIENT_BALANCE: 'ウォレットの残高が不足しています'
   },
   wallet_transaction: {
     CREATE_SUCCESS: 'ウォレット取引の作成に成功しました',

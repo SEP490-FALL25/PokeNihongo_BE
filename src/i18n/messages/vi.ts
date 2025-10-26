@@ -311,7 +311,8 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách ví thành công',
     NOT_FOUND: 'Không tìm thấy ví',
     ALREADY_EXISTS: 'Ví đã tồn tại',
-    INVALID_DATA: 'Dữ liệu ví không hợp lệ'
+    INVALID_DATA: 'Dữ liệu ví không hợp lệ',
+    INSUFFICIENT_BALANCE: 'Số dư ví không đủ'
   },
   wallet_transaction: {
     CREATE_SUCCESS: 'Tạo giao dịch ví thành công',

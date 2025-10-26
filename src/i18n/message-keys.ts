@@ -331,7 +331,8 @@ export const WalletMessage = {
   GET_LIST_SUCCESS: 'wallet.GET_LIST_SUCCESS',
   NOT_FOUND: 'wallet.NOT_FOUND',
   ALREADY_EXISTS: 'wallet.ALREADY_EXISTS',
-  INVALID_DATA: 'wallet.INVALID_DATA'
+  INVALID_DATA: 'wallet.INVALID_DATA',
+  INSUFFICIENT_BALANCE: 'wallet.INSUFFICIENT_BALANCE'
 } as const
 
 export const WalletTransactionMessage = {

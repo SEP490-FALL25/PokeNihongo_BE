@@ -4,14 +4,14 @@ import { Injectable } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
-  CreateShopItemBodyType,
-  SHOP_ITEM_FIELDS,
-  ShopItemType,
-  UpdateShopItemBodyType
-} from './entities/shop-item.entity'
+  CreateShopPurchaseBodyType,
+  SHOP_PURCHASE_FIELDS,
+  ShopPurchaseType,
+  UpdateShopPurchaseBodyType
+} from './entities/shop-purchase.entity'
 
 @Injectable()
-export class ShopItemRepo {
+export class ShopPurchaseRepo {
   constructor(private prismaService: PrismaService) {}
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
     return this.prismaService.$transaction(callback)
@@ -22,12 +22,16 @@ export class ShopItemRepo {
       data
     }: {
       createdById?: number
-      data: CreateShopItemBodyType
+      data: CreateShopPurchaseBodyType & {
+        totalPrice: number
+        userId: number
+        walletTransId: number | null
+      }
     },
     prismaTx?: PrismaClient
-  ): Promise<ShopItemType> {
+  ): Promise<ShopPurchaseType> {
     const client = prismaTx || this.prismaService
-    return client.shopItem.create({
+    return client.shopPurchase.create({
       data: {
         ...data,
         createdById
@@ -42,13 +46,13 @@ export class ShopItemRepo {
       updatedById
     }: {
       id: number
-      data: UpdateShopItemBodyType
+      data: UpdateShopPurchaseBodyType & { walletTransId?: number | null }
       updatedById?: number
     },
     prismaTx?: PrismaClient
-  ): Promise<ShopItemType> {
+  ): Promise<ShopPurchaseType> {
     const client = prismaTx || this.prismaService
-    return client.shopItem.update({
+    return client.shopPurchase.update({
       where: {
         id,
         deletedAt: null
@@ -60,13 +64,17 @@ export class ShopItemRepo {
     })
   }
 
-  delete(id: number, isHard?: boolean, prismaTx?: PrismaClient): Promise<ShopItemType> {
+  delete(
+    id: number,
+    isHard?: boolean,
+    prismaTx?: PrismaClient
+  ): Promise<ShopPurchaseType> {
     const client = prismaTx || this.prismaService
     return isHard
-      ? client.shopItem.delete({
+      ? client.shopPurchase.delete({
           where: { id }
         })
-      : client.shopItem.update({
+      : client.shopPurchase.update({
           where: {
             id,
             deletedAt: null
@@ -78,7 +86,7 @@ export class ShopItemRepo {
   }
 
   async list(pagination: PaginationQueryType) {
-    const { where, orderBy } = parseQs(pagination.qs, SHOP_ITEM_FIELDS)
+    const { where, orderBy } = parseQs(pagination.qs, SHOP_PURCHASE_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
@@ -89,32 +97,15 @@ export class ShopItemRepo {
     }
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.shopItem.count({
+      this.prismaService.shopPurchase.count({
         where: filterWhere
       }),
-      this.prismaService.shopItem.findMany({
+      this.prismaService.shopPurchase.findMany({
         where: filterWhere,
         include: {
-          pokemon: {
-            select: {
-              id: true,
-              pokedex_number: true,
-              nameJp: true,
-              nameTranslations: true,
-              description: true,
-              imageUrl: true,
-              rarity: true,
-              types: {
-                select: {
-                  id: true,
-                  type_name: true,
-                  display_name: true,
-                  color_hex: true
-                }
-              }
-            }
-          },
-          shopBanner: true
+          shopItem: true,
+          walletTrans: true,
+          user: true
         },
         orderBy,
         skip,
@@ -133,15 +124,28 @@ export class ShopItemRepo {
     }
   }
 
-  findById(id: number): Promise<ShopItemType | null> {
-    return this.prismaService.shopItem.findUnique({
+  findById(id: number): Promise<ShopPurchaseType | null> {
+    return this.prismaService.shopPurchase.findUnique({
       where: {
         id,
         deletedAt: null
       },
       include: {
-        pokemon: true,
-        shopBanner: true
+        shopItem: true,
+        walletTrans: true
+      }
+    })
+  }
+
+  findByUserId(userId: number): Promise<ShopPurchaseType[]> {
+    return this.prismaService.shopPurchase.findMany({
+      where: {
+        userId,
+        deletedAt: null
+      },
+      include: {
+        shopItem: true,
+        walletTrans: true
       }
     })
   }

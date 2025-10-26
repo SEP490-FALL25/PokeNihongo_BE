@@ -5,6 +5,7 @@ import { WalletTransactionService } from './wallet-transaction.service'
 
 @Module({
   controllers: [WalletTransactionController],
-  providers: [WalletTransactionService, WalletTransactionRepo]
+  providers: [WalletTransactionService, WalletTransactionRepo],
+  exports: [WalletTransactionService, WalletTransactionRepo]
 })
 export class WalletTransactionModule {}

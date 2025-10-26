@@ -38,6 +38,9 @@ import { PokemonModule } from './modules/pokemon/pokemon.module'
 
 import { QuestionBankModule } from './modules/question-bank/question-bank.module'
 import { RewardModule } from './modules/reward/reward.module'
+import { ShopBannerModule } from './modules/shop-banner/shop-banner.module'
+import { ShopItemModule } from './modules/shop-item/shop-item.module'
+import { ShopPurchaseModule } from './modules/shop-purchase/shop-purchase.module'
 import { SpeakingModule } from './modules/speaking/speaking.module'
 import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module'
 import { TestSetModule } from './modules/testset/testset.module'
@@ -48,13 +51,10 @@ import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserProgressModule } from './modules/user-progress/user-progress.module'
 import { UserModule } from './modules/user/user.module'
+import { WalletTransactionModule } from './modules/wallet-transaction/wallet-transaction.module'
 import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
-import { WalletTransactionModule } from './modules/wallet-transaction/wallet-transaction.module';
-import { ShopBannerModule } from './modules/shop-banner/shop-banner.module';
-import { ShopItemModule } from './modules/shop-item/shop-item.module';
-import { ShopPurchaseModule } from './modules/shop-purchase/shop-purchase.module';
 
 @Module({
   imports: [
