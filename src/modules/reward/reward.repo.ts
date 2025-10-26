@@ -141,7 +141,8 @@ export class RewardRepo {
     if (nameFilterRaw && langId) {
       const toContainsFilter = (raw: any) => {
         if (typeof raw === 'object' && raw !== null) {
-          const val = (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
+          const val =
+            (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
           return { contains: String(val), mode: 'insensitive' as const }
         }
         return { contains: String(raw), mode: 'insensitive' as const }
@@ -178,8 +179,17 @@ export class RewardRepo {
       })
     ])
 
+    // Map results to include nameTranslation and exclude nameTranslations array
+    const results = data.map((d: any) => {
+      const { nameTranslations, ...rest } = d
+      return {
+        ...rest,
+        nameTranslation: langId ? (nameTranslations?.[0]?.value ?? d.nameKey) : undefined
+      }
+    })
+
     return {
-      results: data,
+      results,
       pagination: {
         current: pagination.currentPage,
         pageSize: pagination.pageSize,
