@@ -365,7 +365,10 @@ export const ShopItemMessage = {
   GET_LIST_SUCCESS: 'shop_item.GET_LIST_SUCCESS',
   NOT_FOUND: 'shop_item.NOT_FOUND',
   ALREADY_EXISTS: 'shop_item.ALREADY_EXISTS',
-  INVALID_DATA: 'shop_item.INVALID_DATA'
+  INVALID_DATA: 'shop_item.INVALID_DATA',
+  SHOP_BANNER_INVALID: 'shop_item.SHOP_BANNER_INVALID',
+  POKEMON_DUPLICATE: 'shop_item.POKEMON_DUPLICATE',
+  MAX_ITEMS_EXCEEDED: 'shop_item.MAX_ITEMS_EXCEEDED'
 } as const
 
 export const ShopPurchaseMessage = {
@@ -378,5 +381,6 @@ export const ShopPurchaseMessage = {
 
   ALREADY_EXISTS: 'shop_purchase.ALREADY_EXISTS',
   INVALID_DATA: 'shop_purchase.INVALID_DATA',
-  PURCHASE_LIMIT_REACHED: 'shop_purchase.PURCHASE_LIMIT_REACHED'
+  PURCHASE_LIMIT_REACHED: 'shop_purchase.PURCHASE_LIMIT_REACHED',
+  MISSING_PREVIOUS_POKEMON: 'shop_purchase.MISSING_PREVIOUS_POKEMON'
 } as const

@@ -29,3 +29,13 @@ export class PurchaseLimitReachedException extends BadRequestException {
     })
   }
 }
+
+// Chưa có pokemon tiền nhiệm
+export class MissingPreviousPokemonException extends BadRequestException {
+  constructor() {
+    super({
+      message: ShopPurchaseMessage.MISSING_PREVIOUS_POKEMON,
+      errorKey: ShopPurchaseMessage.MISSING_PREVIOUS_POKEMON
+    })
+  }
+}

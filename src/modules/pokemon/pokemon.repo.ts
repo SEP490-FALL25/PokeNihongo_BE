@@ -1,3 +1,4 @@
+import { RarityPokemon, RarityPokemonType } from '@/common/constants/pokemon.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
@@ -541,6 +542,32 @@ export class PokemonRepo {
 
       orderBy: {
         pokedex_number: 'asc'
+      }
+    })
+  }
+
+  /**
+   * Lấy tất cả pokemon theo rarity (không bao gồm LEGENDARY)
+   */
+  async findByRarity(rarity: RarityPokemonType): Promise<PokemonBasic[]> {
+    return this.prismaService.pokemon.findMany({
+      where: {
+        deletedAt: null,
+        rarity: RarityPokemon[rarity]
+      }
+    })
+  }
+
+  /**
+   * Lấy tất cả pokemon có thể random (exclude LEGENDARY)
+   */
+  async findAllRandomable(): Promise<PokemonBasic[]> {
+    return this.prismaService.pokemon.findMany({
+      where: {
+        deletedAt: null,
+        rarity: {
+          not: 'LEGENDARY'
+        }
       }
     })
   }

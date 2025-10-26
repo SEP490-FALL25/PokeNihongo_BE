@@ -35,6 +35,32 @@ export class ShopItemRepo {
     })
   }
 
+  async createMany(
+    {
+      createdById,
+      items
+    }: {
+      createdById?: number
+      items: CreateShopItemBodyType[]
+    },
+    prismaTx?: PrismaClient
+  ): Promise<ShopItemType[]> {
+    const client = prismaTx || this.prismaService
+    const createdItems: ShopItemType[] = []
+
+    for (const item of items) {
+      const created = await client.shopItem.create({
+        data: {
+          ...item,
+          createdById
+        }
+      })
+      createdItems.push(created)
+    }
+
+    return createdItems
+  }
+
   update(
     {
       id,
@@ -163,5 +189,70 @@ export class ShopItemRepo {
         }
       }
     })
+  }
+
+  /**
+   * Đếm số lượng items hiện có trong banner (chưa bị xóa, đang active)
+   */
+  async countItemsInBanner(shopBannerId: number): Promise<number> {
+    return this.prismaService.shopItem.count({
+      where: {
+        shopBannerId,
+        deletedAt: null,
+        isActive: true
+      }
+    })
+  }
+
+  /**
+   * Kiểm tra pokemonId đã tồn tại trong banner chưa
+   */
+  async findByBannerAndPokemon(
+    shopBannerId: number,
+    pokemonId: number,
+    excludeId?: number
+  ): Promise<ShopItemType | null> {
+    return this.prismaService.shopItem.findFirst({
+      where: {
+        shopBannerId,
+        pokemonId,
+        deletedAt: null,
+        ...(excludeId ? { id: { not: excludeId } } : {})
+      }
+    })
+  }
+
+  /**
+   * Update nhiều items cùng lúc
+   */
+  async updateMany(
+    {
+      updatedById,
+      items
+    }: {
+      updatedById?: number
+      items: Array<{ id: number } & UpdateShopItemBodyType>
+    },
+    prismaTx?: PrismaClient
+  ): Promise<ShopItemType[]> {
+    const client = prismaTx || this.prismaService
+    const updatedItems: ShopItemType[] = []
+
+    for (const item of items) {
+      const { id, ...data } = item
+      const updated = await client.shopItem.update({
+        where: {
+          id,
+          deletedAt: null
+        },
+        data: {
+          ...data,
+          updatedById
+        }
+      })
+      updatedItems.push(updated)
+    }
+
+    return updatedItems
   }
 }

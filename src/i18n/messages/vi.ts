@@ -342,7 +342,10 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách mặt hàng cửa hàng thành công',
     NOT_FOUND: 'Không tìm thấy mặt hàng cửa hàng',
     ALREADY_EXISTS: 'Mặt hàng cửa hàng đã tồn tại',
-    INVALID_DATA: 'Dữ liệu mặt hàng cửa hàng không hợp lệ'
+    INVALID_DATA: 'Dữ liệu mặt hàng cửa hàng không hợp lệ',
+    SHOP_BANNER_INVALID: 'Banner cửa hàng không hợp lệ hoặc đã hết hạn',
+    POKEMON_DUPLICATE: 'Pokémon đã tồn tại trong banner này',
+    MAX_ITEMS_EXCEEDED: 'Số lượng mặt hàng vượt quá giới hạn cho phép của banner'
   },
   shop_purchase: {
     CREATE_SUCCESS: 'Tạo giao dịch mua hàng thành công',
@@ -354,6 +357,8 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy giao dịch mua hàng',
     ALREADY_EXISTS: 'Giao dịch mua hàng đã tồn tại',
     INVALID_DATA: 'Dữ liệu giao dịch mua hàng không hợp lệ',
-    PURCHASE_LIMIT_REACHED: 'Đã đạt giới hạn mua hàng cho mặt hàng này'
+    PURCHASE_LIMIT_REACHED: 'Đã đạt giới hạn mua hàng cho mặt hàng này',
+    MISSING_PREVIOUS_POKEMON:
+      'Bạn cần sở hữu Pokémon tiền nhiệm trước khi mua Pokémon này'
   }
 }
