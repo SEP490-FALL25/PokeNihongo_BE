@@ -35,25 +35,33 @@ jobs:
       - name: Build project
         run: pnpm run build
 
-      - name: Upload dist folder to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: "dist/*"
-          target: "/home/root/BE/dist"
+      - name: Copy Code to VPS
+        run: |
+          echo "${{ secrets.VPS_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+          mkdir -p .github/temp_build/Code
+          cp -r dist package.json pnpm-lock.yaml Dockerfile prisma .github/temp_build/Code/
+          tar -czf code.tar.gz -C .github/temp_build/Code .
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            mkdir -p /home/root/BE &&
+            rm -rf /home/root/BE/dist
+          "
+          scp -o StrictHostKeyChecking=no -i private_key.pem code.tar.gz \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/home/root/BE/
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            cd /home/root/BE &&
+            tar -xzf code.tar.gz &&
+            rm code.tar.gz
+          "
+          rm -f private_key.pem
 
       - name: Restart backend container
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            echo "=== Restarting backend container ==="
-            cd /home/root/BE
-            docker stop pokenihongo-backend || true
-            docker rm pokenihongo-backend || true
+        run: |
+          echo "${{ secrets.VPS_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            cd /home/root/BE &&
+            docker compose down &&
             docker compose up -d --build
-            echo "✅ Deployment completed!"
+          "
+          rm -f private_key.pem
