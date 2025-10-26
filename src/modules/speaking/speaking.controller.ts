@@ -116,10 +116,10 @@ export class SpeakingController {
     })
     @ZodSerializerDto(UserSpeakingAttemptResDTO)
     async getUserSpeakingAttemptById(
-        @Param() params: GetUserSpeakingAttemptByIdParamsDTO,
+        @Param('id') id: string,
         @I18nLang() lang: string
     ): Promise<MessageResDTO> {
-        return this.speakingService.getUserSpeakingAttemptById(params.id)
+        return this.speakingService.getUserSpeakingAttemptById(Number(id))
     }
 
     @Put(':id')
@@ -132,10 +132,10 @@ export class SpeakingController {
     })
     @ZodSerializerDto(UserSpeakingAttemptResDTO)
     async updateUserSpeakingAttempt(
-        @Param() params: GetUserSpeakingAttemptByIdParamsDTO,
+        @Param('id') id: string,
         @Body() body: UpdateUserSpeakingAttemptDTO
     ): Promise<MessageResDTO> {
-        return this.speakingService.updateUserSpeakingAttempt(params.id, body)
+        return this.speakingService.updateUserSpeakingAttempt(Number(id), body)
     }
 
     @Delete(':id')
@@ -149,9 +149,9 @@ export class SpeakingController {
     })
     @ZodSerializerDto(UserSpeakingAttemptResDTO)
     async deleteUserSpeakingAttempt(
-        @Param() params: GetUserSpeakingAttemptByIdParamsDTO
+        @Param('id') id: string
     ): Promise<MessageResDTO> {
-        return this.speakingService.deleteUserSpeakingAttempt(params.id)
+        return this.speakingService.deleteUserSpeakingAttempt(Number(id))
     }
 
     @Post('evaluate')

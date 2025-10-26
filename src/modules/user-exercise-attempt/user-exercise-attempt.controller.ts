@@ -76,8 +76,8 @@ export class UserExerciseAttemptController {
         type: UserExerciseAttemptResponseSwaggerDTO
     })
     @ZodSerializerDto(UserExerciseAttemptResDTO)
-    findOne(@Param() params: GetUserExerciseAttemptByIdParamsDTO) {
-        return this.userExerciseAttemptService.findOne(params)
+    findOne(@Param('id') id: string) {
+        return this.userExerciseAttemptService.findOne(Number(id))
     }
 
     @Put(':id')
@@ -91,11 +91,11 @@ export class UserExerciseAttemptController {
     })
     @ZodSerializerDto(UserExerciseAttemptResDTO)
     update(
-        @Param() params: GetUserExerciseAttemptByIdParamsDTO,
+        @Param('id') id: string,
         @Body() body: UpdateUserExerciseAttemptBodyDTO,
         @ActiveUser('userId') userId: number
     ) {
-        return this.userExerciseAttemptService.update(params.id, body)
+        return this.userExerciseAttemptService.update(Number(id), body)
     }
 
     @Delete(':id')
@@ -108,8 +108,8 @@ export class UserExerciseAttemptController {
         type: UserExerciseAttemptResponseSwaggerDTO
     })
     @ZodSerializerDto(UserExerciseAttemptResDTO)
-    remove(@Param() params: GetUserExerciseAttemptByIdParamsDTO, @ActiveUser('userId') userId: number) {
-        return this.userExerciseAttemptService.remove(params.id)
+    remove(@Param('id') id: string) {
+        return this.userExerciseAttemptService.remove(Number(id))
     }
 
     @Get(':id/check-completion')
@@ -121,7 +121,7 @@ export class UserExerciseAttemptController {
         type: ExerciseCompletionResponseSwaggerDTO
     })
     checkCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number) {
-        return this.userExerciseAttemptService.checkExerciseCompletion(parseInt(id, 10), userId)
+        return this.userExerciseAttemptService.checkExerciseCompletion(Number(id), userId)
     }
 
     @Put(':id/abandon')
@@ -134,7 +134,7 @@ export class UserExerciseAttemptController {
     })
     @ZodSerializerDto(UserExerciseAttemptResDTO)
     abandon(@Param('id') id: string, @ActiveUser('userId') userId: number) {
-        return this.userExerciseAttemptService.abandon(parseInt(id, 10), userId)
+        return this.userExerciseAttemptService.abandon(Number(id), userId)
     }
 
     @Get(':id/status')
@@ -147,7 +147,7 @@ export class UserExerciseAttemptController {
     })
     @ZodSerializerDto(UserExerciseAttemptResDTO)
     getStatus(@Param('id') id: string, @ActiveUser('userId') userId: number) {
-        return this.userExerciseAttemptService.getStatus(parseInt(id, 10), userId)
+        return this.userExerciseAttemptService.getStatus(Number(id), userId)
     }
 }
 

@@ -124,11 +124,11 @@ export class UserProgressController {
     })
     @ZodSerializerDto(UserProgressResDTO)
     update(
-        @Param() params: GetUserProgressByIdParamsDTO,
+        @Param('id') id: string,
         @Body() body: UpdateUserProgressBodyDTO,
         @ActiveUser('userId') userId: number
     ) {
-        return this.userProgressService.update(params.id, body)
+        return this.userProgressService.update(Number(id), body)
     }
 
     @Put('user/lesson/:lessonId')
@@ -158,8 +158,8 @@ export class UserProgressController {
         type: UserProgressResponseSwaggerDTO
     })
     @ZodSerializerDto(UserProgressResDTO)
-    remove(@Param() params: GetUserProgressByIdParamsDTO, @ActiveUser('userId') userId: number) {
-        return this.userProgressService.remove(params.id)
+    remove(@Param('id') id: string) {
+        return this.userProgressService.remove(Number(id))
     }
 
     @Post('start-lesson')

@@ -73,9 +73,9 @@ export class UserAnswerLogService {
         }
     }
 
-    async findOne(params: GetUserAnswerLogByIdParamsType) {
+    async findOne(id: number) {
         const userAnswerLog = await this.userAnswerLogRepository.findUnique({
-            id: params.id
+            id: id
         })
 
         if (!userAnswerLog) {
