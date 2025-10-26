@@ -198,4 +198,39 @@ export class ShopBannerRepo {
       }
     })
   }
+
+  async findValidByDateWithLangId(date: Date, langId: number): Promise<Array<any>> {
+    const data = await this.prismaService.shopBanner.findMany({
+      where: {
+        deletedAt: null,
+        isActive: true,
+        AND: [
+          {
+            OR: [{ startDate: null }, { startDate: { lte: date } }]
+          },
+          {
+            OR: [{ endDate: null }, { endDate: { gte: date } }]
+          }
+        ]
+      },
+      include: {
+        nameTranslations: {
+          where: { languageId: langId },
+          select: { value: true }
+        },
+        shopItems: {
+          where: { deletedAt: null, isActive: true },
+          include: {
+            pokemon: true
+          }
+        }
+      },
+      orderBy: { id: 'asc' }
+    })
+
+    return data.map((d: any) => ({
+      ...d,
+      nameTranslation: d.nameTranslations?.[0]?.value ?? d.nameKey
+    }))
+  }
 }

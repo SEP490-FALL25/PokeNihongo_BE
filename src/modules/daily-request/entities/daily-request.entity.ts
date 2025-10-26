@@ -9,6 +9,7 @@ import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
+
 export const DailyRequestSchema = z.object({
   id: z.number(),
   nameKey: z.string(),
@@ -82,12 +83,24 @@ export const GetDailyRequestDetailResSchema = z.object({
     nameTranslation: z.string().nullable().optional(),
     descriptionTranslation: z.string().nullable().optional(),
     reward: RewardSchema.extend({
-      nameTranslations: TranslationSchema.pick({
-        id: true,
-        languageId: true,
-        value: true
-      })
-        .nullable()
+      nameTranslations: z
+        .array(TranslationSchema.pick({ id: true, languageId: true, value: true }))
+        .optional()
+    })
+      .nullable()
+      .optional()
+  }),
+  message: z.string()
+})
+
+export const GetDailyRequestDetailwithAllLangResSchema = z.object({
+  statusCode: z.number(),
+  data: DailyRequestSchema.extend({
+    nameTranslations: z.array(z.object({ key: z.string(), value: z.string() })),
+    descriptionTranslations: z.array(z.object({ key: z.string(), value: z.string() })),
+    reward: RewardSchema.extend({
+      nameTranslations: z
+        .array(TranslationSchema.pick({ id: true, languageId: true, value: true }))
         .optional()
     })
       .nullable()

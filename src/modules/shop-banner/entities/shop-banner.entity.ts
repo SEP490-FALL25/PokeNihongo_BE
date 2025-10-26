@@ -1,5 +1,6 @@
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ShopBannerMessage } from '@/i18n/message-keys'
+import { PokemonSchema } from '@/modules/pokemon/entities/pokemon.entity'
 import { ShopItemSchema } from '@/modules/shop-item/entities/shop-item.entity'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
@@ -59,6 +60,16 @@ export const GetShopBannerParamsSchema = z
   })
   .strict()
 
+export const GetShopBannerDetailByUserSchema = ShopBannerSchema.extend({
+  nameTranslation: z.string(),
+  shopItems: z.array(
+    ShopItemSchema.extend({
+      pokemon: PokemonSchema.optional(),
+      canBuy: z.boolean()
+    })
+  )
+})
+
 export const GetShopBannerDetailResSchema = z.object({
   statusCode: z.number(),
   data: ShopBannerSchema.extend({
@@ -69,6 +80,12 @@ export const GetShopBannerDetailResSchema = z.object({
       })
     )
   }),
+  message: z.string()
+})
+
+export const GetShopBannerByTodayResSchema = z.object({
+  statusCode: z.number(),
+  data: z.array(GetShopBannerDetailByUserSchema),
   message: z.string()
 })
 
