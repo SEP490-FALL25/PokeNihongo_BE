@@ -324,5 +324,25 @@ export const enMessages = {
     NOT_FOUND: 'Wallet transaction not found',
     ALREADY_EXISTS: 'Wallet transaction already exists',
     INVALID_DATA: 'Invalid wallet transaction data'
+  },
+  shop_banner: {
+    CREATE_SUCCESS: 'Shop banner created successfully',
+    UPDATE_SUCCESS: 'Shop banner updated successfully',
+    DELETE_SUCCESS: 'Shop banner deleted successfully',
+    GET_SUCCESS: 'Shop banner retrieved successfully',
+    GET_LIST_SUCCESS: 'Shop banner list retrieved successfully',
+    NOT_FOUND: 'Shop banner not found',
+    ALREADY_EXISTS: 'Shop banner already exists',
+    INVALID_DATA: 'Invalid shop banner data'
+  },
+  shop_item: {
+    CREATE_SUCCESS: 'Shop item created successfully',
+    UPDATE_SUCCESS: 'Shop item updated successfully',
+    DELETE_SUCCESS: 'Shop item deleted successfully',
+    GET_SUCCESS: 'Shop item retrieved successfully',
+    GET_LIST_SUCCESS: 'Shop item list retrieved successfully',
+    NOT_FOUND: 'Shop item not found',
+    ALREADY_EXISTS: 'Shop item already exists',
+    INVALID_DATA: 'Invalid shop item data'
   }
 }

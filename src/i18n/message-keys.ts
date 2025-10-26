@@ -344,3 +344,25 @@ export const WalletTransactionMessage = {
   ALREADY_EXISTS: 'wallet_transaction.ALREADY_EXISTS',
   INVALID_DATA: 'wallet_transaction.INVALID_DATA'
 } as const
+
+export const ShopBannerMessage = {
+  CREATE_SUCCESS: 'shop_banner.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'shop_banner.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'shop_banner.DELETE_SUCCESS',
+  GET_SUCCESS: 'shop_banner.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'shop_banner.GET_LIST_SUCCESS',
+  NOT_FOUND: 'shop_banner.NOT_FOUND',
+  ALREADY_EXISTS: 'shop_banner.ALREADY_EXISTS',
+  INVALID_DATA: 'shop_banner.INVALID_DATA'
+} as const
+
+export const ShopItemMessage = {
+  CREATE_SUCCESS: 'shop_item.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'shop_item.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'shop_item.DELETE_SUCCESS',
+  GET_SUCCESS: 'shop_item.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'shop_item.GET_LIST_SUCCESS',
+  NOT_FOUND: 'shop_item.NOT_FOUND',
+  ALREADY_EXISTS: 'shop_item.ALREADY_EXISTS',
+  INVALID_DATA: 'shop_item.INVALID_DATA'
+} as const

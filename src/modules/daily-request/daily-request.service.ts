@@ -383,7 +383,8 @@ export class DailyRequestService {
           id,
           deletedById
         }),
-        this.translationRepo.deleteByKey(existingDailyRequest.nameKey)
+        this.translationRepo.deleteByKey(existingDailyRequest.nameKey),
+        this.translationRepo.deleteByKey(existingDailyRequest.descriptionKey)
       ])
 
       return {
