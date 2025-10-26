@@ -52,6 +52,7 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WalletTransactionModule } from './modules/wallet-transaction/wallet-transaction.module';
+import { ShopBannerModule } from './modules/shop-banner/shop-banner.module';
 
 @Module({
   imports: [
@@ -103,7 +104,8 @@ import { WalletTransactionModule } from './modules/wallet-transaction/wallet-tra
     TestSetQuestionBankModule,
     SpeakingModule,
     WalletModule,
-    WalletTransactionModule
+    WalletTransactionModule,
+    ShopBannerModule
   ],
 
   controllers: [],

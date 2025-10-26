@@ -322,5 +322,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy giao dịch ví',
     ALREADY_EXISTS: 'Giao dịch ví đã tồn tại',
     INVALID_DATA: 'Dữ liệu giao dịch ví không hợp lệ'
+  },
+  shop_banner: {
+    CREATE_SUCCESS: 'Tạo banner cửa hàng thành công',
+    UPDATE_SUCCESS: 'Cập nhật banner cửa hàng thành công',
+    DELETE_SUCCESS: 'Xóa banner cửa hàng thành công',
+    GET_SUCCESS: 'Lấy thông tin banner cửa hàng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách banner cửa hàng thành công',
+    NOT_FOUND: 'Không tìm thấy banner cửa hàng',
+    ALREADY_EXISTS: 'Banner cửa hàng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu banner cửa hàng không hợp lệ'
   }
 }

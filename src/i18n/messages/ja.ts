@@ -315,5 +315,15 @@ export const jaMessages = {
 
     ALREADY_EXISTS: 'ウォレット取引は既に存在します',
     INVALID_DATA: '無効なウォレット取引データです'
+  },
+  shop_banner: {
+    CREATE_SUCCESS: 'ショップバナーの作成に成功しました',
+    UPDATE_SUCCESS: 'ショップバナーの更新に成功しました',
+    DELETE_SUCCESS: 'ショップバナーの削除に成功しました',
+    GET_SUCCESS: 'ショップバナー情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ショップバナーリストの取得に成功しました',
+    NOT_FOUND: 'ショップバナーが見つかりません',
+    ALREADY_EXISTS: 'ショップバナーは既に存在します',
+    INVALID_DATA: '無効なショップバナーデータです'
   }
 }
