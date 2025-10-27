@@ -1,21 +1,21 @@
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
-import { ShopBannerStatus } from '@/common/constants/shop-banner.constant'
+import { GachaBannerStatus } from '@/common/constants/shop-banner.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
-  CreateShopBannerBodyType,
-  REWARD_FIELDS,
-  ShopBannerType,
-  UpdateShopBannerBodyType
-} from './entities/shop-banner.entity'
+  CreateGachaBannerBodyType,
+  GACHA_BANNER_FIELDS,
+  GachaBannerType,
+  UpdateGachaBannerBodyType
+} from './entities/gacha-banner.entity'
 
-type ShopBannerPrismaType = Omit<ShopBannerType, 'nameKey'> & { name: string }
+type GachaBannerPrismaType = Omit<GachaBannerType, 'nameKey'> & { name: string }
 
 @Injectable()
-export class ShopBannerRepo {
+export class GachaBannerRepo {
   constructor(private prismaService: PrismaService) {}
 
   // Wrapper cho transaction
@@ -29,12 +29,12 @@ export class ShopBannerRepo {
       data
     }: {
       createdById: number | null
-      data: CreateShopBannerBodyType
+      data: CreateGachaBannerBodyType
     },
     prismaTx?: PrismaClient
-  ): Promise<ShopBannerType> {
+  ): Promise<GachaBannerType> {
     const client = prismaTx || this.prismaService
-    return client.shopBanner.create({
+    return client.gachaBanner.create({
       data: {
         ...data,
         createdById
@@ -50,12 +50,12 @@ export class ShopBannerRepo {
     }: {
       id: number
       updatedById?: number
-      data: UpdateShopBannerBodyType
+      data: UpdateGachaBannerBodyType
     },
     prismaTx?: PrismaClient
-  ): Promise<ShopBannerType> {
+  ): Promise<GachaBannerType> {
     const client = prismaTx || this.prismaService
-    return client.shopBanner.update({
+    return client.gachaBanner.update({
       where: { id, deletedAt: null },
       data: {
         ...data,
@@ -74,15 +74,15 @@ export class ShopBannerRepo {
     },
     isHard?: boolean,
     prismaTx?: PrismaClient
-  ): Promise<ShopBannerType> {
+  ): Promise<GachaBannerType> {
     const client = prismaTx || this.prismaService
     const result = isHard
-      ? await this.prismaService.shopBanner.delete({
+      ? await this.prismaService.gachaBanner.delete({
           where: {
             id
           }
         })
-      : await client.shopBanner.update({
+      : await client.gachaBanner.update({
           where: {
             id,
             deletedAt: null
@@ -96,7 +96,7 @@ export class ShopBannerRepo {
   }
 
   async list(pagination: PaginationQueryType, langId?: number) {
-    const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, REWARD_FIELDS)
+    const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, GACHA_BANNER_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
@@ -132,8 +132,8 @@ export class ShopBannerRepo {
     }
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.shopBanner.count({ where }),
-      this.prismaService.shopBanner.findMany({
+      this.prismaService.gachaBanner.count({ where }),
+      this.prismaService.gachaBanner.findMany({
         where,
         include: {
           nameTranslations: langId
@@ -170,7 +170,7 @@ export class ShopBannerRepo {
   }
 
   async listwithDetail(pagination: PaginationQueryType, langId?: number) {
-    const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, REWARD_FIELDS)
+    const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, GACHA_BANNER_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
@@ -206,19 +206,13 @@ export class ShopBannerRepo {
     }
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.shopBanner.count({ where }),
-      this.prismaService.shopBanner.findMany({
+      this.prismaService.gachaBanner.count({ where }),
+      this.prismaService.gachaBanner.findMany({
         where,
         include: {
           // Always include all translations with languageId for service-level mapping
           nameTranslations: {
             select: { value: true, languageId: true }
-          },
-          shopItems: {
-            where: { deletedAt: null, isActive: true },
-            include: {
-              pokemon: true
-            }
           }
         },
         orderBy,
@@ -253,8 +247,8 @@ export class ShopBannerRepo {
     }
   }
 
-  findById(id: number): Promise<ShopBannerType | null> {
-    return this.prismaService.shopBanner.findUnique({
+  findById(id: number): Promise<GachaBannerType | null> {
+    return this.prismaService.gachaBanner.findUnique({
       where: {
         id,
         deletedAt: null
@@ -262,8 +256,8 @@ export class ShopBannerRepo {
     })
   }
 
-  findByIdWithLangId(id: number, langId: number): Promise<ShopBannerType | null> {
-    return this.prismaService.shopBanner.findUnique({
+  findByIdWithLangId(id: number, langId: number): Promise<GachaBannerType | null> {
+    return this.prismaService.gachaBanner.findUnique({
       where: {
         id,
         deletedAt: null
@@ -273,29 +267,16 @@ export class ShopBannerRepo {
           where: {
             languageId: langId
           }
-        },
-        shopItems: {
-          where: { deletedAt: null, isActive: true },
-          include: {
-            pokemon: {
-              select: {
-                pokedex_number: true,
-                nameJp: true,
-                nameTranslations: true,
-                imageUrl: true
-              }
-            }
-          }
         }
       }
     })
   }
 
   async findValidByDateWithLangId(date: Date, langId: number): Promise<Array<any>> {
-    const data = await this.prismaService.shopBanner.findMany({
+    const data = await this.prismaService.gachaBanner.findMany({
       where: {
         deletedAt: null,
-        status: ShopBannerStatus.ACTIVE,
+        status: GachaBannerStatus.ACTIVE,
         AND: [
           {
             OR: [{ startDate: null }, { startDate: { lte: date } }]
@@ -309,18 +290,6 @@ export class ShopBannerRepo {
         nameTranslations: {
           where: { languageId: langId },
           select: { value: true }
-        },
-        shopItems: {
-          where: { deletedAt: null, isActive: true },
-          include: {
-            pokemon: {
-              include: {
-                previousPokemons: {
-                  select: { id: true }
-                }
-              }
-            }
-          }
         }
       },
       orderBy: { id: 'asc' }
@@ -332,26 +301,13 @@ export class ShopBannerRepo {
     }))
   }
 
-  /**
-   * Lấy thông tin shop banner để validate
-   */
-  async findByIdForValidation(shopBannerId: number): Promise<ShopBannerType | null> {
-    return this.prismaService.shopBanner.findUnique({
-      where: { id: shopBannerId },
-      select: {
-        id: true,
-        nameKey: true,
-        startDate: true,
-        endDate: true,
-        status: true,
-        deletedAt: true,
-        createdAt: true,
-        updatedAt: true,
-        min: true,
-        max: true,
-        createdById: true,
-        deletedById: true,
-        updatedById: true
+  async countActiveBanners(excludeId?: number, prismaTx?: PrismaClient): Promise<number> {
+    const client = prismaTx || this.prismaService
+    return client.gachaBanner.count({
+      where: {
+        status: GachaBannerStatus.ACTIVE,
+        deletedAt: null,
+        ...(excludeId ? { id: { not: excludeId } } : {})
       }
     })
   }

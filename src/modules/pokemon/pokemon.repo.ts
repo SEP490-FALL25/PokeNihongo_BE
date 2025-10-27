@@ -236,6 +236,48 @@ export class PokemonRepo {
     }
   }
 
+  async listWithNameNumImg(pagination: PaginationQueryType) {
+    const { where, orderBy } = parseQs(
+      pagination.qs,
+      POKEMON_FIELDS,
+      ['types', 'rarities'], // relation fields - types là relation với ElementalType
+      [] // array fields
+    )
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.pokemon.count({
+        where: { deletedAt: null, ...where }
+      }),
+      this.prismaService.pokemon.findMany({
+        where: { deletedAt: null, ...where },
+        select: {
+          id: true,
+          pokedex_number: true,
+          nameJp: true,
+          nameTranslations: true,
+          imageUrl: true,
+          rarity: true
+        },
+        orderBy,
+        skip,
+        take
+      })
+    ])
+
+    return {
+      results: data,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
+    }
+  }
+
   async getPokemonListWithPokemonUser(pagination: PaginationQueryType) {
     const { where, orderBy } = parseQs(
       pagination.qs,
@@ -570,5 +612,148 @@ export class PokemonRepo {
         }
       }
     })
+  }
+
+  /**
+   * Random pokemon theo rarity, typeIds, và limit
+   * - Ưu tiên pokemon có type trong typeIds
+   * - Chỉ lấy pokemon có previousPokemons = []
+   * - Nếu không đủ số lượng từ typeIds, lấy thêm random theo rarity
+   */
+  async getRandomPokemonsByTypeAndRarity({
+    limit,
+    rarity,
+    typeIds = [],
+    excludeIds = []
+  }: {
+    limit: number
+    rarity: RarityPokemonType
+    typeIds?: number[]
+    excludeIds?: number[]
+  }): Promise<PokemonWithRelations[]> {
+    const baseWhere = {
+      deletedAt: null,
+      rarity,
+      id: excludeIds.length > 0 ? { notIn: excludeIds } : undefined,
+      // Chỉ lấy pokemon base form (không có previousPokemons)
+      previousPokemons: { none: {} }
+    }
+
+    let selectedPokemons: PokemonWithRelations[] = []
+
+    // Bước 1: Ưu tiên pokemon có type trong typeIds
+    if (typeIds.length > 0) {
+      const pokemonsWithTypes = await this.prismaService.pokemon.findMany({
+        where: {
+          ...baseWhere,
+          types: {
+            some: {
+              id: { in: typeIds }
+            }
+          }
+        },
+        include: {
+          types: {
+            select: {
+              id: true,
+              type_name: true,
+              display_name: true,
+              color_hex: true
+            }
+          },
+          nextPokemons: {
+            select: {
+              id: true,
+              pokedex_number: true,
+              nameJp: true,
+              nameTranslations: true,
+              description: true,
+              conditionLevel: true,
+              isStarted: true,
+              imageUrl: true,
+              rarity: true
+            }
+          },
+          previousPokemons: {
+            select: {
+              id: true,
+              pokedex_number: true,
+              nameJp: true,
+              nameTranslations: true,
+              description: true,
+              conditionLevel: true,
+              isStarted: true,
+              imageUrl: true,
+              rarity: true
+            },
+            where: {
+              deletedAt: null
+            }
+          }
+        }
+      })
+
+      // Random từ pokemonsWithTypes
+      const shuffled = pokemonsWithTypes.sort(() => 0.5 - Math.random())
+      selectedPokemons = shuffled.slice(0, limit)
+    }
+
+    // Bước 2: Nếu chưa đủ số lượng, lấy thêm pokemon bất kỳ theo rarity
+    if (selectedPokemons.length < limit) {
+      const remaining = limit - selectedPokemons.length
+      const selectedIds = selectedPokemons.map((p) => p.id)
+      const allExcludeIds = [...excludeIds, ...selectedIds]
+
+      const additionalPokemons = await this.prismaService.pokemon.findMany({
+        where: {
+          ...baseWhere,
+          id: allExcludeIds.length > 0 ? { notIn: allExcludeIds } : undefined
+        },
+        include: {
+          types: {
+            select: {
+              id: true,
+              type_name: true,
+              display_name: true,
+              color_hex: true
+            }
+          },
+          nextPokemons: {
+            select: {
+              id: true,
+              pokedex_number: true,
+              nameJp: true,
+              nameTranslations: true,
+              description: true,
+              conditionLevel: true,
+              isStarted: true,
+              imageUrl: true,
+              rarity: true
+            }
+          },
+          previousPokemons: {
+            select: {
+              id: true,
+              pokedex_number: true,
+              nameJp: true,
+              nameTranslations: true,
+              description: true,
+              conditionLevel: true,
+              isStarted: true,
+              imageUrl: true,
+              rarity: true
+            },
+            where: {
+              deletedAt: null
+            }
+          }
+        }
+      })
+
+      const shuffled = additionalPokemons.sort(() => 0.5 - Math.random())
+      selectedPokemons.push(...shuffled.slice(0, remaining))
+    }
+
+    return selectedPokemons
   }
 }
