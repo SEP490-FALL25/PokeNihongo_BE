@@ -114,6 +114,7 @@ export const GetVocabularyListQuerySchema = z
         pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         search: z.string().optional(),
         levelN: z.string().transform((val) => parseInt(val, 10)).optional(),
+        lessonId: z.string().transform((val) => parseInt(val, 10)).optional(),
         sortBy: z.nativeEnum(VocabularySortField).optional().default(VocabularySortField.CREATED_AT),
         sort: z.nativeEnum(VocabularySortOrder).optional().default(VocabularySortOrder.DESC)
     })

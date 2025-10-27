@@ -176,8 +176,8 @@ export class VocabularyController {
         type: VocabularyResponseSwaggerDTO
     })
     @ZodSerializerDto(VocabularyResDTO)
-    findOne(@Param() params: GetVocabularyByIdParamsDTO, @I18nLang() lang: string) {
-        return this.vocabularyService.findOne(params, lang)
+    findOne(@Param('id') id: string, @I18nLang() lang: string) {
+        return this.vocabularyService.findOne(Number(id), lang)
     }
 
     @Delete(':id')

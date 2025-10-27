@@ -12,10 +12,11 @@ export class VocabularyRepository {
         pageSize: number
         search?: string
         levelN?: number
+        lessonId?: number
         sortBy?: VocabularySortField
         sort?: VocabularySortOrder
     }) {
-        const { currentPage, pageSize, search, levelN, sortBy = VocabularySortField.CREATED_AT, sort = VocabularySortOrder.DESC } = params
+        const { currentPage, pageSize, search, levelN, lessonId, sortBy = VocabularySortField.CREATED_AT, sort = VocabularySortOrder.DESC } = params
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -29,6 +30,26 @@ export class VocabularyRepository {
 
         if (levelN) {
             where.levelN = levelN
+        }
+
+        // Nếu có lessonId, loại bỏ vocabulary đã có trong lesson đó
+        if (lessonId) {
+            const existingContentIds = await this.prismaService.lessonContents.findMany({
+                where: {
+                    lessonId: lessonId,
+                    contentType: 'VOCABULARY'
+                },
+                select: {
+                    contentId: true
+                }
+            })
+
+            const excludedIds = existingContentIds.map(item => item.contentId)
+            if (excludedIds.length > 0) {
+                where.id = {
+                    notIn: excludedIds
+                }
+            }
         }
 
         const [items, total] = await Promise.all([

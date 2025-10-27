@@ -54,16 +54,6 @@ export class GrammarController {
         return await this.grammarService.createGrammar(body)
     }
 
-    @Post('basic')
-    @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Tạo ngữ pháp cơ bản (chỉ structure và level)' })
-    @ApiResponse({ status: 201, description: 'Tạo ngữ pháp cơ bản thành công', type: GrammarResponseSwaggerDTO })
-    @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
-    @ApiResponse({ status: 409, description: 'Ngữ pháp đã tồn tại' })
-    @ZodSerializerDto(GrammarResponseDTO)
-    async createGrammarBasic(@Body() body: { structure: string; level: string }) {
-        return await this.grammarService.createGrammarBasic(body)
-    }
 
     @Get()
     @ApiOperation({ summary: 'Lấy danh sách ngữ pháp với phân trang và tìm kiếm' })
