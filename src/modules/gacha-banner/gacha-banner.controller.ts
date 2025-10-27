@@ -51,9 +51,7 @@ export class GachaBannerController {
 
   @Get('today/user')
   @ZodSerializerDto(GetGachaBannerByTodayResDTO)
-  getByToday(@I18nLang() lang: string, @ActiveUser('userId') userId?: number) {
-    console.log('log')
-
+  getByToday(@I18nLang() lang: string, @ActiveUser('userId') userId: number) {
     return this.gachaBannerService.getByToday(lang, userId)
   }
 
