@@ -1,7 +1,10 @@
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
-import { ShopBannerStatus } from '@/common/constants/shop-banner.constant'
+import {
+  ShopBannerStatus,
+  ShopBannerStatusType
+} from '@/common/constants/shop-banner.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
@@ -356,6 +359,15 @@ export class ShopBannerRepo {
         createdById: true,
         deletedById: true,
         updatedById: true
+      }
+    })
+  }
+
+  findByStatus(status: ShopBannerStatusType): Promise<ShopBannerType | null> {
+    return this.prismaService.shopBanner.findFirst({
+      where: {
+        status,
+        deletedAt: null
       }
     })
   }

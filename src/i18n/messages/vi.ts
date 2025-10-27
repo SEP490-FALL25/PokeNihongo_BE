@@ -332,7 +332,8 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách banner cửa hàng thành công',
     NOT_FOUND: 'Không tìm thấy banner cửa hàng',
     ALREADY_EXISTS: 'Banner cửa hàng đã tồn tại',
-    INVALID_DATA: 'Dữ liệu banner cửa hàng không hợp lệ'
+    INVALID_DATA: 'Dữ liệu banner cửa hàng không hợp lệ',
+    ONLY_ONE_ACTIVE: 'Chỉ được phép có một banner cửa hàng ở trạng thái ACTIVE'
   },
   shop_item: {
     CREATE_SUCCESS: 'Tạo mặt hàng cửa hàng thành công',

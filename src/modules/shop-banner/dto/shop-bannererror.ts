@@ -18,3 +18,12 @@ export class ShopBannerInvalidDateRangeException extends BadRequestException {
     })
   }
 }
+
+export class OnlyOneShopBannerActiveException extends BadRequestException {
+  constructor() {
+    super({
+      message: ShopBannerMessage.ONLY_ONE_ACTIVE,
+      errorKey: ShopBannerMessage.ONLY_ONE_ACTIVE
+    })
+  }
+}
