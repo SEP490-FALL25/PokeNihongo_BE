@@ -42,7 +42,7 @@ export class GrammarService {
                 data: {
                     results: result.data,
                     pagination: {
-                        current: result.currentPage,
+                        current: result.current,
                         pageSize: result.pageSize,
                         totalPage: result.totalPages,
                         totalItem: result.total

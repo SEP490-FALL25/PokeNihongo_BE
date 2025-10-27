@@ -150,3 +150,44 @@ export class ExerciseCompletionResponseSwaggerDTO {
     @ApiProperty({ type: ExerciseCompletionStatusSwaggerDTO, description: 'Dữ liệu trạng thái hoàn thành' })
     data: ExerciseCompletionStatusSwaggerDTO
 }
+
+export class LatestExerciseAttemptSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID của lần thử bài tập' })
+    id: number
+
+    @ApiProperty({ example: 1, description: 'ID người dùng' })
+    userId: number
+
+    @ApiProperty({ example: 1, description: 'ID bài tập' })
+    exerciseId: number
+
+    @ApiProperty({ example: 'QUIZ', description: 'Loại bài tập' })
+    exerciseType: string
+
+    @ApiProperty({
+        example: 'COMPLETED',
+        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED']
+    })
+    status: string
+
+    @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Ngày tạo' })
+    createdAt: Date
+
+    @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Ngày cập nhật' })
+    updatedAt: Date
+}
+
+export class LatestExerciseAttemptsByLessonResSwaggerDTO {
+    @ApiProperty({ example: 200, description: 'Mã trạng thái' })
+    statusCode: number
+
+    @ApiProperty({
+        type: [LatestExerciseAttemptSwaggerDTO],
+        description: 'Danh sách exercise attempt gần nhất của user cho mỗi exercise trong lesson'
+    })
+    data: LatestExerciseAttemptSwaggerDTO[]
+
+    @ApiProperty({ example: 'Lấy danh sách exercise gần nhất thành công', description: 'Thông báo' })
+    message: string
+}

@@ -173,6 +173,58 @@ export class UserExerciseAttemptRepository {
 
         return completedAttempts.map(attempt => attempt.exerciseId)
     }
+
+    async findLatestByLessonAndUser(userId: number, lessonId: number) {
+        // Lấy tất cả exercise trong lesson
+        const exercises = await this.prismaService.exercises.findMany({
+            where: { lessonId },
+            select: { id: true, exerciseType: true }
+        })
+
+        if (exercises.length === 0) {
+            return []
+        }
+
+        const exerciseIds = exercises.map(ex => ex.id)
+
+        // Với mỗi exercise, lấy attempt gần nhất của user
+        const latestAttempts = await Promise.all(
+            exerciseIds.map(async (exerciseId) => {
+                const latestAttempt = await this.prismaService.userExerciseAttempt.findFirst({
+                    where: {
+                        userId,
+                        exerciseId
+                    },
+                    orderBy: {
+                        createdAt: 'desc'
+                    },
+                    include: {
+                        exercise: {
+                            select: {
+                                exerciseType: true
+                            }
+                        }
+                    }
+                })
+
+                if (latestAttempt) {
+                    return {
+                        id: latestAttempt.id,
+                        userId: latestAttempt.userId,
+                        exerciseId: latestAttempt.exerciseId,
+                        exerciseType: latestAttempt.exercise.exerciseType,
+                        status: latestAttempt.status,
+                        createdAt: latestAttempt.createdAt,
+                        updatedAt: latestAttempt.updatedAt
+                    }
+                }
+                return null
+            })
+        )
+
+        // Lọc bỏ null values
+        return latestAttempts.filter(attempt => attempt !== null)
+    }
 }
 
 
