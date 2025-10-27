@@ -10,8 +10,8 @@ export class TestSetRepository {
     async create(data: CreateTestSetBodyType & { creatorId?: number }): Promise<TestSetType> {
         const result = await this.prisma.testSet.create({
             data: {
-                name: data.name,
-                description: data.description,
+                name: 'temp', // Sẽ được cập nhật trong service
+                description: 'temp', // Sẽ được cập nhật trong service
                 content: data.content,
                 audioUrl: data.audioUrl,
                 price: data.price,
@@ -112,8 +112,6 @@ export class TestSetRepository {
         const result = await this.prisma.testSet.update({
             where: { id },
             data: {
-                ...(data.name && { name: data.name }),
-                ...(data.description !== undefined && { description: data.description }),
                 ...(data.content !== undefined && { content: data.content }),
                 ...(data.audioUrl !== undefined && { audioUrl: data.audioUrl }),
                 ...(data.price !== undefined && { price: data.price }),

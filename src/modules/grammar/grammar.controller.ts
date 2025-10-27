@@ -67,8 +67,8 @@ export class GrammarController {
     @ApiOperation({ summary: 'Lấy thông tin ngữ pháp theo ID' })
     @ApiResponse({ status: 200, description: 'Lấy thông tin ngữ pháp thành công', type: GrammarResponseSwaggerDTO })
     @ApiResponse({ status: 404, description: 'Không tìm thấy ngữ pháp' })
-    async getGrammarById(@Param() params: GetGrammarByIdParamsDTO) {
-        return await this.grammarService.getGrammarById(params)
+    async getGrammarById(@Param('id') id: string) {
+        return await this.grammarService.getGrammarById(Number(id))
     }
 
     @Put(':id')
