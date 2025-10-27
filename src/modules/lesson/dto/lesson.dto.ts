@@ -14,6 +14,25 @@ export class LessonResponseSwaggerDTO {
     })
     titleKey: string
 
+    @ApiPropertyOptional({
+        example: 'Bài 1: Chào hỏi & Giới thiệu bản thân',
+        description: 'Tiêu đề bài học đã dịch (string khi có lang, array khi không có lang)',
+        oneOf: [
+            { type: 'string' },
+            {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    properties: {
+                        language: { type: 'string', example: 'lang_1' },
+                        value: { type: 'string', example: 'Bài 1: Chào hỏi & Giới thiệu bản thân' }
+                    }
+                }
+            }
+        ]
+    })
+    title?: string | Array<{ language: string; value: string }>
+
     @ApiProperty({
         example: 5,
         description: 'Cấp độ JLPT (1-5)',

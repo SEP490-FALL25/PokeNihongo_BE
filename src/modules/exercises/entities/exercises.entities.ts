@@ -37,10 +37,10 @@ export const GetExercisesByIdParamsType = z.object({
 })
 
 export const GetExercisesListQueryType = z.object({
-    currentPage: z.string().transform(Number).default('1'),
-    pageSize: z.string().transform(Number).default('10'),
+    currentPage: z.string().transform(val => val ? Number(val) : 1).default('1'),
+    pageSize: z.string().transform(val => val ? Number(val) : 10).default('10'),
     exerciseType: z.string().optional(),
-    lessonId: z.string().transform(Number).optional(),
+    lessonId: z.string().transform(val => val ? Number(val) : undefined).optional(),
     isBlocked: z.string().transform(val => val === 'true').optional(),
     search: z.string().optional(),
     sortBy: z.nativeEnum(ExercisesSortField).optional().default(ExercisesSortField.CREATED_AT),

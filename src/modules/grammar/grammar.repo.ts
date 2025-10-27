@@ -125,8 +125,14 @@ export class GrammarRepository {
         // Add translations to usages
         const usagesWithTranslations = grammar.usages.map(usage => ({
             ...usage,
-            explanationTranslations: translationsByKey[usage.explanationKey] || [],
-            exampleTranslations: translationsByKey[usage.exampleSentenceKey] || []
+            explanationTranslations: (translationsByKey[usage.explanationKey] || []).map(t => ({
+                language_code: t.language.code,
+                value: t.value
+            })),
+            exampleTranslations: (translationsByKey[usage.exampleSentenceKey] || []).map(t => ({
+                language_code: t.language.code,
+                value: t.value
+            }))
         }))
 
         return {

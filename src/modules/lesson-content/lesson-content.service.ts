@@ -258,9 +258,7 @@ export class LessonContentService {
             await this.lessonContentRepository.delete(id)
 
             this.logger.log(`Deleted lesson content ${id}`)
-            return {
-                message: 'Xóa nội dung bài học thành công'
-            }
+            return 'Xóa nội dung bài học thành công'
         } catch (error) {
             this.logger.error(`Error deleting lesson content ${id}:`, error)
 

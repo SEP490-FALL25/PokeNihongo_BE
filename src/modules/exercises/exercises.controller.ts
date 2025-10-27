@@ -46,8 +46,10 @@ export class ExercisesController {
         description: 'Lấy danh sách bài tập thành công',
         type: ExercisesListResponseSwaggerDTO
     })
-    async getExercisesList(@Query() query: GetExercisesListQueryType) {
-        return await this.exercisesService.getExercisesList(query)
+    async getExercisesList(@Query() query: any) {
+        // Explicit validation and transformation
+        const validatedQuery = GetExercisesListQueryType.parse(query)
+        return await this.exercisesService.getExercisesList(validatedQuery)
     }
 
     @Get(':id')
