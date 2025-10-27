@@ -75,8 +75,8 @@ export class TestSetController {
     })
     @ApiQuery({ type: GetTestSetListQuerySwaggerDTO })
     @ZodSerializerDto(TestSetListResDTO)
-    findAll(@Query() query: GetTestSetListQueryDTO) {
-        return this.testSetService.findAll(query)
+    findAll(@Query() query: GetTestSetListQueryDTO, @I18nLang() lang: string) {
+        return this.testSetService.findAll(query, lang)
     }
 
     @Get(':id')

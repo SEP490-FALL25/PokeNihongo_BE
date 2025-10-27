@@ -180,7 +180,7 @@ export class TestSetService {
         }
     }
 
-    async findAll(query: GetTestSetListQueryType) {
+    async findAll(query: GetTestSetListQueryType, lang: string) {
         try {
             const { data, total } = await this.testSetRepo.findMany(query)
             const { currentPage, pageSize } = query
