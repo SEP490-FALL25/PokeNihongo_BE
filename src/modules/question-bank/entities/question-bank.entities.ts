@@ -2,6 +2,7 @@ import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
 import { QuestionType } from '@prisma/client'
+import e from 'express'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -134,6 +135,42 @@ export const CreateQuestionBankWithAnswersBodySchema = z.object({
     })).min(1).max(4)
 }).strict()
 
+
+
+
+// Schema for creating question bank with 4 answers
+export const UpdatedQuestionBankWithAnswersBodySchema = z.object({
+    questionJp: z.string(),
+    questionType: z.nativeEnum(QuestionType),
+    audioUrl: z.string().nullable().optional(),
+    pronunciation: z.string().nullable().optional(),
+    levelN: z.number().min(1).max(5).nullable().optional(),
+    meanings: z.array(z.object({
+        meaningKey: z.string().nullable().optional(),
+        translations: z.record(z.string())
+    })).optional(),
+    answers: z.array(z.object({
+        anwerId: z.number(),
+        answerJp: z.string(),
+        isCorrect: z.boolean(),
+        translations: z.union([
+            // Format 1: Simple object with language_code and value
+            z.object({
+                language_code: z.string(),
+                value: z.string()
+            }),
+            // Format 2: Complex object with meaning array
+            z.object({
+                meaning: z.array(z.object({
+                    language_code: z.string(),
+                    value: z.string()
+                }))
+            })
+        ]).optional()
+    })).min(1).max(4)
+}).strict()
+
+
 // Types
 export type QuestionBankType = z.infer<typeof QuestionBankSchema>
 export type CreateQuestionBankBodyType = z.infer<typeof CreateQuestionBankBodySchema>
@@ -144,4 +181,5 @@ export type GetQuestionBankByIdParamsType = z.infer<typeof GetQuestionBankByIdPa
 export type GetQuestionBankListQueryType = z.infer<typeof GetQuestionBankListQuerySchema>
 export type CreateQuestionBankWithMeaningsBodyType = z.infer<typeof CreateQuestionBankWithMeaningsBodySchema>
 export type CreateQuestionBankWithAnswersBodyType = z.infer<typeof CreateQuestionBankWithAnswersBodySchema>
+export type UpdatedQuestionBankWithAnswersBodyType = z.infer<typeof UpdatedQuestionBankWithAnswersBodySchema>
 

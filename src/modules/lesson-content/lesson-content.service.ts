@@ -4,6 +4,7 @@ import {
     UpdateLessonContentBodyType,
     GetLessonContentByIdParamsType,
     GetLessonContentListQueryType,
+    CreateMutiLessonContentBodyType,
 } from './entities/lesson-content.entities'
 import {
     LessonContentNotFoundException,
@@ -64,55 +65,76 @@ export class LessonContentService {
         }
     }
 
-    async createLessonContent(data: CreateLessonContentBodyType) {
+    async createLessonContent(createData: CreateMutiLessonContentBodyType) {
         try {
-            this.logger.log('Creating lesson content with data:', data)
+            this.logger.log('Creating multiple lesson contents with data:', createData);
 
             // Validate lesson exists
-            const lessonExists = await this.lessonContentRepository.checkLessonExists(data.lessonId)
+            const lessonExists = await this.lessonContentRepository.checkLessonExists(createData.lessonId);
             if (!lessonExists) {
-                throw new LessonNotFoundException()
+                throw new LessonNotFoundException();
             }
 
-            // Check if content already exists in this lesson with same contentType
-            const contentExists = await this.lessonContentRepository.checkContentExistsInLesson(
-                data.lessonId,
-                data.contentId,
-                data.contentType
-            )
-            if (contentExists) {
-                throw new ContentAlreadyExistsInLessonException(data.contentId, data.contentType, data.lessonId)
+            // Validate contentId array
+            if (!createData.contentId?.length) {
+                throw new InvalidLessonContentDataException('Danh sách contentId không được để trống');
             }
 
-            // Auto-generate contentOrder
-            const maxOrder = await this.lessonContentRepository.getMaxContentOrder(data.lessonId)
-            const contentOrder = maxOrder + 1
-            this.logger.log(`Auto-generated contentOrder: ${contentOrder} for lesson ${data.lessonId}`)
+            // Get current max order once
+            const maxOrder = await this.lessonContentRepository.getMaxContentOrder(createData.lessonId);
 
-            const contentData = {
-                ...data,
-                contentOrder
+            // Check all contents existence first
+            const existenceChecks = await Promise.all(
+                createData.contentId.map(contentId =>
+                    this.lessonContentRepository.checkContentExistsInLesson(
+                        createData.lessonId,
+                        contentId,
+                        createData.contentType
+                    )
+                )
+            );
+
+            // Kiểm tra tất cả các content đã tồn tại
+            const existingContents = createData.contentId.filter((_, index) => existenceChecks[index]);
+            if (existingContents.length > 0) {
+                throw new ContentAlreadyExistsInLessonException(
+                    `[${existingContents.join(', ')}]`,
+                    createData.contentType,
+                    createData.lessonId
+                );
             }
 
-            const content = await this.lessonContentRepository.create(contentData)
+            // Create all contents in parallel
+            const createdContents = await Promise.all(
+                createData.contentId.map((contentId, index) => {
+                    const contentData = {
+                        ...createData,
+                        contentId,
+                        contentOrder: maxOrder + index + 1
+                    };
+                    return this.lessonContentRepository.create(contentData);
+                })
+            );
 
-            this.logger.log(`Created lesson content: ${content.id} with contentOrder: ${contentOrder}`)
+            this.logger.log(`Created ${createdContents.length} lesson contents successfully`);
             return {
-                data: content,
+                data: createdContents,
                 message: 'Tạo nội dung bài học thành công'
-            }
+            };
         } catch (error) {
-            this.logger.error('Error creating lesson content:', error)
+            this.logger.error('Error creating lesson contents:', error);
 
-            if (error instanceof LessonNotFoundException || error instanceof ContentAlreadyExistsInLessonException) {
-                throw error
+            if (error instanceof LessonNotFoundException ||
+                error instanceof ContentAlreadyExistsInLessonException ||
+                error instanceof InvalidLessonContentDataException) {
+                throw error;
             }
 
             if (isUniqueConstraintPrismaError(error)) {
-                throw new LessonContentAlreadyExistsException()
+                throw new LessonContentAlreadyExistsException();
             }
 
-            throw new InvalidLessonContentDataException('Lỗi khi tạo nội dung bài học')
+            throw new InvalidLessonContentDataException('Lỗi khi tạo nội dung bài học');
         }
     }
 

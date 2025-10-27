@@ -1376,3 +1376,9 @@ enum BannerStatus {
   EXPIRED // Hết hạn (đã qua thời gian kết thúc)
   PREVIEW // Xem trước (chưa chính thức áp dụng)
 }
+
+enum LessonContentsType {
+  Vocabulary
+  Grammar
+  Kanji
+}
