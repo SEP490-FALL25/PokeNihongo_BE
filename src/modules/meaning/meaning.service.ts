@@ -60,10 +60,10 @@ export class MeaningService {
         }
     }
 
-    async findByVocabularyId(params: GetMeaningsByVocabularyParamsType) {
+    async findByVocabularyId(vocabularyId: number) {
         try {
-            this.logger.log(`Finding meanings by vocabulary id: ${params.vocabularyId}`)
-            return await this.meaningRepository.findByVocabularyId(params.vocabularyId)
+            this.logger.log(`Finding meanings by vocabulary id: ${vocabularyId}`)
+            return await this.meaningRepository.findByVocabularyId(vocabularyId)
         } catch (error) {
             this.logger.error('Error finding meanings by vocabulary id:', error)
             throw error

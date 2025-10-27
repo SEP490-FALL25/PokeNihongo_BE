@@ -188,7 +188,8 @@ export const GetKanjiListQuerySchema = z.object({
     sortOrder: z.nativeEnum(SortOrder).optional(),
     search: z.string().optional(),
     jlptLevel: z.string().transform((val) => parseInt(val, 10)).optional(),
-    strokeCount: z.string().transform((val) => parseInt(val, 10)).optional()
+    strokeCount: z.string().transform((val) => parseInt(val, 10)).optional(),
+    lessonId: z.string().transform((val) => parseInt(val, 10)).optional()
 })
 
 
