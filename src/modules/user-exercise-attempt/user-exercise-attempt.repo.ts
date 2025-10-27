@@ -187,13 +187,15 @@ export class UserExerciseAttemptRepository {
 
         const exerciseIds = exercises.map(ex => ex.id)
 
-        // Với mỗi exercise, lấy attempt gần nhất của user
+        // Với mỗi exercise, lấy attempt ưu tiên của user
         const latestAttempts = await Promise.all(
             exerciseIds.map(async (exerciseId) => {
-                const latestAttempt = await this.prismaService.userExerciseAttempt.findFirst({
+                // 1. Tìm COMPLETED attempt gần nhất (ưu tiên cao nhất)
+                let priorityAttempt = await this.prismaService.userExerciseAttempt.findFirst({
                     where: {
                         userId,
-                        exerciseId
+                        exerciseId,
+                        status: 'COMPLETED'
                     },
                     orderBy: {
                         createdAt: 'desc'
@@ -207,24 +209,71 @@ export class UserExerciseAttemptRepository {
                     }
                 })
 
-                if (latestAttempt) {
+                // 2. Nếu không có COMPLETED, tìm attempt gần nhất
+                if (!priorityAttempt) {
+                    priorityAttempt = await this.prismaService.userExerciseAttempt.findFirst({
+                        where: {
+                            userId,
+                            exerciseId
+                        },
+                        orderBy: {
+                            createdAt: 'desc'
+                        },
+                        include: {
+                            exercise: {
+                                select: {
+                                    exerciseType: true
+                                }
+                            }
+                        }
+                    })
+                }
+
+                // 3. Nếu vẫn không có attempt nào, tạo attempt mới
+                if (!priorityAttempt) {
+                    const newAttempt = await this.prismaService.userExerciseAttempt.create({
+                        data: {
+                            userId,
+                            exerciseId,
+                            status: 'IN_PROGRESS'
+                        },
+                        include: {
+                            exercise: {
+                                select: {
+                                    exerciseType: true
+                                }
+                            }
+                        }
+                    })
+
                     return {
-                        id: latestAttempt.id,
-                        userId: latestAttempt.userId,
-                        exerciseId: latestAttempt.exerciseId,
-                        exerciseType: latestAttempt.exercise.exerciseType,
-                        status: latestAttempt.status,
-                        createdAt: latestAttempt.createdAt,
-                        updatedAt: latestAttempt.updatedAt
+                        id: newAttempt.id,
+                        userId: newAttempt.userId,
+                        exerciseId: newAttempt.exerciseId,
+                        exerciseType: newAttempt.exercise.exerciseType,
+                        status: newAttempt.status,
+                        createdAt: newAttempt.createdAt,
+                        updatedAt: newAttempt.updatedAt
                     }
                 }
-                return null
+
+                // 4. Trả về attempt đã tìm thấy
+                return {
+                    id: priorityAttempt.id,
+                    userId: priorityAttempt.userId,
+                    exerciseId: priorityAttempt.exerciseId,
+                    exerciseType: priorityAttempt.exercise.exerciseType,
+                    status: priorityAttempt.status,
+                    createdAt: priorityAttempt.createdAt,
+                    updatedAt: priorityAttempt.updatedAt
+                }
             })
         )
 
-        // Lọc bỏ null values
+        // Lọc bỏ null values (không cần thiết nữa vì luôn tạo attempt mới)
         return latestAttempts.filter(attempt => attempt !== null)
     }
 }
+
 
 

@@ -1,6 +1,7 @@
 import {
     CreateQuestionBankBodyType,
     CreateQuestionBankWithMeaningsBodyType,
+    UpdateQuestionBankWithMeaningsBodyType,
     CreateQuestionBankWithAnswersBodyType,
     GetQuestionBankByIdParamsType,
     GetQuestionBankListQueryType,
@@ -21,6 +22,7 @@ import { UploadService } from '@/3rdService/upload/upload.service'
 import { TranslationService } from '@/modules/translation/translation.service'
 import { LanguagesService } from '@/modules/languages/languages.service'
 import { AnswerService } from '@/modules/answer/answer.service'
+import { PrismaService } from '@/shared/services/prisma.service'
 
 // Custom validation functions for Japanese text
 const isJapaneseText = (text: string): boolean => {
@@ -54,7 +56,8 @@ export class QuestionBankService {
         private readonly uploadService: UploadService,
         private readonly translationService: TranslationService,
         private readonly languagesService: LanguagesService,
-        private readonly answerService: AnswerService
+        private readonly answerService: AnswerService,
+        private readonly prismaService: PrismaService
     ) { }
 
     async createWithMeanings(body: CreateQuestionBankWithMeaningsBodyType, userId: number): Promise<MessageResDTO> {
@@ -142,62 +145,10 @@ export class QuestionBankService {
         const { currentPage, pageSize } = query
         const totalPage = Math.ceil(total / pageSize)
 
-        // Resolve translation values for questionKey per requested language
-        let languageId: number | undefined
-        try {
-            const language = await this.languagesService.findByCode({ code: lang })
-            languageId = language?.data?.id
-        } catch {
-            languageId = undefined
-        }
-
-        const resultsWithMeaning = await Promise.all(
-            data.map(async (item) => {
-                // Sử dụng trực tiếp questionKey để tìm translation
-                if (!item.questionKey) {
-                    const { questionKey, ...itemWithoutQuestionKey } = item
-                    return {
-                        ...itemWithoutQuestionKey,
-                        meaning: null
-                    }
-                }
-
-                try {
-                    const translations = await this.translationService.findByKey({ key: item.questionKey })
-
-                    if (translations && translations.translations && translations.translations.length > 0) {
-                        // Get Vietnamese meaning first, fallback to first available
-                        const viTranslation = translations.translations.find(t => {
-                            return t.languageId === 1 // Assuming Vietnamese is languageId 1
-                        })
-                        const meaning = viTranslation?.value || translations.translations[0]?.value || ''
-                        const { questionKey, ...itemWithoutQuestionKey } = item
-                        return {
-                            ...itemWithoutQuestionKey,
-                            meaning
-                        }
-                    } else {
-                        const { questionKey, ...itemWithoutQuestionKey } = item
-                        return {
-                            ...itemWithoutQuestionKey,
-                            meaning: null
-                        }
-                    }
-                } catch (error) {
-                    this.logger.warn(`Failed to get meaning for question ${item.id}:`, error)
-                    const { questionKey, ...itemWithoutQuestionKey } = item
-                    return {
-                        ...itemWithoutQuestionKey,
-                        meaning: null
-                    }
-                }
-            })
-        )
-
         return {
             statusCode: 200,
             data: {
-                results: resultsWithMeaning,
+                results: data,
                 pagination: {
                     current: currentPage,
                     pageSize: pageSize,
@@ -235,6 +186,73 @@ export class QuestionBankService {
         } catch (error) {
             this.logger.error('Error updating question bank:', error)
             if (error instanceof HttpException || error.message?.includes('không tồn tại') || error.message?.includes('đã tồn tại')) {
+                throw error
+            }
+            throw InvalidQuestionBankDataException
+        }
+    }
+
+    async updateWithMeanings(id: number, body: UpdateQuestionBankWithMeaningsBodyType): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Updating question bank with meanings: ${JSON.stringify(body)}`)
+
+            // Validate special rules based on questionType (nếu có)
+            if (body.questionType) {
+                this.validateQuestionBankData(body as CreateQuestionBankWithMeaningsBodyType)
+            }
+
+            // Kiểm tra questionJp đã tồn tại chưa (chỉ khi questionJp thay đổi)
+            if (body.questionJp) {
+                // Lấy question hiện tại để so sánh
+                const currentQuestion = await this.questionBankRepository.findById(id)
+                if (!currentQuestion) {
+                    throw QuestionBankNotFoundException
+                }
+
+                // Chỉ kiểm tra duplicate nếu questionJp thay đổi
+                if (currentQuestion.questionJp !== body.questionJp) {
+                    this.logger.log(`QuestionJp changed from "${currentQuestion.questionJp}" to "${body.questionJp}", checking duplicate...`)
+                    const questionJpExists = await this.questionBankRepository.checkQuestionJpExists(body.questionJp, id)
+                    this.logger.log(`QuestionJp exists result: ${questionJpExists}`)
+                    if (questionJpExists) {
+                        throw new ConflictException(QUESTION_BANK_MESSAGE.ALREADY_EXISTS)
+                    }
+                } else {
+                    this.logger.log(`QuestionJp unchanged: "${body.questionJp}", skipping duplicate check`)
+                }
+            }
+
+            // Xử lý audioUrl - chỉ khi questionType là LISTENING thì mới tự tạo text-to-speech
+            if (body.questionType === 'LISTENING' && body.questionJp && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
+                body.audioUrl = await this.textToSpeechService.generateAudioFromText(body.questionJp, 'question-bank', 'question_bank')
+            }
+
+            // Tự động tạo meaningKey cho từng meaning nếu không có
+            if (body.meanings && body.meanings.length > 0) {
+                for (const meaning of body.meanings) {
+                    if (!meaning.meaningKey || meaning.meaningKey.trim().length === 0) {
+                        // Tạo meaningKey tạm thời, sẽ được cập nhật sau khi có ID
+                        meaning.meaningKey = `temp.${Date.now()}.${Math.random().toString(36).substr(2, 9)}`
+                    }
+                }
+            }
+
+            // Update question bank
+            const questionBank = await this.questionBankRepository.updateWithMeanings(id, body)
+
+            // Cập nhật meaningKey với questionKey làm base (nếu có meanings)
+            if (body.meanings && body.meanings.length > 0 && questionBank.questionKey) {
+                await this.updateMeaningKeys(questionBank.id, questionBank.questionKey, body.meanings)
+            }
+
+            return {
+                statusCode: 200,
+                data: questionBank,
+                message: QUESTION_BANK_MESSAGE.UPDATE_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error updating question bank with meanings:', error)
+            if (error instanceof HttpException || error.message?.includes('đã tồn tại') || error.message?.includes('không tồn tại')) {
                 throw error
             }
             throw InvalidQuestionBankDataException
@@ -310,10 +328,10 @@ export class QuestionBankService {
     }
 
     /**
-     * Tự động tạo questionKey theo mẫu: {questionType}.{ID}.question
+     * Tự động tạo questionKey theo mẫu: question.{questionType}.{ID}
      */
     private generateQuestionKeyFromId(id: number, questionType: string): string {
-        return `${questionType}.${id}.question`
+        return `question.${questionType}.${id}`
     }
 
     /**
@@ -322,12 +340,43 @@ export class QuestionBankService {
     private async updateMeaningKeys(questionBankId: number, questionKey: string, meanings: Array<{ meaningKey?: string | null, translations: Record<string, string> }>): Promise<void> {
         for (let i = 0; i < meanings.length; i++) {
             const meaning = meanings[i]
-            // Sử dụng questionKey làm base: VOCABULARY.5.question -> question.VOCABULARY.5.meaning.1
-            const finalMeaningKey = `question.${questionKey.replace('.question', `.meaning.${i + 1}`)}`
+            // Sử dụng questionKey làm base: question.VOCABULARY.5 -> question.VOCABULARY.5.meaning.1
+            const finalMeaningKey = `${questionKey}.meaning.${i + 1}`
 
-            // Cập nhật translations với meaningKey mới (chỉ nếu có meaningKey cũ)
+            // Xóa translations cũ nếu có (trước khi tạo mới)
             if (meaning.meaningKey) {
-                await this.questionBankRepository.updateTranslationKeys(meaning.meaningKey, finalMeaningKey)
+                await this.prismaService.translation.deleteMany({
+                    where: {
+                        key: meaning.meaningKey
+                    }
+                })
+            }
+
+            // Tạo translations mới trực tiếp
+            for (const [languageCode, translation] of Object.entries(meaning.translations)) {
+                // Tìm languageId từ languageCode
+                const language = await this.prismaService.languages.findFirst({
+                    where: { code: languageCode }
+                })
+
+                if (language) {
+                    await this.prismaService.translation.upsert({
+                        where: {
+                            languageId_key: {
+                                languageId: language.id,
+                                key: finalMeaningKey
+                            }
+                        },
+                        update: {
+                            value: translation
+                        },
+                        create: {
+                            languageId: language.id,
+                            key: finalMeaningKey,
+                            value: translation
+                        }
+                    })
+                }
             }
 
             // Cập nhật meaningKey trong array
