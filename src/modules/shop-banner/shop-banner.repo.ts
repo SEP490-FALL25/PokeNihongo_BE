@@ -215,6 +215,7 @@ export class ShopBannerRepo {
             select: { value: true, languageId: true }
           },
           shopItems: {
+            where: { deletedAt: null, isActive: true },
             include: {
               pokemon: true
             }
@@ -273,7 +274,19 @@ export class ShopBannerRepo {
             languageId: langId
           }
         },
-        shopItems: true
+        shopItems: {
+          where: { deletedAt: null, isActive: true },
+          include: {
+            pokemon: {
+              select: {
+                pokedex_number: true,
+                nameJp: true,
+                nameTranslations: true,
+                imageUrl: true
+              }
+            }
+          }
+        }
       }
     })
   }

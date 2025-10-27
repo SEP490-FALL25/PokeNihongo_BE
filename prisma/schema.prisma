@@ -93,9 +93,9 @@ model User {
   createdGachaItemRates     GachaItemRate[]     @relation("GachaItemRateCreatedBy")
   updatedGachaItemRates     GachaItemRate[]     @relation("GachaItemRateUpdatedBy")
   deletedGachaItemRates     GachaItemRate[]     @relation("GachaItemRateDeletedBy")
-  createdGachaBannerItems   GachaBannerItem[]   @relation("GachaBannerItemCreatedBy")
-  updatedGachaBannerItems   GachaBannerItem[]   @relation("GachaBannerItemUpdatedBy")
-  deletedGachaBannerItems   GachaBannerItem[]   @relation("GachaBannerItemDeletedBy")
+  createdGachaItems         GachaItem[]         @relation("GachaItemCreatedBy")
+  updatedGachaItems         GachaItem[]         @relation("GachaItemUpdatedBy")
+  deletedGachaItems         GachaItem[]         @relation("GachaItemDeletedBy")
   createdGachaRollHistories GachaRollHistory[]  @relation("GachaRollHistoryCreatedBy")
   updatedGachaRollHistories GachaRollHistory[]  @relation("GachaRollHistoryUpdatedBy")
   deletedGachaRollHistories GachaRollHistory[]  @relation("GachaRollHistoryDeletedBy")
@@ -473,7 +473,7 @@ model Pokemon {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   ShopItem         ShopItem[]
-  GachaBannerItem  GachaBannerItem[]
+  GachaItem        GachaItem[]
   GachaRollHistory GachaRollHistory[]
 }
 
@@ -1264,7 +1264,7 @@ model GachaBanner {
   amount1Star Int @default(10) // Số lượng 1★
 
   // Quan hệ
-  items     GachaBannerItem[]
+  items     GachaItem[]
   purchases GachaPurchase[]
   rollLogs  GachaRollHistory[]
 
@@ -1291,7 +1291,7 @@ model GachaItemRate {
   starType GachaStarType
   rate     Float // 0.3, 5.7, 14, 30, 50 (tổng các rate = 100%)
 
-  gachaBannerItems GachaBannerItem[]
+  gachaBannerItems GachaItem[]
 
   // meta
   createdById Int?
@@ -1307,7 +1307,7 @@ model GachaItemRate {
 }
 
 // 🎴 Danh sách Pokémon trong banner (gắn rate)
-model GachaBannerItem {
+model GachaItem {
   id Int @id @default(autoincrement())
 
   bannerId Int
@@ -1321,11 +1321,11 @@ model GachaBannerItem {
 
   // meta
   createdById Int?
-  createdBy   User? @relation("GachaBannerItemCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  createdBy   User? @relation("GachaItemCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
   deletedById Int?
-  deletedBy   User? @relation("GachaBannerItemDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  deletedBy   User? @relation("GachaItemDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
   updatedById Int?
-  updatedBy   User? @relation("GachaBannerItemUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+  updatedBy   User? @relation("GachaItemUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())

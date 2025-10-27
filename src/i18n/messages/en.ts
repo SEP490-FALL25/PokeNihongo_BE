@@ -386,5 +386,24 @@ export const enMessages = {
     NOT_FOUND: 'Gacha item rate not found',
     ALREADY_EXISTS: 'Gacha item rate already exists',
     INVALID_DATA: 'Invalid gacha item rate data'
+  },
+  gacha_item: {
+    CREATE_SUCCESS: 'Gacha item created successfully',
+    UPDATE_SUCCESS: 'Gacha item updated successfully',
+    DELETE_SUCCESS: 'Gacha item deleted successfully',
+    GET_SUCCESS: 'Gacha item retrieved successfully',
+    GET_LIST_SUCCESS: 'Gacha item list retrieved successfully',
+    NOT_FOUND: 'Gacha item not found',
+    ALREADY_EXISTS: 'Gacha item already exists',
+    INVALID_DATA: 'Invalid gacha item data',
+    GACHA_BANNER_INVALID: 'Gacha banner is invalid or expired',
+    GACHA_BANNER_INACTIVE: 'Gacha banner is inactive',
+    GACHA_BANNER_ACTIVE: 'Gacha banner is active',
+    GACHA_BANNER_EXPIRED: 'Gacha banner is expired',
+    POKEMON_DUPLICATE: 'Pokémon already exists in this banner',
+    MAX_ITEMS_EXCEEDED: 'Number of items exceeds the banner limit',
+    POKEMON_HAS_PREV_EVOLUTION: 'Pokémon has a previous evolution form',
+    POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
+      'Pokémon rarity is not compatible with the star type to be added'
   }
 }

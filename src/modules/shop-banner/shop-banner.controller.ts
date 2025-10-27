@@ -42,6 +42,17 @@ export class ShopBannerController {
     return this.shopBannerService.list(query, lang)
   }
 
+  @Get('all-pokemon/:shopBannerId')
+  @IsPublic()
+  @ZodSerializerDto(PaginationResponseSchema)
+  getListAllPokemonWithShopId(
+    @Param('shopBannerId') shopBannerId: number,
+    @Query() query: PaginationQueryDTO,
+    @I18nLang() lang: string
+  ) {
+    return this.shopBannerService.getListAllPokemonWithShopId(shopBannerId, query, lang)
+  }
+
   @Get('all/details')
   @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)

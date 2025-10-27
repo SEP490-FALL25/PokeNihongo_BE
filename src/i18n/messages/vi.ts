@@ -384,5 +384,25 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy tỉ lệ vật phẩm gacha',
     ALREADY_EXISTS: 'Tỉ lệ vật phẩm gacha đã tồn tại',
     INVALID_DATA: 'Dữ liệu tỉ lệ vật phẩm gacha không hợp lệ'
+  },
+  gacha_item: {
+    CREATE_SUCCESS: 'Tạo vật phẩm gacha thành công',
+    UPDATE_SUCCESS: 'Cập nhật vật phẩm gacha thành công',
+    DELETE_SUCCESS: 'Xóa vật phẩm gacha thành công',
+    GET_SUCCESS: 'Lấy thông tin vật phẩm gacha thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách vật phẩm gacha thành công',
+    NOT_FOUND: 'Không tìm thấy vật phẩm gacha',
+    ALREADY_EXISTS: 'Vật phẩm gacha đã tồn tại',
+    INVALID_DATA: 'Dữ liệu vật phẩm gacha không hợp lệ',
+    GACHA_BANNER_INVALID: 'Banner gacha không hợp lệ hoặc đã hết hạn',
+    GACHA_BANNER_INACTIVE: 'Banner gacha không hoạt động',
+    GACHA_BANNER_ACTIVE: 'Banner gacha đang hoạt động',
+    GACHA_BANNER_EXPIRED: 'Banner gacha đã hết hạn',
+    POKEMON_DUPLICATE: 'Pokémon đã tồn tại trong banner này',
+    MAX_ITEMS_EXCEEDED: 'Số lượng vật phẩm vượt quá giới hạn cho phép của banner',
+    POKEMON_HAS_PREV_EVOLUTION:
+      'Pokémon này có tiền nhiệm, vui lòng thêm tiền nhiệm trước khi thêm Pokémon này',
+    POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
+      'Rarity của Pokémon không hợp lệ với Star Type được thêm vào'
   }
 }

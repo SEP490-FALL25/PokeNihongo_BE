@@ -5,6 +5,7 @@ import { GachaItemRateService } from './gacha-item-rate.service'
 
 @Module({
   controllers: [GachaItemRateController],
-  providers: [GachaItemRateService, GachaItemRateRepo]
+  providers: [GachaItemRateService, GachaItemRateRepo],
+  exports: [GachaItemRateService, GachaItemRateRepo]
 })
 export class GachaItemRateModule {}
