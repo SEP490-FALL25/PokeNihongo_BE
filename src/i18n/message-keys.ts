@@ -387,3 +387,24 @@ export const ShopPurchaseMessage = {
   PURCHASE_LIMIT_REACHED: 'shop_purchase.PURCHASE_LIMIT_REACHED',
   MISSING_PREVIOUS_POKEMON: 'shop_purchase.MISSING_PREVIOUS_POKEMON'
 } as const
+
+export const GachaBannerMessage = {
+  CREATE_SUCCESS: 'gacha_banner.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'gacha_banner.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'gacha_banner.DELETE_SUCCESS',
+  GET_SUCCESS: 'gacha_banner.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'gacha_banner.GET_LIST_SUCCESS',
+  NOT_FOUND: 'gacha_banner.NOT_FOUND',
+  ALREADY_EXISTS: 'gacha_banner.ALREADY_EXISTS',
+  INVALID_DATA: 'gacha_banner.INVALID_DATA',
+  ACTIVE_LIMIT_EXCEEDED: 'gacha_banner.ACTIVE_LIMIT_EXCEEDED'
+} as const
+
+export const GachaItemRateMessage = {
+  CREATE_SUCCESS: 'gacha_item_rate.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'gacha_item_rate.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'gacha_item_rate.DELETE_SUCCESS',
+
+  GET_LIST_SUCCESS: 'gacha_item_rate.GET_LIST_SUCCESS',
+  GET_SUCCESS: 'gacha_item_rate.GET_SUCCESS'
+} as const

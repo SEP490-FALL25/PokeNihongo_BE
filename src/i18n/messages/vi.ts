@@ -363,5 +363,26 @@ export const viMessages = {
     PURCHASE_LIMIT_REACHED: 'Đã đạt giới hạn mua hàng cho mặt hàng này',
     MISSING_PREVIOUS_POKEMON:
       'Bạn cần sở hữu Pokémon tiền nhiệm trước khi mua Pokémon này'
+  },
+  gacha_banner: {
+    CREATE_SUCCESS: 'Tạo banner gacha thành công',
+    UPDATE_SUCCESS: 'Cập nhật banner gacha thành công',
+    DELETE_SUCCESS: 'Xóa banner gacha thành công',
+    GET_SUCCESS: 'Lấy thông tin banner gacha thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách banner gacha thành công',
+    NOT_FOUND: 'Không tìm thấy banner gacha',
+    ALREADY_EXISTS: 'Banner gacha đã tồn tại',
+    INVALID_DATA: 'Dữ liệu banner gacha không hợp lệ',
+    ACTIVE_LIMIT_EXCEEDED: 'Số lượng banner ACTIVE đã vượt quá giới hạn (tối đa 2 banner)'
+  },
+  gacha_item_rate: {
+    CREATE_SUCCESS: 'Tạo tỉ lệ vật phẩm gacha thành công',
+    UPDATE_SUCCESS: 'Cập nhật tỉ lệ vật phẩm gacha thành công',
+    DELETE_SUCCESS: 'Xóa tỉ lệ vật phẩm gacha thành công',
+    GET_SUCCESS: 'Lấy thông tin tỉ lệ vật phẩm gacha thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách tỉ lệ vật phẩm gacha thành công',
+    NOT_FOUND: 'Không tìm thấy tỉ lệ vật phẩm gacha',
+    ALREADY_EXISTS: 'Tỉ lệ vật phẩm gacha đã tồn tại',
+    INVALID_DATA: 'Dữ liệu tỉ lệ vật phẩm gacha không hợp lệ'
   }
 }

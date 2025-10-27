@@ -364,5 +364,27 @@ export const enMessages = {
     PURCHASE_LIMIT_REACHED: 'Purchase limit reached for this item',
     MISSING_PREVIOUS_POKEMON:
       'You need to own the previous Pokémon before purchasing this one'
+  },
+  gacha_banner: {
+    CREATE_SUCCESS: 'Gacha banner created successfully',
+    UPDATE_SUCCESS: 'Gacha banner updated successfully',
+    DELETE_SUCCESS: 'Gacha banner deleted successfully',
+    GET_SUCCESS: 'Gacha banner retrieved successfully',
+    GET_LIST_SUCCESS: 'Gacha banner list retrieved successfully',
+
+    NOT_FOUND: 'Gacha banner not found',
+    ALREADY_EXISTS: 'Gacha banner already exists',
+    INVALID_DATA: 'Invalid gacha banner data',
+    ACTIVE_LIMIT_EXCEEDED: 'Active banner limit exceeded (maximum 2 banners allowed)'
+  },
+  gacha_item_rate: {
+    CREATE_SUCCESS: 'Gacha item rate created successfully',
+    UPDATE_SUCCESS: 'Gacha item rate updated successfully',
+    DELETE_SUCCESS: 'Gacha item rate deleted successfully',
+    GET_SUCCESS: 'Gacha item rate retrieved successfully',
+    GET_LIST_SUCCESS: 'Gacha item rate list retrieved successfully',
+    NOT_FOUND: 'Gacha item rate not found',
+    ALREADY_EXISTS: 'Gacha item rate already exists',
+    INVALID_DATA: 'Invalid gacha item rate data'
   }
 }

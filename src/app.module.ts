@@ -36,6 +36,8 @@ import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
 
+import { GachaBannerModule } from './modules/gacha-banner/gacha-banner.module'
+import { GachaItemRateModule } from './modules/gacha-item-rate/gacha-item-rate.module'
 import { QuestionBankModule } from './modules/question-bank/question-bank.module'
 import { RewardModule } from './modules/reward/reward.module'
 import { ShopBannerModule } from './modules/shop-banner/shop-banner.module'
@@ -109,7 +111,9 @@ import { SharedModule } from './shared/shared.module'
     WalletTransactionModule,
     ShopBannerModule,
     ShopItemModule,
-    ShopPurchaseModule
+    ShopPurchaseModule,
+    GachaBannerModule,
+    GachaItemRateModule
   ],
 
   controllers: [],
