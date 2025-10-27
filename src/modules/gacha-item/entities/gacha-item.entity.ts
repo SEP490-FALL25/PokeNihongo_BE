@@ -1,0 +1,154 @@
+import { checkIdSchema } from '@/common/utils/id.validation'
+import { ENTITY_MESSAGE } from '@/i18n/message-keys'
+import { PokemonSchema } from '@/modules/pokemon/entities/pokemon.entity'
+import { extendZodWithOpenApi } from '@anatine/zod-openapi'
+import { GachaStarType } from '@prisma/client'
+import { patchNestJsSwagger } from 'nestjs-zod'
+import { z } from 'zod'
+
+extendZodWithOpenApi(z)
+patchNestJsSwagger()
+
+// Base GachaItem Schema
+export const GachaItemSchema = z.object({
+  id: z.number(),
+  bannerId: z.number(),
+  pokemonId: z.number(),
+  gachaItemRateId: z.number(),
+
+  createdById: z.number().nullable(),
+  updatedById: z.number().nullable(),
+  deletedById: z.number().nullable(),
+  deletedAt: z.date().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
+
+export type GachaItemType = z.infer<typeof GachaItemSchema>
+
+// ============ NEW STRUCTURE ============
+
+// Create single item: { starType, pokemonId }
+export const CreateGachaItemBodySchema = z
+  .object({
+    starType: z.nativeEnum(GachaStarType),
+    pokemonId: z.number()
+  })
+  .strict()
+
+export type CreateGachaItemBodyType = z.infer<typeof CreateGachaItemBodySchema>
+
+// Create multiple items: { bannerId, items: [{ starType, pokemons: [...] }] }
+export const CreateGachaItemByStarTypeSchema = z.object({
+  starType: z.nativeEnum(GachaStarType),
+  pokemons: z.array(z.number()).min(1, 'At least one pokemon required')
+})
+
+export const CreateWithListItemBodySchema = z.object({
+  bannerId: z.number(),
+  items: z.array(CreateGachaItemByStarTypeSchema).min(1, 'At least one item is required')
+})
+
+export type CreateWithListItemBodyType = z.infer<typeof CreateWithListItemBodySchema>
+
+// Update single item: { starType, pokemonId }
+export const UpdateGachaItemBodySchema = z
+  .object({
+    starType: z.nativeEnum(GachaStarType).optional(),
+    pokemonId: z.number().optional()
+  })
+  .strict()
+
+export type UpdateGachaItemBodyType = z.infer<typeof UpdateGachaItemBodySchema>
+
+// Update multiple items: { bannerId, items: [{ starType, pokemons: [...] }] }
+export const UpdateWithListItemBodySchema = z.object({
+  bannerId: z.number(),
+  items: z.array(CreateGachaItemByStarTypeSchema).min(1)
+})
+
+export type UpdateWithListGachaItemBodyType = z.infer<typeof UpdateWithListItemBodySchema>
+
+// ============ RANDOM API ============
+
+export const GetRandomGachaItemTypeSchema = z.object({
+  starType: z.nativeEnum(GachaStarType),
+  typeIds: z.array(z.number()).default([])
+})
+
+export const GetRamdomAmountGachaItemsBodySchema = z.object({
+  bannerId: z.number(),
+  items: z.array(GetRandomGachaItemTypeSchema).min(1, 'At least one starType is required')
+})
+
+export type GetRamdomAmountGachaItemsBodyType = z.infer<
+  typeof GetRamdomAmountGachaItemsBodySchema
+>
+
+export const GetRandomGachaItemsResSchema = z.object({
+  statusCode: z.number(),
+  data: z.object({
+    bannerId: z.number(),
+    items: z.array(
+      z.object({
+        starType: z.nativeEnum(GachaStarType),
+        pokemons: z.array(PokemonSchema)
+      })
+    )
+  }),
+  message: z.string()
+})
+
+// ============ RESPONSE SCHEMAS ============
+
+export const CreateGachaItemResSchema = z.object({
+  statusCode: z.number(),
+  data: GachaItemSchema,
+  message: z.string()
+})
+
+export const CreateWithListItemResSchema = z.object({
+  statusCode: z.number(),
+  data: z.array(GachaItemSchema),
+  message: z.string()
+})
+
+export const UpdateGachaItemResSchema = CreateGachaItemResSchema
+
+export const UpdateWithListItemResSchema = z.object({
+  statusCode: z.number(),
+  data: z.array(GachaItemSchema),
+  message: z.string()
+})
+
+// ============ QUERY SCHEMAS ============
+
+export const GetGachaItemParamsSchema = z.object({
+  gachaItemId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
+})
+
+export const GetGachaItemDetailSchema = GachaItemSchema.extend({
+  banner: z
+    .lazy(
+      () => require('../../gacha-banner/entities/gacha-banner.entity').GachaBannerSchema
+    )
+    .optional(),
+  pokemon: PokemonSchema.optional()
+})
+
+export const GetGachaItemDetailResSchema = z.object({
+  statusCode: z.number(),
+  data: GetGachaItemDetailSchema,
+  message: z.string()
+})
+
+// ============ TYPE EXPORTS ============
+
+export type GetGachaItemParamsType = z.infer<typeof GetGachaItemParamsSchema>
+export type GetGachaItemDetailType = z.infer<typeof GetGachaItemDetailSchema>
+export type GetRandomGachaItemTypeType = z.infer<typeof GetRandomGachaItemTypeSchema>
+
+export type GachaItemFieldType = keyof z.infer<typeof GachaItemSchema>
+export const GACHA_ITEM_FIELDS = Object.keys(
+  GachaItemSchema.shape
+) as GachaItemFieldType[]
