@@ -1,6 +1,7 @@
 import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 import { GrammarType, GetGrammarListQueryType } from '../entities/grammar.entities'
+import { CurrentUser } from '@/common/decorators/user.decorator'
 
 export const GrammarResponseSchema = z.object({
     data: GrammarType,
@@ -10,8 +11,8 @@ export const GrammarResponseSchema = z.object({
 export const GrammarListResponseSchema = z.object({
     data: z.array(GrammarType),
     total: z.number(),
-    page: z.number(),
-    limit: z.number(),
+    current: z.number(),
+    pageSize: z.number(),
     totalPages: z.number(),
     message: z.string(),
 })

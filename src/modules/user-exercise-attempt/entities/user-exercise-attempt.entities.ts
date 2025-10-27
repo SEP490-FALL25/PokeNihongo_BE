@@ -70,6 +70,24 @@ export const GetUserExerciseAttemptListQuerySchema = z
     })
     .strict()
 
+export const LatestExerciseAttemptSchema = z.object({
+    id: z.number(),
+    userId: z.number(),
+    exerciseId: z.number(),
+    exerciseType: z.string(),
+    status: ExerciseAttemptStatusSchema,
+    createdAt: z.date(),
+    updatedAt: z.date()
+})
+
+export const LatestExerciseAttemptsByLessonResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.array(LatestExerciseAttemptSchema),
+        message: z.string()
+    })
+    .strict()
+
 // Types
 export type ExerciseAttemptStatusType = z.infer<typeof ExerciseAttemptStatusSchema>
 export type UserExerciseAttemptType = z.infer<typeof UserExerciseAttemptSchema>
@@ -80,5 +98,7 @@ export type UserExerciseAttemptListResType = z.infer<typeof UserExerciseAttemptL
 export type GetUserExerciseAttemptByIdParamsType = z.infer<typeof GetUserExerciseAttemptByIdParamsSchema>
 export type CreateUserExerciseAttemptParamsType = z.infer<typeof CreateUserExerciseAttemptParamsSchema>
 export type GetUserExerciseAttemptListQueryType = z.infer<typeof GetUserExerciseAttemptListQuerySchema>
+export type LatestExerciseAttemptType = z.infer<typeof LatestExerciseAttemptSchema>
+export type LatestExerciseAttemptsByLessonResType = z.infer<typeof LatestExerciseAttemptsByLessonResSchema>
 
 

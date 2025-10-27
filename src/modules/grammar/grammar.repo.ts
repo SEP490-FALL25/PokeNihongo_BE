@@ -61,7 +61,7 @@ export class GrammarRepository {
         return {
             data,
             total,
-            currentPage: currentPage,
+            current: currentPage,
             pageSize: pageSize,
             totalPages: Math.ceil(total / pageSize),
         }

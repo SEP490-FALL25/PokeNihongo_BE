@@ -2,7 +2,8 @@ import {
     CreateUserExerciseAttemptBodyType,
     GetUserExerciseAttemptByIdParamsType,
     GetUserExerciseAttemptListQueryType,
-    UpdateUserExerciseAttemptBodyType
+    UpdateUserExerciseAttemptBodyType,
+    LatestExerciseAttemptsByLessonResType
 } from '@/modules/user-exercise-attempt/entities/user-exercise-attempt.entities'
 import {
     InvalidUserExerciseAttemptDataException,
@@ -375,6 +376,25 @@ export class UserExerciseAttemptService {
         } catch (error) {
             this.logger.error('Error updating user progress on start:', error)
             // Không throw error để không ảnh hưởng đến flow chính
+        }
+    }
+
+    async getLatestExerciseAttemptsByLesson(userId: number, lessonId: number): Promise<LatestExerciseAttemptsByLessonResType> {
+        try {
+            this.logger.log(`Getting latest exercise attempts for user ${userId} in lesson ${lessonId}`)
+
+            const result = await this.userExerciseAttemptRepository.findLatestByLessonAndUser(userId, lessonId)
+
+            this.logger.log(`Found ${result.length} latest exercise attempts`)
+
+            return {
+                statusCode: 200,
+                data: result,
+                message: 'Lấy danh sách exercise gần nhất thành công'
+            }
+        } catch (error) {
+            this.logger.error('Error getting latest exercise attempts by lesson:', error)
+            throw error
         }
     }
 }
