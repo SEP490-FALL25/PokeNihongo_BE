@@ -16,7 +16,7 @@ export class HandleShopBannerCronjob {
   ) {}
 
   // Chạy mỗi ngày lúc 00:00
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleShopBannerStatus() {
     const now = todayUTCWith0000()
     this.logger.log(`[ShopBanner Cronjob Status] Running at ${now.toISOString()}`)
@@ -98,7 +98,7 @@ export class HandleShopBannerCronjob {
   }
 
   // Chạy mỗi ngày lúc 01:00 để tự động tạo banner mới
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async handlePrecreateShopBanner() {
     const now = todayUTCWith0000()
     this.logger.log(`[ShopBanner Precreate] Running at ${now.toISOString()}`)
@@ -186,38 +186,45 @@ export class HandleShopBannerCronjob {
             }
           })
 
-          // 3. Update nameKey chính thức trước để đảm bảo quan hệ
+          // 3. Update nameKey và tạo translations cùng lúc (giống ShopBannerService)
           const finalNameKeyWithId = `shopBanner.name.${newBanner.id}`
-          await this.prismaService.shopBanner.update({
-            where: { id: newBanner.id },
-            data: { nameKey: finalNameKeyWithId }
-          })
 
-          // 4. Create translations với shopBannerNameKey được gắn đúng
+          this.logger.log(
+            `[ShopBanner Precreate] Old banner ${banner.id} has ${banner.nameTranslations.length} translations`
+          )
+          this.logger.debug(
+            `[ShopBanner Precreate] Old banner translations: ${JSON.stringify(banner.nameTranslations)}`
+          )
+
           const nameUpserts = banner.nameTranslations.map((t) => ({
             where: {
               languageId_key: { languageId: t.languageId, key: finalNameKeyWithId }
             },
-            update: {
-              value: `${t.value} 2`,
-              shopBannerNameKey: finalNameKeyWithId
-            },
+            update: { value: t.value },
             create: {
               languageId: t.languageId,
               key: finalNameKeyWithId,
-              value: `${t.value} 2`,
-              shopBannerNameKey: finalNameKeyWithId
+              value: t.value
             }
           }))
+
+          this.logger.log(
+            `[ShopBanner Precreate] Will upsert ${nameUpserts.length} translations`
+          )
 
           await this.prismaService.shopBanner.update({
             where: { id: newBanner.id },
             data: {
-              nameTranslations: {
-                upsert: nameUpserts as any
-              }
+              nameKey: finalNameKeyWithId,
+              ...(nameUpserts.length
+                ? { nameTranslations: { upsert: nameUpserts as any } }
+                : {})
             }
           })
+
+          this.logger.log(
+            `[ShopBanner Precreate] Translations upserted for banner ${newBanner.id}`
+          )
 
           // 5. Tạo shop items
           if (banner.isRandomItemAgain) {
