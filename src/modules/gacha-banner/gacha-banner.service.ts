@@ -9,6 +9,7 @@ import {
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError,
   isUniqueConstraintPrismaError,
+  todayUTCWith0000,
   todayUTCWith0000ByDate
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
@@ -448,106 +449,29 @@ export class GachaBannerService {
     }
   }
 
-  // async getByToday(lang: string = 'vi', userId?: number) {
-  //   try {
-  //     console.log(userId)
+  async getByToday(lang: string = 'vi', userId?: number) {
+    try {
+      const date = todayUTCWith0000()
+      const langId = await this.languageRepo.getIdByCode(lang)
 
-  //     const date = todayUTCWith0000()
-  //     const langId = await this.languageRepo.getIdByCode(lang)
+      if (!langId) {
+        return {
+          statusCode: HttpStatus.OK,
+          data: [],
+          message: this.i18nService.translate(GachaBannerMessage.GET_LIST_SUCCESS, lang)
+        }
+      }
 
-  //     if (!langId) {
-  //       return {
-  //         statusCode: HttpStatus.OK,
-  //         data: [],
-  //         message: this.i18nService.translate(GachaBannerMessage.GET_LIST_SUCCESS, lang)
-  //       }
-  //     }
+      // Lấy tất cả gacha banners có status = ACTIVE và trong khoảng thời gian hợp lệ
+      const banners = await this.gachaBannerRepo.findValidByDateWithLangId(date, langId)
 
-  //     const banners = await this.gachaBannerRepo.findValidByDateWithLangId(date, langId)
-
-  //     // If we have a userId, compute canBuy per item based on their total purchased quantities
-  //     if (userId) {
-  //       // Collect unique item IDs
-  //       const itemIds = Array.from(
-  //         new Set(banners.flatMap((b: any) => (b.shopItems || []).map((i: any) => i.id)))
-  //       )
-
-  //       // Fetch totals in parallel
-  //       const totals = await Promise.all(
-  //         itemIds.map(async (itemId) => ({
-  //           itemId,
-  //           total: await this.shopPurchaseRepo.getTotalPurchasedQuantityByUserAndItem(
-  //             userId,
-  //             itemId
-  //           )
-  //         }))
-  //       )
-  //       const totalMap = new Map<number, number>(totals.map((t) => [t.itemId, t.total]))
-
-  //       // Fetch user's owned pokemons
-  //       const userPokemons = await this.userPokemonRepo.getByUserId(userId)
-  //       const ownedPokemonIds = new Set<number>(
-  //         (userPokemons || []).map((up: any) => up.pokemonId)
-  //       )
-
-  //       const data = banners.map((b: any) => ({
-  //         ...b,
-  //         shopItems: (b.shopItems || []).map((it: any) => {
-  //           // 1. Nếu user đã sở hữu pokemon này → canBuy = false
-  //           const ownsTarget = ownedPokemonIds.has(it.pokemonId)
-  //           if (ownsTarget) {
-  //             return { ...it, canBuy: false }
-  //           }
-
-  //           // 2. Kiểm tra previousPokemons
-  //           const prevList = it.pokemon?.previousPokemons || []
-
-  //           // 2a. Nếu previousPokemons là [] (không có tiền nhiệm) → canBuy = true (nếu đủ limit)
-  //           if (prevList.length === 0) {
-  //             const limit = it.purchaseLimit
-  //             const bought = totalMap.get(it.id) ?? 0
-  //             const withinLimit = limit == null ? true : bought < limit
-  //             return { ...it, canBuy: withinLimit }
-  //           }
-
-  //           // 2b. Nếu có previousPokemons, check xem user có sở hữu ít nhất 1 con trong list không
-  //           const ownsPrev = prevList.some(
-  //             (prev: any) => prev?.id && ownedPokemonIds.has(prev.id)
-  //           )
-
-  //           // Nếu không sở hữu bất kỳ pokemon tiền nhiệm nào → canBuy = false
-  //           if (!ownsPrev) {
-  //             return { ...it, canBuy: false }
-  //           }
-
-  //           // 3. Nếu sở hữu pokemon tiền nhiệm, kiểm tra purchase limit
-  //           const limit = it.purchaseLimit
-  //           const bought = totalMap.get(it.id) ?? 0
-  //           const withinLimit = limit == null ? true : bought < limit
-  //           return { ...it, canBuy: withinLimit }
-  //         })
-  //       }))
-
-  //       return {
-  //         statusCode: HttpStatus.OK,
-  //         data,
-  //         message: this.i18nService.translate(GachaBannerMessage.GET_LIST_SUCCESS, lang)
-  //       }
-  //     }
-
-  //     // No user: default canBuy to true for all items
-  //     const data = banners.map((b: any) => ({
-  //       ...b,
-  //       shopItems: (b.shopItems || []).map((it: any) => ({ ...it, canBuy: true }))
-  //     }))
-
-  //     return {
-  //       statusCode: HttpStatus.OK,
-  //       data,
-  //       message: this.i18nService.translate(GachaBannerMessage.GET_LIST_SUCCESS, lang)
-  //     }
-  //   } catch (error) {
-  //     throw error
-  //   }
-  // }
+      return {
+        statusCode: HttpStatus.OK,
+        data: banners,
+        message: this.i18nService.translate(GachaBannerMessage.GET_LIST_SUCCESS, lang)
+      }
+    } catch (error) {
+      throw error
+    }
+  }
 }
