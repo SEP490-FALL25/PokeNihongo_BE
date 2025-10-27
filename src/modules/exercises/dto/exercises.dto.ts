@@ -36,6 +36,9 @@ export class UpdateExercisesSwaggerDTO {
 
     @ApiProperty({ example: 1, description: 'ID bài học', required: false })
     lessonId?: number
+
+    @ApiProperty({ example: 1, description: 'ID bộ đề', required: false })
+    testSetId?: number
 }
 
 export class GetExercisesListQuerySwaggerDTO {
