@@ -5,6 +5,7 @@ import {
     GetLessonContentByIdParamsType,
     GetLessonContentListQueryType,
     CreateMutiLessonContentBodyType,
+    UpdateLessonContentOrder,
 } from './entities/lesson-content.entities'
 import {
     LessonContentNotFoundException,
@@ -15,6 +16,7 @@ import {
 } from './dto/lesson-content.error'
 import { LessonContentRepository } from './lesson-content.repo'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
+import { LessonContentSortField, SortOrder } from '@/common/enum/enum'
 
 @Injectable()
 export class LessonContentService {
@@ -39,11 +41,11 @@ export class LessonContentService {
         }
     }
 
-    async getLessonContentById(params: GetLessonContentByIdParamsType) {
+    async getLessonContentById(id: number) {
         try {
-            this.logger.log(`Getting lesson content by id: ${params.id}`)
+            this.logger.log(`Getting lesson content by id: ${id}`)
 
-            const content = await this.lessonContentRepository.findById(params.id)
+            const content = await this.lessonContentRepository.findById(id)
 
             if (!content) {
                 throw new LessonContentNotFoundException()
@@ -55,7 +57,7 @@ export class LessonContentService {
                 message: 'Lấy thông tin nội dung bài học thành công'
             }
         } catch (error) {
-            this.logger.error(`Error getting lesson content by id ${params.id}:`, error)
+            this.logger.error(`Error getting lesson content by id ${id}:`, error)
 
             if (error instanceof LessonContentNotFoundException) {
                 throw error
@@ -81,7 +83,7 @@ export class LessonContentService {
             }
 
             // Get current max order once
-            const maxOrder = await this.lessonContentRepository.getMaxContentOrder(createData.lessonId);
+            const maxOrder = await this.lessonContentRepository.getMaxContentOrder(createData.lessonId, createData.contentType);
 
             // Check all contents existence first
             const existenceChecks = await Promise.all(
@@ -135,6 +137,67 @@ export class LessonContentService {
             }
 
             throw new InvalidLessonContentDataException('Lỗi khi tạo nội dung bài học');
+        }
+    }
+
+    async updateLessonContentOrder(data: UpdateLessonContentOrder) {
+        try {
+            this.logger.log('Đang cập nhật thứ tự nội dung:', data);
+
+            // Kiểm tra mảng đầu vào
+            if (!data.contentId?.length) {
+                throw new InvalidLessonContentDataException('Danh sách thứ tự không được để trống');
+            }
+
+            // Lấy content đầu tiên để kiểm tra
+            const firstContent = await this.lessonContentRepository.findById(data.contentId[0]);
+            if (!firstContent) {
+                throw new LessonContentNotFoundException();
+            }
+
+            // Lấy tất cả content cùng loại trong lesson
+            const contentsInLesson = await this.lessonContentRepository.findMany({
+                lessonId: firstContent.lessonId,
+                contentType: data.contentType,
+                page: 1,
+                limit: 100,
+                sortBy: LessonContentSortField.CONTENT_ORDER,
+                sort: SortOrder.ASC
+            });
+
+            // Kiểm tra tất cả contentIds phải thuộc cùng lesson và cùng contentType
+            const validContentIds = new Set(contentsInLesson.data.map(content => content.id));
+            const invalidContentIds = data.contentId.filter(id => !validContentIds.has(id));
+
+            if (invalidContentIds.length > 0) {
+                throw new InvalidLessonContentDataException(
+                    `Các content ${invalidContentIds.join(', ')} không thuộc cùng loại ${data.contentType} trong lesson ${firstContent.lessonId}`
+                );
+            }
+
+            // Cập nhật thứ tự mới, bắt đầu từ 1 cho mỗi contentType
+            const updatedContents = await Promise.all(
+                data.contentId.map((contentId, index) => {
+                    return this.lessonContentRepository.update(contentId, {
+                        contentOrder: index + 1
+                    });
+                })
+            );
+
+            this.logger.log(`Đã cập nhật ${updatedContents.length} thứ tự nội dung ${data.contentType}`);
+            return {
+                data: updatedContents,
+                message: 'Cập nhật thứ tự nội dung bài học thành công'
+            };
+        } catch (error) {
+            this.logger.error('Lỗi khi cập nhật thứ tự nội dung:', error);
+
+            if (error instanceof LessonContentNotFoundException ||
+                error instanceof InvalidLessonContentDataException) {
+                throw error;
+            }
+
+            throw new InvalidLessonContentDataException('Lỗi khi cập nhật thứ tự nội dung bài học');
         }
     }
 

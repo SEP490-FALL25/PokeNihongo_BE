@@ -68,6 +68,7 @@ export class LessonContentRepository {
         })
     }
 
+
     async create(data: CreateLessonContentBodyType) {
         return this.prismaService.lessonContents.create({
             data,
@@ -120,9 +121,12 @@ export class LessonContentRepository {
         return count > 0
     }
 
-    async getMaxContentOrder(lessonId: number) {
+    async getMaxContentOrder(lessonId: number, contentType: string) {
         const result = await this.prismaService.lessonContents.findFirst({
-            where: { lessonId },
+            where: {
+                lessonId,
+                contentType
+            },
             orderBy: { contentOrder: 'desc' },
             select: { contentOrder: true }
         })
