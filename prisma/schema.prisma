@@ -1378,7 +1378,7 @@ enum BannerStatus {
 }
 
 enum LessonContentsType {
-  Vocabulary
-  Grammar
-  Kanji
+  VOCABULARY
+  GRAMMAR
+  KANJI
 }
