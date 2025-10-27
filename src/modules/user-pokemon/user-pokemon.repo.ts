@@ -101,14 +101,18 @@ export class UserPokemonRepo {
     })
   }
 
-  update({
-    id,
-    data
-  }: {
-    id: number
-    data: UpdateUserPokemonBodyType
-  }): Promise<UserPokemonBasic> {
-    return this.prismaService.userPokemon.update({
+  update(
+    {
+      id,
+      data
+    }: {
+      id: number
+      data: UpdateUserPokemonBodyType
+    },
+    prismaTx?: PrismaClient
+  ): Promise<UserPokemonBasic> {
+    const client = prismaTx || this.prismaService
+    return client.userPokemon.update({
       where: {
         id,
         deletedAt: null
@@ -237,8 +241,12 @@ export class UserPokemonRepo {
     }
   }
 
-  findById(id: number): Promise<UserPokemonWithRelations | null> {
-    return this.prismaService.userPokemon.findUnique({
+  findById(
+    id: number,
+    prismaTx?: PrismaClient
+  ): Promise<UserPokemonWithRelations | null> {
+    const client = prismaTx || this.prismaService
+    return client.userPokemon.findUnique({
       where: {
         id,
         deletedAt: null
@@ -431,8 +439,13 @@ export class UserPokemonRepo {
   }
 
   // Level up Pokemon
-  async levelUp(id: number, newLevelId: number): Promise<UserPokemonBasic> {
-    return this.prismaService.userPokemon.update({
+  async levelUp(
+    id: number,
+    newLevelId: number,
+    prismaTx?: PrismaClient
+  ): Promise<UserPokemonBasic> {
+    const client = prismaTx || this.prismaService
+    return client.userPokemon.update({
       where: {
         id,
         deletedAt: null
