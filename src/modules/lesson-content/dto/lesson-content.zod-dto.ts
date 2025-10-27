@@ -5,7 +5,8 @@ import {
     GetLessonContentByIdParamsType,
     GetLessonContentListQueryType,
     LessonContentListResSchema,
-    UpdateLessonContentOrder
+    UpdateLessonContentOrder,
+    LessonContentFullResSchema
 } from '../entities/lesson-content.entities'
 
 // Lesson Content DTOs
@@ -15,3 +16,4 @@ export class updateLessonContentOrder extends createZodDto(UpdateLessonContentOr
 export class GetLessonContentByIdParamsDTO extends createZodDto(GetLessonContentByIdParamsType) { }
 export class GetLessonContentListQueryDTO extends createZodDto(GetLessonContentListQueryType) { }
 export class LessonContentListResDTO extends createZodDto(LessonContentListResSchema) { }
+export class LessonContentFullResDTO extends createZodDto(LessonContentFullResSchema) { }
