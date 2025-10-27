@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus } from '@nestjs/common'
+import { HttpException, HttpStatus, BadRequestException } from '@nestjs/common'
 
 export class LessonContentNotFoundException extends HttpException {
     constructor() {
@@ -26,16 +26,9 @@ export class LessonContentAlreadyExistsException extends HttpException {
     }
 }
 
-export class ContentAlreadyExistsInLessonException extends HttpException {
-    constructor(contentId: number, contentType: string, lessonId: number) {
-        super(
-            {
-                statusCode: HttpStatus.CONFLICT,
-                message: `ContentId: ${contentId} (${contentType}) đã tồn tại trong lesson ${lessonId}`,
-                error: 'CONTENT_ALREADY_EXISTS_IN_LESSON'
-            },
-            HttpStatus.CONFLICT
-        )
+export class ContentAlreadyExistsInLessonException extends BadRequestException {
+    constructor(contentIds: string, contentType: string, lessonId: number) {
+        super(`${contentType} đã tồn tại trong lesson ${lessonId} là ${contentIds}`);
     }
 }
 
