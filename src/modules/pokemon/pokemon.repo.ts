@@ -258,7 +258,8 @@ export class PokemonRepo {
           pokedex_number: true,
           nameJp: true,
           nameTranslations: true,
-          imageUrl: true
+          imageUrl: true,
+          rarity: true
         },
         orderBy,
         skip,
