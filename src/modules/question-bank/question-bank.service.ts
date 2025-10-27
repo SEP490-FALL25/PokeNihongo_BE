@@ -1,6 +1,7 @@
 import {
     CreateQuestionBankBodyType,
     CreateQuestionBankWithMeaningsBodyType,
+    CreateQuestionBankWithAnswersBodyType,
     GetQuestionBankByIdParamsType,
     GetQuestionBankListQueryType,
     UpdateQuestionBankBodyType
@@ -19,6 +20,7 @@ import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
 import { UploadService } from '@/3rdService/upload/upload.service'
 import { TranslationService } from '@/modules/translation/translation.service'
 import { LanguagesService } from '@/modules/languages/languages.service'
+import { AnswerService } from '@/modules/answer/answer.service'
 
 // Custom validation functions for Japanese text
 const isJapaneseText = (text: string): boolean => {
@@ -51,7 +53,8 @@ export class QuestionBankService {
         private readonly textToSpeechService: TextToSpeechService,
         private readonly uploadService: UploadService,
         private readonly translationService: TranslationService,
-        private readonly languagesService: LanguagesService
+        private readonly languagesService: LanguagesService,
+        private readonly answerService: AnswerService
     ) { }
 
     async createWithMeanings(body: CreateQuestionBankWithMeaningsBodyType, userId: number): Promise<MessageResDTO> {
@@ -329,6 +332,156 @@ export class QuestionBankService {
 
             // Cập nhật meaningKey trong array
             meaning.meaningKey = finalMeaningKey
+        }
+    }
+
+    /**
+     * Tạo câu hỏi với 4 câu trả lời cùng lúc
+     */
+    async createWithAnswers(body: CreateQuestionBankWithAnswersBodyType, userId: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Creating question bank with answers: ${JSON.stringify(body)}`)
+
+            // Validate special rules based on questionType
+            this.validateQuestionBankData(body)
+
+            // Validate answers
+            this.validateAnswersData(body.answers, body.questionType)
+
+            // Kiểm tra questionJp đã tồn tại chưa
+            const questionJpExists = await this.questionBankRepository.checkQuestionJpExists(body.questionJp)
+            if (questionJpExists) {
+                throw new ConflictException(QUESTION_BANK_MESSAGE.ALREADY_EXISTS)
+            }
+
+            // Xử lý audioUrl - chỉ khi questionType là LISTENING thì mới tự tạo text-to-speech
+            if (body.questionType === 'LISTENING' && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
+                body.audioUrl = await this.textToSpeechService.generateAudioFromText(body.questionJp, 'question-bank', 'question_bank')
+            }
+
+            // Tách answers ra khỏi body để tạo question bank
+            const { answers, ...questionBankData } = body
+
+            // Tự động tạo meaningKey cho từng meaning nếu không có
+            if (questionBankData.meanings && questionBankData.meanings.length > 0) {
+                for (const meaning of questionBankData.meanings) {
+                    if (!meaning.meaningKey || meaning.meaningKey.trim().length === 0) {
+                        // Tạo meaningKey tạm thời, sẽ được cập nhật sau khi có ID
+                        meaning.meaningKey = `temp.${Date.now()}.${Math.random().toString(36).substr(2, 9)}`
+                    }
+                }
+            }
+
+            // Tạo question bank với meanings (không có answers)
+            const questionBank = await this.questionBankRepository.createWithMeanings(questionBankData, userId)
+
+            // Tự động tạo questionKey dựa trên ID vừa tạo
+            const generatedKey = this.generateQuestionKeyFromId(questionBank.id, questionBankData.questionType)
+            // Cập nhật questionKey cho question bank vừa tạo
+            await this.questionBankRepository.updateQuestionKey(questionBank.id, generatedKey)
+            questionBank.questionKey = generatedKey
+
+            // Cập nhật meaningKey với questionKey làm base
+            if (questionBankData.meanings && questionBankData.meanings.length > 0 && questionBank.questionKey) {
+                await this.updateMeaningKeys(questionBank.id, questionBank.questionKey, questionBankData.meanings)
+            }
+
+            // Tạo answers
+            const createdAnswers: any[] = []
+            const failedAnswers: { answerJp: string; reason: string }[] = []
+
+            for (const answerData of answers) {
+                try {
+                    // Tạo answer
+                    const answer = await this.answerService.createAnswer({
+                        questionBankId: questionBank.id,
+                        answerJp: answerData.answerJp,
+                        isCorrect: answerData.isCorrect,
+                        translations: answerData.translations
+                    })
+
+                    createdAnswers.push(answer.data)
+                } catch (error: any) {
+                    this.logger.error(`Error creating answer "${answerData.answerJp}":`, error)
+                    failedAnswers.push({
+                        answerJp: answerData.answerJp,
+                        reason: error?.message || 'Lỗi không xác định khi tạo câu trả lời'
+                    })
+                }
+            }
+
+            const total = answers.length
+            const success = createdAnswers.length
+            const failed = failedAnswers.length
+
+            let statusCode = 201
+            let message = `Tạo câu hỏi và ${success}/${total} câu trả lời thành công`
+
+            if (success === 0) {
+                statusCode = 400
+                message = 'Tạo câu hỏi thành công nhưng không thể tạo câu trả lời nào'
+            } else if (failed > 0) {
+                statusCode = 207 // Multi-status
+                message = `Tạo câu hỏi thành công và ${success}/${total} câu trả lời thành công`
+            }
+
+            return {
+                statusCode,
+                data: {
+                    questionBank,
+                    answers: createdAnswers,
+                    createdCount: success,
+                    failedCount: failed,
+                    failedAnswers: failed > 0 ? failedAnswers : undefined
+                },
+                message
+            }
+
+        } catch (error: any) {
+            this.logger.error('Error creating question bank with answers:', error)
+            if (error instanceof HttpException) {
+                throw error
+            }
+            throw InvalidQuestionBankDataException
+        }
+    }
+
+    /**
+     * Validate answers data
+     */
+    private validateAnswersData(answers: Array<{ answerJp: string; isCorrect: boolean }>, questionType: QuestionType): void {
+        // Rule 1: Must have at least 1 answer, max 4
+        if (!answers || answers.length === 0) {
+            throw new BadRequestException('Phải có ít nhất 1 câu trả lời')
+        }
+        if (answers.length > 4) {
+            throw new BadRequestException('Tối đa 4 câu trả lời')
+        }
+
+        // Rule 2: MATCHING type - only 1 answer allowed and must be correct
+        if (questionType === QuestionType.MATCHING) {
+            if (answers.length !== 1) {
+                throw new BadRequestException('MATCHING type chỉ cho phép 1 câu trả lời duy nhất')
+            }
+            if (!answers[0].isCorrect) {
+                throw new BadRequestException('MATCHING type bắt buộc phải có isCorrect = true')
+            }
+        } else {
+            // Rule 3: Other types - only 1 answer can be correct
+            const correctAnswers = answers.filter(answer => answer.isCorrect)
+            if (correctAnswers.length === 0) {
+                throw new BadRequestException('Phải có ít nhất 1 câu trả lời đúng')
+            }
+            if (correctAnswers.length > 1) {
+                throw new BadRequestException('Chỉ được có 1 câu trả lời đúng')
+            }
+        }
+
+        // Rule 4: All answers must be Japanese text
+        for (const answer of answers) {
+            if (!isJapaneseText(answer.answerJp)) {
+                throw new BadRequestException(`Câu trả lời "${answer.answerJp}" phải là tiếng Nhật`)
+            }
         }
     }
 }
