@@ -96,7 +96,7 @@ export const GetShopBannerDetailByUserSchema = ShopBannerSchema.extend({
 export const GetShopBannerDetailResSchema = z.object({
   statusCode: z.number(),
   data: ShopBannerSchema.extend({
-    nameTranslation: z.string(),
+    nameTranslation: z.string().nullable(),
     shopItems: z.array(
       z.object({
         ...ShopItemSchema.shape,

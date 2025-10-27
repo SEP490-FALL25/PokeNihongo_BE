@@ -23,6 +23,7 @@ import { CreateTranslationBodyType } from '../translation/entities/translation.e
 import { TranslationRepository } from '../translation/translation.repo'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import {
+  OnlyOneShopBannerActiveException,
   ShopBannerAlreadyExistsException,
   ShopBannerInvalidDateRangeException
 } from './dto/shop-bannererror'
@@ -175,6 +176,13 @@ export class ShopBannerService {
       return await this.shopBannerRepo.withTransaction(async (prismaTx) => {
         if (data.status && data.status === ShopBannerStatus.ACTIVE) {
           // check coi co thang khac active ko
+          const isHaveActive = await this.shopBannerRepo.findByStatus(
+            ShopBannerStatus.ACTIVE
+          )
+
+          if (isHaveActive) {
+            throw new OnlyOneShopBannerActiveException()
+          }
         }
 
         const nameKey = `shopBanner.name.${Date.now()}`
@@ -322,6 +330,16 @@ export class ShopBannerService {
 
     try {
       return await this.shopBannerRepo.withTransaction(async (prismaTx) => {
+        if (data.status && data.status === ShopBannerStatus.ACTIVE) {
+          // check coi co thang khac active ko
+          const isHaveActive = await this.shopBannerRepo.findByStatus(
+            ShopBannerStatus.ACTIVE
+          )
+
+          if (isHaveActive) {
+            throw new OnlyOneShopBannerActiveException()
+          }
+        }
         // Get current record
         existingShopBanner = await this.shopBannerRepo.findById(id)
         if (!existingShopBanner) throw new NotFoundRecordException()
@@ -565,7 +583,8 @@ export class ShopBannerService {
     }
   }
 
-  // async checkActiveShopBanner() {
-  //   const
-  // }
+  async checkActiveShopBanner() {
+    const isHaveActive = await this.shopBannerRepo.findByStatus(ShopBannerStatus.ACTIVE)
+    return isHaveActive !== null
+  }
 }

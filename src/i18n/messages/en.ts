@@ -334,7 +334,8 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Shop banner list retrieved successfully',
     NOT_FOUND: 'Shop banner not found',
     ALREADY_EXISTS: 'Shop banner already exists',
-    INVALID_DATA: 'Invalid shop banner data'
+    INVALID_DATA: 'Invalid shop banner data',
+    ONLY_ONE_ACTIVE: 'Only one shop banner can be active at a time'
   },
   shop_item: {
     CREATE_SUCCESS: 'Shop item created successfully',
