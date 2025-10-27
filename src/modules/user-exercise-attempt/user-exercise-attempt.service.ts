@@ -385,7 +385,14 @@ export class UserExerciseAttemptService {
 
             const result = await this.userExerciseAttemptRepository.findLatestByLessonAndUser(userId, lessonId)
 
-            this.logger.log(`Found ${result.length} latest exercise attempts`)
+            this.logger.log(`Found ${result.length} exercise attempts (including newly created ones)`)
+
+            // Log chi tiết về status
+            const completedCount = result.filter(attempt => attempt.status === 'COMPLETED').length
+            const inProgressCount = result.filter(attempt => attempt.status === 'IN_PROGRESS').length
+            const otherCount = result.length - completedCount - inProgressCount
+
+            this.logger.log(`Status breakdown: ${completedCount} COMPLETED, ${inProgressCount} IN_PROGRESS, ${otherCount} others`)
 
             return {
                 statusCode: 200,

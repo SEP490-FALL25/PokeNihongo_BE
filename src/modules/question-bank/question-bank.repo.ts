@@ -1,4 +1,4 @@
-import { QuestionBankType, CreateQuestionBankBodyType, CreateQuestionBankWithMeaningsBodyType, UpdateQuestionBankBodyType, GetQuestionBankListQueryType } from '@/modules/question-bank/entities/question-bank.entities'
+import { QuestionBankType, CreateQuestionBankBodyType, CreateQuestionBankWithMeaningsBodyType, UpdateQuestionBankWithMeaningsBodyType, UpdateQuestionBankBodyType, GetQuestionBankListQueryType } from '@/modules/question-bank/entities/question-bank.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable, Logger } from '@nestjs/common'
 import { QuestionType } from '@prisma/client'
@@ -10,7 +10,7 @@ export class QuestionBankRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     async findMany(query: GetQuestionBankListQueryType): Promise<{ data: QuestionBankType[]; total: number }> {
-        const { currentPage, pageSize, levelN, questionType, search } = query
+        const { currentPage, pageSize, levelN, questionType, search, sortBy = 'createdAt', sort = 'desc', language } = query
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -31,21 +31,98 @@ export class QuestionBankRepository {
             where.questionType = questionType
         }
 
-        const [data, total] = await Promise.all([
+        const orderBy: any = {}
+        orderBy[sortBy] = sort
+
+        const [questionBanks, total] = await Promise.all([
             this.prisma.questionBank.findMany({
                 where,
                 skip,
                 take: pageSize,
-                orderBy: { createdAt: 'desc' },
+                orderBy,
             }),
             this.prisma.questionBank.count({ where }),
         ])
+
+        // Lấy translation cho từng question bank
+        const data = await Promise.all(
+            questionBanks.map(async (questionBank) => {
+                if (questionBank.questionKey) {
+                    const translationWhere: any = {
+                        key: questionBank.questionKey
+                    }
+
+                    // Nếu có language, chỉ lấy translation của ngôn ngữ đó
+                    if (language) {
+                        const languageRecord = await this.prisma.languages.findFirst({
+                            where: { code: language }
+                        })
+                        if (languageRecord) {
+                            translationWhere.languageId = languageRecord.id
+                        }
+                    }
+
+                    // Tìm translation theo 2 pattern:
+                    // 1. Key chính xác: GRAMMAR.5.question
+                    // 2. Pattern meaning: GRAMMAR.5.question.meaning.*
+                    let translations = await this.prisma.translation.findMany({
+                        where: {
+                            ...translationWhere,
+                            OR: [
+                                { key: questionBank.questionKey }, // Key chính xác
+                                { key: { startsWith: questionBank.questionKey + '.meaning.' } } // Pattern meaning
+                            ]
+                        },
+                        include: {
+                            language: true
+                        }
+                    })
+
+                    // Nếu không tìm thấy và key có format cũ, thử tìm theo format mới
+                    if (translations.length === 0 && questionBank.questionKey.includes('.question')) {
+                        const newKey = questionBank.questionKey.replace('.question', '').replace(/^(\w+)\.(\d+)$/, 'question.$1.$2')
+
+                        translations = await this.prisma.translation.findMany({
+                            where: {
+                                ...translationWhere,
+                                OR: [
+                                    { key: newKey }, // Key chính xác mới
+                                    { key: { startsWith: newKey + '.meaning.' } } // Pattern meaning mới
+                                ]
+                            },
+                            include: {
+                                language: true
+                            }
+                        })
+                    }
+
+                    // Nếu có language filter, chỉ lấy 1 translation
+                    if (language) {
+                        (questionBank as any).meaning = translations.length > 0 ? translations[0].value : ''
+                    } else {
+                        // Nếu không có language filter, lấy tất cả translations
+                        (questionBank as any).meanings = translations.length > 0 ? translations.map(t => ({
+                            language: t.language.code,
+                            value: t.value
+                        })) : []
+                    }
+                } else {
+                    // Nếu không có questionKey, vẫn set field rỗng
+                    if (language) {
+                        (questionBank as any).meaning = ''
+                    } else {
+                        (questionBank as any).meanings = []
+                    }
+                }
+                return questionBank
+            })
+        )
 
         return { data, total }
     }
 
     async findById(id: number): Promise<QuestionBankType | null> {
-        return await this.prisma.questionBank.findUnique({
+        const questionBank = await this.prisma.questionBank.findUnique({
             where: { id },
             include: {
                 answers: true,
@@ -64,6 +141,56 @@ export class QuestionBankRepository {
                 },
             },
         })
+
+        if (!questionBank) {
+            return null
+        }
+
+        // Lấy translation cho questionKey nếu có
+        if (questionBank.questionKey) {
+            // Tìm translation theo 2 pattern:
+            // 1. Key chính xác: GRAMMAR.5.question
+            // 2. Pattern meaning: GRAMMAR.5.question.meaning.*
+            let translations = await this.prisma.translation.findMany({
+                where: {
+                    OR: [
+                        { key: questionBank.questionKey }, // Key chính xác
+                        { key: { startsWith: questionBank.questionKey + '.meaning.' } } // Pattern meaning
+                    ]
+                },
+                include: {
+                    language: true
+                }
+            })
+
+            // Nếu không tìm thấy và key có format cũ, thử tìm theo format mới
+            if (translations.length === 0 && questionBank.questionKey.includes('.question')) {
+                const newKey = questionBank.questionKey.replace('.question', '').replace(/^(\w+)\.(\d+)$/, 'question.$1.$2')
+
+                translations = await this.prisma.translation.findMany({
+                    where: {
+                        OR: [
+                            { key: newKey }, // Key chính xác mới
+                            { key: { startsWith: newKey + '.meaning.' } } // Pattern meaning mới
+                        ]
+                    },
+                    include: {
+                        language: true
+                    }
+                })
+            }
+
+            // Lấy tất cả translations cho findById
+            (questionBank as any).meanings = translations.length > 0 ? translations.map(t => ({
+                language: t.language.code,
+                value: t.value
+            })) : []
+        } else {
+            // Nếu không có questionKey, vẫn set field rỗng
+            (questionBank as any).meanings = []
+        }
+
+        return questionBank
     }
 
     async create(data: CreateQuestionBankBodyType): Promise<QuestionBankType> {
@@ -121,6 +248,52 @@ export class QuestionBankRepository {
         return await this.prisma.questionBank.update({
             where: { id },
             data,
+        })
+    }
+
+    async updateWithMeanings(id: number, data: UpdateQuestionBankWithMeaningsBodyType): Promise<QuestionBankType> {
+        const { meanings, ...questionBankData } = data
+
+        return await this.prisma.$transaction(async (tx) => {
+            // Update question bank
+            const questionBank = await tx.questionBank.update({
+                where: { id },
+                data: questionBankData,
+            })
+
+            // Update translations nếu có
+            if (meanings && meanings.length > 0) {
+                for (const meaning of meanings) {
+                    // Tạo translations cho từng ngôn ngữ
+                    for (const [languageCode, translation] of Object.entries(meaning.translations)) {
+                        // Tìm languageId từ languageCode
+                        const language = await tx.languages.findFirst({
+                            where: { code: languageCode }
+                        })
+
+                        if (language) {
+                            await tx.translation.upsert({
+                                where: {
+                                    languageId_key: {
+                                        languageId: language.id,
+                                        key: meaning.meaningKey!
+                                    }
+                                },
+                                update: {
+                                    value: translation
+                                },
+                                create: {
+                                    languageId: language.id,
+                                    key: meaning.meaningKey!,
+                                    value: translation
+                                }
+                            })
+                        }
+                    }
+                }
+            }
+
+            return questionBank
         })
     }
 
@@ -196,10 +369,16 @@ export class QuestionBankRepository {
     /**
      * Kiểm tra questionJp đã tồn tại chưa
      */
-    async checkQuestionJpExists(questionJp: string): Promise<boolean> {
+    async checkQuestionJpExists(questionJp: string, excludeId?: number): Promise<boolean> {
+        const where: any = { questionJp }
+        if (excludeId) {
+            where.id = { not: excludeId }
+        }
+
         const existing = await this.prisma.questionBank.findFirst({
-            where: { questionJp }
+            where
         })
+
         return !!existing
     }
 
