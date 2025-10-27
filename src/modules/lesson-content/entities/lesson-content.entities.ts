@@ -41,7 +41,7 @@ export const UpdateLessonContentBodyType = z.object({
 
 export const UpdateLessonContentOrder = z.object({
     contentType: z.nativeEnum(PrismaLessonContentType),
-    contentId: z.number().array(),
+    lessonContentId: z.number().array(),
 })
 
 export const GetLessonContentByIdParamsType = z.object({
