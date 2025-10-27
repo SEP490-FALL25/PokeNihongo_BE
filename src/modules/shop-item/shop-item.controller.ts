@@ -33,11 +33,11 @@ export class ShopItemController {
   @Get('random')
   @ZodSerializerDto(GetRandomShopItemResDTO)
   getRandomListItem(
-    @Body() body: GetRamdomAmountShopItemBodyDTO,
+    @Query() query: GetRamdomAmountShopItemBodyDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.shopItemService.getRandomListItem(body, lang)
+    return this.shopItemService.getRandomListItem(query, lang)
   }
 
   @Get(':shopItemId')

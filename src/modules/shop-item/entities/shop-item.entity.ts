@@ -84,8 +84,8 @@ export const UpdateWithListItemResSchema = z.object({
 
 export const GetRamdomAmountShopItemBodySchema = z
   .object({
-    amount: z.number().min(1).optional().nullable(),
-    shopBannerId: z.number()
+    amount: z.coerce.number().min(1).optional().nullable(),
+    shopBannerId: z.coerce.number()
   })
   .strict()
 

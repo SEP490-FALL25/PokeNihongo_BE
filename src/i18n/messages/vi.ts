@@ -344,6 +344,9 @@ export const viMessages = {
     ALREADY_EXISTS: 'Mặt hàng cửa hàng đã tồn tại',
     INVALID_DATA: 'Dữ liệu mặt hàng cửa hàng không hợp lệ',
     SHOP_BANNER_INVALID: 'Banner cửa hàng không hợp lệ hoặc đã hết hạn',
+    SHOP_BANNER_INACTIVE: 'Banner cửa hàng không hoạt động',
+    SHOP_BANNER_ACTIVE: 'Banner cửa hàng đang hoạt động',
+    SHOP_BANNER_EXPIRED: 'Banner cửa hàng đã hết hạn',
     POKEMON_DUPLICATE: 'Pokémon đã tồn tại trong banner này',
     MAX_ITEMS_EXCEEDED: 'Số lượng mặt hàng vượt quá giới hạn cho phép của banner'
   },
