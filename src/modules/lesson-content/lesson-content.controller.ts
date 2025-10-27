@@ -66,6 +66,16 @@ export class LessonContentController {
         return await this.lessonContentService.getLessonContentList(query)
     }
 
+
+    @Get('Full')
+    @ApiOperation({ summary: 'Lấy danh sách nội dung bài học' })
+    @ApiQuery({ type: GetLessonContentListQuerySwaggerDTO })
+    @ApiResponse({ status: 200, description: 'Lấy danh sách nội dung bài học thành công', type: LessonContentListResponseSwaggerDTO })
+    @ZodSerializerDto(LessonContentListResponseDTO)
+    async getLessonContentFull(@Query() query: GetLessonContentListQueryDTO) {
+        
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Lấy thông tin nội dung bài học theo ID' })
     @ApiResponse({ status: 200, description: 'Lấy thông tin nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })

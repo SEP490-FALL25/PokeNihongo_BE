@@ -145,12 +145,12 @@ export class LessonContentService {
             this.logger.log('Đang cập nhật thứ tự nội dung:', data);
 
             // Kiểm tra mảng đầu vào
-            if (!data.contentId?.length) {
+            if (!data.lessonContentId?.length) {
                 throw new InvalidLessonContentDataException('Danh sách thứ tự không được để trống');
             }
 
             // Lấy content đầu tiên để kiểm tra
-            const firstContent = await this.lessonContentRepository.findById(data.contentId[0]);
+            const firstContent = await this.lessonContentRepository.findById(data.lessonContentId[0]);
             if (!firstContent) {
                 throw new LessonContentNotFoundException();
             }
@@ -167,7 +167,7 @@ export class LessonContentService {
 
             // Kiểm tra tất cả contentIds phải thuộc cùng lesson và cùng contentType
             const validContentIds = new Set(contentsInLesson.data.map(content => content.id));
-            const invalidContentIds = data.contentId.filter(id => !validContentIds.has(id));
+            const invalidContentIds = data.lessonContentId.filter(id => !validContentIds.has(id));
 
             if (invalidContentIds.length > 0) {
                 throw new InvalidLessonContentDataException(
@@ -177,7 +177,7 @@ export class LessonContentService {
 
             // Cập nhật thứ tự mới, bắt đầu từ 1 cho mỗi contentType
             const updatedContents = await Promise.all(
-                data.contentId.map((contentId, index) => {
+                data.lessonContentId.map((contentId, index) => {
                     return this.lessonContentRepository.update(contentId, {
                         contentOrder: index + 1
                     });
