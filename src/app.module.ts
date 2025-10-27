@@ -36,6 +36,7 @@ import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
 
+import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
 import { GachaBannerModule } from './modules/gacha-banner/gacha-banner.module'
 import { GachaItemRateModule } from './modules/gacha-item-rate/gacha-item-rate.module'
 import { GachaItemModule } from './modules/gacha-item/gacha-item.module'
@@ -120,7 +121,7 @@ import { SharedModule } from './shared/shared.module'
 
   controllers: [],
   providers: [
-    // HandleShopBannerCronjob,
+    HandleShopBannerCronjob,
     {
       provide: APP_PIPE,
       useClass: CustomZodValidationPipe
