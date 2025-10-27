@@ -21,6 +21,7 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreatedGachaBannerBodyInputDTO,
   CreateGachaBannerResDTO,
+  GetGachaBannerByTodayResDTO,
   GetGachaBannerDetailResDTO,
   GetGachaBannerParamsDTO,
   UpdateGachaBannerBodyInputDTO,
@@ -48,11 +49,13 @@ export class GachaBannerController {
     return this.gachaBannerService.listwithDetail(query, lang)
   }
 
-  // @Get('today/user')
-  // @ZodSerializerDto(GetGachaBannerByTodayResDTO)
-  // getByToday(@I18nLang() lang: string, @ActiveUser('userId') userId?: number) {
-  //   return this.gachaBannerService.getByToday(lang, userId)
-  // }
+  @Get('today/user')
+  @ZodSerializerDto(GetGachaBannerByTodayResDTO)
+  getByToday(@I18nLang() lang: string, @ActiveUser('userId') userId?: number) {
+    console.log('log')
+
+    return this.gachaBannerService.getByToday(lang, userId)
+  }
 
   @Get(':gachaBannerId')
   @IsPublic()
