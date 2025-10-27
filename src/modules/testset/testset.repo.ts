@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { TestSetType, CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType } from './entities/testset.entities'
+import { TestSetType, CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, CreateTestSetWithMeaningsBodyType, UpdateTestSetWithMeaningsBodyType } from './entities/testset.entities'
 import { QuestionType } from '@prisma/client'
 
 @Injectable()
@@ -28,21 +28,78 @@ export class TestSetRepository {
         }
     }
 
-    async findById(id: number): Promise<TestSetType | null> {
+    async findById(id: number, language?: string): Promise<TestSetType | null> {
         const result = await this.prisma.testSet.findUnique({
             where: { id },
         })
         if (!result) return null
-        return {
+
+        const testSet = {
             ...result,
             price: result.price ? Number(result.price) : null,
             testType: result.testType as QuestionType,
         }
+
+        // Lấy translations cho name và description
+        const nameKey = `testset.${id}.name`
+        const descriptionKey = `testset.${id}.description`
+
+        const translationWhere: any = {
+            OR: [
+                { key: nameKey },
+                { key: descriptionKey },
+                { key: { startsWith: nameKey + '.meaning.' } },
+                { key: { startsWith: descriptionKey + '.meaning.' } }
+            ]
+        }
+
+        // Nếu có language, chỉ lấy translation của ngôn ngữ đó
+        if (language) {
+            const languageRecord = await this.prisma.languages.findFirst({
+                where: { code: language }
+            })
+            if (languageRecord) {
+                translationWhere.languageId = languageRecord.id
+            }
+        }
+
+        const translations = await this.prisma.translation.findMany({
+            where: translationWhere,
+            include: {
+                language: true
+            }
+        })
+
+        if (language) {
+            // Nếu có language filter, chỉ lấy 1 translation cho name và description
+            const nameTranslation = translations.find(t => t.key.startsWith(nameKey + '.meaning.'))
+            const descriptionTranslation = translations.find(t => t.key.startsWith(descriptionKey + '.meaning.'))
+
+                ; (testSet as any).name = nameTranslation?.value || result.name
+                ; (testSet as any).description = descriptionTranslation?.value || result.description
+        } else {
+            // Nếu không có language filter, lấy tất cả translations
+            const nameTranslations = translations.filter(t => t.key.startsWith(nameKey + '.meaning.'))
+            const descriptionTranslations = translations.filter(t => t.key.startsWith(descriptionKey + '.meaning.'))
+
+                ; (testSet as any).nameTranslations = nameTranslations.map(t => ({
+                    language: t.language.code,
+                    value: t.value,
+                    key: t.key
+                }))
+                ; (testSet as any).descriptionTranslations = descriptionTranslations.map(t => ({
+                    language: t.language.code,
+                    value: t.value,
+                    key: t.key
+                }))
+        }
+
+        return testSet
     }
 
 
     async findMany(query: GetTestSetListQueryType): Promise<{ data: TestSetType[]; total: number }> {
-        const { currentPage, pageSize, search, levelN, testType, status, creatorId } = query
+        const { currentPage, pageSize, search, levelN, testType, status, creatorId, language } = query
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -96,14 +153,75 @@ export class TestSetRepository {
             this.prisma.testSet.count({ where }),
         ])
 
-        const data = rawData.map(item => ({
-            ...item,
-            price: item.price ? Number(item.price) : null,
-            testType: item.testType as QuestionType,
-            // Remove _count and creator from the response
-            _count: undefined,
-            creator: undefined,
-        }))
+        // Lấy translation cho từng testset
+        const data = await Promise.all(
+            rawData.map(async (testSet) => {
+                const result = {
+                    ...testSet,
+                    price: testSet.price ? Number(testSet.price) : null,
+                    testType: testSet.testType as QuestionType,
+                    // Remove _count and creator from the response
+                    _count: undefined,
+                    creator: undefined,
+                }
+
+                // Lấy translations cho name và description
+                const nameKey = `testset.${testSet.id}.name`
+                const descriptionKey = `testset.${testSet.id}.description`
+
+                const translationWhere: any = {
+                    OR: [
+                        { key: nameKey },
+                        { key: descriptionKey },
+                        { key: { startsWith: nameKey + '.meaning.' } },
+                        { key: { startsWith: descriptionKey + '.meaning.' } }
+                    ]
+                }
+
+                // Nếu có language, chỉ lấy translation của ngôn ngữ đó
+                if (language) {
+                    const languageRecord = await this.prisma.languages.findFirst({
+                        where: { code: language }
+                    })
+                    if (languageRecord) {
+                        translationWhere.languageId = languageRecord.id
+                    }
+                }
+
+                const translations = await this.prisma.translation.findMany({
+                    where: translationWhere,
+                    include: {
+                        language: true
+                    }
+                })
+
+                if (language) {
+                    // Nếu có language filter, chỉ lấy 1 translation cho name và description
+                    const nameTranslation = translations.find(t => t.key.startsWith(nameKey + '.meaning.'))
+                    const descriptionTranslation = translations.find(t => t.key.startsWith(descriptionKey + '.meaning.'))
+
+                        ; (result as any).name = nameTranslation?.value || testSet.name
+                        ; (result as any).description = descriptionTranslation?.value || testSet.description
+                } else {
+                    // Nếu không có language filter, lấy tất cả translations
+                    const nameTranslations = translations.filter(t => t.key.startsWith(nameKey + '.meaning.'))
+                    const descriptionTranslations = translations.filter(t => t.key.startsWith(descriptionKey + '.meaning.'))
+
+                        ; (result as any).nameTranslations = nameTranslations.map(t => ({
+                            language: t.language.code,
+                            value: t.value,
+                            key: t.key
+                        }))
+                        ; (result as any).descriptionTranslations = descriptionTranslations.map(t => ({
+                            language: t.language.code,
+                            value: t.value,
+                            key: t.key
+                        }))
+                }
+
+                return result
+            })
+        )
 
         return { data, total }
     }
@@ -136,6 +254,148 @@ export class TestSetRepository {
             price: result.price ? Number(result.price) : null,
             testType: result.testType as QuestionType,
         }
+    }
+
+    async createWithMeanings(data: CreateTestSetWithMeaningsBodyType, userId: number): Promise<TestSetType> {
+        const { meanings, ...testSetData } = data
+
+        return await this.prisma.$transaction(async (tx) => {
+            // Tạo testset tạm thời để lấy ID
+            const testSet = await tx.testSet.create({
+                data: {
+                    name: 'temp', // Tạm thời
+                    description: 'temp', // Tạm thời
+                    content: testSetData.content,
+                    audioUrl: testSetData.audioUrl,
+                    price: testSetData.price,
+                    levelN: testSetData.levelN,
+                    testType: testSetData.testType,
+                    status: testSetData.status,
+                    creatorId: userId,
+                }
+            })
+
+            // Tạo keys
+            const nameKey = `testset.${testSet.id}.name`
+            const descriptionKey = `testset.${testSet.id}.description`
+
+            // Cập nhật testset với keys
+            const updatedTestSet = await tx.testSet.update({
+                where: { id: testSet.id },
+                data: {
+                    name: nameKey,
+                    description: descriptionKey
+                }
+            })
+
+            // Tạo translations nếu có
+            if (meanings && meanings.length > 0) {
+                for (let i = 0; i < meanings.length; i++) {
+                    const meaning = meanings[i]
+                    const baseKey = meaning.field === 'name' ? nameKey : descriptionKey
+                    const finalKey = `${baseKey}.meaning.${i + 1}`
+
+                    // Cập nhật meaningKey trong array
+                    meaning.meaningKey = finalKey
+
+                    // Tạo translations cho từng ngôn ngữ
+                    for (const [languageCode, translation] of Object.entries(meaning.translations)) {
+                        // Tìm languageId từ languageCode
+                        const language = await tx.languages.findFirst({
+                            where: { code: languageCode }
+                        })
+
+                        if (language) {
+                            await tx.translation.upsert({
+                                where: {
+                                    languageId_key: {
+                                        languageId: language.id,
+                                        key: finalKey
+                                    }
+                                },
+                                update: { value: translation },
+                                create: {
+                                    languageId: language.id,
+                                    key: finalKey,
+                                    value: translation
+                                }
+                            })
+                        }
+                    }
+                }
+            }
+
+            return {
+                ...updatedTestSet,
+                price: updatedTestSet.price ? Number(updatedTestSet.price) : null,
+                testType: updatedTestSet.testType as QuestionType,
+            }
+        })
+    }
+
+    async updateWithMeanings(id: number, data: UpdateTestSetWithMeaningsBodyType): Promise<TestSetType> {
+        const { meanings, ...testSetData } = data
+
+        return await this.prisma.$transaction(async (tx) => {
+            // Cập nhật testset
+            const updatedTestSet = await tx.testSet.update({
+                where: { id },
+                data: {
+                    ...(testSetData.content !== undefined && { content: testSetData.content }),
+                    ...(testSetData.audioUrl !== undefined && { audioUrl: testSetData.audioUrl }),
+                    ...(testSetData.price !== undefined && { price: testSetData.price }),
+                    ...(testSetData.levelN !== undefined && { levelN: testSetData.levelN }),
+                    ...(testSetData.testType && { testType: testSetData.testType }),
+                    ...(testSetData.status && { status: testSetData.status }),
+                }
+            })
+
+            // Cập nhật translations nếu có
+            if (meanings && meanings.length > 0) {
+                const nameKey = `testset.${id}.name`
+                const descriptionKey = `testset.${id}.description`
+
+                for (let i = 0; i < meanings.length; i++) {
+                    const meaning = meanings[i]
+                    const baseKey = meaning.field === 'name' ? nameKey : descriptionKey
+                    const finalKey = `${baseKey}.meaning.${i + 1}`
+
+                    // Cập nhật meaningKey trong array
+                    meaning.meaningKey = finalKey
+
+                    // Tạo translations cho từng ngôn ngữ
+                    for (const [languageCode, translation] of Object.entries(meaning.translations)) {
+                        // Tìm languageId từ languageCode
+                        const language = await tx.languages.findFirst({
+                            where: { code: languageCode }
+                        })
+
+                        if (language) {
+                            await tx.translation.upsert({
+                                where: {
+                                    languageId_key: {
+                                        languageId: language.id,
+                                        key: finalKey
+                                    }
+                                },
+                                update: { value: translation },
+                                create: {
+                                    languageId: language.id,
+                                    key: finalKey,
+                                    value: translation
+                                }
+                            })
+                        }
+                    }
+                }
+            }
+
+            return {
+                ...updatedTestSet,
+                price: updatedTestSet.price ? Number(updatedTestSet.price) : null,
+                testType: updatedTestSet.testType as QuestionType,
+            }
+        })
     }
 
 }

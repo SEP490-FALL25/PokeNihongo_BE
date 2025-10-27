@@ -6,6 +6,8 @@ import {
     TestSetListResSchema,
     GetTestSetByIdParamsSchema,
     GetTestSetListQuerySchema,
+    CreateTestSetWithMeaningsBodySchema,
+    UpdateTestSetWithMeaningsBodySchema,
 } from '../entities/testset.entities'
 
 // Create TestSet DTO
@@ -25,4 +27,10 @@ export class GetTestSetByIdParamsDTO extends createZodDto(GetTestSetByIdParamsSc
 
 // Get TestSet List Query DTO
 export class GetTestSetListQueryDTO extends createZodDto(GetTestSetListQuerySchema) { }
+
+// Create TestSet with Meanings DTO
+export class CreateTestSetWithMeaningsBodyDTO extends createZodDto(CreateTestSetWithMeaningsBodySchema) { }
+
+// Update TestSet with Meanings DTO
+export class UpdateTestSetWithMeaningsBodyDTO extends createZodDto(UpdateTestSetWithMeaningsBodySchema) { }
 
