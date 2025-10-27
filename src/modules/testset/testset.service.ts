@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { TestSetRepository } from './testset.repo'
-import { CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, GetTestSetByIdParamsType } from './entities/testset.entities'
+import { CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, GetTestSetByIdParamsType, CreateTestSetWithMeaningsBodyType, UpdateTestSetWithMeaningsBodyType } from './entities/testset.entities'
 import { TestSetNotFoundException, TestSetPermissionDeniedException, TestSetAlreadyExistsException } from './dto/testset.error'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
@@ -180,7 +180,7 @@ export class TestSetService {
         }
     }
 
-    async findAll(query: GetTestSetListQueryType, lang: string) {
+    async findAll(query: GetTestSetListQueryType) {
         try {
             const { data, total } = await this.testSetRepo.findMany(query)
             const { currentPage, pageSize } = query
@@ -207,7 +207,7 @@ export class TestSetService {
 
     async findOne(id: number, lang: string) {
         try {
-            const testSet = await this.testSetRepo.findById(id)
+            const testSet = await this.testSetRepo.findById(id, lang)
 
             if (!testSet) {
                 throw TestSetNotFoundException
@@ -313,6 +313,94 @@ export class TestSetService {
             statusCode: 200,
             data: testSet,
             message: TEST_SET_MESSAGE.DELETE_SUCCESS,
+        }
+    }
+
+    private validateTestSetWithMeaningsData(data: CreateTestSetWithMeaningsBodyType | UpdateTestSetWithMeaningsBodyType, isUpdate: boolean = false): void {
+        // Validation cho meanings
+        if (data.meanings) {
+            if (data.meanings.length === 0) {
+                throw new BadRequestException('Phải có ít nhất 1 meaning')
+            }
+
+            // Kiểm tra có ít nhất 1 meaning cho name
+            const hasNameMeaning = data.meanings.some(m => m.field === 'name')
+            if (!hasNameMeaning) {
+                throw new BadRequestException('Phải có ít nhất 1 meaning cho name')
+            }
+        }
+
+        if (data.testType !== undefined) {
+            if (!data.testType) {
+                throw new BadRequestException('Loại đề thi không được để trống')
+            }
+        }
+
+        if (data.audioUrl !== undefined && data.audioUrl && !this.isValidUrl(data.audioUrl)) {
+            throw new BadRequestException('URL âm thanh không hợp lệ')
+        }
+
+        if (data.price !== undefined && data.price !== null && data.price < 0) {
+            throw new BadRequestException('Giá bộ đề không được âm')
+        }
+
+        if (data.levelN !== undefined && data.levelN !== null && (data.levelN < 1 || data.levelN > 5)) {
+            throw new BadRequestException('Cấp độ JLPT phải từ 1 đến 5')
+        }
+
+        // Validation chỉ cho create (không phải update)
+        if (!isUpdate) {
+            const createData = data as CreateTestSetWithMeaningsBodyType
+            if (!createData.testType) {
+                throw new BadRequestException('Loại đề thi không được để trống')
+            }
+        }
+    }
+
+    async createTestSetWithMeanings(data: CreateTestSetWithMeaningsBodyType, userId: number): Promise<MessageResDTO> {
+        try {
+            // Validation
+            this.validateTestSetWithMeaningsData(data, false)
+
+            // Tạo testset với meanings
+            const result = await this.testSetRepo.createWithMeanings(data, userId)
+
+            return {
+                statusCode: 201,
+                data: result,
+                message: TEST_SET_MESSAGE.CREATE_SUCCESS,
+            }
+        } catch (error) {
+            if (error instanceof BadRequestException) {
+                throw error
+            }
+            this.logger.error('Error creating testset with meanings:', error)
+            throw new BadRequestException('Không thể tạo bộ đề với meanings')
+        }
+    }
+
+    async updateTestSetWithMeanings(id: number, data: UpdateTestSetWithMeaningsBodyType, userId: number): Promise<MessageResDTO> {
+        const testSet = await this.testSetRepo.findById(id)
+
+        if (!testSet) {
+            throw TestSetNotFoundException
+        }
+
+        // Kiểm tra quyền sở hữu
+        if (testSet.creatorId !== userId) {
+            throw TestSetPermissionDeniedException
+        }
+
+        // Validation
+        this.validateTestSetWithMeaningsData(data, true)
+
+        // Cập nhật testset với meanings
+        const result = await this.testSetRepo.updateWithMeanings(id, data)
+
+        return {
+            statusCode: 200,
+            data: result,
+            message: TEST_SET_MESSAGE.UPDATE_SUCCESS,
         }
     }
 
