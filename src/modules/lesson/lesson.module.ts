@@ -5,9 +5,10 @@ import { LessonRepository } from './lesson.repo'
 import { SharedModule } from '@/shared/shared.module'
 import { LessonCategoryModule } from '../lesson-category/lesson-category.module'
 import { TranslationModule } from '../translation/translation.module'
+import { LanguagesModule } from '../languages/languages.module'
 
 @Module({
-    imports: [SharedModule, LessonCategoryModule, TranslationModule],
+    imports: [SharedModule, LessonCategoryModule, TranslationModule, LanguagesModule],
     controllers: [LessonController],
     providers: [LessonService, LessonRepository],
     exports: [LessonService, LessonRepository]

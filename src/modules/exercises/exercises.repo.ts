@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '@/shared/services/prisma.service'
 import {
     CreateExercisesBodyType,
@@ -8,11 +8,13 @@ import {
 
 @Injectable()
 export class ExercisesRepository {
+    private readonly logger = new Logger(ExercisesRepository.name)
+
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetExercisesListQueryType) {
         const { currentPage, pageSize, exerciseType, lessonId, isBlocked, search, sortBy, sort } = params
-        const skip = (Number(currentPage) - 1) * Number(pageSize)
+        const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
 
@@ -25,7 +27,7 @@ export class ExercisesRepository {
         }
 
         if (isBlocked !== undefined) {
-            where.isBlocked = isBlocked
+            where.isBlocked = Boolean(isBlocked)
         }
 
         if (search) {

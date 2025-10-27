@@ -55,11 +55,11 @@ export class GrammarService {
         }
     }
 
-    async getGrammarById(params: GetGrammarByIdParamsType) {
+    async getGrammarById(id: number) {
         try {
-            this.logger.log(`Getting grammar by id: ${params.id}`)
+            this.logger.log(`Getting grammar by id: ${id}`)
 
-            const grammar = await this.grammarRepository.findByIdWithTranslations(params.id)
+            const grammar = await this.grammarRepository.findByIdWithTranslations(id)
 
             if (!grammar) {
                 throw new GrammarNotFoundException()
@@ -71,7 +71,7 @@ export class GrammarService {
                 message: 'Lấy thông tin ngữ pháp thành công'
             }
         } catch (error) {
-            this.logger.error(`Error getting grammar by id ${params.id}:`, error)
+            this.logger.error(`Error getting grammar by id ${id}:`, error)
 
             if (error instanceof GrammarNotFoundException) {
                 throw error

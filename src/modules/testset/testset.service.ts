@@ -5,6 +5,8 @@ import { TestSetNotFoundException, TestSetPermissionDeniedException, TestSetAlre
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { TEST_SET_MESSAGE } from '@/common/constants/message'
+import { TranslationService } from '../translation/translation.service'
+import { LanguagesService } from '../languages/languages.service'
 
 @Injectable()
 export class TestSetService {
@@ -13,6 +15,8 @@ export class TestSetService {
     constructor(
         private readonly testSetRepo: TestSetRepository,
         private readonly prisma: PrismaService,
+        private readonly translationService: TranslationService,
+        private readonly languagesService: LanguagesService,
     ) { }
 
     private isValidUrl(url: string): boolean {
@@ -25,12 +29,16 @@ export class TestSetService {
     }
 
     private validateTestSetData(data: CreateTestSetBodyType | UpdateTestSetBodyType, isUpdate: boolean = false): void {
-        if (data.name !== undefined) {
-            if (!data.name || data.name.trim().length === 0) {
-                throw new BadRequestException('Tên bộ đề không được để trống')
+        // Validation cho translations
+        if (data.translations) {
+            if (data.translations.length === 0) {
+                throw new BadRequestException('Phải có ít nhất 1 translation')
             }
-            if (data.name.length > 200) {
-                throw new BadRequestException('Tên bộ đề quá dài (tối đa 200 ký tự)')
+
+            // Kiểm tra có ít nhất 1 translation cho name
+            const hasNameTranslation = data.translations.some(t => t.field === 'name')
+            if (!hasNameTranslation) {
+                throw new BadRequestException('Phải có ít nhất 1 translation cho name')
             }
         }
 
@@ -69,20 +77,71 @@ export class TestSetService {
             // Validation
             this.validateTestSetData(data, false)
 
-            const testSet = await this.testSetRepo.create({
-                ...data,
-                creatorId: userId,
+            // Tạo testset với transaction
+            const result = await this.prisma.$transaction(async (tx) => {
+                // Tạo testset tạm thời để lấy ID
+                const testSet = await tx.testSet.create({
+                    data: {
+                        name: 'temp', // Tạm thời
+                        description: 'temp', // Tạm thời
+                        content: data.content,
+                        audioUrl: data.audioUrl,
+                        price: data.price,
+                        levelN: data.levelN,
+                        testType: data.testType,
+                        status: data.status,
+                        creatorId: userId,
+                    }
+                })
+
+                // Tạo keys
+                const nameKey = `testset.${testSet.id}.name`
+                const descriptionKey = `testset.${testSet.id}.description`
+
+                // Cập nhật testset với keys
+                const updatedTestSet = await tx.testSet.update({
+                    where: { id: testSet.id },
+                    data: {
+                        name: nameKey,
+                        description: descriptionKey
+                    }
+                })
+
+                // Tạo translations
+                for (const translation of data.translations) {
+                    const language = await this.languagesService.findByCode({ code: translation.language_code })
+                    if (language?.data) {
+                        const key = translation.field === 'name' ? nameKey : descriptionKey
+                        await tx.translation.upsert({
+                            where: {
+                                languageId_key: {
+                                    key: key,
+                                    languageId: language.data.id
+                                }
+                            },
+                            update: { value: translation.value },
+                            create: {
+                                key: key,
+                                languageId: language.data.id,
+                                value: translation.value
+                            }
+                        })
+                    }
+                }
+
+                return updatedTestSet
             })
 
             return {
                 statusCode: 201,
-                data: testSet,
+                data: result,
                 message: TEST_SET_MESSAGE.CREATE_SUCCESS,
             }
         } catch (error) {
             if (error instanceof BadRequestException) {
                 throw error
             }
+            this.logger.error('Error creating testset:', error)
             throw new BadRequestException('Không thể tạo bộ đề')
         }
     }
@@ -183,11 +242,55 @@ export class TestSetService {
         // Validation
         this.validateTestSetData(data, true)
 
-        const updatedTestSet = await this.testSetRepo.update(id, data)
+        // Cập nhật testset với transaction
+        const result = await this.prisma.$transaction(async (tx) => {
+            // Cập nhật testset
+            const updatedTestSet = await tx.testSet.update({
+                where: { id },
+                data: {
+                    content: data.content,
+                    audioUrl: data.audioUrl,
+                    price: data.price,
+                    levelN: data.levelN,
+                    testType: data.testType,
+                    status: data.status,
+                }
+            })
+
+            // Cập nhật translations nếu có
+            if (data.translations) {
+                const nameKey = `testset.${id}.name`
+                const descriptionKey = `testset.${id}.description`
+
+                // Cập nhật translations
+                for (const translation of data.translations) {
+                    const language = await this.languagesService.findByCode({ code: translation.language_code })
+                    if (language?.data) {
+                        const key = translation.field === 'name' ? nameKey : descriptionKey
+                        await tx.translation.upsert({
+                            where: {
+                                languageId_key: {
+                                    key: key,
+                                    languageId: language.data.id
+                                }
+                            },
+                            update: { value: translation.value },
+                            create: {
+                                key: key,
+                                languageId: language.data.id,
+                                value: translation.value
+                            }
+                        })
+                    }
+                }
+            }
+
+            return updatedTestSet
+        })
 
         return {
             statusCode: 200,
-            data: updatedTestSet,
+            data: result,
             message: TEST_SET_MESSAGE.UPDATE_SUCCESS,
         }
     }

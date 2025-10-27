@@ -11,7 +11,10 @@ export class TestSetSwaggerDTO {
     @ApiPropertyOptional({ example: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản trong tiếng Nhật', description: 'Mô tả chi tiết về bộ đề thi' })
     description?: string
 
-    @ApiPropertyOptional({ example: 'Chọn từ đúng nghĩa cho các từ tiếng Nhật được cho. Mỗi câu hỏi có 4 lựa chọn A, B, C, D.', description: 'Nội dung hướng dẫn làm bài' })
+    @ApiPropertyOptional({
+        example: '２月１４日は、日本ではバレンタインデーです。キリスト教の特別な日ですが、日本では、女の人が好きな人にチョコレートなどのプレゼントをする日になりました。世界にも同じような日があります。ブラジルでは、６月１２日が「恋人の日」と呼ばれる日です。その日は、男の人も女の人もプレゼントを用意して、恋人におくります。 ブラジルでは、日本のようにチョコレートではなく、写真立てに写真を入れて、プレゼントするそうです。',
+        description: 'Nội dung bài đọc. Bắt buộc phải có và phải là tiếng Nhật (Hiragana, Katakana, Kanji) khi testType là READING'
+    })
     content?: string
 
     @ApiPropertyOptional({ example: 'https://storage.googleapis.com/pokenihongo-audio/testset-n3-vocab-instruction.mp3', description: 'URL file âm thanh hướng dẫn làm bài' })
@@ -103,23 +106,23 @@ export class TestSetWithQuestionsSwaggerDTO extends TestSetSwaggerDTO {
 }
 
 export class CreateTestSetSwaggerDTO {
-    @ApiProperty({
-        example: 'Đề thi từ vựng N3 - Phần 1',
-        description: 'Tên bộ đề thi'
-    })
-    name: string
 
     @ApiPropertyOptional({
-        example: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản trong tiếng Nhật',
-        description: 'Mô tả chi tiết về bộ đề thi'
-    })
-    description?: string | null
-
-    @ApiPropertyOptional({
-        example: 'Chọn từ đúng nghĩa cho các từ tiếng Nhật được cho. Mỗi câu hỏi có 4 lựa chọn A, B, C, D.',
-        description: 'Nội dung hướng dẫn làm bài'
+        example: '２月１４日は、日本ではバレンタインデーです。キリスト教の特別な日ですが、日本では、女の人が好きな人にチョコレートなどのプレゼントをする日になりました。世界にも同じような日があります。ブラジルでは、６月１２日が「恋人の日」と呼ばれる日です。その日は、男の人も女の人もプレゼントを用意して、恋人におくります。 ブラジルでは、日本のようにチョコレートではなく、写真立てに写真を入れて、プレゼントするそうです。',
+        description: 'Bài đọc bằng tiếng nhật'
     })
     content?: string | null
+
+    @ApiPropertyOptional({
+        example: [
+            { field: 'name', language_code: 'vi', value: 'Đề thi từ vựng N3 - Phần 1' },
+            { field: 'name', language_code: 'en', value: 'N3 Vocabulary Test - Part 1' },
+            { field: 'description', language_code: 'vi', value: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản' },
+            { field: 'description', language_code: 'en', value: 'N3 vocabulary test with 50 basic vocabulary questions' }
+        ],
+        description: 'Translations cho name và description'
+    })
+    translations?: Array<{ field: 'name' | 'description'; language_code: string; value: string }>
 
     @ApiPropertyOptional({
         example: 'https://storage.googleapis.com/pokenihongo-audio/testset-n3-vocab-instruction.mp3',
@@ -156,23 +159,23 @@ export class CreateTestSetSwaggerDTO {
 }
 
 export class UpdateTestSetSwaggerDTO {
-    @ApiPropertyOptional({
-        example: 'Đề thi ngữ pháp N3 - Phần 2 (Cập nhật)',
-        description: 'Tên bộ đề thi'
-    })
-    name?: string
-
-    @ApiPropertyOptional({
-        example: 'Bộ đề thi ngữ pháp N3 bao gồm 40 câu hỏi về cấu trúc ngữ pháp nâng cao trong tiếng Nhật (đã cập nhật)',
-        description: 'Mô tả chi tiết về bộ đề thi'
-    })
-    description?: string | null
 
     @ApiPropertyOptional({
         example: 'Chọn cấu trúc ngữ pháp đúng để hoàn thành câu. Mỗi câu hỏi có 4 lựa chọn A, B, C, D. (Nội dung đã cập nhật)',
         description: 'Nội dung hướng dẫn làm bài'
     })
     content?: string | null
+
+    @ApiPropertyOptional({
+        example: [
+            { field: 'name', language_code: 'vi', value: 'Đề thi ngữ pháp N3 - Phần 2 (Cập nhật)' },
+            { field: 'name', language_code: 'en', value: 'N3 Grammar Test - Part 2 (Updated)' },
+            { field: 'description', language_code: 'vi', value: 'Bộ đề thi ngữ pháp N3 bao gồm 40 câu hỏi về cấu trúc ngữ pháp nâng cao' },
+            { field: 'description', language_code: 'en', value: 'N3 grammar test with 40 advanced grammar structure questions' }
+        ],
+        description: 'Translations cho name và description'
+    })
+    translations?: Array<{ field: 'name' | 'description'; language_code: string; value: string }>
 
     @ApiPropertyOptional({
         example: 'https://storage.googleapis.com/pokenihongo-audio/testset-n3-grammar-instruction-updated.mp3',

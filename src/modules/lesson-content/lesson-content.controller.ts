@@ -96,14 +96,14 @@ export class LessonContentController {
         return await this.lessonContentService.getLessonContentFull(Number(lessonId), lang)
     }
 
-    @Get(':id')
-    @ApiOperation({ summary: 'Lấy thông tin nội dung bài học theo ID' })
-    @ApiResponse({ status: 200, description: 'Lấy thông tin nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy nội dung bài học' })
-    @ZodSerializerDto(LessonContentResponseDTO)
-    async getLessonContentById(@Param('id') id: string) {
-        return await this.lessonContentService.getLessonContentById(Number(id))
-    }
+    // @Get(':id')
+    // @ApiOperation({ summary: 'Lấy thông tin nội dung bài học theo ID' })
+    // @ApiResponse({ status: 200, description: 'Lấy thông tin nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })
+    // @ApiResponse({ status: 404, description: 'Không tìm thấy nội dung bài học' })
+    // @ZodSerializerDto(LessonContentResponseDTO)
+    // async getLessonContentById(@Param('id') id: string) {
+    //     return await this.lessonContentService.getLessonContentById(Number(id))
+    // }
 
     @Put('order')
     @ApiOperation({ summary: 'Cập nhật vị trí nội dung bài học' })
@@ -116,11 +116,7 @@ export class LessonContentController {
     }
 
     @Delete(':id')
-    @HttpCode(HttpStatus.NO_CONTENT)
     @ApiOperation({ summary: 'Xóa nội dung ra khỏi bài học' })
-    @ApiResponse({ status: 204, description: 'Xóa nội dung bài học thành công' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy nội dung bài học' })
-    @ZodSerializerDto(MessageResDTO)
     async deleteLessonContent(@Param('id') id: string) {
         return await this.lessonContentService.deleteLessonContent(Number(id))
     }

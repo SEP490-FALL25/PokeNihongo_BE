@@ -19,6 +19,7 @@ import {
 import { LessonRepository } from './lesson.repo'
 import { LessonCategoryService } from '../lesson-category/lesson-category.service'
 import { TranslationService } from '../translation/translation.service'
+import { LanguagesService } from '../languages/languages.service'
 import { LESSON_MESSAGE } from '@/common/constants/message'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 
@@ -29,22 +30,65 @@ export class LessonService {
     constructor(
         private readonly lessonRepository: LessonRepository,
         private readonly lessonCategoryService: LessonCategoryService,
-        private readonly translationService: TranslationService
+        private readonly translationService: TranslationService,
+        private readonly languagesService: LanguagesService
     ) { }
 
     //#region get
-    async getLessonList(params: GetLessonListQueryType) {
+    async getLessonList(params: GetLessonListQueryType, languageCode?: string) {
         try {
             this.logger.log('Getting lesson list with params:', params)
 
             const result = await this.lessonRepository.findMany(params)
+
+            // Lấy language ID (chỉ khi có languageCode)
+            let languageId: number | undefined
+            if (languageCode) {
+                try {
+                    const language = await this.languagesService.findByCode({ code: languageCode })
+                    languageId = language?.data?.id
+                } catch {
+                    this.logger.warn(`Language ${languageCode} not found, using all languages`)
+                }
+            }
+
+            // Lấy translations cho từng lesson
+            const lessonsWithTranslations = await Promise.all(
+                result.data.map(async (lesson) => {
+                    let title: string | Array<{ language: string; value: string }> = ''
+                    if (lesson.titleKey) {
+                        this.logger.log(`Looking for translations for key: ${lesson.titleKey}`)
+                        if (languageId) {
+                            // Lấy translation của 1 ngôn ngữ cụ thể
+                            const titleTranslation = await this.translationService.findByKeyAndLanguage(lesson.titleKey, languageId)
+                            this.logger.log(`Found single translation:`, titleTranslation)
+                            title = titleTranslation?.value || ''
+                        } else {
+                            // Lấy tất cả translations
+                            const titleTranslations = await this.translationService.findByKey({ key: lesson.titleKey })
+                            this.logger.log(`Found all translations:`, titleTranslations)
+                            title = titleTranslations.translations?.map(t => ({
+                                language: `lang_${t.languageId}`,
+                                value: t.value
+                            })) || []
+                        }
+                    } else {
+                        this.logger.warn(`No titleKey found for lesson: ${lesson.id}`)
+                    }
+
+                    return {
+                        ...lesson,
+                        title
+                    }
+                })
+            )
 
             this.logger.log(`Found ${result.data.length} lessons`)
             return {
                 statusCode: 200,
                 message: LESSON_MESSAGE.GET_LIST_SUCCESS,
                 data: {
-                    results: result.data,
+                    results: lessonsWithTranslations,
                     pagination: {
                         current: result.page,
                         pageSize: result.limit,
@@ -59,9 +103,9 @@ export class LessonService {
         }
     }
 
-    async getLessonById(id: number) {
+    async getLessonById(id: number, languageCode?: string) {
         try {
-            this.logger.log(`Getting lesson by id: ${id}`)
+            this.logger.log(`Getting lesson by id: ${id} with language ${languageCode || 'all'}`)
 
             const lesson = await this.lessonRepository.findById(id)
 
@@ -69,9 +113,47 @@ export class LessonService {
                 throw new LessonNotFoundException()
             }
 
+            // Lấy language ID (chỉ khi có languageCode)
+            let languageId: number | undefined
+            if (languageCode) {
+                try {
+                    const language = await this.languagesService.findByCode({ code: languageCode })
+                    languageId = language?.data?.id
+                } catch {
+                    this.logger.warn(`Language ${languageCode} not found, using all languages`)
+                }
+            }
+
+            // Lấy translations cho lesson
+            let title: string | Array<{ language: string; value: string }> = ''
+            if (lesson.titleKey) {
+                this.logger.log(`Looking for translations for key: ${lesson.titleKey}`)
+                if (languageId) {
+                    // Lấy translation của 1 ngôn ngữ cụ thể
+                    const titleTranslation = await this.translationService.findByKeyAndLanguage(lesson.titleKey, languageId)
+                    this.logger.log(`Found single translation:`, titleTranslation)
+                    title = titleTranslation?.value || ''
+                } else {
+                    // Lấy tất cả translations
+                    const titleTranslations = await this.translationService.findByKey({ key: lesson.titleKey })
+                    this.logger.log(`Found all translations:`, titleTranslations)
+                    title = titleTranslations.translations?.map(t => ({
+                        language: `lang_${t.languageId}`,
+                        value: t.value
+                    })) || []
+                }
+            } else {
+                this.logger.warn(`No titleKey found for lesson: ${lesson.id}`)
+            }
+
+            const lessonWithTranslations = {
+                ...lesson,
+                title
+            }
+
             this.logger.log(`Found lesson: ${lesson.slug}`)
             return {
-                data: lesson,
+                data: lessonWithTranslations,
                 message: LESSON_MESSAGE.GET_BY_ID_SUCCESS
             }
         } catch (error) {
@@ -85,9 +167,9 @@ export class LessonService {
         }
     }
 
-    async getLessonBySlug(slug: string) {
+    async getLessonBySlug(slug: string, languageCode?: string) {
         try {
-            this.logger.log(`Getting lesson by slug: ${slug}`)
+            this.logger.log(`Getting lesson by slug: ${slug} with language ${languageCode || 'all'}`)
 
             const lesson = await this.lessonRepository.findBySlug(slug)
 
@@ -95,9 +177,47 @@ export class LessonService {
                 throw new LessonNotFoundException()
             }
 
+            // Lấy language ID (chỉ khi có languageCode)
+            let languageId: number | undefined
+            if (languageCode) {
+                try {
+                    const language = await this.languagesService.findByCode({ code: languageCode })
+                    languageId = language?.data?.id
+                } catch {
+                    this.logger.warn(`Language ${languageCode} not found, using all languages`)
+                }
+            }
+
+            // Lấy translations cho lesson
+            let title: string | Array<{ language: string; value: string }> = ''
+            if (lesson.titleKey) {
+                this.logger.log(`Looking for translations for key: ${lesson.titleKey}`)
+                if (languageId) {
+                    // Lấy translation của 1 ngôn ngữ cụ thể
+                    const titleTranslation = await this.translationService.findByKeyAndLanguage(lesson.titleKey, languageId)
+                    this.logger.log(`Found single translation:`, titleTranslation)
+                    title = titleTranslation?.value || ''
+                } else {
+                    // Lấy tất cả translations
+                    const titleTranslations = await this.translationService.findByKey({ key: lesson.titleKey })
+                    this.logger.log(`Found all translations:`, titleTranslations)
+                    title = titleTranslations.translations?.map(t => ({
+                        language: `lang_${t.languageId}`,
+                        value: t.value
+                    })) || []
+                }
+            } else {
+                this.logger.warn(`No titleKey found for lesson: ${lesson.id}`)
+            }
+
+            const lessonWithTranslations = {
+                ...lesson,
+                title
+            }
+
             this.logger.log(`Found lesson: ${lesson.slug}`)
             return {
-                data: lesson,
+                data: lessonWithTranslations,
                 message: LESSON_MESSAGE.GET_BY_ID_SUCCESS
             }
         } catch (error) {
