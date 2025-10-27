@@ -41,12 +41,12 @@ export type CreateGachaItemBodyType = z.infer<typeof CreateGachaItemBodySchema>
 // Create multiple items: { bannerId, items: [{ starType, pokemons: [...] }] }
 export const CreateGachaItemByStarTypeSchema = z.object({
   starType: z.nativeEnum(GachaStarType),
-  pokemons: z.array(z.number()).min(1, 'At least one pokemon required')
+  pokemons: z.array(z.number())
 })
 
 export const CreateWithListItemBodySchema = z.object({
   bannerId: z.number(),
-  items: z.array(CreateGachaItemByStarTypeSchema).min(1, 'At least one item is required')
+  items: z.array(CreateGachaItemByStarTypeSchema)
 })
 
 export type CreateWithListItemBodyType = z.infer<typeof CreateWithListItemBodySchema>
@@ -78,7 +78,7 @@ export const GetRandomGachaItemTypeSchema = z.object({
 
 export const GetRamdomAmountGachaItemsBodySchema = z.object({
   bannerId: z.number(),
-  items: z.array(GetRandomGachaItemTypeSchema).min(1, 'At least one starType is required')
+  items: z.array(GetRandomGachaItemTypeSchema)
 })
 
 export type GetRamdomAmountGachaItemsBodyType = z.infer<

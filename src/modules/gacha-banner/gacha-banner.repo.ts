@@ -213,6 +213,16 @@ export class GachaBannerRepo {
           // Always include all translations with languageId for service-level mapping
           nameTranslations: {
             select: { value: true, languageId: true }
+          },
+          items: {
+            include: {
+              pokemon: {
+                include: {
+                  types: true
+                }
+              },
+              gachaItemRate: true
+            }
           }
         },
         orderBy,
@@ -266,6 +276,23 @@ export class GachaBannerRepo {
         nameTranslations: {
           where: {
             languageId: langId
+          }
+        },
+        items: {
+          include: {
+            gachaItemRate: {
+              select: { rate: true, starType: true }
+            },
+            pokemon: {
+              select: {
+                id: true,
+                pokedex_number: true,
+                nameJp: true,
+                nameTranslations: true,
+                imageUrl: true,
+                rarity: true
+              }
+            }
           }
         }
       }
