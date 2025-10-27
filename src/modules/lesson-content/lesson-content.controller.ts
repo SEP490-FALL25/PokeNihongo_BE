@@ -10,7 +10,7 @@ import {
     Put,
     Query,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { UseGuards } from '@nestjs/common'
@@ -33,6 +33,7 @@ import {
     LessonContentResponseDTO,
     LessonContentListResponseDTO,
 } from './dto/lesson-content.response.dto'
+import { CreateMutiLessonContentBodyType } from './entities/lesson-content.entities'
 
 @ApiTags('Lesson Contents')
 @Controller('lesson-contents')
@@ -43,12 +44,15 @@ export class LessonContentController {
 
     @Post()
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Tạo nội dung bài học mới' })
+    @ApiOperation({
+        summary: 'Tạo nội dung bài học mới',
+        description: `Tạo nội dung bài học mới.
+**Quy tắc đặc biệt:**
+- **contentType**: Chỉ chấp nhận các giá trị 'Vocabulary', 'Grammar', 'Kanji'`
+    })
+    @ApiBody({ type: CreateLessonContentSwaggerDTO })
     @ApiResponse({ status: 201, description: 'Tạo nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })
-    @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy bài học' })
-    @ZodSerializerDto(LessonContentResponseDTO)
-    async createLessonContent(@Body() body: CreateLessonContentBodyDTO) {
+    async createLessonContent(@Body() body: CreateMutiLessonContentBodyType) {
         return await this.lessonContentService.createLessonContent(body)
     }
 
