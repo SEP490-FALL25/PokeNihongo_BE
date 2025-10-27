@@ -92,30 +92,52 @@ export class VocabularyResponseSwaggerDTO {
     updatedAt: Date
 }
 
-export class VocabularyListResponseSwaggerDTO {
-    @ApiProperty({
-        type: [VocabularyResponseSwaggerDTO],
-        description: 'Danh sách từ vựng'
-    })
-    items: VocabularyResponseSwaggerDTO[]
-
-    @ApiProperty({
-        example: 100,
-        description: 'Tổng số từ vựng'
-    })
-    total: number
-
+export class VocabularyPaginationSwaggerDTO {
     @ApiProperty({
         example: 1,
         description: 'Trang hiện tại'
     })
-    page: number
+    current: number
 
     @ApiProperty({
         example: 10,
         description: 'Số lượng từ vựng mỗi trang'
     })
-    limit: number
+    pageSize: number
+
+    @ApiProperty({
+        example: 10,
+        description: 'Tổng số trang'
+    })
+    totalPage: number
+
+    @ApiProperty({
+        example: 100,
+        description: 'Tổng số từ vựng'
+    })
+    totalItem: number
+}
+
+export class VocabularyListResponseSwaggerDTO {
+    @ApiProperty({
+        example: 200,
+        description: 'Mã trạng thái'
+    })
+    statusCode: number
+
+    @ApiProperty({
+        description: 'Dữ liệu danh sách từ vựng'
+    })
+    data: {
+        results: VocabularyResponseSwaggerDTO[]
+        pagination: VocabularyPaginationSwaggerDTO
+    }
+
+    @ApiProperty({
+        example: 'Lấy danh sách từ vựng thành công',
+        description: 'Thông báo'
+    })
+    message: string
 }
 
 export class VocabularyStatisticsSwaggerDTO {
@@ -207,6 +229,14 @@ export class GetVocabularyListQuerySwaggerDTO {
         maximum: 5
     })
     levelN?: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID của lesson để loại bỏ vocabulary đã có trong lesson đó',
+        required: false,
+        minimum: 1
+    })
+    lessonId?: number
 
     @ApiProperty({
         enum: VocabularySortField,

@@ -42,8 +42,8 @@ export class GrammarService {
                 data: {
                     results: result.data,
                     pagination: {
-                        current: result.page,
-                        pageSize: result.limit,
+                        current: result.current,
+                        pageSize: result.pageSize,
                         totalPage: result.totalPages,
                         totalItem: result.total
                     }

@@ -54,22 +54,11 @@ export class GrammarController {
         return await this.grammarService.createGrammar(body)
     }
 
-    @Post('basic')
-    @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Tạo ngữ pháp cơ bản (chỉ structure và level)' })
-    @ApiResponse({ status: 201, description: 'Tạo ngữ pháp cơ bản thành công', type: GrammarResponseSwaggerDTO })
-    @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
-    @ApiResponse({ status: 409, description: 'Ngữ pháp đã tồn tại' })
-    @ZodSerializerDto(GrammarResponseDTO)
-    async createGrammarBasic(@Body() body: { structure: string; level: string }) {
-        return await this.grammarService.createGrammarBasic(body)
-    }
 
     @Get()
     @ApiOperation({ summary: 'Lấy danh sách ngữ pháp với phân trang và tìm kiếm' })
     @ApiResponse({ status: 200, description: 'Lấy danh sách ngữ pháp thành công', type: GrammarListResponseSwaggerDTO })
     @ApiQuery({ type: GetGrammarListQuerySwaggerDTO })
-    @ZodSerializerDto(GrammarListResponseDTO)
     async getGrammarList(@Query() query: GetGrammarListQueryDTO) {
         return await this.grammarService.getGrammarList(query)
     }
@@ -78,7 +67,6 @@ export class GrammarController {
     @ApiOperation({ summary: 'Lấy thông tin ngữ pháp theo ID' })
     @ApiResponse({ status: 200, description: 'Lấy thông tin ngữ pháp thành công', type: GrammarResponseSwaggerDTO })
     @ApiResponse({ status: 404, description: 'Không tìm thấy ngữ pháp' })
-    @ZodSerializerDto(GrammarResponseDTO)
     async getGrammarById(@Param() params: GetGrammarByIdParamsDTO) {
         return await this.grammarService.getGrammarById(params)
     }
@@ -89,7 +77,6 @@ export class GrammarController {
     @ApiResponse({ status: 200, description: 'Cập nhật ngữ pháp thành công', type: GrammarResponseSwaggerDTO })
     @ApiResponse({ status: 404, description: 'Không tìm thấy ngữ pháp' })
     @ApiResponse({ status: 409, description: 'Cấu trúc ngữ pháp đã tồn tại' })
-    @ZodSerializerDto(GrammarResponseDTO)
     async updateGrammar(
         @Param() params: GetGrammarByIdParamsDTO,
         @Body() body: UpdateGrammarBodyDTO

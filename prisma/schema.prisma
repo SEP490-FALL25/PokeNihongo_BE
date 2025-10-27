@@ -1602,3 +1602,9 @@ enum GachaPityType {
   COMPLETED_MAX // Reset do đạt hard pity (ví dụ roll đủ 90 lần)
   COMPLETED_LUCK // Reset do roll hên ra 5★ trước khi đạt pity
 }
+
+enum LessonContentsType {
+  VOCABULARY
+  GRAMMAR
+  KANJI
+}

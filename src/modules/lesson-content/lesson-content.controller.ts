@@ -10,7 +10,7 @@ import {
     Put,
     Query,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { UseGuards } from '@nestjs/common'
@@ -20,6 +20,7 @@ import {
     UpdateLessonContentBodyDTO,
     GetLessonContentByIdParamsDTO,
     GetLessonContentListQueryDTO,
+    LessonContentFullResDTO,
 } from './dto/lesson-content.zod-dto'
 import {
     LessonContentResponseSwaggerDTO,
@@ -27,12 +28,16 @@ import {
     CreateLessonContentSwaggerDTO,
     UpdateLessonContentSwaggerDTO,
     GetLessonContentListQuerySwaggerDTO,
+    UpdateLessonContentOrderSwaggerDTO,
+    LessonContentFullResponseSwaggerDTO,
 } from './dto/lesson-content.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
     LessonContentResponseDTO,
     LessonContentListResponseDTO,
 } from './dto/lesson-content.response.dto'
+import { CreateMutiLessonContentBodyType, UpdateLessonContentOrder } from './entities/lesson-content.entities'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('Lesson Contents')
 @Controller('lesson-contents')
@@ -43,12 +48,15 @@ export class LessonContentController {
 
     @Post()
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Tạo nội dung bài học mới' })
+    @ApiOperation({
+        summary: 'Tạo nội dung bài học mới',
+        description: `Tạo nội dung bài học mới.
+**Quy tắc đặc biệt:**
+- **contentType**: Chỉ chấp nhận các giá trị 'VOCABULARY', 'GRAMMAR', 'KANJI'`
+    })
+    @ApiBody({ type: CreateLessonContentSwaggerDTO })
     @ApiResponse({ status: 201, description: 'Tạo nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })
-    @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy bài học' })
-    @ZodSerializerDto(LessonContentResponseDTO)
-    async createLessonContent(@Body() body: CreateLessonContentBodyDTO) {
+    async createLessonContent(@Body() body: CreateMutiLessonContentBodyType) {
         return await this.lessonContentService.createLessonContent(body)
     }
 
@@ -61,34 +69,59 @@ export class LessonContentController {
         return await this.lessonContentService.getLessonContentList(query)
     }
 
+
+    @Get(':lessonId')
+    @ApiOperation({
+        summary: 'Lấy toàn bộ nội dung bài học được nhóm theo loại',
+        description: 'API này trả về tất cả nội dung của một lesson được nhóm theo VOCABULARY, GRAMMAR, KANJI và kèm theo translations'
+    })
+    @ApiParam({ name: 'lessonId', description: 'ID của lesson', example: 1 })
+    @ApiQuery({
+        name: 'lang',
+        description: 'Mã ngôn ngữ (vi, en, ja)',
+        example: 'vi',
+        required: false
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy toàn bộ nội dung bài học thành công',
+        type: LessonContentFullResponseSwaggerDTO
+    })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy lesson' })
+    @ZodSerializerDto(LessonContentFullResDTO)
+    async getLessonContentFull(
+        @Param('lessonId') lessonId: string,
+        @I18nLang() lang: string
+    ) {
+        return await this.lessonContentService.getLessonContentFull(Number(lessonId), lang)
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Lấy thông tin nội dung bài học theo ID' })
     @ApiResponse({ status: 200, description: 'Lấy thông tin nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })
     @ApiResponse({ status: 404, description: 'Không tìm thấy nội dung bài học' })
     @ZodSerializerDto(LessonContentResponseDTO)
-    async getLessonContentById(@Param() params: GetLessonContentByIdParamsDTO) {
-        return await this.lessonContentService.getLessonContentById(params)
+    async getLessonContentById(@Param('id') id: string) {
+        return await this.lessonContentService.getLessonContentById(Number(id))
     }
 
-    @Put(':id')
-    @ApiOperation({ summary: 'Cập nhật nội dung bài học' })
-    @ApiResponse({ status: 200, description: 'Cập nhật nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })
-    @ApiResponse({ status: 404, description: 'Không tìm thấy nội dung bài học' })
-    @ZodSerializerDto(LessonContentResponseDTO)
-    async updateLessonContent(
-        @Param() params: GetLessonContentByIdParamsDTO,
-        @Body() body: UpdateLessonContentBodyDTO
+    @Put('order')
+    @ApiOperation({ summary: 'Cập nhật vị trí nội dung bài học' })
+    @ApiBody({ type: UpdateLessonContentOrderSwaggerDTO })
+    @ApiResponse({ status: 200, description: 'Cập nhật vị trí nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })
+    async updateLessonContentOrder(
+        @Body() body: UpdateLessonContentOrder
     ) {
-        return await this.lessonContentService.updateLessonContent(params.id, body)
+        return await this.lessonContentService.updateLessonContentOrder(body);
     }
 
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
-    @ApiOperation({ summary: 'Xóa nội dung bài học' })
+    @ApiOperation({ summary: 'Xóa nội dung ra khỏi bài học' })
     @ApiResponse({ status: 204, description: 'Xóa nội dung bài học thành công' })
     @ApiResponse({ status: 404, description: 'Không tìm thấy nội dung bài học' })
     @ZodSerializerDto(MessageResDTO)
-    async deleteLessonContent(@Param() params: GetLessonContentByIdParamsDTO) {
-        return await this.lessonContentService.deleteLessonContent(params.id)
+    async deleteLessonContent(@Param('id') id: string) {
+        return await this.lessonContentService.deleteLessonContent(Number(id))
     }
 }

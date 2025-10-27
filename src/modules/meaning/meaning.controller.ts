@@ -102,9 +102,8 @@ export class MeaningController {
         description: 'Lấy nghĩa theo từ vựng thành công',
         type: [MeaningSwaggerResponseDTO]
     })
-    @ZodSerializerDto(MeaningResponseDTO)
-    findByVocabularyId(@Param('vocabularyId') vocabularyId: number) {
-        return this.meaningService.findByVocabularyId({ vocabularyId })
+    findByVocabularyId(@Param('vocabularyId') vocabularyId: string) {
+        return this.meaningService.findByVocabularyId(Number(vocabularyId))
     }
 
     @Get(':id')

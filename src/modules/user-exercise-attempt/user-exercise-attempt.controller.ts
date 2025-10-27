@@ -6,7 +6,8 @@ import {
     GetUserExerciseAttemptListQueryDTO,
     UpdateUserExerciseAttemptBodyDTO,
     UserExerciseAttemptListResDTO,
-    UserExerciseAttemptResDTO
+    UserExerciseAttemptResDTO,
+    LatestExerciseAttemptsByLessonResDTO
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.zod-dto'
 import {
     UserExerciseAttemptResponseSwaggerDTO,
@@ -14,7 +15,8 @@ import {
     GetUserExerciseAttemptListQuerySwaggerDTO,
     CreateUserExerciseAttemptParamsSwaggerDTO,
     UpdateUserExerciseAttemptSwaggerDTO,
-    ExerciseCompletionResponseSwaggerDTO
+    ExerciseCompletionResponseSwaggerDTO,
+    LatestExerciseAttemptsByLessonResSwaggerDTO
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.dto'
 import {
     Body,
@@ -148,6 +150,25 @@ export class UserExerciseAttemptController {
     @ZodSerializerDto(UserExerciseAttemptResDTO)
     getStatus(@Param('id') id: string, @ActiveUser('userId') userId: number) {
         return this.userExerciseAttemptService.getStatus(Number(id), userId)
+    }
+
+    @Get('latest/lesson/:lessonId')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Lấy danh sách exercise gần nhất của người dùng theo lesson',
+        description: 'API này trả về exercise attempt gần nhất của user cho mỗi exercise trong lesson. Nếu user có nhiều attempts cho cùng 1 exercise, sẽ lấy cái mới nhất.'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách exercise gần nhất thành công',
+        type: LatestExerciseAttemptsByLessonResSwaggerDTO
+    })
+    @ZodSerializerDto(LatestExerciseAttemptsByLessonResDTO)
+    getLatestExerciseAttemptsByLesson(
+        @Param('lessonId') lessonId: string,
+        @ActiveUser('userId') userId: number
+    ) {
+        return this.userExerciseAttemptService.getLatestExerciseAttemptsByLesson(userId, Number(lessonId))
     }
 }
 

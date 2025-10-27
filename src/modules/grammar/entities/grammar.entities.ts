@@ -46,10 +46,11 @@ export const GetGrammarByIdParamsType = z.object({
 })
 
 export const GetGrammarListQueryType = z.object({
-    page: z.string().transform(Number).default('1'),
-    limit: z.string().transform(Number).default('10'),
+    currentPage: z.string().transform(Number).default('1'),
+    pageSize: z.string().transform(Number).default('10'),
     level: z.string().optional(),
     search: z.string().optional(),
+    lessonId: z.string().transform(Number).optional(),
     sortBy: z.nativeEnum(GrammarSortField).optional().default(GrammarSortField.CREATED_AT),
     sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
