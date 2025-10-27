@@ -6,4 +6,4 @@ export const GachaStarType = {
   FIVE: 'FIVE'
 } as const
 
-export type GachaStarType = (typeof GachaStarType)[keyof typeof GachaStarType]
+export type GachaStarTypeType = (typeof GachaStarType)[keyof typeof GachaStarType]

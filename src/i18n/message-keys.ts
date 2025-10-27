@@ -406,5 +406,8 @@ export const GachaItemRateMessage = {
   DELETE_SUCCESS: 'gacha_item_rate.DELETE_SUCCESS',
 
   GET_LIST_SUCCESS: 'gacha_item_rate.GET_LIST_SUCCESS',
-  GET_SUCCESS: 'gacha_item_rate.GET_SUCCESS'
+  GET_SUCCESS: 'gacha_item_rate.GET_SUCCESS',
+  NOT_FOUND: 'gacha_item_rate.NOT_FOUND',
+  ALREADY_EXISTS: 'gacha_item_rate.ALREADY_EXISTS',
+  INVALID_DATA: 'gacha_item_rate.INVALID_DATA'
 } as const

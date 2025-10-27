@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
-import { GachaItemRateService } from './gacha-item-rate.service';
-import { GachaItemRateController } from './gacha-item-rate.controller';
+import { Module } from '@nestjs/common'
+import { GachaItemRateController } from './gacha-item-rate.controller'
+import { GachaItemRateRepo } from './gacha-item-rate.repo'
+import { GachaItemRateService } from './gacha-item-rate.service'
 
 @Module({
   controllers: [GachaItemRateController],
-  providers: [GachaItemRateService],
+  providers: [GachaItemRateService, GachaItemRateRepo]
 })
 export class GachaItemRateModule {}
