@@ -10,7 +10,7 @@ import {
     Put,
     Query,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { UseGuards } from '@nestjs/common'
@@ -20,6 +20,7 @@ import {
     UpdateLessonContentBodyDTO,
     GetLessonContentByIdParamsDTO,
     GetLessonContentListQueryDTO,
+    LessonContentFullResDTO,
 } from './dto/lesson-content.zod-dto'
 import {
     LessonContentResponseSwaggerDTO,
@@ -28,6 +29,7 @@ import {
     UpdateLessonContentSwaggerDTO,
     GetLessonContentListQuerySwaggerDTO,
     UpdateLessonContentOrderSwaggerDTO,
+    LessonContentFullResponseSwaggerDTO,
 } from './dto/lesson-content.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -35,6 +37,7 @@ import {
     LessonContentListResponseDTO,
 } from './dto/lesson-content.response.dto'
 import { CreateMutiLessonContentBodyType, UpdateLessonContentOrder } from './entities/lesson-content.entities'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('Lesson Contents')
 @Controller('lesson-contents')
@@ -67,13 +70,30 @@ export class LessonContentController {
     }
 
 
-    @Get('Full')
-    @ApiOperation({ summary: 'Lấy danh sách nội dung bài học' })
-    @ApiQuery({ type: GetLessonContentListQuerySwaggerDTO })
-    @ApiResponse({ status: 200, description: 'Lấy danh sách nội dung bài học thành công', type: LessonContentListResponseSwaggerDTO })
-    @ZodSerializerDto(LessonContentListResponseDTO)
-    async getLessonContentFull(@Query() query: GetLessonContentListQueryDTO) {
-        
+    @Get(':lessonId')
+    @ApiOperation({
+        summary: 'Lấy toàn bộ nội dung bài học được nhóm theo loại',
+        description: 'API này trả về tất cả nội dung của một lesson được nhóm theo VOCABULARY, GRAMMAR, KANJI và kèm theo translations'
+    })
+    @ApiParam({ name: 'lessonId', description: 'ID của lesson', example: 1 })
+    @ApiQuery({
+        name: 'lang',
+        description: 'Mã ngôn ngữ (vi, en, ja)',
+        example: 'vi',
+        required: false
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy toàn bộ nội dung bài học thành công',
+        type: LessonContentFullResponseSwaggerDTO
+    })
+    @ApiResponse({ status: 404, description: 'Không tìm thấy lesson' })
+    @ZodSerializerDto(LessonContentFullResDTO)
+    async getLessonContentFull(
+        @Param('lessonId') lessonId: string,
+        @I18nLang() lang: string
+    ) {
+        return await this.lessonContentService.getLessonContentFull(Number(lessonId), lang)
     }
 
     @Get(':id')

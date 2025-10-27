@@ -74,6 +74,56 @@ export const LessonContentListResSchema = z
     })
     .strict()
 
+// Schema for grouped lesson content with translations
+export const VocabularyContentSchema = z.object({
+    id: z.number(),
+    wordJp: z.string(),
+    reading: z.string(),
+    imageUrl: z.string().nullable().optional(),
+    audioUrl: z.string().nullable().optional(),
+    meanings: z.array(z.object({
+        id: z.number(),
+        meaning: z.string(),
+        exampleSentence: z.string().optional(),
+        explanation: z.string().optional()
+    })).optional()
+})
+
+export const GrammarContentSchema = z.object({
+    id: z.number(),
+    titleKey: z.string(),
+    title: z.string().optional(),
+    descriptionKey: z.string().optional(),
+    description: z.string().optional(),
+    usageKey: z.string().optional(),
+    usage: z.string().optional()
+})
+
+export const KanjiContentSchema = z.object({
+    id: z.number(),
+    character: z.string(),
+    meaningKey: z.string(),
+    meaning: z.string().optional(),
+    onReading: z.string().optional(),
+    kunReading: z.string().optional(),
+    strokeCount: z.number().optional(),
+    imageUrl: z.string().nullable().optional()
+})
+
+export const GroupedLessonContentSchema = z.object({
+    voca: z.array(VocabularyContentSchema).optional(),
+    grama: z.array(GrammarContentSchema).optional(),
+    kanji: z.array(KanjiContentSchema).optional()
+})
+
+export const LessonContentFullResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: GroupedLessonContentSchema,
+        message: z.string()
+    })
+    .strict()
+
 // Type exports
 export type LessonContentType = z.infer<typeof LessonContentType>
 export type LessonContentWithRelationsType = z.infer<typeof LessonContentWithRelationsType>
@@ -84,4 +134,11 @@ export type UpdateLessonContentOrder = z.infer<typeof UpdateLessonContentOrder>
 export type GetLessonContentByIdParamsType = z.infer<typeof GetLessonContentByIdParamsType>
 export type GetLessonContentListQueryType = z.infer<typeof GetLessonContentListQueryType>
 export type LessonContentListResType = z.infer<typeof LessonContentListResSchema>
+
+// New types for grouped content
+export type VocabularyContentType = z.infer<typeof VocabularyContentSchema>
+export type GrammarContentType = z.infer<typeof GrammarContentSchema>
+export type KanjiContentType = z.infer<typeof KanjiContentSchema>
+export type GroupedLessonContentType = z.infer<typeof GroupedLessonContentSchema>
+export type LessonContentFullResType = z.infer<typeof LessonContentFullResSchema>
 
