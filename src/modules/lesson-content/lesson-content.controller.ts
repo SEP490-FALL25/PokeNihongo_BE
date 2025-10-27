@@ -27,13 +27,14 @@ import {
     CreateLessonContentSwaggerDTO,
     UpdateLessonContentSwaggerDTO,
     GetLessonContentListQuerySwaggerDTO,
+    UpdateLessonContentOrderSwaggerDTO,
 } from './dto/lesson-content.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
     LessonContentResponseDTO,
     LessonContentListResponseDTO,
 } from './dto/lesson-content.response.dto'
-import { CreateMutiLessonContentBodyType } from './entities/lesson-content.entities'
+import { CreateMutiLessonContentBodyType, UpdateLessonContentOrder } from './entities/lesson-content.entities'
 
 @ApiTags('Lesson Contents')
 @Controller('lesson-contents')
@@ -48,7 +49,7 @@ export class LessonContentController {
         summary: 'Tạo nội dung bài học mới',
         description: `Tạo nội dung bài học mới.
 **Quy tắc đặc biệt:**
-- **contentType**: Chỉ chấp nhận các giá trị 'Vocabulary', 'Grammar', 'Kanji'`
+- **contentType**: Chỉ chấp nhận các giá trị 'VOCABULARY', 'GRAMMAR', 'KANJI'`
     })
     @ApiBody({ type: CreateLessonContentSwaggerDTO })
     @ApiResponse({ status: 201, description: 'Tạo nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })
@@ -70,8 +71,18 @@ export class LessonContentController {
     @ApiResponse({ status: 200, description: 'Lấy thông tin nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })
     @ApiResponse({ status: 404, description: 'Không tìm thấy nội dung bài học' })
     @ZodSerializerDto(LessonContentResponseDTO)
-    async getLessonContentById(@Param() params: GetLessonContentByIdParamsDTO) {
-        return await this.lessonContentService.getLessonContentById(params)
+    async getLessonContentById(@Param('id') id: string) {
+        return await this.lessonContentService.getLessonContentById(Number(id))
+    }
+
+    @Put('order')
+    @ApiOperation({ summary: 'Cập nhật vị trí nội dung bài học' })
+    @ApiBody({ type: UpdateLessonContentOrderSwaggerDTO })
+    @ApiResponse({ status: 200, description: 'Cập nhật vị trí nội dung bài học thành công', type: LessonContentResponseSwaggerDTO })
+    async updateLessonContentOrder(
+        @Body() body: UpdateLessonContentOrder
+    ) {
+        return await this.lessonContentService.updateLessonContentOrder(body);
     }
 
     @Put(':id')
@@ -80,10 +91,10 @@ export class LessonContentController {
     @ApiResponse({ status: 404, description: 'Không tìm thấy nội dung bài học' })
     @ZodSerializerDto(LessonContentResponseDTO)
     async updateLessonContent(
-        @Param() params: GetLessonContentByIdParamsDTO,
+        @Param('id') id: string,
         @Body() body: UpdateLessonContentBodyDTO
     ) {
-        return await this.lessonContentService.updateLessonContent(params.id, body)
+        return await this.lessonContentService.updateLessonContent(Number(id), body)
     }
 
     @Delete(':id')

@@ -39,6 +39,11 @@ export const UpdateLessonContentBodyType = z.object({
     contentOrder: z.number().min(0).optional(),
 })
 
+export const UpdateLessonContentOrder = z.object({
+    contentType: z.nativeEnum(PrismaLessonContentType),
+    contentId: z.number().array(),
+})
+
 export const GetLessonContentByIdParamsType = z.object({
     id: z.string().transform(Number),
 })
@@ -47,7 +52,7 @@ export const GetLessonContentListQueryType = z.object({
     page: z.string().transform(Number).default('1'),
     limit: z.string().transform(Number).default('10'),
     lessonId: z.string().transform(Number).optional(),
-    contentType: z.string().optional(),
+    contentType: z.nativeEnum(PrismaLessonContentType).optional(),
     sortBy: z.nativeEnum(LessonContentSortField).optional().default(LessonContentSortField.CREATED_AT),
     sort: z.nativeEnum(SortOrder).optional().default(SortOrder.DESC),
 })
@@ -75,6 +80,8 @@ export type LessonContentWithRelationsType = z.infer<typeof LessonContentWithRel
 export type CreateLessonContentBodyType = z.infer<typeof CreateLessonContentBodyType>
 export type CreateMutiLessonContentBodyType = z.infer<typeof CreateMutiLessonContentBodyType>
 export type UpdateLessonContentBodyType = z.infer<typeof UpdateLessonContentBodyType>
+export type UpdateLessonContentOrder = z.infer<typeof UpdateLessonContentOrder>
 export type GetLessonContentByIdParamsType = z.infer<typeof GetLessonContentByIdParamsType>
 export type GetLessonContentListQueryType = z.infer<typeof GetLessonContentListQueryType>
 export type LessonContentListResType = z.infer<typeof LessonContentListResSchema>
+

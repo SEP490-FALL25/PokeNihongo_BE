@@ -22,10 +22,11 @@ export class LessonContentResponseSwaggerDTO {
     contentId: number
 
     @ApiProperty({
-        example: 'vocabulary',
-        description: 'Loại nội dung (vocabulary, grammar, kanji, etc.)'
+        example: 'VOCABULARY',
+        description: 'Loại nội dung (VOCABULARY, GRAMMAR, KANJI, etc.)',
+        required: false
     })
-    contentType: string
+    contentType?: string
 
     @ApiProperty({
         example: 1,
@@ -86,17 +87,17 @@ export class CreateLessonContentSwaggerDTO {
     contentId: number[]
 
     @ApiProperty({
-        enum: ['Vocabulary', 'Grammar', 'Kanji'],
-        example: 'Vocabulary',
-        description: 'Loại nội dung (vocabulary, grammar, kanji, etc.)'
+        enum: ['VOCABULARY', 'GRAMMAR', 'KANJI'],
+        example: 'VOCABULARY',
+        description: 'Loại nội dung (VOCABULARY, GRAMMAR, KANJI, etc.)'
     })
     contentType: string
 }
 
 export class UpdateLessonContentSwaggerDTO {
     @ApiProperty({
-        example: 'vocabulary',
-        description: 'Loại nội dung (vocabulary, grammar, kanji, etc.)',
+        example: 'VOCABULARY',
+        description: 'Loại nội dung (VOCABULARY, GRAMMAR, KANJI, etc.)',
         required: false
     })
     contentType?: string
@@ -107,6 +108,24 @@ export class UpdateLessonContentSwaggerDTO {
         required: false
     })
     contentOrder?: number
+}
+
+
+export class UpdateLessonContentOrderSwaggerDTO {
+    @ApiProperty({
+        enum: ['VOCABULARY', 'GRAMMAR', 'KANJI'],
+        example: 'VOCABULARY',
+        description: 'Loại nội dung (VOCABULARY, GRAMMAR, KANJI, etc.)',
+        required: false
+    })
+    contentType: string
+
+    @ApiProperty({
+        example: [3, 1, 2],
+        description: 'Thứ tự nội dung trong bài học',
+        required: false
+    })
+    lessonContentId: number[]
 }
 
 export class GetLessonContentListQuerySwaggerDTO {
@@ -137,8 +156,8 @@ export class GetLessonContentListQuerySwaggerDTO {
     lessonId?: number
 
     @ApiProperty({
-        example: 'vocabulary',
-        description: 'Loại nội dung (vocabulary, grammar, kanji, etc.)',
+        example: 'VOCABULARY',
+        description: 'Loại nội dung (VOCABULARY, GRAMMAR, KANJI, etc.)',
         required: false
     })
     contentType?: string
