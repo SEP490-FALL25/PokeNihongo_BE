@@ -325,7 +325,8 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'ショップバナーリストの取得に成功しました',
     NOT_FOUND: 'ショップバナーが見つかりません',
     ALREADY_EXISTS: 'ショップバナーは既に存在します',
-    INVALID_DATA: '無効なショップバナーデータです'
+    INVALID_DATA: '無効なショップバナーデータです',
+    ONLY_ONE_ACTIVE: 'アクティブなショップバナーは1つだけにしてください'
   },
   shop_item: {
     CREATE_SUCCESS: 'ショップアイテムの作成に成功しました',

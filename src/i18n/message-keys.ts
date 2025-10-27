@@ -354,7 +354,8 @@ export const ShopBannerMessage = {
   GET_LIST_SUCCESS: 'shop_banner.GET_LIST_SUCCESS',
   NOT_FOUND: 'shop_banner.NOT_FOUND',
   ALREADY_EXISTS: 'shop_banner.ALREADY_EXISTS',
-  INVALID_DATA: 'shop_banner.INVALID_DATA'
+  INVALID_DATA: 'shop_banner.INVALID_DATA',
+  ONLY_ONE_ACTIVE: 'shop_banner.ONLY_ONE_ACTIVE'
 } as const
 
 export const ShopItemMessage = {
