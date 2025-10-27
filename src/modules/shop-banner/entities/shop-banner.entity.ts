@@ -25,6 +25,9 @@ export const ShopBannerSchema = z.object({
     .default(ShopBannerStatus.PREVIEW),
   min: z.number().default(4),
   max: z.number().default(8),
+  enablePrecreate: z.boolean().default(false), // bật/tắt tự tạo
+  precreateBeforeEndDays: z.number().min(0).default(2), // tạo trước X ngày (mặc định 2)
+  isRandomItemAgain: z.boolean().default(false), // có thể trùng item khi random lại
 
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
@@ -39,7 +42,10 @@ export const CreateShopBannerBodyInputSchema = ShopBannerSchema.pick({
   min: true,
   max: true,
   endDate: true,
-  status: true
+  status: true,
+  enablePrecreate: true,
+  precreateBeforeEndDays: true,
+  isRandomItemAgain: true
 })
   .strict()
   .extend({
@@ -50,7 +56,12 @@ export const CreateShopBannerBodySchema = ShopBannerSchema.pick({
   nameKey: true,
   startDate: true,
   endDate: true,
-  status: true
+  status: true,
+  min: true,
+  max: true,
+  enablePrecreate: true,
+  precreateBeforeEndDays: true,
+  isRandomItemAgain: true
 }).strict()
 
 export const CreateShopBannerResSchema = z.object({
@@ -93,7 +104,8 @@ export const GetShopBannerDetailResSchema = z.object({
           pokedex_number: true,
           nameJp: true,
           nameTranslations: true,
-          imageUrl: true
+          imageUrl: true,
+          rarity: true
         })
       })
     )

@@ -1,3 +1,4 @@
+import { ShopBannerStatus } from '@/common/constants/shop-banner.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { ShopBannerMessage } from '@/i18n/message-keys'
 import {
@@ -172,6 +173,10 @@ export class ShopBannerService {
 
     try {
       return await this.shopBannerRepo.withTransaction(async (prismaTx) => {
+        if (data.status && data.status === ShopBannerStatus.ACTIVE) {
+          // check coi co thang khac active ko
+        }
+
         const nameKey = `shopBanner.name.${Date.now()}`
         const now = new Date()
 
@@ -198,7 +203,12 @@ export class ShopBannerService {
           nameKey,
           startDate: startDateNormalized,
           endDate: endDateNormalized,
-          status: data.status
+          status: data.status,
+          min: data.min,
+          max: data.max,
+          enablePrecreate: data.enablePrecreate,
+          precreateBeforeEndDays: data.precreateBeforeEndDays,
+          isRandomItemAgain: data.isRandomItemAgain
         }
 
         createdShopBanner = await this.shopBannerRepo.create(
@@ -554,4 +564,8 @@ export class ShopBannerService {
       throw error
     }
   }
+
+  // async checkActiveShopBanner() {
+  //   const
+  // }
 }

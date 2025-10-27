@@ -282,7 +282,8 @@ export class ShopBannerRepo {
                 pokedex_number: true,
                 nameJp: true,
                 nameTranslations: true,
-                imageUrl: true
+                imageUrl: true,
+                rarity: true
               }
             }
           }
@@ -344,6 +345,9 @@ export class ShopBannerRepo {
         startDate: true,
         endDate: true,
         status: true,
+        enablePrecreate: true,
+        precreateBeforeEndDays: true,
+        isRandomItemAgain: true,
         deletedAt: true,
         createdAt: true,
         updatedAt: true,
