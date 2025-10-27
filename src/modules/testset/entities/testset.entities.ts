@@ -54,6 +54,35 @@ export const CreateTestSetBodySchema = z.object({
     path: ["content"]
 })
 
+// Create TestSet with Meanings Schema
+export const CreateTestSetWithMeaningsBodySchema = z.object({
+    content: z.string().nullable().optional(),
+    audioUrl: z.string().nullable().optional(),
+    price: z.number().nullable().optional(),
+    levelN: z.number().nullable().optional(),
+    testType: z.nativeEnum(QuestionType),
+    status: z.nativeEnum(TestSetStatus).default(TestSetStatus.DRAFT),
+    meanings: z.array(z.object({
+        field: z.enum(['name', 'description']),
+        meaningKey: z.string().nullable().optional(),
+        translations: z.record(z.string())
+    })).min(1, "Phải có ít nhất 1 meaning")
+}).strict().refine((data) => {
+    // Nếu testType là READING thì content phải có và là tiếng Nhật
+    if (data.testType === QuestionType.READING) {
+        if (!data.content || data.content.trim() === '') {
+            return false
+        }
+        // Kiểm tra có chứa ký tự tiếng Nhật (Hiragana, Katakana, Kanji)
+        const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/
+        return japaneseRegex.test(data.content)
+    }
+    return true
+}, {
+    message: "Khi testType là READING, content phải có và phải là tiếng Nhật (bài đọc)",
+    path: ["content"]
+})
+
 // Update TestSet Schema
 export const UpdateTestSetBodySchema = z.object({
     content: z.string().nullable().optional(),
@@ -66,6 +95,35 @@ export const UpdateTestSetBodySchema = z.object({
         field: z.enum(['name', 'description']),
         language_code: z.string(),
         value: z.string()
+    })).optional()
+}).strict().refine((data) => {
+    // Nếu testType là READING thì content phải có và là tiếng Nhật
+    if (data.testType === QuestionType.READING) {
+        if (!data.content || data.content.trim() === '') {
+            return false
+        }
+        // Kiểm tra có chứa ký tự tiếng Nhật (Hiragana, Katakana, Kanji)
+        const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/
+        return japaneseRegex.test(data.content)
+    }
+    return true
+}, {
+    message: "Khi testType là READING, content phải có và phải là tiếng Nhật (bài đọc)",
+    path: ["content"]
+})
+
+// Update TestSet with Meanings Schema
+export const UpdateTestSetWithMeaningsBodySchema = z.object({
+    content: z.string().nullable().optional(),
+    audioUrl: z.string().nullable().optional(),
+    price: z.number().nullable().optional(),
+    levelN: z.number().nullable().optional(),
+    testType: z.nativeEnum(QuestionType).optional(),
+    status: z.nativeEnum(TestSetStatus).optional(),
+    meanings: z.array(z.object({
+        field: z.enum(['name', 'description']),
+        meaningKey: z.string().nullable().optional(),
+        translations: z.record(z.string())
     })).optional()
 }).strict().refine((data) => {
     // Nếu testType là READING thì content phải có và là tiếng Nhật
@@ -126,7 +184,8 @@ export const GetTestSetListQuerySchema = z
         levelN: z.string().transform((val) => parseInt(val, 10)).optional(),
         testType: z.nativeEnum(QuestionType).optional(),
         status: z.nativeEnum(TestSetStatus).optional(),
-        creatorId: z.string().transform((val) => parseInt(val, 10)).optional()
+        creatorId: z.string().transform((val) => parseInt(val, 10)).optional(),
+        language: z.string().optional()
     })
     .strict()
 
@@ -135,6 +194,8 @@ export const GetTestSetListQuerySchema = z
 export type TestSetType = z.infer<typeof TestSetSchema>
 export type CreateTestSetBodyType = z.infer<typeof CreateTestSetBodySchema>
 export type UpdateTestSetBodyType = z.infer<typeof UpdateTestSetBodySchema>
+export type CreateTestSetWithMeaningsBodyType = z.infer<typeof CreateTestSetWithMeaningsBodySchema>
+export type UpdateTestSetWithMeaningsBodyType = z.infer<typeof UpdateTestSetWithMeaningsBodySchema>
 export type TestSetResType = z.infer<typeof TestSetResSchema>
 export type TestSetListResType = z.infer<typeof TestSetListResSchema>
 export type GetTestSetByIdParamsType = z.infer<typeof GetTestSetByIdParamsSchema>

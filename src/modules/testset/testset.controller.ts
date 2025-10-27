@@ -8,6 +8,8 @@ import {
     UpdateTestSetBodyDTO,
     TestSetResDTO,
     TestSetListResDTO,
+    CreateTestSetWithMeaningsBodyDTO,
+    UpdateTestSetWithMeaningsBodyDTO,
 } from './dto/testset.zod-dto'
 import {
     TestSetResponseSwaggerDTO,
@@ -15,7 +17,9 @@ import {
     TestSetWithQuestionsResponseSwaggerDTO,
     GetTestSetListQuerySwaggerDTO,
     CreateTestSetSwaggerDTO,
-    UpdateTestSetSwaggerDTO
+    UpdateTestSetSwaggerDTO,
+    CreateTestSetWithMeaningsSwaggerDTO,
+    UpdateTestSetWithMeaningsSwaggerDTO
 } from './dto/testset.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -39,24 +43,25 @@ import { TestSetService } from './testset.service'
 export class TestSetController {
     constructor(private readonly testSetService: TestSetService) { }
 
-    @Post()
+
+
+    @Post('with-meanings')
     @ApiBearerAuth()
     @ApiOperation({
-        summary: 'Tạo bộ đề mới với',
-        description: 'testType: VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, MATCHING'
-
+        summary: 'Tạo bộ đề mới với meanings',
+        description: 'Tạo bộ đề với meanings cho name và description thay vì translations array'
     })
-    @ApiBody({ type: CreateTestSetSwaggerDTO })
+    @ApiBody({ type: CreateTestSetWithMeaningsSwaggerDTO })
     @ApiResponse({
         status: 201,
-        description: 'Tạo bộ đề thành công',
+        description: 'Tạo bộ đề với meanings thành công',
         type: TestSetResponseSwaggerDTO
     })
-    async createTestSet(
-        @Body() body: CreateTestSetBodyDTO,
+    async createTestSetWithMeanings(
+        @Body() body: CreateTestSetWithMeaningsBodyDTO,
         @ActiveUser('userId') userId: number
     ): Promise<MessageResDTO> {
-        return this.testSetService.createTestSet(body, userId)
+        return this.testSetService.createTestSetWithMeanings(body, userId)
     }
 
 
@@ -70,8 +75,8 @@ export class TestSetController {
     })
     @ApiQuery({ type: GetTestSetListQuerySwaggerDTO })
     @ZodSerializerDto(TestSetListResDTO)
-    findAll(@Query() query: GetTestSetListQueryDTO, @I18nLang() lang: string) {
-        return this.testSetService.findAll(query, lang)
+    findAll(@Query() query: GetTestSetListQueryDTO) {
+        return this.testSetService.findAll(query)
     }
 
     @Get(':id')
@@ -100,6 +105,22 @@ export class TestSetController {
         @ActiveUser('userId') userId: number
     ): Promise<MessageResDTO> {
         return this.testSetService.updateTestSet(Number(id), body, userId)
+    }
+
+    @Put(':id/with-meanings')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Cập nhật bộ đề với meanings theo ID' })
+    @ApiResponse({
+        status: 200,
+        description: 'Cập nhật bộ đề với meanings thành công',
+        type: TestSetResponseSwaggerDTO
+    })
+    async updateTestSetWithMeanings(
+        @Param('id') id: string,
+        @Body() body: UpdateTestSetWithMeaningsBodyDTO,
+        @ActiveUser('userId') userId: number
+    ): Promise<MessageResDTO> {
+        return this.testSetService.updateTestSetWithMeanings(Number(id), body, userId)
     }
 
     @Delete(':id')
