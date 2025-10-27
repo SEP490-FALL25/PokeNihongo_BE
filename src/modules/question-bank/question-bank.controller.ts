@@ -2,6 +2,7 @@ import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import {
     CreateQuestionBankBodyDTO,
     CreateQuestionBankWithMeaningsBodyDTO,
+    UpdateQuestionBankWithMeaningsBodyDTO,
     CreateQuestionBankWithAnswersBodyDTO,
     GetQuestionBankByIdParamsDTO,
     GetQuestionBankListQueryDTO,
@@ -14,6 +15,7 @@ import {
     QuestionBankListResponseSwaggerDTO,
     GetQuestionBankListQuerySwaggerDTO,
     CreateQuestionBankWithMeaningsSwaggerDTO,
+    UpdateQuestionBankWithMeaningsSwaggerDTO,
     CreateQuestionBankWithAnswersSwaggerDTO,
     CreateQuestionBankWithAnswersResponseSwaggerDTO,
     UpdateQuestionBankSwaggerDTO
@@ -119,19 +121,22 @@ export class QuestionBankController {
 
     @Put(':id')
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Cập nhật câu hỏi theo ID' })
-    @ApiBody({ type: UpdateQuestionBankSwaggerDTO })
+    @ApiOperation({
+        summary: 'Cập nhật câu hỏi với meanings theo ID',
+        description: 'Cập nhật câu hỏi kèm theo nghĩa và translations. Tất cả fields đều optional.'
+    })
+    @ApiBody({ type: UpdateQuestionBankWithMeaningsSwaggerDTO })
     @ApiResponse({
         status: 200,
-        description: 'Cập nhật câu hỏi thành công',
+        description: 'Cập nhật câu hỏi với meanings thành công',
         type: QuestionBankResponseSwaggerDTO
     })
     @ZodSerializerDto(QuestionBankResDTO)
-    update(
+    updateWithMeanings(
         @Param('id') id: string,
-        @Body() body: UpdateQuestionBankBodyDTO
+        @Body() body: UpdateQuestionBankWithMeaningsBodyDTO
     ) {
-        return this.questionBankService.update(Number(id), body)
+        return this.questionBankService.updateWithMeanings(Number(id), body)
     }
 
     @Delete(':id')

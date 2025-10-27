@@ -85,7 +85,10 @@ export const GetQuestionBankListQuerySchema = z
         pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         levelN: z.string().transform((val) => parseInt(val, 10)).optional(),
         questionType: z.nativeEnum(QuestionType).optional(),
-        search: z.string().optional()
+        search: z.string().optional(),
+        sortBy: z.enum(['id', 'questionJp', 'questionType', 'levelN', 'createdAt', 'updatedAt']).optional().default('createdAt'),
+        sort: z.enum(['asc', 'desc']).optional().default('desc'),
+        language: z.string().optional()
     })
     .strict()
 
@@ -94,6 +97,19 @@ export const GetQuestionBankListQuerySchema = z
 export const CreateQuestionBankWithMeaningsBodySchema = z.object({
     questionJp: z.string(),
     questionType: z.nativeEnum(QuestionType),
+    audioUrl: z.string().nullable().optional(),
+    questionKey: z.string().nullable().optional(),
+    pronunciation: z.string().nullable().optional(),
+    levelN: z.number().min(1).max(5).nullable().optional(),
+    meanings: z.array(z.object({
+        meaningKey: z.string().nullable().optional(),
+        translations: z.record(z.string())
+    })).optional()
+}).strict()
+
+export const UpdateQuestionBankWithMeaningsBodySchema = z.object({
+    questionJp: z.string().optional(),
+    questionType: z.nativeEnum(QuestionType).optional(),
     audioUrl: z.string().nullable().optional(),
     questionKey: z.string().nullable().optional(),
     pronunciation: z.string().nullable().optional(),
@@ -180,6 +196,7 @@ export type QuestionBankListResType = z.infer<typeof QuestionBankListResSchema>
 export type GetQuestionBankByIdParamsType = z.infer<typeof GetQuestionBankByIdParamsSchema>
 export type GetQuestionBankListQueryType = z.infer<typeof GetQuestionBankListQuerySchema>
 export type CreateQuestionBankWithMeaningsBodyType = z.infer<typeof CreateQuestionBankWithMeaningsBodySchema>
+export type UpdateQuestionBankWithMeaningsBodyType = z.infer<typeof UpdateQuestionBankWithMeaningsBodySchema>
 export type CreateQuestionBankWithAnswersBodyType = z.infer<typeof CreateQuestionBankWithAnswersBodySchema>
 export type UpdatedQuestionBankWithAnswersBodyType = z.infer<typeof UpdatedQuestionBankWithAnswersBodySchema>
 
