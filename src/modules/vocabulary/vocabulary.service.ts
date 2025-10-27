@@ -44,13 +44,14 @@ export class VocabularyService {
     //#region Find All
     async findAll(query: GetVocabularyListQueryType, lang: string) {
         try {
-            const { currentPage, pageSize, search, levelN, sortBy, sort } = query
+            const { currentPage, pageSize, search, levelN, lessonId, sortBy, sort } = query
 
             const result = await this.vocabularyRepository.findMany({
                 currentPage,
                 pageSize,
                 search,
                 levelN,
+                lessonId,
                 sortBy,
                 sort
             })
@@ -500,9 +501,9 @@ export class VocabularyService {
     //#endregion
 
     //#region Find One
-    async findOne(params: GetVocabularyByIdParamsType, lang: string) {
+    async findOne(id: number, lang: string) {
         const vocabulary = await this.vocabularyRepository.findUnique({
-            id: params.id
+            id
         })
 
         if (!vocabulary) {

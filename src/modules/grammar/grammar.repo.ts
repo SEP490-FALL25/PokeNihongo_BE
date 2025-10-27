@@ -12,8 +12,8 @@ export class GrammarRepository {
     constructor(private readonly prismaService: PrismaService) { }
 
     async findMany(params: GetGrammarListQueryType) {
-        const { page, limit, level, search, sortBy = GrammarSortField.CREATED_AT, sort = SortOrder.DESC } = params
-        const skip = (page - 1) * limit
+        const { currentPage, pageSize, level, search, lessonId, sortBy = GrammarSortField.CREATED_AT, sort = SortOrder.DESC } = params
+        const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
 
@@ -28,12 +28,32 @@ export class GrammarRepository {
             }
         }
 
+        // Nếu có lessonId, loại bỏ grammar đã có trong lesson đó
+        if (lessonId) {
+            const existingContentIds = await this.prismaService.lessonContents.findMany({
+                where: {
+                    lessonId: lessonId,
+                    contentType: 'GRAMMAR'
+                },
+                select: {
+                    contentId: true
+                }
+            })
+
+            const excludedIds = existingContentIds.map(item => item.contentId)
+            if (excludedIds.length > 0) {
+                where.id = {
+                    notIn: excludedIds
+                }
+            }
+        }
+
         const [data, total] = await Promise.all([
             this.prismaService.grammar.findMany({
                 where,
                 orderBy: { [sortBy]: sort },
                 skip,
-                take: limit,
+                take: pageSize,
             }),
             this.prismaService.grammar.count({ where })
         ])
@@ -41,9 +61,9 @@ export class GrammarRepository {
         return {
             data,
             total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit),
+            currentPage: currentPage,
+            pageSize: pageSize,
+            totalPages: Math.ceil(total / pageSize),
         }
     }
 

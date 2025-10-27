@@ -33,30 +33,52 @@ export class GrammarResponseSwaggerDTO {
     updatedAt: Date
 }
 
-export class GrammarListResponseSwaggerDTO {
-    @ApiProperty({
-        type: [GrammarResponseSwaggerDTO],
-        description: 'Danh sách ngữ pháp'
-    })
-    items: GrammarResponseSwaggerDTO[]
-
-    @ApiProperty({
-        example: 100,
-        description: 'Tổng số ngữ pháp'
-    })
-    total: number
-
+export class GrammarPaginationSwaggerDTO {
     @ApiProperty({
         example: 1,
         description: 'Trang hiện tại'
     })
-    page: number
+    current: number
 
     @ApiProperty({
         example: 10,
         description: 'Số lượng ngữ pháp mỗi trang'
     })
-    limit: number
+    pageSize: number
+
+    @ApiProperty({
+        example: 1,
+        description: 'Tổng số trang'
+    })
+    totalPage: number
+
+    @ApiProperty({
+        example: 100,
+        description: 'Tổng số ngữ pháp'
+    })
+    totalItem: number
+}
+
+export class GrammarListResponseSwaggerDTO {
+    @ApiProperty({
+        example: 200,
+        description: 'Mã trạng thái'
+    })
+    statusCode: number
+
+    @ApiProperty({
+        description: 'Dữ liệu danh sách ngữ pháp'
+    })
+    data: {
+        results: GrammarResponseSwaggerDTO[]
+        pagination: GrammarPaginationSwaggerDTO
+    }
+
+    @ApiProperty({
+        example: 'Lấy danh sách ngữ pháp thành công',
+        description: 'Thông báo'
+    })
+    message: string
 }
 
 export class CreateGrammarSwaggerDTO {
@@ -155,6 +177,14 @@ export class GetGrammarListQuerySwaggerDTO {
         required: false
     })
     search?: string
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID của lesson để loại bỏ grammar đã có trong lesson đó',
+        required: false,
+        minimum: 1
+    })
+    lessonId?: number
 
     @ApiProperty({
         enum: GrammarSortField,

@@ -308,11 +308,11 @@ export class LessonContentService {
                     vocabularyContents.map(async (lc) => {
                         try {
                             // Lấy từng vocabulary theo ID
-                            const vocab = await this.vocabularyService.findOne({ id: lc.contentId }, languageCode)
+                            const vocab = await this.vocabularyService.findOne(lc.contentId, languageCode)
                             if (!vocab.data) return null
 
                             // Lấy meanings từ repository
-                            const meaningsData = await this.meaningService.findByVocabularyId({ vocabularyId: vocab.data.id })
+                            const meaningsData = await this.meaningService.findByVocabularyId(vocab.data.id)
 
                             // Lấy translations cho từng meaning
                             const meanings = await Promise.all(

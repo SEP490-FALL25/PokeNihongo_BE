@@ -18,10 +18,11 @@ export class KanjiRepository {
         search?: string
         jlptLevel?: number
         strokeCount?: number
+        lessonId?: number
         sortBy?: KanjiSortField
         sortOrder?: SortOrder
     }) {
-        const { currentPage, pageSize, search, jlptLevel, strokeCount, sortBy = KanjiSortField.CREATED_AT, sortOrder = SortOrder.DESC } = params
+        const { currentPage, pageSize, search, jlptLevel, strokeCount, lessonId, sortBy = KanjiSortField.CREATED_AT, sortOrder = SortOrder.DESC } = params
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -39,6 +40,26 @@ export class KanjiRepository {
 
         if (strokeCount) {
             where.strokeCount = strokeCount
+        }
+
+        // Nếu có lessonId, loại bỏ kanji đã có trong lesson đó
+        if (lessonId) {
+            const existingContentIds = await this.prismaService.lessonContents.findMany({
+                where: {
+                    lessonId: lessonId,
+                    contentType: 'KANJI'
+                },
+                select: {
+                    contentId: true
+                }
+            })
+
+            const excludedIds = existingContentIds.map(item => item.contentId)
+            if (excludedIds.length > 0) {
+                where.id = {
+                    notIn: excludedIds
+                }
+            }
         }
 
         const orderBy: any = {}

@@ -81,6 +81,14 @@ export class GetKanjiListQuerySwaggerDTO {
     strokeCount?: number
 
     @ApiProperty({
+        example: 1,
+        description: 'ID của lesson để loại bỏ kanji đã có trong lesson đó',
+        required: false,
+        minimum: 1
+    })
+    lessonId?: number
+
+    @ApiProperty({
         example: 'character',
         description: 'Sắp xếp theo trường id, character, meaningKey, strokeCount, jlptLevel, createdAt, updatedAt',
         enum: ['id', 'character', 'meaningKey', 'strokeCount', 'jlptLevel', 'createdAt', 'updatedAt'],
@@ -97,21 +105,32 @@ export class GetKanjiListQuerySwaggerDTO {
     sortOrder?: 'asc' | 'desc'
 }
 
-export class KanjiListSwaggerResponseDTO {
-    @ApiProperty({ type: [KanjiSwaggerResponseDTO], description: 'Danh sách Kanji' })
-    data: KanjiSwaggerResponseDTO[]
-
-    @ApiProperty({ example: 100, description: 'Tổng số Kanji' })
-    total: number
-
+export class KanjiPaginationSwaggerDTO {
     @ApiProperty({ example: 1, description: 'Trang hiện tại' })
-    page: number
+    current: number
 
     @ApiProperty({ example: 10, description: 'Số Kanji mỗi trang' })
-    limit: number
+    pageSize: number
 
     @ApiProperty({ example: 10, description: 'Tổng số trang' })
-    totalPages: number
+    totalPage: number
+
+    @ApiProperty({ example: 100, description: 'Tổng số Kanji' })
+    totalItem: number
+}
+
+export class KanjiListSwaggerResponseDTO {
+    @ApiProperty({ example: 200, description: 'Mã trạng thái' })
+    statusCode: number
+
+    @ApiProperty({ description: 'Dữ liệu danh sách Kanji' })
+    data: {
+        results: KanjiSwaggerResponseDTO[]
+        pagination: KanjiPaginationSwaggerDTO
+    }
+
+    @ApiProperty({ example: 'Lấy danh sách Kanji thành công', description: 'Thông báo' })
+    message: string
 }
 
 // Import Kanji DTO

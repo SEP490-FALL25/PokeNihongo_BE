@@ -124,6 +124,7 @@ export class KanjiService {
                 search: params.search,
                 jlptLevel: params.jlptLevel,
                 strokeCount: params.strokeCount,
+                lessonId: params.lessonId,
                 sortBy: params.sortBy,
                 sortOrder: (params as any).sortOrder
             }
