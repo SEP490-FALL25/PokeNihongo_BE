@@ -74,9 +74,12 @@ export class ShopPurchaseService {
   ) {
     try {
       // co item hong
+      console.log('tim item')
+
       const shopItem = await this.shopItemRepo.findById(data.shopItemId)
       if (!shopItem) throw new NotFoundRecordException()
 
+      console.log('tim pokemon in item')
       // 1.5) Lấy thông tin pokemon để check tiền nhiệm
       const pokemon = await this.pokemonRepo.findById(shopItem.pokemonId)
       if (!pokemon) throw new NotFoundRecordException()
@@ -194,7 +197,7 @@ export class ShopPurchaseService {
             },
             prismaTx
           ),
-          await this.userPokemonService.addPokemonByShop(
+          this.userPokemonService.addPokemonByShop(
             { userId, pokemonId: shopItem.pokemonId },
             prismaTx as any
           ),
@@ -214,6 +217,8 @@ export class ShopPurchaseService {
         message: this.i18nService.translate(ShopPurchaseMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
+      console.log('vo catch')
+
       if (isNotFoundPrismaError(error)) throw new NotFoundRecordException()
       if (isForeignKeyConstraintPrismaError(error)) throw new NotFoundRecordException()
       throw error
