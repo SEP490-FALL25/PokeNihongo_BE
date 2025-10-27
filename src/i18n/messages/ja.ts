@@ -355,5 +355,46 @@ export const jaMessages = {
     PURCHASE_LIMIT_REACHED: 'このアイテムの購入制限に達しました',
     MISSING_PREVIOUS_POKEMON:
       'このポケモンを購入する前に、前のポケモンを所有する必要があります'
+  },
+  gacha_banner: {
+    CREATE_SUCCESS: 'ガチャバナーの作成に成功しました',
+    UPDATE_SUCCESS: 'ガチャバナーの更新に成功しました',
+    DELETE_SUCCESS: 'ガチャバナーの削除に成功しました',
+    GET_SUCCESS: 'ガチャバナー情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ガチャバナーリストの取得に成功しました',
+    NOT_FOUND: 'ガチャバナーが見つかりません',
+
+    ALREADY_EXISTS: 'ガチャバナーは既に存在します',
+    INVALID_DATA: '無効なガチャバナーデータです',
+    ACTIVE_LIMIT_EXCEEDED: 'アクティブバナーの数が上限を超えました（最大2つまで）'
+  },
+  gacha_item_rate: {
+    CREATE_SUCCESS: 'ガチャアイテムの作成に成功しました',
+    UPDATE_SUCCESS: 'ガチャアイテムの更新に成功しました',
+    DELETE_SUCCESS: 'ガチャアイテムの削除に成功しました',
+    GET_SUCCESS: 'ガチャアイテム情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ガチャアイテムリストの取得に成功しました',
+    NOT_FOUND: 'ガチャアイテムが見つかりません',
+    ALREADY_EXISTS: 'ガチャアイテムは既に存在します',
+    INVALID_DATA: '無効なガチャアイテムデータです'
+  },
+  gacha_item: {
+    CREATE_SUCCESS: 'ガチャバナーの作成に成功しました',
+    UPDATE_SUCCESS: 'ガチャバナーの更新に成功しました',
+    DELETE_SUCCESS: 'ガチャバナーの削除に成功しました',
+    GET_SUCCESS: 'ガチャバナー情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ガチャバナーリストの取得に成功しました',
+    NOT_FOUND: 'ガチャバナーが見つかりません',
+    ALREADY_EXISTS: 'ガチャバナーは既に存在します',
+    INVALID_DATA: '無効なガチャバナーデータです',
+    GACHA_BANNER_INVALID: 'ガチャバナーが無効または期限切れです',
+    GACHA_BANNER_INACTIVE: 'ガチャバナーは非アクティブです',
+    GACHA_BANNER_ACTIVE: 'ガチャバナーはアクティブです',
+    GACHA_BANNER_EXPIRED: 'ガチャバナーは期限切れです',
+    POKEMON_DUPLICATE: 'ポケモンはこのバナーに既に存在します',
+    MAX_ITEMS_EXCEEDED: 'アイテム数がバナーの制限を超えています',
+    POKEMON_HAS_PREV_EVOLUTION: 'ポケモンは進化前の形態を持っています',
+    POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
+      'ポケモンのレアリティは、追加される星タイプと互換性がありません'
   }
 }

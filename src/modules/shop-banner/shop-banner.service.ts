@@ -15,6 +15,8 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
+import { PokemonRepo } from '../pokemon/pokemon.repo'
+import { ShopItemRepo } from '../shop-item/shop-item.repo'
 import { ShopPurchaseRepo } from '../shop-purchase/shop-purchase.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
@@ -39,7 +41,9 @@ export class ShopBannerService {
     private readonly languageRepo: LanguagesRepository,
     private readonly translationRepo: TranslationRepository,
     private readonly shopPurchaseRepo: ShopPurchaseRepo,
-    private readonly userPokemonRepo: UserPokemonRepo
+    private readonly userPokemonRepo: UserPokemonRepo,
+    private readonly pokemonRepo: PokemonRepo,
+    private readonly shopItemRepo: ShopItemRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -47,6 +51,42 @@ export class ShopBannerService {
     const data = await this.shopBannerRepo.list(pagination, langId ?? undefined)
     return {
       data,
+      message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  async getListAllPokemonWithShopId(
+    shopBannerId: number,
+    pagination: PaginationQueryType,
+    lang: string = 'vi'
+  ) {
+    // 1. Lấy tất cả pokemon với pagination
+    const allPokemon = await this.pokemonRepo.listWithNameNumImg(pagination)
+
+    // 2. Lấy danh sách shop items của banner này (lấy all, không cần pagination)
+    const shopItems = await this.shopItemRepo.list({
+      currentPage: 1,
+      pageSize: 1000, // Lấy đủ để check
+      qs: `shopBannerId=${shopBannerId}`
+    })
+
+    // 3. Tạo Set chứa các pokemonId đã có trong shop banner
+    const existingPokemonIds = new Set(
+      shopItems.results.map((item: any) => item.pokemonId)
+    )
+
+    // 4. Map qua từng pokemon và thêm field isExist
+    const results = allPokemon.results.map((pokemon: any) => ({
+      ...pokemon,
+      isExist: existingPokemonIds.has(pokemon.id)
+    }))
+
+    return {
+      statusCode: 200,
+      data: {
+        ...allPokemon,
+        results
+      },
       message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
     }
   }

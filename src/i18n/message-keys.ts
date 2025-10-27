@@ -387,3 +387,47 @@ export const ShopPurchaseMessage = {
   PURCHASE_LIMIT_REACHED: 'shop_purchase.PURCHASE_LIMIT_REACHED',
   MISSING_PREVIOUS_POKEMON: 'shop_purchase.MISSING_PREVIOUS_POKEMON'
 } as const
+
+export const GachaBannerMessage = {
+  CREATE_SUCCESS: 'gacha_banner.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'gacha_banner.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'gacha_banner.DELETE_SUCCESS',
+  GET_SUCCESS: 'gacha_banner.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'gacha_banner.GET_LIST_SUCCESS',
+  NOT_FOUND: 'gacha_banner.NOT_FOUND',
+  ALREADY_EXISTS: 'gacha_banner.ALREADY_EXISTS',
+  INVALID_DATA: 'gacha_banner.INVALID_DATA',
+  ACTIVE_LIMIT_EXCEEDED: 'gacha_banner.ACTIVE_LIMIT_EXCEEDED'
+} as const
+
+export const GachaItemRateMessage = {
+  CREATE_SUCCESS: 'gacha_item_rate.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'gacha_item_rate.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'gacha_item_rate.DELETE_SUCCESS',
+
+  GET_LIST_SUCCESS: 'gacha_item_rate.GET_LIST_SUCCESS',
+  GET_SUCCESS: 'gacha_item_rate.GET_SUCCESS',
+  NOT_FOUND: 'gacha_item_rate.NOT_FOUND',
+  ALREADY_EXISTS: 'gacha_item_rate.ALREADY_EXISTS',
+  INVALID_DATA: 'gacha_item_rate.INVALID_DATA'
+} as const
+
+export const GachaItemMessage = {
+  CREATE_SUCCESS: 'gacha_item.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'gacha_item.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'gacha_item.DELETE_SUCCESS',
+  GET_LIST_SUCCESS: 'gacha_item.GET_LIST_SUCCESS',
+  GET_DETAIL_SUCCESS: 'gacha_item.GET_DETAIL_SUCCESS',
+  NOT_FOUND: 'gacha_item.NOT_FOUND',
+  ALREADY_EXISTS: 'gacha_item.ALREADY_EXISTS',
+  INVALID_DATA: 'gacha_item.INVALID_DATA',
+  GACHA_BANNER_INVALID: 'gacha_item.GACHA_BANNER_INVALID',
+  GACHA_BANNER_INACTIVE: 'gacha_item.GACHA_BANNER_INACTIVE',
+  GACHA_BANNER_ACTIVE: 'gacha_item.GACHA_BANNER_ACTIVE',
+  GACHA_BANNER_EXPIRED: 'gacha_item.GACHA_BANNER_EXPIRED',
+  POKEMON_DUPLICATE: 'gacha_item.POKEMON_DUPLICATE',
+  MAX_ITEMS_EXCEEDED: 'gacha_item.MAX_ITEMS_EXCEEDED',
+  POKEMON_HAS_PREV_EVOLUTION: 'gacha_item.POKEMON_HAS_PREV_EVOLUTION',
+  POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
+    'gacha_item.POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD'
+} as const

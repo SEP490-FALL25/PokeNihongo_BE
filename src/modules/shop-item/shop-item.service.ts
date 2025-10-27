@@ -284,6 +284,22 @@ export class ShopItemService {
         throw new ShopItemNotFoundException()
       }
 
+      // Check số lượng items hiện tại trong banner
+      // Nếu số lượng hiện tại = min, không cho xóa
+
+      const [banner, currentCount] = await Promise.all([
+        this.shopBannerRepo.findById(existShopItem.shopBannerId),
+        this.shopItemRepo.countItemsInBanner(existShopItem.shopBannerId)
+      ])
+
+      if (!banner) {
+        throw new InvalidShopBannerTimeException()
+      }
+
+      if (currentCount <= banner.min) {
+        throw new MaxItemsExceededException()
+      }
+
       await this.shopItemRepo.delete(id)
       return {
         statusCode: 200,

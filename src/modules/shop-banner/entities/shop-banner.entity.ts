@@ -88,7 +88,13 @@ export const GetShopBannerDetailResSchema = z.object({
     nameTranslation: z.string(),
     shopItems: z.array(
       z.object({
-        ...ShopItemSchema.shape
+        ...ShopItemSchema.shape,
+        pokemon: PokemonSchema.pick({
+          pokedex_number: true,
+          nameJp: true,
+          nameTranslations: true,
+          imageUrl: true
+        })
       })
     )
   }),
