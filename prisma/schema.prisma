@@ -1597,7 +1597,7 @@ enum TransactionPurpose {
   SUBSCRIPTION
   GACHA
   SHOP
-  QUIZ_ATTEMPT
+  DAILY_REQUEST
   REWARD
   REFUND
 }
