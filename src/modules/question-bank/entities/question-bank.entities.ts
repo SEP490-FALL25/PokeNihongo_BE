@@ -88,7 +88,12 @@ export const GetQuestionBankListQuerySchema = z
         search: z.string().optional(),
         sortBy: z.enum(['id', 'questionJp', 'questionType', 'levelN', 'createdAt', 'updatedAt']).optional().default('createdAt'),
         sort: z.enum(['asc', 'desc']).optional().default('desc'),
-        language: z.string().optional()
+        language: z.string().optional(),
+        testSetId: z.string().transform((val) => parseInt(val, 10)).optional(),
+        noTestSet: z
+            .string()
+            .optional()
+            .transform((val) => val === 'true')
     })
     .strict()
 

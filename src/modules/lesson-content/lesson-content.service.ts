@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, BadRequestException, NotFoundException, HttpException } from '@nestjs/common'
 import {
     CreateLessonContentBodyType,
     UpdateLessonContentBodyType,
@@ -18,6 +18,7 @@ import {
 } from './dto/lesson-content.error'
 import { LessonContentRepository } from './lesson-content.repo'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
+import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { LessonContentSortField, SortOrder } from '@/common/enum/enum'
 import { VocabularyService } from '../vocabulary/vocabulary.service'
 import { GrammarRepository } from '../grammar/grammar.repo'
@@ -560,6 +561,46 @@ export class LessonContentService {
         } catch (error) {
             this.logger.error(`Error getting full lesson content for lesson ${lessonId}:`, error)
             throw new InvalidLessonContentDataException('Lỗi khi lấy nội dung bài học')
+        }
+    }
+
+    async deleteMultipleLessonContents(ids: number[]): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Deleting multiple lesson contents: ${ids.join(', ')}`)
+
+            // Validate input
+            if (!ids || ids.length === 0) {
+                throw new BadRequestException('Danh sách ID không được để trống')
+            }
+
+            // Check if all lesson contents exist
+            const existingContents = await this.lessonContentRepository.findByIds(ids)
+            const existingIds = existingContents.map(content => content.id)
+            const notFoundIds = ids.filter(id => !existingIds.includes(id))
+
+            if (notFoundIds.length > 0) {
+                throw new NotFoundException(`Không tìm thấy lesson-content với ID: ${notFoundIds.join(', ')}`)
+            }
+
+            // Delete all lesson contents
+            const deletedCount = await this.lessonContentRepository.deleteMultiple(ids)
+
+            this.logger.log(`Successfully deleted ${deletedCount} lesson contents`)
+
+            return {
+                statusCode: 200,
+                data: {
+                    deletedCount,
+                    deletedIds: existingIds
+                },
+                message: 'Xóa nhiều nội dung bài học thành công'
+            }
+        } catch (error) {
+            this.logger.error('Error deleting multiple lesson contents:', error)
+            if (error instanceof HttpException) {
+                throw error
+            }
+            throw new InvalidLessonContentDataException('Lỗi khi xóa nhiều nội dung bài học')
         }
     }
 }
