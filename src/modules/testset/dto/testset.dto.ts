@@ -261,14 +261,16 @@ export class CreateTestSetWithMeaningsSwaggerDTO {
                 field: 'name',
                 translations: {
                     'vi': 'Đề thi từ vựng N3 - Phần 1',
-                    'en': 'N3 Vocabulary Test - Part 1'
+                    'en': 'N3 Vocabulary Test - Part 1',
+                    'ja': 'N3語彙テスト - パート1'
                 }
             },
             {
                 field: 'description',
                 translations: {
                     'vi': 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản trong tiếng Nhật',
-                    'en': 'N3 vocabulary test with 50 basic vocabulary questions in Japanese'
+                    'en': 'N3 vocabulary test with 50 basic vocabulary questions in Japanese',
+                    'ja': 'N3語彙テスト50問の基本語彙問題を含む'
                 }
             }
         ],
@@ -277,7 +279,11 @@ export class CreateTestSetWithMeaningsSwaggerDTO {
     meanings: Array<{
         field: 'name' | 'description'
         meaningKey?: string | null
-        translations: Record<string, string>
+        translations: {
+            vi: string
+            en: string
+            ja?: string
+        }
     }>
 
     @ApiPropertyOptional({
@@ -327,14 +333,16 @@ export class UpdateTestSetWithMeaningsSwaggerDTO {
                 field: 'name',
                 translations: {
                     'vi': 'Đề thi ngữ pháp N3 - Phần 2 (Cập nhật)',
-                    'en': 'N3 Grammar Test - Part 2 (Updated)'
+                    'en': 'N3 Grammar Test - Part 2 (Updated)',
+                    'ja': 'N3文法テスト - パート2（更新）'
                 }
             },
             {
                 field: 'description',
                 translations: {
                     'vi': 'Bộ đề thi ngữ pháp N3 bao gồm 40 câu hỏi về cấu trúc ngữ pháp nâng cao (Cập nhật)',
-                    'en': 'N3 grammar test with 40 advanced grammar structure questions (Updated)'
+                    'en': 'N3 grammar test with 40 advanced grammar structure questions (Updated)',
+                    'ja': 'N3文法テスト40問の高度な文法構造問題を含む（更新）'
                 }
             }
         ],
@@ -343,7 +351,11 @@ export class UpdateTestSetWithMeaningsSwaggerDTO {
     meanings?: Array<{
         field: 'name' | 'description'
         meaningKey?: string | null
-        translations: Record<string, string>
+        translations: {
+            vi: string
+            en: string
+            ja?: string
+        }
     }>
 
     @ApiPropertyOptional({
@@ -404,6 +416,20 @@ export class GetTestSetListQuerySwaggerDTO {
     @ApiPropertyOptional({ example: 'vi', description: 'Lọc theo ngôn ngữ (vi, en, ja). Nếu không truyền sẽ lấy tất cả translations' })
     language?: string
 
+    @ApiPropertyOptional({
+        enum: ['id', 'name', 'testType', 'levelN', 'status', 'price', 'createdAt', 'updatedAt'],
+        example: 'createdAt',
+        description: 'Sắp xếp theo trường id, name, testType, levelN, status, price, createdAt, updatedAt'
+    })
+    sortBy?: string
+
+    @ApiPropertyOptional({
+        enum: ['asc', 'desc'],
+        example: 'desc',
+        description: 'Thứ tự sắp xếp (asc: tăng dần, desc: giảm dần)'
+    })
+    sort?: string
+
     @ApiPropertyOptional({ example: 'true', description: 'Nếu true, chỉ lấy những testSet chưa có Exercise nào gắn vào' })
     noExercies?: boolean
 }
@@ -431,12 +457,25 @@ export class TestSetListResponseSwaggerDTO {
             results: [
                 {
                     id: 1,
-                    name: 'Đề thi từ vựng N3 - Phần 1',
-                    description: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản trong tiếng Nhật',
+                    name: [
+                        { language: 'vi', value: 'Đề thi từ vựng N3 - Phần 1' },
+                        { language: 'en', value: 'N3 Vocabulary Test - Part 1' },
+                        { language: 'ja', value: 'N3語彙テスト - パート1' }
+                    ],
+                    description: [
+                        { language: 'vi', value: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản trong tiếng Nhật' },
+                        { language: 'en', value: 'N3 vocabulary test with 50 basic vocabulary questions in Japanese' },
+                        { language: 'ja', value: 'N3語彙テスト50問の基本語彙問題を含む' }
+                    ],
                     testType: 'VOCABULARY',
                     levelN: 3,
                     status: 'ACTIVE',
-                    price: 50000
+                    price: 50000,
+                    content: null,
+                    audioUrl: 'https://storage.googleapis.com/pokenihongo-audio/testset-n3-vocab-instruction.mp3',
+                    creatorId: 1,
+                    createdAt: '2024-10-24T14:00:00.000Z',
+                    updatedAt: '2024-10-24T14:30:00.000Z'
                 }
             ],
             pagination: {

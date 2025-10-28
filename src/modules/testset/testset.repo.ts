@@ -96,7 +96,7 @@ export class TestSetRepository {
 
 
     async findMany(query: GetTestSetListQueryType): Promise<{ data: TestSetType[]; total: number }> {
-        const { currentPage, pageSize, search, levelN, testType, status, creatorId, language, noExercies } = query
+        const { currentPage, pageSize, search, levelN, testType, status, creatorId, language, sortBy = 'createdAt', sort = 'desc', noExercies } = query
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -128,12 +128,15 @@ export class TestSetRepository {
         // Lọc testSet chưa có exercises nếu yêu cầu
         const extraWhere = noExercies ? { exercises: { none: {} } } : {}
 
+        const orderBy: any = {}
+        orderBy[sortBy] = sort
+
         const [rawData, total] = await Promise.all([
             this.prisma.testSet.findMany({
                 where: { ...where, ...extraWhere },
                 skip,
                 take: pageSize,
-                orderBy: { createdAt: 'desc' },
+                orderBy,
                 include: {
                     creator: {
                         select: {

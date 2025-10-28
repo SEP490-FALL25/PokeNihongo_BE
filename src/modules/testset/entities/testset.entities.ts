@@ -76,8 +76,12 @@ export const CreateTestSetWithMeaningsBodySchema = z.object({
     status: z.nativeEnum(TestSetStatus).default(TestSetStatus.DRAFT),
     meanings: z.array(z.object({
         field: z.enum(['name', 'description']),
-        meaningKey: z.string().nullable().optional(),
-        translations: z.record(z.string())
+        meaningKey: z.string().optional(),
+        translations: z.object({
+            vi: z.string(),
+            en: z.string(),
+            ja: z.string().optional()
+        })
     })).min(1, "Phải có ít nhất 1 meaning")
 }).strict().refine((data) => {
     // Nếu testType là READING thì content phải có và là tiếng Nhật
@@ -134,8 +138,12 @@ export const UpdateTestSetWithMeaningsBodySchema = z.object({
     status: z.nativeEnum(TestSetStatus).optional(),
     meanings: z.array(z.object({
         field: z.enum(['name', 'description']),
-        meaningKey: z.string().nullable().optional(),
-        translations: z.record(z.string())
+        meaningKey: z.string().optional(),
+        translations: z.object({
+            vi: z.string(),
+            en: z.string(),
+            ja: z.string().optional()
+        })
     })).optional()
 }).strict().refine((data) => {
     // Nếu testType là READING thì content phải có và là tiếng Nhật
@@ -198,6 +206,8 @@ export const GetTestSetListQuerySchema = z
         status: z.nativeEnum(TestSetStatus).optional(),
         creatorId: z.string().transform((val) => parseInt(val, 10)).optional(),
         language: z.string().optional(),
+        sortBy: z.enum(['id', 'name', 'testType', 'levelN', 'status', 'price', 'createdAt', 'updatedAt']).optional().default('createdAt'),
+        sort: z.enum(['asc', 'desc']).optional().default('desc'),
         noExercies: z
             .string()
             .optional()
