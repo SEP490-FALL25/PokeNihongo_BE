@@ -133,8 +133,6 @@ export class AnswerDataSwaggerDTO {
     })
     answerJp: string
 
-    // answerKey is not exposed in list response
-
     @ApiProperty({
         example: true,
         description: 'Đánh dấu câu trả lời đúng'
@@ -163,7 +161,7 @@ export class AnswerDataSwaggerDTO {
     meaning?: string
 
     @ApiProperty({ type: [MeaningSwaggerDTO], required: false })
-    meanings?: Array<{ language: string; value: string }>
+    meanings?: Array<{ language_code: string; value: string }>
 }
 
 export class AnswerResponseSwaggerDTO {

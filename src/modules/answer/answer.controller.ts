@@ -35,6 +35,7 @@ import {
     GetAnswerListQuerySwaggerDTO,
 } from './dto/answer.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('Answers')
 @Controller('answers')
@@ -104,8 +105,8 @@ export class AnswerController {
     @ApiOperation({ summary: 'Lấy thông tin câu trả lời theo ID' })
     @ApiResponse({ status: 200, description: 'Lấy thông tin câu trả lời thành công', type: AnswerResponseSwaggerDTO })
     @ZodSerializerDto(AnswerResponseDTO)
-    async getAnswerById(@Param('id') id: string) {
-        return await this.answerService.getAnswerById(Number(id))
+    async getAnswerById(@Param('id') id: string, @I18nLang() lang: string) {
+        return await this.answerService.getAnswerById(Number(id), lang)
     }
 
     @Put(':id')

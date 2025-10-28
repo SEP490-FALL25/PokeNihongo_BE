@@ -115,7 +115,13 @@ export const GetAnswerListQueryType = z.object({
 export const AnswerResponseSchema = z
     .object({
         statusCode: z.number(),
-        data: AnswerType,
+        data: AnswerType.omit({ answerKey: true }).extend({
+            meaning: z.string().optional(),
+            meanings: z.array(z.object({
+                language_code: z.string(),
+                value: z.string()
+            })).optional()
+        }),
         message: z.string()
     })
     .strict()
