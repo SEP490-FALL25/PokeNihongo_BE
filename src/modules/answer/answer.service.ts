@@ -32,55 +32,90 @@ export class AnswerService {
     ) { }
 
     //#region Get Answer
-    async getAnswerList(params: GetAnswerListQueryType, lang: string) {
+    async getAnswerList(params: GetAnswerListQueryType) {
         try {
             this.logger.log('Getting answer list with params:', params)
 
             const result = await this.answerRepository.findMany(params)
 
+            // Resolve language (query param takes precedence over I18n header)
+            const requestedLanguageCode = params.language
+
             // Get language ID for translations
             let languageId: number | undefined
-            try {
-                const language = await this.languagesService.findByCode({ code: lang })
-                languageId = language?.data?.id
-            } catch {
+            if (requestedLanguageCode) {
+                try {
+                    const language = await this.languagesService.findByCode({ code: requestedLanguageCode })
+                    languageId = language?.data?.id
+                } catch {
+                    languageId = undefined
+                }
+            } else {
                 languageId = undefined
             }
 
-            // Add translations for each answer
+            // Add translations for each answer (match Question Bank behavior)
             const resultsWithTranslations = await Promise.all(
                 result.items.map(async (answer) => {
-                    if (!languageId) {
-                        // If no language, return answer without answerKey
-                        const { answerKey, ...answerWithoutKey } = answer
-                        return answerWithoutKey
+                    // If language specified -> return single meaning
+                    if (languageId) {
+                        try {
+                            if (!answer.answerKey) {
+                                const { answerKey, ...answerWithoutKey } = answer
+                                return {
+                                    ...answerWithoutKey,
+                                    meaning: answer.answerJp || ''
+                                }
+                            }
+
+                            const translationResult = await this.translationService.findByKeyAndLanguage(
+                                answer.answerKey,
+                                languageId as number
+                            )
+                            const meaning = translationResult?.value || answer.answerJp || ''
+
+                            const { answerKey, ...answerWithoutKey } = answer
+                            return {
+                                ...answerWithoutKey,
+                                meaning
+                            }
+                        } catch {
+                            const { answerKey, ...answerWithoutKey } = answer
+                            return {
+                                ...answerWithoutKey,
+                                meaning: ''
+                            }
+                        }
                     }
 
+                    // If no language specified -> return all meanings
                     try {
                         if (!answer.answerKey) {
-                            // If no answerKey, return answer without translation
                             const { answerKey, ...answerWithoutKey } = answer
-                            return answerWithoutKey
+                            return {
+                                ...answerWithoutKey,
+                                meanings: []
+                            }
                         }
 
-                        const translationResult = await this.translationService.findByKeyAndLanguage(
-                            answer.answerKey,
-                            languageId as number
-                        )
-                        const translatedText = translationResult?.value || answer.answerJp
+                        const translationResult = await this.translationService.findByKey({ key: answer.answerKey })
+                        const meanings = translationResult.translations && translationResult.translations.length > 0
+                            ? translationResult.translations.map(t => ({
+                                language: this.getLanguageCodeById(t.languageId),
+                                value: t.value
+                            }))
+                            : []
 
-                        // Remove answerKey and add translatedText
                         const { answerKey, ...answerWithoutKey } = answer
                         return {
                             ...answerWithoutKey,
-                            translatedText
+                            meanings
                         }
                     } catch {
-                        // Remove answerKey and fallback to original Japanese text
                         const { answerKey, ...answerWithoutKey } = answer
                         return {
                             ...answerWithoutKey,
-                            translatedText: answer.answerJp
+                            meanings: []
                         }
                     }
                 })
@@ -93,7 +128,7 @@ export class AnswerService {
                 data: {
                     results: resultsWithTranslations,
                     pagination: {
-                        currentPage: result.page,
+                        current: result.page,
                         pageSize: result.limit,
                         totalPage: Math.ceil(result.total / result.limit),
                         totalItem: result.total
@@ -106,7 +141,7 @@ export class AnswerService {
         }
     }
 
-    async getAnswerById(id: number) {
+    async getAnswerById(id: number, lang: string) {
         try {
             this.logger.log(`Getting answer by id: ${id}`)
 
@@ -116,10 +151,51 @@ export class AnswerService {
                 throw new AnswerNotFoundException()
             }
 
+            // Resolve language id from I18n lang for meaning
+            let meaning: string
+            try {
+                if (lang && answer.answerKey) {
+                    const language = await this.languagesService.findByCode({ code: lang })
+                    const languageId = language?.data?.id
+                    if (languageId) {
+                        const translationResult = await this.translationService.findByKeyAndLanguage(
+                            answer.answerKey,
+                            languageId
+                        )
+                        meaning = (translationResult?.value ?? answer.answerJp) ?? ''
+                    } else {
+                        meaning = answer.answerJp ?? ''
+                    }
+                } else {
+                    meaning = answer.answerJp ?? ''
+                }
+            } catch {
+                meaning = answer.answerJp ?? ''
+            }
+
+            // Build meanings array (all languages) if answerKey exists
+            let meanings: Array<{ language_code: string; value: string }> | undefined
+            try {
+                if (answer.answerKey) {
+                    const translationResultAll = await this.translationService.findByKey({ key: answer.answerKey })
+                    meanings = (translationResultAll.translations || []).map(t => ({
+                        language_code: this.getLanguageCodeById(t.languageId) || '',
+                        value: t.value ?? ''
+                    }))
+                }
+            } catch {
+                meanings = undefined
+            }
+
             this.logger.log(`Found answer: ${answer.id}`)
+            const { answerKey, ...answerWithoutKey } = answer as any
             return {
                 statusCode: 200,
-                data: answer,
+                data: {
+                    ...answerWithoutKey,
+                    meaning,
+                    ...(meanings && meanings.length > 0 ? { meanings } : {})
+                } as any,
                 message: 'Lấy thông tin câu trả lời thành công'
             }
         } catch (error) {
@@ -284,26 +360,49 @@ export class AnswerService {
                 }
             }
 
-            // Update answer first
-            const updatedAnswer = await this.answerRepository.update(id, data)
+            // Prepare Prisma-safe data: map questionId -> questionBankId, strip translations
+            const { translations, questionId, ...rest } = data as any
+            const prismaData: any = { ...rest }
+            if (questionId) {
+                prismaData.questionBankId = questionId
+            }
+
+            // Update answer first (without translations)
+            const updatedAnswer = await this.answerRepository.update(id, prismaData)
 
             // Generate new answerKey if answerJp changed
+            let currentAnswerKey = updatedAnswer.answerKey || `answer.${id}.text`
             if (data.answerJp) {
                 const newAnswerKey = `answer.${id}.text`
 
                 // Update with new answerKey
                 const finalUpdatedAnswer = await this.answerRepository.update(id, { answerKey: newAnswerKey } as any)
-                return {
-                    statusCode: 200,
-                    data: finalUpdatedAnswer,
-                    message: 'Cập nhật câu trả lời thành công'
+                currentAnswerKey = newAnswerKey
+                // continue to translation update below
+            }
+
+            // Upsert translations if provided
+            if (translations && 'meaning' in translations && (translations as any).meaning?.length > 0) {
+                for (const m of (translations as any).meaning) {
+                    const languageId = this.getLanguageIdByCode(m.language_code)
+                    if (!languageId) continue
+                    try {
+                        const existing = await this.translationService.findByKeyAndLanguage(currentAnswerKey, languageId)
+                        if (existing) {
+                            await this.translationService.updateByKeyAndLanguage(currentAnswerKey, languageId, { value: m.value })
+                        } else {
+                            await this.translationService.create({ key: currentAnswerKey, languageId, value: m.value })
+                        }
+                    } catch (e) {
+                        this.logger.warn(`Failed to upsert translation for answer ${id} ${m.language_code}`, e as any)
+                    }
                 }
             }
 
             this.logger.log(`Updated answer: ${updatedAnswer.id}`)
             return {
                 statusCode: 200,
-                data: updatedAnswer,
+                data: { ...updatedAnswer, answerKey: currentAnswerKey },
                 message: 'Cập nhật câu trả lời thành công'
             }
         } catch (error) {
