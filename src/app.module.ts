@@ -60,6 +60,7 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module';
+import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.module';
 
 @Module({
   imports: [
@@ -118,7 +119,8 @@ import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-p
     GachaBannerModule,
     GachaItemRateModule,
     GachaItemModule,
-    ShopRarityPriceModule
+    ShopRarityPriceModule,
+    UserGachaPityModule
   ],
 
   controllers: [],
