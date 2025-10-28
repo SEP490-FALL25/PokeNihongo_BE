@@ -24,7 +24,9 @@ export const GachaBannerSchema = z.object({
       GachaBannerStatus.PREVIEW
     ])
     .default(GachaBannerStatus.PREVIEW),
-
+  enablePrecreate: z.boolean().default(false), // bật/tắt tự tạo
+  precreateBeforeEndDays: z.number().min(0).default(2), // tạo trước X ngày (mặc định 2)
+  isRandomItemAgain: z.boolean().default(false), // có thể trùng item khi random lại
   hardPity5Star: z.number().default(200),
   costRoll: z.number().default(100),
   amount5Star: z.number().default(1),
@@ -46,6 +48,9 @@ export const CreateGachaBannerBodyInputSchema = GachaBannerSchema.pick({
   endDate: true,
   status: true,
   hardPity5Star: true,
+  enablePrecreate: true,
+  precreateBeforeEndDays: true,
+  isRandomItemAgain: true,
   costRoll: true,
   amount5Star: true,
   amount4Star: true,
@@ -64,6 +69,10 @@ export const CreateGachaBannerBodySchema = GachaBannerSchema.pick({
   endDate: true,
   status: true,
   hardPity5Star: true,
+  enablePrecreate: true,
+  precreateBeforeEndDays: true,
+  isRandomItemAgain: true,
+
   costRoll: true,
   amount5Star: true,
   amount4Star: true,

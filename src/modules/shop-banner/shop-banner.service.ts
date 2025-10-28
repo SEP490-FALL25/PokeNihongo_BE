@@ -666,9 +666,14 @@ export class ShopBannerService {
         // Remove nameTranslations array from banner, keep only nameTranslation
         const { nameTranslations: _, ...bannerData } = banner as any
 
+        // Always sort shopItems by id ascending
+        const sortedItems = (((banner as any).shopItems || []) as any[])
+          .slice()
+          .sort((a: any, b: any) => (a?.id ?? 0) - (b?.id ?? 0))
+
         const data = {
           ...bannerData,
-          shopItems: ((banner as any).shopItems || []).map((it: any) => {
+          shopItems: sortedItems.map((it: any) => {
             // 1. Nếu user đã sở hữu pokemon này → canBuy = false
             const ownsTarget = ownedPokemonIds.has(it.pokemonId)
             if (ownsTarget) {
@@ -715,9 +720,14 @@ export class ShopBannerService {
       // Remove nameTranslations array from banner, keep only nameTranslation
       const { nameTranslations: _, ...bannerData } = banner as any
 
+      // Always sort shopItems by id ascending
+      const sortedItems = (((banner as any).shopItems || []) as any[])
+        .slice()
+        .sort((a: any, b: any) => (a?.id ?? 0) - (b?.id ?? 0))
+
       const data = {
         ...bannerData,
-        shopItems: ((banner as any).shopItems || []).map((it: any) => ({
+        shopItems: sortedItems.map((it: any) => ({
           ...it,
           canBuy: true
         }))

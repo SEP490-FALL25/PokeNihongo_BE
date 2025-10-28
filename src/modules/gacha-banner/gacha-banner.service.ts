@@ -253,6 +253,9 @@ export class GachaBannerService {
           status: data.status,
           hardPity5Star: data.hardPity5Star ?? 200,
           costRoll: data.costRoll ?? 100,
+          enablePrecreate: data.enablePrecreate ?? false,
+          precreateBeforeEndDays: data.precreateBeforeEndDays ?? 2,
+          isRandomItemAgain: data.isRandomItemAgain ?? false,
           amount5Star: data.amount5Star ?? 1,
           amount4Star: data.amount4Star ?? 3,
           amount3Star: data.amount3Star ?? 6,
@@ -413,6 +416,12 @@ export class GachaBannerService {
         if (data.amount3Star !== undefined) dataUpdate.amount3Star = data.amount3Star
         if (data.amount2Star !== undefined) dataUpdate.amount2Star = data.amount2Star
         if (data.amount1Star !== undefined) dataUpdate.amount1Star = data.amount1Star
+        if (data.enablePrecreate !== undefined)
+          dataUpdate.enablePrecreate = data.enablePrecreate
+        if (data.precreateBeforeEndDays !== undefined)
+          dataUpdate.precreateBeforeEndDays = data.precreateBeforeEndDays
+        if (data.isRandomItemAgain !== undefined)
+          dataUpdate.isRandomItemAgain = data.isRandomItemAgain
 
         // Handle translations if provided
         let nameUpserts: any[] = []
