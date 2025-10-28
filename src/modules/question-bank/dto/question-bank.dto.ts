@@ -249,6 +249,20 @@ export class GetQuestionBankListQuerySwaggerDTO {
         required: false
     })
     language?: string
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID của testSet để loại trừ những câu hỏi thuộc testSet đó',
+        required: false
+    })
+    testSetId?: number
+
+    @ApiProperty({
+        example: 'true',
+        description: 'Nếu true, chỉ lấy những câu hỏi chưa có trong testSet nào',
+        required: false
+    })
+    noTestSet?: boolean
 }
 
 export class AnswerSwaggerDTO {

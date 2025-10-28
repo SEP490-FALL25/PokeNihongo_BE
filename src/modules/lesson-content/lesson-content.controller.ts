@@ -115,6 +115,47 @@ export class LessonContentController {
         return await this.lessonContentService.updateLessonContentOrder(body);
     }
 
+    @Delete('bulk')
+    @ApiOperation({
+        summary: 'Xóa nhiều nội dung bài học cùng lúc',
+        description: 'Xóa nhiều lesson-content bằng cách truyền array các ID'
+    })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                ids: {
+                    type: 'array',
+                    items: { type: 'number' },
+                    description: 'Array các ID của lesson-content cần xóa',
+                    example: [1, 2, 3]
+                }
+            },
+            required: ['id']
+        }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa nhiều nội dung bài học thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 200 },
+                message: { type: 'string', example: 'Xóa nhiều nội dung bài học thành công' },
+                data: {
+                    type: 'object',
+                    properties: {
+                        deletedCount: { type: 'number', example: 3 },
+                        deletedIds: { type: 'array', items: { type: 'number' }, example: [1, 2, 3] }
+                    }
+                }
+            }
+        }
+    })
+    async deleteMultipleLessonContents(@Body() body: { id: number[] }) {
+        return await this.lessonContentService.deleteMultipleLessonContents(body.id)
+    }
+
     @Delete(':id')
     @ApiOperation({ summary: 'Xóa nội dung ra khỏi bài học' })
     async deleteLessonContent(@Param('id') id: string) {

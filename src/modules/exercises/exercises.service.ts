@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpException } from '@nestjs/common'
+import { Injectable, Logger, HttpException, BadRequestException } from '@nestjs/common'
 import { ExercisesRepository } from './exercises.repo'
 import { CreateExercisesBodyType, UpdateExercisesBodyType, GetExercisesListQueryType, ExercisesType } from './entities/exercises.entities'
 import { EXERCISES_MESSAGE } from '@/common/constants/message'
@@ -66,7 +66,11 @@ export class ExercisesService {
             }
             // Handle Prisma unique constraint error
             if (error.code === 'P2002' && error.meta?.target?.includes('testSetId')) {
-                throw ExercisesAlreadyExistsException
+                throw new BadRequestException({
+                    statusCode: 400,
+                    message: 'TestSet này đã có exercise được gán. Mỗi testSet chỉ có thể có một exercise.',
+                    error: 'TESTSET_ALREADY_HAS_EXERCISE'
+                })
             }
             throw InvalidExercisesDataException
         }
@@ -111,6 +115,16 @@ export class ExercisesService {
             if (error instanceof HttpException || error.message?.includes('không tồn tại') || error.message?.includes('đã tồn tại')) {
                 throw error
             }
+
+            // Xử lý lỗi unique constraint violation cho testSetId
+            if (error.code === 'P2002' && error.meta?.target?.includes('testSetId')) {
+                throw new BadRequestException({
+                    statusCode: 400,
+                    message: 'TestSet này đã có exercise được gán. Mỗi testSet chỉ có thể có một exercise.',
+                    error: 'TESTSET_ALREADY_HAS_EXERCISE'
+                })
+            }
+
             throw InvalidExercisesDataException
         }
     }
