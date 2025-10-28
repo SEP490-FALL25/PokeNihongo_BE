@@ -5,11 +5,49 @@ export class TestSetSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của bộ đề thi' })
     id: number
 
-    @ApiProperty({ example: 'Đề thi từ vựng N3 - Phần 1', description: 'Tên bộ đề thi' })
-    name: string
+    @ApiProperty({
+        description: 'Tên bộ đề thi. Nếu có language: string; nếu không: mảng translations',
+        oneOf: [
+            { type: 'string', example: 'Đề thi từ vựng N3 - Phần 1' },
+            {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    properties: {
+                        language: { type: 'string', example: 'vi' },
+                        value: { type: 'string', example: 'Đề thi từ vựng N3 - Phần 1' }
+                    }
+                },
+                example: [
+                    { language: 'vi', value: 'Đề thi từ vựng N3 - Phần 1' },
+                    { language: 'en', value: 'N3 Vocabulary Test - Part 1' }
+                ]
+            }
+        ]
+    })
+    name: string | Array<{ language: string; value: string }>
 
-    @ApiPropertyOptional({ example: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản trong tiếng Nhật', description: 'Mô tả chi tiết về bộ đề thi' })
-    description?: string
+    @ApiPropertyOptional({
+        description: 'Mô tả bộ đề. Nếu có language: string; nếu không: mảng translations',
+        oneOf: [
+            { type: 'string', example: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi...' },
+            {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    properties: {
+                        language: { type: 'string', example: 'vi' },
+                        value: { type: 'string', example: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi...' }
+                    }
+                },
+                example: [
+                    { language: 'vi', value: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi...' },
+                    { language: 'en', value: 'N3 vocabulary test with 50 questions...' }
+                ]
+            }
+        ]
+    })
+    description?: string | Array<{ language: string; value: string }>
 
     @ApiPropertyOptional({
         example: '２月１４日は、日本ではバレンタインデーです。キリスト教の特別な日ですが、日本では、女の人が好きな人にチョコレートなどのプレゼントをする日になりました。世界にも同じような日があります。ブラジルでは、６月１２日が「恋人の日」と呼ばれる日です。その日は、男の人も女の人もプレゼントを用意して、恋人におくります。 ブラジルでは、日本のようにチョコレートではなく、写真立てに写真を入れて、プレゼントするそうです。',

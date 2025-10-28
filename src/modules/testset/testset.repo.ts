@@ -74,23 +74,20 @@ export class TestSetRepository {
             // Nếu có language filter, chỉ lấy 1 translation cho name và description
             const nameTranslation = translations.find(t => t.key.startsWith(nameKey + '.meaning.'))
             const descriptionTranslation = translations.find(t => t.key.startsWith(descriptionKey + '.meaning.'))
-
                 ; (testSet as any).name = nameTranslation?.value || result.name
                 ; (testSet as any).description = descriptionTranslation?.value || result.description
         } else {
-            // Nếu không có language filter, lấy tất cả translations
+            // Nếu không có language filter, trả về mảng translations theo định dạng yêu cầu
             const nameTranslations = translations.filter(t => t.key.startsWith(nameKey + '.meaning.'))
             const descriptionTranslations = translations.filter(t => t.key.startsWith(descriptionKey + '.meaning.'))
 
-                ; (testSet as any).nameTranslations = nameTranslations.map(t => ({
+                ; (testSet as any).name = nameTranslations.map(t => ({
                     language: t.language.code,
-                    value: t.value,
-                    key: t.key
+                    value: t.value
                 }))
-                ; (testSet as any).descriptionTranslations = descriptionTranslations.map(t => ({
+                ; (testSet as any).description = descriptionTranslations.map(t => ({
                     language: t.language.code,
-                    value: t.value,
-                    key: t.key
+                    value: t.value
                 }))
         }
 
@@ -202,23 +199,20 @@ export class TestSetRepository {
                     // Nếu có language filter, chỉ lấy 1 translation cho name và description
                     const nameTranslation = translations.find(t => t.key.startsWith(nameKey + '.meaning.'))
                     const descriptionTranslation = translations.find(t => t.key.startsWith(descriptionKey + '.meaning.'))
-
                         ; (result as any).name = nameTranslation?.value || testSet.name
                         ; (result as any).description = descriptionTranslation?.value || testSet.description
                 } else {
-                    // Nếu không có language filter, lấy tất cả translations
+                    // Nếu không có language filter, trả về mảng translations theo định dạng yêu cầu
                     const nameTranslations = translations.filter(t => t.key.startsWith(nameKey + '.meaning.'))
                     const descriptionTranslations = translations.filter(t => t.key.startsWith(descriptionKey + '.meaning.'))
 
-                        ; (result as any).nameTranslations = nameTranslations.map(t => ({
+                        ; (result as any).name = nameTranslations.map(t => ({
                             language: t.language.code,
-                            value: t.value,
-                            key: t.key
+                            value: t.value
                         }))
-                        ; (result as any).descriptionTranslations = descriptionTranslations.map(t => ({
+                        ; (result as any).description = descriptionTranslations.map(t => ({
                             language: t.language.code,
-                            value: t.value,
-                            key: t.key
+                            value: t.value
                         }))
                 }
 

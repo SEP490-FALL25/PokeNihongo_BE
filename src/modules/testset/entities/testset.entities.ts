@@ -9,8 +9,20 @@ patchNestJsSwagger()
 // TestSet Schema
 export const TestSetSchema = z.object({
     id: z.number(),
-    name: z.string(),
-    description: z.string().nullable().optional(),
+    name: z.union([
+        z.string(),
+        z.array(z.object({
+            language: z.string(),
+            value: z.string()
+        }))
+    ]),
+    description: z.union([
+        z.string().nullable(),
+        z.array(z.object({
+            language: z.string(),
+            value: z.string()
+        }))
+    ]).optional(),
     content: z.string().nullable().optional(),
     audioUrl: z.string().nullable().optional(),
     price: z.number().nullable().optional(),
