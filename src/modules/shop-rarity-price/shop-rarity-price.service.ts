@@ -1,4 +1,5 @@
 import { RarityPokemonType } from '@/common/constants/pokemon.constant'
+import { ShopBannerStatus } from '@/common/constants/shop-banner.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { ShopRarityPriceMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
@@ -7,7 +8,9 @@ import {
   isNotFoundPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
-import { Injectable } from '@nestjs/common'
+import { forwardRef, Inject, Injectable } from '@nestjs/common'
+import { ShopBannerRepo } from '../shop-banner/shop-banner.repo'
+import { ShopItemRepo } from '../shop-item/shop-item.repo'
 import {
   ShopRarityPriceAlreadyExistsException,
   ShopRarityPriceNotFoundException
@@ -22,8 +25,11 @@ import { ShopRarityPriceRepo } from './shop-rarity-price.repo'
 export class ShopRarityPriceService {
   constructor(
     private shopRarityPriceRepo: ShopRarityPriceRepo,
-
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    @Inject(forwardRef(() => ShopBannerRepo))
+    private shopBannerRepo: ShopBannerRepo,
+    @Inject(forwardRef(() => ShopItemRepo))
+    private shopItemRepo: ShopItemRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -95,6 +101,12 @@ export class ShopRarityPriceService {
     lang: string = 'vi'
   ) {
     try {
+      // Get current rarity price to know which rarity is being updated
+      const currentRarityPrice = await this.shopRarityPriceRepo.findById(id)
+      if (!currentRarityPrice) {
+        throw new ShopRarityPriceNotFoundException()
+      }
+
       if (data.rarity) {
         //check exist gacha item rate by star type
         const existShopRarityPrice = await this.shopRarityPriceRepo.getByType(data.rarity)
@@ -103,11 +115,51 @@ export class ShopRarityPriceService {
         }
       }
 
+      // Extract isChangeAllShopPreview flag before updating
+      const { isChangeAllShopPreview, ...updateData } = data
+
       const shopRarityPrice = await this.shopRarityPriceRepo.update({
         id,
-        data: data,
+        data: updateData,
         updatedById: userId
       })
+
+      // If isChangeAllShopPreview is true, update all PREVIEW shop banners' items
+      if (isChangeAllShopPreview === true && data.price !== undefined) {
+        // Get all PREVIEW shop banners
+        const previewBanners = await this.shopBannerRepo.list(
+          { currentPage: 1, pageSize: 1000, qs: `status=${ShopBannerStatus.PREVIEW}` },
+          undefined,
+          false
+        )
+
+        // For each preview banner, get all shop items and update price by rarity
+        const targetRarity = data.rarity ?? currentRarityPrice.rarity
+        const newPrice = data.price
+
+        for (const banner of previewBanners.results) {
+          // Get all items in this banner
+          const items = await this.shopItemRepo.list({
+            currentPage: 1,
+            pageSize: 1000,
+            qs: `shopBannerId=${banner.id}`
+          })
+
+          // Update items that match the rarity
+          const updatePromises = items.results
+            .filter((item: any) => item.pokemon?.rarity === targetRarity)
+            .map((item: any) =>
+              this.shopItemRepo.update({
+                id: item.id,
+                data: { price: newPrice },
+                updatedById: userId
+              })
+            )
+
+          await Promise.all(updatePromises)
+        }
+      }
+
       return {
         statusCode: 200,
         data: shopRarityPrice,

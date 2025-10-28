@@ -173,7 +173,7 @@ export class WalletService {
   }
 
   async generateWalletByUserId(userId: number) {
-    const types = [walletType.FREE_COIN, walletType.COIN]
+    const types = [walletType.POKE_COINS, walletType.SPARKLES]
     console.log(';log ne')
 
     for (const type of types) {

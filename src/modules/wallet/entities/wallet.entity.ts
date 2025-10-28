@@ -10,7 +10,7 @@ patchNestJsSwagger()
 export const WalletSchema = z.object({
   id: z.number(),
   userId: z.number(),
-  type: z.enum([walletType.COIN, walletType.FREE_COIN]),
+  type: z.enum([walletType.POKE_COINS, walletType.SPARKLES]),
   balance: z.number().min(0).default(0),
 
   createdById: z.number().nullable(),
