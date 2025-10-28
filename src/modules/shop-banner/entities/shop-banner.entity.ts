@@ -116,7 +116,7 @@ export const GetShopBannerDetailResSchema = z.object({
 
 export const GetShopBannerByTodayResSchema = z.object({
   statusCode: z.number(),
-  data: z.array(GetShopBannerDetailByUserSchema),
+  data: GetShopBannerDetailByUserSchema,
   message: z.string()
 })
 

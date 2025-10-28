@@ -59,6 +59,7 @@ import { WalletTransactionModule } from './modules/wallet-transaction/wallet-tra
 import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
+import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module';
 
 @Module({
   imports: [
@@ -116,7 +117,8 @@ import { SharedModule } from './shared/shared.module'
     ShopPurchaseModule,
     GachaBannerModule,
     GachaItemRateModule,
-    GachaItemModule
+    GachaItemModule,
+    ShopRarityPriceModule
   ],
 
   controllers: [],

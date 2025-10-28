@@ -620,23 +620,32 @@ export class ShopBannerService {
       if (!langId) {
         return {
           statusCode: HttpStatus.OK,
-          data: [],
+          data: null,
           message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
         }
       }
 
-      const banners = await this.shopBannerRepo.findValidByDateWithLangId(date, langId)
+      const banner = await this.shopBannerRepo.findValidByDateWithLangId(date, langId)
+
+      // If no active banner found
+      if (!banner) {
+        return {
+          statusCode: HttpStatus.OK,
+          data: null,
+          message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+        }
+      }
 
       // If we have a userId, compute canBuy per item based on their total purchased quantities
       if (userId) {
         // Collect unique item IDs
         const itemIds = Array.from(
-          new Set(banners.flatMap((b: any) => (b.shopItems || []).map((i: any) => i.id)))
+          new Set(((banner as any).shopItems || []).map((i: any) => i.id as number))
         )
 
         // Fetch totals in parallel
         const totals = await Promise.all(
-          itemIds.map(async (itemId) => ({
+          itemIds.map(async (itemId: number) => ({
             itemId,
             total: await this.shopPurchaseRepo.getTotalPurchasedQuantityByUserAndItem(
               userId,
@@ -644,7 +653,9 @@ export class ShopBannerService {
             )
           }))
         )
-        const totalMap = new Map<number, number>(totals.map((t) => [t.itemId, t.total]))
+        const totalMap = new Map<number, number>(
+          totals.map((t) => [t.itemId as number, t.total])
+        )
 
         // Fetch user's owned pokemons
         const userPokemons = await this.userPokemonRepo.getByUserId(userId)
@@ -652,9 +663,12 @@ export class ShopBannerService {
           (userPokemons || []).map((up: any) => up.pokemonId)
         )
 
-        const data = banners.map((b: any) => ({
-          ...b,
-          shopItems: (b.shopItems || []).map((it: any) => {
+        // Remove nameTranslations array from banner, keep only nameTranslation
+        const { nameTranslations: _, ...bannerData } = banner as any
+
+        const data = {
+          ...bannerData,
+          shopItems: ((banner as any).shopItems || []).map((it: any) => {
             // 1. Nếu user đã sở hữu pokemon này → canBuy = false
             const ownsTarget = ownedPokemonIds.has(it.pokemonId)
             if (ownsTarget) {
@@ -688,7 +702,7 @@ export class ShopBannerService {
             const withinLimit = limit == null ? true : bought < limit
             return { ...it, canBuy: withinLimit }
           })
-        }))
+        }
 
         return {
           statusCode: HttpStatus.OK,
@@ -698,10 +712,16 @@ export class ShopBannerService {
       }
 
       // No user: default canBuy to true for all items
-      const data = banners.map((b: any) => ({
-        ...b,
-        shopItems: (b.shopItems || []).map((it: any) => ({ ...it, canBuy: true }))
-      }))
+      // Remove nameTranslations array from banner, keep only nameTranslation
+      const { nameTranslations: _, ...bannerData } = banner as any
+
+      const data = {
+        ...bannerData,
+        shopItems: ((banner as any).shopItems || []).map((it: any) => ({
+          ...it,
+          canBuy: true
+        }))
+      }
 
       return {
         statusCode: HttpStatus.OK,
