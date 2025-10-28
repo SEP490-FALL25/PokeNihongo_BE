@@ -129,8 +129,8 @@ export class QuestionBankService {
             throw new BadRequestException('SPEAKING type bắt buộc phải có pronunciation (cách phát âm romaji)')
         }
 
-        // Rule 3: LISTENING - audioUrl must be a valid URL if provided
-        if (body.questionType === 'LISTENING' && body.audioUrl && body.audioUrl.trim().length > 0) {
+        // Rule 3: audioUrl nếu được cung cấp (không rỗng) phải là URL hợp lệ (mọi loại)
+        if (body.audioUrl && body.audioUrl.trim().length > 0) {
             try {
                 new URL(body.audioUrl)
             } catch {
@@ -176,6 +176,24 @@ export class QuestionBankService {
 
     async update(id: number, body: UpdateQuestionBankBodyType): Promise<MessageResDTO> {
         try {
+            // Xử lý audioUrl rỗng trước khi validate - chuyển thành null để lưu vào DB
+            if (typeof body.audioUrl === 'string' && body.audioUrl.trim().length === 0) {
+                body.audioUrl = null
+            }
+
+            // Validate theo questionType nếu truyền vào
+            if ((body as any).questionType) {
+                this.validateQuestionBankData(body as unknown as CreateQuestionBankWithMeaningsBodyType)
+            }
+
+            // LISTENING: xử lý TTS
+            if ((body as any).questionType === 'LISTENING') {
+                // Nếu không gửi audioUrl nhưng có questionJp, tự động tạo TTS
+                if ((body.audioUrl === undefined || body.audioUrl === null) && (body as any).questionJp) {
+                    body.audioUrl = await this.textToSpeechService.generateAudioFromText((body as any).questionJp, 'question-bank', 'question_bank')
+                }
+            }
+
             const questionBank = await this.questionBankRepository.update(id, body)
 
             return {
@@ -195,6 +213,11 @@ export class QuestionBankService {
     async updateWithMeanings(id: number, body: UpdateQuestionBankWithMeaningsBodyType): Promise<MessageResDTO> {
         try {
             this.logger.log(`Updating question bank with meanings: ${JSON.stringify(body)}`)
+
+            // Xử lý audioUrl rỗng trước khi validate - chuyển thành null để lưu vào DB
+            if (typeof body.audioUrl === 'string' && body.audioUrl.trim().length === 0) {
+                body.audioUrl = null
+            }
 
             // Validate special rules based on questionType (nếu có)
             if (body.questionType) {
