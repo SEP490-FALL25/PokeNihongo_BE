@@ -17,7 +17,8 @@ import {
 } from './dto/shop-rarity-price.error'
 import {
   CreateShopRarityPriceBodyType,
-  UpdateShopRarityPriceBodyType
+  UpdateShopRarityPriceBodyType,
+  UpdateWithListShopRarityPriceBodyType
 } from './entities/shop-rarity-price.entity'
 import { ShopRarityPriceRepo } from './shop-rarity-price.repo'
 
@@ -30,7 +31,7 @@ export class ShopRarityPriceService {
     private shopBannerRepo: ShopBannerRepo,
     @Inject(forwardRef(() => ShopItemRepo))
     private shopItemRepo: ShopItemRepo
-  ) {}
+  ) { }
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.shopRarityPriceRepo.list(pagination)
@@ -200,5 +201,107 @@ export class ShopRarityPriceService {
 
   async getByType(rarity: RarityPokemonType) {
     return await this.shopRarityPriceRepo.getByType(rarity)
+  }
+
+  async updateByList(
+    { userId, data }: { userId: number; data: UpdateWithListShopRarityPriceBodyType },
+    lang: string = 'vi'
+  ) {
+    try {
+      // Validate tất cả items tồn tại
+      const itemsToUpdate: Array<{ id: number } & Partial<CreateShopRarityPriceBodyType>> = []
+      const raritySet = new Set<string>()
+
+      for (const item of data.items) {
+        const currentItem = await this.shopRarityPriceRepo.findById(item.id)
+        if (!currentItem) {
+          throw new ShopRarityPriceNotFoundException()
+        }
+
+        // Check nếu update rarity thì không được trùng với rarity khác
+        if (item.rarity) {
+          if (raritySet.has(item.rarity)) {
+            throw new ShopRarityPriceAlreadyExistsException()
+          }
+          raritySet.add(item.rarity)
+
+          // Check trùng với rarity đã tồn tại (không phải record hiện tại)
+          const existShopRarityPrice = await this.shopRarityPriceRepo.getByType(item.rarity)
+          if (existShopRarityPrice && existShopRarityPrice.id !== item.id) {
+            throw new ShopRarityPriceAlreadyExistsException()
+          }
+        }
+
+        itemsToUpdate.push(item)
+      }
+
+      // Update từng item
+      const results: any[] = []
+      for (const item of itemsToUpdate) {
+        const { id, ...updateData } = item
+
+        // Get current rarity price
+        const currentRarityPrice = await this.shopRarityPriceRepo.findById(id)
+
+        const shopRarityPrice = await this.shopRarityPriceRepo.update({
+          id,
+          data: updateData,
+          updatedById: userId
+        })
+
+        // If isChangeAllShopPreview is true, update all PREVIEW shop banners' items
+        if (data.isChangeAllShopPreview === true && updateData.price !== undefined) {
+          // Get all PREVIEW shop banners
+          const previewBanners = await this.shopBannerRepo.list(
+            { currentPage: 1, pageSize: 1000, qs: `status=${ShopBannerStatus.PREVIEW}` },
+            undefined,
+            false
+          )
+
+          // For each preview banner, get all shop items and update price by rarity
+          const targetRarity = updateData.rarity ?? currentRarityPrice!.rarity
+          const newPrice = updateData.price
+
+          for (const banner of previewBanners.results) {
+            // Get all items in this banner
+            const items = await this.shopItemRepo.list({
+              currentPage: 1,
+              pageSize: 1000,
+              qs: `shopBannerId=${banner.id}`
+            })
+
+            // Update items that match the rarity
+            const updatePromises = items.results
+              .filter((shopItem: any) => shopItem.pokemon?.rarity === targetRarity)
+              .map((shopItem: any) =>
+                this.shopItemRepo.update({
+                  id: shopItem.id,
+                  data: { price: newPrice },
+                  updatedById: userId
+                })
+              )
+
+            await Promise.all(updatePromises)
+          }
+        }
+
+        results.push(shopRarityPrice)
+      }
+
+      return {
+        statusCode: 200,
+        data: results,
+        message: this.i18nService.translate(ShopRarityPriceMessage.UPDATE_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new ShopRarityPriceNotFoundException()
+      }
+
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      throw error
+    }
   }
 }

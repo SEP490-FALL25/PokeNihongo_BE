@@ -48,6 +48,24 @@ export const UpdateShopRarityPriceBodySchema = CreateShopRarityPriceBodySchema.e
 
 export const UpdateShopRarityPriceResSchema = CreateShopRarityPriceResSchema
 
+// Batch Update Schema
+export const UpdateShopRarityPriceListItemSchema = z.object({
+  id: z.number(),
+  rarity: z.enum([
+    RarityPokemon.COMMON,
+    RarityPokemon.UNCOMMON,
+    RarityPokemon.RARE,
+    RarityPokemon.EPIC,
+    RarityPokemon.LEGENDARY
+  ]).optional(),
+  price: z.number().min(0).max(1000000).optional(),
+}).strict()
+
+export const UpdateWithListShopRarityPriceBodySchema = z.object({
+  items: z.array(UpdateShopRarityPriceListItemSchema).min(1),
+  isChangeAllShopPreview: z.boolean().default(false).optional()
+}).strict()
+
 export const UpdateWithListItemResSchema = z.object({
   statusCode: z.number(),
   data: z.array(ShopRarityPriceSchema),
@@ -74,6 +92,12 @@ export type CreateShopRarityPriceBodyType = z.infer<
 >
 export type UpdateShopRarityPriceBodyType = z.infer<
   typeof UpdateShopRarityPriceBodySchema
+>
+export type UpdateShopRarityPriceListItemType = z.infer<
+  typeof UpdateShopRarityPriceListItemSchema
+>
+export type UpdateWithListShopRarityPriceBodyType = z.infer<
+  typeof UpdateWithListShopRarityPriceBodySchema
 >
 export type GetShopRarityPriceParamsType = z.infer<typeof GetShopRarityPriceParamsSchema>
 

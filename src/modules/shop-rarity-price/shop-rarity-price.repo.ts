@@ -13,7 +13,7 @@ import {
 
 @Injectable()
 export class ShopRarityPriceRepo {
-  constructor(private prismaService: PrismaService) {}
+  constructor(private prismaService: PrismaService) { }
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
     return this.prismaService.$transaction(callback)
   }
@@ -61,6 +61,39 @@ export class ShopRarityPriceRepo {
     })
   }
 
+  /**
+ * Update nhiều shop rarity prices cùng lúc
+ */
+  async updateMany(
+    {
+      updatedById,
+      items
+    }: {
+      updatedById?: number
+      items: Array<{ id: number } & UpdateShopRarityPriceBodyType>
+    },
+    prismaTx?: PrismaClient
+  ): Promise<ShopRarityPriceType[]> {
+    const client = prismaTx || this.prismaService
+    const updatedItems: ShopRarityPriceType[] = []
+
+    for (const item of items) {
+      const { id, ...data } = item
+      const updated = await client.shopRarityPrice.update({
+        where: {
+          id,
+          deletedAt: null
+        },
+        data: {
+          ...data,
+          updatedById
+        }
+      })
+      updatedItems.push(updated)
+    }
+
+    return updatedItems
+  }
   delete(
     id: number,
     isHard?: boolean,
@@ -69,17 +102,17 @@ export class ShopRarityPriceRepo {
     const client = prismaTx || this.prismaService
     return isHard
       ? client.shopRarityPrice.delete({
-          where: { id }
-        })
+        where: { id }
+      })
       : client.shopRarityPrice.update({
-          where: {
-            id,
-            deletedAt: null
-          },
-          data: {
-            deletedAt: new Date()
-          }
-        })
+        where: {
+          id,
+          deletedAt: null
+        },
+        data: {
+          deletedAt: new Date()
+        }
+      })
   }
 
   async list(pagination: PaginationQueryType) {

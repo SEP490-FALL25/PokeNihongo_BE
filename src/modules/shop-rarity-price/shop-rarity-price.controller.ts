@@ -10,13 +10,15 @@ import {
   GetShopRarityPriceDetailResDTO,
   GetShopRarityPriceParamsDTO,
   UpdateShopRarityPriceBodyDTO,
-  UpdateShopRarityPriceResDTO
+  UpdateShopRarityPriceResDTO,
+  UpdateWithListShopRarityPriceBodyDTO,
+  UpdateWithListItemResDTO
 } from './dto/shop-rarity-price.dto'
 import { ShopRarityPriceService } from './shop-rarity-price.service'
 
 @Controller('shop-rarity-price')
 export class ShopRarityPriceController {
-  constructor(private readonly shopRarityPriceService: ShopRarityPriceService) {}
+  constructor(private readonly shopRarityPriceService: ShopRarityPriceService) { }
 
   @Get()
   @ZodSerializerDto(PaginationResponseDTO)
@@ -42,6 +44,22 @@ export class ShopRarityPriceController {
     @I18nLang() lang: string
   ) {
     return this.shopRarityPriceService.create(
+      {
+        userId,
+        data: body
+      },
+      lang
+    )
+  }
+
+  @Put()
+  @ZodSerializerDto(UpdateWithListShopRarityPriceBodyDTO)
+  updateByList(
+    @Body() body: UpdateWithListShopRarityPriceBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.shopRarityPriceService.updateByList(
       {
         userId,
         data: body
