@@ -365,6 +365,9 @@ export class GetTestSetListQuerySwaggerDTO {
 
     @ApiPropertyOptional({ example: 'vi', description: 'Lọc theo ngôn ngữ (vi, en, ja). Nếu không truyền sẽ lấy tất cả translations' })
     language?: string
+
+    @ApiPropertyOptional({ example: 'true', description: 'Nếu true, chỉ lấy những testSet chưa có Exercise nào gắn vào' })
+    noExercies?: boolean
 }
 
 
