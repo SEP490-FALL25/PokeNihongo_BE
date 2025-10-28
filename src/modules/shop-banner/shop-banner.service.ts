@@ -1,3 +1,4 @@
+import { RoleName } from '@/common/constants/role.constant'
 import { ShopBannerStatus } from '@/common/constants/shop-banner.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { ShopBannerMessage } from '@/i18n/message-keys'
@@ -48,11 +49,74 @@ export class ShopBannerService {
     private readonly shopItemRepo: ShopItemRepo
   ) {}
 
-  async list(pagination: PaginationQueryType, lang: string = 'vi') {
+  /**
+   * Convert nameTranslations from { languageId, value } to { key: langCode, value }
+   */
+  private async convertTranslationsToLangCodes(
+    nameTranslations: Array<{ languageId: number; value: string }>
+  ): Promise<Array<{ key: string; value: string }>> {
+    if (!nameTranslations || nameTranslations.length === 0) return []
+
+    const allLangIds = Array.from(new Set(nameTranslations.map((t) => t.languageId)))
+    const langs = await this.languageRepo.getWithListId(allLangIds)
+    const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+
+    return nameTranslations.map((t) => ({
+      key: idToCode.get(t.languageId) || String(t.languageId),
+      value: t.value
+    }))
+  }
+
+  async list(pagination: PaginationQueryType, lang: string = 'vi', roleName: string) {
     const langId = await this.languageRepo.getIdByCode(lang)
-    const data = await this.shopBannerRepo.list(pagination, langId ?? undefined)
+    const isAllLang = roleName === RoleName.Admin ? true : false
+    const data = await this.shopBannerRepo.list(
+      pagination,
+      langId ?? undefined,
+      isAllLang
+    )
+
+    // Convert translations to lang codes for all cases
+    const allTranslations = (data.results || []).flatMap(
+      (item: any) => item.nameTranslations || []
+    )
+    console.log('all ne: ', allTranslations)
+
+    if (allTranslations.length === 0) {
+      return {
+        data,
+        message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+      }
+    }
+
+    const converted = await this.convertTranslationsToLangCodes(allTranslations)
+
+    // Build map for quick lookup
+    const conversionMap = new Map(
+      allTranslations.map((t, idx) => [`${t.languageId}_${t.value}`, converted[idx]])
+    )
+
+    const results = (data.results || []).map((item: any) => {
+      const translationsAll = (item.nameTranslations || []).map(
+        (t: any) =>
+          conversionMap.get(`${t.languageId}_${t.value}`) || {
+            key: String(t.languageId),
+            value: t.value
+          }
+      )
+      const { nameTranslations, ...rest } = item
+      return {
+        ...rest,
+        nameTranslations: translationsAll
+      }
+    })
+    console.log('results', results)
+
     return {
-      data,
+      data: {
+        ...data,
+        results
+      },
       message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
     }
   }
@@ -93,31 +157,50 @@ export class ShopBannerService {
     }
   }
 
-  async listwithDetail(pagination: PaginationQueryType, lang: string = 'vi') {
+  async listwithDetail(
+    pagination: PaginationQueryType,
+    lang: string = 'vi',
+    roleName?: string
+  ) {
     const langId = await this.languageRepo.getIdByCode(lang)
-    const data = await this.shopBannerRepo.listwithDetail(pagination, langId ?? undefined)
-
-    // Build languageId -> code map for all translations present
-    const allLangIds: number[] = Array.from(
-      new Set(
-        (data.results || []).flatMap((item: any) =>
-          (item.nameTranslations || []).map((t: any) => t.languageId)
-        )
-      )
+    const isAllLang = roleName === RoleName.Admin ? true : false
+    const data = await this.shopBannerRepo.listwithDetail(
+      pagination,
+      langId ?? undefined,
+      isAllLang
     )
-    const langs = await this.languageRepo.getWithListId(allLangIds)
-    const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+
+    // Convert translations to lang codes for all cases
+    const allTranslations = (data.results || []).flatMap(
+      (item: any) => item.nameTranslations || []
+    )
+
+    if (allTranslations.length === 0) {
+      return {
+        data,
+        message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+      }
+    }
+
+    const converted = await this.convertTranslationsToLangCodes(allTranslations)
+
+    // Build map for quick lookup
+    const conversionMap = new Map(
+      allTranslations.map((t, idx) => [`${t.languageId}_${t.value}`, converted[idx]])
+    )
 
     const results = (data.results || []).map((item: any) => {
-      const translationsAll = (item.nameTranslations || []).map((t: any) => ({
-        key: idToCode.get(t.languageId) || String(t.languageId),
-        value: t.value
-      }))
+      const translationsAll = (item.nameTranslations || []).map(
+        (t: any) =>
+          conversionMap.get(`${t.languageId}_${t.value}`) || {
+            key: String(t.languageId),
+            value: t.value
+          }
+      )
       const { nameTranslations, ...rest } = item
       return {
         ...rest,
         nameTranslations: translationsAll
-        // nameTranslation: item.nameTranslation // keep single current-lang value for compatibility
       }
     })
 
@@ -130,7 +213,7 @@ export class ShopBannerService {
     }
   }
 
-  async findById(id: number, lang: string = 'vi') {
+  async findById(id: number, lang: string = 'vi', roleName: string) {
     const langId = await this.languageRepo.getIdByCode(lang)
 
     if (!langId) {
@@ -140,18 +223,35 @@ export class ShopBannerService {
       }
     }
 
-    const shopBanner = await this.shopBannerRepo.findByIdWithLangId(id, langId)
+    const isAllLang = roleName === RoleName.Admin ? true : false
+    console.log('admin ne: ', isAllLang)
+
+    const shopBanner = await this.shopBannerRepo.findByIdWithDetail(id, langId, isAllLang)
+
     if (!shopBanner) {
       throw new NotFoundRecordException()
     }
 
-    const data = {}
+    // Convert translations to { key, value } format
+    const nameTranslations = await this.convertTranslationsToLangCodes(
+      (shopBanner as any).nameTranslations || []
+    )
+    console.log('sau convert: ', nameTranslations)
+
+    // Find current translation by langId
+    const currentTranslation = ((shopBanner as any).nameTranslations || []).find(
+      (t: any) => t.languageId === langId
+    )
+
+    // Remove raw nameTranslations from shopBanner
+    const { nameTranslations: _, ...bannerWithoutTranslations } = shopBanner as any
+
     const result = {
-      ...shopBanner,
-      nameTranslation: (shopBanner as any).nameTranslations?.[0]?.value ?? null,
-      descriptionTranslation:
-        (shopBanner as any).descriptionTranslations?.[0]?.value ?? null
+      ...bannerWithoutTranslations,
+      nameTranslation: currentTranslation?.value ?? null,
+      ...(isAllLang ? { nameTranslations } : {})
     }
+    console.log(`${isAllLang ? nameTranslations : 'ehe'}`)
 
     return {
       statusCode: HttpStatus.OK,
