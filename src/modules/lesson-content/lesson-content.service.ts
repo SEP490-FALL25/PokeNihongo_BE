@@ -366,11 +366,36 @@ export class LessonContentService {
                                         explanationText = ''
                                     }
 
+                                    if (languageId) {
+                                        return {
+                                            meaning: meaningText,
+                                            exampleSentence: exampleText,
+                                            explanation: explanationText
+                                        }
+                                    }
+
+                                    // Khi không truyền lang, trả về mảng translations cho meaning/example/explanation
+                                    const meaningTranslations = meaning.meaningKey
+                                        ? (await this.translationService.findByKey({ key: meaning.meaningKey })).translations
+                                        : []
+                                    const exampleTranslations = meaning.exampleSentenceKey
+                                        ? (await this.translationService.findByKey({ key: meaning.exampleSentenceKey })).translations
+                                        : []
+                                    const explanationTranslations = meaning.explanationKey
+                                        ? (await this.translationService.findByKey({ key: meaning.explanationKey })).translations
+                                        : []
+
+                                    const mapWithCode = async (arr: { languageId: number; value: string }[]) => {
+                                        return Promise.all(arr.map(async (t) => {
+                                            const lang = await this.languagesService.findById(t.languageId)
+                                            return { language: lang?.data?.code || String(t.languageId), value: t.value }
+                                        }))
+                                    }
+
                                     return {
-                                        id: meaning.id,
-                                        meaning: meaningText,
-                                        exampleSentence: exampleText,
-                                        explanation: explanationText
+                                        meaning: await mapWithCode(meaningTranslations || []),
+                                        exampleSentence: await mapWithCode(exampleTranslations || []),
+                                        explanation: await mapWithCode(explanationTranslations || [])
                                     }
                                 })
                             )
@@ -409,22 +434,51 @@ export class LessonContentService {
                             const firstUsage = grammar.usages?.[0]
                             if (!firstUsage) return null
 
+                            // Helper chọn giá trị ưu tiên VI nếu không truyền lang
+                            const pickValue = (translations: { languageId: number; value: string }[] | undefined): string => {
+                                if (!translations || translations.length === 0) return ''
+                                const vi = translations.find(t => t.languageId === 1)
+                                return (vi?.value) || translations[0].value || ''
+                            }
+
                             // Lấy translations cho grammar
-                            const explanation = languageId ?
-                                await this.translationService.findByKeyAndLanguage(firstUsage.explanationKey, languageId) :
-                                null
-                            const exampleSentence = languageId ?
-                                await this.translationService.findByKeyAndLanguage(firstUsage.exampleSentenceKey, languageId) :
-                                null
+                            let explanationValue: string | Array<{ language: string; value: string }> = ''
+                            let exampleSentenceValue: string | Array<{ language: string; value: string }> = ''
+
+                            if (firstUsage.explanationKey) {
+                                if (languageId) {
+                                    const t = await this.translationService.findByKeyAndLanguage(firstUsage.explanationKey, languageId)
+                                    explanationValue = t?.value || ''
+                                } else {
+                                    const all = await this.translationService.findByKey({ key: firstUsage.explanationKey })
+                                    explanationValue = await Promise.all((all.translations || []).map(async (t) => {
+                                        const lang = await this.languagesService.findById(t.languageId)
+                                        return { language: lang?.data?.code || String(t.languageId), value: t.value }
+                                    }))
+                                }
+                            }
+
+                            if (firstUsage.exampleSentenceKey) {
+                                if (languageId) {
+                                    const t = await this.translationService.findByKeyAndLanguage(firstUsage.exampleSentenceKey, languageId)
+                                    exampleSentenceValue = t?.value || ''
+                                } else {
+                                    const all = await this.translationService.findByKey({ key: firstUsage.exampleSentenceKey })
+                                    exampleSentenceValue = await Promise.all((all.translations || []).map(async (t) => {
+                                        const lang = await this.languagesService.findById(t.languageId)
+                                        return { language: lang?.data?.code || String(t.languageId), value: t.value }
+                                    }))
+                                }
+                            }
 
                             return {
                                 id: grammar.id,
                                 titleKey: firstUsage.explanationKey, // Sử dụng explanationKey làm title
-                                title: explanation?.value || '',
+                                title: explanationValue,
                                 descriptionKey: firstUsage.explanationKey,
-                                description: explanation?.value || '',
+                                description: explanationValue,
                                 usageKey: firstUsage.exampleSentenceKey,
-                                usage: exampleSentence?.value || '',
+                                usage: exampleSentenceValue,
                                 contentOrder: lc.contentOrder,
                                 lessonContentId: lc.id
                             }
@@ -448,10 +502,27 @@ export class LessonContentService {
                             const kanji = await this.kanjiService.findById(lc.contentId)
                             if (!kanji.data) return null
 
+                            // Helper chọn giá trị ưu tiên VI nếu không truyền lang
+                            const pickValue = (translations: { languageId: number; value: string }[] | undefined): string => {
+                                if (!translations || translations.length === 0) return ''
+                                const vi = translations.find(t => t.languageId === 1)
+                                return (vi?.value) || translations[0].value || ''
+                            }
+
                             // Lấy translation cho meaning
-                            const meaning = languageId ?
-                                await this.translationService.findByKeyAndLanguage(kanji.data.meaningKey, languageId) :
-                                null
+                            let meaningValue: string | Array<{ language: string; value: string }> = ''
+                            if (kanji.data.meaningKey) {
+                                if (languageId) {
+                                    const t = await this.translationService.findByKeyAndLanguage(kanji.data.meaningKey, languageId)
+                                    meaningValue = t?.value || ''
+                                } else {
+                                    const all = await this.translationService.findByKey({ key: kanji.data.meaningKey })
+                                    meaningValue = await Promise.all((all.translations || []).map(async (t) => {
+                                        const lang = await this.languagesService.findById(t.languageId)
+                                        return { language: lang?.data?.code || String(t.languageId), value: t.value }
+                                    }))
+                                }
+                            }
 
                             // Tách readings thành on và kun
                             const onReadings = kanji.data.readings?.filter(r => r.readingType === 'ON').map(r => r.reading) || []
@@ -461,7 +532,7 @@ export class LessonContentService {
                                 id: kanji.data.id,
                                 character: kanji.data.character,
                                 meaningKey: kanji.data.meaningKey,
-                                meaning: meaning?.value || '',
+                                meaning: meaningValue,
                                 onReading: onReadings.join(', '),
                                 kunReading: kunReadings.join(', '),
                                 strokeCount: kanji.data.strokeCount || undefined,
