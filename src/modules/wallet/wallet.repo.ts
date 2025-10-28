@@ -106,6 +106,16 @@ export class WalletRepo {
       }),
       this.prismaService.wallet.findMany({
         where: { deletedAt: null, ...where },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatar: true
+            }
+          }
+        },
         orderBy,
         skip,
         take
