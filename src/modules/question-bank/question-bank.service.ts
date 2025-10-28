@@ -196,6 +196,13 @@ export class QuestionBankService {
 
             const questionBank = await this.questionBankRepository.update(id, body)
 
+            // Đảm bảo questionKey sử dụng format mới
+            if (!questionBank.questionKey || !questionBank.questionKey.startsWith('question.')) {
+                const generatedKey = this.generateQuestionKeyFromId(questionBank.id, questionBank.questionType)
+                await this.questionBankRepository.updateQuestionKey(questionBank.id, generatedKey)
+                questionBank.questionKey = generatedKey
+            }
+
             return {
                 statusCode: 200,
                 data: questionBank,
@@ -262,6 +269,13 @@ export class QuestionBankService {
 
             // Update question bank
             const questionBank = await this.questionBankRepository.updateWithMeanings(id, body)
+
+            // Đảm bảo questionKey sử dụng format mới
+            if (!questionBank.questionKey || !questionBank.questionKey.startsWith('question.')) {
+                const generatedKey = this.generateQuestionKeyFromId(questionBank.id, questionBank.questionType)
+                await this.questionBankRepository.updateQuestionKey(questionBank.id, generatedKey)
+                questionBank.questionKey = generatedKey
+            }
 
             // Cập nhật meaningKey với questionKey làm base (nếu có meanings)
             if (body.meanings && body.meanings.length > 0 && questionBank.questionKey) {
