@@ -91,7 +91,7 @@ export class LessonContentController {
     @ZodSerializerDto(LessonContentFullResDTO)
     async getLessonContentFull(
         @Param('lessonId') lessonId: string,
-        @I18nLang() lang: string
+        @Query('lang') lang?: string
     ) {
         return await this.lessonContentService.getLessonContentFull(Number(lessonId), lang)
     }
