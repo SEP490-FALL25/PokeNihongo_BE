@@ -62,33 +62,26 @@ export class QuestionBankRepository {
                         }
                     }
 
-                    // Tìm translation theo 2 pattern:
-                    // 1. Key chính xác: GRAMMAR.5.question
-                    // 2. Pattern meaning: GRAMMAR.5.question.meaning.*
+                    // Tìm translation theo pattern meaning: question.VOCABULARY.99.meaning.*
                     let translations = await this.prisma.translation.findMany({
                         where: {
                             ...translationWhere,
-                            OR: [
-                                { key: questionBank.questionKey }, // Key chính xác
-                                { key: { startsWith: questionBank.questionKey + '.meaning.' } } // Pattern meaning
-                            ]
+                            key: { startsWith: questionBank.questionKey + '.meaning.' }
                         },
                         include: {
                             language: true
                         }
                     })
 
-                    // Nếu không tìm thấy và key có format cũ, thử tìm theo format mới
-                    if (translations.length === 0 && questionBank.questionKey.includes('.question')) {
-                        const newKey = questionBank.questionKey.replace('.question', '').replace(/^(\w+)\.(\d+)$/, 'question.$1.$2')
+                    // Nếu không tìm thấy với key mới, thử tìm với key cũ (backward compatibility)
+                    if (translations.length === 0) {
+                        // Chuyển từ key mới sang key cũ: question.VOCABULARY.99 -> VOCABULARY.99.question
+                        const oldKey = questionBank.questionKey.replace(/^question\.(\w+)\.(\d+)$/, '$1.$2.question')
 
                         translations = await this.prisma.translation.findMany({
                             where: {
                                 ...translationWhere,
-                                OR: [
-                                    { key: newKey }, // Key chính xác mới
-                                    { key: { startsWith: newKey + '.meaning.' } } // Pattern meaning mới
-                                ]
+                                key: { startsWith: oldKey + '.meaning.' }
                             },
                             include: {
                                 language: true
