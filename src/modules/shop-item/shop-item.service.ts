@@ -347,19 +347,28 @@ export class ShopItemService {
   async getRandomListItem(body: GetRamdomAmountShopItemBodyType, lang: string = 'vi') {
     try {
       // 1. Validate shop banner
-
       // 3. Lấy tất cả pokemon có thể random (exclude LEGENDARY)
-
       // 4  Lấy bảng giá từ shop-rarity-price
-      const [banner, allPokemons, allPrices] = await Promise.all([
+      const [banner, allPokemons, allPrices, existingItems] = await Promise.all([
         this.validateShopBannerForCreate(body.shopBannerId),
         this.pokemonRepo.findAllRandomable(),
         this.shopRarityPriceRepo.list({
           currentPage: 1,
           pageSize: 100,
           qs: ''
+        }),
+        this.shopItemRepo.list({
+          currentPage: 1,
+          pageSize: 1000,
+          qs: `shopBannerId=${body.shopBannerId}`
         })
       ])
+
+      // Tạo Set chứa pokemonId đã có trong shop banner
+      const existingPokemonIds = new Set(
+        existingItems.results.map((item: any) => item.pokemonId)
+      )
+      console.log('list pokeId: ', existingPokemonIds)
 
       // 2. Xác định số lượng pokemon cần random
       const amount = body.amount ?? banner.max
@@ -389,15 +398,23 @@ export class ShopItemService {
       )
 
       // 7. Tạo shop items từ pokemon đã random
-      const items = selectedPokemons.map((pokemon) => ({
-        shopBannerId: body.shopBannerId,
-        pokemonId: pokemon.id,
-        price:
-          priceMap.get(pokemon.rarity) ?? this.calculatePriceByRarity(pokemon.rarity),
-        purchaseLimit: 10, // Default limit
-        isActive: true,
-        pokemon
-      }))
+      const items = selectedPokemons.map((pokemon) => {
+        const isHas = existingPokemonIds.has(pokemon.id)
+        console.log(
+          `Pokemon ID: ${pokemon.id}, isHas: ${isHas}, existingIds has:`,
+          existingPokemonIds.has(pokemon.id)
+        )
+        return {
+          shopBannerId: body.shopBannerId,
+          pokemonId: pokemon.id,
+          price:
+            priceMap.get(pokemon.rarity) ?? this.calculatePriceByRarity(pokemon.rarity),
+          purchaseLimit: 10, // Default limit
+          isActive: true,
+          isHas,
+          pokemon
+        }
+      })
 
       return {
         statusCode: 200,
