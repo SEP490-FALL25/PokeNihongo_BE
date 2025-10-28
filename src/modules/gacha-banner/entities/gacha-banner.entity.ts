@@ -99,6 +99,7 @@ export const GetGachaBannerDetailResSchema = z.object({
   statusCode: z.number(),
   data: GachaBannerSchema.extend({
     nameTranslation: z.string(),
+    nameTranslations: TranslationInputSchema.optional().nullable(),
     items: z.array(
       GachaItemSchema.extend({
         gachaItemRate: GachaItemRateSchema.pick({ rate: true, starType: true }),

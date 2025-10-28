@@ -1,5 +1,4 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
-import { IsPublic } from '@/common/decorators/auth.decorator'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
@@ -36,14 +35,16 @@ export class GachaBannerController {
   constructor(private readonly gachaBannerService: GachaBannerService) {}
 
   @Get()
-  @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
-  list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
-    return this.gachaBannerService.list(query, lang)
+  list(
+    @Query() query: PaginationQueryDTO,
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string
+  ) {
+    return this.gachaBannerService.list(query, lang, roleName)
   }
 
   @Get('all/details')
-  @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
   listwithDetail(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.gachaBannerService.listwithDetail(query, lang)
@@ -56,10 +57,13 @@ export class GachaBannerController {
   }
 
   @Get(':gachaBannerId')
-  @IsPublic()
   @ZodSerializerDto(GetGachaBannerDetailResDTO)
-  findById(@Param() params: GetGachaBannerParamsDTO, @I18nLang() lang: string) {
-    return this.gachaBannerService.findById(params.gachaBannerId, lang)
+  findById(
+    @Param() params: GetGachaBannerParamsDTO,
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string
+  ) {
+    return this.gachaBannerService.findById(params.gachaBannerId, lang, roleName)
   }
 
   @Post()

@@ -2,7 +2,7 @@ export const walletPurposeType = {
   SUBSCRIPTION: 'SUBSCRIPTION',
   GACHA: 'GACHA',
   SHOP: 'SHOP',
-  QUIZ_ATTEMPT: 'QUIZ_ATTEMPT',
+  DAILY_REQUEST: 'DAILY_REQUEST',
   REWARD: 'REWARD',
   REFUND: 'REFUND'
 } as const

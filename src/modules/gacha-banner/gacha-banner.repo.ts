@@ -95,7 +95,11 @@ export class GachaBannerRepo {
     return result
   }
 
-  async list(pagination: PaginationQueryType, langId?: number) {
+  async list(
+    pagination: PaginationQueryType,
+    langId?: number,
+    isAllLang: boolean = false
+  ) {
     const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, GACHA_BANNER_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
@@ -135,14 +139,20 @@ export class GachaBannerRepo {
       this.prismaService.gachaBanner.count({ where }),
       this.prismaService.gachaBanner.findMany({
         where,
-        include: {
-          nameTranslations: langId
-            ? {
-                where: childNameIncludeWhere,
-                select: { value: true }
+        include: isAllLang
+          ? {
+              nameTranslations: {
+                select: { value: true, languageId: true }
               }
-            : undefined
-        },
+            }
+          : langId
+            ? {
+                nameTranslations: {
+                  where: childNameIncludeWhere,
+                  select: { value: true }
+                }
+              }
+            : undefined,
         orderBy,
         skip,
         take
@@ -154,6 +164,7 @@ export class GachaBannerRepo {
       const { nameTranslations, ...rest } = d
       return {
         ...rest,
+        ...(isAllLang ? { nameTranslations } : {}),
         nameTranslation: langId ? (nameTranslations?.[0]?.value ?? d.nameKey) : undefined
       }
     })
@@ -266,18 +277,20 @@ export class GachaBannerRepo {
     })
   }
 
-  findByIdWithLangId(id: number, langId: number): Promise<GachaBannerType | null> {
+  findByIdWithLangId(
+    id: number,
+    langId: number,
+    isAllLang: boolean = false
+  ): Promise<GachaBannerType | null> {
     return this.prismaService.gachaBanner.findUnique({
       where: {
         id,
         deletedAt: null
       },
       include: {
-        nameTranslations: {
-          where: {
-            languageId: langId
-          }
-        },
+        nameTranslations: isAllLang
+          ? { select: { value: true, languageId: true } }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } },
         items: {
           include: {
             gachaItemRate: {
