@@ -97,6 +97,7 @@ export const GetShopBannerDetailResSchema = z.object({
   statusCode: z.number(),
   data: ShopBannerSchema.extend({
     nameTranslation: z.string().nullable(),
+    nameTranslations: TranslationInputSchema.optional().nullable(),
     shopItems: z.array(
       z.object({
         ...ShopItemSchema.shape,
