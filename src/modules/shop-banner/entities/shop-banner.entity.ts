@@ -23,8 +23,8 @@ export const ShopBannerSchema = z.object({
       ShopBannerStatus.PREVIEW
     ])
     .default(ShopBannerStatus.PREVIEW),
-  min: z.number().default(4),
-  max: z.number().default(8),
+  min: z.number().min(1).default(4),
+  max: z.number().min(1).default(8),
   enablePrecreate: z.boolean().default(false), // bật/tắt tự tạo
   precreateBeforeEndDays: z.number().min(0).default(2), // tạo trước X ngày (mặc định 2)
   isRandomItemAgain: z.boolean().default(false), // có thể trùng item khi random lại
