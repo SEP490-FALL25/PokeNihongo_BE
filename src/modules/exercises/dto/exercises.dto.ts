@@ -18,7 +18,7 @@ export class CreateExercisesSwaggerDTO {
     lessonId: number
 
     @ApiProperty({ example: 1, description: 'ID bộ đề' })
-    testSetId: number
+    testSetId?: number
 }
 
 export class UpdateExercisesSwaggerDTO {

@@ -83,52 +83,37 @@ export const VocabularyContentSchema = z.object({
     audioUrl: z.string().nullable().optional(),
     meanings: z.array(z.object({
         id: z.number(),
-        meaning: z.union([z.string(), z.array(z.object({
-            language: z.string(),
-            value: z.string()
-        }))]),
-        exampleSentence: z.union([z.string(), z.array(z.object({
-            language: z.string(),
-            value: z.string()
-        }))]).optional(),
-        explanation: z.union([z.string(), z.array(z.object({
-            language: z.string(),
-            value: z.string()
-        }))]).optional()
-    })).optional()
+        meaning: z.string(),
+        exampleSentence: z.string().optional(),
+        explanation: z.string().optional()
+    })).optional(),
+    contentOrder: z.number(),
+    lessonContentId: z.number()
 })
 
 export const GrammarContentSchema = z.object({
     id: z.number(),
     titleKey: z.string(),
-    title: z.union([z.string(), z.array(z.object({
-        language: z.string(),
-        value: z.string()
-    }))]).optional(),
+    title: z.string().optional(),
     descriptionKey: z.string().optional(),
-    description: z.union([z.string(), z.array(z.object({
-        language: z.string(),
-        value: z.string()
-    }))]).optional(),
+    description: z.string().optional(),
     usageKey: z.string().optional(),
-    usage: z.union([z.string(), z.array(z.object({
-        language: z.string(),
-        value: z.string()
-    }))]).optional()
+    usage: z.string().optional(),
+    contentOrder: z.number(),
+    lessonContentId: z.number()
 })
 
 export const KanjiContentSchema = z.object({
     id: z.number(),
     character: z.string(),
     meaningKey: z.string(),
-    meaning: z.union([z.string(), z.array(z.object({
-        language: z.string(),
-        value: z.string()
-    }))]).optional(),
+    meaning: z.string().optional(),
     onReading: z.string().optional(),
     kunReading: z.string().optional(),
     strokeCount: z.number().optional(),
-    imageUrl: z.string().nullable().optional()
+    imageUrl: z.string().nullable().optional(),
+    contentOrder: z.number(),
+    lessonContentId: z.number()
 })
 
 export const GroupedLessonContentSchema = z.object({
