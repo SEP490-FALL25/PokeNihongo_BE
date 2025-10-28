@@ -185,7 +185,11 @@ export const GetTestSetListQuerySchema = z
         testType: z.nativeEnum(QuestionType).optional(),
         status: z.nativeEnum(TestSetStatus).optional(),
         creatorId: z.string().transform((val) => parseInt(val, 10)).optional(),
-        language: z.string().optional()
+        language: z.string().optional(),
+        noExercies: z
+            .string()
+            .optional()
+            .transform((val) => val === 'true')
     })
     .strict()
 
