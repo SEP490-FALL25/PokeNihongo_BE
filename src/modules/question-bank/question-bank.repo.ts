@@ -10,7 +10,7 @@ export class QuestionBankRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     async findMany(query: GetQuestionBankListQueryType): Promise<{ data: QuestionBankType[]; total: number }> {
-        const { currentPage, pageSize, levelN, questionType, search, sortBy = 'createdAt', sort = 'desc', language } = query
+        const { currentPage, pageSize, levelN, questionType, search, sortBy = 'createdAt', sort = 'desc', language, testSetId, noTestSet } = query
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -29,6 +29,22 @@ export class QuestionBankRepository {
 
         if (questionType) {
             where.questionType = questionType
+        }
+
+        // Lọc theo testSetId - loại trừ những câu hỏi thuộc testSetId đó
+        if (testSetId) {
+            where.testSetQuestionBanks = {
+                none: {
+                    testSetId: testSetId
+                }
+            }
+        }
+
+        // Lọc câu hỏi chưa có trong testSet nào
+        if (noTestSet) {
+            where.testSetQuestionBanks = {
+                none: {}
+            }
         }
 
         const orderBy: any = {}
