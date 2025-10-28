@@ -64,8 +64,7 @@ jobs:
             docker stop pokenihongo-backend &&
             docker rm pokenihongo-backend &&
             
-            docker system prune -af --volumes &&
-            find /var/lib/docker/containers/ -name '*.log' -type f -exec truncate -s 0 {} \; &&
+          
 
             docker compose up -d --build
           "
