@@ -114,6 +114,13 @@ export class GetAnswerListQuerySwaggerDTO {
         required: false
     })
     sort?: SortOrder
+
+    @ApiProperty({
+        example: 'vi',
+        description: 'Mã ngôn ngữ để lấy translation (vi, en, ja). Nếu không truyền thì lấy hết',
+        required: false
+    })
+    language?: string
 }
 
 export class AnswerDataSwaggerDTO {
@@ -125,12 +132,6 @@ export class AnswerDataSwaggerDTO {
         description: 'Nội dung câu trả lời bằng tiếng Nhật'
     })
     answerJp: string
-
-    @ApiProperty({
-        example: 'answer.1.text',
-        description: 'Key để dịch câu trả lời'
-    })
-    answerKey: string
 
     @ApiProperty({
         example: true,
@@ -156,12 +157,11 @@ export class AnswerDataSwaggerDTO {
     })
     updatedAt: Date
 
-    @ApiProperty({
-        type: TranslationSwaggerDTO,
-        description: 'Bản dịch của câu trả lời',
-        required: false
-    })
-    translations?: TranslationSwaggerDTO
+    @ApiProperty({ example: 'Đây là quyển sách', required: false })
+    meaning?: string
+
+    @ApiProperty({ type: [MeaningSwaggerDTO], required: false })
+    meanings?: Array<{ language_code: string; value: string }>
 }
 
 export class AnswerResponseSwaggerDTO {
@@ -204,6 +204,18 @@ export class AnswerWithTranslationSwaggerDTO {
     })
     questionBankId: number
 
+    @ApiProperty({ example: 'Đây là quyển sách', required: false })
+    meaning?: string
+
+    @ApiProperty({ type: [MeaningSwaggerDTO], required: false })
+    meanings?: Array<{ language: string; value: string }>
+
+    @ApiProperty({
+        required: false,
+        example: { id: 98, questionJp: 'ますますます', questionKey: 'question.LISTENING.98' }
+    })
+    questionBank?: { id: number; questionJp: string; questionKey?: string | null }
+
     @ApiProperty({
         example: '2024-01-01T00:00:00.000Z',
         description: 'Ngày tạo'
@@ -215,13 +227,6 @@ export class AnswerWithTranslationSwaggerDTO {
         description: 'Ngày cập nhật'
     })
     updatedAt: Date
-
-    @ApiProperty({
-        example: 'Đây là quyển sách',
-        description: 'Bản dịch của câu trả lời (nếu có)',
-        required: false
-    })
-    translatedText?: string
 }
 
 export class AnswerPaginationSwaggerDTO {
