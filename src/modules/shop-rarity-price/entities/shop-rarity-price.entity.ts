@@ -40,8 +40,11 @@ export const CreateShopRarityPriceResSchema = z.object({
 })
 
 // Update Schema
-export const UpdateShopRarityPriceBodySchema =
-  CreateShopRarityPriceBodySchema.partial().strict()
+export const UpdateShopRarityPriceBodySchema = CreateShopRarityPriceBodySchema.extend({
+  isChangeAllShopPreview: z.boolean().default(false)
+})
+  .partial()
+  .strict()
 
 export const UpdateShopRarityPriceResSchema = CreateShopRarityPriceResSchema
 

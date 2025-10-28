@@ -91,7 +91,7 @@ export class ShopPurchaseService {
       const [userWallet, existed, totalPurchased] = await Promise.all([
         this.walletRepo.checkEnoughBalance({
           userId,
-          type: walletType.FREE_COIN,
+          type: walletType.SPARKLES,
           amount: totalPrice
         }),
         this.userPokemonRepo.findByUserAndPokemon(userId, shopItem.pokemonId),
@@ -159,7 +159,7 @@ export class ShopPurchaseService {
             prismaTx
           ),
           this.walletRepo.minusBalanceToWalletWithTypeUserId(
-            { userId, type: walletType.FREE_COIN, amount: totalPrice },
+            { userId, type: walletType.SPARKLES, amount: totalPrice },
             prismaTx
           )
         ])
@@ -260,7 +260,7 @@ export class ShopPurchaseService {
         if (newTotal !== oldTotal) {
           // nhet lai tien cu ve vi
           const walletAfterRefund = await this.walletRepo.addBalanceToWalletWithType(
-            { userId: existing.userId, type: walletType.FREE_COIN, amount: oldTotal },
+            { userId: existing.userId, type: walletType.SPARKLES, amount: oldTotal },
             prismaTx
           )
           if (!walletAfterRefund) throw new NotEnoughBalanceException()
@@ -292,7 +292,7 @@ export class ShopPurchaseService {
           // tru tien ra
           const walletAfterCharge =
             await this.walletRepo.minusBalanceToWalletWithTypeUserId(
-              { userId: existing.userId, type: walletType.FREE_COIN, amount: newTotal },
+              { userId: existing.userId, type: walletType.SPARKLES, amount: newTotal },
               prismaTx
             )
           if (!walletAfterCharge) throw new NotEnoughBalanceException()
@@ -360,7 +360,7 @@ export class ShopPurchaseService {
         const walletAfterRefund = await this.walletRepo.addBalanceToWalletWithType(
           {
             userId: existShopPurchase.userId,
-            type: walletType.FREE_COIN,
+            type: walletType.SPARKLES,
             amount: existShopPurchase.totalPrice
           },
           prismaTx
