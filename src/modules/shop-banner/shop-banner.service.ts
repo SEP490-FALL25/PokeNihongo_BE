@@ -24,6 +24,7 @@ import { CreateTranslationBodyType } from '../translation/entities/translation.e
 import { TranslationRepository } from '../translation/translation.repo'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import {
+  InvalidMinMaxShopBannerException,
   OnlyOneShopBannerActiveException,
   ShopBannerAlreadyExistsException,
   ShopBannerInvalidDateRangeException
@@ -306,6 +307,10 @@ export class ShopBannerService {
           throw new ShopBannerInvalidDateRangeException()
         }
 
+        if (data.min && data.max && data.min > data.max) {
+          throw new InvalidMinMaxShopBannerException()
+        }
+
         // Convert data for create
         const dataCreate: CreateShopBannerBodyType = {
           nameKey,
@@ -469,6 +474,31 @@ export class ShopBannerService {
         if (data.startDate !== undefined) dataUpdate.startDate = normalizedStart as any
         if (data.endDate !== undefined) dataUpdate.endDate = normalizedEnd as any
         if (data.status !== undefined) dataUpdate.status = data.status
+
+        // Validate min/max against current shop items count
+        const currentItemsCount = await this.shopItemRepo.countByShopBannerId(id)
+        console.log('current amount: ', currentItemsCount)
+
+        if (data.min !== undefined && data.min !== null) {
+          if (currentItemsCount < data.min) {
+            throw new InvalidMinMaxShopBannerException()
+          }
+          dataUpdate.min = data.min
+        }
+
+        if (data.max !== undefined && data.max !== null) {
+          if (currentItemsCount > data.max) {
+            throw new InvalidMinMaxShopBannerException()
+          }
+          dataUpdate.max = data.max
+        }
+
+        if (data.enablePrecreate !== undefined)
+          dataUpdate.enablePrecreate = data.enablePrecreate
+        if (data.precreateBeforeEndDays !== undefined)
+          dataUpdate.precreateBeforeEndDays = data.precreateBeforeEndDays
+        if (data.isRandomItemAgain !== undefined)
+          dataUpdate.isRandomItemAgain = data.isRandomItemAgain
 
         // Handle translations if provided
         let nameUpserts: any[] = []

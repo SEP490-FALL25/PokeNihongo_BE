@@ -326,7 +326,8 @@ export const jaMessages = {
     NOT_FOUND: 'ショップバナーが見つかりません',
     ALREADY_EXISTS: 'ショップバナーは既に存在します',
     INVALID_DATA: '無効なショップバナーデータです',
-    ONLY_ONE_ACTIVE: 'アクティブなショップバナーは1つだけにしてください'
+    ONLY_ONE_ACTIVE: 'アクティブなショップバナーは1つだけにしてください',
+    INVALID_MIN_MAX: '無効な最小/最大レベル範囲です'
   },
   shop_item: {
     CREATE_SUCCESS: 'ショップアイテムの作成に成功しました',
@@ -397,5 +398,15 @@ export const jaMessages = {
     POKEMON_HAS_PREV_EVOLUTION: 'ポケモンは進化前の形態を持っています',
     POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
       'ポケモンのレアリティは、追加される星タイプと互換性がありません'
+  },
+  shop_rarity_price: {
+    CREATE_SUCCESS: 'ショップレアリティ価格の作成に成功しました',
+    UPDATE_SUCCESS: 'ショップレアリティ価格の更新に成功しました',
+    DELETE_SUCCESS: 'ショップレアリティ価格の削除に成功しました',
+    GET_SUCCESS: 'ショップレアリティ価格情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ショップレアリティ価格リストの取得に成功しました',
+    NOT_FOUND: 'ショップレアリティ価格が見つかりません',
+    ALREADY_EXISTS: 'ショップレアリティ価格は既に存在します',
+    INVALID_DATA: '無効なショップレアリティ価格データです'
   }
 }

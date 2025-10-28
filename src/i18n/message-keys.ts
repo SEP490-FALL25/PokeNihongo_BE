@@ -355,7 +355,8 @@ export const ShopBannerMessage = {
   NOT_FOUND: 'shop_banner.NOT_FOUND',
   ALREADY_EXISTS: 'shop_banner.ALREADY_EXISTS',
   INVALID_DATA: 'shop_banner.INVALID_DATA',
-  ONLY_ONE_ACTIVE: 'shop_banner.ONLY_ONE_ACTIVE'
+  ONLY_ONE_ACTIVE: 'shop_banner.ONLY_ONE_ACTIVE',
+  INVALID_MIN_MAX: 'shop_banner.INVALID_MIN_MAX'
 } as const
 
 export const ShopItemMessage = {
@@ -431,4 +432,15 @@ export const GachaItemMessage = {
   POKEMON_HAS_PREV_EVOLUTION: 'gacha_item.POKEMON_HAS_PREV_EVOLUTION',
   POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
     'gacha_item.POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD'
+} as const
+
+export const ShopRarityPriceMessage = {
+  CREATE_SUCCESS: 'shop_rarity_price.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'shop_rarity_price.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'shop_rarity_price.DELETE_SUCCESS',
+  GET_SUCCESS: 'shop_rarity_price.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'shop_rarity_price.GET_LIST_SUCCESS',
+  NOT_FOUND: 'shop_rarity_price.NOT_FOUND',
+  ALREADY_EXISTS: 'shop_rarity_price.ALREADY_EXISTS',
+  INVALID_DATA: 'shop_rarity_price.INVALID_DATA'
 } as const

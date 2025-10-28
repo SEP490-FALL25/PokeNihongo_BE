@@ -102,6 +102,9 @@ model User {
   createdGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseCreatedBy")
   updatedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseUpdatedBy")
   deletedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseDeletedBy")
+  createdShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceCreatedBy")
+  updatedShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceUpdatedBy")
+  deletedShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -1175,6 +1178,23 @@ model ShopBanner {
   deletedBy   User? @relation("ShopBannerDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
   updatedById Int?
   updatedBy   User? @relation("ShopBannerUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ShopRarityPrice {
+  id     Int           @id @default(autoincrement())
+  rarity RarityPokemon
+  price  Int           @default(1000)
+
+  createdById Int?
+  createdBy   User? @relation("ShopRarityPriceCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("ShopRarityPriceDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("ShopRarityPriceUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
