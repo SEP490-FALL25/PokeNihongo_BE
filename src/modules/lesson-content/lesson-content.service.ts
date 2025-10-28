@@ -381,7 +381,9 @@ export class LessonContentService {
                                 reading: vocab.data.reading,
                                 imageUrl: vocab.data.imageUrl,
                                 audioUrl: vocab.data.audioUrl,
-                                meanings: meanings
+                                meanings: meanings,
+                                contentOrder: lc.contentOrder,
+                                lessonContentId: lc.id
                             }
                         } catch (error) {
                             this.logger.warn(`Error getting vocabulary ${lc.contentId}:`, error)
@@ -422,7 +424,9 @@ export class LessonContentService {
                                 descriptionKey: firstUsage.explanationKey,
                                 description: explanation?.value || '',
                                 usageKey: firstUsage.exampleSentenceKey,
-                                usage: exampleSentence?.value || ''
+                                usage: exampleSentence?.value || '',
+                                contentOrder: lc.contentOrder,
+                                lessonContentId: lc.id
                             }
                         } catch (error) {
                             this.logger.warn(`Error getting grammar ${lc.contentId}:`, error)
@@ -461,7 +465,9 @@ export class LessonContentService {
                                 onReading: onReadings.join(', '),
                                 kunReading: kunReadings.join(', '),
                                 strokeCount: kanji.data.strokeCount || undefined,
-                                imageUrl: kanji.data.img
+                                imageUrl: kanji.data.img,
+                                contentOrder: lc.contentOrder,
+                                lessonContentId: lc.id
                             }
                         } catch (error) {
                             this.logger.warn(`Error getting kanji ${lc.contentId}:`, error)

@@ -72,84 +72,6 @@ export class ExercisesService {
         }
     }
 
-    async getExercisesList(query: GetExercisesListQueryType): Promise<MessageResDTO> {
-        try {
-            this.logger.log(`Getting exercises list with query: ${JSON.stringify(query)}`)
-
-            const result = await this.exercisesRepository.findMany(query)
-            this.logger.log(`Found ${result.total} exercises`)
-
-            const { currentPage, pageSize } = query
-            const totalPage = Math.ceil(result.total / Number(pageSize))
-
-            return {
-                statusCode: 200,
-                data: {
-                    results: result.items,
-                    pagination: {
-                        current: Number(currentPage),
-                        pageSize: Number(pageSize),
-                        totalPage,
-                        totalItem: result.total,
-                    },
-                },
-                message: EXERCISES_MESSAGE.GET_LIST_SUCCESS,
-            }
-        } catch (error) {
-            this.logger.error('Error getting exercises list:', error)
-            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
-                throw error
-            }
-            throw InvalidExercisesDataException
-        }
-    }
-
-    async getExercisesById(id: number): Promise<MessageResDTO> {
-        try {
-            this.logger.log(`Getting exercise by ID: ${id}`)
-
-            const result = await this.exercisesRepository.findById(id)
-            if (!result) {
-                throw ExercisesNotFoundException
-            }
-
-            this.logger.log(`Exercise found: ${result.id}`)
-
-            return {
-                statusCode: 200,
-                data: result,
-                message: EXERCISES_MESSAGE.GET_SUCCESS
-            }
-        } catch (error) {
-            this.logger.error('Error getting exercise by ID:', error)
-            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
-                throw error
-            }
-            throw InvalidExercisesDataException
-        }
-    }
-
-    async getExercisesByLessonId(lessonId: number): Promise<MessageResDTO> {
-        try {
-            this.logger.log(`Getting exercises by lesson ID: ${lessonId}`)
-
-            const result = await this.exercisesRepository.findByLessonId(lessonId)
-            this.logger.log(`Found ${result.length} exercises for lesson ${lessonId}`)
-
-            return {
-                statusCode: 200,
-                data: result,
-                message: EXERCISES_MESSAGE.GET_LIST_SUCCESS
-            }
-        } catch (error) {
-            this.logger.error('Error getting exercises by lesson ID:', error)
-            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
-                throw error
-            }
-            throw InvalidExercisesDataException
-        }
-    }
-
     async update(id: number, data: UpdateExercisesBodyType): Promise<MessageResDTO> {
         try {
             this.logger.log(`Updating exercise ${id} with data: ${JSON.stringify(data)}`)
@@ -257,4 +179,84 @@ export class ExercisesService {
             throw InvalidExercisesDataException
         }
     }
+
+
+    async getExercisesList(query: GetExercisesListQueryType): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Getting exercises list with query: ${JSON.stringify(query)}`)
+
+            const result = await this.exercisesRepository.findMany(query)
+            this.logger.log(`Found ${result.total} exercises`)
+
+            const { currentPage, pageSize } = query
+            const totalPage = Math.ceil(result.total / Number(pageSize))
+
+            return {
+                statusCode: 200,
+                data: {
+                    results: result.items,
+                    pagination: {
+                        current: Number(currentPage),
+                        pageSize: Number(pageSize),
+                        totalPage,
+                        totalItem: result.total,
+                    },
+                },
+                message: EXERCISES_MESSAGE.GET_LIST_SUCCESS,
+            }
+        } catch (error) {
+            this.logger.error('Error getting exercises list:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidExercisesDataException
+        }
+    }
+
+    async getExercisesById(id: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Getting exercise by ID: ${id}`)
+
+            const result = await this.exercisesRepository.findById(id)
+            if (!result) {
+                throw ExercisesNotFoundException
+            }
+
+            this.logger.log(`Exercise found: ${result.id}`)
+
+            return {
+                statusCode: 200,
+                data: result,
+                message: EXERCISES_MESSAGE.GET_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error getting exercise by ID:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidExercisesDataException
+        }
+    }
+
+    async getExercisesByLessonId(lessonId: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Getting exercises by lesson ID: ${lessonId}`)
+
+            const result = await this.exercisesRepository.findByLessonId(lessonId)
+            this.logger.log(`Found ${result.length} exercises for lesson ${lessonId}`)
+
+            return {
+                statusCode: 200,
+                data: result,
+                message: EXERCISES_MESSAGE.GET_LIST_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error getting exercises by lesson ID:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidExercisesDataException
+        }
+    }
+
 }
