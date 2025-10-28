@@ -223,6 +223,19 @@ export class ShopItemRepo {
   }
 
   /**
+   * Đếm số lượng shop items của một banner
+   */
+  async countByShopBannerId(shopBannerId: number): Promise<number> {
+    return this.prismaService.shopItem.count({
+      where: {
+        shopBannerId,
+        deletedAt: null,
+        isActive: true
+      }
+    })
+  }
+
+  /**
    * Update nhiều items cùng lúc
    */
   async updateMany(

@@ -335,7 +335,8 @@ export const enMessages = {
     NOT_FOUND: 'Shop banner not found',
     ALREADY_EXISTS: 'Shop banner already exists',
     INVALID_DATA: 'Invalid shop banner data',
-    ONLY_ONE_ACTIVE: 'Only one shop banner can be active at a time'
+    ONLY_ONE_ACTIVE: 'Only one shop banner can be active at a time',
+    INVALID_AMOUNT: 'Invalid amount for shop banner'
   },
   shop_item: {
     CREATE_SUCCESS: 'Shop item created successfully',
@@ -406,5 +407,17 @@ export const enMessages = {
     POKEMON_HAS_PREV_EVOLUTION: 'Pokémon has a previous evolution form',
     POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
       'Pokémon rarity is not compatible with the star type to be added'
+  },
+  shop_rarity_price: {
+    CREATE_SUCCESS: 'Shop rarity price created successfully',
+    UPDATE_SUCCESS: 'Shop rarity price updated successfully',
+
+    DELETE_SUCCESS: 'Shop rarity price deleted successfully',
+    GET_SUCCESS: 'Shop rarity price retrieved successfully',
+    GET_LIST_SUCCESS: 'Shop rarity price list retrieved successfully',
+    NOT_FOUND: 'Shop rarity price not found',
+
+    ALREADY_EXISTS: 'Shop rarity price already exists',
+    INVALID_DATA: 'Invalid shop rarity price data'
   }
 }
