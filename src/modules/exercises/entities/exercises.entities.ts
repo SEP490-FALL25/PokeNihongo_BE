@@ -22,7 +22,7 @@ export const CreateExercisesBodyType = z.object({
     exerciseType: z.string().min(1, 'Loại bài tập không được để trống').max(100, 'Loại bài tập không được vượt quá 100 ký tự'),
     isBlocked: z.boolean().default(false),
     lessonId: z.number().min(1, 'ID bài học không hợp lệ'),
-    testSetId: z.number().min(1, 'ID bộ đề không hợp lệ'),
+    testSetId: z.number().min(1, 'ID bộ đề không hợp lệ').optional(),
 })
 
 export const UpdateExercisesBodyType = z.object({
