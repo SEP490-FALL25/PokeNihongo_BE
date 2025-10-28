@@ -2,6 +2,12 @@ import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
 
 import { dailyRequestType } from '@/common/constants/achievement.constant'
+import {
+  walletPurposeType,
+  WalletTransactionSourceType,
+  WalletTransactionType
+} from '@/common/constants/wallet-transaction.constant'
+import { walletType } from '@/common/constants/wallet.constant'
 import { NotFoundRecordException } from 'src/shared/error'
 import {
   getWeekDay,
@@ -18,6 +24,8 @@ import { AttendanceMessage, ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { AttendenceConfigRepo } from '../attendence-config/attendence-config.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
+import { WalletTransactionRepo } from '../wallet-transaction/wallet-transaction.repo'
+import { WalletRepo } from '../wallet/wallet.repo'
 import { AttendanceRepo } from './attendence.repo'
 import { AttendancegAlreadyExistsException } from './dto/attendance.error'
 import {
@@ -34,7 +42,9 @@ export class AttendanceService {
     private shareUserRepo: SharedUserRepository,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
-    private readonly userDailyRequestService: UserDailyRequestService
+    private readonly userDailyRequestService: UserDailyRequestService,
+    private readonly walletRepo: WalletRepo,
+    private readonly walletTransactionRepo: WalletTransactionRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -155,8 +165,10 @@ export class AttendanceService {
       }
 
       // Update daily login requests
-      const [attendance, ,] = await Promise.all([
-        await this.attendanceRepo.create({
+      const totalCoin = data.coin + data.bonusCoin
+
+      const [attendance, , , wallet] = await Promise.all([
+        this.attendanceRepo.create({
           createdById,
           data: data
         }),
@@ -169,8 +181,32 @@ export class AttendanceService {
           userId: createdById,
           dailyRequestType: dailyRequestType.STREAK_LOGIN,
           progressAdd: 1
+        }),
+        // Cộng coin vào ví SPARKLES
+        this.walletRepo.addBalanceToWalletWithType({
+          userId: createdById,
+          type: walletType.SPARKLES,
+          amount: totalCoin
         })
       ])
+
+      // Lưu lịch sử wallet transaction
+      if (wallet) {
+        await this.walletTransactionRepo.create({
+          createdById,
+          data: {
+            walletId: wallet.id,
+            userId: createdById,
+            purpose: walletPurposeType.DAILY_REQUEST,
+            referenceId: null,
+            amount: totalCoin,
+            type: WalletTransactionType.INCREASE,
+            source: WalletTransactionSourceType.DAILY_CHECKIN,
+            description: `Daily attendance reward: ${data.coin} base + ${data.bonusCoin} bonus`
+          }
+        })
+      }
+
       return {
         statusCode: HttpStatus.CREATED,
         data: attendance,
