@@ -1277,6 +1277,7 @@ model GachaBanner {
   // auto pre-create before end
   enablePrecreate        Boolean @default(false) // bật/tắt tự tạo
   precreateBeforeEndDays Int     @default(2) // tạo trước X ngày (mặc định 2)
+  isRandomItemAgain      Boolean @default(false) // có thể trùng item khi random lại
 
   amount5Star Int @default(1) // Số lượng 5★
   amount4Star Int @default(3) // Số lượng 4★

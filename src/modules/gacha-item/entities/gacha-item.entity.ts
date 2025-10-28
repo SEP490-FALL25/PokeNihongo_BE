@@ -128,12 +128,18 @@ export const GetGachaItemParamsSchema = z.object({
 })
 
 export const GetGachaItemDetailSchema = GachaItemSchema.extend({
-  banner: z
-    .lazy(
-      () => require('../../gacha-banner/entities/gacha-banner.entity').GachaBannerSchema
-    )
-    .optional(),
-  pokemon: PokemonSchema.optional()
+  pokemon: PokemonSchema.pick({
+    id: true,
+    nameJp: true,
+    nameTranslations: true,
+    imageUrl: true,
+    rarity: true
+  }),
+  gachaItemRate: z.object({
+    id: z.number(),
+    starType: z.nativeEnum(GachaStarType),
+    rate: z.number()
+  })
 })
 
 export const GetGachaItemDetailResSchema = z.object({
