@@ -99,7 +99,9 @@ export const GetRandomShopItemResSchema = z.object({
       purchaseLimit: z.number(),
       isActive: z.boolean(),
       // Trả kèm thông tin Pokemon
-      pokemon: PokemonSchema
+      pokemon: PokemonSchema,
+
+      isHas: z.boolean()
     })
   ),
   message: z.string()
