@@ -131,7 +131,6 @@ export class QuestionBankController {
         description: 'Cập nhật câu hỏi với meanings thành công',
         type: QuestionBankResponseSwaggerDTO
     })
-    @ZodSerializerDto(QuestionBankResDTO)
     updateWithMeanings(
         @Param('id') id: string,
         @Body() body: UpdateQuestionBankWithMeaningsBodyDTO
