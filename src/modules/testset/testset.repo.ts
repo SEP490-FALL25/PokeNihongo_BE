@@ -74,23 +74,20 @@ export class TestSetRepository {
             // Nếu có language filter, chỉ lấy 1 translation cho name và description
             const nameTranslation = translations.find(t => t.key.startsWith(nameKey + '.meaning.'))
             const descriptionTranslation = translations.find(t => t.key.startsWith(descriptionKey + '.meaning.'))
-
                 ; (testSet as any).name = nameTranslation?.value || result.name
                 ; (testSet as any).description = descriptionTranslation?.value || result.description
         } else {
-            // Nếu không có language filter, lấy tất cả translations
+            // Nếu không có language filter, trả về mảng translations theo định dạng yêu cầu
             const nameTranslations = translations.filter(t => t.key.startsWith(nameKey + '.meaning.'))
             const descriptionTranslations = translations.filter(t => t.key.startsWith(descriptionKey + '.meaning.'))
 
-                ; (testSet as any).nameTranslations = nameTranslations.map(t => ({
+                ; (testSet as any).name = nameTranslations.map(t => ({
                     language: t.language.code,
-                    value: t.value,
-                    key: t.key
+                    value: t.value
                 }))
-                ; (testSet as any).descriptionTranslations = descriptionTranslations.map(t => ({
+                ; (testSet as any).description = descriptionTranslations.map(t => ({
                     language: t.language.code,
-                    value: t.value,
-                    key: t.key
+                    value: t.value
                 }))
         }
 
@@ -99,7 +96,7 @@ export class TestSetRepository {
 
 
     async findMany(query: GetTestSetListQueryType): Promise<{ data: TestSetType[]; total: number }> {
-        const { currentPage, pageSize, search, levelN, testType, status, creatorId, language } = query
+        const { currentPage, pageSize, search, levelN, testType, status, creatorId, language, sortBy = 'createdAt', sort = 'desc', noExercies } = query
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -128,12 +125,18 @@ export class TestSetRepository {
             where.creatorId = creatorId
         }
 
+        // Lọc testSet chưa có exercises nếu yêu cầu
+        const extraWhere = noExercies ? { exercises: { none: {} } } : {}
+
+        const orderBy: any = {}
+        orderBy[sortBy] = sort
+
         const [rawData, total] = await Promise.all([
             this.prisma.testSet.findMany({
-                where,
+                where: { ...where, ...extraWhere },
                 skip,
                 take: pageSize,
-                orderBy: { createdAt: 'desc' },
+                orderBy,
                 include: {
                     creator: {
                         select: {
@@ -150,7 +153,7 @@ export class TestSetRepository {
                     },
                 },
             }),
-            this.prisma.testSet.count({ where }),
+            this.prisma.testSet.count({ where: { ...where, ...extraWhere } }),
         ])
 
         // Lấy translation cho từng testset
@@ -199,23 +202,20 @@ export class TestSetRepository {
                     // Nếu có language filter, chỉ lấy 1 translation cho name và description
                     const nameTranslation = translations.find(t => t.key.startsWith(nameKey + '.meaning.'))
                     const descriptionTranslation = translations.find(t => t.key.startsWith(descriptionKey + '.meaning.'))
-
                         ; (result as any).name = nameTranslation?.value || testSet.name
                         ; (result as any).description = descriptionTranslation?.value || testSet.description
                 } else {
-                    // Nếu không có language filter, lấy tất cả translations
+                    // Nếu không có language filter, trả về mảng translations theo định dạng yêu cầu
                     const nameTranslations = translations.filter(t => t.key.startsWith(nameKey + '.meaning.'))
                     const descriptionTranslations = translations.filter(t => t.key.startsWith(descriptionKey + '.meaning.'))
 
-                        ; (result as any).nameTranslations = nameTranslations.map(t => ({
+                        ; (result as any).name = nameTranslations.map(t => ({
                             language: t.language.code,
-                            value: t.value,
-                            key: t.key
+                            value: t.value
                         }))
-                        ; (result as any).descriptionTranslations = descriptionTranslations.map(t => ({
+                        ; (result as any).description = descriptionTranslations.map(t => ({
                             language: t.language.code,
-                            value: t.value,
-                            key: t.key
+                            value: t.value
                         }))
                 }
 

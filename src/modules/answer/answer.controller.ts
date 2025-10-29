@@ -10,7 +10,6 @@ import {
     Put,
     Query,
 } from '@nestjs/common'
-import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
@@ -36,6 +35,7 @@ import {
     GetAnswerListQuerySwaggerDTO,
 } from './dto/answer.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('Answers')
 @Controller('answers')
@@ -97,16 +97,16 @@ export class AnswerController {
     @ApiResponse({ status: 200, description: 'Lấy danh sách câu trả lời thành công', type: AnswerListResponseSwaggerDTO })
     @ApiQuery({ type: GetAnswerListQuerySwaggerDTO })
     @ZodSerializerDto(AnswerListResDTO)
-    async getAnswerList(@Query() query: GetAnswerListQueryDTO, @I18nLang() lang: string) {
-        return await this.answerService.getAnswerList(query, lang)
+    async getAnswerList(@Query() query: GetAnswerListQueryDTO) {
+        return await this.answerService.getAnswerList(query)
     }
 
     @Get(':id')
     @ApiOperation({ summary: 'Lấy thông tin câu trả lời theo ID' })
     @ApiResponse({ status: 200, description: 'Lấy thông tin câu trả lời thành công', type: AnswerResponseSwaggerDTO })
     @ZodSerializerDto(AnswerResponseDTO)
-    async getAnswerById(@Param('id') id: string) {
-        return await this.answerService.getAnswerById(Number(id))
+    async getAnswerById(@Param('id') id: string, @I18nLang() lang: string) {
+        return await this.answerService.getAnswerById(Number(id), lang)
     }
 
     @Put(':id')

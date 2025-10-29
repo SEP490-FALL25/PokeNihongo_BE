@@ -129,8 +129,8 @@ export class QuestionBankService {
             throw new BadRequestException('SPEAKING type bắt buộc phải có pronunciation (cách phát âm romaji)')
         }
 
-        // Rule 3: LISTENING - audioUrl must be a valid URL if provided
-        if (body.questionType === 'LISTENING' && body.audioUrl && body.audioUrl.trim().length > 0) {
+        // Rule 3: audioUrl nếu được cung cấp (không rỗng) phải là URL hợp lệ (mọi loại)
+        if (body.audioUrl && body.audioUrl.trim().length > 0) {
             try {
                 new URL(body.audioUrl)
             } catch {
@@ -176,7 +176,32 @@ export class QuestionBankService {
 
     async update(id: number, body: UpdateQuestionBankBodyType): Promise<MessageResDTO> {
         try {
+            // Xử lý audioUrl rỗng trước khi validate - chuyển thành null để lưu vào DB
+            if (typeof body.audioUrl === 'string' && body.audioUrl.trim().length === 0) {
+                body.audioUrl = null
+            }
+
+            // Validate theo questionType nếu truyền vào
+            if ((body as any).questionType) {
+                this.validateQuestionBankData(body as unknown as CreateQuestionBankWithMeaningsBodyType)
+            }
+
+            // LISTENING: xử lý TTS
+            if ((body as any).questionType === 'LISTENING') {
+                // Nếu không gửi audioUrl nhưng có questionJp, tự động tạo TTS
+                if ((body.audioUrl === undefined || body.audioUrl === null) && (body as any).questionJp) {
+                    body.audioUrl = await this.textToSpeechService.generateAudioFromText((body as any).questionJp, 'question-bank', 'question_bank')
+                }
+            }
+
             const questionBank = await this.questionBankRepository.update(id, body)
+
+            // Đảm bảo questionKey sử dụng format mới
+            if (!questionBank.questionKey || !questionBank.questionKey.startsWith('question.')) {
+                const generatedKey = this.generateQuestionKeyFromId(questionBank.id, questionBank.questionType)
+                await this.questionBankRepository.updateQuestionKey(questionBank.id, generatedKey)
+                questionBank.questionKey = generatedKey
+            }
 
             return {
                 statusCode: 200,
@@ -195,6 +220,11 @@ export class QuestionBankService {
     async updateWithMeanings(id: number, body: UpdateQuestionBankWithMeaningsBodyType): Promise<MessageResDTO> {
         try {
             this.logger.log(`Updating question bank with meanings: ${JSON.stringify(body)}`)
+
+            // Xử lý audioUrl rỗng trước khi validate - chuyển thành null để lưu vào DB
+            if (typeof body.audioUrl === 'string' && body.audioUrl.trim().length === 0) {
+                body.audioUrl = null
+            }
 
             // Validate special rules based on questionType (nếu có)
             if (body.questionType) {
@@ -240,6 +270,13 @@ export class QuestionBankService {
             // Update question bank
             const questionBank = await this.questionBankRepository.updateWithMeanings(id, body)
 
+            // Đảm bảo questionKey sử dụng format mới
+            if (!questionBank.questionKey || !questionBank.questionKey.startsWith('question.')) {
+                const generatedKey = this.generateQuestionKeyFromId(questionBank.id, questionBank.questionType)
+                await this.questionBankRepository.updateQuestionKey(questionBank.id, generatedKey)
+                questionBank.questionKey = generatedKey
+            }
+
             // Cập nhật meaningKey với questionKey làm base (nếu có meanings)
             if (body.meanings && body.meanings.length > 0 && questionBank.questionKey) {
                 await this.updateMeaningKeys(questionBank.id, questionBank.questionKey, body.meanings)
@@ -271,6 +308,43 @@ export class QuestionBankService {
         } catch (error) {
             this.logger.error('Error deleting question bank:', error)
             if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidQuestionBankDataException
+        }
+    }
+
+    async removeMany(ids: number[]): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Deleting multiple question banks: ${JSON.stringify(ids)}`)
+
+            if (!ids || ids.length === 0) {
+                throw new BadRequestException('Danh sách ID không được để trống')
+            }
+
+            if (ids.length > 100) {
+                throw new BadRequestException('Chỉ được xóa tối đa 100 câu hỏi cùng lúc')
+            }
+
+            const result = await this.questionBankRepository.deleteMany(ids)
+
+            if (result.deletedCount === 0) {
+                throw new BadRequestException('Không tìm thấy câu hỏi nào để xóa')
+            }
+
+            return {
+                statusCode: 200,
+                data: {
+                    deletedCount: result.deletedCount,
+                    deletedIds: result.deletedIds,
+                    requestedCount: ids.length,
+                    notFoundCount: ids.length - result.deletedCount
+                },
+                message: `Xóa thành công ${result.deletedCount}/${ids.length} câu hỏi`
+            }
+        } catch (error) {
+            this.logger.error('Error deleting multiple question banks:', error)
+            if (error instanceof HttpException) {
                 throw error
             }
             throw InvalidQuestionBankDataException
@@ -526,11 +600,6 @@ export class QuestionBankService {
             }
         }
 
-        // Rule 4: All answers must be Japanese text
-        for (const answer of answers) {
-            if (!isJapaneseText(answer.answerJp)) {
-                throw new BadRequestException(`Câu trả lời "${answer.answerJp}" phải là tiếng Nhật`)
-            }
-        }
+        // Rule 4 removed: allow any string for answerJp
     }
 }

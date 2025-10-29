@@ -82,7 +82,6 @@ export const VocabularyContentSchema = z.object({
     imageUrl: z.string().nullable().optional(),
     audioUrl: z.string().nullable().optional(),
     meanings: z.array(z.object({
-        id: z.number(),
         meaning: z.union([z.string(), z.array(z.object({
             language: z.string(),
             value: z.string()
@@ -95,7 +94,9 @@ export const VocabularyContentSchema = z.object({
             language: z.string(),
             value: z.string()
         }))]).optional()
-    })).optional()
+    })).optional(),
+    contentOrder: z.number(),
+    lessonContentId: z.number()
 })
 
 export const GrammarContentSchema = z.object({
@@ -114,7 +115,9 @@ export const GrammarContentSchema = z.object({
     usage: z.union([z.string(), z.array(z.object({
         language: z.string(),
         value: z.string()
-    }))]).optional()
+    }))]).optional(),
+    contentOrder: z.number(),
+    lessonContentId: z.number()
 })
 
 export const KanjiContentSchema = z.object({
@@ -128,7 +131,9 @@ export const KanjiContentSchema = z.object({
     onReading: z.string().optional(),
     kunReading: z.string().optional(),
     strokeCount: z.number().optional(),
-    imageUrl: z.string().nullable().optional()
+    imageUrl: z.string().nullable().optional(),
+    contentOrder: z.number(),
+    lessonContentId: z.number()
 })
 
 export const GroupedLessonContentSchema = z.object({

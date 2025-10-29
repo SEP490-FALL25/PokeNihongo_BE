@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { LessonContentsType } from '@prisma/client'
 
 export class UserExerciseAttemptSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của lần thử bài tập' })
@@ -161,8 +162,8 @@ export class LatestExerciseAttemptSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID bài tập' })
     exerciseId: number
 
-    @ApiProperty({ example: 'QUIZ', description: 'Loại bài tập' })
-    exerciseType: string
+    @ApiProperty({ example: 'multiple_choice', description: 'Loại bài tập', enum: LessonContentsType })
+    exerciseType: LessonContentsType
 
     @ApiProperty({
         example: 'COMPLETED',

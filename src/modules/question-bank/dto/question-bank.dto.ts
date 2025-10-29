@@ -149,6 +149,17 @@ export class UpdateQuestionBankSwaggerDTO {
     status?: QuestionBankStatusEnum
 }
 
+export class BulkDeleteQuestionBankSwaggerDTO {
+    @ApiProperty({
+        example: [1, 2, 3, 4, 5],
+        description: 'Danh sách ID câu hỏi cần xóa (tối đa 100 ID)',
+        type: [Number],
+        minItems: 1,
+        maxItems: 100
+    })
+    ids: number[]
+}
+
 export class QuestionBankResponseSwaggerDTO {
     @ApiProperty({ example: 200, description: 'Status code' })
     statusCode: number
@@ -249,6 +260,20 @@ export class GetQuestionBankListQuerySwaggerDTO {
         required: false
     })
     language?: string
+
+    @ApiProperty({
+        example: 1,
+        description: 'ID của testSet để loại trừ những câu hỏi thuộc testSet đó',
+        required: false
+    })
+    testSetId?: number
+
+    @ApiProperty({
+        example: 'true',
+        description: 'Nếu true, chỉ lấy những câu hỏi chưa có trong testSet nào',
+        required: false
+    })
+    noTestSet?: boolean
 }
 
 export class AnswerSwaggerDTO {

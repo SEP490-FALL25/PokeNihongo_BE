@@ -207,6 +207,12 @@ export class VocabularyContentSwaggerDTO {
         exampleSentence?: string
         explanation?: string
     }>
+
+    @ApiProperty({ example: 2, description: 'Thứ tự của nội dung trong bài học' })
+    contentOrder: number
+
+    @ApiProperty({ example: 31, description: 'ID bản ghi lessonContents tương ứng' })
+    lessonContentId: number
 }
 
 export class GrammarContentSwaggerDTO {
@@ -230,6 +236,12 @@ export class GrammarContentSwaggerDTO {
 
     @ApiProperty({ example: 'Cách sử dụng', description: 'Cách sử dụng đã dịch', required: false })
     usage?: string
+
+    @ApiProperty({ example: 2, description: 'Thứ tự của nội dung trong bài học' })
+    contentOrder: number
+
+    @ApiProperty({ example: 31, description: 'ID bản ghi lessonContents tương ứng' })
+    lessonContentId: number
 }
 
 export class KanjiContentSwaggerDTO {
@@ -256,6 +268,12 @@ export class KanjiContentSwaggerDTO {
 
     @ApiProperty({ example: 'https://example.com/kanji.jpg', description: 'URL hình ảnh', required: false })
     imageUrl?: string
+
+    @ApiProperty({ example: 2, description: 'Thứ tự của nội dung trong bài học' })
+    contentOrder: number
+
+    @ApiProperty({ example: 31, description: 'ID bản ghi lessonContents tương ứng' })
+    lessonContentId: number
 }
 
 export class GroupedLessonContentSwaggerDTO {

@@ -143,4 +143,21 @@ export class LessonContentRepository {
         })
         return count > 0
     }
+
+    async findByIds(ids: number[]) {
+        return await this.prismaService.lessonContents.findMany({
+            where: {
+                id: { in: ids }
+            }
+        })
+    }
+
+    async deleteMultiple(ids: number[]) {
+        const result = await this.prismaService.lessonContents.deleteMany({
+            where: {
+                id: { in: ids }
+            }
+        })
+        return result.count
+    }
 }

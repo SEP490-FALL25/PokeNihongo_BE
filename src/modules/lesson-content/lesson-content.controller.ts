@@ -91,7 +91,7 @@ export class LessonContentController {
     @ZodSerializerDto(LessonContentFullResDTO)
     async getLessonContentFull(
         @Param('lessonId') lessonId: string,
-        @I18nLang() lang: string
+        @Query('lang') lang?: string
     ) {
         return await this.lessonContentService.getLessonContentFull(Number(lessonId), lang)
     }
@@ -113,6 +113,47 @@ export class LessonContentController {
         @Body() body: UpdateLessonContentOrder
     ) {
         return await this.lessonContentService.updateLessonContentOrder(body);
+    }
+
+    @Delete('bulk')
+    @ApiOperation({
+        summary: 'Xóa nhiều nội dung bài học cùng lúc',
+        description: 'Xóa nhiều lesson-content bằng cách truyền array các ID'
+    })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                ids: {
+                    type: 'array',
+                    items: { type: 'number' },
+                    description: 'Array các ID của lesson-content cần xóa',
+                    example: [1, 2, 3]
+                }
+            },
+            required: ['ids']
+        }
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa nhiều nội dung bài học thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 200 },
+                message: { type: 'string', example: 'Xóa nhiều nội dung bài học thành công' },
+                data: {
+                    type: 'object',
+                    properties: {
+                        deletedCount: { type: 'number', example: 3 },
+                        deletedIds: { type: 'array', items: { type: 'number' }, example: [1, 2, 3] }
+                    }
+                }
+            }
+        }
+    })
+    async deleteMultipleLessonContents(@Body() body: { ids: number[] }) {
+        return await this.lessonContentService.deleteMultipleLessonContents(body.ids)
     }
 
     @Delete(':id')

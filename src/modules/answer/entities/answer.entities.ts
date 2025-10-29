@@ -2,6 +2,7 @@ import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
 import { AnswerSortField, SortOrder } from '@/common/enum/enum'
+import { language } from 'googleapis/build/src/apis/language'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -19,8 +20,17 @@ export const AnswerType = z.object({
 
 // Answer with translation for list (without answerKey)
 export const AnswerWithTranslationType = AnswerType.omit({ answerKey: true }).extend({
-    translatedText: z.string().optional()
-})
+    meaning: z.string().optional(),
+    meanings: z.array(z.object({
+        language: z.string(),
+        value: z.string()
+    })).optional(),
+    questionBank: z.object({
+        id: z.number(),
+        questionJp: z.string(),
+        questionKey: z.string().nullable().optional()
+    }).optional()
+}).strict()
 
 // Request/Response Types
 export const CreateAnswerBodyType = z.object({
@@ -98,13 +108,20 @@ export const GetAnswerListQueryType = z.object({
     search: z.string().optional(),
     sortBy: z.nativeEnum(AnswerSortField).optional().default(AnswerSortField.CREATED_AT),
     sort: z.preprocess((val) => typeof val === 'string' ? val.toLowerCase() : val, z.nativeEnum(SortOrder)).optional().default(SortOrder.DESC),
+    language: z.string().optional()
 })
 
 // Response schemas
 export const AnswerResponseSchema = z
     .object({
         statusCode: z.number(),
-        data: AnswerType,
+        data: AnswerType.omit({ answerKey: true }).extend({
+            meaning: z.string().optional(),
+            meanings: z.array(z.object({
+                language_code: z.string(),
+                value: z.string()
+            })).optional()
+        }),
         message: z.string()
     })
     .strict()
@@ -115,7 +132,7 @@ export const AnswerListResSchema = z
         data: z.object({
             results: z.array(AnswerWithTranslationType),
             pagination: z.object({
-                currentPage: z.number(),
+                current: z.number(),
                 pageSize: z.number(),
                 totalPage: z.number(),
                 totalItem: z.number()

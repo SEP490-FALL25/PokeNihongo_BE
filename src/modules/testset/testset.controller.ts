@@ -94,6 +94,7 @@ export class TestSetController {
     @Put(':id')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Cập nhật bộ đề theo ID' })
+    @ApiBody({ type: UpdateTestSetSwaggerDTO })
     @ApiResponse({
         status: 200,
         description: 'Cập nhật bộ đề thành công',
@@ -110,6 +111,7 @@ export class TestSetController {
     @Put(':id/with-meanings')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Cập nhật bộ đề với meanings theo ID' })
+    @ApiBody({ type: UpdateTestSetWithMeaningsSwaggerDTO })
     @ApiResponse({
         status: 200,
         description: 'Cập nhật bộ đề với meanings thành công',

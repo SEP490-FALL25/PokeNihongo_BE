@@ -8,7 +8,8 @@ import {
     GetQuestionBankListQueryDTO,
     UpdateQuestionBankBodyDTO,
     QuestionBankListResDTO,
-    QuestionBankResDTO
+    QuestionBankResDTO,
+    BulkDeleteQuestionBankBodyDTO
 } from '@/modules/question-bank/dto/question-bank.zod-dto'
 import {
     QuestionBankResponseSwaggerDTO,
@@ -18,7 +19,8 @@ import {
     UpdateQuestionBankWithMeaningsSwaggerDTO,
     CreateQuestionBankWithAnswersSwaggerDTO,
     CreateQuestionBankWithAnswersResponseSwaggerDTO,
-    UpdateQuestionBankSwaggerDTO
+    UpdateQuestionBankSwaggerDTO,
+    BulkDeleteQuestionBankSwaggerDTO
 } from '@/modules/question-bank/dto/question-bank.dto'
 import {
     Body,
@@ -131,13 +133,49 @@ export class QuestionBankController {
         description: 'Cập nhật câu hỏi với meanings thành công',
         type: QuestionBankResponseSwaggerDTO
     })
-    @ZodSerializerDto(QuestionBankResDTO)
     updateWithMeanings(
         @Param('id') id: string,
         @Body() body: UpdateQuestionBankWithMeaningsBodyDTO
     ) {
         return this.questionBankService.updateWithMeanings(Number(id), body)
     }
+
+
+    @Delete('bulk')
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Xóa nhiều câu hỏi cùng lúc',
+        description: 'Xóa nhiều câu hỏi cùng lúc và tự động xóa translations liên quan. Tối đa 100 câu hỏi mỗi lần.'
+    })
+    @ApiBody({
+        type: BulkDeleteQuestionBankSwaggerDTO,
+        description: 'Danh sách ID câu hỏi cần xóa'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa nhiều câu hỏi thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 200 },
+                message: { type: 'string', example: 'Xóa thành công 5/5 câu hỏi' },
+                data: {
+                    type: 'object',
+                    properties: {
+                        deletedCount: { type: 'number', example: 5 },
+                        deletedIds: { type: 'array', items: { type: 'number' }, example: [1, 2, 3, 4, 5] },
+                        requestedCount: { type: 'number', example: 5 },
+                        notFoundCount: { type: 'number', example: 0 }
+                    }
+                }
+            }
+        }
+    })
+    removeMany(@Body() body: BulkDeleteQuestionBankBodyDTO) {
+        return this.questionBankService.removeMany(body.ids)
+    }
+
 
     @Delete(':id')
     @ApiBearerAuth()

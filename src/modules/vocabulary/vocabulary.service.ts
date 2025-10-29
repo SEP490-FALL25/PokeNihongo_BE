@@ -119,7 +119,13 @@ export class VocabularyService {
     //#region Import from XLSX
     /**
      * Import vocabularies from an Excel file (.xlsx) with columns:
-     * kanji, mean (English), detail (English), kun, on
+     * word (Japanese word), phonetic (reading), mean (English meaning)
+     * 
+     * Xử lý đặc biệt:
+     * - Bỏ qua dòng có word trống hoặc là dấu '-'
+     * - Nếu phonetic trống, sử dụng word làm reading
+     * - Nếu phonetic có nhiều cách đọc (có dấu '・'), lấy cách đọc đầu tiên
+     * - Tách cột mean bằng dấu ';' thành nhiều meanings riêng biệt
      */
     async importFromXlsx(file: Express.Multer.File, createdById?: number) {
         try {
@@ -136,51 +142,53 @@ export class VocabularyService {
             const skipped: Array<{ word: string; reason: string }> = []
 
             for (const row of rows) {
-                const kanji = (row.kanji || '').toString().trim()
+                const wordJp = (row.word || '').toString().trim()
+                const phonetic = (row.phonetic || '').toString().trim()
                 const meanEn = (row.mean || '').toString().trim()
-                const detailEn = (row.detail || '').toString().trim()
-                const kun = (row.kun || '').toString().trim()
-                const on = (row.on || '').toString().trim()
 
-                // Tạo reading từ kun và on
-                const reading = [kun, on].filter(r => r).join(', ')
-
-                if (!kanji) {
-                    skipped.push({ word: kanji || 'N/A', reason: 'Thiếu ký tự kanji' })
+                // Bỏ qua các dòng trống hoặc không có word
+                if (!wordJp || wordJp === '-') {
                     continue
                 }
 
                 if (!meanEn) {
-                    skipped.push({ word: kanji, reason: 'Thiếu nghĩa tiếng Anh' })
+                    skipped.push({ word: wordJp, reason: 'Thiếu nghĩa tiếng Anh' })
                     continue
                 }
 
                 try {
-                    // Tạo danh sách nghĩa
+                    // Tạo danh sách nghĩa từ cột mean - tách các nghĩa khác nhau
                     const meanings: Array<{ language_code: string; value: string }> = []
 
                     if (meanEn) {
-                        meanings.push({ language_code: 'en', value: meanEn })
+                        // Tách các nghĩa bằng dấu chấm phẩy
+                        const meaningParts = meanEn.split(';').map(part => part.trim()).filter(part => part.length > 0)
+
+                        // Nếu có nhiều nghĩa, tạo từng nghĩa riêng biệt
+                        if (meaningParts.length > 1) {
+                            meaningParts.forEach(meaning => {
+                                meanings.push({ language_code: 'en', value: meaning })
+                            })
+                        } else {
+                            // Nếu chỉ có một nghĩa, lưu nguyên
+                            meanings.push({ language_code: 'en', value: meanEn })
+                        }
                     }
 
-                    // Tạo danh sách chi tiết nghĩa (nếu có)
-                    const examples: Array<{ language_code: string; sentence: string; original_sentence: string }> = []
+                    // Xử lý reading: nếu có phonetic thì dùng, nếu không thì dùng wordJp
+                    let reading = phonetic || wordJp
 
-                    if (detailEn) {
-                        examples.push({
-                            language_code: 'en',
-                            sentence: detailEn,
-                            original_sentence: kanji
-                        })
+                    // Nếu phonetic có nhiều cách đọc, lấy cách đọc đầu tiên
+                    if (phonetic && phonetic.includes('・')) {
+                        reading = phonetic.split('・')[0]
                     }
 
                     const result = await this.createFullVocabularyWithFiles(
                         {
-                            word_jp: kanji,
-                            reading: reading || kanji, // Fallback to kanji if no reading
+                            word_jp: wordJp,
+                            reading: reading,
                             translations: {
-                                meaning: meanings,
-                                examples: examples.length > 0 ? examples : undefined
+                                meaning: meanings
                             }
                         },
                         undefined,
@@ -189,7 +197,7 @@ export class VocabularyService {
                     )
                     created.push(result.data)
                 } catch (err: any) {
-                    skipped.push({ word: kanji, reason: err?.message || 'Lỗi không xác định' })
+                    skipped.push({ word: wordJp, reason: err?.message || 'Lỗi không xác định' })
                 }
             }
 
