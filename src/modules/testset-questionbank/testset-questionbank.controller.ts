@@ -165,7 +165,8 @@ export class TestSetQuestionBankController {
         schema: {
             example: [
                 {
-                    id: 1,
+                    id: 101, // id của bản ghi nhiều-nhiều (TestSetQuestionBank)
+                    questionBankId: 1, // id của QuestionBank
                     questionJp: "「わたし」の意味 là gì?",
                     questionType: "VOCABULARY",
                     audioUrl: null,

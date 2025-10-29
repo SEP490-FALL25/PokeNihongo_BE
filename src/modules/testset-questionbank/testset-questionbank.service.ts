@@ -296,11 +296,20 @@ export class TestSetQuestionBankService {
             let questionBanks = [] as any[]
             if (questionBankIds.length > 0) {
                 const basicQBs = await this.questionBankService.findByTestSetId(testSetId)
-                const idToQB = new Map(basicQBs.data.results.map((qb: any) => [qb.id, qb]))
+                const idToQB = new Map((basicQBs.data.results as any[]).map((qb: any) => [qb.id, qb]))
                 questionBanks = links
                     .sort((a, b) => a.questionOrder - b.questionOrder)
-                    .map((l) => idToQB.get(l.questionBankId))
-                    .filter(Boolean)
+                    .map((l) => {
+                        const qb = idToQB.get(l.questionBankId)
+                        if (!qb) return null
+                        const { id, ...rest } = qb
+                        return {
+                            id: l.id,
+                            questionBankId: id,
+                            ...rest
+                        }
+                    })
+                    .filter(Boolean) as any[]
             }
             return {
                 statusCode: 200,
