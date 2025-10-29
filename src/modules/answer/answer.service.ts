@@ -735,8 +735,9 @@ export class AnswerService {
         const normalized = raw.replace(/\s*\+\s*/g, '+').trim()
         const jpMatch = normalized.match(/(?:^|\b)jp:([^+]+)/i)
         if (!jpMatch) return null
-        const viMatch = normalized.match(/\+vi:([^+]+)/i)
-        const enMatch = normalized.match(/\+en:([^+]+)/i)
+        // capture even when empty: vi:  or en:
+        const viMatch = normalized.match(/\+vi:([^+]*)/i)
+        const enMatch = normalized.match(/\+en:([^+]*)/i)
         const jp = jpMatch[1].trim()
         const vi = viMatch ? viMatch[1].trim() : undefined
         const en = enMatch ? enMatch[1].trim() : undefined
