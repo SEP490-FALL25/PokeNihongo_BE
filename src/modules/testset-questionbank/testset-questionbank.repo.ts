@@ -65,6 +65,12 @@ export class TestSetQuestionBankRepository {
         })
     }
 
+    async deleteMany(ids: number[]): Promise<{ count: number }> {
+        return await this.prismaService.testSetQuestionBank.deleteMany({
+            where: { id: { in: ids } }
+        })
+    }
+
     async deleteByTestSetId(testSetId: number): Promise<{ count: number }> {
         return await this.prismaService.testSetQuestionBank.deleteMany({
             where: { testSetId }

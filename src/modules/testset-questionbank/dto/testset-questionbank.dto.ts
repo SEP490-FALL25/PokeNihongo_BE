@@ -48,6 +48,15 @@ export class UpdateQuestionOrderSwaggerDTO {
     questionOrder: number
 }
 
+export class DeleteManyTestSetQuestionBankSwaggerDTO {
+    @ApiProperty({
+        example: [1, 2, 3],
+        description: 'Mảng ID của các TestSetQuestionBank cần xóa',
+        type: [Number]
+    })
+    ids: number[]
+}
+
 export class CreateMultipleTestSetQuestionBankSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của TestSet' })
     testSetId: number

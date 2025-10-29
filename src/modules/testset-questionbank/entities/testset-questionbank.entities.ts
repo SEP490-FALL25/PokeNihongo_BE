@@ -53,6 +53,13 @@ export const UpdateQuestionOrderSchema = z
     })
     .strict()
 
+// Delete Many Schema
+export const DeleteManyTestSetQuestionBankBodySchema = z
+    .object({
+        ids: z.array(z.number()).min(1, 'Phải có ít nhất 1 id')
+    })
+    .strict()
+
 // Types
 export type TestSetQuestionBankType = z.infer<typeof TestSetQuestionBankSchema>
 export type CreateTestSetQuestionBankBodyType = z.infer<typeof CreateTestSetQuestionBankBodySchema>
@@ -77,3 +84,4 @@ export type CreateMultipleTestSetQuestionBankResponseType = z.infer<typeof Creat
 export type GetTestSetQuestionBankByTestSetIdParamsType = z.infer<typeof GetTestSetQuestionBankByTestSetIdParamsSchema>
 export type GetTestSetQuestionBankByIdParamsType = z.infer<typeof GetTestSetQuestionBankByIdParamsSchema>
 export type UpdateQuestionOrderType = z.infer<typeof UpdateQuestionOrderSchema>
+export type DeleteManyTestSetQuestionBankBodyType = z.infer<typeof DeleteManyTestSetQuestionBankBodySchema>

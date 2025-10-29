@@ -19,6 +19,7 @@ import {
     TestSetNotFoundException,
     QuestionBankNotFoundException
 } from './dto/testset-questionbank.error'
+import { DeleteManyTestSetQuestionBankBodyType } from './entities/testset-questionbank.entities'
 
 @Injectable()
 export class TestSetQuestionBankService {
@@ -286,6 +287,35 @@ export class TestSetQuestionBankService {
         }
     }
 
+    async findFullByTestSetId(testSetId: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Finding ONLY QuestionBanks by testSetId: ${testSetId}`)
+
+            const links = await this.testSetQuestionBankRepository.findByTestSetId(testSetId)
+            const questionBankIds = links.map((l) => l.questionBankId)
+            let questionBanks = [] as any[]
+            if (questionBankIds.length > 0) {
+                const basicQBs = await this.questionBankService.findByTestSetId(testSetId)
+                const idToQB = new Map(basicQBs.data.results.map((qb: any) => [qb.id, qb]))
+                questionBanks = links
+                    .sort((a, b) => a.questionOrder - b.questionOrder)
+                    .map((l) => idToQB.get(l.questionBankId))
+                    .filter(Boolean)
+            }
+            return {
+                statusCode: 200,
+                data: questionBanks,
+                message: TEST_SET_QUESTIONBANK_MESSAGE.GET_LIST_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error finding ONLY QuestionBanks by testSetId:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+
     async update(id: number, data: UpdateTestSetQuestionBankBodyType): Promise<MessageResDTO> {
         try {
             this.logger.log(`Updating TestSetQuestionBank with id: ${id}, data: ${JSON.stringify(data)}`)
@@ -374,6 +404,26 @@ export class TestSetQuestionBankService {
         } catch (error) {
             this.logger.error('Error deleting TestSetQuestionBank:', error)
             if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+
+    async deleteMany(body: DeleteManyTestSetQuestionBankBodyType): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Deleting multiple TestSetQuestionBank with ids: ${JSON.stringify(body.ids)}`)
+
+            const result = await this.testSetQuestionBankRepository.deleteMany(body.ids)
+
+            return {
+                statusCode: 200,
+                data: { deletedCount: result.count },
+                message: TEST_SET_QUESTIONBANK_MESSAGE.DELETE_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error deleting multiple TestSetQuestionBank:', error)
+            if (error instanceof HttpException) {
                 throw error
             }
             throw InvalidTestSetQuestionBankDataException

@@ -14,7 +14,8 @@ import {
     GetTestSetQuestionBankByIdParamsType,
     GetTestSetQuestionBankByTestSetIdParamsType,
     UpdateQuestionOrderType,
-    CreateMultipleTestSetQuestionBankBodyType
+    CreateMultipleTestSetQuestionBankBodyType,
+    DeleteManyTestSetQuestionBankBodyType
 } from './entities/testset-questionbank.entities'
 import {
     TestSetQuestionBankSwaggerDTO,
@@ -24,7 +25,8 @@ import {
     TestSetQuestionBankResponseSwaggerDTO,
     TestSetQuestionBankListResponseSwaggerDTO,
     CreateMultipleTestSetQuestionBankSwaggerDTO,
-    CreateMultipleTestSetQuestionBankResponseSwaggerDTO
+    CreateMultipleTestSetQuestionBankResponseSwaggerDTO,
+    DeleteManyTestSetQuestionBankSwaggerDTO
 } from './dto/testset-questionbank.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -40,6 +42,7 @@ import {
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { TestSetQuestionBankService } from './testset-questionbank.service'
+// no need to import DTO class for type annotation
 
 @ApiTags('TestSetQuestionBank')
 @Controller('testset-questionbank')
@@ -150,6 +153,50 @@ export class TestSetQuestionBankController {
         return this.testSetQuestionBankService.findByTestSetId(Number(testSetId))
     }
 
+    @Get('testset/:testSetId/full')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Lấy danh sách TestSetQuestionBank kèm QuestionBank',
+        description: 'Trả về các liên kết cùng dữ liệu QuestionBank'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách QuestionBank thuần (chỉ các trường cần thiết, không bọc trong object)',
+        schema: {
+            example: [
+                {
+                    id: 1,
+                    questionJp: "「わたし」の意味 là gì?",
+                    questionType: "VOCABULARY",
+                    audioUrl: null,
+                    questionKey: "VOCABULARY.1.question",
+                    pronunciation: "わたし",
+                    levelN: 5,
+                    createdById: 1,
+                    createdAt: "2025-10-25T14:50:08.164Z",
+                    updatedAt: "2025-10-28T19:10:32.618Z"
+                }
+                // ... nhiều object khác ...
+            ]
+        }
+    })
+    async findFullByTestSetId(@Param('testSetId') testSetId: string): Promise<MessageResDTO> {
+        return this.testSetQuestionBankService.findFullByTestSetId(Number(testSetId))
+    }
+
+    @Delete('delete-many')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Xóa nhiều TestSetQuestionBank theo mảng id' })
+    @ApiBody({ type: DeleteManyTestSetQuestionBankSwaggerDTO })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa nhiều liên kết thành công',
+        schema: { example: { statusCode: 200, data: { deletedCount: 3 }, message: 'Xóa TestSetQuestionBank thành công' } }
+    })
+    deleteMany(@Body() body: DeleteManyTestSetQuestionBankBodyType) {
+        return this.testSetQuestionBankService.deleteMany(body)
+    }
+
     @Put(':id')
     @ApiBearerAuth()
     @ApiOperation({
@@ -221,7 +268,7 @@ export class TestSetQuestionBankController {
         summary: 'Xóa tất cả TestSetQuestionBank theo TestSet ID',
         description: 'Xóa tất cả liên kết TestSet và QuestionBank của một TestSet cụ thể'
     })
-  
+
     @ApiResponse({
         status: 200,
         description: 'Xóa thành công',
