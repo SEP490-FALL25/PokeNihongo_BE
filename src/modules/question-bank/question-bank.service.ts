@@ -314,6 +314,43 @@ export class QuestionBankService {
         }
     }
 
+    async removeMany(ids: number[]): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Deleting multiple question banks: ${JSON.stringify(ids)}`)
+
+            if (!ids || ids.length === 0) {
+                throw new BadRequestException('Danh sách ID không được để trống')
+            }
+
+            if (ids.length > 100) {
+                throw new BadRequestException('Chỉ được xóa tối đa 100 câu hỏi cùng lúc')
+            }
+
+            const result = await this.questionBankRepository.deleteMany(ids)
+
+            if (result.deletedCount === 0) {
+                throw new BadRequestException('Không tìm thấy câu hỏi nào để xóa')
+            }
+
+            return {
+                statusCode: 200,
+                data: {
+                    deletedCount: result.deletedCount,
+                    deletedIds: result.deletedIds,
+                    requestedCount: ids.length,
+                    notFoundCount: ids.length - result.deletedCount
+                },
+                message: `Xóa thành công ${result.deletedCount}/${ids.length} câu hỏi`
+            }
+        } catch (error) {
+            this.logger.error('Error deleting multiple question banks:', error)
+            if (error instanceof HttpException) {
+                throw error
+            }
+            throw InvalidQuestionBankDataException
+        }
+    }
+
     async getStatistics(): Promise<MessageResDTO> {
         const statistics = await this.questionBankRepository.getStatistics()
 

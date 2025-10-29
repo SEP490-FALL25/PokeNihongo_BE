@@ -149,6 +149,17 @@ export class UpdateQuestionBankSwaggerDTO {
     status?: QuestionBankStatusEnum
 }
 
+export class BulkDeleteQuestionBankSwaggerDTO {
+    @ApiProperty({
+        example: [1, 2, 3, 4, 5],
+        description: 'Danh sách ID câu hỏi cần xóa (tối đa 100 ID)',
+        type: [Number],
+        minItems: 1,
+        maxItems: 100
+    })
+    ids: number[]
+}
+
 export class QuestionBankResponseSwaggerDTO {
     @ApiProperty({ example: 200, description: 'Status code' })
     statusCode: number

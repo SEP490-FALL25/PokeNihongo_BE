@@ -8,7 +8,8 @@ import {
     GetQuestionBankByIdParamsSchema,
     GetQuestionBankListQuerySchema,
     QuestionBankResSchema,
-    QuestionBankListResSchema
+    QuestionBankListResSchema,
+    BulkDeleteQuestionBankBodySchema
 } from '../entities/question-bank.entities'
 
 export class CreateQuestionBankBodyDTO extends createZodDto(CreateQuestionBankBodySchema) { }
@@ -20,4 +21,5 @@ export class GetQuestionBankByIdParamsDTO extends createZodDto(GetQuestionBankBy
 export class GetQuestionBankListQueryDTO extends createZodDto(GetQuestionBankListQuerySchema) { }
 export class QuestionBankResDTO extends createZodDto(QuestionBankResSchema) { }
 export class QuestionBankListResDTO extends createZodDto(QuestionBankListResSchema) { }
+export class BulkDeleteQuestionBankBodyDTO extends createZodDto(BulkDeleteQuestionBankBodySchema) { }
 
