@@ -131,7 +131,7 @@ export class LessonContentController {
                     example: [1, 2, 3]
                 }
             },
-            required: ['id']
+            required: ['ids']
         }
     })
     @ApiResponse({
@@ -152,8 +152,8 @@ export class LessonContentController {
             }
         }
     })
-    async deleteMultipleLessonContents(@Body() body: { id: number[] }) {
-        return await this.lessonContentService.deleteMultipleLessonContents(body.id)
+    async deleteMultipleLessonContents(@Body() body: { ids: number[] }) {
+        return await this.lessonContentService.deleteMultipleLessonContents(body.ids)
     }
 
     @Delete(':id')
