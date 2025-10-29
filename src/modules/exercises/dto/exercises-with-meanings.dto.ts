@@ -2,27 +2,22 @@ import { ApiProperty } from '@nestjs/swagger'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { LessonContentsType } from '@prisma/client'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
 
-// Custom validation functions
-const isValidExerciseType = (exerciseType: string): boolean => {
-    const validTypes = ['multiple_choice', 'matching', 'listening', 'speaking']
-    return validTypes.includes(exerciseType.toLowerCase())
-}
+// No custom validation; rely on Prisma enum
 
 // Meaning schema for exercises with meanings
 const MeaningSchema = z.object({})
 
 // Main schema for creating exercises with meanings
 export const CreateExercisesWithMeaningsSchema = z.object({
-    exerciseType: z
-        .string()
-        .min(1, 'Loại bài tập không được để trống')
-        .refine(isValidExerciseType, {
-            message: 'Loại bài tập phải là multiple_choice, matching, listening, hoặc speaking'
-        }),
+    exerciseType: z.nativeEnum(LessonContentsType, {
+        required_error: 'Loại bài tập không được để trống',
+        invalid_type_error: 'Loại bài tập không hợp lệ'
+    }),
     content: z
         .string()
         .max(1000, 'Nội dung bài tập quá dài (tối đa 1000 ký tự)')
@@ -82,7 +77,7 @@ export const CreateExercisesWithMeaningsSchema = z.object({
 export const ExercisesWithMeaningsResponseSchema = z.object({
     exercises: z.object({
         id: z.number(),
-        exerciseType: z.string(),
+        exerciseType: z.nativeEnum(LessonContentsType),
         content: z.string().nullable(),
         audioUrl: z.string().nullable(),
         isBlocked: z.boolean(),
@@ -112,9 +107,9 @@ export class CreateExercisesWithMeaningsSwaggerDTO {
     @ApiProperty({
         example: 'multiple_choice',
         description: 'Loại bài tập',
-        enum: ['multiple_choice', 'matching', 'listening', 'speaking']
+        enum: LessonContentsType
     })
-    exerciseType: string
+    exerciseType: LessonContentsType
 
     @ApiProperty({
         example: 'この練習では文法を学びます',
@@ -165,8 +160,8 @@ class ExercisesWithMeaningsInfoSwaggerDTO {
     id: number
 
 
-    @ApiProperty({ example: 'multiple_choice', description: 'Loại bài tập' })
-    exerciseType: string
+    @ApiProperty({ example: 'multiple_choice', description: 'Loại bài tập', enum: LessonContentsType })
+    exerciseType: LessonContentsType
 
 
     @ApiProperty({ example: 'この練習では文法を学びます', description: 'Nội dung mô tả bài tập' })

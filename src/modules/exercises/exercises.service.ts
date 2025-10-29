@@ -51,6 +51,48 @@ export class ExercisesService {
                 }
             }
 
+            // Enforce per-lesson constraints: max 3 exercises and unique type per lesson
+            if (data.lessonId) {
+                const totalInLesson = await this.exercisesRepository.countByLesson(data.lessonId)
+                if (totalInLesson >= 3) {
+                    throw new HttpException(
+                        {
+                            statusCode: 400,
+                            message: 'Mỗi bài học chỉ được phép có tối đa 3 bài tập: VOCABULARY, GRAMMAR, KANJI',
+                            error: 'EXERCISE_LIMIT_PER_LESSON'
+                        },
+                        400
+                    )
+                }
+
+                const existedSameType = await this.exercisesRepository.findByLessonAndType(data.lessonId, data.exerciseType as unknown as string)
+                if (existedSameType) {
+                    throw new HttpException(
+                        {
+                            statusCode: 409,
+                            message: 'Mỗi loại bài tập chỉ được tạo 1 lần trong mỗi bài học',
+                            error: 'EXERCISE_TYPE_ALREADY_EXISTS'
+                        },
+                        409
+                    )
+                }
+            }
+
+            // Validate testSet type matches exercise type when provided
+            if (data.testSetId) {
+                const testSetType = await this.exercisesRepository.getTestSetType(data.testSetId)
+                if (testSetType && String(testSetType) !== String(data.exerciseType)) {
+                    throw new HttpException(
+                        {
+                            statusCode: 400,
+                            message: 'Loại TestSet không khớp với loại bài tập. Chỉ có thể gắn TestSet cùng loại (VOCABULARY/GRAMMAR/KANJI)',
+                            error: 'TESTSET_TYPE_MISMATCH'
+                        },
+                        400
+                    )
+                }
+            }
+
             const result = await this.exercisesRepository.create(data)
             this.logger.log(`Exercise created successfully with ID: ${result.id}`)
 
@@ -99,6 +141,48 @@ export class ExercisesService {
                 const testSetExists = await this.exercisesRepository.checkTestSetExists(data.testSetId)
                 if (!testSetExists) {
                     throw InvalidExercisesDataException
+                }
+            }
+
+            // Compute target lesson and type for uniqueness checks
+            const targetLessonId = data.lessonId ?? (existingExercise as any).lessonId
+            const targetExerciseType = data.exerciseType ?? (existingExercise as any).exerciseType
+
+            // Enforce unique type per lesson when changing type or lesson
+            if (data.lessonId || data.exerciseType) {
+                const existsSameType = await this.exercisesRepository.existsByLessonAndTypeExcludingId(
+                    targetLessonId,
+                    targetExerciseType as unknown as string,
+                    id
+                )
+                if (existsSameType) {
+                    throw new HttpException(
+                        {
+                            statusCode: 409,
+                            message: 'Mỗi loại bài tập chỉ được tạo 1 lần trong mỗi bài học',
+                            error: 'EXERCISE_TYPE_ALREADY_EXISTS'
+                        },
+                        409
+                    )
+                }
+            }
+
+            // Validate testSet type matches exercise type when updating testSetId or exerciseType
+            if (data.testSetId || data.exerciseType) {
+                const testSetIdToCheck = data.testSetId ?? (existingExercise as any).testSetId
+                if (testSetIdToCheck) {
+                    const testSetType = await this.exercisesRepository.getTestSetType(testSetIdToCheck)
+                    const exerciseTypeToCheck = data.exerciseType ?? (existingExercise as any).exerciseType
+                    if (testSetType && String(testSetType) !== String(exerciseTypeToCheck)) {
+                        throw new HttpException(
+                            {
+                                statusCode: 400,
+                                message: 'Loại TestSet không khớp với loại bài tập. Chỉ có thể gắn TestSet cùng loại (VOCABULARY/GRAMMAR/KANJI)',
+                                error: 'TESTSET_TYPE_MISMATCH'
+                            },
+                            400
+                        )
+                    }
                 }
             }
 
@@ -160,14 +244,25 @@ export class ExercisesService {
         try {
             this.logger.log(`Getting exercise by ID: ${id}`)
 
-            const result = await this.exercisesRepository.findById(id)
-            if (!result) {
+            const repoResult = await this.exercisesRepository.findById(id)
+            if (!repoResult) {
                 throw ExercisesNotFoundException
             }
 
-            this.logger.log(`Exercise found: ${result.id}`)
+            this.logger.log(`Exercise found: ${repoResult.id}`)
 
-            return result
+            // Map to lean entity shape expected by ExercisesType
+            const mapped: ExercisesType = {
+                id: repoResult.id as any,
+                createdAt: (repoResult as any).createdAt,
+                updatedAt: (repoResult as any).updatedAt,
+                lessonId: (repoResult as any).lessonId,
+                exerciseType: (repoResult as any).exerciseType,
+                isBlocked: (repoResult as any).isBlocked,
+                testSetId: (repoResult as any).testSetId ?? null,
+            }
+
+            return mapped
         } catch (error) {
             this.logger.error('Error getting exercise by ID:', error)
             if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
@@ -184,7 +279,18 @@ export class ExercisesService {
             const result = await this.exercisesRepository.findByLessonId(lessonId)
             this.logger.log(`Found ${result.length} exercises for lesson ${lessonId}`)
 
-            return result
+            // Ensure exact type matching with ExercisesType
+            const mapped = result.map((item: any) => ({
+                id: item.id,
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt,
+                lessonId: item.lessonId,
+                exerciseType: item.exerciseType,
+                isBlocked: item.isBlocked,
+                testSetId: item.testSetId ?? null,
+            })) as ExercisesType[]
+
+            return mapped
         } catch (error) {
             this.logger.error('Error getting exercises by lesson ID:', error)
             if (error instanceof HttpException || error.message?.includes('không tồn tại')) {

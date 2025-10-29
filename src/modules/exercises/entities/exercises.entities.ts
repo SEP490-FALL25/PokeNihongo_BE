@@ -2,6 +2,7 @@ import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
 import { ExercisesSortField, SortOrder } from '@/common/enum/enum'
+import { LessonContentsType } from '@prisma/client'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -9,7 +10,7 @@ patchNestJsSwagger()
 // Exercises Entity Types
 export const ExercisesType = z.object({
     id: z.number(),
-    exerciseType: z.string(),
+    exerciseType: z.nativeEnum(LessonContentsType),
     isBlocked: z.boolean(),
     lessonId: z.number(),
     testSetId: z.number().nullable(),
@@ -19,14 +20,17 @@ export const ExercisesType = z.object({
 
 // Request/Response Types
 export const CreateExercisesBodyType = z.object({
-    exerciseType: z.string().min(1, 'Loại bài tập không được để trống').max(100, 'Loại bài tập không được vượt quá 100 ký tự'),
+    exerciseType: z.nativeEnum(LessonContentsType, {
+        required_error: 'Loại bài tập không được để trống',
+        invalid_type_error: 'Loại bài tập không hợp lệ'
+    }),
     isBlocked: z.boolean().default(false),
     lessonId: z.number().min(1, 'ID bài học không hợp lệ'),
     testSetId: z.number().min(1, 'ID bộ đề không hợp lệ').optional(),
 })
 
 export const UpdateExercisesBodyType = z.object({
-    exerciseType: z.string().min(1, 'Loại bài tập không được để trống').max(100, 'Loại bài tập không được vượt quá 100 ký tự').optional(),
+    exerciseType: z.nativeEnum(LessonContentsType).optional(),
     isBlocked: z.boolean().optional(),
     lessonId: z.number().min(1, 'ID bài học không hợp lệ').optional(),
     testSetId: z.number().min(1, 'ID bộ đề không hợp lệ').optional(),
@@ -39,7 +43,7 @@ export const GetExercisesByIdParamsType = z.object({
 export const GetExercisesListQueryType = z.object({
     currentPage: z.string().transform(val => val ? Number(val) : 1).default('1'),
     pageSize: z.string().transform(val => val ? Number(val) : 10).default('10'),
-    exerciseType: z.string().optional(),
+    exerciseType: z.nativeEnum(LessonContentsType).optional(),
     lessonId: z.string().transform(val => val ? Number(val) : undefined).optional(),
     isBlocked: z.string().transform(val => val === 'true').optional(),
     search: z.string().optional(),
