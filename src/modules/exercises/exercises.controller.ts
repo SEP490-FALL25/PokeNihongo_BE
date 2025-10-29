@@ -24,7 +24,7 @@ export class ExercisesController {
             '\n\nQuy tắc Level:' +
             '\n• Lesson.levelJlpt phải khớp với TestSet.levelN' +
             '\n• Chỉ có thể tạo Exercise khi level của Lesson và TestSet khớp nhau' +
-            '\n\nLoại bài tập: QUIZ, multiple_choice, matching, listening, speaking'
+            '\n\nLoại bài tập: VOCABULARY, GRAMMAR, KANJI'
     })
     @ApiResponse({
         status: 201,
