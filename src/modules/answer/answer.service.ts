@@ -215,10 +215,7 @@ export class AnswerService {
         try {
             this.logger.log('Creating answer with data:', data)
 
-            // Validate Japanese content
-            if (!this.isJapanese(data.answerJp)) {
-                throw new InvalidJapaneseContentException()
-            }
+            // Allow any string content for answerJp (no Japanese-only validation)
 
             // Check if question exists
             const questionExists = await this.answerRepository.checkQuestionExists(data.questionBankId)
@@ -589,14 +586,7 @@ export class AnswerService {
 
             for (const answerData of data.answers) {
                 try {
-                    // Validate Japanese content
-                    if (!this.isJapanese(answerData.answerJp)) {
-                        failedAnswers.push({
-                            answerJp: answerData.answerJp,
-                            reason: 'Nội dung câu trả lời phải là tiếng Nhật'
-                        })
-                        continue
-                    }
+                    // Skip Japanese-only validation; accept any string
 
                     // Validate MATCHING type: only 1 answer allowed and must be correct
                     if (questionType === QuestionType.MATCHING) {

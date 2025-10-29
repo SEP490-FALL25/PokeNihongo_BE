@@ -400,4 +400,51 @@ export class QuestionBankRepository {
             data: { key: newKey }
         })
     }
+
+    /**
+     * Xóa nhiều question bank cùng lúc và tự động xóa translations liên quan
+     */
+    async deleteMany(ids: number[]): Promise<{ deletedCount: number; deletedIds: number[] }> {
+        if (!ids || ids.length === 0) {
+            return { deletedCount: 0, deletedIds: [] }
+        }
+
+        return await this.prisma.$transaction(async (tx) => {
+            // Lấy thông tin question banks để lấy questionKey
+            const questionBanks = await tx.questionBank.findMany({
+                where: { id: { in: ids } },
+                select: { id: true, questionKey: true }
+            })
+
+            const foundIds = questionBanks.map(qb => qb.id)
+            const questionKeys = questionBanks
+                .filter(qb => qb.questionKey)
+                .map(qb => qb.questionKey!)
+
+            // Xóa translations liên quan (nếu có questionKey)
+            if (questionKeys.length > 0) {
+                // Tạo array các pattern để xóa
+                const keyPatterns = questionKeys.flatMap(key => [
+                    { key: { equals: key } }, // Key chính xác
+                    { key: { startsWith: key + '.meaning.' } } // Pattern meaning
+                ])
+
+                await tx.translation.deleteMany({
+                    where: {
+                        OR: keyPatterns
+                    }
+                })
+            }
+
+            // Xóa question banks
+            const deleteResult = await tx.questionBank.deleteMany({
+                where: { id: { in: foundIds } }
+            })
+
+            return {
+                deletedCount: deleteResult.count,
+                deletedIds: foundIds
+            }
+        })
+    }
 }
