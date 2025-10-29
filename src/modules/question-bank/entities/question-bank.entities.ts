@@ -79,6 +79,13 @@ export const GetQuestionBankByIdParamsSchema = z
     })
     .strict()
 
+// Bulk delete schema
+export const BulkDeleteQuestionBankBodySchema = z
+    .object({
+        ids: z.array(z.number().min(1)).min(1, 'Phải có ít nhất 1 ID').max(100, 'Tối đa 100 ID')
+    })
+    .strict()
+
 export const GetQuestionBankListQuerySchema = z
     .object({
         currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
@@ -204,4 +211,5 @@ export type CreateQuestionBankWithMeaningsBodyType = z.infer<typeof CreateQuesti
 export type UpdateQuestionBankWithMeaningsBodyType = z.infer<typeof UpdateQuestionBankWithMeaningsBodySchema>
 export type CreateQuestionBankWithAnswersBodyType = z.infer<typeof CreateQuestionBankWithAnswersBodySchema>
 export type UpdatedQuestionBankWithAnswersBodyType = z.infer<typeof UpdatedQuestionBankWithAnswersBodySchema>
+export type BulkDeleteQuestionBankBodyType = z.infer<typeof BulkDeleteQuestionBankBodySchema>
 
