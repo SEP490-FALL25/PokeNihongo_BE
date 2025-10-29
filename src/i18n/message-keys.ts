@@ -444,3 +444,15 @@ export const ShopRarityPriceMessage = {
   ALREADY_EXISTS: 'shop_rarity_price.ALREADY_EXISTS',
   INVALID_DATA: 'shop_rarity_price.INVALID_DATA'
 } as const
+
+export const UserGachaPityMessage = {
+  CREATE_SUCCESS: 'user_gacha_pity.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'user_gacha_pity.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'user_gacha_pity.DELETE_SUCCESS',
+  GET_SUCCESS: 'user_gacha_pity.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'user_gacha_pity.GET_LIST_SUCCESS',
+  NOT_FOUND: 'user_gacha_pity.NOT_FOUND',
+  ALREADY_EXISTS: 'user_gacha_pity.ALREADY_EXISTS',
+  INVALID_DATA: 'user_gacha_pity.INVALID_DATA',
+  HAS_PENDING: 'user_gacha_pity.HAS_PENDING'
+} as const

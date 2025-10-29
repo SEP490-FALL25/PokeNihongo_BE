@@ -419,5 +419,15 @@ export const enMessages = {
 
     ALREADY_EXISTS: 'Shop rarity price already exists',
     INVALID_DATA: 'Invalid shop rarity price data'
+  },
+  user_gacha_pity: {
+    CREATE_SUCCESS: 'User gacha pity created successfully',
+    UPDATE_SUCCESS: 'User gacha pity updated successfully',
+    GET_SUCCESS: 'User gacha pity retrieved successfully',
+    GET_LIST_SUCCESS: 'User gacha pity list retrieved successfully',
+    NOT_FOUND: 'User gacha pity not found',
+    ALREADY_EXISTS: 'User gacha pity already exists',
+    INVALID_DATA: 'Invalid user gacha pity data',
+    HAS_PENDING: 'User already has a pending gacha pity'
   }
 }

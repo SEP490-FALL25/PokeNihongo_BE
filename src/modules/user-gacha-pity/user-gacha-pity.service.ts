@@ -1,6 +1,6 @@
-import { GachaStarTypeType } from '@/common/constants/gacha.constant'
+import { GachaPityType } from '@/common/constants/gacha.constant'
 import { I18nService } from '@/i18n/i18n.service'
-import { GachaItemRateMessage } from '@/i18n/message-keys'
+import { UserGachaPityMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -9,58 +9,64 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 import {
-  GachaItemRateAlreadyExistsException,
-  GachaItemRateNotFoundException
+  UserGachaPityHasPendingException,
+  UserGachaPityNotFoundException
 } from './dto/user-gacha-pity.error'
 import {
-  CreateGachaItemRateBodyType,
-  UpdateGachaItemRateBodyType
+  CreateUserGachaPityBodyType,
+  UpdateUserGachaPityBodyType
 } from './entities/user-gacha-pityentity'
-import { GachaItemRateRepo } from './user-gacha-pity.repo'
+import { UserGachaPityRepo } from './user-gacha-pity.repo'
 
 @Injectable()
-export class GachaItemRateService {
+export class UserGachaPityService {
   constructor(
-    private gachaItemRateRepo: GachaItemRateRepo,
+    private userGachaPityRepo: UserGachaPityRepo,
 
     private readonly i18nService: I18nService
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
-    const data = await this.gachaItemRateRepo.list(pagination)
+    const data = await this.userGachaPityRepo.list(pagination)
     return {
       statusCode: 200,
       data,
-      message: this.i18nService.translate(GachaItemRateMessage.GET_LIST_SUCCESS, lang)
+      message: this.i18nService.translate(UserGachaPityMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
   // Helper method to calculate weaknesses for a Pokemon (copied from PokemonService)
   async findById(id: number, lang: string = 'vi') {
-    const gachaItemRate = await this.gachaItemRateRepo.findById(id)
-    if (!gachaItemRate) {
-      throw new GachaItemRateNotFoundException()
+    const userGachaPity = await this.userGachaPityRepo.findById(id)
+    if (!userGachaPity) {
+      throw new UserGachaPityNotFoundException()
     }
 
     return {
       statusCode: 200,
-      data: gachaItemRate,
-      message: this.i18nService.translate(GachaItemRateMessage.GET_LIST_SUCCESS, lang)
+      data: userGachaPity,
+      message: this.i18nService.translate(UserGachaPityMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
   async create(
-    { userId, data }: { userId: number; data: CreateGachaItemRateBodyType },
+    { userId, data }: { userId: number; data: CreateUserGachaPityBodyType },
     lang: string = 'vi'
   ) {
     try {
-      //check exist gacha item rate by star type
-      const existGachaItemRate = await this.gachaItemRateRepo.getByType(data.starType)
-      if (existGachaItemRate) {
-        throw new GachaItemRateAlreadyExistsException()
+      // check coi co truyen userId ko, neu ko thi lay cua created_by
+      data.userId = data.userId || userId
+
+      //check coi thang user nay co pity nao dang pending ko, co thi ko dc tao them
+      const existingPity = await this.userGachaPityRepo.findStatusByUserId(
+        data.userId,
+        GachaPityType.PENDING
+      )
+      if (existingPity) {
+        throw new UserGachaPityHasPendingException()
       }
 
-      const result = await this.gachaItemRateRepo.create({
+      const result = await this.userGachaPityRepo.create({
         createdById: userId,
         data: {
           ...data
@@ -69,7 +75,7 @@ export class GachaItemRateService {
       return {
         statusCode: 201,
         data: result,
-        message: this.i18nService.translate(GachaItemRateMessage.CREATE_SUCCESS, lang)
+        message: this.i18nService.translate(UserGachaPityMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
@@ -89,33 +95,42 @@ export class GachaItemRateService {
       userId
     }: {
       id: number
-      data: UpdateGachaItemRateBodyType
+      data: UpdateUserGachaPityBodyType
       userId?: number
     },
     lang: string = 'vi'
   ) {
     try {
-      if (data.starType) {
-        //check exist gacha item rate by star type
-        const existGachaItemRate = await this.gachaItemRateRepo.getByType(data.starType)
-        if (existGachaItemRate && existGachaItemRate.id !== id) {
-          throw new GachaItemRateAlreadyExistsException()
+      //check coi thang user nay co pity nao dang pending ko, co thi ko dc tao them
+      const existingPity = await this.userGachaPityRepo.findById(id)
+      if (!existingPity) {
+        throw new UserGachaPityNotFoundException()
+      }
+      // co update staus ko, neu co va status la pending thi check coi thang user da co pending chua
+
+      if (data.status && data.status === GachaPityType.PENDING) {
+        const pendingPity = await this.userGachaPityRepo.findStatusByUserId(
+          existingPity.userId,
+          GachaPityType.PENDING
+        )
+        if (pendingPity && pendingPity.id !== id) {
+          throw new UserGachaPityHasPendingException()
         }
       }
 
-      const gachaItemRate = await this.gachaItemRateRepo.update({
+      const userGachaPity = await this.userGachaPityRepo.update({
         id,
         data: data,
         updatedById: userId
       })
       return {
         statusCode: 200,
-        data: gachaItemRate,
-        message: this.i18nService.translate(GachaItemRateMessage.UPDATE_SUCCESS, lang)
+        data: userGachaPity,
+        message: this.i18nService.translate(UserGachaPityMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw new GachaItemRateNotFoundException()
+        throw new UserGachaPityNotFoundException()
       }
 
       if (isForeignKeyConstraintPrismaError(error)) {
@@ -127,26 +142,22 @@ export class GachaItemRateService {
 
   async delete({ id, userId }: { id: number; userId?: number }, lang: string = 'vi') {
     try {
-      const existGachaItemRate = await this.gachaItemRateRepo.findById(id)
-      if (!existGachaItemRate) {
-        throw new GachaItemRateNotFoundException()
+      const existUserGachaPity = await this.userGachaPityRepo.findById(id)
+      if (!existUserGachaPity) {
+        throw new UserGachaPityNotFoundException()
       }
 
-      await this.gachaItemRateRepo.delete(id)
+      await this.userGachaPityRepo.delete(id)
       return {
         statusCode: 200,
         data: null,
-        message: this.i18nService.translate(GachaItemRateMessage.DELETE_SUCCESS, lang)
+        message: this.i18nService.translate(UserGachaPityMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw new GachaItemRateNotFoundException()
+        throw new UserGachaPityNotFoundException()
       }
       throw error
     }
-  }
-
-  async getByType(starType: GachaStarTypeType) {
-    return await this.gachaItemRateRepo.getByType(starType)
   }
 }

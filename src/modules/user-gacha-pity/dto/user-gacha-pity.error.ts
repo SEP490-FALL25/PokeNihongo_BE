@@ -1,20 +1,29 @@
-import { GachaItemRateMessage } from '@/i18n/message-keys'
-import { NotFoundException } from '@nestjs/common'
+import { UserGachaPityMessage } from '@/i18n/message-keys'
+import { BadRequestException, NotFoundException } from '@nestjs/common'
 
-export class GachaItemRateNotFoundException extends NotFoundException {
+export class UserGachaPityNotFoundException extends NotFoundException {
   constructor() {
     super({
-      message: GachaItemRateMessage.NOT_FOUND,
-      errorKey: GachaItemRateMessage.NOT_FOUND
+      message: UserGachaPityMessage.NOT_FOUND,
+      errorKey: UserGachaPityMessage.NOT_FOUND
     })
   }
 }
 
-export class GachaItemRateAlreadyExistsException extends NotFoundException {
+export class UserGachaPityAlreadyExistsException extends BadRequestException {
   constructor() {
     super({
-      message: GachaItemRateMessage.ALREADY_EXISTS,
-      errorKey: GachaItemRateMessage.ALREADY_EXISTS
+      message: UserGachaPityMessage.ALREADY_EXISTS,
+      errorKey: UserGachaPityMessage.ALREADY_EXISTS
+    })
+  }
+}
+
+export class UserGachaPityHasPendingException extends BadRequestException {
+  constructor() {
+    super({
+      message: UserGachaPityMessage.HAS_PENDING,
+      errorKey: UserGachaPityMessage.HAS_PENDING
     })
   }
 }

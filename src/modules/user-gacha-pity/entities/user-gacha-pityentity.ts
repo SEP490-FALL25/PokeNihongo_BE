@@ -1,4 +1,4 @@
-import { GachaStarType } from '@/common/constants/gacha.constant'
+import { GachaPityType } from '@/common/constants/gacha.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
@@ -8,70 +8,73 @@ import { z } from 'zod'
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
 
-// Base GachaItemRate Schema
-export const GachaItemRateSchema = z.object({
+// Base UserGachaPity Schema
+export const UserGachaPitySchema = z.object({
   id: z.number(),
-  starType: z.enum([
-    GachaStarType.ONE,
-    GachaStarType.TWO,
-    GachaStarType.THREE,
-    GachaStarType.FOUR,
-    GachaStarType.FIVE
-  ]),
-  rate: z.number().min(0).max(100),
-  createdById: z.number().nullable(),
-  updatedById: z.number().nullable(),
-  deletedById: z.number().nullable(),
+  userId: z.number(),
+  pityCount: z.number().min(0).default(0),
+  status: z
+    .enum([
+      GachaPityType.PENDING,
+      GachaPityType.COMPLETED_MAX,
+      GachaPityType.COMPLETED_MIN
+    ])
+    .default(GachaPityType.PENDING),
   deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })
 
 // Create Schema
-export const CreateGachaItemRateBodySchema = GachaItemRateSchema.pick({
-  starType: true,
-  rate: true
-}).strict()
+export const CreateUserGachaPityBodySchema = UserGachaPitySchema.pick({
+  userId: true,
+  pityCount: true,
+  status: true
+})
+  .extend({
+    userId: z.number().optional()
+  })
+  .strict()
 
-export const CreateGachaItemRateResSchema = z.object({
+export const CreateUserGachaPityResSchema = z.object({
   statusCode: z.number(),
-  data: GachaItemRateSchema,
+  data: UserGachaPitySchema,
   message: z.string()
 })
 
 // Update Schema
-export const UpdateGachaItemRateBodySchema =
-  CreateGachaItemRateBodySchema.partial().strict()
+export const UpdateUserGachaPityBodySchema =
+  CreateUserGachaPityBodySchema.partial().strict()
 
-export const UpdateGachaItemRateResSchema = CreateGachaItemRateResSchema
+export const UpdateUserGachaPityResSchema = CreateUserGachaPityResSchema
 
 export const UpdateWithListItemResSchema = z.object({
   statusCode: z.number(),
-  data: z.array(GachaItemRateSchema),
+  data: z.array(UserGachaPitySchema),
   message: z.string()
 })
 
 // Query Schema
-export const GetGachaItemRateParamsSchema = z.object({
-  gachaItemRateId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
+export const GetUserGachaPityParamsSchema = z.object({
+  userGachaPityId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
 
-export const GetGachaItemRateDetailSchema = GachaItemRateSchema
+export const GetUserGachaPityDetailSchema = UserGachaPitySchema
 
-export const GetGachaItemRateDetailResSchema = z.object({
+export const GetUserGachaPityDetailResSchema = z.object({
   statusCode: z.number(),
-  data: GetGachaItemRateDetailSchema,
+  data: GetUserGachaPityDetailSchema,
   message: z.string()
 })
 
 // Type exports
-export type GachaItemRateType = z.infer<typeof GachaItemRateSchema>
-export type CreateGachaItemRateBodyType = z.infer<typeof CreateGachaItemRateBodySchema>
-export type UpdateGachaItemRateBodyType = z.infer<typeof UpdateGachaItemRateBodySchema>
-export type GetGachaItemRateParamsType = z.infer<typeof GetGachaItemRateParamsSchema>
+export type UserGachaPityType = z.infer<typeof UserGachaPitySchema>
+export type CreateUserGachaPityBodyType = z.infer<typeof CreateUserGachaPityBodySchema>
+export type UpdateUserGachaPityBodyType = z.infer<typeof UpdateUserGachaPityBodySchema>
+export type GetUserGachaPityParamsType = z.infer<typeof GetUserGachaPityParamsSchema>
 
 // Field for query
-export type GachaItemFieldType = keyof z.infer<typeof GachaItemRateSchema>
-export const GACHA_ITEM_RATE_FIELDS = Object.keys(
-  GachaItemRateSchema.shape
-) as GachaItemFieldType[]
+export type UserGachaPityFieldType = keyof z.infer<typeof UserGachaPitySchema>
+export const USER_GACHA_PITY_FIELDS = Object.keys(
+  UserGachaPitySchema.shape
+) as UserGachaPityFieldType[]

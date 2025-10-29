@@ -5,43 +5,43 @@ import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
-  CreateGachaItemRateBodyDTO,
-  CreateGachaItemRateResDTO,
-  GetGachaItemRateDetailResDTO,
-  GetGachaItemRateParamsDTO,
-  UpdateGachaItemRateBodyDTO,
-  UpdateGachaItemRateResDTO
+  CreateUserGachaPityBodyDTO,
+  CreateUserGachaPityResDTO,
+  GetUserGachaPityDetailResDTO,
+  GetUserGachaPityParamsDTO,
+  UpdateUserGachaPityBodyDTO,
+  UpdateUserGachaPityResDTO
 } from './dto/user-gacha-pity.dto'
-import { GachaItemRateService } from './gacha-item-rate.service'
+import { UserGachaPityService } from './user-gacha-pity.service'
 
-@Controller('gacha-item-rate')
-export class GachaItemRateController {
-  constructor(private readonly gachaItemRateService: GachaItemRateService) {}
+@Controller('user-gacha-pity')
+export class UserGachaPityController {
+  constructor(private readonly userGachaPityService: UserGachaPityService) {}
 
   @Get()
   @ZodSerializerDto(PaginationResponseDTO)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
-    return this.gachaItemRateService.list(query, lang)
+    return this.userGachaPityService.list(query, lang)
   }
 
-  @Get(':gachaItemRateId')
-  @ZodSerializerDto(GetGachaItemRateDetailResDTO)
+  @Get(':userGachaPityId')
+  @ZodSerializerDto(GetUserGachaPityDetailResDTO)
   findById(
-    @Param() params: GetGachaItemRateParamsDTO,
+    @Param() params: GetUserGachaPityParamsDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.gachaItemRateService.findById(params.gachaItemRateId, lang)
+    return this.userGachaPityService.findById(params.userGachaPityId, lang)
   }
 
   @Post()
-  @ZodSerializerDto(CreateGachaItemRateResDTO)
+  @ZodSerializerDto(CreateUserGachaPityResDTO)
   create(
-    @Body() body: CreateGachaItemRateBodyDTO,
+    @Body() body: CreateUserGachaPityBodyDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.gachaItemRateService.create(
+    return this.userGachaPityService.create(
       {
         userId,
         data: body
@@ -50,34 +50,34 @@ export class GachaItemRateController {
     )
   }
 
-  @Put(':gachaItemRateId')
-  @ZodSerializerDto(UpdateGachaItemRateResDTO)
+  @Put(':userGachaPityId')
+  @ZodSerializerDto(UpdateUserGachaPityResDTO)
   update(
-    @Body() body: UpdateGachaItemRateBodyDTO,
-    @Param() params: GetGachaItemRateParamsDTO,
+    @Body() body: UpdateUserGachaPityBodyDTO,
+    @Param() params: GetUserGachaPityParamsDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.gachaItemRateService.update(
+    return this.userGachaPityService.update(
       {
         data: body,
-        id: params.gachaItemRateId,
+        id: params.userGachaPityId,
         userId
       },
       lang
     )
   }
 
-  @Delete(':gachaItemRateId')
+  @Delete(':userGachaPityId')
   @ZodSerializerDto(MessageResDTO)
   delete(
-    @Param() params: GetGachaItemRateParamsDTO,
+    @Param() params: GetUserGachaPityParamsDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.gachaItemRateService.delete(
+    return this.userGachaPityService.delete(
       {
-        id: params.gachaItemRateId,
+        id: params.userGachaPityId,
         userId
       },
       lang

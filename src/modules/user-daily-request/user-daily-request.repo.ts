@@ -13,7 +13,7 @@ import {
 
 @Injectable()
 export class UserDailyRequestRepo {
-  constructor(private prismaService: PrismaService) { }
+  constructor(private prismaService: PrismaService) {}
 
   create({
     createdById,
@@ -71,20 +71,20 @@ export class UserDailyRequestRepo {
   ): Promise<UserDailyRequestType> {
     return isHard
       ? this.prismaService.userDailyRequest.delete({
-        where: {
-          id
-        }
-      })
+          where: {
+            id
+          }
+        })
       : this.prismaService.userDailyRequest.update({
-        where: {
-          id,
-          deletedAt: null
-        },
-        data: {
-          deletedAt: new Date(),
-          deletedById
-        }
-      })
+          where: {
+            id,
+            deletedAt: null
+          },
+          data: {
+            deletedAt: new Date(),
+            deletedById
+          }
+        })
   }
 
   async list(pagination: PaginationQueryType) {
@@ -165,7 +165,8 @@ export class UserDailyRequestRepo {
   // Lấy user daily requests với chi tiết daily request và user
   async findByUserAndDateWithDetails(
     userId: number,
-    date: Date
+    date: Date,
+    langId: number
   ): Promise<UserDailyRequestDetailType[]> {
     const results = await this.prismaService.userDailyRequest.findMany({
       where: {
@@ -176,7 +177,23 @@ export class UserDailyRequestRepo {
       include: {
         dailyRequest: {
           include: {
-            reward: true
+            reward: true,
+            nameTranslations: {
+              where: {
+                languageId: langId
+              },
+              select: {
+                value: true
+              }
+            },
+            descriptionTranslations: {
+              where: {
+                languageId: langId
+              },
+              select: {
+                value: true
+              }
+            }
           }
         },
         user: true
@@ -186,16 +203,26 @@ export class UserDailyRequestRepo {
       }
     })
 
-    // Map name -> nameKey
-    return results.map(item => ({
-      ...item,
-      dailyRequest: {
-        ...item.dailyRequest,
-        reward: item.dailyRequest.reward ? {
-          ...item.dailyRequest.reward,
-          nameKey: (item.dailyRequest.reward as any).name
-        } : null
+    // Map to include nameTranslation and descriptionTranslation
+    return results.map((item) => {
+      const dr = item.dailyRequest as any
+      const { nameTranslations, descriptionTranslations, ...dailyRequestRest } = dr
+
+      return {
+        ...item,
+        dailyRequest: {
+          ...dailyRequestRest,
+          nameTranslation: nameTranslations?.[0]?.value ?? dr.nameKey,
+          descriptionTranslation:
+            descriptionTranslations?.[0]?.value ?? dr.descriptionKey,
+          reward: dr.reward
+            ? {
+                ...dr.reward,
+                nameKey: dr.reward.name
+              }
+            : null
+        }
       } as any
-    })) as any
+    }) as any
   }
 }

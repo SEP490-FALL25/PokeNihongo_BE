@@ -1,35 +1,35 @@
 import { createZodDto } from 'nestjs-zod'
 import {
-  CreateGachaItemRateBodySchema,
-  CreateGachaItemRateResSchema,
-  GetGachaItemRateDetailResSchema,
-  GetGachaItemRateParamsSchema,
-  UpdateGachaItemRateBodySchema,
-  UpdateGachaItemRateResSchema,
+  CreateUserGachaPityBodySchema,
+  CreateUserGachaPityResSchema,
+  GetUserGachaPityDetailResSchema,
+  GetUserGachaPityParamsSchema,
+  UpdateUserGachaPityBodySchema,
+  UpdateUserGachaPityResSchema,
   UpdateWithListItemResSchema
 } from '../entities/user-gacha-pityentity'
 
 // Request DTOs
-export class CreateGachaItemRateBodyDTO extends createZodDto(
-  CreateGachaItemRateBodySchema
+export class CreateUserGachaPityBodyDTO extends createZodDto(
+  CreateUserGachaPityBodySchema
 ) {}
 
-export class UpdateGachaItemRateBodyDTO extends createZodDto(
-  UpdateGachaItemRateBodySchema
+export class UpdateUserGachaPityBodyDTO extends createZodDto(
+  UpdateUserGachaPityBodySchema
 ) {}
 
-export class GetGachaItemRateParamsDTO extends createZodDto(
-  GetGachaItemRateParamsSchema
+export class GetUserGachaPityParamsDTO extends createZodDto(
+  GetUserGachaPityParamsSchema
 ) {}
 
 // Response DTOs
-export class CreateGachaItemRateResDTO extends createZodDto(
-  CreateGachaItemRateResSchema
+export class CreateUserGachaPityResDTO extends createZodDto(
+  CreateUserGachaPityResSchema
 ) {}
-export class UpdateGachaItemRateResDTO extends createZodDto(
-  UpdateGachaItemRateResSchema
+export class UpdateUserGachaPityResDTO extends createZodDto(
+  UpdateUserGachaPityResSchema
 ) {}
 export class UpdateWithListItemResDTO extends createZodDto(UpdateWithListItemResSchema) {}
-export class GetGachaItemRateDetailResDTO extends createZodDto(
-  GetGachaItemRateDetailResSchema
+export class GetUserGachaPityDetailResDTO extends createZodDto(
+  GetUserGachaPityDetailResSchema
 ) {}

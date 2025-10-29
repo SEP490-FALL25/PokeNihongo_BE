@@ -416,5 +416,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy giá theo độ hiếm',
     ALREADY_EXISTS: 'Giá theo độ hiếm đã tồn tại',
     INVALID_DATA: 'Dữ liệu giá theo độ hiếm không hợp lệ'
+  },
+  user_gacha_pity: {
+    CREATE_SUCCESS: 'Tạo hệ thống gacha pity cho người dùng thành công',
+    UPDATE_SUCCESS: 'Cập nhật hệ thống gacha pity cho người dùng thành công',
+    GET_SUCCESS: 'Lấy thông tin hệ thống gacha pity cho người dùng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách hệ thống gacha pity cho người dùng thành công',
+    NOT_FOUND: 'Không tìm thấy hệ thống gacha pity cho người dùng',
+    ALREADY_EXISTS: 'Hệ thống gacha pity cho người dùng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu hệ thống gacha pity cho người dùng không hợp lệ',
+    HAS_PENDING: 'Người dùng đã có hệ thống gacha pity đang chờ xử lý'
   }
 }

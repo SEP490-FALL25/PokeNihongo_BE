@@ -1,18 +1,18 @@
-import { GachaStarTypeType } from '@/common/constants/gacha.constant'
+import { GachaPityTypeType } from '@/common/constants/gacha.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
-  CreateGachaItemRateBodyType,
-  GACHA_ITEM_RATE_FIELDS,
-  GachaItemRateType,
-  UpdateGachaItemRateBodyType
+  CreateUserGachaPityBodyType,
+  USER_GACHA_PITY_FIELDS,
+  UpdateUserGachaPityBodyType,
+  UserGachaPityType
 } from './entities/user-gacha-pityentity'
 
 @Injectable()
-export class GachaItemRateRepo {
+export class UserGachaPityRepo {
   constructor(private prismaService: PrismaService) {}
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
     return this.prismaService.$transaction(callback)
@@ -22,16 +22,16 @@ export class GachaItemRateRepo {
       createdById,
       data
     }: {
-      createdById?: number
-      data: CreateGachaItemRateBodyType
+      createdById: number
+      data: CreateUserGachaPityBodyType
     },
     prismaTx?: PrismaClient
-  ): Promise<GachaItemRateType> {
+  ): Promise<UserGachaPityType> {
     const client = prismaTx || this.prismaService
-    return client.gachaItemRate.create({
+    return client.userGachaPity.create({
       data: {
         ...data,
-        createdById
+        userId: data.userId || createdById
       }
     })
   }
@@ -43,20 +43,19 @@ export class GachaItemRateRepo {
       updatedById
     }: {
       id: number
-      data: UpdateGachaItemRateBodyType
+      data: UpdateUserGachaPityBodyType
       updatedById?: number
     },
     prismaTx?: PrismaClient
-  ): Promise<GachaItemRateType> {
+  ): Promise<UserGachaPityType> {
     const client = prismaTx || this.prismaService
-    return client.gachaItemRate.update({
+    return client.userGachaPity.update({
       where: {
         id,
         deletedAt: null
       },
       data: {
-        ...data,
-        updatedById
+        ...data
       }
     })
   }
@@ -65,13 +64,13 @@ export class GachaItemRateRepo {
     id: number,
     isHard?: boolean,
     prismaTx?: PrismaClient
-  ): Promise<GachaItemRateType> {
+  ): Promise<UserGachaPityType> {
     const client = prismaTx || this.prismaService
     return isHard
-      ? client.gachaItemRate.delete({
+      ? client.userGachaPity.delete({
           where: { id }
         })
-      : client.gachaItemRate.update({
+      : client.userGachaPity.update({
           where: {
             id,
             deletedAt: null
@@ -83,7 +82,7 @@ export class GachaItemRateRepo {
   }
 
   async list(pagination: PaginationQueryType) {
-    const { where, orderBy } = parseQs(pagination.qs, GACHA_ITEM_RATE_FIELDS)
+    const { where, orderBy } = parseQs(pagination.qs, USER_GACHA_PITY_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
@@ -94,10 +93,10 @@ export class GachaItemRateRepo {
     }
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.gachaItemRate.count({
+      this.prismaService.userGachaPity.count({
         where: filterWhere
       }),
-      this.prismaService.gachaItemRate.findMany({
+      this.prismaService.userGachaPity.findMany({
         where: filterWhere,
 
         orderBy,
@@ -117,8 +116,8 @@ export class GachaItemRateRepo {
     }
   }
 
-  findById(id: number): Promise<GachaItemRateType | null> {
-    return this.prismaService.gachaItemRate.findUnique({
+  findById(id: number): Promise<UserGachaPityType | null> {
+    return this.prismaService.userGachaPity.findUnique({
       where: {
         id,
         deletedAt: null
@@ -126,10 +125,14 @@ export class GachaItemRateRepo {
     })
   }
 
-  getByType(starType: GachaStarTypeType): Promise<GachaItemRateType | null> {
-    return this.prismaService.gachaItemRate.findFirst({
+  findStatusByUserId(
+    userId: number,
+    status: GachaPityTypeType
+  ): Promise<UserGachaPityType | null> {
+    return this.prismaService.userGachaPity.findFirst({
       where: {
-        starType,
+        userId,
+        status,
         deletedAt: null
       }
     })
