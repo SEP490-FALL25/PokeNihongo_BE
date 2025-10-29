@@ -332,7 +332,9 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách banner cửa hàng thành công',
     NOT_FOUND: 'Không tìm thấy banner cửa hàng',
     ALREADY_EXISTS: 'Banner cửa hàng đã tồn tại',
-    INVALID_DATA: 'Dữ liệu banner cửa hàng không hợp lệ'
+    INVALID_DATA: 'Dữ liệu banner cửa hàng không hợp lệ',
+    ONLY_ONE_ACTIVE: 'Chỉ được phép có một banner cửa hàng ở trạng thái ACTIVE',
+    INVALID_MIN_MAX: 'Số lượng không hợp lệ'
   },
   shop_item: {
     CREATE_SUCCESS: 'Tạo mặt hàng cửa hàng thành công',
@@ -404,5 +406,15 @@ export const viMessages = {
       'Pokémon này có tiền nhiệm, vui lòng thêm tiền nhiệm trước khi thêm Pokémon này',
     POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
       'Rarity của Pokémon không hợp lệ với Star Type được thêm vào'
+  },
+  shop_rarity_price: {
+    CREATE_SUCCESS: 'Tạo giá theo độ hiếm thành công',
+    UPDATE_SUCCESS: 'Cập nhật giá theo độ hiếm thành công',
+    DELETE_SUCCESS: 'Xóa giá theo độ hiếm thành công',
+    GET_SUCCESS: 'Lấy thông tin giá theo độ hiếm thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách giá theo độ hiếm thành công',
+    NOT_FOUND: 'Không tìm thấy giá theo độ hiếm',
+    ALREADY_EXISTS: 'Giá theo độ hiếm đã tồn tại',
+    INVALID_DATA: 'Dữ liệu giá theo độ hiếm không hợp lệ'
   }
 }

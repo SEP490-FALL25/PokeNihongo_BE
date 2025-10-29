@@ -1,3 +1,4 @@
+import { RoleName } from '@/common/constants/role.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { GachaBannerMessage } from '@/i18n/message-keys'
 import {
@@ -42,6 +43,20 @@ export class GachaBannerService {
     private readonly translationRepo: TranslationRepository
   ) {}
 
+  private async convertTranslationsToLangCodes(
+    nameTranslations: Array<{ languageId: number; value: string }>
+  ): Promise<Array<{ key: string; value: string }>> {
+    if (!nameTranslations || nameTranslations.length === 0) return []
+
+    const allLangIds = Array.from(new Set(nameTranslations.map((t) => t.languageId)))
+    const langs = await this.languageRepo.getWithListId(allLangIds)
+    const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+
+    return nameTranslations.map((t) => ({
+      key: idToCode.get(t.languageId) || String(t.languageId),
+      value: t.value
+    }))
+  }
   /**
    * Validate số lượng ACTIVE banners không vượt quá giới hạn
    * @param excludeId - ID của banner cần loại trừ khỏi việc đếm (dùng khi update)
@@ -54,11 +69,55 @@ export class GachaBannerService {
     }
   }
 
-  async list(pagination: PaginationQueryType, lang: string = 'vi') {
+  async list(pagination: PaginationQueryType, lang: string = 'vi', roleName: string) {
     const langId = await this.languageRepo.getIdByCode(lang)
-    const data = await this.gachaBannerRepo.list(pagination, langId ?? undefined)
+
+    const isAdmin = roleName === RoleName.Admin ? true : false
+
+    console.log('admin ne: ', isAdmin)
+
+    const data = await this.gachaBannerRepo.list(pagination, langId ?? undefined, isAdmin)
+    // Convert translations to lang codes for all cases
+    const allTranslations = (data.results || []).flatMap(
+      (item: any) => item.nameTranslations || []
+    )
+    console.log('all ne: ', allTranslations)
+
+    if (allTranslations.length === 0) {
+      return {
+        data,
+        message: this.i18nService.translate(GachaBannerMessage.GET_LIST_SUCCESS, lang)
+      }
+    }
+
+    const converted = await this.convertTranslationsToLangCodes(allTranslations)
+
+    // Build map for quick lookup
+    const conversionMap = new Map(
+      allTranslations.map((t, idx) => [`${t.languageId}_${t.value}`, converted[idx]])
+    )
+
+    const results = (data.results || []).map((item: any) => {
+      const translationsAll = (item.nameTranslations || []).map(
+        (t: any) =>
+          conversionMap.get(`${t.languageId}_${t.value}`) || {
+            key: String(t.languageId),
+            value: t.value
+          }
+      )
+      const { nameTranslations, ...rest } = item
+      return {
+        ...rest,
+        nameTranslations: translationsAll
+      }
+    })
+    console.log('results', results)
+
     return {
-      data,
+      data: {
+        ...data,
+        results
+      },
       message: this.i18nService.translate(GachaBannerMessage.GET_LIST_SUCCESS, lang)
     }
   }
@@ -102,8 +161,9 @@ export class GachaBannerService {
     }
   }
 
-  async findById(id: number, lang: string = 'vi') {
+  async findById(id: number, lang: string = 'vi', roleName: string) {
     const langId = await this.languageRepo.getIdByCode(lang)
+    const isAdmin = roleName === RoleName.Admin ? true : false
 
     if (!langId) {
       return {
@@ -112,16 +172,31 @@ export class GachaBannerService {
       }
     }
 
-    const gachaBanner = await this.gachaBannerRepo.findByIdWithLangId(id, langId)
+    const gachaBanner = await this.gachaBannerRepo.findByIdWithLangId(id, langId, isAdmin)
     if (!gachaBanner) {
       throw new NotFoundRecordException()
     }
 
-    const data = {}
+    // Convert translations to { key, value } format
+    const nameTranslations = await this.convertTranslationsToLangCodes(
+      (gachaBanner as any).nameTranslations || []
+    )
+    console.log('sau convert: ', nameTranslations)
+
+    // Find current translation by langId
+    const currentTranslation = ((gachaBanner as any).nameTranslations || []).find(
+      (t: any) => t.languageId === langId
+    )
+
+    // Remove raw nameTranslations from shopBanner
+    const { nameTranslations: _, ...bannerWithoutTranslations } = gachaBanner as any
+
     const result = {
-      ...gachaBanner,
-      nameTranslation: (gachaBanner as any).nameTranslations?.[0]?.value ?? null
+      ...bannerWithoutTranslations,
+      nameTranslation: currentTranslation?.value ?? null,
+      ...(isAdmin ? { nameTranslations } : {})
     }
+    console.log(`${isAdmin ? nameTranslations : 'ehe'}`)
 
     return {
       statusCode: HttpStatus.OK,
@@ -178,6 +253,9 @@ export class GachaBannerService {
           status: data.status,
           hardPity5Star: data.hardPity5Star ?? 200,
           costRoll: data.costRoll ?? 100,
+          enablePrecreate: data.enablePrecreate ?? false,
+          precreateBeforeEndDays: data.precreateBeforeEndDays ?? 2,
+          isRandomItemAgain: data.isRandomItemAgain ?? false,
           amount5Star: data.amount5Star ?? 1,
           amount4Star: data.amount4Star ?? 3,
           amount3Star: data.amount3Star ?? 6,
@@ -338,6 +416,12 @@ export class GachaBannerService {
         if (data.amount3Star !== undefined) dataUpdate.amount3Star = data.amount3Star
         if (data.amount2Star !== undefined) dataUpdate.amount2Star = data.amount2Star
         if (data.amount1Star !== undefined) dataUpdate.amount1Star = data.amount1Star
+        if (data.enablePrecreate !== undefined)
+          dataUpdate.enablePrecreate = data.enablePrecreate
+        if (data.precreateBeforeEndDays !== undefined)
+          dataUpdate.precreateBeforeEndDays = data.precreateBeforeEndDays
+        if (data.isRandomItemAgain !== undefined)
+          dataUpdate.isRandomItemAgain = data.isRandomItemAgain
 
         // Handle translations if provided
         let nameUpserts: any[] = []

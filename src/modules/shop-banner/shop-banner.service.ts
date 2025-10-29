@@ -1,3 +1,5 @@
+import { RoleName } from '@/common/constants/role.constant'
+import { ShopBannerStatus } from '@/common/constants/shop-banner.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { ShopBannerMessage } from '@/i18n/message-keys'
 import {
@@ -22,6 +24,8 @@ import { CreateTranslationBodyType } from '../translation/entities/translation.e
 import { TranslationRepository } from '../translation/translation.repo'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import {
+  InvalidMinMaxShopBannerException,
+  OnlyOneShopBannerActiveException,
   ShopBannerAlreadyExistsException,
   ShopBannerInvalidDateRangeException
 } from './dto/shop-bannererror'
@@ -46,11 +50,74 @@ export class ShopBannerService {
     private readonly shopItemRepo: ShopItemRepo
   ) {}
 
-  async list(pagination: PaginationQueryType, lang: string = 'vi') {
+  /**
+   * Convert nameTranslations from { languageId, value } to { key: langCode, value }
+   */
+  private async convertTranslationsToLangCodes(
+    nameTranslations: Array<{ languageId: number; value: string }>
+  ): Promise<Array<{ key: string; value: string }>> {
+    if (!nameTranslations || nameTranslations.length === 0) return []
+
+    const allLangIds = Array.from(new Set(nameTranslations.map((t) => t.languageId)))
+    const langs = await this.languageRepo.getWithListId(allLangIds)
+    const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+
+    return nameTranslations.map((t) => ({
+      key: idToCode.get(t.languageId) || String(t.languageId),
+      value: t.value
+    }))
+  }
+
+  async list(pagination: PaginationQueryType, lang: string = 'vi', roleName: string) {
     const langId = await this.languageRepo.getIdByCode(lang)
-    const data = await this.shopBannerRepo.list(pagination, langId ?? undefined)
+    const isAllLang = roleName === RoleName.Admin ? true : false
+    const data = await this.shopBannerRepo.list(
+      pagination,
+      langId ?? undefined,
+      isAllLang
+    )
+
+    // Convert translations to lang codes for all cases
+    const allTranslations = (data.results || []).flatMap(
+      (item: any) => item.nameTranslations || []
+    )
+    console.log('all ne: ', allTranslations)
+
+    if (allTranslations.length === 0) {
+      return {
+        data,
+        message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+      }
+    }
+
+    const converted = await this.convertTranslationsToLangCodes(allTranslations)
+
+    // Build map for quick lookup
+    const conversionMap = new Map(
+      allTranslations.map((t, idx) => [`${t.languageId}_${t.value}`, converted[idx]])
+    )
+
+    const results = (data.results || []).map((item: any) => {
+      const translationsAll = (item.nameTranslations || []).map(
+        (t: any) =>
+          conversionMap.get(`${t.languageId}_${t.value}`) || {
+            key: String(t.languageId),
+            value: t.value
+          }
+      )
+      const { nameTranslations, ...rest } = item
+      return {
+        ...rest,
+        nameTranslations: translationsAll
+      }
+    })
+    console.log('results', results)
+
     return {
-      data,
+      data: {
+        ...data,
+        results
+      },
       message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
     }
   }
@@ -91,31 +158,50 @@ export class ShopBannerService {
     }
   }
 
-  async listwithDetail(pagination: PaginationQueryType, lang: string = 'vi') {
+  async listwithDetail(
+    pagination: PaginationQueryType,
+    lang: string = 'vi',
+    roleName?: string
+  ) {
     const langId = await this.languageRepo.getIdByCode(lang)
-    const data = await this.shopBannerRepo.listwithDetail(pagination, langId ?? undefined)
-
-    // Build languageId -> code map for all translations present
-    const allLangIds: number[] = Array.from(
-      new Set(
-        (data.results || []).flatMap((item: any) =>
-          (item.nameTranslations || []).map((t: any) => t.languageId)
-        )
-      )
+    const isAllLang = roleName === RoleName.Admin ? true : false
+    const data = await this.shopBannerRepo.listwithDetail(
+      pagination,
+      langId ?? undefined,
+      isAllLang
     )
-    const langs = await this.languageRepo.getWithListId(allLangIds)
-    const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+
+    // Convert translations to lang codes for all cases
+    const allTranslations = (data.results || []).flatMap(
+      (item: any) => item.nameTranslations || []
+    )
+
+    if (allTranslations.length === 0) {
+      return {
+        data,
+        message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+      }
+    }
+
+    const converted = await this.convertTranslationsToLangCodes(allTranslations)
+
+    // Build map for quick lookup
+    const conversionMap = new Map(
+      allTranslations.map((t, idx) => [`${t.languageId}_${t.value}`, converted[idx]])
+    )
 
     const results = (data.results || []).map((item: any) => {
-      const translationsAll = (item.nameTranslations || []).map((t: any) => ({
-        key: idToCode.get(t.languageId) || String(t.languageId),
-        value: t.value
-      }))
+      const translationsAll = (item.nameTranslations || []).map(
+        (t: any) =>
+          conversionMap.get(`${t.languageId}_${t.value}`) || {
+            key: String(t.languageId),
+            value: t.value
+          }
+      )
       const { nameTranslations, ...rest } = item
       return {
         ...rest,
         nameTranslations: translationsAll
-        // nameTranslation: item.nameTranslation // keep single current-lang value for compatibility
       }
     })
 
@@ -128,7 +214,7 @@ export class ShopBannerService {
     }
   }
 
-  async findById(id: number, lang: string = 'vi') {
+  async findById(id: number, lang: string = 'vi', roleName: string) {
     const langId = await this.languageRepo.getIdByCode(lang)
 
     if (!langId) {
@@ -138,18 +224,35 @@ export class ShopBannerService {
       }
     }
 
-    const shopBanner = await this.shopBannerRepo.findByIdWithLangId(id, langId)
+    const isAllLang = roleName === RoleName.Admin ? true : false
+    console.log('admin ne: ', isAllLang)
+
+    const shopBanner = await this.shopBannerRepo.findByIdWithDetail(id, langId, isAllLang)
+
     if (!shopBanner) {
       throw new NotFoundRecordException()
     }
 
-    const data = {}
+    // Convert translations to { key, value } format
+    const nameTranslations = await this.convertTranslationsToLangCodes(
+      (shopBanner as any).nameTranslations || []
+    )
+    console.log('sau convert: ', nameTranslations)
+
+    // Find current translation by langId
+    const currentTranslation = ((shopBanner as any).nameTranslations || []).find(
+      (t: any) => t.languageId === langId
+    )
+
+    // Remove raw nameTranslations from shopBanner
+    const { nameTranslations: _, ...bannerWithoutTranslations } = shopBanner as any
+
     const result = {
-      ...shopBanner,
-      nameTranslation: (shopBanner as any).nameTranslations?.[0]?.value ?? null,
-      descriptionTranslation:
-        (shopBanner as any).descriptionTranslations?.[0]?.value ?? null
+      ...bannerWithoutTranslations,
+      nameTranslation: currentTranslation?.value ?? null,
+      ...(isAllLang ? { nameTranslations } : {})
     }
+    console.log(`${isAllLang ? nameTranslations : 'ehe'}`)
 
     return {
       statusCode: HttpStatus.OK,
@@ -172,6 +275,17 @@ export class ShopBannerService {
 
     try {
       return await this.shopBannerRepo.withTransaction(async (prismaTx) => {
+        if (data.status && data.status === ShopBannerStatus.ACTIVE) {
+          // check coi co thang khac active ko
+          const isHaveActive = await this.shopBannerRepo.findByStatus(
+            ShopBannerStatus.ACTIVE
+          )
+
+          if (isHaveActive) {
+            throw new OnlyOneShopBannerActiveException()
+          }
+        }
+
         const nameKey = `shopBanner.name.${Date.now()}`
         const now = new Date()
 
@@ -193,12 +307,21 @@ export class ShopBannerService {
           throw new ShopBannerInvalidDateRangeException()
         }
 
+        if (data.min && data.max && data.min > data.max) {
+          throw new InvalidMinMaxShopBannerException()
+        }
+
         // Convert data for create
         const dataCreate: CreateShopBannerBodyType = {
           nameKey,
           startDate: startDateNormalized,
           endDate: endDateNormalized,
-          status: data.status
+          status: data.status,
+          min: data.min,
+          max: data.max,
+          enablePrecreate: data.enablePrecreate,
+          precreateBeforeEndDays: data.precreateBeforeEndDays,
+          isRandomItemAgain: data.isRandomItemAgain
         }
 
         createdShopBanner = await this.shopBannerRepo.create(
@@ -312,6 +435,16 @@ export class ShopBannerService {
 
     try {
       return await this.shopBannerRepo.withTransaction(async (prismaTx) => {
+        if (data.status && data.status === ShopBannerStatus.ACTIVE) {
+          // check coi co thang khac active ko
+          const isHaveActive = await this.shopBannerRepo.findByStatus(
+            ShopBannerStatus.ACTIVE
+          )
+
+          if (isHaveActive) {
+            throw new OnlyOneShopBannerActiveException()
+          }
+        }
         // Get current record
         existingShopBanner = await this.shopBannerRepo.findById(id)
         if (!existingShopBanner) throw new NotFoundRecordException()
@@ -341,6 +474,31 @@ export class ShopBannerService {
         if (data.startDate !== undefined) dataUpdate.startDate = normalizedStart as any
         if (data.endDate !== undefined) dataUpdate.endDate = normalizedEnd as any
         if (data.status !== undefined) dataUpdate.status = data.status
+
+        // Validate min/max against current shop items count
+        const currentItemsCount = await this.shopItemRepo.countByShopBannerId(id)
+        console.log('current amount: ', currentItemsCount)
+
+        if (data.min !== undefined && data.min !== null) {
+          if (currentItemsCount < data.min) {
+            throw new InvalidMinMaxShopBannerException()
+          }
+          dataUpdate.min = data.min
+        }
+
+        if (data.max !== undefined && data.max !== null) {
+          if (currentItemsCount > data.max) {
+            throw new InvalidMinMaxShopBannerException()
+          }
+          dataUpdate.max = data.max
+        }
+
+        if (data.enablePrecreate !== undefined)
+          dataUpdate.enablePrecreate = data.enablePrecreate
+        if (data.precreateBeforeEndDays !== undefined)
+          dataUpdate.precreateBeforeEndDays = data.precreateBeforeEndDays
+        if (data.isRandomItemAgain !== undefined)
+          dataUpdate.isRandomItemAgain = data.isRandomItemAgain
 
         // Handle translations if provided
         let nameUpserts: any[] = []
@@ -462,23 +620,32 @@ export class ShopBannerService {
       if (!langId) {
         return {
           statusCode: HttpStatus.OK,
-          data: [],
+          data: null,
           message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
         }
       }
 
-      const banners = await this.shopBannerRepo.findValidByDateWithLangId(date, langId)
+      const banner = await this.shopBannerRepo.findValidByDateWithLangId(date, langId)
+
+      // If no active banner found
+      if (!banner) {
+        return {
+          statusCode: HttpStatus.OK,
+          data: null,
+          message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
+        }
+      }
 
       // If we have a userId, compute canBuy per item based on their total purchased quantities
       if (userId) {
         // Collect unique item IDs
         const itemIds = Array.from(
-          new Set(banners.flatMap((b: any) => (b.shopItems || []).map((i: any) => i.id)))
+          new Set(((banner as any).shopItems || []).map((i: any) => i.id as number))
         )
 
         // Fetch totals in parallel
         const totals = await Promise.all(
-          itemIds.map(async (itemId) => ({
+          itemIds.map(async (itemId: number) => ({
             itemId,
             total: await this.shopPurchaseRepo.getTotalPurchasedQuantityByUserAndItem(
               userId,
@@ -486,7 +653,9 @@ export class ShopBannerService {
             )
           }))
         )
-        const totalMap = new Map<number, number>(totals.map((t) => [t.itemId, t.total]))
+        const totalMap = new Map<number, number>(
+          totals.map((t) => [t.itemId as number, t.total])
+        )
 
         // Fetch user's owned pokemons
         const userPokemons = await this.userPokemonRepo.getByUserId(userId)
@@ -494,9 +663,17 @@ export class ShopBannerService {
           (userPokemons || []).map((up: any) => up.pokemonId)
         )
 
-        const data = banners.map((b: any) => ({
-          ...b,
-          shopItems: (b.shopItems || []).map((it: any) => {
+        // Remove nameTranslations array from banner, keep only nameTranslation
+        const { nameTranslations: _, ...bannerData } = banner as any
+
+        // Always sort shopItems by id ascending
+        const sortedItems = (((banner as any).shopItems || []) as any[])
+          .slice()
+          .sort((a: any, b: any) => (a?.id ?? 0) - (b?.id ?? 0))
+
+        const data = {
+          ...bannerData,
+          shopItems: sortedItems.map((it: any) => {
             // 1. Nếu user đã sở hữu pokemon này → canBuy = false
             const ownsTarget = ownedPokemonIds.has(it.pokemonId)
             if (ownsTarget) {
@@ -530,7 +707,7 @@ export class ShopBannerService {
             const withinLimit = limit == null ? true : bought < limit
             return { ...it, canBuy: withinLimit }
           })
-        }))
+        }
 
         return {
           statusCode: HttpStatus.OK,
@@ -540,10 +717,21 @@ export class ShopBannerService {
       }
 
       // No user: default canBuy to true for all items
-      const data = banners.map((b: any) => ({
-        ...b,
-        shopItems: (b.shopItems || []).map((it: any) => ({ ...it, canBuy: true }))
-      }))
+      // Remove nameTranslations array from banner, keep only nameTranslation
+      const { nameTranslations: _, ...bannerData } = banner as any
+
+      // Always sort shopItems by id ascending
+      const sortedItems = (((banner as any).shopItems || []) as any[])
+        .slice()
+        .sort((a: any, b: any) => (a?.id ?? 0) - (b?.id ?? 0))
+
+      const data = {
+        ...bannerData,
+        shopItems: sortedItems.map((it: any) => ({
+          ...it,
+          canBuy: true
+        }))
+      }
 
       return {
         statusCode: HttpStatus.OK,
@@ -553,5 +741,10 @@ export class ShopBannerService {
     } catch (error) {
       throw error
     }
+  }
+
+  async checkActiveShopBanner() {
+    const isHaveActive = await this.shopBannerRepo.findByStatus(ShopBannerStatus.ACTIVE)
+    return isHaveActive !== null
   }
 }

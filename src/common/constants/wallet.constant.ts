@@ -1,6 +1,6 @@
 export const walletType = {
-  COIN: 'COIN',
-  FREE_COIN: 'FREE_COIN'
+  POKE_COINS: 'POKE_COINS',
+  SPARKLES: 'SPARKLES'
 } as const
 
 export type WalletTypeType = (typeof walletType)[keyof typeof walletType]

@@ -102,6 +102,9 @@ model User {
   createdGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseCreatedBy")
   updatedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseUpdatedBy")
   deletedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseDeletedBy")
+  createdShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceCreatedBy")
+  updatedShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceUpdatedBy")
+  deletedShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -1093,7 +1096,7 @@ model Wallet {
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  type    WalletType @default(COIN) // COIN | FREE_COIN
+  type    WalletType @default(SPARKLES) // SPARKLES | POKÉ_COINS
   balance Int        @default(0)
 
   transactions WalletTransaction[]
@@ -1161,6 +1164,7 @@ model ShopBanner {
   max                    Int          @default(8)
   enablePrecreate        Boolean      @default(false) // bật/tắt tự tạo
   precreateBeforeEndDays Int          @default(2) // tạo trước X ngày (mặc định 2)
+  isRandomItemAgain      Boolean      @default(false) // có thể trùng item khi random lại
 
   // Quan hệ với ShopItem
   shopItems ShopItem[]
@@ -1174,6 +1178,23 @@ model ShopBanner {
   deletedBy   User? @relation("ShopBannerDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
   updatedById Int?
   updatedBy   User? @relation("ShopBannerUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ShopRarityPrice {
+  id     Int           @id @default(autoincrement())
+  rarity RarityPokemon
+  price  Int           @default(1000)
+
+  createdById Int?
+  createdBy   User? @relation("ShopRarityPriceCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("ShopRarityPriceDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("ShopRarityPriceUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
@@ -1256,6 +1277,7 @@ model GachaBanner {
   // auto pre-create before end
   enablePrecreate        Boolean @default(false) // bật/tắt tự tạo
   precreateBeforeEndDays Int     @default(2) // tạo trước X ngày (mặc định 2)
+  isRandomItemAgain      Boolean @default(false) // có thể trùng item khi random lại
 
   amount5Star Int @default(1) // Số lượng 5★
   amount4Star Int @default(3) // Số lượng 4★
@@ -1553,8 +1575,8 @@ enum QuestionType {
 }
 
 enum WalletType {
-  COIN
-  FREE_COIN
+  SPARKLES
+  POKE_COINS
 }
 
 enum WalletTransactionType {
@@ -1576,7 +1598,7 @@ enum TransactionPurpose {
   SUBSCRIPTION
   GACHA
   SHOP
-  QUIZ_ATTEMPT
+  DAILY_REQUEST
   REWARD
   REFUND
 }

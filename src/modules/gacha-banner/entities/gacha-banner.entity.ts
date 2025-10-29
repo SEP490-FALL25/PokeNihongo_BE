@@ -1,6 +1,9 @@
 import { GachaBannerStatus } from '@/common/constants/shop-banner.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { GachaBannerMessage } from '@/i18n/message-keys'
+import { GachaItemRateSchema } from '@/modules/gacha-item-rate/entities/gacha-item-rate.entity'
+import { GachaItemSchema } from '@/modules/gacha-item/entities/gacha-item.entity'
+import { PokemonSchema } from '@/modules/pokemon/entities/pokemon.entity'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -21,7 +24,9 @@ export const GachaBannerSchema = z.object({
       GachaBannerStatus.PREVIEW
     ])
     .default(GachaBannerStatus.PREVIEW),
-
+  enablePrecreate: z.boolean().default(false), // bật/tắt tự tạo
+  precreateBeforeEndDays: z.number().min(0).default(2), // tạo trước X ngày (mặc định 2)
+  isRandomItemAgain: z.boolean().default(false), // có thể trùng item khi random lại
   hardPity5Star: z.number().default(200),
   costRoll: z.number().default(100),
   amount5Star: z.number().default(1),
@@ -43,6 +48,9 @@ export const CreateGachaBannerBodyInputSchema = GachaBannerSchema.pick({
   endDate: true,
   status: true,
   hardPity5Star: true,
+  enablePrecreate: true,
+  precreateBeforeEndDays: true,
+  isRandomItemAgain: true,
   costRoll: true,
   amount5Star: true,
   amount4Star: true,
@@ -61,6 +69,10 @@ export const CreateGachaBannerBodySchema = GachaBannerSchema.pick({
   endDate: true,
   status: true,
   hardPity5Star: true,
+  enablePrecreate: true,
+  precreateBeforeEndDays: true,
+  isRandomItemAgain: true,
+
   costRoll: true,
   amount5Star: true,
   amount4Star: true,
@@ -95,7 +107,21 @@ export const GetGachaBannerDetailByUserSchema = GachaBannerSchema.extend({
 export const GetGachaBannerDetailResSchema = z.object({
   statusCode: z.number(),
   data: GachaBannerSchema.extend({
-    nameTranslation: z.string()
+    nameTranslation: z.string(),
+    nameTranslations: TranslationInputSchema.optional().nullable(),
+    items: z.array(
+      GachaItemSchema.extend({
+        gachaItemRate: GachaItemRateSchema.pick({ rate: true, starType: true }),
+        pokemon: PokemonSchema.pick({
+          id: true,
+          pokedex_number: true,
+          nameJp: true,
+          nameTranslations: true,
+          imageUrl: true,
+          rarity: true
+        })
+      })
+    )
   }),
   message: z.string()
 })

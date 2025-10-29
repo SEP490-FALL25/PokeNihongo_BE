@@ -1,7 +1,10 @@
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
-import { ShopBannerStatus } from '@/common/constants/shop-banner.constant'
+import {
+  ShopBannerStatus,
+  ShopBannerStatusType
+} from '@/common/constants/shop-banner.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
@@ -95,7 +98,11 @@ export class ShopBannerRepo {
     return result
   }
 
-  async list(pagination: PaginationQueryType, langId?: number) {
+  async list(
+    pagination: PaginationQueryType,
+    langId?: number,
+    isAllLang: boolean = false
+  ) {
     const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, REWARD_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
@@ -135,14 +142,20 @@ export class ShopBannerRepo {
       this.prismaService.shopBanner.count({ where }),
       this.prismaService.shopBanner.findMany({
         where,
-        include: {
-          nameTranslations: langId
-            ? {
-                where: childNameIncludeWhere,
-                select: { value: true }
+        include: isAllLang
+          ? {
+              nameTranslations: {
+                select: { value: true, languageId: true }
               }
-            : undefined
-        },
+            }
+          : langId
+            ? {
+                nameTranslations: {
+                  where: childNameIncludeWhere,
+                  select: { value: true }
+                }
+              }
+            : undefined,
         orderBy,
         skip,
         take
@@ -154,6 +167,7 @@ export class ShopBannerRepo {
       const { nameTranslations, ...rest } = d
       return {
         ...rest,
+        ...(isAllLang ? { nameTranslations } : {}),
         nameTranslation: langId ? (nameTranslations?.[0]?.value ?? d.nameKey) : undefined
       }
     })
@@ -169,7 +183,11 @@ export class ShopBannerRepo {
     }
   }
 
-  async listwithDetail(pagination: PaginationQueryType, langId?: number) {
+  async listwithDetail(
+    pagination: PaginationQueryType,
+    langId?: number,
+    isAllLang: boolean = false
+  ) {
     const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, REWARD_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
@@ -210,10 +228,14 @@ export class ShopBannerRepo {
       this.prismaService.shopBanner.findMany({
         where,
         include: {
-          // Always include all translations with languageId for service-level mapping
-          nameTranslations: {
-            select: { value: true, languageId: true }
-          },
+          nameTranslations: isAllLang
+            ? { select: { value: true, languageId: true } }
+            : langId
+              ? {
+                  where: { languageId: langId },
+                  select: { value: true, languageId: true }
+                }
+              : { select: { value: true, languageId: true } },
           shopItems: {
             where: { deletedAt: null, isActive: true },
             include: {
@@ -262,37 +284,42 @@ export class ShopBannerRepo {
     })
   }
 
-  findByIdWithLangId(id: number, langId: number): Promise<ShopBannerType | null> {
+  findByIdWithDetail(
+    id: number,
+    langId: number,
+    isAllLang: boolean = false
+  ): Promise<ShopBannerType | null> {
     return this.prismaService.shopBanner.findUnique({
-      where: {
-        id,
-        deletedAt: null
-      },
+      where: { id, deletedAt: null },
       include: {
-        nameTranslations: {
-          where: {
-            languageId: langId
-          }
-        },
+        nameTranslations: isAllLang
+          ? { select: { value: true, languageId: true } }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } },
         shopItems: {
           where: { deletedAt: null, isActive: true },
           include: {
-            pokemon: {
-              select: {
-                pokedex_number: true,
-                nameJp: true,
-                nameTranslations: true,
-                imageUrl: true
-              }
-            }
+            pokemon: isAllLang
+              ? true
+              : {
+                  select: {
+                    pokedex_number: true,
+                    nameJp: true,
+                    nameTranslations: true,
+                    imageUrl: true,
+                    rarity: true
+                  }
+                }
           }
         }
       }
     })
   }
 
-  async findValidByDateWithLangId(date: Date, langId: number): Promise<Array<any>> {
-    const data = await this.prismaService.shopBanner.findMany({
+  async findValidByDateWithLangId(
+    date: Date,
+    langId: number
+  ): Promise<ShopBannerType | null> {
+    const data = await this.prismaService.shopBanner.findFirst({
       where: {
         deletedAt: null,
         status: ShopBannerStatus.ACTIVE,
@@ -326,10 +353,12 @@ export class ShopBannerRepo {
       orderBy: { id: 'asc' }
     })
 
-    return data.map((d: any) => ({
-      ...d,
-      nameTranslation: d.nameTranslations?.[0]?.value ?? d.nameKey
-    }))
+    if (!data) return null
+
+    return {
+      ...data,
+      nameTranslation: (data as any).nameTranslations?.[0]?.value ?? data.nameKey
+    } as any
   }
 
   /**
@@ -344,6 +373,9 @@ export class ShopBannerRepo {
         startDate: true,
         endDate: true,
         status: true,
+        enablePrecreate: true,
+        precreateBeforeEndDays: true,
+        isRandomItemAgain: true,
         deletedAt: true,
         createdAt: true,
         updatedAt: true,
@@ -352,6 +384,15 @@ export class ShopBannerRepo {
         createdById: true,
         deletedById: true,
         updatedById: true
+      }
+    })
+  }
+
+  findByStatus(status: ShopBannerStatusType): Promise<ShopBannerType | null> {
+    return this.prismaService.shopBanner.findFirst({
+      where: {
+        status,
+        deletedAt: null
       }
     })
   }

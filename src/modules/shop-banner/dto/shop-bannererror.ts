@@ -18,3 +18,30 @@ export class ShopBannerInvalidDateRangeException extends BadRequestException {
     })
   }
 }
+
+export class OnlyOneShopBannerActiveException extends BadRequestException {
+  constructor() {
+    super({
+      message: ShopBannerMessage.ONLY_ONE_ACTIVE,
+      errorKey: ShopBannerMessage.ONLY_ONE_ACTIVE
+    })
+  }
+}
+
+export class InvalidAmountShopBannerException extends BadRequestException {
+  constructor() {
+    super({
+      message: ShopBannerMessage.INVALID_MIN_MAX,
+      errorKey: ShopBannerMessage.INVALID_MIN_MAX
+    })
+  }
+}
+
+export class InvalidMinMaxShopBannerException extends BadRequestException {
+  constructor() {
+    super({
+      message: ShopBannerMessage.INVALID_MIN_MAX,
+      errorKey: ShopBannerMessage.INVALID_MIN_MAX
+    })
+  }
+}

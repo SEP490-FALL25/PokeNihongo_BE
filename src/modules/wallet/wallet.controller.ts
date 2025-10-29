@@ -1,5 +1,4 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
-import { IsPublic } from '@/common/decorators/auth.decorator'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
@@ -36,21 +35,18 @@ export class WalletController {
   constructor(private readonly walletService: WalletService) {}
 
   @Get()
-  @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.walletService.list(query, lang)
   }
 
   @Get('user')
-  @IsPublic()
   @ZodSerializerDto(GetWalletsWithUserResDTO)
   getWalletsByUser(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
     return this.walletService.getWalletsByUser(userId, lang)
   }
 
   @Get(':walletId')
-  @IsPublic()
   @ZodSerializerDto(GetWalletDetailResDTO)
   findById(@Param() params: GetWalletParamsDTO, @I18nLang() lang: string) {
     return this.walletService.findById(params.walletId, lang)

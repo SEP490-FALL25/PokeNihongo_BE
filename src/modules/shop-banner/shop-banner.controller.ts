@@ -1,5 +1,4 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
-import { IsPublic } from '@/common/decorators/auth.decorator'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
@@ -36,14 +35,16 @@ export class ShopBannerController {
   constructor(private readonly shopBannerService: ShopBannerService) {}
 
   @Get()
-  @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
-  list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
-    return this.shopBannerService.list(query, lang)
+  list(
+    @Query() query: PaginationQueryDTO,
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string
+  ) {
+    return this.shopBannerService.list(query, lang, roleName)
   }
 
   @Get('all-pokemon/:shopBannerId')
-  @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
   getListAllPokemonWithShopId(
     @Param('shopBannerId') shopBannerId: number,
@@ -54,10 +55,13 @@ export class ShopBannerController {
   }
 
   @Get('all/details')
-  @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
-  listwithDetail(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
-    return this.shopBannerService.listwithDetail(query, lang)
+  listwithDetail(
+    @Query() query: PaginationQueryDTO,
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string
+  ) {
+    return this.shopBannerService.listwithDetail(query, lang, roleName)
   }
 
   @Get('today/user')
@@ -67,10 +71,13 @@ export class ShopBannerController {
   }
 
   @Get(':shopBannerId')
-  @IsPublic()
   @ZodSerializerDto(GetShopBannerDetailResDTO)
-  findById(@Param() params: GetShopBannerParamsDTO, @I18nLang() lang: string) {
-    return this.shopBannerService.findById(params.shopBannerId, lang)
+  findById(
+    @Param() params: GetShopBannerParamsDTO,
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string
+  ) {
+    return this.shopBannerService.findById(params.shopBannerId, lang, roleName)
   }
 
   @Post()

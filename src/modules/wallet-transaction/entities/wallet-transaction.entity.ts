@@ -20,7 +20,7 @@ export const WalletTransactionSchema = z.object({
     walletPurposeType.GACHA,
     walletPurposeType.SUBSCRIPTION,
     walletPurposeType.SHOP,
-    walletPurposeType.QUIZ_ATTEMPT,
+    walletPurposeType.DAILY_REQUEST,
     walletPurposeType.REWARD,
     walletPurposeType.REFUND
   ]),

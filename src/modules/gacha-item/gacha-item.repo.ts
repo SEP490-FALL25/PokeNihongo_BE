@@ -108,7 +108,25 @@ export class GachaItemRepo {
 
   async findById(id: number): Promise<GachaItem | null> {
     return this.prismaService.gachaItem.findFirst({
-      where: { id, deletedAt: null }
+      where: { id, deletedAt: null },
+      include: {
+        pokemon: {
+          select: {
+            id: true,
+            nameJp: true,
+            nameTranslations: true,
+            imageUrl: true,
+            rarity: true
+          }
+        },
+        gachaItemRate: {
+          select: {
+            id: true,
+            starType: true,
+            rate: true
+          }
+        }
+      }
     })
   }
 
@@ -163,8 +181,22 @@ export class GachaItemRepo {
       this.prismaService.gachaItem.findMany({
         where,
         include: {
-          pokemon: true,
-          gachaItemRate: true
+          pokemon: {
+            select: {
+              id: true,
+              nameJp: true,
+              nameTranslations: true,
+              imageUrl: true,
+              rarity: true
+            }
+          },
+          gachaItemRate: {
+            select: {
+              id: true,
+              starType: true,
+              rate: true
+            }
+          }
         },
         orderBy,
         skip,
@@ -174,10 +206,12 @@ export class GachaItemRepo {
 
     return {
       results: data,
-      currentPage: pagination.currentPage,
-      pageSize: pagination.pageSize,
-      totalPage: Math.ceil(totalItems / pagination.pageSize),
-      totalItem: totalItems
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
     }
   }
 }

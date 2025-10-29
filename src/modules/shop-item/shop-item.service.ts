@@ -11,6 +11,7 @@ import { PaginationQueryType } from '@/shared/models/request.model'
 import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
 import { ShopBannerRepo } from '../shop-banner/shop-banner.repo'
+import { ShopRarityPriceRepo } from '../shop-rarity-price/shop-rarity-price.repo'
 import {
   InvalidShopBannerTimeException,
   MaxItemsExceededException,
@@ -36,7 +37,8 @@ export class ShopItemService {
     @Inject(forwardRef(() => ShopBannerRepo))
     private shopBannerRepo: ShopBannerRepo,
     private pokemonRepo: PokemonRepo,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private shopRarityPriceRepo: ShopRarityPriceRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -345,7 +347,28 @@ export class ShopItemService {
   async getRandomListItem(body: GetRamdomAmountShopItemBodyType, lang: string = 'vi') {
     try {
       // 1. Validate shop banner
-      const banner = await this.validateShopBannerForCreate(body.shopBannerId)
+      // 3. Lấy tất cả pokemon có thể random (exclude LEGENDARY)
+      // 4  Lấy bảng giá từ shop-rarity-price
+      const [banner, allPokemons, allPrices, existingItems] = await Promise.all([
+        this.validateShopBannerForCreate(body.shopBannerId),
+        this.pokemonRepo.findAllRandomable(),
+        this.shopRarityPriceRepo.list({
+          currentPage: 1,
+          pageSize: 100,
+          qs: ''
+        }),
+        this.shopItemRepo.list({
+          currentPage: 1,
+          pageSize: 1000,
+          qs: `shopBannerId=${body.shopBannerId}`
+        })
+      ])
+
+      // Tạo Set chứa pokemonId đã có trong shop banner
+      const existingPokemonIds = new Set(
+        existingItems.results.map((item: any) => item.pokemonId)
+      )
+      console.log('list pokeId: ', existingPokemonIds)
 
       // 2. Xác định số lượng pokemon cần random
       const amount = body.amount ?? banner.max
@@ -353,9 +376,6 @@ export class ShopItemService {
       if (body.amount != null && amount > banner.max) {
         throw new MaxItemsExceededException()
       }
-
-      // 3. Lấy tất cả pokemon có thể random (exclude LEGENDARY)
-      const allPokemons = await this.pokemonRepo.findAllRandomable()
 
       if (allPokemons.length === 0) {
         throw new NotFoundRecordException()
@@ -372,15 +392,29 @@ export class ShopItemService {
       // 5. Random pokemon theo tỉ lệ và quy tắc
       const selectedPokemons = this.randomPokemonsWithRules(pokemonsByRarity, amount)
 
-      // 6. Tạo shop items từ pokemon đã random
-      const items = selectedPokemons.map((pokemon) => ({
-        shopBannerId: body.shopBannerId,
-        pokemonId: pokemon.id,
-        price: this.calculatePriceByRarity(pokemon.rarity),
-        purchaseLimit: 10, // Default limit
-        isActive: true,
-        pokemon
-      }))
+      // Tạo Map để tra cứu giá theo rarity
+      const priceMap = new Map<string, number>(
+        allPrices.results.map((p) => [p.rarity, p.price])
+      )
+
+      // 7. Tạo shop items từ pokemon đã random
+      const items = selectedPokemons.map((pokemon) => {
+        const isHas = existingPokemonIds.has(pokemon.id)
+        console.log(
+          `Pokemon ID: ${pokemon.id}, isHas: ${isHas}, existingIds has:`,
+          existingPokemonIds.has(pokemon.id)
+        )
+        return {
+          shopBannerId: body.shopBannerId,
+          pokemonId: pokemon.id,
+          price:
+            priceMap.get(pokemon.rarity) ?? this.calculatePriceByRarity(pokemon.rarity),
+          purchaseLimit: 10, // Default limit
+          isActive: true,
+          isHas,
+          pokemon
+        }
+      })
 
       return {
         statusCode: 200,

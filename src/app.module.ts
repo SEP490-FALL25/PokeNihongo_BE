@@ -36,8 +36,10 @@ import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
 
+import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
 import { GachaBannerModule } from './modules/gacha-banner/gacha-banner.module'
 import { GachaItemRateModule } from './modules/gacha-item-rate/gacha-item-rate.module'
+import { GachaItemModule } from './modules/gacha-item/gacha-item.module'
 import { QuestionBankModule } from './modules/question-bank/question-bank.module'
 import { RewardModule } from './modules/reward/reward.module'
 import { ShopBannerModule } from './modules/shop-banner/shop-banner.module'
@@ -57,7 +59,7 @@ import { WalletTransactionModule } from './modules/wallet-transaction/wallet-tra
 import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
-import { GachaItemModule } from './modules/gacha-item/gacha-item.module';
+import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module';
 
 @Module({
   imports: [
@@ -115,11 +117,13 @@ import { GachaItemModule } from './modules/gacha-item/gacha-item.module';
     ShopPurchaseModule,
     GachaBannerModule,
     GachaItemRateModule,
-    GachaItemModule
+    GachaItemModule,
+    ShopRarityPriceModule
   ],
 
   controllers: [],
   providers: [
+    HandleShopBannerCronjob,
     {
       provide: APP_PIPE,
       useClass: CustomZodValidationPipe
