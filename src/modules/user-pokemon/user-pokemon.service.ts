@@ -181,7 +181,8 @@ export class UserPokemonService {
   async getPokemonListWithUser(
     query: PaginationQueryType,
     userId: number,
-    lang: string = 'vi'
+    lang: string = 'vi',
+    hasPokemon: boolean = false
   ) {
     // 1. Lấy danh sách tất cả pokemon
     const pokemonData = await this.pokemonRepo.getPokemonListWithPokemonUser(query)
@@ -200,7 +201,6 @@ export class UserPokemonService {
         })
       })
 
-      // Batch load all type effectiveness data once
       // const allTypeEffectiveness = await this.prismaService.typeEffectiveness.findMany({
       //   where: {
       //     defenderId: {
@@ -238,19 +238,6 @@ export class UserPokemonService {
       const pokemonWithUserInfo = pokemonData.results.map((pokemon: any) => {
         const allWeaknesses = new Map<number, any>()
 
-        // pokemon.types?.forEach((type: any) => {
-        //   const weaknesses = effectivenessMap.get(type.id) || []
-        //   weaknesses.forEach((weakness) => {
-        //     if (
-        //       !allWeaknesses.has(weakness.id) ||
-        //       allWeaknesses.get(weakness.id).effectiveness_multiplier <
-        //         weakness.effectiveness_multiplier
-        //     ) {
-        //       allWeaknesses.set(weakness.id, weakness)
-        //     }
-        //   })
-        // })
-
         return {
           ...pokemon,
           weaknesses: Array.from(allWeaknesses.values()),
@@ -259,6 +246,12 @@ export class UserPokemonService {
       })
 
       pokemonData.results = pokemonWithUserInfo
+
+      if (hasPokemon) {
+        pokemonData.results = pokemonWithUserInfo.filter((pokemon: any) => {
+          return hasPokemon ? pokemon.userPokemon : !pokemon.userPokemon
+        })
+      }
     }
 
     return {
@@ -937,6 +930,82 @@ export class UserPokemonService {
         throw new UserPokemonNotFoundException()
       }
       throw error
+    }
+  }
+
+  async getWithEvolvesPokemon(pokemonId: number, userId: number, lang: string = 'vi') {
+    // 1. Lấy userPokemon với pokemon, level và evolution chain
+    const userPokemon = await this.userPokemonRepo.findByPokemonId(pokemonId)
+
+    if (!userPokemon) {
+      throw new UserPokemonNotFoundException()
+    }
+
+    const weaknesses = await this.getWeaknessesForPokemon(userPokemon.pokemon?.types)
+
+    // 2. Verify ownership
+    if (userPokemon.userId !== userId) {
+      throw new InvalidUserAccessPokemonException()
+    }
+
+    // 3. Lấy tất cả pokemon IDs cần check ownership (previous + next)
+    const pokemonIdsToCheck: number[] = []
+
+    if (userPokemon.pokemon?.previousPokemons) {
+      pokemonIdsToCheck.push(
+        ...userPokemon.pokemon.previousPokemons.map((p: any) => p.id)
+      )
+    }
+
+    if (userPokemon.pokemon?.nextPokemons) {
+      pokemonIdsToCheck.push(...userPokemon.pokemon.nextPokemons.map((p: any) => p.id))
+    }
+
+    // 4. Lấy tất cả userPokemon của user có pokemonId trong list
+    const userOwnedPokemons = await Promise.all(
+      pokemonIdsToCheck.map((pokemonId) =>
+        this.userPokemonRepo.findByUserAndPokemon(userId, pokemonId)
+      )
+    )
+
+    // 5. Tạo map để lookup nhanh
+    const ownedPokemonMap = new Map<number, any>()
+    userOwnedPokemons.forEach((up) => {
+      if (up) {
+        ownedPokemonMap.set(up.pokemonId, up)
+      }
+    })
+
+    // 6. Map previousPokemons với userPokemon
+    const previousPokemonsWithOwnership =
+      userPokemon.pokemon?.previousPokemons?.map((prevPokemon: any) => ({
+        ...prevPokemon,
+        userPokemon: ownedPokemonMap.has(prevPokemon.id) || false
+      })) || []
+
+    // 7. Map nextPokemons với userPokemon
+    const nextPokemonsWithOwnership =
+      userPokemon.pokemon?.nextPokemons?.map((nextPokemon: any) => ({
+        ...nextPokemon,
+        userPokemon: ownedPokemonMap.has(nextPokemon.id) || false
+      })) || []
+
+    // 8. Construct response
+    const result = {
+      ...userPokemon,
+      pokemon: {
+        ...userPokemon.pokemon,
+        weaknesses,
+        previousPokemons: previousPokemonsWithOwnership,
+        nextPokemons: nextPokemonsWithOwnership
+      }
+    }
+    // chinh lai gan userPokemon  = true hoac false
+
+    return {
+      statusCode: 200,
+      data: result,
+      message: this.i18nService.translate(UserPokemonMessage.GET_DETAIL_SUCCESS, lang)
     }
   }
 }
