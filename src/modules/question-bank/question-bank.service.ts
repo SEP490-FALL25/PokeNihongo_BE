@@ -600,11 +600,6 @@ export class QuestionBankService {
             }
         }
 
-        // Rule 4: All answers must be Japanese text
-        for (const answer of answers) {
-            if (!isJapaneseText(answer.answerJp)) {
-                throw new BadRequestException(`Câu trả lời "${answer.answerJp}" phải là tiếng Nhật`)
-            }
-        }
+        // Rule 4 removed: allow any string for answerJp
     }
 }
