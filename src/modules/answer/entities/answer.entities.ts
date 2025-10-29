@@ -25,6 +25,9 @@ export const AnswerWithTranslationType = AnswerType.omit({ answerKey: true }).ex
         language: z.string(),
         value: z.string()
     })).optional(),
+    // Parsed fields from combined format "jp:...+vi:...+en:..." (optional)
+    answerVi: z.string().optional(),
+    answerEn: z.string().optional(),
     questionBank: z.object({
         id: z.number(),
         questionJp: z.string(),
@@ -120,7 +123,10 @@ export const AnswerResponseSchema = z
             meanings: z.array(z.object({
                 language_code: z.string(),
                 value: z.string()
-            })).optional()
+            })).optional(),
+            // Parsed convenience fields
+            answerVi: z.string().optional(),
+            answerEn: z.string().optional()
         }),
         message: z.string()
     })
