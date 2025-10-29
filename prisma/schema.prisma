@@ -1370,12 +1370,12 @@ model GachaPurchase {
   walletTrans   WalletTransaction? @relation(fields: [walletTransId], references: [id], onDelete: SetNull)
 
   // Liên kết tới pity chung
-  pityId    Int?
-  pityCycle UserGachaPity? @relation(fields: [pityId], references: [id], onDelete: SetNull)
+  pityId          Int?
+  pityCountBefore Int
+  pityCountAfter  Int
 
-  rollCount Int      @default(1) // 1 hoặc 10
-  totalCost Int      @default(0)
-  rolledAt  DateTime @default(now())
+  rollCount Int @default(1) // 1 hoặc 10
+  totalCost Int @default(0)
 
   // Danh sách kết quả roll của lần này
   rollResults GachaRollHistory[]
@@ -1388,9 +1388,11 @@ model GachaPurchase {
   updatedById Int?
   updatedBy   User? @relation("GachaPurchaseUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
 
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  UserGachaPity   UserGachaPity? @relation(fields: [userGachaPityId], references: [id])
+  userGachaPityId Int?
 
   @@index([userId])
   @@index([bannerId])

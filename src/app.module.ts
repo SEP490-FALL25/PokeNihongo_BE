@@ -61,6 +61,7 @@ import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module';
 import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.module';
+import { GachaPurchaseModule } from './modules/gacha-purchase/gacha-purchase.module';
 
 @Module({
   imports: [
@@ -120,7 +121,8 @@ import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.m
     GachaItemRateModule,
     GachaItemModule,
     ShopRarityPriceModule,
-    UserGachaPityModule
+    UserGachaPityModule,
+    GachaPurchaseModule
   ],
 
   controllers: [],
