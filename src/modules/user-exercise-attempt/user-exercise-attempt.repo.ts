@@ -1,6 +1,7 @@
-import { UserExerciseAttemptType } from '@/modules/user-exercise-attempt/entities/user-exercise-attempt.entities'
+import { LatestExerciseAttemptType, UserExerciseAttemptType } from '@/modules/user-exercise-attempt/entities/user-exercise-attempt.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
+import { LessonContentsType } from '@prisma/client'
 
 @Injectable()
 export class UserExerciseAttemptRepository {
@@ -174,7 +175,7 @@ export class UserExerciseAttemptRepository {
         return completedAttempts.map(attempt => attempt.exerciseId)
     }
 
-    async findLatestByLessonAndUser(userId: number, lessonId: number) {
+    async findLatestByLessonAndUser(userId: number, lessonId: number): Promise<LatestExerciseAttemptType[]> {
         // Lấy tất cả exercise trong lesson
         const exercises = await this.prismaService.exercises.findMany({
             where: { lessonId },
@@ -246,32 +247,34 @@ export class UserExerciseAttemptRepository {
                         }
                     })
 
-                    return {
+                    const obj: LatestExerciseAttemptType = {
                         id: newAttempt.id,
                         userId: newAttempt.userId,
                         exerciseId: newAttempt.exerciseId,
-                        exerciseType: newAttempt.exercise.exerciseType,
+                        exerciseType: newAttempt.exercise.exerciseType as LessonContentsType,
                         status: newAttempt.status,
                         createdAt: newAttempt.createdAt,
                         updatedAt: newAttempt.updatedAt
                     }
+                    return obj
                 }
 
                 // 4. Trả về attempt đã tìm thấy
-                return {
+                const obj: LatestExerciseAttemptType = {
                     id: priorityAttempt.id,
                     userId: priorityAttempt.userId,
                     exerciseId: priorityAttempt.exerciseId,
-                    exerciseType: priorityAttempt.exercise.exerciseType,
+                    exerciseType: priorityAttempt.exercise.exerciseType as LessonContentsType,
                     status: priorityAttempt.status,
                     createdAt: priorityAttempt.createdAt,
                     updatedAt: priorityAttempt.updatedAt
                 }
+                return obj
             })
         )
 
         // Lọc bỏ null values (không cần thiết nữa vì luôn tạo attempt mới)
-        return latestAttempts.filter(attempt => attempt !== null)
+        return latestAttempts.filter((attempt): attempt is LatestExerciseAttemptType => attempt !== null)
     }
 }
 

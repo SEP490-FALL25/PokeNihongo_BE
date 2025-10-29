@@ -1,15 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { LessonContentsType } from '@prisma/client'
 import { ExercisesSortField, SortOrder } from '@/common/enum/enum'
 
 // Swagger DTOs - for API documentation only
 export class CreateExercisesSwaggerDTO {
 
     @ApiProperty({
-        example: 'multiple_choice',
-        description: 'Loại bài tập QUIZ, multiple_choice, matching, listening, speaking',
-        enum: ['QUIZ', 'multiple_choice', 'matching', 'listening', 'speaking']
+        example: 'VOCABULARY',
+        description: 'Loại bài tập',
+        enum: LessonContentsType
     })
-    exerciseType: string
+    exerciseType: LessonContentsType
 
     @ApiProperty({ example: false, description: 'Trạng thái bị chặn' })
     isBlocked?: boolean
@@ -24,12 +25,12 @@ export class CreateExercisesSwaggerDTO {
 export class UpdateExercisesSwaggerDTO {
 
     @ApiProperty({
-        example: 'multiple_choice',
-        description: 'Loại bài tập QUIZ, multiple_choice, matching, listening, speaking',
-        enum: ['QUIZ', 'multiple_choice', 'matching', 'listening', 'speaking'],
+        example: 'VOCABULARY',
+        description: 'Loại bài tập',
+        enum: LessonContentsType,
         required: false
     })
-    exerciseType?: string
+    exerciseType?: LessonContentsType
 
     @ApiProperty({ example: false, description: 'Trạng thái bị chặn', required: false })
     isBlocked?: boolean
@@ -50,11 +51,11 @@ export class GetExercisesListQuerySwaggerDTO {
 
     @ApiProperty({
         example: 'multiple_choice',
-        description: 'Lọc theo loại bài tập QUIZ, multiple_choice, matching, listening, speaking',
-        enum: ['QUIZ', 'multiple_choice', 'matching', 'listening', 'speaking'],
+        description: 'Lọc theo loại bài tập',
+        enum: LessonContentsType,
         required: false
     })
-    exerciseType?: string
+    exerciseType?: LessonContentsType
 
     @ApiProperty({ example: 1, description: 'Lọc theo ID bài học', required: false })
     lessonId?: number
@@ -87,8 +88,8 @@ export class ExercisesResponseSwaggerDTO {
     id: number
 
 
-    @ApiProperty({ example: 'multiple_choice', description: 'Loại bài tập' })
-    exerciseType: string
+    @ApiProperty({ example: 'VOCABULARY', description: 'Loại bài tập', enum: LessonContentsType })
+    exerciseType: LessonContentsType
 
 
     @ApiProperty({ example: 'この練習では文法を学びます', description: 'Nội dung mô tả bài tập' })

@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { LessonContentsType } from '@prisma/client'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -74,7 +75,7 @@ export const LatestExerciseAttemptSchema = z.object({
     id: z.number(),
     userId: z.number(),
     exerciseId: z.number(),
-    exerciseType: z.string(),
+    exerciseType: z.nativeEnum(LessonContentsType),
     status: ExerciseAttemptStatusSchema,
     createdAt: z.date(),
     updatedAt: z.date()

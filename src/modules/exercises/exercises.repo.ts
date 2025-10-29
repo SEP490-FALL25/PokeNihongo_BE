@@ -297,4 +297,33 @@ export class ExercisesRepository {
         }))
     }
 
+    async countByLesson(lessonId: number): Promise<number> {
+        return this.prismaService.exercises.count({ where: { lessonId } })
+    }
+
+    async findByLessonAndType(lessonId: number, exerciseType: string) {
+        return this.prismaService.exercises.findFirst({
+            where: { lessonId, exerciseType }
+        })
+    }
+
+    async existsByLessonAndTypeExcludingId(lessonId: number, exerciseType: string, excludeId: number): Promise<boolean> {
+        const count = await this.prismaService.exercises.count({
+            where: {
+                lessonId,
+                exerciseType,
+                NOT: { id: excludeId }
+            }
+        })
+        return count > 0
+    }
+
+    async getTestSetType(testSetId: number): Promise<string | null> {
+        const testSet = await this.prismaService.testSet.findUnique({
+            where: { id: testSetId },
+            select: { testType: true }
+        })
+        return testSet?.testType ?? null
+    }
+
 }
