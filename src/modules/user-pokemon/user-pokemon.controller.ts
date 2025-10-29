@@ -11,6 +11,8 @@ import {
   EvolvePokemonBodyDTO,
   EvolvePokemonResDTO,
   GetUserPokemonAddExpDetailResDTO,
+  GetUserPokemonByPokemonIdParamsDTO,
+  GetUserPokemonByPokemonIdwithListOwnershipResDTO,
   GetUserPokemonDetailResDTO,
   GetUserPokemonParamsDTO,
   GetUserPokemonStatsResDTO,
@@ -21,7 +23,7 @@ import { UserPokemonService } from './user-pokemon.service'
 
 @Controller('user-pokemon')
 export class UserPokemonController {
-  constructor(private readonly userPokemonService: UserPokemonService) { }
+  constructor(private readonly userPokemonService: UserPokemonService) {}
 
   @Get()
   @ZodSerializerDto(PaginationResponseDTO)
@@ -35,26 +37,41 @@ export class UserPokemonController {
 
   @Get('user/pokemons/stats')
   @ZodSerializerDto(GetUserPokemonStatsResDTO)
-  getUserPokemonStats(
-    @ActiveUser('userId') userId: number,
-    @I18nLang() lang: string
-  ) {
+  getUserPokemonStats(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
     return this.userPokemonService.getUserPokemonStats(userId, lang)
   }
 
-  @Get('user/pokemons')
+  @Get('user/pokemons/:hasPokemon')
   @ZodSerializerDto(PaginationResponseDTO)
   getPokemonListWithUser(
     @Query() query: PaginationQueryDTO,
+    @Param('hasPokemon') hasPokemon: string,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.userPokemonService.getPokemonListWithUser(query, userId, lang)
+    return this.userPokemonService.getPokemonListWithUser(
+      query,
+      userId,
+      lang,
+      hasPokemon === 'true' ? true : false
+    )
   }
 
   @Get('/pokemons')
   getWithUserId(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
     return this.userPokemonService.listWithUserId(userId, lang)
+  }
+
+  @Get('evolves/:pokemonId')
+  @ZodSerializerDto(GetUserPokemonByPokemonIdwithListOwnershipResDTO)
+  getWithEvolvesPokemon(
+    @Param() params: GetUserPokemonByPokemonIdParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    console.log('vo evolves/:pokemonId')
+
+    return this.userPokemonService.getWithEvolvesPokemon(params.pokemonId, userId, lang)
   }
 
   @Post(':userPokemonId/evolve')

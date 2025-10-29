@@ -6,6 +6,8 @@ import {
   EvolvePokemonBodySchema,
   EvolvePokemonResSchema,
   GetUserPokemonAddExpDetailResSchema,
+  GetUserPokemonByPokemonIdParamsSchema,
+  GetUserPokemonByPokemonIdwithListOwnershipResSchema,
   GetUserPokemonDetailResSchema,
   GetUserPokemonParamsSchema,
   GetUserPokemonStatsResSchema,
@@ -32,4 +34,14 @@ export class GetUserPokemonAddExpDetailResDTO extends createZodDto(
   GetUserPokemonAddExpDetailResSchema
 ) {}
 
-export class GetUserPokemonStatsResDTO extends createZodDto(GetUserPokemonStatsResSchema) {}
+export class GetUserPokemonByPokemonIdParamsDTO extends createZodDto(
+  GetUserPokemonByPokemonIdParamsSchema
+) {}
+
+export class GetUserPokemonStatsResDTO extends createZodDto(
+  GetUserPokemonStatsResSchema
+) {}
+
+export class GetUserPokemonByPokemonIdwithListOwnershipResDTO extends createZodDto(
+  GetUserPokemonByPokemonIdwithListOwnershipResSchema
+) {}
