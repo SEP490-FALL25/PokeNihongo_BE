@@ -6,7 +6,6 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateGachaPurchaseBodyDTO,
-  CreateGachaPurchaseResDTO,
   GetGachaPurchaseDetailResDTO,
   GetGachaPurchaseListResDTO,
   GetGachaPurchaseParamsDTO
@@ -40,7 +39,7 @@ export class GachaPurchaseController {
   }
 
   @Post()
-  @ZodSerializerDto(CreateGachaPurchaseResDTO)
+  // @ZodSerializerDto(CreateGachaPurchaseResDTO)
   create(
     @Body() body: CreateGachaPurchaseBodyDTO,
     @ActiveUser('userId') userId: number,

@@ -49,12 +49,9 @@ export class UserPokemonController {
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.userPokemonService.getPokemonListWithUser(
-      query,
-      userId,
-      lang,
-      hasPokemon === 'true' ? true : false
-    )
+    console.log(hasPokemon)
+
+    return this.userPokemonService.getPokemonListWithUser(query, userId, lang, hasPokemon)
   }
 
   @Get('/pokemons')

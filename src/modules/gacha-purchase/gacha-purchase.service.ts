@@ -128,8 +128,8 @@ export class GachaPurchaseService {
       console.log('cost: ', totalCost)
 
       // 4) transaction
+      // 1. Create purchase and minus balance
       const result = await this.gachaPurchaseRepo.withTransaction(async (prismaTx) => {
-        // 4.1) tao lich su mua hang (tam thoi chua co walletTransId) va tru tien no
         const [purchase, updatedWallet] = await Promise.all([
           this.gachaPurchaseRepo.create(
             {
@@ -137,7 +137,7 @@ export class GachaPurchaseService {
               data: {
                 userId,
                 bannerId: data.bannerId,
-                walletTransId: null, // tí update lại sau,
+                walletTransId: null,
                 rollCount: data.rollCount,
                 totalCost: totalCost
               }
@@ -149,11 +149,9 @@ export class GachaPurchaseService {
             prismaTx
           )
         ])
-        console.log('userWallet: ', updatedWallet)
-
         if (!updatedWallet) throw new NotEnoughBalanceException()
 
-        // 4.3) Create Wallet Transaction referencing the purchase
+        // 2. Create Wallet Transaction referencing the purchase
         const walletTrans = await this.walletTransRepo.create(
           {
             createdById: userId,
@@ -171,7 +169,7 @@ export class GachaPurchaseService {
           prismaTx
         )
 
-        // 4.4) Update purchase with walletTransId
+        // 3. Update purchase with walletTransId
         const [finalPurchase] = await Promise.all([
           this.gachaPurchaseRepo.update(
             {
@@ -183,7 +181,7 @@ export class GachaPurchaseService {
           )
         ])
 
-        // Roll logic with pity update, roll history, and reward handling
+        // 4. Roll logic (collect all results first)
         let pityCount = userPity.pityCount
         let currentPityId = userPity.id
         let currentPityStatus = userPity.status
@@ -196,151 +194,184 @@ export class GachaPurchaseService {
             pityCount,
             gachaBanner.hardPity5Star
           )
-
-          // Nếu roll ra 5★
+          // Pity update logic (defer DB update until after loop)
           if (result.starType === 'FIVE') {
-            // Update userPity: status = COMPLETED_MAX nếu newPity = hardPity5Star, ngược lại là COMPLETED_LUCK
             const newStatus =
               newPity === gachaBanner.hardPity5Star
                 ? GachaPityType.COMPLETED_MAX
                 : GachaPityType.COMPLETED_LUCK
-            await this.userGachaPityRepo.update(
-              {
-                id: currentPityId,
-                data: {
-                  pityCount: newPity,
-                  status: newStatus
-                },
-                updatedById: userId
-              },
-              prismaTx
-            )
-            // Tạo userPity mới status PENDING, pityCount = 0
-            const newPityObj = await this.userGachaPityRepo.create(
-              {
-                createdById: userId,
-                data: {
-                  userId,
-                  status: GachaPityType.PENDING,
-                  pityCount: 0
-                }
-              },
-              prismaTx
-            )
             pityCount = 0
-            currentPityId = newPityObj.id
             currentPityStatus = GachaPityType.PENDING
+            // Mark for update after loop
+            gachaRollHistoryToCreate.push({
+              updatePity: {
+                id: currentPityId,
+                data: { pityCount: newPity, status: newStatus }
+              },
+              createNewPity: true
+            })
+            // We'll create new pity after loop
           } else {
             pityCount = newPity
-            //update lại userPity hiện tại
-            await this.userGachaPityRepo.update(
-              {
-                id: currentPityId,
-                data: {
-                  pityCount: newPity
-                },
-                updatedById: userId
-              },
-              prismaTx
-            )
+            gachaRollHistoryToCreate.push({
+              updatePity: { id: currentPityId, data: { pityCount: newPity } },
+              createNewPity: false
+            })
           }
-
           rollResults.push(result)
-          gachaRollHistoryToCreate.push({
-            purchaseId: finalPurchase.id,
-            userId,
-            bannerId: data.bannerId,
-            pokemonId: result.id,
-            rarity: result.starType,
-            pityId: currentPityId,
-            pityNow: pityCount,
-            pityStatus: currentPityStatus
-          })
         }
 
-        // Nếu rollCount = 10 => đảm bảo có ít nhất 1 con ≥ 3★
+        // Guarantee at least one 3★+ for 10-roll
         if (data.rollCount === 10) {
           const hasHighStar = rollResults.some(
             (r) =>
               r.starType === 'THREE' || r.starType === 'FOUR' || r.starType === 'FIVE'
           )
-
           if (!hasHighStar) {
-            // Tìm tất cả 3★ trong pool
             const threeStarPool = gachaPool.filter(
               (r) => r.starType === 'THREE' || r.starType === 'FOUR'
             )
-
             if (threeStarPool.length > 0) {
-              // Chọn ngẫu nhiên 1 con 3★
               const guaranteed =
                 threeStarPool[Math.floor(Math.random() * threeStarPool.length)]
-
-              // Tìm ngẫu nhiên 1 con có 1★ hoặc 2★ để thay thế
               const lowStarIndexes = rollResults
                 .map((r, i) => (r.starType === 'ONE' || r.starType === 'TWO' ? i : -1))
                 .filter((i) => i !== -1)
-
               if (lowStarIndexes.length > 0) {
                 const replaceIndex =
                   lowStarIndexes[Math.floor(Math.random() * lowStarIndexes.length)]
                 rollResults[replaceIndex] = guaranteed
-                // Update gachaRollHistoryToCreate cho đúng pokemonId và rarity
-                gachaRollHistoryToCreate[replaceIndex].pokemonId = guaranteed.id
-                gachaRollHistoryToCreate[replaceIndex].rarity = guaranteed.starType
               }
             }
           }
         }
 
-        // Tạo GachaRollHistory cho từng roll
-        for (const roll of gachaRollHistoryToCreate) {
-          await this.gachaRollHistoryRepo.create(
+        // 5. Batch check user ownership for all rolled pokemon
+
+        const pokemonIds = rollResults.map((r) => r.id)
+        // Use findMany to get all userPokemons with userId and pokemonId in list
+        const userPokemons = await this.userPokemonRepo[
+          'prismaService'
+        ].userPokemon.findMany({
+          where: {
+            userId,
+            pokemonId: { in: pokemonIds },
+            deletedAt: null
+          }
+        })
+        const ownedPokemonIds = new Set(userPokemons.map((up: any) => up.pokemonId))
+
+        // 6. Prepare bulk create for userPokemon and wallet
+        const addPokemonList: any[] = []
+        const addSparklesList: any[] = []
+        const parseItems: any[] = []
+        for (let i = 0; i < rollResults.length; i++) {
+          const roll = rollResults[i]
+          const isOwned = ownedPokemonIds.has(roll.id)
+          let starNum = 1
+          if (roll.starType === 'TWO') starNum = 2
+          if (roll.starType === 'THREE') starNum = 3
+          if (roll.starType === 'FOUR') starNum = 4
+          if (roll.starType === 'FIVE') starNum = 5
+          // Lấy thông tin pokemon từ items[].pokemon (gachaBanner.items)
+          const itemInfo = gachaBanner.items.find((it) => it.id === roll.id)
+          let parseItem: any = {
+            ...roll,
+            isDuplicate: isOwned,
+            pokemon:
+              itemInfo && itemInfo['pokemon']
+                ? {
+                    id: itemInfo['pokemon'].id,
+                    pokedex_number: itemInfo['pokemon'].pokedex_number,
+                    nameJp: itemInfo['pokemon'].nameJp,
+                    nameTranslations: itemInfo['pokemon'].nameTranslations,
+                    imageUrl: itemInfo['pokemon'].imageUrl,
+                    rarity: itemInfo['pokemon'].rarity
+                  }
+                : null
+          }
+          if (!isOwned) {
+            addPokemonList.push({ userId, data: { pokemonId: roll.id } })
+            parseItem.parseItem = null
+          } else {
+            const reward = Math.floor(starNum * gachaBanner.costRoll * 0.2)
+            addSparklesList.push(reward)
+            parseItem.parseItem = { sparkles: reward }
+          }
+          parseItems.push(parseItem)
+        }
+
+        // 7. Bulk create userPokemon
+        if (addPokemonList.length > 0) {
+          await Promise.all(
+            addPokemonList.map((item) =>
+              this.userPokemonService.addPokemonByGacha(item, prismaTx)
+            )
+          )
+        }
+        // 8. Bulk add SPARKLES
+        if (addSparklesList.length > 0) {
+          const totalSparkles = addSparklesList.reduce((a, b) => a + b, 0)
+          await this.walletRepo.addBalanceToWalletWithType(
             {
-              createdById: userId,
-              data: roll
+              userId,
+              type: walletType.SPARKLES,
+              amount: totalSparkles
             },
             prismaTx
           )
         }
 
-        // Xử lý add pokemon hoặc cộng SPARKLES
-        for (const roll of rollResults) {
-          // Kiểm tra user đã có pokemon chưa
-          const userPokemon = await this.userPokemonRepo.findByUserAndPokemon(
-            userId,
-            roll.id
-          )
-          if (!userPokemon) {
-            // Add vào userPokemon
-            await this.userPokemonService.addPokemonByGacha(
-              { userId, data: { pokemonId: roll.id } },
-              prismaTx
-            )
-          } else {
-            // Cộng vào ví SPARKLES số tiền = số sao * gachaBanner.costRoll
-            let starNum = 1
-            if (roll.starType === 'TWO') starNum = 2
-            if (roll.starType === 'THREE') starNum = 3
-            if (roll.starType === 'FOUR') starNum = 4
-            if (roll.starType === 'FIVE') starNum = 5
-            await this.walletRepo.addBalanceToWalletWithType(
-              {
+        // 9. Create GachaRollHistory for each roll
+        for (let i = 0; i < rollResults.length; i++) {
+          const roll = rollResults[i]
+          await this.gachaRollHistoryRepo.create(
+            {
+              createdById: userId,
+              data: {
+                purchaseId: finalPurchase.id,
                 userId,
-                type: walletType.SPARKLES,
-                amount: starNum * gachaBanner.costRoll
-              },
-              prismaTx
-            )
+                bannerId: data.bannerId,
+                pokemonId: roll.id,
+                rarity: roll.starType,
+                pityId: currentPityId,
+                pityNow: pityCount,
+                pityStatus: currentPityStatus
+              }
+            },
+            prismaTx
+          )
+        }
+
+        // 10. Update pity status (after all rolls)
+        // (for simplicity, just update the last one)
+        if (gachaRollHistoryToCreate.length > 0) {
+          for (const pityAction of gachaRollHistoryToCreate) {
+            await this.userGachaPityRepo.update(pityAction.updatePity, prismaTx)
+            if (pityAction.createNewPity) {
+              const newPityObj = await this.userGachaPityRepo.create(
+                {
+                  createdById: userId,
+                  data: {
+                    userId,
+                    status: GachaPityType.PENDING,
+                    pityCount: 0
+                  }
+                },
+                prismaTx
+              )
+              currentPityId = newPityObj.id
+              currentPityStatus = GachaPityType.PENDING
+            }
           }
         }
 
-        return finalPurchase
+        return { finalPurchase, parseItems }
       })
 
       return {
         statusCode: 201,
-        data: result,
+        data: result.parseItems,
         message: this.i18nService.translate(GachaPurchaseMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {
@@ -351,58 +382,6 @@ export class GachaPurchaseService {
       throw error
     }
   }
-
-  // async delete({ id, userId }: { id: number; userId?: number }, lang: string = 'vi') {
-  //   try {
-  //     const existGachaPurchase = await this.gachaPurchaseRepo.findById(id)
-  //     if (!existGachaPurchase) throw new GachaPurchaseNotFoundException()
-
-  //     await this.gachaPurchaseRepo.withTransaction(async (prismaTx) => {
-  //       // 1) Refund full amount to wallet
-  //       const walletAfterRefund = await this.walletRepo.addBalanceToWalletWithType(
-  //         {
-  //           userId: existGachaPurchase.userId,
-  //           type: walletType.SPARKLES,
-  //           amount: existGachaPurchase.totalPrice
-  //         },
-  //         prismaTx
-  //       )
-  //       if (!walletAfterRefund) throw new NotFoundRecordException()
-
-  //       // 2) Log refund transaction
-  //       await this.walletTransRepo.create(
-  //         {
-  //           createdById: userId,
-  //           data: {
-  //             walletId: walletAfterRefund.id,
-  //             userId: existGachaPurchase.userId,
-  //             purpose: walletPurposeType.SHOP,
-  //             referenceId: id,
-  //             amount: existGachaPurchase.totalPrice,
-  //             type: WalletTransactionType.INCREASE,
-  //             source: WalletTransactionSourceType.SHOP_PURCHASE,
-  //             description: `Refund on delete purchase ${id}`
-  //           }
-  //         },
-  //         prismaTx
-  //       )
-
-  //       // 3) Soft delete purchase
-  //       await this.gachaPurchaseRepo.delete(id, false, prismaTx)
-  //     })
-
-  //     return {
-  //       statusCode: 200,
-  //       data: null,
-  //       message: this.i18nService.translate(GachaPurchaseMessage.DELETE_SUCCESS, lang)
-  //     }
-  //   } catch (error) {
-  //     if (isNotFoundPrismaError(error)) {
-  //       throw new GachaPurchaseNotFoundException()
-  //     }
-  //     throw error
-  //   }
-  // }
 
   async getByUser(userId: number, lang: string = 'vi') {
     const data = await this.gachaPurchaseRepo.findByUserId(userId)
