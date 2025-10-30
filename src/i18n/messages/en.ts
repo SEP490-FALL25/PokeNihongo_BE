@@ -419,5 +419,35 @@ export const enMessages = {
 
     ALREADY_EXISTS: 'Shop rarity price already exists',
     INVALID_DATA: 'Invalid shop rarity price data'
+  },
+  user_gacha_pity: {
+    CREATE_SUCCESS: 'User gacha pity created successfully',
+    UPDATE_SUCCESS: 'User gacha pity updated successfully',
+    GET_SUCCESS: 'User gacha pity retrieved successfully',
+    GET_LIST_SUCCESS: 'User gacha pity list retrieved successfully',
+    NOT_FOUND: 'User gacha pity not found',
+    ALREADY_EXISTS: 'User gacha pity already exists',
+    INVALID_DATA: 'Invalid user gacha pity data',
+    HAS_PENDING: 'User already has a pending gacha pity'
+  },
+  gacha_purchase: {
+    CREATE_SUCCESS: 'Gacha purchase created successfully',
+    UPDATE_SUCCESS: 'Gacha purchase updated successfully',
+    DELETE_SUCCESS: 'Gacha purchase deleted successfully',
+    GET_SUCCESS: 'Gacha purchase retrieved successfully',
+    GET_LIST_SUCCESS: 'Gacha purchase list retrieved successfully',
+    NOT_FOUND: 'Gacha purchase not found',
+    ALREADY_EXISTS: 'Gacha purchase already exists',
+    INVALID_DATA: 'Invalid gacha purchase data'
+  },
+  gacha_roll_history: {
+    CREATE_SUCCESS: 'Gacha roll history created successfully',
+    UPDATE_SUCCESS: 'Gacha roll history updated successfully',
+    DELETE_SUCCESS: 'Gacha roll history deleted successfully',
+    GET_SUCCESS: 'Gacha roll history retrieved successfully',
+    GET_LIST_SUCCESS: 'Gacha roll history list retrieved successfully',
+    NOT_FOUND: 'Gacha roll history not found',
+    ALREADY_EXISTS: 'Gacha roll history already exists',
+    INVALID_DATA: 'Invalid gacha roll history data'
   }
 }

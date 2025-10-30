@@ -43,7 +43,6 @@ export class DailyRequestController {
   }
 
   @Get('admin/:dailyRequestId')
-  @IsPublic()
   @ZodSerializerDto(GetDailyRequestDetailwithAllLangResDTO)
   findByIdWithAllLang(
     @Param() params: GetDailyRequestParamsDTO,
@@ -53,7 +52,6 @@ export class DailyRequestController {
   }
 
   @Get('admin')
-  @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
   getListwithAllLang(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.dailyRequestService.getListwithAllLang(query, lang)

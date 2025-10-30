@@ -2,6 +2,7 @@ import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { DailyRequestSchema } from '@/modules/daily-request/entities/daily-request.entity'
 import { RewardSchema } from '@/modules/reward/entities/reward.entity'
+import { UserSchema } from '@/shared/models/shared-user.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { date, z } from 'zod'
@@ -57,15 +58,14 @@ export const UserDailyRequestDetailSchema = UserDailyRequestSchema.extend({
     descriptionTranslation: z.string().optional().nullable(),
     reward: RewardSchema.pick({
       id: true,
-      nameKey: true,
       rewardItem: true,
       rewardTarget: true,
       rewardType: true
     })
       .optional()
       .nullable()
-  }).optional()
-  // user: UserSchema.optional().nullable()
+  }).optional(),
+  user: UserSchema.omit({ password: true }).optional().nullable()
 })
 
 export const GetUserDailyRequestDetailResSchema = z.object({

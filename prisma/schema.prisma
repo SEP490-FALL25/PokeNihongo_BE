@@ -96,9 +96,6 @@ model User {
   createdGachaItems         GachaItem[]         @relation("GachaItemCreatedBy")
   updatedGachaItems         GachaItem[]         @relation("GachaItemUpdatedBy")
   deletedGachaItems         GachaItem[]         @relation("GachaItemDeletedBy")
-  createdGachaRollHistories GachaRollHistory[]  @relation("GachaRollHistoryCreatedBy")
-  updatedGachaRollHistories GachaRollHistory[]  @relation("GachaRollHistoryUpdatedBy")
-  deletedGachaRollHistories GachaRollHistory[]  @relation("GachaRollHistoryDeletedBy")
   createdGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseCreatedBy")
   updatedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseUpdatedBy")
   deletedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseDeletedBy")
@@ -1369,13 +1366,8 @@ model GachaPurchase {
   walletTransId Int?
   walletTrans   WalletTransaction? @relation(fields: [walletTransId], references: [id], onDelete: SetNull)
 
-  // Liên kết tới pity chung
-  pityId    Int?
-  pityCycle UserGachaPity? @relation(fields: [pityId], references: [id], onDelete: SetNull)
-
-  rollCount Int      @default(1) // 1 hoặc 10
-  totalCost Int      @default(0)
-  rolledAt  DateTime @default(now())
+  rollCount Int @default(1) // 1 hoặc 10
+  totalCost Int @default(0)
 
   // Danh sách kết quả roll của lần này
   rollResults GachaRollHistory[]
@@ -1388,9 +1380,11 @@ model GachaPurchase {
   updatedById Int?
   updatedBy   User? @relation("GachaPurchaseUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
 
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  UserGachaPity   UserGachaPity? @relation(fields: [userGachaPityId], references: [id])
+  userGachaPityId Int?
 
   @@index([userId])
   @@index([bannerId])
@@ -1413,15 +1407,13 @@ model GachaRollHistory {
   pokemonId Int
   pokemon   Pokemon @relation(fields: [pokemonId], references: [id], onDelete: Cascade)
 
-  rarity      GachaStarType
-  isPity      Boolean       @default(false)
-  // meta
-  createdById Int?
-  createdBy   User?         @relation("GachaRollHistoryCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
-  deletedById Int?
-  deletedBy   User?         @relation("GachaRollHistoryDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
-  updatedById Int?
-  updatedBy   User?         @relation("GachaRollHistoryUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+  rarity GachaStarType
+
+  // Liên kết tới pity chung
+  pityId     Int?
+  pity       UserGachaPity? @relation(fields: [pityId], references: [id], onDelete: SetNull)
+  pityNow    Int
+  pityStatus GachaPityType  @default(PENDING)
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
@@ -1439,7 +1431,8 @@ model UserGachaPity {
   pityCount Int
   status    GachaPityType @default(PENDING)
 
-  gachaPurchases GachaPurchase[]
+  gachaRollHistories GachaRollHistory[]
+  gachaPurchases     GachaPurchase[]
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())

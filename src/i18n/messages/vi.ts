@@ -416,5 +416,35 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy giá theo độ hiếm',
     ALREADY_EXISTS: 'Giá theo độ hiếm đã tồn tại',
     INVALID_DATA: 'Dữ liệu giá theo độ hiếm không hợp lệ'
+  },
+  user_gacha_pity: {
+    CREATE_SUCCESS: 'Tạo hệ thống gacha pity cho người dùng thành công',
+    UPDATE_SUCCESS: 'Cập nhật hệ thống gacha pity cho người dùng thành công',
+    GET_SUCCESS: 'Lấy thông tin hệ thống gacha pity cho người dùng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách hệ thống gacha pity cho người dùng thành công',
+    NOT_FOUND: 'Không tìm thấy hệ thống gacha pity cho người dùng',
+    ALREADY_EXISTS: 'Hệ thống gacha pity cho người dùng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu hệ thống gacha pity cho người dùng không hợp lệ',
+    HAS_PENDING: 'Người dùng đã có hệ thống gacha pity đang chờ xử lý'
+  },
+  gacha_purchase: {
+    CREATE_SUCCESS: 'Tạo giao dịch gacha thành công',
+    UPDATE_SUCCESS: 'Cập nhật giao dịch gacha thành công',
+    DELETE_SUCCESS: 'Xóa giao dịch gacha thành công',
+    GET_SUCCESS: 'Lấy thông tin giao dịch gacha thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách giao dịch gacha thành công',
+    NOT_FOUND: 'Không tìm thấy giao dịch gacha',
+    ALREADY_EXISTS: 'Giao dịch gacha đã tồn tại',
+    INVALID_DATA: 'Dữ liệu giao dịch gacha không hợp lệ'
+  },
+  gacha_roll_history: {
+    CREATE_SUCCESS: 'Tạo lịch sử quay gacha thành công',
+    UPDATE_SUCCESS: 'Cập nhật lịch sử quay gacha thành công',
+    DELETE_SUCCESS: 'Xóa lịch sử quay gacha thành công',
+    GET_SUCCESS: 'Lấy thông tin lịch sử quay gacha thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách lịch sử quay gacha thành công',
+    NOT_FOUND: 'Không tìm thấy lịch sử quay gacha',
+    ALREADY_EXISTS: 'Lịch sử quay gacha đã tồn tại',
+    INVALID_DATA: 'Dữ liệu lịch sử quay gacha không hợp lệ'
   }
 }
