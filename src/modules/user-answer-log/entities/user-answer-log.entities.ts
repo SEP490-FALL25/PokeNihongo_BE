@@ -10,7 +10,7 @@ export const UserAnswerLogSchema = z.object({
     id: z.number(),
     isCorrect: z.boolean(),
     userExerciseAttemptId: z.number(),
-    questionId: z.number(),
+    questionBankId: z.number(),
     answerId: z.number(),
     createdAt: z.date(),
     updatedAt: z.date()
@@ -18,7 +18,7 @@ export const UserAnswerLogSchema = z.object({
 
 export const CreateUserAnswerLogBodySchema = UserAnswerLogSchema.pick({
     userExerciseAttemptId: true,
-    questionId: true,
+    questionBankId: true,
     answerId: true
 }).strict()
 
@@ -61,7 +61,7 @@ export const GetUserAnswerLogListQuerySchema = z
         currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
         pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         userExerciseAttemptId: z.string().transform((val) => parseInt(val, 10)).optional(),
-        questionId: z.string().transform((val) => parseInt(val, 10)).optional(),
+        questionBankId: z.string().transform((val) => parseInt(val, 10)).optional(),
         isCorrect: z.string().transform((val) => val === 'true').optional()
     })
     .strict()

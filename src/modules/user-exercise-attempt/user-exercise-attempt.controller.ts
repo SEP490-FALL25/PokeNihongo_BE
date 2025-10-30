@@ -117,7 +117,7 @@ export class UserExerciseAttemptController {
         return this.userExerciseAttemptService.remove(Number(id))
     }
 
-    @Put(':id/check-completion')
+    @Put(':id/submit-completion')
     @ApiBearerAuth()
     @ApiBody({ type: TimeSwaggerDTO })
     @ApiOperation({ summary: 'Kiểm tra trạng thái hoàn thành bài tập' })
@@ -126,12 +126,40 @@ export class UserExerciseAttemptController {
         description: 'Kiểm tra trạng thái hoàn thành thành công',
         type: ExerciseCompletionResponseSwaggerDTO
     })
-    checkCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number, @Body() body: CheckExerciseCompletionBodyDTO) {
-        return this.userExerciseAttemptService.checkExerciseCompletion(Number(id), userId, body?.time)
+    supmitCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number, @Body() body: CheckExerciseCompletionBodyDTO) {
+        return this.userExerciseAttemptService.supmitExerciseCompletion(Number(id), userId, body?.time)
+    }
+
+    @Get(':id/check-completion')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Kiểm tra trạng thái hoàn thành bài tập' })
+    @ApiResponse({
+        status: 200,
+        description: 'Kiểm tra trạng thái hoàn thành thành công',
+        type: ExerciseCompletionResponseSwaggerDTO
+    })
+    checkCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number) {
+        return this.userExerciseAttemptService.checkExerciseCompletion(Number(id), userId)
+    }
+
+
+
+    @Get(':id/latest')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy trạng thái hoàn thành bài tập gần nhất' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy trạng thái hoàn thành bài tập gần nhất thành công',
+        type: UserExerciseAttemptResponseSwaggerDTO
+    })
+    @ZodSerializerDto(UserExerciseAttemptResDTO)
+    getStatusExcericeAttemptLatest(@Param('id') id: string, @ActiveUser('userId') userId: number) {
+        return this.userExerciseAttemptService.getStatusExcericeAttemptLatest(Number(id), userId)
     }
 
     @Put(':id/abandon')
     @ApiBearerAuth()
+    @ApiBody({ type: TimeSwaggerDTO })
     @ApiOperation({ summary: 'Đánh dấu bài tập là bỏ dở (khi user thoát ra ngoài)' })
     @ApiResponse({
         status: 200,
@@ -139,8 +167,8 @@ export class UserExerciseAttemptController {
         type: UserExerciseAttemptResponseSwaggerDTO
     })
     @ZodSerializerDto(UserExerciseAttemptResDTO)
-    abandon(@Param('id') id: string, @ActiveUser('userId') userId: number) {
-        return this.userExerciseAttemptService.abandon(Number(id), userId)
+    abandon(@Param('id') id: string, @ActiveUser('userId') userId: number, @Body() body: TimeSwaggerDTO) {
+        return this.userExerciseAttemptService.abandon(Number(id), userId, body?.time)
     }
 
     @Get(':id/status')
@@ -178,15 +206,13 @@ export class UserExerciseAttemptController {
     @Get('/exercise/:id')
     @ApiBearerAuth()
     @ApiOperation({
-        summary: 'Lấy danh sách exercise gần nhất của người dùng theo lesson',
-        description: 'API này trả về exercise attempt gần nhất của user cho mỗi exercise trong lesson. Nếu user có nhiều attempts cho cùng 1 exercise, sẽ lấy cái mới nhất.'
+        summary: 'Lấy trạng thái hoàn thành bài tập của user cho exercise',
     })
     @ApiResponse({
         status: 200,
-        description: 'Lấy danh sách exercise gần nhất thành công',
-        type: LatestExerciseAttemptsByLessonResSwaggerDTO
+        description: 'Lấy bài tập của user cho exercise thành công',
+        type: UserExerciseAttemptResponseSwaggerDTO
     })
-    // @ZodSerializerDto(LatestExerciseAttemptsByLessonResDTO)
     getExerciseAttemptByExerciseId(
         @Param('id') id: string,
         @ActiveUser('userId') userId: number,
@@ -195,6 +221,24 @@ export class UserExerciseAttemptController {
         return this.userExerciseAttemptService.getExerciseAttemptByExerciseId(Number(id), userId, languageCode)
     }
 
-}
 
+    @Get('/exercise/:id/review')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Lấy trạng thái hoàn thành bài tập của user cho exercise',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy bài tập của user cho exercise thành công',
+        type: UserExerciseAttemptResponseSwaggerDTO
+    })
+    getExerciseAttemptReview(
+        @Param('id') id: string,
+        @ActiveUser('userId') userId: number,
+        @I18nLang() languageCode: string
+    ) {
+        return this.userExerciseAttemptService.getExerciseAttemptReview(Number(id), userId, languageCode)
+    }
+
+}
 

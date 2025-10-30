@@ -10,8 +10,8 @@ export class UserAnswerLogSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID lần thử bài tập' })
     userExerciseAttemptId: number
 
-    @ApiProperty({ example: 1, description: 'ID câu hỏi' })
-    questionId: number
+    @ApiProperty({ example: 1, description: 'ID questionBank' })
+    questionBankId: number
 
     @ApiProperty({ example: 1, description: 'ID câu trả lời' })
     answerId: number
@@ -27,8 +27,8 @@ export class CreateUserAnswerLogSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID lần thử bài tập' })
     userExerciseAttemptId: number
 
-    @ApiProperty({ example: 1, description: 'ID câu hỏi' })
-    questionId: number
+    @ApiProperty({ example: 1, description: 'ID questionBank' })
+    questionBankId: number
 
     @ApiProperty({ example: 1, description: 'ID câu trả lời' })
     answerId: number
@@ -96,8 +96,8 @@ export class GetUserAnswerLogListQuerySwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID lần thử bài tập', required: false })
     userExerciseAttemptId?: number
 
-    @ApiProperty({ example: 1, description: 'ID câu hỏi', required: false })
-    questionId?: number
+    @ApiProperty({ example: 1, description: 'ID questionBank', required: false })
+    questionBankId?: number
 
     @ApiProperty({ example: true, description: 'Lọc theo đúng/sai', required: false })
     isCorrect?: boolean

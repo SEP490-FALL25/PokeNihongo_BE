@@ -156,6 +156,14 @@ export class UserExerciseAttemptRepository {
         return this.transformUserExerciseAttempt(result)
     }
 
+    async findLatestByUserAndExercise(userId: number, exerciseId: number): Promise<UserExerciseAttemptType | null> {
+        const result = await this.prismaService.userExerciseAttempt.findFirst({
+            where: { userId, exerciseId },
+            orderBy: { createdAt: 'desc' }
+        })
+        return result ? this.transformUserExerciseAttempt(result) : null
+    }
+
     async findCompletedExercisesByLesson(userId: number, lessonId: number) {
         // Lấy tất cả exercises của lesson
         const lessonExercises = await this.prismaService.exercises.findMany({
