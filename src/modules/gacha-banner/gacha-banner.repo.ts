@@ -7,6 +7,7 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { GachaItemRateType } from '../gacha-item-rate/entities/gacha-item-rate.entity'
 import { GachaItemType } from '../gacha-item/entities/gacha-item.entity'
+import { PokemonType } from '../pokemon/entities/pokemon.entity'
 import {
   CreateGachaBannerBodyType,
   GACHA_BANNER_FIELDS,
@@ -332,6 +333,12 @@ export class GachaBannerRepo {
         nameTranslations: {
           where: { languageId: langId },
           select: { value: true }
+        },
+        items: {
+          include: {
+            gachaItemRate: true,
+            pokemon: true
+          }
         }
       },
       orderBy: { id: 'asc' }
@@ -356,7 +363,10 @@ export class GachaBannerRepo {
 
   findByIdWithItemWithitemRate(id: number): Promise<
     | (GachaBannerType & {
-        items: (GachaItemType & { gachaItemRate: GachaItemRateType })[]
+        items: (GachaItemType & {
+          gachaItemRate: GachaItemRateType
+          pokemon: PokemonType
+        })[]
       })
     | null
   > {
@@ -368,7 +378,8 @@ export class GachaBannerRepo {
       include: {
         items: {
           include: {
-            gachaItemRate: true
+            gachaItemRate: true,
+            pokemon: true
           }
         }
       }

@@ -237,8 +237,12 @@ export class UserPokemonService {
     query: PaginationQueryType,
     userId: number,
     lang: string = 'vi',
-    hasPokemon: boolean = false
+    hasPokemon: string | undefined = undefined
   ) {
+    console.log('ser - hasPokemon: ', hasPokemon)
+    const filterHasPoke =
+      hasPokemon === 'true' ? true : hasPokemon === 'false' ? false : undefined
+
     // 1. Lấy danh sách tất cả pokemon
     const pokemonData = await this.pokemonRepo.getPokemonListWithPokemonUser(query)
 
@@ -256,39 +260,6 @@ export class UserPokemonService {
         })
       })
 
-      // const allTypeEffectiveness = await this.prismaService.typeEffectiveness.findMany({
-      //   where: {
-      //     defenderId: {
-      //       in: Array.from(allTypeIds)
-      //     },
-      //     multiplier: {
-      //       gt: 1 // Only get super effective (weaknesses)
-      //     }
-      //   },
-      //   include: {
-      //     attacker: {
-      //       select: {
-      //         id: true,
-      //         type_name: true,
-      //         display_name: true,
-      //         color_hex: true
-      //       }
-      //     }
-      //   }
-      // })
-
-      // Create lookup map for faster access
-      // const effectivenessMap = new Map<number, any[]>()
-      // allTypeEffectiveness.forEach((eff) => {
-      //   if (!effectivenessMap.has(eff.defenderId)) {
-      //     effectivenessMap.set(eff.defenderId, [])
-      //   }
-      //   effectivenessMap.get(eff.defenderId)!.push({
-      //     ...eff.attacker,
-      //     effectiveness_multiplier: eff.multiplier
-      //   })
-      // })
-
       // Calculate weaknesses for each Pokemon and mark if user owns it
       const pokemonWithUserInfo = pokemonData.results.map((pokemon: any) => {
         const allWeaknesses = new Map<number, any>()
@@ -302,9 +273,9 @@ export class UserPokemonService {
 
       pokemonData.results = pokemonWithUserInfo
 
-      if (hasPokemon) {
+      if (filterHasPoke !== undefined) {
         pokemonData.results = pokemonWithUserInfo.filter((pokemon: any) => {
-          return hasPokemon ? pokemon.userPokemon : !pokemon.userPokemon
+          return pokemon.userPokemon === filterHasPoke
         })
       }
     }
