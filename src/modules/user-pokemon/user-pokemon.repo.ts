@@ -357,6 +357,115 @@ export class UserPokemonRepo {
     })
   }
 
+  findByPokemonId(
+    pokemonId: number,
+    prismaTx?: PrismaClient
+  ): Promise<UserPokemonWithRelations | null> {
+    const client = prismaTx || this.prismaService
+    return client.userPokemon.findFirst({
+      where: {
+        pokemonId,
+        deletedAt: null
+      },
+      include: {
+        pokemon: {
+          select: {
+            id: true,
+            pokedex_number: true,
+            nameJp: true,
+            nameTranslations: true,
+            description: true,
+            conditionLevel: true,
+            imageUrl: true,
+            rarity: true,
+            types: {
+              select: {
+                id: true,
+                type_name: true,
+                display_name: true,
+                color_hex: true
+              }
+            },
+            nextPokemons: {
+              select: {
+                id: true,
+                pokedex_number: true,
+                nameJp: true,
+                nameTranslations: true,
+                description: true,
+                conditionLevel: true,
+                isStarted: true,
+                imageUrl: true,
+                rarity: true,
+                types: {
+                  select: {
+                    id: true,
+                    type_name: true,
+                    display_name: true,
+                    color_hex: true
+                  }
+                },
+                nextPokemons: {
+                  select: {
+                    id: true,
+                    pokedex_number: true,
+                    nameJp: true,
+                    nameTranslations: true,
+                    description: true,
+                    conditionLevel: true,
+                    isStarted: true,
+                    imageUrl: true,
+                    rarity: true,
+                    types: {
+                      select: {
+                        id: true,
+                        type_name: true,
+                        display_name: true,
+                        color_hex: true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            previousPokemons: {
+              select: {
+                id: true,
+                pokedex_number: true,
+                nameJp: true,
+                nameTranslations: true,
+                description: true,
+                conditionLevel: true,
+                isStarted: true,
+                imageUrl: true,
+                rarity: true,
+                types: {
+                  select: {
+                    id: true,
+                    type_name: true,
+                    display_name: true,
+                    color_hex: true
+                  }
+                }
+              },
+              where: {
+                deletedAt: null
+              }
+            }
+          }
+        },
+        level: {
+          select: {
+            id: true,
+            levelNumber: true,
+            requiredExp: true,
+            levelType: true
+          }
+        }
+      }
+    })
+  }
+
   findByUserAndPokemon(
     userId: number,
     pokemonId: number

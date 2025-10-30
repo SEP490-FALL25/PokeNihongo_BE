@@ -1,5 +1,7 @@
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { UserPokemonMessage } from '@/i18n/message-keys'
+import { LevelSchema } from '@/modules/level/entities/level.entity'
+import { PokemonSchema } from '@/modules/pokemon/entities/pokemon.entity'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
@@ -60,6 +62,10 @@ export const UpdateUserPokemonResSchema = CreateUserPokemonResSchema
 // Query Schema
 export const GetUserPokemonParamsSchema = z.object({
   userPokemonId: checkIdSchema(UserPokemonMessage.INVALID_ID)
+})
+
+export const GetUserPokemonByPokemonIdParamsSchema = z.object({
+  pokemonId: checkIdSchema(UserPokemonMessage.INVALID_ID)
 })
 
 export const GetUserPokemonDetailResSchema = z.object({
@@ -325,6 +331,82 @@ export const EvolvePokemonResSchema = z.object({
   message: z.string()
 })
 
+const DisplayNameSchema = z.object({
+  en: z.string(),
+  ja: z.string(),
+  vi: z.string()
+})
+
+const TypeSchema = z.object({
+  id: z.number(),
+  type_name: z.string(),
+  display_name: DisplayNameSchema,
+  color_hex: z.string()
+})
+
+const WeaknessSchema = z.object({
+  id: z.number(),
+  type_name: z.string(),
+  display_name: DisplayNameSchema,
+  color_hex: z.string(),
+  effectiveness_multiplier: z.number()
+})
+
+// Recursive schema cho nextPokemons
+const NextPokemonSchema: z.ZodType<any> = z.lazy(() =>
+  PokemonSchema.pick({
+    id: true,
+    pokedex_number: true,
+    nameJp: true,
+    nameTranslations: true,
+    imageUrl: true,
+    rarity: true,
+    conditionLevel: true
+  }).extend({
+    userPokemon: z.boolean().default(false),
+    nextPokemons: z.array(NextPokemonSchema).optional(),
+    weaknesses: z.array(WeaknessSchema).optional()
+  })
+)
+
+export const PrevPokemonSchema = z.object({
+  id: z.number(),
+  pokedex_number: z.number().optional(),
+  nameJp: z.string().optional(),
+  nameTranslations: DisplayNameSchema.optional(),
+  imageUrl: z.string().optional(),
+  userPokemon: z.boolean().default(false)
+})
+
+export const GetUserPokemonByPokemonIdwithListOwnershipSchema = UserPokemonSchema.extend({
+  pokemon: PokemonSchema.pick({
+    id: true,
+    pokedex_number: true,
+    nameJp: true,
+    nameTranslations: true,
+    imageUrl: true,
+    rarity: true,
+    conditionLevel: true
+  }).extend({
+    types: z.array(TypeSchema).optional(),
+    weaknesses: z.array(WeaknessSchema).optional(),
+    nextPokemons: z.array(NextPokemonSchema).optional(),
+    previousPokemons: z.array(PrevPokemonSchema).optional()
+  }),
+  level: LevelSchema.pick({
+    id: true,
+    levelNumber: true,
+    requiredExp: true,
+    levelType: true
+  })
+})
+
+export const GetUserPokemonByPokemonIdwithListOwnershipResSchema = z.object({
+  statusCode: z.number(),
+  data: GetUserPokemonByPokemonIdwithListOwnershipSchema,
+  message: z.string()
+})
+
 // Type exports
 export type UserPokemonType = z.infer<typeof UserPokemonSchema>
 export type CreateUserPokemonBodyType = z.infer<typeof CreateUserPokemonBodySchema>
@@ -337,6 +419,7 @@ export type EvolvePokemonResType = z.infer<typeof EvolvePokemonResSchema>
 
 // Field for query
 export type UserPokemonFieldType = keyof z.infer<typeof UserPokemonSchema>
-export const USER_POKEMON_FIELDS = Object.keys(
-  UserPokemonSchema.shape
-) as UserPokemonFieldType[]
+export const USER_POKEMON_FIELDS = [
+  ...Object.keys(UserPokemonSchema.shape),
+  'userPokemon'
+] as UserPokemonFieldType[]

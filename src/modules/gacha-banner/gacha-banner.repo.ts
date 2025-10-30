@@ -5,6 +5,9 @@ import { GachaBannerStatus } from '@/common/constants/shop-banner.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
+import { GachaItemRateType } from '../gacha-item-rate/entities/gacha-item-rate.entity'
+import { GachaItemType } from '../gacha-item/entities/gacha-item.entity'
+import { PokemonType } from '../pokemon/entities/pokemon.entity'
 import {
   CreateGachaBannerBodyType,
   GACHA_BANNER_FIELDS,
@@ -330,6 +333,12 @@ export class GachaBannerRepo {
         nameTranslations: {
           where: { languageId: langId },
           select: { value: true }
+        },
+        items: {
+          include: {
+            gachaItemRate: true,
+            pokemon: true
+          }
         }
       },
       orderBy: { id: 'asc' }
@@ -348,6 +357,31 @@ export class GachaBannerRepo {
         status: GachaBannerStatus.ACTIVE,
         deletedAt: null,
         ...(excludeId ? { id: { not: excludeId } } : {})
+      }
+    })
+  }
+
+  findByIdWithItemWithitemRate(id: number): Promise<
+    | (GachaBannerType & {
+        items: (GachaItemType & {
+          gachaItemRate: GachaItemRateType
+          pokemon: PokemonType
+        })[]
+      })
+    | null
+  > {
+    return this.prismaService.gachaBanner.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        items: {
+          include: {
+            gachaItemRate: true,
+            pokemon: true
+          }
+        }
       }
     })
   }

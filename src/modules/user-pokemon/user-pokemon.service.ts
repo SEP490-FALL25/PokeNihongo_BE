@@ -161,6 +161,61 @@ export class UserPokemonService {
     return created
   }
 
+  async addPokemonByGacha(
+    { userId, data }: { userId: number; data: CreateUserPokemonBodyType },
+    prismaTx?: PrismaClient
+  ) {
+    try {
+      // Get Pokemon info to use nameJp as nickname if not provided
+      const pokemon = await this.pokemonRepo.findById(data.pokemonId)
+      if (!pokemon) {
+        throw new NotFoundRecordException()
+      }
+
+      // Get user check is first pokemon
+      const user = await this.sharedUserRepository.findUnique({ id: userId })
+
+      // Check if user already has this Pokemon
+      const existingUserPokemon = await this.userPokemonRepo.findByUserAndPokemon(
+        userId,
+        data.pokemonId
+      )
+      if (existingUserPokemon) {
+        throw new UserHasPokemonException()
+      }
+
+      // If no levelId provided, get the first Pokemon level
+      const firstPokemonLevel = await this.levelRepo.getFirstLevelPokemon()
+      if (!firstPokemonLevel) {
+        throw new ErrorInitLevelPokemonException()
+      }
+
+      const created = await this.userPokemonRepo.create(
+        {
+          userId,
+          data: {
+            pokemonId: data.pokemonId,
+            nickname: null,
+            isMain: false,
+            levelId: firstPokemonLevel.id
+          }
+        },
+        prismaTx
+      )
+      return {
+        data: created
+      }
+    } catch (error) {
+      if (isUniqueConstraintPrismaError(error)) {
+        throw new NicknameAlreadyExistsException()
+      }
+      if (isNotFoundPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      throw error
+    }
+  }
+
   async getUserPokemonStats(userId: number, lang: string = 'vi') {
     const userPokemons = await this.userPokemonRepo.getByUserId(userId)
     const totalPokemons = await this.prismaService.pokemon.count()
@@ -181,8 +236,13 @@ export class UserPokemonService {
   async getPokemonListWithUser(
     query: PaginationQueryType,
     userId: number,
-    lang: string = 'vi'
+    lang: string = 'vi',
+    hasPokemon: string | undefined = undefined
   ) {
+    console.log('ser - hasPokemon: ', hasPokemon)
+    const filterHasPoke =
+      hasPokemon === 'true' ? true : hasPokemon === 'false' ? false : undefined
+
     // 1. Lấy danh sách tất cả pokemon
     const pokemonData = await this.pokemonRepo.getPokemonListWithPokemonUser(query)
 
@@ -200,56 +260,9 @@ export class UserPokemonService {
         })
       })
 
-      // Batch load all type effectiveness data once
-      // const allTypeEffectiveness = await this.prismaService.typeEffectiveness.findMany({
-      //   where: {
-      //     defenderId: {
-      //       in: Array.from(allTypeIds)
-      //     },
-      //     multiplier: {
-      //       gt: 1 // Only get super effective (weaknesses)
-      //     }
-      //   },
-      //   include: {
-      //     attacker: {
-      //       select: {
-      //         id: true,
-      //         type_name: true,
-      //         display_name: true,
-      //         color_hex: true
-      //       }
-      //     }
-      //   }
-      // })
-
-      // Create lookup map for faster access
-      // const effectivenessMap = new Map<number, any[]>()
-      // allTypeEffectiveness.forEach((eff) => {
-      //   if (!effectivenessMap.has(eff.defenderId)) {
-      //     effectivenessMap.set(eff.defenderId, [])
-      //   }
-      //   effectivenessMap.get(eff.defenderId)!.push({
-      //     ...eff.attacker,
-      //     effectiveness_multiplier: eff.multiplier
-      //   })
-      // })
-
       // Calculate weaknesses for each Pokemon and mark if user owns it
       const pokemonWithUserInfo = pokemonData.results.map((pokemon: any) => {
         const allWeaknesses = new Map<number, any>()
-
-        // pokemon.types?.forEach((type: any) => {
-        //   const weaknesses = effectivenessMap.get(type.id) || []
-        //   weaknesses.forEach((weakness) => {
-        //     if (
-        //       !allWeaknesses.has(weakness.id) ||
-        //       allWeaknesses.get(weakness.id).effectiveness_multiplier <
-        //         weakness.effectiveness_multiplier
-        //     ) {
-        //       allWeaknesses.set(weakness.id, weakness)
-        //     }
-        //   })
-        // })
 
         return {
           ...pokemon,
@@ -259,6 +272,12 @@ export class UserPokemonService {
       })
 
       pokemonData.results = pokemonWithUserInfo
+
+      if (filterHasPoke !== undefined) {
+        pokemonData.results = pokemonWithUserInfo.filter((pokemon: any) => {
+          return pokemon.userPokemon === filterHasPoke
+        })
+      }
     }
 
     return {
@@ -937,6 +956,82 @@ export class UserPokemonService {
         throw new UserPokemonNotFoundException()
       }
       throw error
+    }
+  }
+
+  async getWithEvolvesPokemon(pokemonId: number, userId: number, lang: string = 'vi') {
+    // 1. Lấy userPokemon với pokemon, level và evolution chain
+    const userPokemon = await this.userPokemonRepo.findByPokemonId(pokemonId)
+
+    if (!userPokemon) {
+      throw new UserPokemonNotFoundException()
+    }
+
+    const weaknesses = await this.getWeaknessesForPokemon(userPokemon.pokemon?.types)
+
+    // 2. Verify ownership
+    if (userPokemon.userId !== userId) {
+      throw new InvalidUserAccessPokemonException()
+    }
+
+    // 3. Lấy tất cả pokemon IDs cần check ownership (previous + next)
+    const pokemonIdsToCheck: number[] = []
+
+    if (userPokemon.pokemon?.previousPokemons) {
+      pokemonIdsToCheck.push(
+        ...userPokemon.pokemon.previousPokemons.map((p: any) => p.id)
+      )
+    }
+
+    if (userPokemon.pokemon?.nextPokemons) {
+      pokemonIdsToCheck.push(...userPokemon.pokemon.nextPokemons.map((p: any) => p.id))
+    }
+
+    // 4. Lấy tất cả userPokemon của user có pokemonId trong list
+    const userOwnedPokemons = await Promise.all(
+      pokemonIdsToCheck.map((pokemonId) =>
+        this.userPokemonRepo.findByUserAndPokemon(userId, pokemonId)
+      )
+    )
+
+    // 5. Tạo map để lookup nhanh
+    const ownedPokemonMap = new Map<number, any>()
+    userOwnedPokemons.forEach((up) => {
+      if (up) {
+        ownedPokemonMap.set(up.pokemonId, up)
+      }
+    })
+
+    // 6. Map previousPokemons với userPokemon
+    const previousPokemonsWithOwnership =
+      userPokemon.pokemon?.previousPokemons?.map((prevPokemon: any) => ({
+        ...prevPokemon,
+        userPokemon: ownedPokemonMap.has(prevPokemon.id) || false
+      })) || []
+
+    // 7. Map nextPokemons với userPokemon
+    const nextPokemonsWithOwnership =
+      userPokemon.pokemon?.nextPokemons?.map((nextPokemon: any) => ({
+        ...nextPokemon,
+        userPokemon: ownedPokemonMap.has(nextPokemon.id) || false
+      })) || []
+
+    // 8. Construct response
+    const result = {
+      ...userPokemon,
+      pokemon: {
+        ...userPokemon.pokemon,
+        weaknesses,
+        previousPokemons: previousPokemonsWithOwnership,
+        nextPokemons: nextPokemonsWithOwnership
+      }
+    }
+    // chinh lai gan userPokemon  = true hoac false
+
+    return {
+      statusCode: 200,
+      data: result,
+      message: this.i18nService.translate(UserPokemonMessage.GET_DETAIL_SUCCESS, lang)
     }
   }
 }
