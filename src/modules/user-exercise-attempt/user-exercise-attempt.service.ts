@@ -11,7 +11,7 @@ import {
     ExerciseNotFoundException,
     LessonBlockedException
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.error'
-import { USER_EXERCISE_ATTEMPT_MESSAGE } from '@/common/constants/message'
+import { EXERCISES_MESSAGE, USER_EXERCISE_ATTEMPT_MESSAGE } from '@/common/constants/message'
 import { UserExerciseAttemptRepository } from '@/modules/user-exercise-attempt/user-exercise-attempt.repo'
 import { QuestionBankService } from '@/modules/question-bank/question-bank.service'
 import { UserAnswerLogService } from '@/modules/user-answer-log/user-answer-log.service'
@@ -19,6 +19,8 @@ import { UserProgressService } from '@/modules/user-progress/user-progress.servi
 import { ExercisesService } from '@/modules/exercises/exercises.service'
 import { isNotFoundPrismaError } from '@/shared/helpers'
 import { Injectable, Logger, HttpException } from '@nestjs/common'
+import { MessageResDTO } from '@/shared/dtos/response.dto'
+import { TranslationHelperService } from '@/modules/translation/translation.helper.service'
 
 @Injectable()
 export class UserExerciseAttemptService {
@@ -29,7 +31,8 @@ export class UserExerciseAttemptService {
         private readonly questionBankService: QuestionBankService,
         private readonly userAnswerLogService: UserAnswerLogService,
         private readonly userProgressService: UserProgressService,
-        private readonly exercisesService: ExercisesService
+        private readonly exercisesService: ExercisesService,
+        private readonly translationHelper: TranslationHelperService
     ) { }
 
     async create(userId: number, exerciseId: number) {
@@ -179,9 +182,90 @@ export class UserExerciseAttemptService {
             this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userExerciseAttemptId}`)
 
             // 5. Kiểm tra xem đã trả lời hết chưa
-            const answeredQuestionIds = new Set(userAnswers.map(log => log.questionId))
+            const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
             const unansweredQuestions = allQuestions.filter(q => !answeredQuestionIds.has(q.id))
             if (unansweredQuestions.length > 0) {
+                this.logger.log(`Still ${unansweredQuestions.length} unanswered questions`)
+                return {
+                    statusCode: 200,
+                    message: 'Bạn chưa trả lời đủ câu hỏi',
+                    data: {
+                        isCompleted: false,
+                        totalQuestions: allQuestions.length,
+                        answeredQuestions: userAnswers.length,
+                        unansweredQuestions: unansweredQuestions.length,
+                        unansweredQuestionIds: unansweredQuestions.map(q => q.id),
+                        allCorrect: false,
+                        status: 'IN_PROGRESS'
+                    }
+                }
+            }
+
+            // 6. Kiểm tra xem tất cả câu trả lời có đúng không
+            const allCorrect = userAnswers.every(log => log.isCorrect)
+
+            // 7. Chỉ trả kết quả, KHÔNG cập nhật DB trong hàm check
+            const finalStatus = allCorrect ? 'COMPLETED' : 'FAIL'
+            const message = allCorrect
+                ? 'Chúc mừng! Bạn đã hoàn thành bài tập và trả lời đúng hết'
+                : 'Bạn đã hoàn thành bài tập nhưng có một số câu trả lời sai'
+
+            return {
+                statusCode: 200,
+                message: message,
+                data: {
+                    isCompleted: true,
+                    totalQuestions: allQuestions.length,
+                    answeredQuestions: userAnswers.length,
+                    unansweredQuestions: 0,
+                    allCorrect: allCorrect,
+                    status: finalStatus
+                }
+            }
+
+        } catch (error) {
+            this.logger.error('Error checking exercise completion:', error)
+            throw error
+        }
+    }
+
+    async supmitExerciseCompletion(userExerciseAttemptId: number, userId: number, timeSeconds?: number) {
+        try {
+            this.logger.log(`Checking completion for user exercise attempt: ${userExerciseAttemptId}`)
+
+            // 1. Lấy thông tin UserExerciseAttempt
+            const attempt = await this.userExerciseAttemptRepository.findById(userExerciseAttemptId)
+            if (!attempt) {
+                throw UserExerciseAttemptNotFoundException
+            }
+
+            // 2. Lấy thông tin Exercise để biết testSetId
+            const exercise = await this.exercisesService.findById(attempt.exerciseId)
+            if (!exercise || !exercise.testSetId) {
+                throw new Error('Exercise không có test set')
+            }
+
+            // 3. Lấy tất cả Question của TestSet
+            const questionsResult = await this.questionBankService.findByTestSetId(exercise.testSetId)
+            const allQuestions = questionsResult.data.results
+            this.logger.log(`Found ${allQuestions.length} questions for exercise ${attempt.exerciseId}`)
+
+            // 4. Lấy tất cả UserAnswerLog của attempt này
+            const answerLogsResult = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
+            const userAnswers = answerLogsResult.data.results
+            this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userExerciseAttemptId}`)
+
+            // 5. Kiểm tra xem đã trả lời hết chưa
+            const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
+            const unansweredQuestions = allQuestions.filter(q => !answeredQuestionIds.has(q.id))
+            if (unansweredQuestions.length > 0) {
+                // Persist time if provided even when still IN_PROGRESS
+                if (timeSeconds !== undefined) {
+                    await this.userExerciseAttemptRepository.update(
+                        { id: userExerciseAttemptId },
+                        { time: timeSeconds }
+                    )
+                }
                 this.logger.log(`Still ${unansweredQuestions.length} unanswered questions`)
                 return {
                     statusCode: 200,
@@ -216,7 +300,7 @@ export class UserExerciseAttemptService {
             // Update status trong database
             await this.userExerciseAttemptRepository.update(
                 { id: userExerciseAttemptId },
-                { status: newStatus }
+                { status: newStatus, ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
             )
             this.logger.log(`Updated attempt ${userExerciseAttemptId} to ${newStatus}`)
 
@@ -244,7 +328,7 @@ export class UserExerciseAttemptService {
         }
     }
 
-    async abandon(userExerciseAttemptId: number, userId: number) {
+    async abandon(userExerciseAttemptId: number, userId: number, timeSeconds?: number) {
         try {
             this.logger.log(`Abandoning user exercise attempt: ${userExerciseAttemptId} for user: ${userId}`)
 
@@ -271,7 +355,7 @@ export class UserExerciseAttemptService {
             // 4. Update status thành ABANDONED
             const updatedAttempt = await this.userExerciseAttemptRepository.update(
                 { id: userExerciseAttemptId },
-                { status: 'ABANDONED' }
+                { status: 'ABANDONED', ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
             )
 
             this.logger.log(`Updated attempt ${userExerciseAttemptId} to ABANDONED`)
@@ -315,6 +399,291 @@ export class UserExerciseAttemptService {
         }
     }
 
+    async getStatusExcericeAttemptLatest(userExerciseAttemptId: number, userId: number) {
+        try {
+            this.logger.log(`Get latest attempt status by base attempt ${userExerciseAttemptId} for user ${userId}`)
+
+            // 1) Lấy attempt hiện tại để biết exerciseId
+            const baseAttempt = await this.userExerciseAttemptRepository.findById(userExerciseAttemptId)
+            if (!baseAttempt) {
+                throw UserExerciseAttemptNotFoundException
+            }
+
+            // 2) Lấy attempt mới nhất của user cho exercise này
+            const latestAttempt = await this.userExerciseAttemptRepository.findLatestByUserAndExercise(
+                userId,
+                baseAttempt.exerciseId
+            )
+
+            return {
+                statusCode: 200,
+                message: 'Lấy trạng thái bài tập thành công',
+                data: latestAttempt ?? baseAttempt
+            }
+
+        } catch (error) {
+            this.logger.error('Error getting exercise attempt status:', error)
+            throw error
+        }
+    }
+
+    async getLatestExerciseAttemptsByLesson(userId: number, lessonId: number): Promise<LatestExerciseAttemptsByLessonResType> {
+        try {
+            this.logger.log(`Getting latest exercise attempts for user ${userId} in lesson ${lessonId}`)
+
+            const result = await this.userExerciseAttemptRepository.findLatestByLessonAndUser(userId, lessonId)
+
+            this.logger.log(`Found ${result.length} exercise attempts (including newly created ones)`)
+
+            // Log chi tiết về status
+            const completedCount = result.filter(attempt => attempt.status === 'COMPLETED').length
+            const inProgressCount = result.filter(attempt => attempt.status === 'IN_PROGRESS').length
+            const otherCount = result.length - completedCount - inProgressCount
+
+            this.logger.log(`Status breakdown: ${completedCount} COMPLETED, ${inProgressCount} IN_PROGRESS, ${otherCount} others`)
+
+            return {
+                statusCode: 200,
+                data: result,
+                message: 'Lấy danh sách exercise gần nhất thành công'
+            }
+        } catch (error) {
+            this.logger.error('Error getting latest exercise attempts by lesson:', error)
+            throw error
+        }
+    }
+
+    async getExerciseAttemptByExerciseId(id: number, userId: number, languageCode: string): Promise<MessageResDTO | null> {
+        try {
+
+            const userExerciseAttempt = await this.findOne(id)
+            const result = await this.exercisesService.getExercisesByIdHaveQuestionBanks(userExerciseAttempt.data.exerciseId)
+            // Map translations: question strictly from translation; answers from translation or parsed composite string
+            const testSet = (result.data as any)?.testSet
+            const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
+            // If attempt is ABANDONED, load selected answers to mark in response
+            let selectedAnswerIds = new Set<number>()
+            if ((userExerciseAttempt.data as any)?.status === 'ABANDONED') {
+                try {
+                    const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(id)
+                    const ids = (logsRes?.data?.results || []).map((log: any) => log.answerId).filter((v: any) => typeof v === 'number')
+                    selectedAnswerIds = new Set<number>(ids)
+                } catch (e) {
+                    this.logger.warn('Cannot load user answer logs for abandoned attempt', e as any)
+                }
+            }
+            if (testSet?.testSetQuestionBanks?.length) {
+                const mappedBanks = await Promise.all(
+                    testSet.testSetQuestionBanks.map(async (item: any) => {
+                        const qb = item.questionBank
+                        // Question: only via translation key; if missing translation, return empty string
+                        let questionText = ''
+                        if (qb?.questionKey) {
+                            const triedLang = normalizedLang
+                            const keyCandidates = [
+                                qb.questionKey,
+                                qb.questionKey.endsWith('.meaning.1') ? qb.questionKey : `${qb.questionKey}.meaning.1`,
+                                qb.questionKey.endsWith('.question') ? qb.questionKey : `${qb.questionKey}.question`
+                            ]
+                            for (const key of keyCandidates) {
+                                questionText = (await this.translationHelper.getTranslation(key, triedLang)) || ''
+                                if (!questionText) {
+                                    questionText = (await this.translationHelper.getTranslation(key, 'vi')) || ''
+                                }
+                                if (questionText) break
+                            }
+                        }
+                        if (!questionText) {
+                            // fallback to JP original if translation is missing
+                            questionText = qb?.questionJp || ''
+                        }
+
+                        const mappedAnswers = await Promise.all(
+                            (qb?.answers || []).map(async (ans: any) => {
+                                // Always derive from answerJp composite string based on language
+                                const answerLabel = this.pickLabelFromComposite(ans?.answerJp || '', normalizedLang)
+                                const isChosen = selectedAnswerIds.has(ans.id)
+                                return {
+                                    id: ans.id,
+                                    answer: answerLabel,
+                                    ...(isChosen ? { choose: 'choose' } : {})
+                                }
+                            })
+                        )
+
+                        return {
+                            id: item.id,
+                            questionOrder: item.questionOrder,
+                            questionBank: {
+                                id: qb?.id,
+                                question: questionText,
+                                answers: mappedAnswers
+                            }
+                        }
+                    })
+                )
+
+                result.data = {
+                    id: (result.data as any).id,
+                    exerciseType: (result.data as any).exerciseType,
+                    isBlocked: (result.data as any).isBlocked,
+                    testSetId: (result.data as any).testSetId,
+                    testSet: {
+                        id: testSet.id,
+                        testSetQuestionBanks: mappedBanks
+                    }
+                } as any
+            }
+
+            this.logger.log(`Getting latest exercise attempts for user ${userId} in exercise ${userExerciseAttempt.data.exerciseId}`)
+
+            let userExerciseAttemptId = id;
+            const checkAttempt = await this.getStatus(id, userId)
+            if (checkAttempt.data.status === 'COMPLETED') {
+                const createAttempt = await this.create(userId, result.data.id)
+                userExerciseAttemptId = createAttempt.data.id
+            }
+
+            return {
+                statusCode: 200,
+                data: {
+                    ...result.data,
+                    userExerciseAttemptId
+                },
+                message: EXERCISES_MESSAGE.GET_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error getting latest exercise attempts by lesson:', error)
+            throw error
+        }
+    }
+
+    async getExerciseAttemptReview(id: number, userId: number, languageCode: string): Promise<MessageResDTO> {
+        try {
+            const attemptRes = await this.findOne(id)
+            const attempt = attemptRes.data as any
+
+            const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
+
+            // Only build review when attempt is COMPLETED
+            if (attempt.status !== 'COMPLETED') {
+                return {
+                    statusCode: 200,
+                    message: 'Bài tập chưa hoàn thành',
+                    data: { status: attempt.status }
+                }
+            }
+
+            const exerciseRes = await this.exercisesService.getExercisesByIdHaveQuestionBanks(attempt.exerciseId)
+            const testSet = (exerciseRes.data as any)?.testSet
+
+            // Load user answer logs for this attempt
+            const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(id)
+            const logs: Array<{ questionBankId: number; answerId: number }> = (logsRes?.data?.results || []) as any
+            const selectedByQuestion = new Map<number, number>(
+                logs.map((l) => [Number(l.questionBankId), Number(l.answerId)])
+            )
+
+            const translateOrFallback = async (key?: string, jp?: string): Promise<string> => {
+                if (key) {
+                    const t = (await this.translationHelper.getTranslation(key, normalizedLang))
+                        || (await this.translationHelper.getTranslation(key, 'vi'))
+                    if (t) return t
+                }
+                return jp || ''
+            }
+
+            if (testSet?.testSetQuestionBanks?.length) {
+                const mappedBanks = await Promise.all(
+                    testSet.testSetQuestionBanks.map(async (item: any) => {
+                        const qb = item.questionBank
+                        // Resolve question via translation keys with variants, fallback JP
+                        let question = ''
+                        if (qb?.questionKey) {
+                            const keyCandidates = [
+                                qb.questionKey,
+                                qb.questionKey.endsWith('.meaning.1') ? qb.questionKey : `${qb.questionKey}.meaning.1`,
+                                qb.questionKey.endsWith('.question') ? qb.questionKey : `${qb.questionKey}.question`
+                            ]
+                            for (const key of keyCandidates) {
+                                const t = (await this.translationHelper.getTranslation(key, normalizedLang))
+                                    || (await this.translationHelper.getTranslation(key, 'vi'))
+                                if (t) { question = t; break }
+                            }
+                        }
+                        if (!question) {
+                            question = qb?.questionJp || ''
+                        }
+
+                        const answers = qb?.answers || []
+                        const correct = answers.find((a: any) => a.isCorrect)
+                        const userSelectedId = selectedByQuestion.get(qb.id)
+                        const userSelected = answers.find((a: any) => a.id === userSelectedId)
+
+                        // Build full answer list; mark correct and user-selected incorrect
+                        const reviewAnswers: any[] = []
+                        const toShortLabel = (text: string): string => {
+                            if (!text) return ''
+                            // If it looks like an explanation string: "<word>" trong tiếng..., keep the quoted word
+                            const match = text.match(/"([^"]+)"/)
+                            if (match && match[1]) return match[1].trim()
+                            return text.trim()
+                        }
+                        for (const a of answers) {
+                            const label = toShortLabel(this.pickLabelFromComposite(a?.answerJp || '', normalizedLang))
+                            const explanation = await translateOrFallback(a?.answerKey, a?.answerJp)
+                            let entry: any = { id: a.id, answer: label }
+                            if (correct && a.id === correct.id) {
+                                entry.type = 'correct_answer'
+                                entry.explantion = explanation
+                            } else if (userSelectedId && a.id === userSelectedId && (!correct || userSelectedId !== correct.id)) {
+                                entry.type = 'user_selected_incorrect'
+                                entry.explantion = explanation
+                            }
+                            reviewAnswers.push(entry)
+                        }
+
+                        return {
+                            id: item.id,
+                            questionOrder: item.questionOrder,
+                            questionBank: {
+                                id: qb?.id,
+                                question,
+                                answers: reviewAnswers
+                            }
+                        }
+                    })
+                )
+
+                const data = {
+                    id: (exerciseRes.data as any).id,
+                    exerciseType: (exerciseRes.data as any).exerciseType,
+                    isBlocked: (exerciseRes.data as any).isBlocked,
+                    testSetId: (exerciseRes.data as any).testSetId,
+                    testSet: {
+                        id: testSet.id,
+                        testSetQuestionBanks: mappedBanks
+                    }
+                }
+
+                return {
+                    statusCode: 200,
+                    message: EXERCISES_MESSAGE.GET_SUCCESS,
+                    data
+                }
+            }
+
+            return {
+                statusCode: 200,
+                message: EXERCISES_MESSAGE.GET_SUCCESS,
+                data: exerciseRes.data
+            }
+        } catch (error) {
+            this.logger.error('Error building exercise attempt review:', error)
+            throw error
+        }
+    }
+
     private async updateUserProgressOnCompletion(userId: number, exerciseId: number) {
         try {
             this.logger.log(`Updating user progress for completed exercise: ${exerciseId} for user: ${userId}`)
@@ -353,6 +722,27 @@ export class UserExerciseAttemptService {
             // Không throw error để không ảnh hưởng đến flow chính
         }
     }
+    private pickLabelFromComposite(raw: string, lang: string): string {
+        if (!raw) return ''
+        const parts = raw.split('+').map(p => p.trim())
+        const map: Record<string, string> = {}
+        for (const part of parts) {
+            const idx = part.indexOf(':')
+            if (idx > -1) {
+                const k = part.slice(0, idx).trim()
+                const v = part.slice(idx + 1).trim()
+                if (k) map[k] = v
+            }
+        }
+        if (Object.keys(map).length === 0) {
+            const first = raw.split('+')[0]?.trim() ?? ''
+            return first
+        }
+        if (map[lang]) return map[lang]
+        if (map['vi'] && lang.startsWith('vi')) return map['vi']
+        if (map['en'] && lang.startsWith('en')) return map['en']
+        return map['jp'] ?? raw.replace(/\b(jp|vi|en)\s*:/g, '').trim()
+    }
 
     private async updateUserProgressOnStart(userId: number, exerciseId: number) {
         try {
@@ -379,31 +769,5 @@ export class UserExerciseAttemptService {
         }
     }
 
-    async getLatestExerciseAttemptsByLesson(userId: number, lessonId: number): Promise<LatestExerciseAttemptsByLessonResType> {
-        try {
-            this.logger.log(`Getting latest exercise attempts for user ${userId} in lesson ${lessonId}`)
 
-            const result = await this.userExerciseAttemptRepository.findLatestByLessonAndUser(userId, lessonId)
-
-            this.logger.log(`Found ${result.length} exercise attempts (including newly created ones)`)
-
-            // Log chi tiết về status
-            const completedCount = result.filter(attempt => attempt.status === 'COMPLETED').length
-            const inProgressCount = result.filter(attempt => attempt.status === 'IN_PROGRESS').length
-            const otherCount = result.length - completedCount - inProgressCount
-
-            this.logger.log(`Status breakdown: ${completedCount} COMPLETED, ${inProgressCount} IN_PROGRESS, ${otherCount} others`)
-
-            return {
-                statusCode: 200,
-                data: result,
-                message: 'Lấy danh sách exercise gần nhất thành công'
-            }
-        } catch (error) {
-            this.logger.error('Error getting latest exercise attempts by lesson:', error)
-            throw error
-        }
-    }
 }
-
-

@@ -15,6 +15,7 @@ export const UserExerciseAttemptSchema = z.object({
     userId: z.number(),
     exerciseId: z.number(),
     status: ExerciseAttemptStatusSchema,
+    time: z.number().optional(),
     createdAt: z.date(),
     updatedAt: z.date()
 })
@@ -89,6 +90,13 @@ export const LatestExerciseAttemptsByLessonResSchema = z
     })
     .strict()
 
+// Check completion body (time in seconds, optional)
+export const CheckExerciseCompletionBodySchema = z
+    .object({
+        time: z.number().int().nonnegative().optional()
+    })
+    .strict()
+
 // Types
 export type ExerciseAttemptStatusType = z.infer<typeof ExerciseAttemptStatusSchema>
 export type UserExerciseAttemptType = z.infer<typeof UserExerciseAttemptSchema>
@@ -101,5 +109,6 @@ export type CreateUserExerciseAttemptParamsType = z.infer<typeof CreateUserExerc
 export type GetUserExerciseAttemptListQueryType = z.infer<typeof GetUserExerciseAttemptListQuerySchema>
 export type LatestExerciseAttemptType = z.infer<typeof LatestExerciseAttemptSchema>
 export type LatestExerciseAttemptsByLessonResType = z.infer<typeof LatestExerciseAttemptsByLessonResSchema>
+export type CheckExerciseCompletionBodyType = z.infer<typeof CheckExerciseCompletionBodySchema>
 
 

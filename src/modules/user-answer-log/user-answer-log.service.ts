@@ -48,13 +48,13 @@ export class UserAnswerLogService {
     }
 
     async findAll(query: GetUserAnswerLogListQueryType) {
-        const { currentPage, pageSize, userExerciseAttemptId, questionId, isCorrect } = query
+        const { currentPage, pageSize, userExerciseAttemptId, questionBankId, isCorrect } = query
 
         const result = await this.userAnswerLogRepository.findMany({
             currentPage,
             pageSize,
             userExerciseAttemptId,
-            questionId,
+            questionBankId,
             isCorrect
         })
 
