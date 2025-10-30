@@ -41,11 +41,11 @@ export class UserPokemonController {
     return this.userPokemonService.getUserPokemonStats(userId, lang)
   }
 
-  @Get('user/pokemons/:hasPokemon')
+  @Get('user/pokemons')
   @ZodSerializerDto(PaginationResponseDTO)
   getPokemonListWithUser(
     @Query() query: PaginationQueryDTO,
-    @Param('hasPokemon') hasPokemon: string,
+    @Query('hasPokemon') hasPokemon: string,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {

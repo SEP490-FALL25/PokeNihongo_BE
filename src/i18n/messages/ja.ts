@@ -408,5 +408,36 @@ export const jaMessages = {
     NOT_FOUND: 'ショップレアリティ価格が見つかりません',
     ALREADY_EXISTS: 'ショップレアリティ価格は既に存在します',
     INVALID_DATA: '無効なショップレアリティ価格データです'
+  },
+  user_gacha_pity: {
+    CREATE_SUCCESS: 'ユーザーガチャピティの作成に成功しました',
+    UPDATE_SUCCESS: 'ユーザーガチャピティの更新に成功しました',
+    DELETE_SUCCESS: 'ユーザーガチャピティの削除に成功しました',
+    GET_SUCCESS: 'ユーザーガチャピティ情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ユーザーガチャピティリストの取得に成功しました',
+    NOT_FOUND: 'ユーザーガチャピティが見つかりません',
+    ALREADY_EXISTS: 'ユーザーガチャピティは既に存在します',
+    INVALID_DATA: '無効なユーザーガチャピティデータです',
+    HAS_PENDING: 'ユーザーガチャピティは保留中です'
+  },
+  gacha_purchase: {
+    CREATE_SUCCESS: 'ガチャ購入の作成に成功しました',
+    UPDATE_SUCCESS: 'ガチャ購入の更新に成功しました',
+    DELETE_SUCCESS: 'ガチャ購入の削除に成功しました',
+    GET_SUCCESS: 'ガチャ購入情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ガチャ購入リストの取得に成功しました',
+    NOT_FOUND: 'ガチャ購入が見つかりません',
+    ALREADY_EXISTS: 'ガチャ購入は既に存在します',
+    INVALID_DATA: '無効なガチャ購入データです'
+  },
+  gacha_roll_history: {
+    CREATE_SUCCESS: 'ガチャロール履歴の作成に成功しました',
+    UPDATE_SUCCESS: 'ガチャロール履歴の更新に成功しました',
+    DELETE_SUCCESS: 'ガチャロール履歴の削除に成功しました',
+    GET_SUCCESS: 'ガチャロール履歴情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ガチャロール履歴リストの取得に成功しました',
+    NOT_FOUND: 'ガチャロール履歴が見つかりません',
+    ALREADY_EXISTS: 'ガチャロール履歴は既に存在します',
+    INVALID_DATA: '無効なガチャロール履歴データです'
   }
 }

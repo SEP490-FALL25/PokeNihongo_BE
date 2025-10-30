@@ -18,8 +18,7 @@ import { TranslationRepository } from '../translation/translation.repo'
 import { UserDailyRequestAlreadyExistsException } from './dto/user-daily-request.error'
 import {
   CreateUserDailyRequestBodyType,
-  UpdateUserDailyRequestBodyType,
-  UserDailyRequestDetailType
+  UpdateUserDailyRequestBodyType
 } from './entities/user-daily-request.entity'
 import { UserDailyRequestRepo } from './user-daily-request.repo'
 
@@ -252,47 +251,16 @@ export class UserDailyRequestService {
 
       // 4. Lấy lại tất cả user daily requests của user hôm nay (bao gồm vừa tạo)
       const allUserDailyRequests =
-        await this.userDailyRequestRepo.findByUserAndDateWithDetails(userId, today)
+        await this.userDailyRequestRepo.findByUserAndDateWithDetails(
+          userId,
+          today,
+          languageId
+        )
 
-      // 5. Lấy tất cả nameKey và descriptionKey để query translations
-      const translationKeys: string[] = []
-      allUserDailyRequests.forEach((udr) => {
-        if (udr.dailyRequest?.nameKey) {
-          translationKeys.push(udr.dailyRequest.nameKey)
-        }
-        if (udr.dailyRequest?.descriptionKey) {
-          translationKeys.push(udr.dailyRequest.descriptionKey)
-        }
-      })
-
-      // 6. Lấy tất cả translations cho các keys này với languageId
-      const translations = await this.translationRepo.findByKeysAndLanguage(
-        translationKeys,
-        languageId
-      )
-
-      // Tạo map để truy cập nhanh
-      const translationMap = new Map<string, string>()
-      translations.forEach((t) => {
-        translationMap.set(t.key, t.value)
-      })
-
-      // 7. Gắn translations vào kết quả
-      const result: UserDailyRequestDetailType[] = allUserDailyRequests.map((udr) => ({
-        ...udr,
-        dailyRequest: udr.dailyRequest
-          ? {
-              ...udr.dailyRequest,
-              nameTranslation: translationMap.get(udr.dailyRequest.nameKey) || '',
-              descriptionTranslation:
-                translationMap.get(udr.dailyRequest.descriptionKey) || null
-            }
-          : undefined
-      }))
-
+      // Repo đã map nameTranslation và descriptionTranslation rồi, trả về trực tiếp
       return {
         statusCode: HttpStatus.OK,
-        data: result,
+        data: allUserDailyRequests,
         message: this.i18nService.translate(
           UserDailyRequestMessage.GET_LIST_SUCCESS,
           lang
