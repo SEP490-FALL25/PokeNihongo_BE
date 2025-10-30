@@ -160,4 +160,16 @@ export class UserGachaPityService {
       throw error
     }
   }
+
+  async getUserPityNow(userId: number, lang: string = 'vi') {
+    const userGachaPity = await this.userGachaPityRepo.findStatusByUserId(
+      userId,
+      GachaPityType.PENDING
+    )
+    return {
+      statusCode: 200,
+      data: userGachaPity,
+      message: this.i18nService.translate(UserGachaPityMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
 }

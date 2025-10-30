@@ -4,6 +4,7 @@ import {
   CreateGachaRollHistoryResSchema,
   GetGachaRollHistoryDetailResSchema,
   GetGachaRollHistoryParamsSchema,
+  GetGachasRolHisWithPokemonSchema,
   UpdateGachaRollHistoryBodySchema,
   UpdateGachaRollHistoryResSchema,
   UpdateWithListItemResSchema
@@ -32,4 +33,8 @@ export class UpdateGachaRollHistoryResDTO extends createZodDto(
 export class UpdateWithListItemResDTO extends createZodDto(UpdateWithListItemResSchema) {}
 export class GetGachaRollHistoryDetailResDTO extends createZodDto(
   GetGachaRollHistoryDetailResSchema
+) {}
+
+export class GetGachasRolHisWithPokemonDTO extends createZodDto(
+  GetGachasRolHisWithPokemonSchema
 ) {}
