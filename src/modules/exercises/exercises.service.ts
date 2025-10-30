@@ -300,7 +300,6 @@ export class ExercisesService {
         }
     }
 
-
     async getExercisesList(query: GetExercisesListQueryType): Promise<MessageResDTO> {
         try {
             this.logger.log(`Getting exercises list with query: ${JSON.stringify(query)}`)
@@ -351,6 +350,29 @@ export class ExercisesService {
             }
         } catch (error) {
             this.logger.error('Error getting exercise by ID:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidExercisesDataException
+        }
+    }
+
+    async getExercisesByIdHaveQuestionBanks(id: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Getting exercise by ID (plain): ${id}`)
+
+            const result = await this.exercisesRepository.findByIdHaveQuestionBank(id)
+            if (!result) {
+                throw ExercisesNotFoundException
+            }
+
+            return {
+                statusCode: 200,
+                data: result,
+                message: EXERCISES_MESSAGE.GET_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error getting exercise by ID (plain):', error)
             if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
                 throw error
             }

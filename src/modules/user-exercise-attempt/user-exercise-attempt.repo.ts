@@ -97,12 +97,14 @@ export class UserExerciseAttemptRepository {
         where: { id: number },
         data: {
             status?: string
+            time?: number
         }
     ): Promise<UserExerciseAttemptType> {
         const result = await this.prismaService.userExerciseAttempt.update({
             where,
             data: {
-                status: data.status as any
+                status: data.status as any,
+                ...(data.time !== undefined ? { time: data.time } : {})
             }
         })
         return this.transformUserExerciseAttempt(result)
@@ -125,6 +127,7 @@ export class UserExerciseAttemptRepository {
             userId: userExerciseAttempt.userId,
             exerciseId: userExerciseAttempt.exerciseId,
             status: userExerciseAttempt.status,
+            time: userExerciseAttempt.time,
             createdAt: userExerciseAttempt.createdAt,
             updatedAt: userExerciseAttempt.updatedAt
         }
@@ -151,6 +154,14 @@ export class UserExerciseAttemptRepository {
         }
 
         return this.transformUserExerciseAttempt(result)
+    }
+
+    async findLatestByUserAndExercise(userId: number, exerciseId: number): Promise<UserExerciseAttemptType | null> {
+        const result = await this.prismaService.userExerciseAttempt.findFirst({
+            where: { userId, exerciseId },
+            orderBy: { createdAt: 'desc' }
+        })
+        return result ? this.transformUserExerciseAttempt(result) : null
     }
 
     async findCompletedExercisesByLesson(userId: number, lessonId: number) {

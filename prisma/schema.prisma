@@ -785,6 +785,7 @@ model UserExerciseAttempt {
   user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   exerciseId Int
   exercise   Exercises             @relation(fields: [exerciseId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  time       Int?                  @default(0) // Thời gian làm bài (giây)
   status     ExerciseAttemptStatus @default(IN_PROGRESS)
   createdAt  DateTime              @default(now())
   updatedAt  DateTime              @updatedAt

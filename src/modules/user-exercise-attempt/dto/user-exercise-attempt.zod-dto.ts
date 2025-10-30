@@ -7,7 +7,8 @@ import {
     GetUserExerciseAttemptListQuerySchema,
     UserExerciseAttemptResSchema,
     UserExerciseAttemptListResSchema,
-    LatestExerciseAttemptsByLessonResSchema
+    LatestExerciseAttemptsByLessonResSchema,
+    CheckExerciseCompletionBodySchema
 } from '../entities/user-exercise-attempt.entities'
 
 export class CreateUserExerciseAttemptBodyDTO extends createZodDto(CreateUserExerciseAttemptBodySchema) { }
@@ -18,5 +19,6 @@ export class GetUserExerciseAttemptListQueryDTO extends createZodDto(GetUserExer
 export class UserExerciseAttemptResDTO extends createZodDto(UserExerciseAttemptResSchema) { }
 export class UserExerciseAttemptListResDTO extends createZodDto(UserExerciseAttemptListResSchema) { }
 export class LatestExerciseAttemptsByLessonResDTO extends createZodDto(LatestExerciseAttemptsByLessonResSchema) { }
+export class CheckExerciseCompletionBodyDTO extends createZodDto(CheckExerciseCompletionBodySchema) { }
 
 

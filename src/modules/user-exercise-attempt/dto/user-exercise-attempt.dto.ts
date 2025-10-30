@@ -25,6 +25,15 @@ export class UserExerciseAttemptSwaggerDTO {
     updatedAt: Date
 }
 
+export class TimeSwaggerDTO {
+    @ApiProperty({
+        example: 0,
+        description: 'thời gian làm bài (giây)',
+        required: false
+    })
+    time?: number
+}
+
 export class UpdateUserExerciseAttemptSwaggerDTO {
     @ApiProperty({
         example: 'COMPLETED',

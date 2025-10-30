@@ -10,10 +10,10 @@ export class UserAnswerLogRepository {
         currentPage: number
         pageSize: number
         userExerciseAttemptId?: number
-        questionId?: number
+        questionBankId?: number
         isCorrect?: boolean
     }) {
-        const { currentPage, pageSize, userExerciseAttemptId, questionId, isCorrect } = params
+        const { currentPage, pageSize, userExerciseAttemptId, questionBankId, isCorrect } = params
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -22,8 +22,8 @@ export class UserAnswerLogRepository {
             where.userExerciseAttemptId = userExerciseAttemptId
         }
 
-        if (questionId) {
-            where.questionId = questionId
+        if (questionBankId) {
+            where.questionBankId = questionBankId
         }
 
         if (isCorrect !== undefined) {
@@ -69,7 +69,7 @@ export class UserAnswerLogRepository {
 
     async create(data: {
         userExerciseAttemptId: number
-        questionId: number
+        questionBankId: number
         answerId: number
     }): Promise<UserAnswerLogType> {
         // Lấy thông tin answer để kiểm tra isCorrect
@@ -84,7 +84,6 @@ export class UserAnswerLogRepository {
         const result = await this.prismaService.userAnswerLog.create({
             data: {
                 ...data,
-                questionBankId: data.questionId,
                 isCorrect: answer.isCorrect
             }
         })
@@ -93,7 +92,7 @@ export class UserAnswerLogRepository {
 
     async upsert(data: {
         userExerciseAttemptId: number
-        questionId: number
+        questionBankId: number
         answerId: number
     }): Promise<UserAnswerLogType> {
         // Lấy thông tin answer để kiểm tra isCorrect
@@ -105,11 +104,11 @@ export class UserAnswerLogRepository {
             throw new Error('Answer not found')
         }
 
-        // Tìm xem đã có UserAnswerLog cho userExerciseAttemptId + questionId chưa
+        // Tìm xem đã có UserAnswerLog cho userExerciseAttemptId + questionBankId chưa
         const existingLog = await this.prismaService.userAnswerLog.findFirst({
             where: {
                 userExerciseAttemptId: data.userExerciseAttemptId,
-                questionBankId: data.questionId
+                questionBankId: data.questionBankId
             }
         })
 
@@ -128,7 +127,6 @@ export class UserAnswerLogRepository {
             const result = await this.prismaService.userAnswerLog.create({
                 data: {
                     ...data,
-                    questionBankId: data.questionId,
                     isCorrect: answer.isCorrect
                 }
             })
@@ -165,7 +163,7 @@ export class UserAnswerLogRepository {
             id: userAnswerLog.id,
             isCorrect: userAnswerLog.isCorrect,
             userExerciseAttemptId: userAnswerLog.userExerciseAttemptId,
-            questionId: userAnswerLog.questionId,
+            questionBankId: userAnswerLog.questionBankId,
             answerId: userAnswerLog.answerId,
             createdAt: userAnswerLog.createdAt,
             updatedAt: userAnswerLog.updatedAt
