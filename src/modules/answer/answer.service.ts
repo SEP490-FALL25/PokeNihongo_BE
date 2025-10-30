@@ -57,6 +57,7 @@ export class AnswerService {
             // Add translations for each answer (match Question Bank behavior)
             const resultsWithTranslations = await Promise.all(
                 result.items.map(async (answer) => {
+                    const parsedCombined = this.parseCombinedAnswer(answer.answerJp || '')
                     // If language specified -> return single meaning
                     if (languageId) {
                         try {
@@ -64,7 +65,8 @@ export class AnswerService {
                                 const { answerKey, ...answerWithoutKey } = answer
                                 return {
                                     ...answerWithoutKey,
-                                    meaning: answer.answerJp || ''
+                                    meaning: answer.answerJp || '',
+                                    ...(parsedCombined ? { answerVi: parsedCombined.answerVi, answerEn: parsedCombined.answerEn, answerJp: parsedCombined.answerJp } : {})
                                 }
                             }
 
@@ -77,13 +79,15 @@ export class AnswerService {
                             const { answerKey, ...answerWithoutKey } = answer
                             return {
                                 ...answerWithoutKey,
-                                meaning
+                                meaning,
+                                ...(parsedCombined ? { answerVi: parsedCombined.answerVi, answerEn: parsedCombined.answerEn, answerJp: parsedCombined.answerJp } : {})
                             }
                         } catch {
                             const { answerKey, ...answerWithoutKey } = answer
                             return {
                                 ...answerWithoutKey,
-                                meaning: ''
+                                meaning: '',
+                                ...(parsedCombined ? { answerVi: parsedCombined.answerVi, answerEn: parsedCombined.answerEn, answerJp: parsedCombined.answerJp } : {})
                             }
                         }
                     }
@@ -94,7 +98,8 @@ export class AnswerService {
                             const { answerKey, ...answerWithoutKey } = answer
                             return {
                                 ...answerWithoutKey,
-                                meanings: []
+                                meanings: [],
+                                ...(parsedCombined ? { answerVi: parsedCombined.answerVi, answerEn: parsedCombined.answerEn, answerJp: parsedCombined.answerJp } : {})
                             }
                         }
 
@@ -109,13 +114,15 @@ export class AnswerService {
                         const { answerKey, ...answerWithoutKey } = answer
                         return {
                             ...answerWithoutKey,
-                            meanings
+                            meanings,
+                            ...(parsedCombined ? { answerVi: parsedCombined.answerVi, answerEn: parsedCombined.answerEn, answerJp: parsedCombined.answerJp } : {})
                         }
                     } catch {
                         const { answerKey, ...answerWithoutKey } = answer
                         return {
                             ...answerWithoutKey,
-                            meanings: []
+                            meanings: [],
+                            ...(parsedCombined ? { answerVi: parsedCombined.answerVi, answerEn: parsedCombined.answerEn, answerJp: parsedCombined.answerJp } : {})
                         }
                     }
                 })
@@ -188,13 +195,15 @@ export class AnswerService {
             }
 
             this.logger.log(`Found answer: ${answer.id}`)
+            const parsedCombined = this.parseCombinedAnswer(answer.answerJp || '')
             const { answerKey, ...answerWithoutKey } = answer as any
             return {
                 statusCode: 200,
                 data: {
                     ...answerWithoutKey,
                     meaning,
-                    ...(meanings && meanings.length > 0 ? { meanings } : {})
+                    ...(meanings && meanings.length > 0 ? { meanings } : {}),
+                    ...(parsedCombined ? { answerVi: parsedCombined.answerVi, answerEn: parsedCombined.answerEn, answerJp: parsedCombined.answerJp } : {})
                 } as any,
                 message: 'Lấy thông tin câu trả lời thành công'
             }
@@ -717,4 +726,21 @@ export class AnswerService {
         }
     }
     //#endregion
+
+    /**
+     * Parse combined answer string format: "jp:...+vi:...+en:..."
+     */
+    private parseCombinedAnswer(raw: string): { answerJp: string; answerVi?: string; answerEn?: string } | null {
+        if (!raw) return null
+        const normalized = raw.replace(/\s*\+\s*/g, '+').trim()
+        const jpMatch = normalized.match(/(?:^|\b)jp:([^+]+)/i)
+        if (!jpMatch) return null
+        // capture even when empty: vi:  or en:
+        const viMatch = normalized.match(/\+vi:([^+]*)/i)
+        const enMatch = normalized.match(/\+en:([^+]*)/i)
+        const jp = jpMatch[1].trim()
+        const vi = viMatch ? viMatch[1].trim() : undefined
+        const en = enMatch ? enMatch[1].trim() : undefined
+        return { answerJp: jp, answerVi: vi, answerEn: en }
+    }
 }

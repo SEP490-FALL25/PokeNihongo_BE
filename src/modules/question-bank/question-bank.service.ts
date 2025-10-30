@@ -24,27 +24,17 @@ import { LanguagesService } from '@/modules/languages/languages.service'
 import { AnswerService } from '@/modules/answer/answer.service'
 import { PrismaService } from '@/shared/services/prisma.service'
 
-// Custom validation functions for Japanese text
+// Custom validation functions for Japanese text (allow placeholders and inline Latin)
 const isJapaneseText = (text: string): boolean => {
-    // Japanese text contains ONLY Hiragana, Katakana, Kanji, and some punctuation
-    // Must contain at least one Japanese character and no non-Japanese characters
-
-    // Check if contains any non-Japanese characters (Latin, numbers, special chars)
-    const hasNonJapanese = /[a-zA-Z0-9@#$%^&*()_+=\[\]{}|\\:";'<>?,./`~]/.test(text)
-
-    if (hasNonJapanese) {
-        return false
-    }
-
-    // Must contain at least one Japanese character (Hiragana, Katakana, Kanji)
-    const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF\uF900-\uFAFF\u2F800-\u2FA1F]/
-    const hasJapanese = japaneseRegex.test(text)
-
-    return hasJapanese
+    if (!text || !text.trim()) return false
+    // Accept if string contains at least one Japanese char OR placeholder underscores
+    const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF\uF900-\uFAFF\u2F800-\u2FA1F]/.test(text)
+    const hasPlaceholder = /[_\uFF3F]{1,}/.test(text) // '_' or fullwidth '＿'
+    return hasJapanese || hasPlaceholder
 }
 
 // Custom error messages
-const JAPANESE_TEXT_ERROR = 'Phải là văn bản tiếng Nhật thuần túy (CHỈ chứa Hiragana, Katakana, hoặc Kanji - không cho phép số hoặc ký tự Latin)'
+const JAPANESE_TEXT_ERROR = 'Nội dung phải chứa tiếng Nhật hoặc chỗ trống (＿＿＿)'
 
 @Injectable()
 export class QuestionBankService {
