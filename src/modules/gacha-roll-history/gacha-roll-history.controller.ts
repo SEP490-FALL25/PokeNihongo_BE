@@ -24,6 +24,16 @@ export class GachaRollHistoryController {
     return this.gachaRollHistoryService.list(query, lang)
   }
 
+  @Get('user')
+  @ZodSerializerDto(PaginationResponseDTO)
+  getGachasHisByUser(
+    @Query() query: PaginationQueryDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.gachaRollHistoryService.getGachasHisByUser(userId, query, lang)
+  }
+
   @Get(':gachaRollHistoryId')
   @ZodSerializerDto(GetGachaRollHistoryDetailResDTO)
   findById(

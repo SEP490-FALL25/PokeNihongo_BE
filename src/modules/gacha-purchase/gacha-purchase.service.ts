@@ -125,6 +125,13 @@ export class GachaPurchaseService {
       let pityCount = userPity.pityCount
       const results: typeof gachaPool = []
       const totalCost = gachaBanner.costRoll * rollCount
+      const userWallet = await this.walletRepo.checkEnoughBalance({
+        userId,
+        type: walletType.SPARKLES,
+        amount: totalCost
+      })
+      if (!userWallet) throw new NotEnoughBalanceException()
+
       console.log('cost: ', totalCost)
 
       // 4) transaction
@@ -150,7 +157,7 @@ export class GachaPurchaseService {
           )
         ])
         if (!updatedWallet) throw new NotEnoughBalanceException()
-
+        console.log('updatedWallet: ', updatedWallet)
         // 2. Create Wallet Transaction referencing the purchase
         const walletTrans = await this.walletTransRepo.create(
           {
@@ -158,7 +165,7 @@ export class GachaPurchaseService {
             data: {
               walletId: updatedWallet.id,
               userId,
-              purpose: walletPurposeType.SHOP,
+              purpose: walletPurposeType.GACHA,
               referenceId: purchase.id,
               amount: totalCost,
               type: WalletTransactionType.DECREASE,

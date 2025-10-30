@@ -24,6 +24,12 @@ export class UserGachaPityController {
     return this.userGachaPityService.list(query, lang)
   }
 
+  @Get('user/present')
+  @ZodSerializerDto(GetUserGachaPityDetailResDTO)
+  getUserPityNow(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
+    return this.userGachaPityService.getUserPityNow(userId, lang)
+  }
+
   @Get(':userGachaPityId')
   @ZodSerializerDto(GetUserGachaPityDetailResDTO)
   findById(
