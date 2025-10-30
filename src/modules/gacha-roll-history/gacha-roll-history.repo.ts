@@ -123,4 +123,45 @@ export class GachaRollHistoryRepo {
       }
     })
   }
+
+  async findListGachaHisByUserId(userId: number, pagination: PaginationQueryType) {
+    const { where, orderBy } = parseQs(pagination.qs, GACHA_ROLL_HISTORY_FIELDS)
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    const filterWhere = {
+      deletedAt: null,
+      ...where
+    }
+
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.gachaRollHistory.count({
+        where: {
+          ...filterWhere,
+          userId
+        }
+      }),
+      this.prismaService.gachaRollHistory.findMany({
+        where: {
+          ...filterWhere,
+          userId
+        },
+
+        orderBy,
+        skip,
+        take
+      })
+    ])
+
+    return {
+      results: data,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
+    }
+  }
 }

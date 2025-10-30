@@ -45,6 +45,26 @@ export class GachaRollHistoryService {
     }
   }
 
+  async getGachasHisByUser(
+    userId: number,
+    query: PaginationQueryType,
+    lang: string = 'vi'
+  ) {
+    const gachaRollHistory = await this.gachaRollHistoryRepo.findListGachaHisByUserId(
+      userId,
+      query
+    )
+    if (!gachaRollHistory) {
+      throw new GachaRollHistoryNotFoundException()
+    }
+    return {
+      statusCode: 200,
+      data: gachaRollHistory,
+
+      message: this.i18nService.translate(GachaRollHistoryMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
   async create(
     { userId, data }: { userId: number; data: CreateGachaRollHistoryBodyType },
     lang: string = 'vi'

@@ -1,6 +1,7 @@
 import { GachaPityType, GachaStarType } from '@/common/constants/gacha.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
+import { PokemonSchema } from '@/modules/pokemon/entities/pokemon.entity'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
@@ -79,6 +80,17 @@ export const GetGachaRollHistoryDetailResSchema = z.object({
   statusCode: z.number(),
   data: GetGachaRollHistoryDetailSchema,
   message: z.string()
+})
+
+export const GetGachasRolHisWithPokemonSchema = GachaRollHistorySchema.extend({
+  pokemon: PokemonSchema.pick({
+    id: true,
+    pokedex_number: true,
+    nameJp: true,
+    nameTranslations: true,
+    imageUrl: true,
+    rarity: true
+  })
 })
 
 // Type exports
