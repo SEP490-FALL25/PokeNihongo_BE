@@ -144,6 +144,44 @@ export class ExercisesRepository {
         })
     }
 
+    async findByIdHaveQuestionBank(id: number) {
+        return this.prismaService.exercises.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                exerciseType: true,
+                isBlocked: true,
+                testSetId: true,
+                testSet: {
+                    select: {
+                        id: true,
+                        testSetQuestionBanks: {
+                            orderBy: { questionOrder: 'asc' },
+                            select: {
+                                id: true,
+                                questionOrder: true,
+                                questionBank: {
+                                    select: {
+                                        id: true,
+                                        questionJp: true,
+                                        questionKey: true,
+                                        answers: {
+                                            select: {
+                                                id: true,
+                                                answerJp: true,
+                                                answerKey: true,
+                                                isCorrect: true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    }
 
     async create(data: any) {
         return this.prismaService.exercises.create({

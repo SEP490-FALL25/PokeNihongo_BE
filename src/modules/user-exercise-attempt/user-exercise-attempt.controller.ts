@@ -7,7 +7,8 @@ import {
     UpdateUserExerciseAttemptBodyDTO,
     UserExerciseAttemptListResDTO,
     UserExerciseAttemptResDTO,
-    LatestExerciseAttemptsByLessonResDTO
+    LatestExerciseAttemptsByLessonResDTO,
+    CheckExerciseCompletionBodyDTO
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.zod-dto'
 import {
     UserExerciseAttemptResponseSwaggerDTO,
@@ -16,7 +17,8 @@ import {
     CreateUserExerciseAttemptParamsSwaggerDTO,
     UpdateUserExerciseAttemptSwaggerDTO,
     ExerciseCompletionResponseSwaggerDTO,
-    LatestExerciseAttemptsByLessonResSwaggerDTO
+    LatestExerciseAttemptsByLessonResSwaggerDTO,
+    TimeSwaggerDTO,
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.dto'
 import {
     Body,
@@ -33,6 +35,7 @@ import {
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { UserExerciseAttemptService } from './user-exercise-attempt.service'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('User Exercise Attempt')
 @Controller('user-exercise-attempt')
@@ -114,16 +117,17 @@ export class UserExerciseAttemptController {
         return this.userExerciseAttemptService.remove(Number(id))
     }
 
-    @Get(':id/check-completion')
+    @Put(':id/check-completion')
     @ApiBearerAuth()
+    @ApiBody({ type: TimeSwaggerDTO })
     @ApiOperation({ summary: 'Kiểm tra trạng thái hoàn thành bài tập' })
     @ApiResponse({
         status: 200,
         description: 'Kiểm tra trạng thái hoàn thành thành công',
         type: ExerciseCompletionResponseSwaggerDTO
     })
-    checkCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number) {
-        return this.userExerciseAttemptService.checkExerciseCompletion(Number(id), userId)
+    checkCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number, @Body() body: CheckExerciseCompletionBodyDTO) {
+        return this.userExerciseAttemptService.checkExerciseCompletion(Number(id), userId, body?.time)
     }
 
     @Put(':id/abandon')
@@ -170,6 +174,27 @@ export class UserExerciseAttemptController {
     ) {
         return this.userExerciseAttemptService.getLatestExerciseAttemptsByLesson(userId, Number(lessonId))
     }
+
+    @Get('/exercise/:id')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Lấy danh sách exercise gần nhất của người dùng theo lesson',
+        description: 'API này trả về exercise attempt gần nhất của user cho mỗi exercise trong lesson. Nếu user có nhiều attempts cho cùng 1 exercise, sẽ lấy cái mới nhất.'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách exercise gần nhất thành công',
+        type: LatestExerciseAttemptsByLessonResSwaggerDTO
+    })
+    // @ZodSerializerDto(LatestExerciseAttemptsByLessonResDTO)
+    getExerciseAttemptByExerciseId(
+        @Param('id') id: string,
+        @ActiveUser('userId') userId: number,
+        @I18nLang() languageCode: string
+    ) {
+        return this.userExerciseAttemptService.getExerciseAttemptByExerciseId(Number(id), userId, languageCode)
+    }
+
 }
 
 

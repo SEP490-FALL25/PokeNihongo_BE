@@ -66,6 +66,20 @@ export class ExercisesController {
         return await this.exercisesService.getExercisesById(id)
     }
 
+    @Get(':id/plain')
+    @ApiOperation({
+        summary: 'Lấy bài tập theo ID (gọn)',
+        description: 'Trả về bài tập không kèm lesson và testSet (chỉ trường của exercises)'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy thông tin bài tập (gọn) thành công',
+        type: ExercisesResponseSwaggerDTO
+    })
+    async getExercisesByIdPlain(@Param('id', ParseIntPipe) id: number) {
+        return await this.exercisesService.getExercisesByIdHaveQuestionBanks(id)
+    }
+
     @Get('lesson/:lessonId')
     @ApiOperation({
         summary: 'Lấy danh sách bài tập theo bài học',

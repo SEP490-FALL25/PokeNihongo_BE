@@ -11,7 +11,7 @@ import {
     ExerciseNotFoundException,
     LessonBlockedException
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.error'
-import { USER_EXERCISE_ATTEMPT_MESSAGE } from '@/common/constants/message'
+import { EXERCISES_MESSAGE, USER_EXERCISE_ATTEMPT_MESSAGE } from '@/common/constants/message'
 import { UserExerciseAttemptRepository } from '@/modules/user-exercise-attempt/user-exercise-attempt.repo'
 import { QuestionBankService } from '@/modules/question-bank/question-bank.service'
 import { UserAnswerLogService } from '@/modules/user-answer-log/user-answer-log.service'
@@ -19,6 +19,8 @@ import { UserProgressService } from '@/modules/user-progress/user-progress.servi
 import { ExercisesService } from '@/modules/exercises/exercises.service'
 import { isNotFoundPrismaError } from '@/shared/helpers'
 import { Injectable, Logger, HttpException } from '@nestjs/common'
+import { MessageResDTO } from '@/shared/dtos/response.dto'
+import { TranslationHelperService } from '@/modules/translation/translation.helper.service'
 
 @Injectable()
 export class UserExerciseAttemptService {
@@ -29,7 +31,8 @@ export class UserExerciseAttemptService {
         private readonly questionBankService: QuestionBankService,
         private readonly userAnswerLogService: UserAnswerLogService,
         private readonly userProgressService: UserProgressService,
-        private readonly exercisesService: ExercisesService
+        private readonly exercisesService: ExercisesService,
+        private readonly translationHelper: TranslationHelperService
     ) { }
 
     async create(userId: number, exerciseId: number) {
@@ -152,7 +155,7 @@ export class UserExerciseAttemptService {
         }
     }
 
-    async checkExerciseCompletion(userExerciseAttemptId: number, userId: number) {
+    async checkExerciseCompletion(userExerciseAttemptId: number, userId: number, timeSeconds?: number) {
         try {
             this.logger.log(`Checking completion for user exercise attempt: ${userExerciseAttemptId}`)
 
@@ -216,7 +219,7 @@ export class UserExerciseAttemptService {
             // Update status trong database
             await this.userExerciseAttemptRepository.update(
                 { id: userExerciseAttemptId },
-                { status: newStatus }
+                { status: newStatus, ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
             )
             this.logger.log(`Updated attempt ${userExerciseAttemptId} to ${newStatus}`)
 
@@ -404,6 +407,121 @@ export class UserExerciseAttemptService {
             throw error
         }
     }
+
+    async getExerciseAttemptByExerciseId(id: number, userId: number, languageCode: string): Promise<MessageResDTO | null> {
+        try {
+
+            const userExerciseAttempt = await this.findOne(id)
+            const result = await this.exercisesService.getExercisesByIdHaveQuestionBanks(userExerciseAttempt.data.exerciseId)
+            // Map translations: question strictly from translation; answers from translation or parsed composite string
+            const testSet = (result.data as any)?.testSet
+            const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
+            const pickByLang = (raw: string, lang: string): string => {
+                if (!raw) return ''
+                // format example: "jp:月 + vi:Tháng + en:Month"
+                const parts = raw.split('+').map(p => p.trim())
+                const map: Record<string, string> = {}
+                for (const part of parts) {
+                    const idx = part.indexOf(':')
+                    if (idx > -1) {
+                        const k = part.slice(0, idx).trim()
+                        const v = part.slice(idx + 1).trim()
+                        if (k) map[k] = v
+                    }
+                }
+                // If no labeled segments detected, treat entire raw as JP text or first token before '+'
+                if (Object.keys(map).length === 0) {
+                    const first = raw.split('+')[0]?.trim() ?? ''
+                    return first
+                }
+                // prefer requested lang, fallback jp, else original raw without prefixes
+                if (map[lang]) return map[lang]
+                if (map['vi'] && lang.startsWith('vi')) return map['vi']
+                if (map['en'] && lang.startsWith('en')) return map['en']
+                return map['jp'] ?? raw.replace(/\b(jp|vi|en)\s*:/g, '').trim()
+            }
+
+            if (testSet?.testSetQuestionBanks?.length) {
+                const mappedBanks = await Promise.all(
+                    testSet.testSetQuestionBanks.map(async (item: any) => {
+                        const qb = item.questionBank
+                        // Question: only via translation key; if missing translation, return empty string
+                        let questionText = ''
+                        if (qb?.questionKey) {
+                            const triedLang = normalizedLang
+                            const keyCandidates = [
+                                qb.questionKey,
+                                qb.questionKey.endsWith('.meaning.1') ? qb.questionKey : `${qb.questionKey}.meaning.1`,
+                                qb.questionKey.endsWith('.question') ? qb.questionKey : `${qb.questionKey}.question`
+                            ]
+                            for (const key of keyCandidates) {
+                                questionText = (await this.translationHelper.getTranslation(key, triedLang)) || ''
+                                if (!questionText) {
+                                    questionText = (await this.translationHelper.getTranslation(key, 'vi')) || ''
+                                }
+                                if (questionText) break
+                            }
+                        }
+                        if (!questionText) {
+                            // fallback to JP original if translation is missing
+                            questionText = qb?.questionJp || ''
+                        }
+
+                        const mappedAnswers = await Promise.all(
+                            (qb?.answers || []).map(async (ans: any) => {
+                                // Always derive from answerJp composite string based on language
+                                const answerLabel = pickByLang(ans?.answerJp || '', normalizedLang)
+                                return {
+                                    id: ans.id,
+                                    answer: answerLabel
+                                }
+                            })
+                        )
+
+                        return {
+                            id: item.id,
+                            questionOrder: item.questionOrder,
+                            questionBank: {
+                                id: qb?.id,
+                                question: questionText,
+                                answers: mappedAnswers
+                            }
+                        }
+                    })
+                )
+
+                result.data = {
+                    id: (result.data as any).id,
+                    exerciseType: (result.data as any).exerciseType,
+                    isBlocked: (result.data as any).isBlocked,
+                    testSetId: (result.data as any).testSetId,
+                    testSet: {
+                        id: testSet.id,
+                        testSetQuestionBanks: mappedBanks
+                    }
+                } as any
+            }
+
+            this.logger.log(`Getting latest exercise attempts for user ${userId} in exercise ${userExerciseAttempt.data.exerciseId}`)
+
+            let userExerciseAttemptId = 0;
+            const checkAttempt = await this.getStatus(id, userId)
+            if (checkAttempt.data.status === 'COMPLETED') {
+                const createAttempt = await this.create(userId, result.data.id)
+                userExerciseAttemptId = createAttempt.data.id
+            }
+
+            return {
+                statusCode: 200,
+                data: {
+                    ...result.data,
+                    userExerciseAttemptId
+                },
+                message: EXERCISES_MESSAGE.GET_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error getting latest exercise attempts by lesson:', error)
+            throw error
+        }
+    }
 }
-
-
