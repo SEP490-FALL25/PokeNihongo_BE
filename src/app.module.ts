@@ -62,6 +62,7 @@ import { SharedModule } from './shared/shared.module'
 import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module';
 import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.module';
 import { GachaPurchaseModule } from './modules/gacha-purchase/gacha-purchase.module';
+import { GachaRollHistoryModule } from './modules/gacha-roll-history/gacha-roll-history.module';
 
 @Module({
   imports: [
@@ -122,7 +123,8 @@ import { GachaPurchaseModule } from './modules/gacha-purchase/gacha-purchase.mod
     GachaItemModule,
     ShopRarityPriceModule,
     UserGachaPityModule,
-    GachaPurchaseModule
+    GachaPurchaseModule,
+    GachaRollHistoryModule
   ],
 
   controllers: [],

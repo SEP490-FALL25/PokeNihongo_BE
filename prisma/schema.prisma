@@ -96,9 +96,6 @@ model User {
   createdGachaItems         GachaItem[]         @relation("GachaItemCreatedBy")
   updatedGachaItems         GachaItem[]         @relation("GachaItemUpdatedBy")
   deletedGachaItems         GachaItem[]         @relation("GachaItemDeletedBy")
-  createdGachaRollHistories GachaRollHistory[]  @relation("GachaRollHistoryCreatedBy")
-  updatedGachaRollHistories GachaRollHistory[]  @relation("GachaRollHistoryUpdatedBy")
-  deletedGachaRollHistories GachaRollHistory[]  @relation("GachaRollHistoryDeletedBy")
   createdGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseCreatedBy")
   updatedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseUpdatedBy")
   deletedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseDeletedBy")
@@ -1413,17 +1410,10 @@ model GachaRollHistory {
   rarity GachaStarType
 
   // Liên kết tới pity chung
-  pityId          Int?
-  pity            UserGachaPity? @relation(fields: [pityId], references: [id], onDelete: SetNull)
-  pityCountBefore Int
-  pityCountAfter  Int
-  // meta
-  createdById     Int?
-  createdBy       User?          @relation("GachaRollHistoryCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
-  deletedById     Int?
-  deletedBy       User?          @relation("GachaRollHistoryDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
-  updatedById     Int?
-  updatedBy       User?          @relation("GachaRollHistoryUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+  pityId     Int?
+  pity       UserGachaPity? @relation(fields: [pityId], references: [id], onDelete: SetNull)
+  pityNow    Int
+  pityStatus GachaPityType  @default(PENDING)
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())

@@ -467,3 +467,14 @@ export const GachaPurchaseMessage = {
   ALREADY_EXISTS: 'gacha_purchase.ALREADY_EXISTS',
   INVALID_DATA: 'gacha_purchase.INVALID_DATA'
 } as const
+
+export const GachaRollHistoryMessage = {
+  CREATE_SUCCESS: 'gacha_roll_history.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'gacha_roll_history.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'gacha_roll_history.DELETE_SUCCESS',
+  GET_SUCCESS: 'gacha_roll_history.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'gacha_roll_history.GET_LIST_SUCCESS',
+  NOT_FOUND: 'gacha_roll_history.NOT_FOUND',
+  ALREADY_EXISTS: 'gacha_roll_history.ALREADY_EXISTS',
+  INVALID_DATA: 'gacha_roll_history.INVALID_DATA'
+} as const

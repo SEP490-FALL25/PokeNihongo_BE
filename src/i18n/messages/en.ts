@@ -439,5 +439,15 @@ export const enMessages = {
     NOT_FOUND: 'Gacha purchase not found',
     ALREADY_EXISTS: 'Gacha purchase already exists',
     INVALID_DATA: 'Invalid gacha purchase data'
+  },
+  gacha_roll_history: {
+    CREATE_SUCCESS: 'Gacha roll history created successfully',
+    UPDATE_SUCCESS: 'Gacha roll history updated successfully',
+    DELETE_SUCCESS: 'Gacha roll history deleted successfully',
+    GET_SUCCESS: 'Gacha roll history retrieved successfully',
+    GET_LIST_SUCCESS: 'Gacha roll history list retrieved successfully',
+    NOT_FOUND: 'Gacha roll history not found',
+    ALREADY_EXISTS: 'Gacha roll history already exists',
+    INVALID_DATA: 'Invalid gacha roll history data'
   }
 }

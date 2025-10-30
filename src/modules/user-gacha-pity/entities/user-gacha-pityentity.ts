@@ -17,7 +17,7 @@ export const UserGachaPitySchema = z.object({
     .enum([
       GachaPityType.PENDING,
       GachaPityType.COMPLETED_MAX,
-      GachaPityType.COMPLETED_MIN
+      GachaPityType.COMPLETED_LUCK
     ])
     .default(GachaPityType.PENDING),
   deletedAt: z.date().nullable(),

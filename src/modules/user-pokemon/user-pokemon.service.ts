@@ -161,6 +161,61 @@ export class UserPokemonService {
     return created
   }
 
+  async addPokemonByGacha(
+    { userId, data }: { userId: number; data: CreateUserPokemonBodyType },
+    prismaTx?: PrismaClient
+  ) {
+    try {
+      // Get Pokemon info to use nameJp as nickname if not provided
+      const pokemon = await this.pokemonRepo.findById(data.pokemonId)
+      if (!pokemon) {
+        throw new NotFoundRecordException()
+      }
+
+      // Get user check is first pokemon
+      const user = await this.sharedUserRepository.findUnique({ id: userId })
+
+      // Check if user already has this Pokemon
+      const existingUserPokemon = await this.userPokemonRepo.findByUserAndPokemon(
+        userId,
+        data.pokemonId
+      )
+      if (existingUserPokemon) {
+        throw new UserHasPokemonException()
+      }
+
+      // If no levelId provided, get the first Pokemon level
+      const firstPokemonLevel = await this.levelRepo.getFirstLevelPokemon()
+      if (!firstPokemonLevel) {
+        throw new ErrorInitLevelPokemonException()
+      }
+
+      const created = await this.userPokemonRepo.create(
+        {
+          userId,
+          data: {
+            pokemonId: data.pokemonId,
+            nickname: null,
+            isMain: false,
+            levelId: firstPokemonLevel.id
+          }
+        },
+        prismaTx
+      )
+      return {
+        data: created
+      }
+    } catch (error) {
+      if (isUniqueConstraintPrismaError(error)) {
+        throw new NicknameAlreadyExistsException()
+      }
+      if (isNotFoundPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      throw error
+    }
+  }
+
   async getUserPokemonStats(userId: number, lang: string = 'vi') {
     const userPokemons = await this.userPokemonRepo.getByUserId(userId)
     const totalPokemons = await this.prismaService.pokemon.count()

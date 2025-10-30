@@ -436,5 +436,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy giao dịch gacha',
     ALREADY_EXISTS: 'Giao dịch gacha đã tồn tại',
     INVALID_DATA: 'Dữ liệu giao dịch gacha không hợp lệ'
+  },
+  gacha_roll_history: {
+    CREATE_SUCCESS: 'Tạo lịch sử quay gacha thành công',
+    UPDATE_SUCCESS: 'Cập nhật lịch sử quay gacha thành công',
+    DELETE_SUCCESS: 'Xóa lịch sử quay gacha thành công',
+    GET_SUCCESS: 'Lấy thông tin lịch sử quay gacha thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách lịch sử quay gacha thành công',
+    NOT_FOUND: 'Không tìm thấy lịch sử quay gacha',
+    ALREADY_EXISTS: 'Lịch sử quay gacha đã tồn tại',
+    INVALID_DATA: 'Dữ liệu lịch sử quay gacha không hợp lệ'
   }
 }

@@ -5,6 +5,7 @@ import { UserGachaPityService } from './user-gacha-pity.service'
 
 @Module({
   controllers: [UserGachaPityController],
-  providers: [UserGachaPityService, UserGachaPityRepo]
+  providers: [UserGachaPityService, UserGachaPityRepo],
+  exports: [UserGachaPityService, UserGachaPityRepo]
 })
 export class UserGachaPityModule {}

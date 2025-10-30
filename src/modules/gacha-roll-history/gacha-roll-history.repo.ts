@@ -4,14 +4,14 @@ import { Injectable } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
-  CreateGachaPurchaseBodyType,
-  GachaPurchaseType,
-  SHOP_PURCHASE_FIELDS,
-  UpdateGachaPurchaseBodyType
-} from './entities/gacha-purchase.entity'
+  CreateGachaRollHistoryBodyType,
+  GACHA_ROLL_HISTORY_FIELDS,
+  GachaRollHistoryType,
+  UpdateGachaRollHistoryBodyType
+} from './entities/gacha-roll-history.entity'
 
 @Injectable()
-export class GachaPurchaseRepo {
+export class GachaRollHistoryRepo {
   constructor(private prismaService: PrismaService) {}
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
     return this.prismaService.$transaction(callback)
@@ -21,20 +21,16 @@ export class GachaPurchaseRepo {
       createdById,
       data
     }: {
-      createdById?: number
-      data: CreateGachaPurchaseBodyType & {
-        totalCost: number
-        userId: number
-        walletTransId: number | null
-      }
+      createdById: number
+      data: CreateGachaRollHistoryBodyType
     },
     prismaTx?: PrismaClient
-  ): Promise<GachaPurchaseType> {
+  ): Promise<GachaRollHistoryType> {
     const client = prismaTx || this.prismaService
-    return client.gachaPurchase.create({
+    return client.gachaRollHistory.create({
       data: {
         ...data,
-        createdById
+        userId: data.userId || createdById
       }
     })
   }
@@ -46,20 +42,19 @@ export class GachaPurchaseRepo {
       updatedById
     }: {
       id: number
-      data: UpdateGachaPurchaseBodyType & { walletTransId?: number | null }
+      data: UpdateGachaRollHistoryBodyType
       updatedById?: number
     },
     prismaTx?: PrismaClient
-  ): Promise<GachaPurchaseType> {
+  ): Promise<GachaRollHistoryType> {
     const client = prismaTx || this.prismaService
-    return client.gachaPurchase.update({
+    return client.gachaRollHistory.update({
       where: {
         id,
         deletedAt: null
       },
       data: {
-        ...data,
-        updatedById
+        ...data
       }
     })
   }
@@ -68,13 +63,13 @@ export class GachaPurchaseRepo {
     id: number,
     isHard?: boolean,
     prismaTx?: PrismaClient
-  ): Promise<GachaPurchaseType> {
+  ): Promise<GachaRollHistoryType> {
     const client = prismaTx || this.prismaService
     return isHard
-      ? client.gachaPurchase.delete({
+      ? client.gachaRollHistory.delete({
           where: { id }
         })
-      : client.gachaPurchase.update({
+      : client.gachaRollHistory.update({
           where: {
             id,
             deletedAt: null
@@ -86,7 +81,7 @@ export class GachaPurchaseRepo {
   }
 
   async list(pagination: PaginationQueryType) {
-    const { where, orderBy } = parseQs(pagination.qs, SHOP_PURCHASE_FIELDS)
+    const { where, orderBy } = parseQs(pagination.qs, GACHA_ROLL_HISTORY_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
@@ -97,15 +92,12 @@ export class GachaPurchaseRepo {
     }
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.gachaPurchase.count({
+      this.prismaService.gachaRollHistory.count({
         where: filterWhere
       }),
-      this.prismaService.gachaPurchase.findMany({
+      this.prismaService.gachaRollHistory.findMany({
         where: filterWhere,
-        include: {
-          walletTrans: true,
-          user: true
-        },
+
         orderBy,
         skip,
         take
@@ -123,26 +115,11 @@ export class GachaPurchaseRepo {
     }
   }
 
-  findById(id: number): Promise<GachaPurchaseType | null> {
-    return this.prismaService.gachaPurchase.findUnique({
+  findById(id: number): Promise<GachaRollHistoryType | null> {
+    return this.prismaService.gachaRollHistory.findUnique({
       where: {
         id,
         deletedAt: null
-      },
-      include: {
-        walletTrans: true
-      }
-    })
-  }
-
-  findByUserId(userId: number): Promise<GachaPurchaseType[]> {
-    return this.prismaService.gachaPurchase.findMany({
-      where: {
-        userId,
-        deletedAt: null
-      },
-      include: {
-        walletTrans: true
       }
     })
   }

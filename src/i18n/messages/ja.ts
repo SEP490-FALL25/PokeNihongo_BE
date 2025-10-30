@@ -429,5 +429,15 @@ export const jaMessages = {
     NOT_FOUND: 'ガチャ購入が見つかりません',
     ALREADY_EXISTS: 'ガチャ購入は既に存在します',
     INVALID_DATA: '無効なガチャ購入データです'
+  },
+  gacha_roll_history: {
+    CREATE_SUCCESS: 'ガチャロール履歴の作成に成功しました',
+    UPDATE_SUCCESS: 'ガチャロール履歴の更新に成功しました',
+    DELETE_SUCCESS: 'ガチャロール履歴の削除に成功しました',
+    GET_SUCCESS: 'ガチャロール履歴情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ガチャロール履歴リストの取得に成功しました',
+    NOT_FOUND: 'ガチャロール履歴が見つかりません',
+    ALREADY_EXISTS: 'ガチャロール履歴は既に存在します',
+    INVALID_DATA: '無効なガチャロール履歴データです'
   }
 }

@@ -1,8 +1,8 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
-import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common'
+import { PaginationResponseDTO } from '@/shared/dtos/response.dto'
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateGachaPurchaseBodyDTO,
@@ -73,19 +73,19 @@ export class GachaPurchaseController {
   //   )
   // }
 
-  @Delete(':gachaPurchaseId')
-  @ZodSerializerDto(MessageResDTO)
-  delete(
-    @Param() params: GetGachaPurchaseParamsDTO,
-    @ActiveUser('userId') userId: number,
-    @I18nLang() lang: string
-  ) {
-    return this.gachaPurchaseService.delete(
-      {
-        id: params.gachaPurchaseId,
-        userId
-      },
-      lang
-    )
-  }
+  // @Delete(':gachaPurchaseId')
+  // @ZodSerializerDto(MessageResDTO)
+  // delete(
+  //   @Param() params: GetGachaPurchaseParamsDTO,
+  //   @ActiveUser('userId') userId: number,
+  //   @I18nLang() lang: string
+  // ) {
+  //   return this.gachaPurchaseService.delete(
+  //     {
+  //       id: params.gachaPurchaseId,
+  //       userId
+  //     },
+  //     lang
+  //   )
+  // }
 }

@@ -25,9 +25,7 @@ export const GachaPurchaseSchema = z.object({
 
 // Create Schema
 export const CreateGachaPurchaseBodySchema = GachaPurchaseSchema.pick({
-  userId: true,
   bannerId: true,
-  walletTransId: true,
   rollCount: true
 }).strict()
 

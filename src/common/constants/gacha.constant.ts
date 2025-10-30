@@ -11,6 +11,6 @@ export type GachaStarTypeType = (typeof GachaStarType)[keyof typeof GachaStarTyp
 export const GachaPityType = {
   PENDING: 'PENDING',
   COMPLETED_MAX: 'COMPLETED_MAX',
-  COMPLETED_MIN: 'COMPLETED_LUCK'
+  COMPLETED_LUCK: 'COMPLETED_LUCK'
 } as const
 export type GachaPityTypeType = (typeof GachaPityType)[keyof typeof GachaPityType]

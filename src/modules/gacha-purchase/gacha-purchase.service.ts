@@ -19,8 +19,7 @@ import { GachaBannerRepo } from '../gacha-banner/gacha-banner.repo'
 import { GachaItemRateType } from '../gacha-item-rate/entities/gacha-item-rate.entity'
 import { InvalidGachaBannerException } from '../gacha-item/dto/gacha-item.error'
 import { GachaItemType } from '../gacha-item/entities/gacha-item.entity'
-import { GachaItemRepo } from '../gacha-item/gacha-item.repo'
-import { PokemonRepo } from '../pokemon/pokemon.repo'
+import { GachaRollHistoryRepo } from '../gacha-roll-history/gacha-roll-history.repo'
 import { UserGachaPityRepo } from '../user-gacha-pity/user-gacha-pity.repo'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import { UserPokemonService } from '../user-pokemon/user-pokemon.service'
@@ -39,13 +38,14 @@ export class GachaPurchaseService {
     private gachaPurchaseRepo: GachaPurchaseRepo,
     private readonly i18nService: I18nService,
     private readonly gachaBannerRepo: GachaBannerRepo,
-    private readonly gachaItemRepo: GachaItemRepo,
+    // private readonly gachaItemRepo: GachaItemRepo,
+    private readonly gachaRollHistoryRepo: GachaRollHistoryRepo,
     private readonly userGachaPityRepo: UserGachaPityRepo,
     private readonly walletRepo: WalletRepo,
     private readonly walletTransRepo: WalletTransactionRepo,
     private readonly userPokemonRepo: UserPokemonRepo,
-    private readonly userPokemonService: UserPokemonService,
-    private readonly pokemonRepo: PokemonRepo
+    private readonly userPokemonService: UserPokemonService
+    // private readonly pokemonRepo: PokemonRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -89,6 +89,7 @@ export class GachaPurchaseService {
       ) {
         throw new InvalidGachaBannerException()
       }
+
       let userPity =
         userPityExist === null
           ? await this.userGachaPityRepo.create({
@@ -100,7 +101,7 @@ export class GachaPurchaseService {
               }
             })
           : userPityExist
-
+      console.log('userPity: ', userPity)
       // Tách 2 mảng
       // 1 cái là list để random, 1 cái là tỉ lệ
       const items: GachaItemType[] = gachaBanner.items.map(
@@ -123,44 +124,8 @@ export class GachaPurchaseService {
       // Gacha roll logic
       let pityCount = userPity.pityCount
       const results: typeof gachaPool = []
-
-      // chạy roll theo count
-      for (let i = 0; i < rollCount; i++) {
-        const { result, pityCount: newPity } = this.rollGacha(gachaPool, pityCount)
-        results.push(result)
-        pityCount = newPity
-      }
-
-      // Nếu rollCount = 10 => đảm bảo có ít nhất 1 con ≥ 3★
-      if (data.rollCount === 10) {
-        const hasHighStar = results.some(
-          (r) => r.starType === 'THREE' || r.starType === 'FOUR' || r.starType === 'FIVE'
-        )
-
-        if (!hasHighStar) {
-          // Tìm tất cả 3★ trong pool
-          const threeStarPool = gachaPool.filter(
-            (r) => r.starType === 'THREE' || r.starType === 'FOUR'
-          )
-
-          if (threeStarPool.length > 0) {
-            // Chọn ngẫu nhiên 1 con 3★
-            const guaranteed =
-              threeStarPool[Math.floor(Math.random() * threeStarPool.length)]
-
-            // Tìm ngẫu nhiên 1 con có 1★ hoặc 2★ để thay thế
-            const lowStarIndexes = results
-              .map((r, i) => (r.starType === 'ONE' || r.starType === 'TWO' ? i : -1))
-              .filter((i) => i !== -1)
-
-            if (lowStarIndexes.length > 0) {
-              const replaceIndex =
-                lowStarIndexes[Math.floor(Math.random() * lowStarIndexes.length)]
-              results[replaceIndex] = guaranteed
-            }
-          }
-        }
-      }
+      const totalCost = gachaBanner.costRoll * rollCount
+      console.log('cost: ', totalCost)
 
       // 4) transaction
       const result = await this.gachaPurchaseRepo.withTransaction(async (prismaTx) => {
@@ -171,21 +136,21 @@ export class GachaPurchaseService {
               createdById: userId,
               data: {
                 userId,
-                gachaItemId: data.gachaItemId,
-                walletTransId: null,
-                quantity: data.quantity,
-                totalPrice
+                bannerId: data.bannerId,
+                walletTransId: null, // tí update lại sau,
+                rollCount: data.rollCount,
+                totalCost: totalCost
               }
             },
             prismaTx
           ),
           this.walletRepo.minusBalanceToWalletWithTypeUserId(
-            { userId, type: walletType.SPARKLES, amount: totalPrice },
+            { userId, type: walletType.SPARKLES, amount: totalCost },
             prismaTx
           )
         ])
+        console.log('userWallet: ', updatedWallet)
 
-        // ko du la chui
         if (!updatedWallet) throw new NotEnoughBalanceException()
 
         // 4.3) Create Wallet Transaction referencing the purchase
@@ -197,7 +162,7 @@ export class GachaPurchaseService {
               userId,
               purpose: walletPurposeType.SHOP,
               referenceId: purchase.id,
-              amount: totalPrice,
+              amount: totalCost,
               type: WalletTransactionType.DECREASE,
               source: WalletTransactionSourceType.SHOP_PURCHASE,
               description: `Gacha purchase ${purchase.id}`
@@ -207,8 +172,6 @@ export class GachaPurchaseService {
         )
 
         // 4.4) Update purchase with walletTransId
-        // Add Pokemon to user inventory (level 1, nickname null, isMain false)
-
         const [finalPurchase] = await Promise.all([
           this.gachaPurchaseRepo.update(
             {
@@ -217,17 +180,160 @@ export class GachaPurchaseService {
               updatedById: userId
             },
             prismaTx
-          ),
-          this.userPokemonService.addPokemonByGacha(
-            { userId, pokemonId: gachaItem.pokemonId },
-            prismaTx as any
-          ),
-          this.gachaItemRepo.incrementPurchasedCount(
-            data.gachaItemId,
-            data.quantity,
-            prismaTx
           )
         ])
+
+        // Roll logic with pity update, roll history, and reward handling
+        let pityCount = userPity.pityCount
+        let currentPityId = userPity.id
+        let currentPityStatus = userPity.status
+        const rollResults: any[] = []
+        const gachaRollHistoryToCreate: any[] = []
+
+        for (let i = 0; i < rollCount; i++) {
+          const { result, pityCount: newPity } = this.rollGacha(
+            gachaPool,
+            pityCount,
+            gachaBanner.hardPity5Star
+          )
+
+          // Nếu roll ra 5★
+          if (result.starType === 'FIVE') {
+            // Update userPity: status = COMPLETED_MAX nếu newPity = hardPity5Star, ngược lại là COMPLETED_LUCK
+            const newStatus =
+              newPity === gachaBanner.hardPity5Star
+                ? GachaPityType.COMPLETED_MAX
+                : GachaPityType.COMPLETED_LUCK
+            await this.userGachaPityRepo.update(
+              {
+                id: currentPityId,
+                data: {
+                  pityCount: newPity,
+                  status: newStatus
+                },
+                updatedById: userId
+              },
+              prismaTx
+            )
+            // Tạo userPity mới status PENDING, pityCount = 0
+            const newPityObj = await this.userGachaPityRepo.create(
+              {
+                createdById: userId,
+                data: {
+                  userId,
+                  status: GachaPityType.PENDING,
+                  pityCount: 0
+                }
+              },
+              prismaTx
+            )
+            pityCount = 0
+            currentPityId = newPityObj.id
+            currentPityStatus = GachaPityType.PENDING
+          } else {
+            pityCount = newPity
+            //update lại userPity hiện tại
+            await this.userGachaPityRepo.update(
+              {
+                id: currentPityId,
+                data: {
+                  pityCount: newPity
+                },
+                updatedById: userId
+              },
+              prismaTx
+            )
+          }
+
+          rollResults.push(result)
+          gachaRollHistoryToCreate.push({
+            purchaseId: finalPurchase.id,
+            userId,
+            bannerId: data.bannerId,
+            pokemonId: result.id,
+            rarity: result.starType,
+            pityId: currentPityId,
+            pityNow: pityCount,
+            pityStatus: currentPityStatus
+          })
+        }
+
+        // Nếu rollCount = 10 => đảm bảo có ít nhất 1 con ≥ 3★
+        if (data.rollCount === 10) {
+          const hasHighStar = rollResults.some(
+            (r) =>
+              r.starType === 'THREE' || r.starType === 'FOUR' || r.starType === 'FIVE'
+          )
+
+          if (!hasHighStar) {
+            // Tìm tất cả 3★ trong pool
+            const threeStarPool = gachaPool.filter(
+              (r) => r.starType === 'THREE' || r.starType === 'FOUR'
+            )
+
+            if (threeStarPool.length > 0) {
+              // Chọn ngẫu nhiên 1 con 3★
+              const guaranteed =
+                threeStarPool[Math.floor(Math.random() * threeStarPool.length)]
+
+              // Tìm ngẫu nhiên 1 con có 1★ hoặc 2★ để thay thế
+              const lowStarIndexes = rollResults
+                .map((r, i) => (r.starType === 'ONE' || r.starType === 'TWO' ? i : -1))
+                .filter((i) => i !== -1)
+
+              if (lowStarIndexes.length > 0) {
+                const replaceIndex =
+                  lowStarIndexes[Math.floor(Math.random() * lowStarIndexes.length)]
+                rollResults[replaceIndex] = guaranteed
+                // Update gachaRollHistoryToCreate cho đúng pokemonId và rarity
+                gachaRollHistoryToCreate[replaceIndex].pokemonId = guaranteed.id
+                gachaRollHistoryToCreate[replaceIndex].rarity = guaranteed.starType
+              }
+            }
+          }
+        }
+
+        // Tạo GachaRollHistory cho từng roll
+        for (const roll of gachaRollHistoryToCreate) {
+          await this.gachaRollHistoryRepo.create(
+            {
+              createdById: userId,
+              data: roll
+            },
+            prismaTx
+          )
+        }
+
+        // Xử lý add pokemon hoặc cộng SPARKLES
+        for (const roll of rollResults) {
+          // Kiểm tra user đã có pokemon chưa
+          const userPokemon = await this.userPokemonRepo.findByUserAndPokemon(
+            userId,
+            roll.id
+          )
+          if (!userPokemon) {
+            // Add vào userPokemon
+            await this.userPokemonService.addPokemonByGacha(
+              { userId, data: { pokemonId: roll.id } },
+              prismaTx
+            )
+          } else {
+            // Cộng vào ví SPARKLES số tiền = số sao * gachaBanner.costRoll
+            let starNum = 1
+            if (roll.starType === 'TWO') starNum = 2
+            if (roll.starType === 'THREE') starNum = 3
+            if (roll.starType === 'FOUR') starNum = 4
+            if (roll.starType === 'FIVE') starNum = 5
+            await this.walletRepo.addBalanceToWalletWithType(
+              {
+                userId,
+                type: walletType.SPARKLES,
+                amount: starNum * gachaBanner.costRoll
+              },
+              prismaTx
+            )
+          }
+        }
 
         return finalPurchase
       })
@@ -246,182 +352,57 @@ export class GachaPurchaseService {
     }
   }
 
-  // async update(
-  //   {
-  //     id,
-  //     data,
-  //     userId
-  //   }: {
-  //     id: number
-  //     data: UpdateGachaPurchaseBodyType
-  //     userId?: number
-  //   },
-  //   lang: string = 'vi'
-  // ) {
+  // async delete({ id, userId }: { id: number; userId?: number }, lang: string = 'vi') {
   //   try {
-  //     // 0) lay cai purchase ra
-  //     const existing = await this.gachaPurchaseRepo.findById(id)
-  //     if (!existing) throw new GachaPurchaseNotFoundException()
+  //     const existGachaPurchase = await this.gachaPurchaseRepo.findById(id)
+  //     if (!existGachaPurchase) throw new GachaPurchaseNotFoundException()
 
-  //     // 1) xem coi item moi hay cu, co doi so luong ko
-  //     const effectiveGachaItemId = data.gachaItemId ?? existing.gachaItemId
-  //     const effectiveQuantity = data.quantity ?? existing.quantity
-
-  //     // 2) lay ra item de tinh tien
-  //     const gachaItem = await this.gachaItemRepo.findById(effectiveGachaItemId)
-  //     if (!gachaItem) throw new NotFoundRecordException()
-
-  //     // 3) Compute totals
-  //     const oldTotal = existing.totalPrice
-  //     const newTotal = effectiveQuantity * gachaItem.price
-
-  //     // 4) transaction
-  //     const result = await this.gachaPurchaseRepo.withTransaction(async (prismaTx) => {
-  //       // 4.1) If total changed: refund old, then charge new
-  //       if (newTotal !== oldTotal) {
-  //         // nhet lai tien cu ve vi
-  //         const walletAfterRefund = await this.walletRepo.addBalanceToWalletWithType(
-  //           { userId: existing.userId, type: walletType.SPARKLES, amount: oldTotal },
-  //           prismaTx
-  //         )
-  //         if (!walletAfterRefund) throw new NotEnoughBalanceException()
-
-  //         // Log refund transaction (INCREASE)
-  //         await this.walletTransRepo.create(
-  //           {
-  //             createdById: userId,
-  //             data: {
-  //               walletId: walletAfterRefund.id,
-  //               userId: existing.userId,
-  //               purpose: walletPurposeType.SHOP,
-  //               referenceId: id,
-  //               amount: oldTotal,
-  //               type: WalletTransactionType.INCREASE,
-  //               source: WalletTransactionSourceType.SHOP_PURCHASE,
-  //               description: `Refund previous total for purchase ${id}`
-  //             }
-  //           },
-  //           prismaTx
-  //         )
-
-  //         //check coi du tien ko
-  //         if ((walletAfterRefund as any).balance < newTotal) {
-  //           // Optional: check current wallet if needed; here we guard via balance on returned entity
-  //           throw new NotEnoughBalanceException()
-  //         }
-
-  //         // tru tien ra
-  //         const walletAfterCharge =
-  //           await this.walletRepo.minusBalanceToWalletWithTypeUserId(
-  //             { userId: existing.userId, type: walletType.SPARKLES, amount: newTotal },
-  //             prismaTx
-  //           )
-  //         if (!walletAfterCharge) throw new NotEnoughBalanceException()
-
-  //         // Log charge transaction (DECREASE)
-  //         await this.walletTransRepo.create(
-  //           {
-  //             createdById: userId,
-  //             data: {
-  //               walletId: walletAfterCharge.id,
-  //               userId: existing.userId,
-  //               purpose: walletPurposeType.SHOP,
-  //               referenceId: id,
-  //               amount: newTotal,
-  //               type: WalletTransactionType.DECREASE,
-  //               source: WalletTransactionSourceType.SHOP_PURCHASE,
-  //               description: `Charge new total for purchase ${id}`
-  //             }
-  //           },
-  //           prismaTx
-  //         )
-  //       }
-
-  //       // 4.2) Update purchase record
-  //       const updated = await this.gachaPurchaseRepo.update(
+  //     await this.gachaPurchaseRepo.withTransaction(async (prismaTx) => {
+  //       // 1) Refund full amount to wallet
+  //       const walletAfterRefund = await this.walletRepo.addBalanceToWalletWithType(
   //         {
-  //           id,
-  //           data: {
-  //             ...data,
-  //             gachaItemId: effectiveGachaItemId,
-  //             quantity: effectiveQuantity,
-  //             totalPrice: newTotal
-  //           } as any,
-  //           updatedById: userId
+  //           userId: existGachaPurchase.userId,
+  //           type: walletType.SPARKLES,
+  //           amount: existGachaPurchase.totalPrice
   //         },
   //         prismaTx
   //       )
-  //       return updated
+  //       if (!walletAfterRefund) throw new NotFoundRecordException()
+
+  //       // 2) Log refund transaction
+  //       await this.walletTransRepo.create(
+  //         {
+  //           createdById: userId,
+  //           data: {
+  //             walletId: walletAfterRefund.id,
+  //             userId: existGachaPurchase.userId,
+  //             purpose: walletPurposeType.SHOP,
+  //             referenceId: id,
+  //             amount: existGachaPurchase.totalPrice,
+  //             type: WalletTransactionType.INCREASE,
+  //             source: WalletTransactionSourceType.SHOP_PURCHASE,
+  //             description: `Refund on delete purchase ${id}`
+  //           }
+  //         },
+  //         prismaTx
+  //       )
+
+  //       // 3) Soft delete purchase
+  //       await this.gachaPurchaseRepo.delete(id, false, prismaTx)
   //     })
 
   //     return {
   //       statusCode: 200,
-  //       data: result,
-  //       message: this.i18nService.translate(GachaPurchaseMessage.UPDATE_SUCCESS, lang)
+  //       data: null,
+  //       message: this.i18nService.translate(GachaPurchaseMessage.DELETE_SUCCESS, lang)
   //     }
   //   } catch (error) {
   //     if (isNotFoundPrismaError(error)) {
   //       throw new GachaPurchaseNotFoundException()
   //     }
-
-  //     if (isForeignKeyConstraintPrismaError(error)) {
-  //       throw new NotFoundRecordException()
-  //     }
   //     throw error
   //   }
   // }
-
-  async delete({ id, userId }: { id: number; userId?: number }, lang: string = 'vi') {
-    try {
-      const existGachaPurchase = await this.gachaPurchaseRepo.findById(id)
-      if (!existGachaPurchase) throw new GachaPurchaseNotFoundException()
-
-      await this.gachaPurchaseRepo.withTransaction(async (prismaTx) => {
-        // 1) Refund full amount to wallet
-        const walletAfterRefund = await this.walletRepo.addBalanceToWalletWithType(
-          {
-            userId: existGachaPurchase.userId,
-            type: walletType.SPARKLES,
-            amount: existGachaPurchase.totalPrice
-          },
-          prismaTx
-        )
-        if (!walletAfterRefund) throw new NotFoundRecordException()
-
-        // 2) Log refund transaction
-        await this.walletTransRepo.create(
-          {
-            createdById: userId,
-            data: {
-              walletId: walletAfterRefund.id,
-              userId: existGachaPurchase.userId,
-              purpose: walletPurposeType.SHOP,
-              referenceId: id,
-              amount: existGachaPurchase.totalPrice,
-              type: WalletTransactionType.INCREASE,
-              source: WalletTransactionSourceType.SHOP_PURCHASE,
-              description: `Refund on delete purchase ${id}`
-            }
-          },
-          prismaTx
-        )
-
-        // 3) Soft delete purchase
-        await this.gachaPurchaseRepo.delete(id, false, prismaTx)
-      })
-
-      return {
-        statusCode: 200,
-        data: null,
-        message: this.i18nService.translate(GachaPurchaseMessage.DELETE_SUCCESS, lang)
-      }
-    } catch (error) {
-      if (isNotFoundPrismaError(error)) {
-        throw new GachaPurchaseNotFoundException()
-      }
-      throw error
-    }
-  }
 
   async getByUser(userId: number, lang: string = 'vi') {
     const data = await this.gachaPurchaseRepo.findByUserId(userId)
@@ -460,10 +441,10 @@ export class GachaPurchaseService {
     if (currentPity + 1 >= pityLimit) {
       const fiveStarPool = pool.filter((p) => p.starType === 'FIVE')
       selected = fiveStarPool[Math.floor(Math.random() * fiveStarPool.length)]
-      currentPity = 0
+      currentPity++
     } else {
       selected = getRandomItem()
-      currentPity = selected.starType === 'FIVE' ? 0 : currentPity + 1
+      currentPity = currentPity + 1
     }
 
     return { result: selected, pityCount: currentPity }
