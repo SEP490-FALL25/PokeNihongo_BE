@@ -1,30 +1,36 @@
 import { createZodDto } from 'nestjs-zod'
 import {
-  CreateShopPurchaseBodySchema,
-  CreateShopPurchaseResSchema,
-  GetShopPurchaseDetailResSchema,
-  GetShopPurchaseListResSchema,
-  GetShopPurchaseParamsSchema,
-  UpdateShopPurchaseBodySchema,
-  UpdateShopPurchaseResSchema
+  CreateGachaPurchaseBodySchema,
+  CreateGachaPurchaseResSchema,
+  GetGachaPurchaseDetailResSchema,
+  GetGachaPurchaseListResSchema,
+  GetGachaPurchaseParamsSchema,
+  UpdateGachaPurchaseBodySchema,
+  UpdateGachaPurchaseResSchema
 } from '../entities/gacha-purchase.entity'
 
 // Request DTOs
-export class CreateShopPurchaseBodyDTO extends createZodDto(
-  CreateShopPurchaseBodySchema
+export class CreateGachaPurchaseBodyDTO extends createZodDto(
+  CreateGachaPurchaseBodySchema
 ) {}
-export class UpdateShopPurchaseBodyDTO extends createZodDto(
-  UpdateShopPurchaseBodySchema
+export class UpdateGachaPurchaseBodyDTO extends createZodDto(
+  UpdateGachaPurchaseBodySchema
 ) {}
-export class GetShopPurchaseParamsDTO extends createZodDto(GetShopPurchaseParamsSchema) {}
+export class GetGachaPurchaseParamsDTO extends createZodDto(
+  GetGachaPurchaseParamsSchema
+) {}
 
 // Response DTOs
-export class CreateShopPurchaseResDTO extends createZodDto(CreateShopPurchaseResSchema) {}
-export class UpdateShopPurchaseResDTO extends createZodDto(UpdateShopPurchaseResSchema) {}
-export class GetShopPurchaseDetailResDTO extends createZodDto(
-  GetShopPurchaseDetailResSchema
+export class CreateGachaPurchaseResDTO extends createZodDto(
+  CreateGachaPurchaseResSchema
+) {}
+export class UpdateGachaPurchaseResDTO extends createZodDto(
+  UpdateGachaPurchaseResSchema
+) {}
+export class GetGachaPurchaseDetailResDTO extends createZodDto(
+  GetGachaPurchaseDetailResSchema
 ) {}
 
-export class GetShopPurchaseListResDTO extends createZodDto(
-  GetShopPurchaseListResSchema
+export class GetGachaPurchaseListResDTO extends createZodDto(
+  GetGachaPurchaseListResSchema
 ) {}

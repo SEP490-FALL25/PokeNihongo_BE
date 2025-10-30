@@ -2,53 +2,51 @@ import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
-  CreateShopPurchaseBodyDTO,
-  CreateShopPurchaseResDTO,
-  GetShopPurchaseDetailResDTO,
-  GetShopPurchaseListResDTO,
-  GetShopPurchaseParamsDTO,
-  UpdateShopPurchaseBodyDTO,
-  UpdateShopPurchaseResDTO
+  CreateGachaPurchaseBodyDTO,
+  CreateGachaPurchaseResDTO,
+  GetGachaPurchaseDetailResDTO,
+  GetGachaPurchaseListResDTO,
+  GetGachaPurchaseParamsDTO
 } from './dto/gacha-purchase.dto'
-import { ShopPurchaseService } from './shop-purchase.service'
+import { GachaPurchaseService } from './gacha-purchase.service'
 
-@Controller('shop-purchase')
-export class ShopPurchaseController {
-  constructor(private readonly shopPurchaseService: ShopPurchaseService) {}
+@Controller('gacha-purchase')
+export class GachaPurchaseController {
+  constructor(private readonly gachaPurchaseService: GachaPurchaseService) {}
 
   @Get()
   @ZodSerializerDto(PaginationResponseDTO)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
-    return this.shopPurchaseService.list(query, lang)
+    return this.gachaPurchaseService.list(query, lang)
   }
 
   @Get('user')
-  @ZodSerializerDto(GetShopPurchaseListResDTO)
+  @ZodSerializerDto(GetGachaPurchaseListResDTO)
   getByUser(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
-    return this.shopPurchaseService.getByUser(userId, lang)
+    return this.gachaPurchaseService.getByUser(userId, lang)
   }
 
-  @Get(':shopPurchaseId')
-  @ZodSerializerDto(GetShopPurchaseDetailResDTO)
+  @Get(':gachaPurchaseId')
+  @ZodSerializerDto(GetGachaPurchaseDetailResDTO)
   findById(
-    @Param() params: GetShopPurchaseParamsDTO,
+    @Param() params: GetGachaPurchaseParamsDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.shopPurchaseService.findById(params.shopPurchaseId, lang)
+    return this.gachaPurchaseService.findById(params.gachaPurchaseId, lang)
   }
 
   @Post()
-  @ZodSerializerDto(CreateShopPurchaseResDTO)
+  @ZodSerializerDto(CreateGachaPurchaseResDTO)
   create(
-    @Body() body: CreateShopPurchaseBodyDTO,
+    @Body() body: CreateGachaPurchaseBodyDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.shopPurchaseService.create(
+    return this.gachaPurchaseService.create(
       {
         userId,
         data: body
@@ -57,34 +55,34 @@ export class ShopPurchaseController {
     )
   }
 
-  @Put(':shopPurchaseId')
-  @ZodSerializerDto(UpdateShopPurchaseResDTO)
-  update(
-    @Body() body: UpdateShopPurchaseBodyDTO,
-    @Param() params: GetShopPurchaseParamsDTO,
-    @ActiveUser('userId') userId: number,
-    @I18nLang() lang: string
-  ) {
-    return this.shopPurchaseService.update(
-      {
-        data: body,
-        id: params.shopPurchaseId,
-        userId
-      },
-      lang
-    )
-  }
+  // @Put(':gachaPurchaseId')
+  // @ZodSerializerDto(UpdateGachaPurchaseResDTO)
+  // update(
+  //   @Body() body: UpdateGachaPurchaseBodyDTO,
+  //   @Param() params: GetGachaPurchaseParamsDTO,
+  //   @ActiveUser('userId') userId: number,
+  //   @I18nLang() lang: string
+  // ) {
+  //   return this.gachaPurchaseService.update(
+  //     {
+  //       data: body,
+  //       id: params.gachaPurchaseId,
+  //       userId
+  //     },
+  //     lang
+  //   )
+  // }
 
-  @Delete(':shopPurchaseId')
+  @Delete(':gachaPurchaseId')
   @ZodSerializerDto(MessageResDTO)
   delete(
-    @Param() params: GetShopPurchaseParamsDTO,
+    @Param() params: GetGachaPurchaseParamsDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.shopPurchaseService.delete(
+    return this.gachaPurchaseService.delete(
       {
-        id: params.shopPurchaseId,
+        id: params.gachaPurchaseId,
         userId
       },
       lang

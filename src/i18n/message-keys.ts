@@ -456,3 +456,14 @@ export const UserGachaPityMessage = {
   INVALID_DATA: 'user_gacha_pity.INVALID_DATA',
   HAS_PENDING: 'user_gacha_pity.HAS_PENDING'
 } as const
+
+export const GachaPurchaseMessage = {
+  CREATE_SUCCESS: 'gacha_purchase.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'gacha_purchase.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'gacha_purchase.DELETE_SUCCESS',
+  GET_SUCCESS: 'gacha_purchase.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'gacha_purchase.GET_LIST_SUCCESS',
+  NOT_FOUND: 'gacha_purchase.NOT_FOUND',
+  ALREADY_EXISTS: 'gacha_purchase.ALREADY_EXISTS',
+  INVALID_DATA: 'gacha_purchase.INVALID_DATA'
+} as const

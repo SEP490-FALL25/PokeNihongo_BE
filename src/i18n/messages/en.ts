@@ -429,5 +429,15 @@ export const enMessages = {
     ALREADY_EXISTS: 'User gacha pity already exists',
     INVALID_DATA: 'Invalid user gacha pity data',
     HAS_PENDING: 'User already has a pending gacha pity'
+  },
+  gacha_purchase: {
+    CREATE_SUCCESS: 'Gacha purchase created successfully',
+    UPDATE_SUCCESS: 'Gacha purchase updated successfully',
+    DELETE_SUCCESS: 'Gacha purchase deleted successfully',
+    GET_SUCCESS: 'Gacha purchase retrieved successfully',
+    GET_LIST_SUCCESS: 'Gacha purchase list retrieved successfully',
+    NOT_FOUND: 'Gacha purchase not found',
+    ALREADY_EXISTS: 'Gacha purchase already exists',
+    INVALID_DATA: 'Invalid gacha purchase data'
   }
 }

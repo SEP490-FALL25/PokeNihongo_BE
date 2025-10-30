@@ -1,7 +1,5 @@
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
-import { ShopItemSchema } from '@/modules/shop-item/entities/shop-item.entity'
-import { WalletTransactionSchema } from '@/modules/wallet-transaction/entities/wallet-transaction.entity'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
@@ -9,15 +7,14 @@ import { z } from 'zod'
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
 
-// Base ShopPurchase Schema
-export const ShopPurchaseSchema = z.object({
+// Base GachaPurchase Schema
+export const GachaPurchaseSchema = z.object({
   id: z.number(),
   userId: z.number(),
   bannerId: z.number(),
   walletTransId: z.number().nullable(),
-  pityId: z.number().nullable(),
   rollCount: z.number().min(1),
-  totalcost: z.number().min(0),
+  totalCost: z.number().min(0),
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
   deletedById: z.number().nullable(),
@@ -27,55 +24,54 @@ export const ShopPurchaseSchema = z.object({
 })
 
 // Create Schema
-export const CreateShopPurchaseBodySchema = ShopPurchaseSchema.pick({
-  shopItemId: true,
-  quantity: true
+export const CreateGachaPurchaseBodySchema = GachaPurchaseSchema.pick({
+  userId: true,
+  bannerId: true,
+  walletTransId: true,
+  rollCount: true
 }).strict()
 
-export const CreateShopPurchaseResSchema = z.object({
+export const CreateGachaPurchaseResSchema = z.object({
   statusCode: z.number(),
-  data: ShopPurchaseSchema,
+  data: GachaPurchaseSchema,
   message: z.string()
 })
 
 // Update Schema
-export const UpdateShopPurchaseBodySchema = CreateShopPurchaseBodySchema.extend({})
+export const UpdateGachaPurchaseBodySchema = CreateGachaPurchaseBodySchema.extend({})
   .partial()
   .strict()
 
-export const UpdateShopPurchaseResSchema = CreateShopPurchaseResSchema
+export const UpdateGachaPurchaseResSchema = CreateGachaPurchaseResSchema
 
 // Query Schema
-export const GetShopPurchaseParamsSchema = z.object({
-  shopPurchaseId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
+export const GetGachaPurchaseParamsSchema = z.object({
+  gachaPurchaseId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
 
-export const GetShopPurchaseDetailSchema = ShopPurchaseSchema.extend({
-  shopItem: ShopItemSchema.nullable().optional(),
-  walletTrans: WalletTransactionSchema.nullable().optional()
-})
+export const GetGachaPurchaseDetailSchema = GachaPurchaseSchema.extend({})
 
-export const GetShopPurchaseListResSchema = z.object({
+export const GetGachaPurchaseListResSchema = z.object({
   statusCode: z.number(),
-  data: z.array(GetShopPurchaseDetailSchema),
+  data: z.array(GetGachaPurchaseDetailSchema),
   message: z.string()
 })
 
-export const GetShopPurchaseDetailResSchema = z.object({
+export const GetGachaPurchaseDetailResSchema = z.object({
   statusCode: z.number(),
-  data: GetShopPurchaseDetailSchema,
+  data: GetGachaPurchaseDetailSchema,
   message: z.string()
 })
 
 // Type exports
-export type ShopPurchaseType = z.infer<typeof ShopPurchaseSchema>
-export type CreateShopPurchaseBodyType = z.infer<typeof CreateShopPurchaseBodySchema>
-export type UpdateShopPurchaseBodyType = z.infer<typeof UpdateShopPurchaseBodySchema>
-export type GetShopPurchaseParamsType = z.infer<typeof GetShopPurchaseParamsSchema>
-export type GetShopPurchaseDetailType = z.infer<typeof GetShopPurchaseDetailSchema>
+export type GachaPurchaseType = z.infer<typeof GachaPurchaseSchema>
+export type CreateGachaPurchaseBodyType = z.infer<typeof CreateGachaPurchaseBodySchema>
+export type UpdateGachaPurchaseBodyType = z.infer<typeof UpdateGachaPurchaseBodySchema>
+export type GetGachaPurchaseParamsType = z.infer<typeof GetGachaPurchaseParamsSchema>
+export type GetGachaPurchaseDetailType = z.infer<typeof GetGachaPurchaseDetailSchema>
 
 // Field for query
-export type ShopPurchaseFieldType = keyof z.infer<typeof ShopPurchaseSchema>
+export type GachaPurchaseFieldType = keyof z.infer<typeof GachaPurchaseSchema>
 export const SHOP_PURCHASE_FIELDS = Object.keys(
-  ShopPurchaseSchema.shape
-) as ShopPurchaseFieldType[]
+  GachaPurchaseSchema.shape
+) as GachaPurchaseFieldType[]

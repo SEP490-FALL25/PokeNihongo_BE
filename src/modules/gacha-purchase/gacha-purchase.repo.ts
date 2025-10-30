@@ -4,14 +4,14 @@ import { Injectable } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
-  CreateShopPurchaseBodyType,
+  CreateGachaPurchaseBodyType,
+  GachaPurchaseType,
   SHOP_PURCHASE_FIELDS,
-  ShopPurchaseType,
-  UpdateShopPurchaseBodyType
+  UpdateGachaPurchaseBodyType
 } from './entities/gacha-purchase.entity'
 
 @Injectable()
-export class ShopPurchaseRepo {
+export class GachaPurchaseRepo {
   constructor(private prismaService: PrismaService) {}
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
     return this.prismaService.$transaction(callback)
@@ -22,16 +22,16 @@ export class ShopPurchaseRepo {
       data
     }: {
       createdById?: number
-      data: CreateShopPurchaseBodyType & {
+      data: CreateGachaPurchaseBodyType & {
         totalPrice: number
         userId: number
         walletTransId: number | null
       }
     },
     prismaTx?: PrismaClient
-  ): Promise<ShopPurchaseType> {
+  ): Promise<GachaPurchaseType> {
     const client = prismaTx || this.prismaService
-    return client.shopPurchase.create({
+    return client.gachaPurchase.create({
       data: {
         ...data,
         createdById
@@ -46,13 +46,13 @@ export class ShopPurchaseRepo {
       updatedById
     }: {
       id: number
-      data: UpdateShopPurchaseBodyType & { walletTransId?: number | null }
+      data: UpdateGachaPurchaseBodyType & { walletTransId?: number | null }
       updatedById?: number
     },
     prismaTx?: PrismaClient
-  ): Promise<ShopPurchaseType> {
+  ): Promise<GachaPurchaseType> {
     const client = prismaTx || this.prismaService
-    return client.shopPurchase.update({
+    return client.gachaPurchase.update({
       where: {
         id,
         deletedAt: null
@@ -68,13 +68,13 @@ export class ShopPurchaseRepo {
     id: number,
     isHard?: boolean,
     prismaTx?: PrismaClient
-  ): Promise<ShopPurchaseType> {
+  ): Promise<GachaPurchaseType> {
     const client = prismaTx || this.prismaService
     return isHard
-      ? client.shopPurchase.delete({
+      ? client.gachaPurchase.delete({
           where: { id }
         })
-      : client.shopPurchase.update({
+      : client.gachaPurchase.update({
           where: {
             id,
             deletedAt: null
@@ -97,10 +97,10 @@ export class ShopPurchaseRepo {
     }
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.shopPurchase.count({
+      this.prismaService.gachaPurchase.count({
         where: filterWhere
       }),
-      this.prismaService.shopPurchase.findMany({
+      this.prismaService.gachaPurchase.findMany({
         where: filterWhere,
         include: {
           shopItem: true,
@@ -124,8 +124,8 @@ export class ShopPurchaseRepo {
     }
   }
 
-  findById(id: number): Promise<ShopPurchaseType | null> {
-    return this.prismaService.shopPurchase.findUnique({
+  findById(id: number): Promise<GachaPurchaseType | null> {
+    return this.prismaService.gachaPurchase.findUnique({
       where: {
         id,
         deletedAt: null
@@ -137,8 +137,8 @@ export class ShopPurchaseRepo {
     })
   }
 
-  findByUserId(userId: number): Promise<ShopPurchaseType[]> {
-    return this.prismaService.shopPurchase.findMany({
+  findByUserId(userId: number): Promise<GachaPurchaseType[]> {
+    return this.prismaService.gachaPurchase.findMany({
       where: {
         userId,
         deletedAt: null
@@ -155,7 +155,7 @@ export class ShopPurchaseRepo {
     userId: number,
     shopItemId: number
   ): Promise<number> {
-    const purchases = await this.prismaService.shopPurchase.findMany({
+    const purchases = await this.prismaService.gachaPurchase.findMany({
       where: {
         userId,
         shopItemId,

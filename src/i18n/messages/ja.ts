@@ -419,5 +419,15 @@ export const jaMessages = {
     ALREADY_EXISTS: 'ユーザーガチャピティは既に存在します',
     INVALID_DATA: '無効なユーザーガチャピティデータです',
     HAS_PENDING: 'ユーザーガチャピティは保留中です'
+  },
+  gacha_purchase: {
+    CREATE_SUCCESS: 'ガチャ購入の作成に成功しました',
+    UPDATE_SUCCESS: 'ガチャ購入の更新に成功しました',
+    DELETE_SUCCESS: 'ガチャ購入の削除に成功しました',
+    GET_SUCCESS: 'ガチャ購入情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ガチャ購入リストの取得に成功しました',
+    NOT_FOUND: 'ガチャ購入が見つかりません',
+    ALREADY_EXISTS: 'ガチャ購入は既に存在します',
+    INVALID_DATA: '無効なガチャ購入データです'
   }
 }

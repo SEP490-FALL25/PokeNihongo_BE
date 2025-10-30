@@ -1369,11 +1369,6 @@ model GachaPurchase {
   walletTransId Int?
   walletTrans   WalletTransaction? @relation(fields: [walletTransId], references: [id], onDelete: SetNull)
 
-  // Liên kết tới pity chung
-  pityId          Int?
-  pityCountBefore Int
-  pityCountAfter  Int
-
   rollCount Int @default(1) // 1 hoặc 10
   totalCost Int @default(0)
 
@@ -1415,15 +1410,20 @@ model GachaRollHistory {
   pokemonId Int
   pokemon   Pokemon @relation(fields: [pokemonId], references: [id], onDelete: Cascade)
 
-  rarity      GachaStarType
-  isPity      Boolean       @default(false)
+  rarity GachaStarType
+
+  // Liên kết tới pity chung
+  pityId          Int?
+  pity            UserGachaPity? @relation(fields: [pityId], references: [id], onDelete: SetNull)
+  pityCountBefore Int
+  pityCountAfter  Int
   // meta
-  createdById Int?
-  createdBy   User?         @relation("GachaRollHistoryCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
-  deletedById Int?
-  deletedBy   User?         @relation("GachaRollHistoryDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
-  updatedById Int?
-  updatedBy   User?         @relation("GachaRollHistoryUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+  createdById     Int?
+  createdBy       User?          @relation("GachaRollHistoryCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById     Int?
+  deletedBy       User?          @relation("GachaRollHistoryDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById     Int?
+  updatedBy       User?          @relation("GachaRollHistoryUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
@@ -1441,7 +1441,8 @@ model UserGachaPity {
   pityCount Int
   status    GachaPityType @default(PENDING)
 
-  gachaPurchases GachaPurchase[]
+  gachaRollHistories GachaRollHistory[]
+  gachaPurchases     GachaPurchase[]
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
