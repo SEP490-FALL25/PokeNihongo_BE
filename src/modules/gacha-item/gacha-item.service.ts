@@ -23,7 +23,6 @@ import {
   InvalidGachaBannerException,
   MaxGachaItemsExceededException,
   PokemonDuplicateInGachaException,
-  PokemonHasPrevEvolutionException,
   PokemonInvalidRarityWithStarTypeToAddException
 } from './dto/gacha-item.error'
 import {
@@ -161,8 +160,7 @@ export class GachaItemService {
       for (const pokemonId of item.pokemons) {
         const pokemon = pokemonMap.get(pokemonId)
         if (!pokemon) throw new NotFoundRecordException()
-        if (pokemon.previousPokemons && pokemon.previousPokemons.length > 0)
-          throw new PokemonHasPrevEvolutionException()
+
         if (RARITY_TO_STAR_TYPE[pokemon.rarity] !== item.starType)
           throw new PokemonInvalidRarityWithStarTypeToAddException(
             `pokedex_number: ${pokemon.pokedex_number}`
@@ -267,8 +265,7 @@ export class GachaItemService {
       for (const pokemonId of item.pokemons) {
         const pokemon = pokemonMap.get(pokemonId)
         if (!pokemon) throw new NotFoundRecordException()
-        if (pokemon.previousPokemons && pokemon.previousPokemons.length > 0)
-          throw new PokemonHasPrevEvolutionException()
+
         if (RARITY_TO_STAR_TYPE[pokemon.rarity] !== item.starType)
           throw new PokemonInvalidRarityWithStarTypeToAddException()
 
