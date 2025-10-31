@@ -183,7 +183,11 @@ export class UserExerciseAttemptRepository {
             select: { exerciseId: true }
         })
 
-        return completedAttempts.map(attempt => attempt.exerciseId)
+        // Sử dụng Set để chỉ lấy các exerciseId riêng biệt (không trùng lặp)
+        // Ngay cả khi user làm cùng 1 exercise nhiều lần và đều COMPLETED, chỉ đếm 1 lần
+        const uniqueExerciseIds = Array.from(new Set(completedAttempts.map(attempt => attempt.exerciseId)))
+
+        return uniqueExerciseIds
     }
 
     async findLatestByLessonAndUser(userId: number, lessonId: number): Promise<LatestExerciseAttemptType[]> {
