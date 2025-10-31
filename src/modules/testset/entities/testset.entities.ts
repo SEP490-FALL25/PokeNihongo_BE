@@ -1,7 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
-import { TestSetStatus, QuestionType } from '@prisma/client'
+import { TestSetStatus, TestSetType as PrismaTestSetType } from '@prisma/client'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -27,7 +27,7 @@ export const TestSetSchema = z.object({
     audioUrl: z.string().nullable().optional(),
     price: z.number().nullable().optional(),
     levelN: z.number().nullable().optional(),
-    testType: z.nativeEnum(QuestionType),
+    testType: z.nativeEnum(PrismaTestSetType),
     status: z.nativeEnum(TestSetStatus),
     creatorId: z.number().nullable().optional(),
     createdAt: z.date(),
@@ -43,7 +43,7 @@ export const CreateTestSetBodySchema = z.object({
     audioUrl: z.string().nullable().optional(),
     price: z.number().nullable().optional(),
     levelN: z.number().nullable().optional(),
-    testType: z.nativeEnum(QuestionType),
+    testType: z.nativeEnum(PrismaTestSetType),
     status: z.nativeEnum(TestSetStatus).default(TestSetStatus.DRAFT),
     translations: z.array(z.object({
         field: z.enum(['name', 'description']),
@@ -52,7 +52,7 @@ export const CreateTestSetBodySchema = z.object({
     })).min(1, "Phải có ít nhất 1 translation")
 }).strict().refine((data) => {
     // Nếu testType là READING thì content phải có và là tiếng Nhật
-    if (data.testType === QuestionType.READING) {
+    if (data.testType === PrismaTestSetType.READING) {
         if (!data.content || data.content.trim() === '') {
             return false
         }
@@ -72,7 +72,7 @@ export const CreateTestSetWithMeaningsBodySchema = z.object({
     audioUrl: z.string().nullable().optional(),
     price: z.number().nullable().optional(),
     levelN: z.number().nullable().optional(),
-    testType: z.nativeEnum(QuestionType),
+    testType: z.nativeEnum(PrismaTestSetType),
     status: z.nativeEnum(TestSetStatus).default(TestSetStatus.DRAFT),
     meanings: z.array(z.object({
         field: z.enum(['name', 'description']),
@@ -85,7 +85,7 @@ export const CreateTestSetWithMeaningsBodySchema = z.object({
     })).min(1, "Phải có ít nhất 1 meaning")
 }).strict().refine((data) => {
     // Nếu testType là READING thì content phải có và là tiếng Nhật
-    if (data.testType === QuestionType.READING) {
+    if (data.testType === PrismaTestSetType.READING) {
         if (!data.content || data.content.trim() === '') {
             return false
         }
@@ -105,7 +105,7 @@ export const UpdateTestSetBodySchema = z.object({
     audioUrl: z.string().nullable().optional(),
     price: z.number().nullable().optional(),
     levelN: z.number().nullable().optional(),
-    testType: z.nativeEnum(QuestionType).optional(),
+    testType: z.nativeEnum(PrismaTestSetType).optional(),
     status: z.nativeEnum(TestSetStatus).optional(),
     translations: z.array(z.object({
         field: z.enum(['name', 'description']),
@@ -114,7 +114,7 @@ export const UpdateTestSetBodySchema = z.object({
     })).optional()
 }).strict().refine((data) => {
     // Nếu testType là READING thì content phải có và là tiếng Nhật
-    if (data.testType === QuestionType.READING) {
+    if (data.testType === PrismaTestSetType.READING) {
         if (!data.content || data.content.trim() === '') {
             return false
         }
@@ -134,7 +134,7 @@ export const UpdateTestSetWithMeaningsBodySchema = z.object({
     audioUrl: z.string().nullable().optional(),
     price: z.number().nullable().optional(),
     levelN: z.number().nullable().optional(),
-    testType: z.nativeEnum(QuestionType).optional(),
+    testType: z.nativeEnum(PrismaTestSetType).optional(),
     status: z.nativeEnum(TestSetStatus).optional(),
     meanings: z.array(z.object({
         field: z.enum(['name', 'description']),
@@ -147,7 +147,7 @@ export const UpdateTestSetWithMeaningsBodySchema = z.object({
     })).optional()
 }).strict().refine((data) => {
     // Nếu testType là READING thì content phải có và là tiếng Nhật
-    if (data.testType === QuestionType.READING) {
+    if (data.testType === PrismaTestSetType.READING) {
         if (!data.content || data.content.trim() === '') {
             return false
         }
@@ -202,8 +202,8 @@ export const GetTestSetListQuerySchema = z
         pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         search: z.string().optional(),
         levelN: z.string().transform((val) => parseInt(val, 10)).optional(),
-        testType: z.nativeEnum(QuestionType).optional(),
-        status: z.nativeEnum(TestSetStatus).optional(),
+        testType: z.nativeEnum(PrismaTestSetType).default(PrismaTestSetType.VOCABULARY),
+        status: z.nativeEnum(TestSetStatus).default(TestSetStatus.DRAFT),
         creatorId: z.string().transform((val) => parseInt(val, 10)).optional(),
         language: z.string().optional(),
         sortBy: z.enum(['id', 'name', 'testType', 'levelN', 'status', 'price', 'createdAt', 'updatedAt']).optional().default('createdAt'),
