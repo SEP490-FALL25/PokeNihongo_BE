@@ -11,7 +11,7 @@ import {
 } from '@/modules/user-answer-log/dto/user-answer-log.error'
 import { UserAnswerLogRepository } from '@/modules/user-answer-log/user-answer-log.repo'
 import { isNotFoundPrismaError } from '@/shared/helpers'
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common'
 
 @Injectable()
 export class UserAnswerLogService {
@@ -29,13 +29,25 @@ export class UserAnswerLogService {
             }
         } catch (error) {
             this.logger.error('Error creating user answer log:', error)
+            // Preserve specific validation message from repository
+            const msg = (error as any)?.message || ''
+            if (msg.includes('Đáp án không thuộc về câu hỏi đã chọn')) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.BAD_REQUEST,
+                        message: 'Đáp án không thuộc về câu hỏi đã chọn',
+                        error: 'ANSWER_NOT_IN_QUESTION'
+                    },
+                    HttpStatus.BAD_REQUEST
+                )
+            }
             throw InvalidUserAnswerLogDataException
         }
     }
 
-    async upsert(body: CreateUserAnswerLogBodyType) {
+    async upsert(body: CreateUserAnswerLogBodyType, userId: number) {
         try {
-            const userAnswerLog = await this.userAnswerLogRepository.upsert(body)
+            const userAnswerLog = await this.userAnswerLogRepository.upsert(body, userId)
 
             return {
                 data: userAnswerLog,
@@ -43,6 +55,38 @@ export class UserAnswerLogService {
             }
         } catch (error) {
             this.logger.error('Error upserting user answer log:', error)
+            // Preserve specific validation message from repository
+            const msg = (error as any)?.message || ''
+            if (msg.includes('Đáp án không thuộc về câu hỏi đã chọn')) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.BAD_REQUEST,
+                        message: 'Đáp án không thuộc về câu hỏi đã chọn',
+                        error: 'ANSWER_NOT_IN_QUESTION'
+                    },
+                    HttpStatus.BAD_REQUEST
+                )
+            }
+            if (msg.includes('Câu hỏi không thuộc về bài tập hiện tại')) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.BAD_REQUEST,
+                        message: 'Câu hỏi không thuộc về bài tập hiện tại',
+                        error: 'QUESTION_NOT_IN_EXERCISE'
+                    },
+                    HttpStatus.BAD_REQUEST
+                )
+            }
+            if (msg.includes('Attempt không thuộc về người dùng')) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.FORBIDDEN,
+                        message: 'Bạn không có quyền ghi log cho lần thử này',
+                        error: 'ATTEMPT_OWNERSHIP_MISMATCH'
+                    },
+                    HttpStatus.FORBIDDEN
+                )
+            }
             throw InvalidUserAnswerLogDataException
         }
     }
