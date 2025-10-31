@@ -1,3 +1,4 @@
+import { GachaStarType } from '@/common/constants/gacha.constant'
 import { RoleName } from '@/common/constants/role.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { GachaBannerMessage } from '@/i18n/message-keys'
@@ -15,6 +16,7 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
+import { GachaItemRepo } from '../gacha-item/gacha-item.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
@@ -40,7 +42,8 @@ export class GachaBannerService {
     private gachaBannerRepo: GachaBannerRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
-    private readonly translationRepo: TranslationRepository
+    private readonly translationRepo: TranslationRepository,
+    private readonly gachaItemRepo: GachaItemRepo
   ) {}
 
   private async convertTranslationsToLangCodes(
@@ -191,10 +194,30 @@ export class GachaBannerService {
     // Remove raw nameTranslations from shopBanner
     const { nameTranslations: _, ...bannerWithoutTranslations } = gachaBanner as any
 
+    // Count items by star type
+    const [
+      amount5StarCurrent,
+      amount4StarCurrent,
+      amount3StarCurrent,
+      amount2StarCurrent,
+      amount1StarCurrent
+    ] = await Promise.all([
+      this.gachaItemRepo.countItemsByStarType(id, GachaStarType.FIVE),
+      this.gachaItemRepo.countItemsByStarType(id, GachaStarType.FOUR),
+      this.gachaItemRepo.countItemsByStarType(id, GachaStarType.THREE),
+      this.gachaItemRepo.countItemsByStarType(id, GachaStarType.TWO),
+      this.gachaItemRepo.countItemsByStarType(id, GachaStarType.ONE)
+    ])
+
     const result = {
       ...bannerWithoutTranslations,
       nameTranslation: currentTranslation?.value ?? null,
-      ...(isAdmin ? { nameTranslations } : {})
+      ...(isAdmin ? { nameTranslations } : {}),
+      amount5StarCurrent,
+      amount4StarCurrent,
+      amount3StarCurrent,
+      amount2StarCurrent,
+      amount1StarCurrent
     }
     console.log(`${isAdmin ? nameTranslations : 'ehe'}`)
 
