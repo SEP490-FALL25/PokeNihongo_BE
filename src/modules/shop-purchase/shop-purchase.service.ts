@@ -1,7 +1,7 @@
 import {
+  walletPurposeType,
   WalletTransactionSourceType,
-  WalletTransactionType,
-  walletPurposeType
+  WalletTransactionType
 } from '@/common/constants/wallet-transaction.constant'
 import { walletType } from '@/common/constants/wallet.constant'
 import { I18nService } from '@/i18n/i18n.service'
@@ -12,8 +12,9 @@ import {
   isNotFoundPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
-import { Injectable } from '@nestjs/common'
+import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
+import { ShopBannerRepo } from '../shop-banner/shop-banner.repo'
 import { ShopItemRepo } from '../shop-item/shop-item.repo'
 import { UserHasPokemonException } from '../user-pokemon/dto/user-pokemon.error'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
@@ -21,9 +22,9 @@ import { UserPokemonService } from '../user-pokemon/user-pokemon.service'
 import { WalletTransactionRepo } from '../wallet-transaction/wallet-transaction.repo'
 import { WalletRepo } from '../wallet/wallet.repo'
 import {
-  MissingPreviousPokemonException,
   NotEnoughBalanceException,
   PurchaseLimitReachedException,
+  ShopNotOpenException,
   ShopPurchaseNotFoundException
 } from './dto/shop-purchase.error'
 import {
@@ -38,6 +39,8 @@ export class ShopPurchaseService {
     private shopPurchaseRepo: ShopPurchaseRepo,
     private readonly i18nService: I18nService,
     private readonly shopItemRepo: ShopItemRepo,
+    @Inject(forwardRef(() => ShopBannerRepo))
+    private readonly shopBannerRepo: ShopBannerRepo,
     private readonly walletRepo: WalletRepo,
     private readonly walletTransRepo: WalletTransactionRepo,
     private readonly userPokemonRepo: UserPokemonRepo,
@@ -79,16 +82,11 @@ export class ShopPurchaseService {
       const shopItem = await this.shopItemRepo.findById(data.shopItemId)
       if (!shopItem) throw new NotFoundRecordException()
 
-      console.log('tim pokemon in item')
-      // 1.5) Lấy thông tin pokemon để check tiền nhiệm
-      const pokemon = await this.pokemonRepo.findById(shopItem.pokemonId)
-      if (!pokemon) throw new NotFoundRecordException()
-
       // 2)tong tien ne
       const totalPrice = data.quantity * shopItem.price
 
       // 3)may co du tien ko ?
-      const [userWallet, existed, totalPurchased] = await Promise.all([
+      const [userWallet, existed, totalPurchased, shopBanner] = await Promise.all([
         this.walletRepo.checkEnoughBalance({
           userId,
           type: walletType.SPARKLES,
@@ -98,39 +96,22 @@ export class ShopPurchaseService {
         this.shopPurchaseRepo.getTotalPurchasedQuantityByUserAndItem(
           userId,
           data.shopItemId
-        )
+        ),
+        this.shopBannerRepo.findById(shopItem.shopBannerId)
       ])
+
+      // shop mo cua chua ma doi mua ??
+      if (!shopBanner) throw new NotFoundRecordException()
+
+      if (shopBanner.status !== 'ACTIVE') {
+        throw new ShopNotOpenException()
+      }
       // ko du ma doi mua ha ?
       if (!userWallet) throw new NotEnoughBalanceException()
 
       // 3.5) user da co pokemon nay chua
       if (existed) {
         throw new UserHasPokemonException()
-      }
-
-      // 3.55) Check pokemon tiền nhiệm: nếu pokemon này có previousPokemons
-      // thì user phải sở hữu ít nhất 1 pokemon trong list previousPokemons
-      if (pokemon.previousPokemons && pokemon.previousPokemons.length > 0) {
-        // Lấy danh sách pokemonId của các pokemon tiền nhiệm (filter out undefined)
-        const previousPokemonIds = pokemon.previousPokemons
-          .map((p) => p.id)
-          .filter((id): id is number => id !== undefined)
-
-        // Check xem user có sở hữu bất kỳ pokemon tiền nhiệm nào không
-        const hasPreviousPokemon = await Promise.any(
-          previousPokemonIds.map((pokemonId) =>
-            this.userPokemonRepo
-              .findByUserAndPokemon(userId, pokemonId)
-              .then((result) => {
-                if (result) return Promise.resolve(true)
-                return Promise.reject()
-              })
-          )
-        ).catch(() => false)
-
-        if (!hasPreviousPokemon) {
-          throw new MissingPreviousPokemonException()
-        }
       }
 
       // 3.6) Check purchase limit (nếu có giới hạn)

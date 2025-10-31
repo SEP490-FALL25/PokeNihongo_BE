@@ -39,3 +39,12 @@ export class MissingPreviousPokemonException extends BadRequestException {
     })
   }
 }
+
+export class ShopNotOpenException extends BadRequestException {
+  constructor() {
+    super({
+      message: ShopPurchaseMessage.SHOP_NOT_OPEN,
+      errorKey: ShopPurchaseMessage.SHOP_NOT_OPEN
+    })
+  }
+}

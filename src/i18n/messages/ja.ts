@@ -44,7 +44,9 @@ export const jaMessages = {
       '新しいパスワードと確認用パスワードが一致しません',
     INVALID_OLD_PASSWORD: '古いパスワードが正しくありません',
     NOT_FOUND_RECORD: 'レコードが見つかりません',
-    PASSWORD_MUST_BE_MATCH: 'パスワードは一致している必要があります'
+    PASSWORD_MUST_BE_MATCH: 'パスワードは一致している必要があります',
+    MISSING_TOKEN: '認証トークンが見つかりません',
+    INVALID_TOKEN: '無効な認証トークンです'
   },
   reward: {
     CREATE_SUCCESS: '報酬の作成が完了しました',
@@ -356,7 +358,8 @@ export const jaMessages = {
     INVALID_DATA: '無効なショップ購入データです',
     PURCHASE_LIMIT_REACHED: 'このアイテムの購入制限に達しました',
     MISSING_PREVIOUS_POKEMON:
-      'このポケモンを購入する前に、前のポケモンを所有する必要があります'
+      'このポケモンを購入する前に、前のポケモンを所有する必要があります',
+    SHOP_NOT_OPEN: 'ショップは現在オープンしていません'
   },
   gacha_banner: {
     CREATE_SUCCESS: 'ガチャバナーの作成に成功しました',
@@ -368,7 +371,8 @@ export const jaMessages = {
 
     ALREADY_EXISTS: 'ガチャバナーは既に存在します',
     INVALID_DATA: '無効なガチャバナーデータです',
-    ACTIVE_LIMIT_EXCEEDED: 'アクティブバナーの数が上限を超えました（最大2つまで）'
+    ACTIVE_LIMIT_EXCEEDED: 'アクティブバナーの数が上限を超えました（最大2つまで）',
+    INVALID_AMOUNT_ITEMS: 'ガチャバナーには最低3つのアイテムが必要です'
   },
   gacha_item_rate: {
     CREATE_SUCCESS: 'ガチャアイテムの作成に成功しました',

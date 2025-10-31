@@ -43,7 +43,9 @@ export const viMessages = {
     INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'Mật khẩu mới và mật khẩu xác nhận không khớp',
     INVALID_OLD_PASSWORD: 'Mật khẩu cũ không đúng',
     NOT_FOUND_RECORD: 'Không tìm thấy bản ghi',
-    PASSWORD_MUST_BE_MATCH: 'Mật khẩu phải khớp với nhau'
+    PASSWORD_MUST_BE_MATCH: 'Mật khẩu phải khớp với nhau',
+    MISSING_TOKEN: 'Thiếu token xác thực',
+    INVALID_TOKEN: 'Token xác thực không hợp lệ'
   },
   reward: {
     CREATE_SUCCESS: 'Tạo phần thưởng thành công',
@@ -364,7 +366,8 @@ export const viMessages = {
     INVALID_DATA: 'Dữ liệu giao dịch mua hàng không hợp lệ',
     PURCHASE_LIMIT_REACHED: 'Đã đạt giới hạn mua hàng cho mặt hàng này',
     MISSING_PREVIOUS_POKEMON:
-      'Bạn cần sở hữu Pokémon tiền nhiệm trước khi mua Pokémon này'
+      'Bạn cần sở hữu Pokémon tiền nhiệm trước khi mua Pokémon này',
+    SHOP_NOT_OPEN: 'Cửa hàng hiện không mở cửa'
   },
   gacha_banner: {
     CREATE_SUCCESS: 'Tạo banner gacha thành công',
@@ -375,7 +378,9 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy banner gacha',
     ALREADY_EXISTS: 'Banner gacha đã tồn tại',
     INVALID_DATA: 'Dữ liệu banner gacha không hợp lệ',
-    ACTIVE_LIMIT_EXCEEDED: 'Số lượng banner ACTIVE đã vượt quá giới hạn (tối đa 2 banner)'
+    ACTIVE_LIMIT_EXCEEDED:
+      'Số lượng banner ACTIVE đã vượt quá giới hạn (tối đa 2 banner)',
+    INVALID_AMOUNT_ITEMS: 'Số lượng vật phẩm trong banner không hợp lệ '
   },
   gacha_item_rate: {
     CREATE_SUCCESS: 'Tạo tỉ lệ vật phẩm gacha thành công',

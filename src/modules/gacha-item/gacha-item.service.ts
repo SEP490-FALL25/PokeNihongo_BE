@@ -2,6 +2,7 @@ import { RarityPokemonType } from '@/common/constants/pokemon.constant'
 import { GachaBannerStatus } from '@/common/constants/shop-banner.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { GachaItemMessage } from '@/i18n/message-keys'
+import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -10,7 +11,6 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import { GachaStarType, RarityPokemon } from '@prisma/client'
-import { PrismaService } from 'src/shared/services/prisma.service'
 import { GachaBannerRepo } from '../gacha-banner/gacha-banner.repo'
 import { GachaItemRateRepo } from '../gacha-item-rate/gacha-item-rate.repo'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
@@ -22,7 +22,6 @@ import {
   InvalidGachaBannerException,
   MaxGachaItemsExceededException,
   PokemonDuplicateInGachaException,
-  PokemonHasPrevEvolutionException,
   PokemonInvalidRarityWithStarTypeToAddException
 } from './dto/gacha-item.error'
 import {
@@ -56,8 +55,7 @@ export class GachaItemService {
     private gachaBannerRepo: GachaBannerRepo,
     private gachaItemRateRepo: GachaItemRateRepo,
     private pokemonRepo: PokemonRepo,
-    private readonly i18nService: I18nService,
-    private readonly prismaService: PrismaService
+    private readonly i18nService: I18nService
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -160,10 +158,11 @@ export class GachaItemService {
       for (const pokemonId of item.pokemons) {
         const pokemon = pokemonMap.get(pokemonId)
         if (!pokemon) throw new NotFoundRecordException()
-        if (pokemon.previousPokemons && pokemon.previousPokemons.length > 0)
-          throw new PokemonHasPrevEvolutionException()
+
         if (RARITY_TO_STAR_TYPE[pokemon.rarity] !== item.starType)
-          throw new PokemonInvalidRarityWithStarTypeToAddException()
+          throw new PokemonInvalidRarityWithStarTypeToAddException(
+            `pokedex_number: ${pokemon.pokedex_number}`
+          )
 
         itemsToCreate.push({
           bannerId,
@@ -228,10 +227,7 @@ export class GachaItemService {
     const { bannerId, items } = data
     const banner = await this.validateGachaBannerForCreate(bannerId)
 
-    // Delete old items (single query)
-    await this.prismaService.gachaItem.deleteMany({ where: { bannerId } })
-
-    // Reuse createByList logic
+    // Collect IDs
     const allPokemonIds = new Set<number>()
     const starTypes = new Set<GachaStarType>()
     items.forEach((item) => {
@@ -239,17 +235,20 @@ export class GachaItemService {
       item.pokemons.forEach((id) => allPokemonIds.add(id))
     })
 
+    // Batch fetch rates
     const rates = await Promise.all(
       Array.from(starTypes).map((st) => this.gachaItemRateRepo.getByType(st))
     )
     const rateMap = new Map<GachaStarType, number>()
     rates.forEach((r, i) => r && rateMap.set(Array.from(starTypes)[i], r.id))
 
+    // Batch fetch pokemons
     const pokemons = await Promise.all(
       Array.from(allPokemonIds).map((id) => this.pokemonRepo.findById(id))
     )
     const pokemonMap = new Map(pokemons.filter((p) => p).map((p) => [p!.id, p!]))
 
+    // Prepare items
     const itemsToCreate: Array<{
       bannerId: number
       pokemonId: number
@@ -264,10 +263,11 @@ export class GachaItemService {
       for (const pokemonId of item.pokemons) {
         const pokemon = pokemonMap.get(pokemonId)
         if (!pokemon) throw new NotFoundRecordException()
-        if (pokemon.previousPokemons && pokemon.previousPokemons.length > 0)
-          throw new PokemonHasPrevEvolutionException()
+
         if (RARITY_TO_STAR_TYPE[pokemon.rarity] !== item.starType)
-          throw new PokemonInvalidRarityWithStarTypeToAddException()
+          throw new PokemonInvalidRarityWithStarTypeToAddException(
+            `pokedex_number: ${pokemon.pokedex_number}`
+          )
 
         itemsToCreate.push({
           bannerId,
@@ -278,6 +278,7 @@ export class GachaItemService {
       }
     }
 
+    // Validate counts
     const counts: Record<GachaStarType, number> = {
       [GachaStarType.ONE]: 0,
       [GachaStarType.TWO]: 0,
@@ -292,10 +293,13 @@ export class GachaItemService {
     }
 
     try {
-      const created = await this.gachaItemRepo.createMany({
-        createdById: updatedById,
+      // Use repo transaction method
+      const created = await this.gachaItemRepo.updateManyByBanner({
+        bannerId,
+        updatedById,
         items: itemsToCreate
       })
+
       return {
         statusCode: 200,
         data: created,
@@ -350,11 +354,29 @@ export class GachaItemService {
       await this.gachaItemRepo.delete(id)
       return {
         statusCode: 200,
+        data: null,
         message: this.i18nService.translate(GachaItemMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) throw new GachaItemNotFoundException()
       throw error
+    }
+  }
+
+  async getListPokemonWithGachaBannerId({
+    bannerId,
+    query,
+    lang
+  }: {
+    bannerId: number
+    query: PaginationQueryDTO
+    lang: string
+  }) {
+    const data = await this.gachaItemRepo.getListPokemonWithGachaBannerId(bannerId, query)
+    return {
+      statusCode: 200,
+      data,
+      message: this.i18nService.translate(GachaItemMessage.GET_LIST_SUCCESS, lang)
     }
   }
 }

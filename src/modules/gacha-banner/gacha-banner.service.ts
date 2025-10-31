@@ -1,3 +1,4 @@
+import { GachaStarType } from '@/common/constants/gacha.constant'
 import { RoleName } from '@/common/constants/role.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { GachaBannerMessage } from '@/i18n/message-keys'
@@ -15,13 +16,15 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
+import { GachaItemRepo } from '../gacha-item/gacha-item.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
 import {
   GachaBannerActiveLimitExceededException,
   GachaBannerAlreadyExistsException,
-  GachaBannerInvalidDateRangeException
+  GachaBannerInvalidDateRangeException,
+  InvalidGachaBannerAmountItemsException
 } from './dto/gacha-banner.error'
 import {
   CreateGachaBannerBodyInputType,
@@ -40,7 +43,8 @@ export class GachaBannerService {
     private gachaBannerRepo: GachaBannerRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
-    private readonly translationRepo: TranslationRepository
+    private readonly translationRepo: TranslationRepository,
+    private readonly gachaItemRepo: GachaItemRepo
   ) {}
 
   private async convertTranslationsToLangCodes(
@@ -191,10 +195,30 @@ export class GachaBannerService {
     // Remove raw nameTranslations from shopBanner
     const { nameTranslations: _, ...bannerWithoutTranslations } = gachaBanner as any
 
+    // Count items by star type
+    const [
+      amount5StarCurrent,
+      amount4StarCurrent,
+      amount3StarCurrent,
+      amount2StarCurrent,
+      amount1StarCurrent
+    ] = await Promise.all([
+      this.gachaItemRepo.countItemsByStarType(id, GachaStarType.FIVE),
+      this.gachaItemRepo.countItemsByStarType(id, GachaStarType.FOUR),
+      this.gachaItemRepo.countItemsByStarType(id, GachaStarType.THREE),
+      this.gachaItemRepo.countItemsByStarType(id, GachaStarType.TWO),
+      this.gachaItemRepo.countItemsByStarType(id, GachaStarType.ONE)
+    ])
+
     const result = {
       ...bannerWithoutTranslations,
       nameTranslation: currentTranslation?.value ?? null,
-      ...(isAdmin ? { nameTranslations } : {})
+      ...(isAdmin ? { nameTranslations } : {}),
+      amount5StarCurrent,
+      amount4StarCurrent,
+      amount3StarCurrent,
+      amount2StarCurrent,
+      amount1StarCurrent
     }
     console.log(`${isAdmin ? nameTranslations : 'ehe'}`)
 
@@ -422,6 +446,71 @@ export class GachaBannerService {
           dataUpdate.precreateBeforeEndDays = data.precreateBeforeEndDays
         if (data.isRandomItemAgain !== undefined)
           dataUpdate.isRandomItemAgain = data.isRandomItemAgain
+
+        // Check so sanh xem neu amount co chinh thi co hop le khong
+        const promises: Promise<any>[] = []
+
+        if (data.amount5Star !== undefined) {
+          promises.push(
+            this.gachaItemRepo
+              .countItemsByStarType(existingGachaBanner.id, GachaStarType.FIVE)
+              .then((result) => ({
+                amount5Star: result
+              }))
+          )
+        }
+
+        if (data.amount4Star !== undefined) {
+          promises.push(
+            this.gachaItemRepo
+              .countItemsByStarType(existingGachaBanner.id, GachaStarType.FOUR)
+              .then((result) => ({
+                amount4Star: result
+              }))
+          )
+        }
+
+        if (data.amount3Star !== undefined) {
+          promises.push(
+            this.gachaItemRepo
+              .countItemsByStarType(existingGachaBanner.id, GachaStarType.THREE)
+              .then((result) => ({
+                amount3Star: result
+              }))
+          )
+        }
+
+        if (data.amount2Star !== undefined) {
+          promises.push(
+            this.gachaItemRepo
+              .countItemsByStarType(existingGachaBanner.id, GachaStarType.TWO)
+              .then((result) => ({
+                amount2Star: result
+              }))
+          )
+        }
+
+        if (data.amount1Star !== undefined) {
+          promises.push(
+            this.gachaItemRepo
+              .countItemsByStarType(existingGachaBanner.id, GachaStarType.ONE)
+              .then((result) => ({
+                amount1Star: result
+              }))
+          )
+        }
+
+        // chạy tất cả so sánh
+        const checkamountStar = await Promise.all(promises)
+        for (const item of checkamountStar) {
+          const key = Object.keys(item)[0]
+          const value = (item as any)[key]
+          if (dataUpdate[key] !== undefined && value > dataUpdate[key]) {
+            throw new InvalidGachaBannerAmountItemsException(
+              `${key}: ${value} > ${dataUpdate[key]}`
+            )
+          }
+        }
 
         // Handle translations if provided
         let nameUpserts: any[] = []

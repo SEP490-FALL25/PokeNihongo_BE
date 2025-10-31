@@ -107,3 +107,25 @@ export function addDaysUTC0000(date, days) {
   )
   return new Date(utc)
 }
+
+export function getDisplayName(
+  displayNameObj: Record<string, string> | string | null | undefined,
+  lang: string = 'vi'
+): string {
+  if (!displayNameObj) return ''
+  if (typeof displayNameObj === 'string') return displayNameObj
+  return (
+    displayNameObj[lang] ?? displayNameObj['en'] ?? Object.values(displayNameObj)[0] ?? ''
+  )
+}
+
+export function mapTypesDisplayName(
+  types: any[] | null | undefined,
+  lang: string = 'vi'
+): any[] {
+  if (!Array.isArray(types)) return []
+  return types.map((t) => ({
+    ...t,
+    display_name: getDisplayName(t?.display_name, lang)
+  }))
+}

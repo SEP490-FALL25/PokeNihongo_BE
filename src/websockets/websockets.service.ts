@@ -1,0 +1,10 @@
+import { Injectable } from '@nestjs/common'
+
+@Injectable()
+export class WebsocketsService {
+  constructor() {}
+
+  createNotification() {
+    return
+  }
+}
