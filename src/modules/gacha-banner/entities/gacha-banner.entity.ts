@@ -31,7 +31,7 @@ export const GachaBannerSchema = z.object({
   costRoll: z.number().default(100),
   amount5Star: z.number().min(0).max(5).default(1),
   amount4Star: z.number().min(2).max(20).default(3),
-  amount3Star: z.number().min(3).max(50).default(6),
+  amount3Star: z.number().min(3).max(400).default(6),
   amount2Star: z.number().min(4).max(150).default(8),
   amount1Star: z.number().min(5).max(150).default(10),
 
