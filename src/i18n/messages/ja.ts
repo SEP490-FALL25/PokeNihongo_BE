@@ -44,7 +44,9 @@ export const jaMessages = {
       '新しいパスワードと確認用パスワードが一致しません',
     INVALID_OLD_PASSWORD: '古いパスワードが正しくありません',
     NOT_FOUND_RECORD: 'レコードが見つかりません',
-    PASSWORD_MUST_BE_MATCH: 'パスワードは一致している必要があります'
+    PASSWORD_MUST_BE_MATCH: 'パスワードは一致している必要があります',
+    MISSING_TOKEN: '認証トークンが見つかりません',
+    INVALID_TOKEN: '無効な認証トークンです'
   },
   reward: {
     CREATE_SUCCESS: '報酬の作成が完了しました',

@@ -40,11 +40,14 @@ import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
 import { GachaBannerModule } from './modules/gacha-banner/gacha-banner.module'
 import { GachaItemRateModule } from './modules/gacha-item-rate/gacha-item-rate.module'
 import { GachaItemModule } from './modules/gacha-item/gacha-item.module'
+import { GachaPurchaseModule } from './modules/gacha-purchase/gacha-purchase.module'
+import { GachaRollHistoryModule } from './modules/gacha-roll-history/gacha-roll-history.module'
 import { QuestionBankModule } from './modules/question-bank/question-bank.module'
 import { RewardModule } from './modules/reward/reward.module'
 import { ShopBannerModule } from './modules/shop-banner/shop-banner.module'
 import { ShopItemModule } from './modules/shop-item/shop-item.module'
 import { ShopPurchaseModule } from './modules/shop-purchase/shop-purchase.module'
+import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module'
 import { SpeakingModule } from './modules/speaking/speaking.module'
 import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module'
 import { TestSetModule } from './modules/testset/testset.module'
@@ -52,6 +55,7 @@ import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effec
 import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.module'
 import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-request.module'
 import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-exercise-attempt.module'
+import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.module'
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserProgressModule } from './modules/user-progress/user-progress.module'
 import { UserModule } from './modules/user/user.module'
@@ -59,10 +63,7 @@ import { WalletTransactionModule } from './modules/wallet-transaction/wallet-tra
 import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
-import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module';
-import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.module';
-import { GachaPurchaseModule } from './modules/gacha-purchase/gacha-purchase.module';
-import { GachaRollHistoryModule } from './modules/gacha-roll-history/gacha-roll-history.module';
+import { WebsocketsModule } from './websockets/websockets.module'
 
 @Module({
   imports: [
@@ -124,7 +125,8 @@ import { GachaRollHistoryModule } from './modules/gacha-roll-history/gacha-roll-
     ShopRarityPriceModule,
     UserGachaPityModule,
     GachaPurchaseModule,
-    GachaRollHistoryModule
+    GachaRollHistoryModule,
+    WebsocketsModule
   ],
 
   controllers: [],
