@@ -231,6 +231,8 @@ export class UserExerciseAttemptService {
     }
 
     async supmitExerciseCompletion(userExerciseAttemptId: number, userId: number, timeSeconds?: number) {
+
+        // 3,14159 PILU
         try {
             this.logger.log(`Checking completion for user exercise attempt: ${userExerciseAttemptId}`)
 
@@ -259,6 +261,33 @@ export class UserExerciseAttemptService {
             // 5. Kiểm tra xem đã trả lời hết chưa
             const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
             const unansweredQuestions = allQuestions.filter(q => !answeredQuestionIds.has(q.id))
+
+            // Nếu không có câu trả lời nào mà vẫn nộp bài, coi như FAIL
+            if (userAnswers.length === 0) {
+                const newStatus = 'FAIL'
+                const message = 'Bạn đã nộp bài nhưng chưa trả lời câu hỏi nào'
+
+                await this.userExerciseAttemptRepository.update(
+                    { id: userExerciseAttemptId },
+                    { status: newStatus, ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
+                )
+                this.logger.log(`Updated attempt ${userExerciseAttemptId} to ${newStatus} - no answers provided`)
+
+                return {
+                    statusCode: 200,
+                    message: message,
+                    data: {
+                        isCompleted: true,
+                        totalQuestions: allQuestions.length,
+                        answeredQuestions: 0,
+                        unansweredQuestions: allQuestions.length,
+                        unansweredQuestionIds: allQuestions.map(q => q.id),
+                        allCorrect: false,
+                        status: newStatus
+                    }
+                }
+            }
+
             if (unansweredQuestions.length > 0) {
                 // Persist time if provided even when still IN_PROGRESS
                 if (timeSeconds !== undefined) {
@@ -309,6 +338,7 @@ export class UserExerciseAttemptService {
             if (newStatus === 'COMPLETED') {
                 await this.updateUserProgressOnCompletion(attempt.userId, attempt.exerciseId)
             }
+            //CON cá PILU
 
             return {
                 statusCode: 200,
@@ -740,10 +770,11 @@ export class UserExerciseAttemptService {
             const totalExercises = lessonExercises.length
             this.logger.log(`Lesson ${lessonId} has ${totalExercises} exercises`)
 
-            // 3. Đếm số exercises đã COMPLETED của user trong lesson này
-            const completedExercises = await this.userExerciseAttemptRepository.findCompletedExercisesByLesson(userId, lessonId)
-            const completedCount = completedExercises.length
-            this.logger.log(`User ${userId} has completed ${completedCount}/${totalExercises} exercises in lesson ${lessonId}`)
+            // 3. Đếm số exercises riêng biệt đã COMPLETED của user trong lesson này
+            // Chỉ đếm số exercises khác nhau, không đếm số lần làm lại
+            const completedExerciseIds = await this.userExerciseAttemptRepository.findCompletedExercisesByLesson(userId, lessonId)
+            const completedCount = completedExerciseIds.length
+            this.logger.log(`User ${userId} has completed ${completedCount}/${totalExercises} unique exercises in lesson ${lessonId}`)
 
             // 4. Tính phần trăm hoàn thành
             const progressPercentage = Math.round((completedCount / totalExercises) * 100)
@@ -759,7 +790,7 @@ export class UserExerciseAttemptService {
             // Không throw error để không ảnh hưởng đến flow chính
         }
     }
-    
+
     private pickLabelFromComposite(raw: string, lang: string): string {
         if (!raw) return ''
         const parts = raw.split('+').map(p => p.trim())
