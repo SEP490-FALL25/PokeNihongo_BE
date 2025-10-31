@@ -107,7 +107,9 @@ export class GachaItemService {
       [GachaStarType.FIVE]: banner.amount5Star
     }
     if (currentCount + additionalCount > limitMap[starType]) {
-      throw new MaxGachaItemsExceededException()
+      throw new MaxGachaItemsExceededException(
+        `${starType}: ${currentCount} + ${additionalCount} > ${limitMap[starType]}`
+      )
     }
   }
 
