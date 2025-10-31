@@ -446,5 +446,10 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy lịch sử quay gacha',
     ALREADY_EXISTS: 'Lịch sử quay gacha đã tồn tại',
     INVALID_DATA: 'Dữ liệu lịch sử quay gacha không hợp lệ'
+  },
+  user_exercise_attempt: {
+    REVIEW_NOT_COMPLETED: 'Bài tập chưa hoàn thành',
+    REVIEW_INSUFFICIENT_SCORE: 'Bạn cần đạt ít nhất 80% số câu trả lời đúng để xem đáp án',
+    REVIEW_SUCCESS: 'Lấy thông tin đáp án bài tập thành công'
   }
 }

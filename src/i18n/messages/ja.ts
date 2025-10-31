@@ -439,5 +439,10 @@ export const jaMessages = {
     NOT_FOUND: 'ガチャロール履歴が見つかりません',
     ALREADY_EXISTS: 'ガチャロール履歴は既に存在します',
     INVALID_DATA: '無効なガチャロール履歴データです'
+  },
+  user_exercise_attempt: {
+    REVIEW_NOT_COMPLETED: '演習がまだ完了していません',
+    REVIEW_INSUFFICIENT_SCORE: '解答レビューを表示するには、少なくとも80%の正解率が必要です',
+    REVIEW_SUCCESS: '演習レビュー情報の取得に成功しました'
   }
 }

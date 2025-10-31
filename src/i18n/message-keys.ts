@@ -478,3 +478,9 @@ export const GachaRollHistoryMessage = {
   ALREADY_EXISTS: 'gacha_roll_history.ALREADY_EXISTS',
   INVALID_DATA: 'gacha_roll_history.INVALID_DATA'
 } as const
+
+export const UserExerciseAttemptMessage = {
+  REVIEW_NOT_COMPLETED: 'user_exercise_attempt.REVIEW_NOT_COMPLETED',
+  REVIEW_INSUFFICIENT_SCORE: 'user_exercise_attempt.REVIEW_INSUFFICIENT_SCORE',
+  REVIEW_SUCCESS: 'user_exercise_attempt.REVIEW_SUCCESS'
+} as const
