@@ -46,7 +46,7 @@ export class I18nHttpExceptionFilter implements ExceptionFilter {
     // Get exception response
     const exceptionResponse = exception.getResponse()
     let message = exception.message
-
+    let details = {}
     // Check if exception has errorKey for translation
     if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
       const responseObj = exceptionResponse as any
@@ -54,6 +54,12 @@ export class I18nHttpExceptionFilter implements ExceptionFilter {
         message = this.i18nService.translate(responseObj.errorKey, lang)
       } else if (responseObj.message) {
         message = responseObj.message
+      }
+      if (responseObj.data) {
+        details = responseObj.data
+
+        message += `: ${responseObj.data.toString()}`
+        // message += `: ${JSON.stringify(responseObj.data).toString()}`
       }
     }
 

@@ -164,7 +164,9 @@ export class GachaItemService {
         if (pokemon.previousPokemons && pokemon.previousPokemons.length > 0)
           throw new PokemonHasPrevEvolutionException()
         if (RARITY_TO_STAR_TYPE[pokemon.rarity] !== item.starType)
-          throw new PokemonInvalidRarityWithStarTypeToAddException()
+          throw new PokemonInvalidRarityWithStarTypeToAddException(
+            `pokedex_number: ${pokemon.pokedex_number}`
+          )
 
         itemsToCreate.push({
           bannerId,

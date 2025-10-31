@@ -1,6 +1,5 @@
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { UserPokemonMessage } from '@/i18n/message-keys'
-import { LevelSchema } from '@/modules/level/entities/level.entity'
 import { PokemonSchema } from '@/modules/pokemon/entities/pokemon.entity'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -14,7 +13,6 @@ export const UserPokemonSchema = z.object({
   id: z.number(),
   userId: z.number(),
   pokemonId: z.number(),
-  levelId: z.number(),
   nickname: z.string().max(50, UserPokemonMessage.INVALID_NICKNAME).nullable(),
   exp: z.number().min(0, UserPokemonMessage.INVALID_EXP).default(0),
   isEvolved: z.boolean().default(false),
@@ -183,14 +181,6 @@ export const GetUserPokemonDetailResSchema = z.object({
                   })
                 )
                 .optional()
-                .nullable(),
-              level: z
-                .object({
-                  id: z.number(),
-                  levelNumber: z.number(),
-                  requiredExp: z.number(),
-                  levelType: z.string()
-                })
                 .nullable()
             })
           )
@@ -234,15 +224,6 @@ export const GetUserPokemonDetailResSchema = z.object({
           )
           .optional()
           .nullable()
-      })
-      .optional()
-      .nullable(),
-    level: z
-      .object({
-        id: z.number(),
-        levelNumber: z.number(),
-        requiredExp: z.number(),
-        levelType: z.string()
       })
       .optional()
       .nullable()
@@ -291,18 +272,7 @@ export const GetUserPokemonAddExpDetailResSchema = z.object({
           )
           .optional()
       })
-      .optional(),
-    level: z
-      .object({
-        id: z.number(),
-        levelNumber: z.number(),
-        requiredExp: z.number(),
-        levelType: z.string()
-      })
-      .optional(),
-    leveledUp: z.boolean().optional(),
-    levelsGained: z.number().optional(),
-    finalExp: z.number().optional()
+      .optional()
   }),
   message: z.string()
 })
@@ -392,12 +362,6 @@ export const GetUserPokemonByPokemonIdwithListOwnershipSchema = UserPokemonSchem
     weaknesses: z.array(WeaknessSchema).optional(),
     nextPokemons: z.array(NextPokemonSchema).optional(),
     previousPokemons: z.array(PrevPokemonSchema).optional()
-  }),
-  level: LevelSchema.pick({
-    id: true,
-    levelNumber: true,
-    requiredExp: true,
-    levelType: true
   })
 })
 

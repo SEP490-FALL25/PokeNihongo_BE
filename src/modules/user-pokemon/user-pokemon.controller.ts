@@ -5,12 +5,8 @@ import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
-  AddExpBodyDTO,
   CreateUserPokemonBodyDTO,
   CreateUserPokemonResDTO,
-  EvolvePokemonBodyDTO,
-  EvolvePokemonResDTO,
-  GetUserPokemonAddExpDetailResDTO,
   GetUserPokemonByPokemonIdParamsDTO,
   GetUserPokemonByPokemonIdwithListOwnershipResDTO,
   GetUserPokemonDetailResDTO,
@@ -71,17 +67,6 @@ export class UserPokemonController {
     return this.userPokemonService.getWithEvolvesPokemon(params.pokemonId, userId, lang)
   }
 
-  @Post(':userPokemonId/evolve')
-  @ZodSerializerDto(EvolvePokemonResDTO)
-  evolvePokemon(
-    @Param() params: GetUserPokemonParamsDTO,
-    @Body() body: EvolvePokemonBodyDTO,
-    @ActiveUser('userId') userId: number,
-    @I18nLang() lang: string
-  ) {
-    return this.userPokemonService.evolvePokemon(params.userPokemonId, body, userId, lang)
-  }
-
   @Get(':userPokemonId')
   @ZodSerializerDto(GetUserPokemonDetailResDTO)
   findById(
@@ -140,17 +125,6 @@ export class UserPokemonController {
       },
       lang
     )
-  }
-
-  @Post(':userPokemonId/add-exp')
-  @ZodSerializerDto(GetUserPokemonAddExpDetailResDTO)
-  addExp(
-    @Param() params: GetUserPokemonParamsDTO,
-    @Body() body: AddExpBodyDTO,
-    @ActiveUser('userId') userId: number,
-    @I18nLang() lang: string
-  ) {
-    return this.userPokemonService.addExp(params.userPokemonId, body, userId, lang)
   }
 
   // Admin endpoints
