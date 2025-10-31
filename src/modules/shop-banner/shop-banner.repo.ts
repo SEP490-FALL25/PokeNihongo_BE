@@ -1,4 +1,5 @@
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { pickNameTranslation } from '@/shared/utils/translation-helper'
 import { Injectable } from '@nestjs/common'
 
 import {
@@ -165,10 +166,11 @@ export class ShopBannerRepo {
     // Map results to include nameTranslation and exclude nameTranslations array
     const results = data.map((d: any) => {
       const { nameTranslations, ...rest } = d
+      const single = pickNameTranslation(nameTranslations, langId, d.nameKey)
       return {
         ...rest,
         ...(isAllLang ? { nameTranslations } : {}),
-        nameTranslation: langId ? (nameTranslations?.[0]?.value ?? d.nameKey) : undefined
+        nameTranslation: single
       }
     })
 
@@ -253,10 +255,7 @@ export class ShopBannerRepo {
     const results = data.map((d: any) => {
       const { nameTranslations, ...rest } = d
       // Find single translation for current langId if provided
-      const single = langId
-        ? (nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
-          d.nameKey)
-        : undefined
+      const single = pickNameTranslation(nameTranslations, langId, d.nameKey)
       return {
         ...rest,
         nameTranslations, // keep raw translations for service to format to all languages
