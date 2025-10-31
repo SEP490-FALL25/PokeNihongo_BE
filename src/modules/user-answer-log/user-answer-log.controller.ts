@@ -60,7 +60,7 @@ export class UserAnswerLogController {
     })
     @ZodSerializerDto(UserAnswerLogResDTO)
     upsert(@Body() body: CreateUserAnswerLogBodyDTO, @ActiveUser('userId') userId: number) {
-        return this.userAnswerLogService.upsert(body)
+        return this.userAnswerLogService.upsert(body, userId)
     }
 
     @Get()

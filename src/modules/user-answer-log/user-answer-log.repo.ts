@@ -72,13 +72,19 @@ export class UserAnswerLogRepository {
         questionBankId: number
         answerId: number
     }): Promise<UserAnswerLogType> {
-        // Lấy thông tin answer để kiểm tra isCorrect
+        // Lấy thông tin answer để kiểm tra isCorrect và ràng buộc cùng câu hỏi
         const answer = await this.prismaService.answer.findUnique({
-            where: { id: data.answerId }
+            where: { id: data.answerId },
+            select: { id: true, isCorrect: true, questionBankId: true }
         })
 
         if (!answer) {
             throw new Error('Answer not found')
+        }
+
+        // Không cho phép chọn đáp án không thuộc câu hỏi
+        if (answer.questionBankId !== data.questionBankId) {
+            throw new Error('Đáp án không thuộc về câu hỏi đã chọn')
         }
 
         const result = await this.prismaService.userAnswerLog.create({
@@ -94,14 +100,40 @@ export class UserAnswerLogRepository {
         userExerciseAttemptId: number
         questionBankId: number
         answerId: number
-    }): Promise<UserAnswerLogType> {
-        // Lấy thông tin answer để kiểm tra isCorrect
+    }, userId: number): Promise<UserAnswerLogType> {
+        // Validate question belongs to the exercise of this attempt
+        const attempt = await this.prismaService.userExerciseAttempt.findUnique({
+            where: { id: data.userExerciseAttemptId },
+            select: { id: true, userId: true, exercise: { select: { testSetId: true, id: true } } }
+        })
+        if (!attempt) {
+            throw new Error('Lần thử bài tập không tồn tại')
+        }
+        if (attempt.userId !== userId) {
+            throw new Error('Attempt không thuộc về người dùng')
+        }
+        if (!attempt.exercise?.testSetId) {
+            throw new Error('Bài tập không có bộ đề (test set)')
+        }
+        const link = await this.prismaService.testSetQuestionBank.findFirst({
+            where: { testSetId: attempt.exercise.testSetId, questionBankId: data.questionBankId }
+        })
+        if (!link) {
+            throw new Error('Câu hỏi không thuộc về bài tập hiện tại')
+        }
+        // Lấy thông tin answer để kiểm tra isCorrect và ràng buộc cùng câu hỏi
         const answer = await this.prismaService.answer.findUnique({
-            where: { id: data.answerId }
+            where: { id: data.answerId },
+            select: { id: true, isCorrect: true, questionBankId: true }
         })
 
         if (!answer) {
             throw new Error('Answer not found')
+        }
+
+        // Không cho phép chọn đáp án không thuộc câu hỏi
+        if (answer.questionBankId !== data.questionBankId) {
+            throw new Error('Đáp án không thuộc về câu hỏi đã chọn')
         }
 
         // Tìm xem đã có UserAnswerLog cho userExerciseAttemptId + questionBankId chưa
