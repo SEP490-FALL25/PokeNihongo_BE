@@ -2,6 +2,7 @@ import { RarityPokemonType } from '@/common/constants/pokemon.constant'
 import { GachaBannerStatus } from '@/common/constants/shop-banner.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { GachaItemMessage } from '@/i18n/message-keys'
+import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -356,6 +357,23 @@ export class GachaItemService {
     } catch (error) {
       if (isNotFoundPrismaError(error)) throw new GachaItemNotFoundException()
       throw error
+    }
+  }
+
+  async getListPokemonWithGachaBannerId({
+    bannerId,
+    query,
+    lang
+  }: {
+    bannerId: number
+    query: PaginationQueryDTO
+    lang: string
+  }) {
+    const data = await this.gachaItemRepo.getListPokemonWithGachaBannerId(bannerId, query)
+    return {
+      statusCode: 200,
+      data,
+      message: this.i18nService.translate(GachaItemMessage.GET_LIST_SUCCESS, lang)
     }
   }
 }

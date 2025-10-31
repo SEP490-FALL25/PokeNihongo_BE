@@ -2,7 +2,17 @@ import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query
+} from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateWithListItemBodyDTO,
@@ -24,6 +34,20 @@ export class GachaItemController {
   @ZodSerializerDto(PaginationResponseDTO)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.gachaItemService.list(query, lang)
+  }
+
+  @Get('prepare-pokemons/:gachaBannerId')
+  @ZodSerializerDto(PaginationResponseDTO)
+  getListPokemonWithGachaBannerId(
+    @Param('gachaBannerId', ParseIntPipe) gachaBannerId: number,
+    @Query() query: PaginationQueryDTO,
+    @I18nLang() lang: string
+  ) {
+    return this.gachaItemService.getListPokemonWithGachaBannerId({
+      bannerId: gachaBannerId,
+      query,
+      lang
+    })
   }
 
   @Post('random')
