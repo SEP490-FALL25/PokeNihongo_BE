@@ -461,16 +461,19 @@ export class UserExerciseAttemptService {
             // Map translations: question strictly from translation; answers from translation or parsed composite string
             const testSet = (result.data as any)?.testSet
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
-            // If attempt is ABANDONED, load selected answers to mark in response
+            // Load user answer logs once to compute answered count; mark choices if ABANDONED
             let selectedAnswerIds = new Set<number>()
-            if ((userExerciseAttempt.data as any)?.status === 'ABANDONED') {
-                try {
-                    const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(id)
-                    const ids = (logsRes?.data?.results || []).map((log: any) => log.answerId).filter((v: any) => typeof v === 'number')
+            let answeredCount = 0
+            try {
+                const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(id)
+                const logs = (logsRes?.data?.results || []) as any[]
+                answeredCount = logs.length
+                if ((userExerciseAttempt.data as any)?.status === 'ABANDONED') {
+                    const ids = logs.map((log: any) => log.answerId).filter((v: any) => typeof v === 'number')
                     selectedAnswerIds = new Set<number>(ids)
-                } catch (e) {
-                    this.logger.warn('Cannot load user answer logs for abandoned attempt', e as any)
                 }
+            } catch (e) {
+                this.logger.warn('Cannot load user answer logs', e as any)
             }
             if (testSet?.testSetQuestionBanks?.length) {
                 const mappedBanks = await Promise.all(
@@ -548,7 +551,10 @@ export class UserExerciseAttemptService {
                 statusCode: 200,
                 data: {
                     ...result.data,
-                    userExerciseAttemptId
+                    userExerciseAttemptId,
+                    totalQuestions: ((result.data as any)?.testSet?.testSetQuestionBanks?.length) || 0,
+                    answeredQuestions: answeredCount,
+                    time: Number((userExerciseAttempt.data as any)?.time ?? 0)
                 },
                 message: EXERCISES_MESSAGE.GET_SUCCESS
             }
@@ -594,6 +600,8 @@ export class UserExerciseAttemptService {
             }
 
             if (testSet?.testSetQuestionBanks?.length) {
+                let answeredCorrect = 0
+                let answeredInCorrect = 0
                 const mappedBanks = await Promise.all(
                     testSet.testSetQuestionBanks.map(async (item: any) => {
                         const qb = item.questionBank
@@ -619,6 +627,11 @@ export class UserExerciseAttemptService {
                         const correct = answers.find((a: any) => a.isCorrect)
                         const userSelectedId = selectedByQuestion.get(qb.id)
                         const userSelected = answers.find((a: any) => a.id === userSelectedId)
+                        const isCorrect = Boolean(correct && userSelectedId && userSelectedId === correct.id)
+                        if (userSelectedId) {
+                            if (isCorrect) answeredCorrect++
+                            else answeredInCorrect++
+                        }
 
                         // Build full answer list; mark correct and user-selected incorrect
                         const reviewAnswers: any[] = []
@@ -649,6 +662,7 @@ export class UserExerciseAttemptService {
                             questionBank: {
                                 id: qb?.id,
                                 question,
+                                isCorrect,
                                 answers: reviewAnswers
                             }
                         }
@@ -663,7 +677,12 @@ export class UserExerciseAttemptService {
                     testSet: {
                         id: testSet.id,
                         testSetQuestionBanks: mappedBanks
-                    }
+                    },
+                    totalQuestions: mappedBanks.length,
+                    answeredCorrect,
+                    answeredInCorrect,
+                    time: Number((attempt as any)?.time ?? 0),
+                    status: (attempt as any)?.status
                 }
 
                 return {
