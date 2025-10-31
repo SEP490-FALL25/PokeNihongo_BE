@@ -44,7 +44,9 @@ export const enMessages = {
       'New password and confirm password do not match',
     INVALID_OLD_PASSWORD: 'Old password is incorrect',
     NOT_FOUND_RECORD: 'Record not found',
-    PASSWORD_MUST_BE_MATCH: 'Password must match'
+    PASSWORD_MUST_BE_MATCH: 'Password must match',
+    MISSING_TOKEN: 'Missing authentication token',
+    INVALID_TOKEN: 'Invalid authentication token'
   },
   reward: {
     CREATE_SUCCESS: 'Reward created successfully',

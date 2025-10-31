@@ -350,6 +350,7 @@ export class GachaItemService {
       await this.gachaItemRepo.delete(id)
       return {
         statusCode: 200,
+        data: null,
         message: this.i18nService.translate(GachaItemMessage.DELETE_SUCCESS, lang)
       }
     } catch (error) {
