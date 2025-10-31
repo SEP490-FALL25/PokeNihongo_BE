@@ -43,7 +43,9 @@ export const viMessages = {
     INVALID_NEW_PASSWORD_CONFIRM_PASSWORD: 'Mật khẩu mới và mật khẩu xác nhận không khớp',
     INVALID_OLD_PASSWORD: 'Mật khẩu cũ không đúng',
     NOT_FOUND_RECORD: 'Không tìm thấy bản ghi',
-    PASSWORD_MUST_BE_MATCH: 'Mật khẩu phải khớp với nhau'
+    PASSWORD_MUST_BE_MATCH: 'Mật khẩu phải khớp với nhau',
+    MISSING_TOKEN: 'Thiếu token xác thực',
+    INVALID_TOKEN: 'Token xác thực không hợp lệ'
   },
   reward: {
     CREATE_SUCCESS: 'Tạo phần thưởng thành công',
