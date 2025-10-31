@@ -453,5 +453,10 @@ export const enMessages = {
     NOT_FOUND: 'Gacha roll history not found',
     ALREADY_EXISTS: 'Gacha roll history already exists',
     INVALID_DATA: 'Invalid gacha roll history data'
+  },
+  user_exercise_attempt: {
+    REVIEW_NOT_COMPLETED: 'Exercise not completed yet',
+    REVIEW_INSUFFICIENT_SCORE: 'You need to score at least 80% correct to view the answer review',
+    REVIEW_SUCCESS: 'Exercise review retrieved successfully'
   }
 }
