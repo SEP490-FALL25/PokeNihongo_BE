@@ -148,16 +148,6 @@ export class LevelRepo {
     })
   }
 
-  getFirstLevelPokemon(): Promise<LevelType | null> {
-    return this.prismaService.level.findFirst({
-      where: {
-        levelType: LEVEL_TYPE.POKEMON,
-        deletedAt: null,
-        levelNumber: 1
-      }
-    })
-  }
-
   // Tìm level kế tiếp dựa trên levelNumber + 1
   findNextLevelByNumber(
     levelNumber: number,

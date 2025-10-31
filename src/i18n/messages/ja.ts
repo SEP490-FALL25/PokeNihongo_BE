@@ -358,7 +358,8 @@ export const jaMessages = {
     INVALID_DATA: '無効なショップ購入データです',
     PURCHASE_LIMIT_REACHED: 'このアイテムの購入制限に達しました',
     MISSING_PREVIOUS_POKEMON:
-      'このポケモンを購入する前に、前のポケモンを所有する必要があります'
+      'このポケモンを購入する前に、前のポケモンを所有する必要があります',
+    SHOP_NOT_OPEN: 'ショップは現在オープンしていません'
   },
   gacha_banner: {
     CREATE_SUCCESS: 'ガチャバナーの作成に成功しました',

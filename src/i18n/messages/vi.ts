@@ -366,7 +366,8 @@ export const viMessages = {
     INVALID_DATA: 'Dữ liệu giao dịch mua hàng không hợp lệ',
     PURCHASE_LIMIT_REACHED: 'Đã đạt giới hạn mua hàng cho mặt hàng này',
     MISSING_PREVIOUS_POKEMON:
-      'Bạn cần sở hữu Pokémon tiền nhiệm trước khi mua Pokémon này'
+      'Bạn cần sở hữu Pokémon tiền nhiệm trước khi mua Pokémon này',
+    SHOP_NOT_OPEN: 'Cửa hàng hiện không mở cửa'
   },
   gacha_banner: {
     CREATE_SUCCESS: 'Tạo banner gacha thành công',

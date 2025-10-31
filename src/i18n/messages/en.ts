@@ -367,7 +367,8 @@ export const enMessages = {
     INVALID_DATA: 'Invalid shop purchase data',
     PURCHASE_LIMIT_REACHED: 'Purchase limit reached for this item',
     MISSING_PREVIOUS_POKEMON:
-      'You need to own the previous Pokémon before purchasing this one'
+      'You need to own the previous Pokémon before purchasing this one',
+    SHOP_NOT_OPEN: 'The shop is currently not open'
   },
   gacha_banner: {
     CREATE_SUCCESS: 'Gacha banner created successfully',

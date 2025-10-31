@@ -389,7 +389,8 @@ export const ShopPurchaseMessage = {
   ALREADY_EXISTS: 'shop_purchase.ALREADY_EXISTS',
   INVALID_DATA: 'shop_purchase.INVALID_DATA',
   PURCHASE_LIMIT_REACHED: 'shop_purchase.PURCHASE_LIMIT_REACHED',
-  MISSING_PREVIOUS_POKEMON: 'shop_purchase.MISSING_PREVIOUS_POKEMON'
+  MISSING_PREVIOUS_POKEMON: 'shop_purchase.MISSING_PREVIOUS_POKEMON',
+  SHOP_NOT_OPEN: 'shop_purchase.SHOP_NOT_OPEN'
 } as const
 
 export const GachaBannerMessage = {

@@ -12,7 +12,7 @@ export const LevelSchema = z.object({
   id: z.number(),
   levelNumber: z.number().min(1, LevelMessage.LEVEL_NUMBER_MIN),
   requiredExp: z.number().min(0, LevelMessage.REQUIRED_EXP_REQUIRED),
-  levelType: z.enum([LEVEL_TYPE.USER, LEVEL_TYPE.POKEMON]),
+  levelType: z.enum([LEVEL_TYPE.USER]),
   nextLevelId: z.number().optional().nullable(),
   rewardId: z.number().optional().nullable(),
   createdById: z.number().nullable(),
