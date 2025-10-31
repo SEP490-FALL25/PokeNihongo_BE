@@ -24,6 +24,7 @@ import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { TranslationHelperService } from '@/modules/translation/translation.helper.service'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserExerciseAttemptMessage } from '@/i18n/message-keys'
+import { pickLabelFromComposite } from '@/common/utils/prase.utils'
 
 @Injectable()
 export class UserExerciseAttemptService {
@@ -596,7 +597,7 @@ export class UserExerciseAttemptService {
                         const mappedAnswers = await Promise.all(
                             (qb?.answers || []).map(async (ans: any) => {
                                 // Always derive from answerJp composite string based on language
-                                const answerLabel = this.pickLabelFromComposite(ans?.answerJp || '', normalizedLang)
+                                const answerLabel = pickLabelFromComposite(ans?.answerJp || '', normalizedLang)
                                 const isChosen = selectedAnswerIds.has(ans.id)
                                 return {
                                     id: ans.id,
@@ -757,7 +758,7 @@ export class UserExerciseAttemptService {
                             return text.trim()
                         }
                         for (const a of answers) {
-                            const label = toShortLabel(this.pickLabelFromComposite(a?.answerJp || '', normalizedLang))
+                            const label = toShortLabel(pickLabelFromComposite(a?.answerJp || '', normalizedLang))
                             const explanation = await translateOrFallback(a?.answerKey, a?.answerJp)
                             let entry: any = { id: a.id, answer: label }
                             if (correct && a.id === correct.id) {
@@ -860,27 +861,6 @@ export class UserExerciseAttemptService {
         }
     }
 
-    private pickLabelFromComposite(raw: string, lang: string): string {
-        if (!raw) return ''
-        const parts = raw.split('+').map(p => p.trim())
-        const map: Record<string, string> = {}
-        for (const part of parts) {
-            const idx = part.indexOf(':')
-            if (idx > -1) {
-                const k = part.slice(0, idx).trim()
-                const v = part.slice(idx + 1).trim()
-                if (k) map[k] = v
-            }
-        }
-        if (Object.keys(map).length === 0) {
-            const first = raw.split('+')[0]?.trim() ?? ''
-            return first
-        }
-        if (map[lang]) return map[lang]
-        if (map['vi'] && lang.startsWith('vi')) return map['vi']
-        if (map['en'] && lang.startsWith('en')) return map['en']
-        return map['jp'] ?? raw.replace(/\b(jp|vi|en)\s*:/g, '').trim()
-    }
 
     private async updateUserProgressOnStart(userId: number, exerciseId: number) {
         try {

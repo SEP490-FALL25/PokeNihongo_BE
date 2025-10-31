@@ -11,6 +11,8 @@ import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { TEST_SET_QUESTIONBANK_MESSAGE } from '@/common/constants/message'
 import { BadRequestException } from '@nestjs/common'
 import { Injectable, Logger, HttpException } from '@nestjs/common'
+import { TranslationHelperService } from '@/modules/translation/translation.helper.service'
+import { pickLabelFromComposite } from '@/common/utils/prase.utils'
 import {
     TestSetQuestionBankNotFoundException,
     TestSetQuestionBankAlreadyExistsException,
@@ -28,7 +30,8 @@ export class TestSetQuestionBankService {
     constructor(
         private readonly testSetQuestionBankRepository: TestSetQuestionBankRepository,
         private readonly testSetService: TestSetService,
-        private readonly questionBankService: QuestionBankService
+        private readonly questionBankService: QuestionBankService,
+        private readonly translationHelper: TranslationHelperService
     ) { }
 
     async create(data: CreateTestSetQuestionBankBodyType): Promise<MessageResDTO> {
@@ -287,43 +290,97 @@ export class TestSetQuestionBankService {
         }
     }
 
-    async findFullByTestSetId(testSetId: number): Promise<MessageResDTO> {
+    async findFullByTestSetId(testSetId: number, languageCode: string): Promise<MessageResDTO> {
         try {
-            this.logger.log(`Finding ONLY QuestionBanks by testSetId: ${testSetId}`)
+            this.logger.log(`Finding QuestionBanks with answers by testSetId: ${testSetId}, language: ${languageCode}`)
 
             const links = await this.testSetQuestionBankRepository.findByTestSetId(testSetId)
-            const questionBankIds = links.map((l) => l.questionBankId)
+            const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
+
             let questionBanks = [] as any[]
-            if (questionBankIds.length > 0) {
-                const basicQBs = await this.questionBankService.findByTestSetId(testSetId)
-                const idToQB = new Map((basicQBs.data.results as any[]).map((qb: any) => [qb.id, qb]))
-                questionBanks = links
-                    .sort((a, b) => a.questionOrder - b.questionOrder)
-                    .map((l) => {
-                        const qb = idToQB.get(l.questionBankId)
-                        if (!qb) return null
-                        const { id, ...rest } = qb
-                        return {
-                            id: l.id,
-                            questionBankId: id,
-                            ...rest
-                        }
-                    })
-                    .filter(Boolean) as any[]
+            if (links.length > 0) {
+                // Lấy tất cả QuestionBank IDs
+                const questionBankIds = links.map(l => l.questionBankId)
+
+                // Lấy đầy đủ QuestionBanks với answers bằng cách gọi findOne cho mỗi ID
+                const qbPromises = questionBankIds.map(id => this.questionBankService.findOne(id))
+                const qbResults = await Promise.all(qbPromises)
+                const idToQB = new Map(
+                    qbResults.map((res: any) => [res.data.id, res.data])
+                )
+
+                // Map với translations
+                questionBanks = await Promise.all(
+                    links
+                        .sort((a, b) => a.questionOrder - b.questionOrder)
+                        .map(async (l) => {
+                            const qb = idToQB.get(l.questionBankId)
+                            if (!qb) return null
+
+                            // Resolve question text via translation keys
+                            let questionText = ''
+                            if (qb?.questionKey) {
+                                const triedLang = normalizedLang
+                                const keyCandidates = [
+                                    qb.questionKey,
+                                    qb.questionKey.endsWith('.meaning.1') ? qb.questionKey : `${qb.questionKey}.meaning.1`,
+                                    qb.questionKey.endsWith('.question') ? qb.questionKey : `${qb.questionKey}.question`
+                                ]
+                                for (const key of keyCandidates) {
+                                    questionText = (await this.translationHelper.getTranslation(key, triedLang)) || ''
+                                    if (!questionText) {
+                                        questionText = (await this.translationHelper.getTranslation(key, 'vi')) || ''
+                                    }
+                                    if (questionText) break
+                                }
+                            }
+                            if (!questionText) {
+                                // fallback to JP original if translation is missing
+                                questionText = qb?.questionJp || ''
+                            }
+
+                            // Map answers với translations
+                            const mappedAnswers = await Promise.all(
+                                (qb?.answers || []).map(async (ans: any) => {
+                                    // Derive from answerJp composite string based on language
+                                    const answerLabel = pickLabelFromComposite(ans?.answerJp || '', normalizedLang)
+                                    return {
+                                        id: ans.id,
+                                        answer: answerLabel
+                                    }
+                                })
+                            )
+
+                            return {
+                                id: l.id,
+                                questionOrder: l.questionOrder,
+                                questionBankId: qb.id,
+                                question: questionText,
+                                questionType: qb.questionType,
+                                audioUrl: qb.audioUrl,
+                                pronunciation: qb.pronunciation,
+                                levelN: qb.levelN,
+                                answers: mappedAnswers
+                            }
+                        })
+                )
+                questionBanks = questionBanks.filter(Boolean) as any[]
             }
+
             return {
                 statusCode: 200,
                 data: questionBanks,
                 message: TEST_SET_QUESTIONBANK_MESSAGE.GET_LIST_SUCCESS
             }
         } catch (error) {
-            this.logger.error('Error finding ONLY QuestionBanks by testSetId:', error)
+            this.logger.error('Error finding QuestionBanks with answers by testSetId:', error)
             if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
                 throw error
             }
             throw InvalidTestSetQuestionBankDataException
         }
     }
+
 
     async update(id: number, data: UpdateTestSetQuestionBankBodyType): Promise<MessageResDTO> {
         try {

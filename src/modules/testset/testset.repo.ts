@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { TestSetType, CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, CreateTestSetWithMeaningsBodyType, UpdateTestSetWithMeaningsBodyType } from './entities/testset.entities'
-import { QuestionType } from '@prisma/client'
+import { TestSetType as PrismaTestSetType } from '@prisma/client'
 
 @Injectable()
 export class TestSetRepository {
@@ -24,7 +24,7 @@ export class TestSetRepository {
         return {
             ...result,
             price: result.price ? Number(result.price) : null,
-            testType: result.testType as QuestionType,
+            testType: result.testType as PrismaTestSetType,
         }
     }
 
@@ -37,7 +37,7 @@ export class TestSetRepository {
         const testSet = {
             ...result,
             price: result.price ? Number(result.price) : null,
-            testType: result.testType as QuestionType,
+            testType: result.testType as PrismaTestSetType,
         }
 
         // Lấy translations cho name và description
@@ -162,7 +162,7 @@ export class TestSetRepository {
                 const result = {
                     ...testSet,
                     price: testSet.price ? Number(testSet.price) : null,
-                    testType: testSet.testType as QuestionType,
+                    testType: testSet.testType as PrismaTestSetType,
                     // Remove _count and creator from the response
                     _count: undefined,
                     creator: undefined,
@@ -241,7 +241,7 @@ export class TestSetRepository {
         return {
             ...result,
             price: result.price ? Number(result.price) : null,
-            testType: result.testType as QuestionType,
+            testType: result.testType as PrismaTestSetType,
         }
     }
 
@@ -252,7 +252,7 @@ export class TestSetRepository {
         return {
             ...result,
             price: result.price ? Number(result.price) : null,
-            testType: result.testType as QuestionType,
+            testType: result.testType as PrismaTestSetType,
         }
     }
 
@@ -328,7 +328,7 @@ export class TestSetRepository {
             return {
                 ...updatedTestSet,
                 price: updatedTestSet.price ? Number(updatedTestSet.price) : null,
-                testType: updatedTestSet.testType as QuestionType,
+                testType: updatedTestSet.testType as PrismaTestSetType,
             }
         })
     }
@@ -393,7 +393,7 @@ export class TestSetRepository {
             return {
                 ...updatedTestSet,
                 price: updatedTestSet.price ? Number(updatedTestSet.price) : null,
-                testType: updatedTestSet.testType as QuestionType,
+                testType: updatedTestSet.testType as PrismaTestSetType,
             }
         })
     }

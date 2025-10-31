@@ -1,4 +1,5 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import {
     CreateTestSetQuestionBankBodyDTO,
     UpdateTestSetQuestionBankBodyDTO,
@@ -153,36 +154,18 @@ export class TestSetQuestionBankController {
         return this.testSetQuestionBankService.findByTestSetId(Number(testSetId))
     }
 
+    //KUMO lấy testset và questionbank kèm theo answer theo header và tralation như đã làm bên userExercies
     @Get('testset/:testSetId/full')
     @ApiBearerAuth()
     @ApiOperation({
-        summary: 'Lấy danh sách TestSetQuestionBank kèm QuestionBank',
-        description: 'Trả về các liên kết cùng dữ liệu QuestionBank'
+        summary: 'Lấy danh sách TestSetQuestionBank kèm QuestionBank và Answers',
+        description: 'Trả về các liên kết cùng dữ liệu QuestionBank và Answers với translations theo ngôn ngữ'
     })
-    @ApiResponse({
-        status: 200,
-        description: 'Lấy danh sách QuestionBank thuần (chỉ các trường cần thiết, không bọc trong object)',
-        schema: {
-            example: [
-                {
-                    id: 101, // id của bản ghi nhiều-nhiều (TestSetQuestionBank)
-                    questionBankId: 1, // id của QuestionBank
-                    questionJp: "「わたし」の意味 là gì?",
-                    questionType: "VOCABULARY",
-                    audioUrl: null,
-                    questionKey: "VOCABULARY.1.question",
-                    pronunciation: "わたし",
-                    levelN: 5,
-                    createdById: 1,
-                    createdAt: "2025-10-25T14:50:08.164Z",
-                    updatedAt: "2025-10-28T19:10:32.618Z"
-                }
-                // ... nhiều object khác ...
-            ]
-        }
-    })
-    async findFullByTestSetId(@Param('testSetId') testSetId: string): Promise<MessageResDTO> {
-        return this.testSetQuestionBankService.findFullByTestSetId(Number(testSetId))
+    async findFullByTestSetId(
+        @Param('testSetId') testSetId: string,
+        @I18nLang() languageCode: string
+    ): Promise<MessageResDTO> {
+        return this.testSetQuestionBankService.findFullByTestSetId(Number(testSetId), languageCode)
     }
 
     @Delete('delete-many')

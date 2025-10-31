@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { TestSetStatus, QuestionType } from '@prisma/client'
+import { TestSetStatus, TestSetType } from '@prisma/client'
 
 export class TestSetSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của bộ đề thi' })
@@ -64,8 +64,8 @@ export class TestSetSwaggerDTO {
     @ApiPropertyOptional({ example: 3, description: 'Cấp độ JLPT (1-5)' })
     levelN?: number
 
-    @ApiProperty({ enum: QuestionType, example: QuestionType.VOCABULARY, description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL)' })
-    testType: QuestionType
+    @ApiProperty({ enum: TestSetType, example: TestSetType.VOCABULARY, description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, PLACEMENT_TEST_DONE)' })
+    testType: TestSetType
 
     @ApiProperty({ enum: TestSetStatus, example: TestSetStatus.ACTIVE, description: 'Trạng thái bộ đề thi' })
     status: TestSetStatus
@@ -181,11 +181,11 @@ export class CreateTestSetSwaggerDTO {
     levelN?: number | null
 
     @ApiProperty({
-        enum: QuestionType,
-        example: QuestionType.VOCABULARY,
-        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL)'
+        enum: TestSetType,
+        example: TestSetType.VOCABULARY,
+        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, PLACEMENT_TEST_DONE)'
     })
-    testType: QuestionType
+    testType: TestSetType
 
     @ApiPropertyOptional({
         enum: TestSetStatus,
@@ -234,11 +234,11 @@ export class UpdateTestSetSwaggerDTO {
     levelN?: number | null
 
     @ApiPropertyOptional({
-        enum: QuestionType,
-        example: QuestionType.GRAMMAR,
-        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL)'
+        enum: TestSetType,
+        example: TestSetType.GRAMMAR,
+        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, PLACEMENT_TEST_DONE)'
     })
-    testType?: QuestionType
+    testType?: TestSetType
 
     @ApiPropertyOptional({
         enum: TestSetStatus,
@@ -305,11 +305,11 @@ export class CreateTestSetWithMeaningsSwaggerDTO {
     levelN?: number | null
 
     @ApiProperty({
-        enum: QuestionType,
-        example: QuestionType.VOCABULARY,
-        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL)'
+        enum: TestSetType,
+        example: TestSetType.VOCABULARY,
+        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, PLACEMENT_TEST_DONE)'
     })
-    testType: QuestionType
+    testType: TestSetType
 
     @ApiPropertyOptional({
         enum: TestSetStatus,
@@ -377,11 +377,11 @@ export class UpdateTestSetWithMeaningsSwaggerDTO {
     levelN?: number | null
 
     @ApiPropertyOptional({
-        enum: QuestionType,
-        example: QuestionType.GRAMMAR,
-        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL)'
+        enum: TestSetType,
+        example: TestSetType.GRAMMAR,
+        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, PLACEMENT_TEST_DONE)'
     })
-    testType?: QuestionType
+    testType?: TestSetType
 
     @ApiPropertyOptional({
         enum: TestSetStatus,
@@ -404,8 +404,8 @@ export class GetTestSetListQuerySwaggerDTO {
     @ApiPropertyOptional({ example: '3', description: 'Lọc theo cấp độ JLPT (1-5)' })
     levelN?: string
 
-    @ApiPropertyOptional({ enum: QuestionType, example: QuestionType.VOCABULARY, description: 'Lọc theo loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL)' })
-    testType?: QuestionType
+    @ApiPropertyOptional({ enum: TestSetType, example: TestSetType.VOCABULARY, description: 'Lọc theo loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, PLACEMENT_TEST_DONE)' })
+    testType?: TestSetType
 
     @ApiPropertyOptional({ enum: TestSetStatus, example: TestSetStatus.ACTIVE, description: 'Lọc theo trạng thái bộ đề thi' })
     status?: TestSetStatus
