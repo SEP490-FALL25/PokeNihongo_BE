@@ -509,35 +509,63 @@ export class UserExerciseAttemptService {
                 throw UserExerciseAttemptNotFoundException
             }
 
-            // Nếu attempt gần nhất là SKIPPED, COMPLETED hoặc FAIL → tạo attempt mới
+            // Nếu attempt gần nhất là SKIPPED, COMPLETED hoặc FAIL → tạo attempt mới hoàn toàn
             let attempt = latestAttempt
             let userExerciseAttemptId = latestAttempt.id
+            let shouldLoadOldAnswers = false // Chỉ load answers cũ nếu là ABANDONED
 
-            if (latestAttempt.status === 'SKIPPED' || latestAttempt.status === 'COMPLETED' || latestAttempt.status === 'FAIL') {
+            if (latestAttempt.status === 'NOT_STARTED') {
+                // Nếu là NOT_STARTED, update thành IN_PROGRESS
+                this.logger.log(`Latest attempt is NOT_STARTED, updating to IN_PROGRESS for user ${userId}, exercise ${exerciseId}`)
+                const updatedAttempt = await this.userExerciseAttemptRepository.update(
+                    { id: latestAttempt.id },
+                    { status: 'IN_PROGRESS' }
+                )
+                attempt = updatedAttempt as any
+                userExerciseAttemptId = attempt.id
+                shouldLoadOldAnswers = false
+            } else if (latestAttempt.status === 'SKIPPED' || latestAttempt.status === 'COMPLETED' || latestAttempt.status === 'FAIL') {
                 this.logger.log(`Latest attempt is ${latestAttempt.status}, creating new attempt for user ${userId}, exercise ${exerciseId}`)
                 const createAttempt = await this.create(userId, exerciseId)
                 attempt = createAttempt.data as any
                 userExerciseAttemptId = attempt.id
+                // Khi tạo mới từ SKIPPED/COMPLETED/FAIL, không load answers cũ
+                shouldLoadOldAnswers = false
+            } else if (latestAttempt.status === 'ABANDONED') {
+                // Nếu là ABANDONED, load answers cũ để khôi phục
+                shouldLoadOldAnswers = true
             }
 
             const result = await this.exercisesService.getExercisesByIdHaveQuestionBanks(exerciseId)
             // Map translations: question strictly from translation; answers from translation or parsed composite string
             const testSet = (result.data as any)?.testSet
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
-            // Load user answer logs once to compute answered count; mark choices if ABANDONED hoặc SKIPPED
+            // Load user answer logs chỉ nếu cần khôi phục (ABANDONED)
             let selectedAnswerIds = new Set<number>()
             let answeredCount = 0
-            try {
-                const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
-                const logs = (logsRes?.data?.results || []) as any[]
-                answeredCount = logs.length
-                // Mark choices nếu status là ABANDONED hoặc SKIPPED
-                if (attempt?.status === 'ABANDONED' || attempt?.status === 'SKIPPED') {
-                    const ids = logs.map((log: any) => log.answerId).filter((v: any) => typeof v === 'number')
-                    selectedAnswerIds = new Set<number>(ids)
+            if (shouldLoadOldAnswers) {
+                try {
+                    const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
+                    const logs = (logsRes?.data?.results || []) as any[]
+                    answeredCount = logs.length
+                    // Chỉ mark choices nếu là ABANDONED (để khôi phục)
+                    if (attempt?.status === 'ABANDONED') {
+                        const ids = logs.map((log: any) => log.answerId).filter((v: any) => typeof v === 'number')
+                        selectedAnswerIds = new Set<number>(ids)
+                    }
+                } catch (e) {
+                    this.logger.warn('Cannot load user answer logs', e as any)
                 }
-            } catch (e) {
-                this.logger.warn('Cannot load user answer logs', e as any)
+            } else {
+                // Nếu là attempt mới (từ SKIPPED/COMPLETED/FAIL) hoặc IN_PROGRESS, không load answers cũ
+                // answeredCount sẽ là 0, selectedAnswerIds sẽ là empty
+                try {
+                    const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
+                    const logs = (logsRes?.data?.results || []) as any[]
+                    answeredCount = logs.length
+                } catch (e) {
+                    this.logger.warn('Cannot load user answer logs', e as any)
+                }
             }
             if (testSet?.testSetQuestionBanks?.length) {
                 const mappedBanks = await Promise.all(
@@ -637,6 +665,7 @@ export class UserExerciseAttemptService {
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
 
             // Only build review when attempt is COMPLETED or FAIL
+            // NOT_STARTED không được xem review
             if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAIL') {
                 return {
                     statusCode: 200,
