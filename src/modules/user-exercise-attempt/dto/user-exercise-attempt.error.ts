@@ -63,3 +63,12 @@ export const ExerciseAbandonedException = new HttpException(
     },
     HttpStatus.CONFLICT
 )
+
+export const ForbiddenReviewAccessException = new HttpException(
+    {
+        statusCode: HttpStatus.FORBIDDEN,
+        message: USER_EXERCISE_ATTEMPT_MESSAGE.FORBIDDEN_REVIEW_ACCESS,
+        error: 'FORBIDDEN_REVIEW_ACCESS'
+    },
+    HttpStatus.FORBIDDEN
+)
