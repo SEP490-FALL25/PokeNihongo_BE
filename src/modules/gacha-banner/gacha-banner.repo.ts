@@ -165,10 +165,32 @@ export class GachaBannerRepo {
     // Map results to include nameTranslation and exclude nameTranslations array
     const results = data.map((d: any) => {
       const { nameTranslations, ...rest } = d
+
+      // Determine single translation for the requested langId.
+      // If the included nameTranslations contain languageId, prefer the entry matching langId.
+      // Otherwise fall back to the first item (the repository may return only { value } when
+      // filtering by langId in the query).
+      let single: string | undefined = undefined
+      if (langId) {
+        if (Array.isArray(nameTranslations) && nameTranslations.length > 0) {
+          const first = nameTranslations[0]
+          if (first && Object.prototype.hasOwnProperty.call(first, 'languageId')) {
+            // items include languageId, find exact match
+            const matched = nameTranslations.find((t: any) => t.languageId === langId)
+            single = matched ? matched.value : d.nameKey
+          } else {
+            // items don't include languageId (likely only { value } were selected)
+            single = nameTranslations[0]?.value ?? d.nameKey
+          }
+        } else {
+          single = d.nameKey
+        }
+      }
+
       return {
         ...rest,
         ...(isAllLang ? { nameTranslations } : {}),
-        nameTranslation: langId ? (nameTranslations?.[0]?.value ?? d.nameKey) : undefined
+        nameTranslation: single
       }
     })
 
