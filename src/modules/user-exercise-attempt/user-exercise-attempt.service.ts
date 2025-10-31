@@ -9,7 +9,8 @@ import {
     InvalidUserExerciseAttemptDataException,
     UserExerciseAttemptNotFoundException,
     ExerciseNotFoundException,
-    LessonBlockedException
+    LessonBlockedException,
+    ForbiddenReviewAccessException
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.error'
 import { EXERCISES_MESSAGE, USER_EXERCISE_ATTEMPT_MESSAGE } from '@/common/constants/message'
 import { UserExerciseAttemptRepository } from '@/modules/user-exercise-attempt/user-exercise-attempt.repo'
@@ -18,7 +19,7 @@ import { UserAnswerLogService } from '@/modules/user-answer-log/user-answer-log.
 import { UserProgressService } from '@/modules/user-progress/user-progress.service'
 import { ExercisesService } from '@/modules/exercises/exercises.service'
 import { isNotFoundPrismaError } from '@/shared/helpers'
-import { Injectable, Logger, HttpException } from '@nestjs/common'
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { TranslationHelperService } from '@/modules/translation/translation.helper.service'
 
@@ -455,9 +456,15 @@ export class UserExerciseAttemptService {
 
     async getExerciseAttemptByExerciseId(id: number, userId: number, languageCode: string): Promise<MessageResDTO | null> {
         try {
-
             const userExerciseAttempt = await this.findOne(id)
-            const result = await this.exercisesService.getExercisesByIdHaveQuestionBanks(userExerciseAttempt.data.exerciseId)
+            const attempt = userExerciseAttempt.data as any
+
+            // Kiểm tra attempt có thuộc về user này không
+            if (attempt?.userId !== userId) {
+                throw ForbiddenReviewAccessException
+            }
+
+            const result = await this.exercisesService.getExercisesByIdHaveQuestionBanks(attempt.exerciseId)
             // Map translations: question strictly from translation; answers from translation or parsed composite string
             const testSet = (result.data as any)?.testSet
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
@@ -468,7 +475,7 @@ export class UserExerciseAttemptService {
                 const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(id)
                 const logs = (logsRes?.data?.results || []) as any[]
                 answeredCount = logs.length
-                if ((userExerciseAttempt.data as any)?.status === 'ABANDONED') {
+                if (attempt?.status === 'ABANDONED') {
                     const ids = logs.map((log: any) => log.answerId).filter((v: any) => typeof v === 'number')
                     selectedAnswerIds = new Set<number>(ids)
                 }
@@ -538,7 +545,7 @@ export class UserExerciseAttemptService {
                 } as any
             }
 
-            this.logger.log(`Getting latest exercise attempts for user ${userId} in exercise ${userExerciseAttempt.data.exerciseId}`)
+            this.logger.log(`Getting latest exercise attempts for user ${userId} in exercise ${attempt.exerciseId}`)
 
             let userExerciseAttemptId = id;
             const checkAttempt = await this.getStatus(id, userId)
@@ -554,12 +561,15 @@ export class UserExerciseAttemptService {
                     userExerciseAttemptId,
                     totalQuestions: ((result.data as any)?.testSet?.testSetQuestionBanks?.length) || 0,
                     answeredQuestions: answeredCount,
-                    time: Number((userExerciseAttempt.data as any)?.time ?? 0)
+                    time: Number(attempt?.time ?? 0)
                 },
                 message: EXERCISES_MESSAGE.GET_SUCCESS
             }
         } catch (error) {
             this.logger.error('Error getting latest exercise attempts by lesson:', error)
+            if (error instanceof HttpException) {
+                throw error
+            }
             throw error
         }
     }
@@ -568,6 +578,11 @@ export class UserExerciseAttemptService {
         try {
             const attemptRes = await this.findOne(id)
             const attempt = attemptRes.data as any
+
+            // Kiểm tra attempt có thuộc về user này không
+            if ((attempt as any)?.userId !== userId) {
+                throw ForbiddenReviewAccessException
+            }
 
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
 
@@ -699,6 +714,9 @@ export class UserExerciseAttemptService {
             }
         } catch (error) {
             this.logger.error('Error building exercise attempt review:', error)
+            if (error instanceof HttpException) {
+                throw error
+            }
             throw error
         }
     }
@@ -741,6 +759,7 @@ export class UserExerciseAttemptService {
             // Không throw error để không ảnh hưởng đến flow chính
         }
     }
+    
     private pickLabelFromComposite(raw: string, lang: string): string {
         if (!raw) return ''
         const parts = raw.split('+').map(p => p.trim())
@@ -787,6 +806,5 @@ export class UserExerciseAttemptService {
             // Không throw error để không ảnh hưởng đến flow chính
         }
     }
-
 
 }
