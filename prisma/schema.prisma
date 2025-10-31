@@ -71,6 +71,7 @@ model User {
   updatedAttendances       Attendance[]       @relation("AttendanceUpdatedBy")
   deletedAttendances       Attendance[]       @relation("AttendanceDeletedBy")
   createdTestSets          TestSet[]          @relation("TestSetCreatedBy")
+  createdTests             Test[]             @relation("TestCreatedBy")
 
   createdWallets            Wallet[]            @relation("WalletCreatedBy")
   updatedWallets            Wallet[]            @relation("WalletUpdatedBy")
@@ -714,11 +715,37 @@ model TestSet {
   // Quan hệ với TestSetQuestionBank (bảng nối)
   testSetQuestionBanks TestSetQuestionBank[]
 
+  // Quan hệ nhiều-nhiều với Test (Prisma tự động tạo bảng nối)
+  tests Test[]
+
   // Quan hệ với User
   creatorId Int?
   creator   User? @relation("TestSetCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([levelN])
+  @@index([testType])
+  @@index([status])
+  @@index([creatorId])
+}
+
+// Thực thể bài kiểm tra tổng hợp
+model Test {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(200) // Tên bài test
+  description String?       @db.Text // Mô tả bài test
+  price       Decimal?      @db.Decimal(10, 2) // Giá bài test (nếu có)
+  testType    TestStatus    @default(PLACEMENT_TEST_DONE) // Loại đề thi
+  status      TestSetStatus @default(DRAFT) // Trạng thái (DRAFT, ACTIVE, INACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Quan hệ nhiều-nhiều với TestSet (Prisma tự động tạo bảng nối)
+  testSets TestSet[]
+
+  // Quan hệ với User
+  creatorId Int?
+  creator   User? @relation("TestCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
   @@index([testType])
   @@index([status])
   @@index([creatorId])
@@ -1634,10 +1661,10 @@ enum LessonContentsType {
   KANJI
 }
 
-// enum TestStatus {
-//   PLACEMENT_TEST_DONE  // Kiểm tra đầu vào
-//   MATCH_TEST   // Trận đấu
-//   QUIZ_TEST   //Quiz 
-//   REVIEW_TEST // Ôn tập
-//   PRACTICE_TEST // Thi thử
-// }
+enum TestStatus {
+  PLACEMENT_TEST_DONE // Kiểm tra đầu vào
+  MATCH_TEST // Trận đấu
+  QUIZ_TEST //Quiz 
+  REVIEW_TEST // Ôn tập
+  PRACTICE_TEST // Thi thử
+}
