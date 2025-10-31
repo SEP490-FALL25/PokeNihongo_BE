@@ -401,7 +401,8 @@ export const jaMessages = {
     MAX_ITEMS_EXCEEDED: 'アイテム数がバナーの制限を超えています',
     POKEMON_HAS_PREV_EVOLUTION: 'ポケモンは進化前の形態を持っています',
     POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
-      'ポケモンのレアリティは、追加される星タイプと互換性がありません'
+      'ポケモンのレアリティは、追加される星タイプと互換性がありません',
+    DUPLICATE_STAR_TYPE_IN_LIST: '各スタータイプはリスト内で一度だけ表示できます'
   },
   shop_rarity_price: {
     CREATE_SUCCESS: 'ショップレアリティ価格の作成に成功しました',
@@ -446,7 +447,8 @@ export const jaMessages = {
   },
   user_exercise_attempt: {
     REVIEW_NOT_COMPLETED: '演習がまだ完了していません',
-    REVIEW_INSUFFICIENT_SCORE: '解答レビューを表示するには、少なくとも80%の正解率が必要です',
+    REVIEW_INSUFFICIENT_SCORE:
+      '解答レビューを表示するには、少なくとも80%の正解率が必要です',
     REVIEW_SUCCESS: '演習レビュー情報の取得に成功しました'
   }
 }

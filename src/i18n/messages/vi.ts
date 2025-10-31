@@ -410,7 +410,9 @@ export const viMessages = {
     POKEMON_HAS_PREV_EVOLUTION:
       'Pokémon này có tiền nhiệm, vui lòng thêm tiền nhiệm trước khi thêm Pokémon này',
     POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
-      'Rarity của Pokémon không hợp lệ với Star Type được thêm vào'
+      'Rarity của Pokémon không hợp lệ với Star Type được thêm vào',
+    DUPLICATE_STAR_TYPE_IN_LIST:
+      'Mỗi Star Type chỉ được xuất hiện một lần trong danh sách'
   },
   shop_rarity_price: {
     CREATE_SUCCESS: 'Tạo giá theo độ hiếm thành công',
@@ -454,7 +456,8 @@ export const viMessages = {
   },
   user_exercise_attempt: {
     REVIEW_NOT_COMPLETED: 'Bài tập chưa hoàn thành',
-    REVIEW_INSUFFICIENT_SCORE: 'Bạn cần đạt ít nhất 80% số câu trả lời đúng để xem đáp án',
+    REVIEW_INSUFFICIENT_SCORE:
+      'Bạn cần đạt ít nhất 80% số câu trả lời đúng để xem đáp án',
     REVIEW_SUCCESS: 'Lấy thông tin đáp án bài tập thành công'
   }
 }

@@ -1,13 +1,18 @@
 import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
-import { GachaItem, Prisma } from '@prisma/client'
+import { GachaItem, Prisma, PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { GACHA_ITEM_FIELDS } from './entities/gacha-item.entity'
 
 @Injectable()
 export class GachaItemRepo {
   constructor(private readonly prismaService: PrismaService) {}
+
+  // Wrapper for transaction
+  async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
+    return this.prismaService.$transaction(callback)
+  }
 
   async getListPokemonWithGachaBannerId(bannerId: number, pagination: any) {
     const { where: rawWhere = {}, orderBy } = parseQs(
@@ -300,14 +305,16 @@ export class GachaItemRepo {
       await prismaTx.gachaItem.deleteMany({ where: { bannerId } })
 
       // Create new items
-      await prismaTx.gachaItem.createMany({
-        data: items.map((item) => ({
-          bannerId: item.bannerId,
-          pokemonId: item.pokemonId,
-          gachaItemRateId: item.gachaItemRateId,
-          createdById: updatedById
-        }))
-      })
+      if (items.length > 0) {
+        await prismaTx.gachaItem.createMany({
+          data: items.map((item) => ({
+            bannerId: item.bannerId,
+            pokemonId: item.pokemonId,
+            gachaItemRateId: item.gachaItemRateId,
+            createdById: updatedById
+          }))
+        })
+      }
 
       // Fetch created items to return
       const created = await prismaTx.gachaItem.findMany({

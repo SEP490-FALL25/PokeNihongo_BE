@@ -410,7 +410,8 @@ export const enMessages = {
     MAX_ITEMS_EXCEEDED: 'Number of items exceeds the banner limit',
     POKEMON_HAS_PREV_EVOLUTION: 'Pokémon has a previous evolution form',
     POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD:
-      'Pokémon rarity is not compatible with the star type to be added'
+      'Pokémon rarity is not compatible with the star type to be added',
+    DUPLICATE_STAR_TYPE_IN_LIST: 'Each Star Type can only appear once in the list'
   },
   shop_rarity_price: {
     CREATE_SUCCESS: 'Shop rarity price created successfully',
@@ -456,7 +457,8 @@ export const enMessages = {
   },
   user_exercise_attempt: {
     REVIEW_NOT_COMPLETED: 'Exercise not completed yet',
-    REVIEW_INSUFFICIENT_SCORE: 'You need to score at least 80% correct to view the answer review',
+    REVIEW_INSUFFICIENT_SCORE:
+      'You need to score at least 80% correct to view the answer review',
     REVIEW_SUCCESS: 'Exercise review retrieved successfully'
   }
 }
