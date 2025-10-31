@@ -164,6 +164,56 @@ export class UserExerciseAttemptRepository {
         return result ? this.transformUserExerciseAttempt(result) : null
     }
 
+    /**
+     * Tìm attempt gần nhất theo thứ tự ưu tiên:
+     * Ưu tiên theo thời gian: attempt có updatedAt gần nhất là ưu tiên cao nhất
+     * Trong cùng khoảng thời gian (cùng updatedAt), ưu tiên theo status: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAIL
+     * 
+     * Logic: 
+     * - Nếu SKIPPED gần nhất (updatedAt gần nhất) → sẽ được chọn, sau đó service sẽ tạo mới
+     * - Nếu ABANDONED gần nhất → lấy ABANDONED
+     * - Nếu IN_PROGRESS gần nhất → lấy IN_PROGRESS
+     */
+    async findLatestByPriority(userId: number, exerciseId: number): Promise<UserExerciseAttemptType | null> {
+        // Lấy tất cả attempts và sắp xếp theo updatedAt desc
+        const allAttempts = await this.prismaService.userExerciseAttempt.findMany({
+            where: { userId, exerciseId },
+            orderBy: { updatedAt: 'desc' }
+        })
+
+        if (allAttempts.length === 0) {
+            return null
+        }
+
+        // Ưu tiên: attempt gần nhất (updatedAt gần nhất) là quan trọng nhất
+        // Nhưng nếu có nhiều attempts cùng updatedAt, ưu tiên theo status
+        const priorityOrder = ['IN_PROGRESS', 'ABANDONED', 'SKIPPED', 'COMPLETED', 'FAIL']
+
+        // Lấy attempt gần nhất (updatedAt gần nhất)
+        const latestUpdatedAt = allAttempts[0].updatedAt
+
+        // Tìm tất cả attempts có cùng updatedAt gần nhất
+        const latestAttempts = allAttempts.filter(attempt =>
+            attempt.updatedAt.getTime() === latestUpdatedAt.getTime()
+        )
+
+        // Nếu chỉ có 1 attempt với updatedAt gần nhất, trả về luôn
+        if (latestAttempts.length === 1) {
+            return this.transformUserExerciseAttempt(latestAttempts[0])
+        }
+
+        // Nếu có nhiều attempts cùng updatedAt, chọn theo priority order
+        for (const status of priorityOrder) {
+            const found = latestAttempts.find(attempt => attempt.status === status)
+            if (found) {
+                return this.transformUserExerciseAttempt(found)
+            }
+        }
+
+        // Fallback: trả về attempt đầu tiên trong latestAttempts
+        return this.transformUserExerciseAttempt(latestAttempts[0])
+    }
+
     async findCompletedExercisesByLesson(userId: number, lessonId: number) {
         // Lấy tất cả exercises của lesson
         const lessonExercises = await this.prismaService.exercises.findMany({

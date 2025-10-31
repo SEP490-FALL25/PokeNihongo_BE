@@ -491,26 +491,48 @@ export class UserExerciseAttemptService {
 
     async getExerciseAttemptByExerciseId(id: number, userId: number, languageCode: string): Promise<MessageResDTO | null> {
         try {
-            const userExerciseAttempt = await this.findOne(id)
-            const attempt = userExerciseAttempt.data as any
+            // Lấy attempt base để biết exerciseId
+            const baseAttemptRes = await this.findOne(id)
+            const baseAttempt = baseAttemptRes.data as any
 
             // Kiểm tra attempt có thuộc về user này không
-            if (attempt?.userId !== userId) {
+            if (baseAttempt?.userId !== userId) {
                 throw ForbiddenReviewAccessException
             }
 
-            const result = await this.exercisesService.getExercisesByIdHaveQuestionBanks(attempt.exerciseId)
+            const exerciseId = baseAttempt.exerciseId
+
+            // Tìm attempt gần nhất theo thứ tự ưu tiên: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAIL
+            const latestAttempt = await this.userExerciseAttemptRepository.findLatestByPriority(userId, exerciseId)
+
+            if (!latestAttempt) {
+                throw UserExerciseAttemptNotFoundException
+            }
+
+            // Nếu attempt gần nhất là SKIPPED, COMPLETED hoặc FAIL → tạo attempt mới
+            let attempt = latestAttempt
+            let userExerciseAttemptId = latestAttempt.id
+
+            if (latestAttempt.status === 'SKIPPED' || latestAttempt.status === 'COMPLETED' || latestAttempt.status === 'FAIL') {
+                this.logger.log(`Latest attempt is ${latestAttempt.status}, creating new attempt for user ${userId}, exercise ${exerciseId}`)
+                const createAttempt = await this.create(userId, exerciseId)
+                attempt = createAttempt.data as any
+                userExerciseAttemptId = attempt.id
+            }
+
+            const result = await this.exercisesService.getExercisesByIdHaveQuestionBanks(exerciseId)
             // Map translations: question strictly from translation; answers from translation or parsed composite string
             const testSet = (result.data as any)?.testSet
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
-            // Load user answer logs once to compute answered count; mark choices if ABANDONED
+            // Load user answer logs once to compute answered count; mark choices if ABANDONED hoặc SKIPPED
             let selectedAnswerIds = new Set<number>()
             let answeredCount = 0
             try {
-                const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(id)
+                const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
                 const logs = (logsRes?.data?.results || []) as any[]
                 answeredCount = logs.length
-                if (attempt?.status === 'ABANDONED') {
+                // Mark choices nếu status là ABANDONED hoặc SKIPPED
+                if (attempt?.status === 'ABANDONED' || attempt?.status === 'SKIPPED') {
                     const ids = logs.map((log: any) => log.answerId).filter((v: any) => typeof v === 'number')
                     selectedAnswerIds = new Set<number>(ids)
                 }
@@ -580,15 +602,7 @@ export class UserExerciseAttemptService {
                 } as any
             }
 
-            this.logger.log(`Getting latest exercise attempts for user ${userId} in exercise ${attempt.exerciseId}`)
-
-            let userExerciseAttemptId = id;
-            const checkAttempt = await this.getStatus(id, userId)
-            // Nếu attempt đã COMPLETED hoặc FAIL, tạo attempt mới để user có thể làm lại
-            if (checkAttempt.data.status === 'COMPLETED' || checkAttempt.data.status === 'FAIL') {
-                const createAttempt = await this.create(userId, result.data.id)
-                userExerciseAttemptId = createAttempt.data.id
-            }
+            this.logger.log(`Getting exercise attempt for user ${userId} in exercise ${exerciseId}, using attempt ${userExerciseAttemptId} with status ${attempt?.status}`)
 
             return {
                 statusCode: 200,

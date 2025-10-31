@@ -768,10 +768,12 @@ model Answer {
 
 // Enum cho trạng thái làm bài tập
 enum ExerciseAttemptStatus {
+  NOT_STARTED // Chưa bắt đầu
   IN_PROGRESS // Đang làm
   COMPLETED // Đã hoàn thành
   FAIL // Đã hoàn thành nhưng sai
   ABANDONED // Đã bỏ dở
+  SKIPPED // Đã bỏ qua
 }
 
 // Model UserExerciseAttempt (Lần thử bài tập của user)
