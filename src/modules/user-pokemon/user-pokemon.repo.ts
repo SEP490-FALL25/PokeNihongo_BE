@@ -66,12 +66,6 @@ type UserPokemonWithRelations = UserPokemonType & {
       }>
     }>
   }
-  level?: {
-    id: number
-    levelNumber: number
-    requiredExp: number
-    levelType: string
-  }
 }
 
 type UserPokemonBasic = UserPokemonType
@@ -86,7 +80,7 @@ export class UserPokemonRepo {
       data
     }: {
       userId: number
-      data: CreateUserPokemonBodyType & { levelId?: number }
+      data: CreateUserPokemonBodyType
     },
     prismaTx?: PrismaClient
   ): Promise<UserPokemonBasic> {
@@ -94,9 +88,7 @@ export class UserPokemonRepo {
     return client.userPokemon.create({
       data: {
         ...data,
-        userId,
-        // If no levelId provided, get the first Pokemon level
-        levelId: data.levelId || 1 // Default to level 1, should be handled in service
+        userId
       }
     })
   }
@@ -163,14 +155,6 @@ export class UserPokemonRepo {
             }
           }
         },
-        level: {
-          select: {
-            id: true,
-            levelNumber: true,
-            requiredExp: true,
-            levelType: true
-          }
-        },
         user: { select: { id: true, name: true, email: true } }
       },
       orderBy: [{ createdAt: 'desc' }]
@@ -213,14 +197,6 @@ export class UserPokemonRepo {
                   color_hex: true
                 }
               }
-            }
-          },
-          level: {
-            select: {
-              id: true,
-              levelNumber: true,
-              requiredExp: true,
-              levelType: true
             }
           }
         },
@@ -344,14 +320,6 @@ export class UserPokemonRepo {
               }
             }
           }
-        },
-        level: {
-          select: {
-            id: true,
-            levelNumber: true,
-            requiredExp: true,
-            levelType: true
-          }
         }
       }
     })
@@ -359,12 +327,14 @@ export class UserPokemonRepo {
 
   findByPokemonId(
     pokemonId: number,
+    userId: number,
     prismaTx?: PrismaClient
   ): Promise<UserPokemonWithRelations | null> {
     const client = prismaTx || this.prismaService
     return client.userPokemon.findFirst({
       where: {
         pokemonId,
+        userId,
         deletedAt: null
       },
       include: {
@@ -453,14 +423,6 @@ export class UserPokemonRepo {
               }
             }
           }
-        },
-        level: {
-          select: {
-            id: true,
-            levelNumber: true,
-            requiredExp: true,
-            levelType: true
-          }
         }
       }
     })
@@ -518,14 +480,6 @@ export class UserPokemonRepo {
               }
             }
           }
-        },
-        level: {
-          select: {
-            id: true,
-            levelNumber: true,
-            requiredExp: true,
-            levelType: true
-          }
         }
       },
       orderBy: [{ createdAt: 'desc' }]
@@ -543,25 +497,6 @@ export class UserPokemonRepo {
         exp: {
           increment: expAmount
         }
-      }
-    })
-  }
-
-  // Level up Pokemon
-  async levelUp(
-    id: number,
-    newLevelId: number,
-    prismaTx?: PrismaClient
-  ): Promise<UserPokemonBasic> {
-    const client = prismaTx || this.prismaService
-    return client.userPokemon.update({
-      where: {
-        id,
-        deletedAt: null
-      },
-      data: {
-        levelId: newLevelId,
-        exp: 0 // Reset EXP when leveling up
       }
     })
   }

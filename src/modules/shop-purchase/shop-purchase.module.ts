@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 import { PokemonModule } from '../pokemon/pokemon.module'
+import { ShopBannerModule } from '../shop-banner/shop-banner.module'
 import { ShopItemModule } from '../shop-item/shop-item.module'
 import { UserPokemonModule } from '../user-pokemon/user-pokemon.module'
 import { WalletTransactionModule } from '../wallet-transaction/wallet-transaction.module'
@@ -13,6 +14,7 @@ import { ShopPurchaseService } from './shop-purchase.service'
     ShopItemModule,
     UserPokemonModule,
     WalletTransactionModule,
+    forwardRef(() => ShopBannerModule),
     WalletModule,
     PokemonModule
   ],

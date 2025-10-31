@@ -634,9 +634,9 @@ export class PokemonRepo {
     const baseWhere = {
       deletedAt: null,
       rarity,
-      id: excludeIds.length > 0 ? { notIn: excludeIds } : undefined,
-      // Chỉ lấy pokemon base form (không có previousPokemons)
-      previousPokemons: { none: {} }
+      id: excludeIds.length > 0 ? { notIn: excludeIds } : undefined
+      // // Chỉ lấy pokemon base form (không có previousPokemons)
+      // previousPokemons: { none: {} }
     }
 
     let selectedPokemons: PokemonWithRelations[] = []

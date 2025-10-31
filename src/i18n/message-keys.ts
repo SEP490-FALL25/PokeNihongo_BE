@@ -389,7 +389,8 @@ export const ShopPurchaseMessage = {
   ALREADY_EXISTS: 'shop_purchase.ALREADY_EXISTS',
   INVALID_DATA: 'shop_purchase.INVALID_DATA',
   PURCHASE_LIMIT_REACHED: 'shop_purchase.PURCHASE_LIMIT_REACHED',
-  MISSING_PREVIOUS_POKEMON: 'shop_purchase.MISSING_PREVIOUS_POKEMON'
+  MISSING_PREVIOUS_POKEMON: 'shop_purchase.MISSING_PREVIOUS_POKEMON',
+  SHOP_NOT_OPEN: 'shop_purchase.SHOP_NOT_OPEN'
 } as const
 
 export const GachaBannerMessage = {
@@ -401,7 +402,8 @@ export const GachaBannerMessage = {
   NOT_FOUND: 'gacha_banner.NOT_FOUND',
   ALREADY_EXISTS: 'gacha_banner.ALREADY_EXISTS',
   INVALID_DATA: 'gacha_banner.INVALID_DATA',
-  ACTIVE_LIMIT_EXCEEDED: 'gacha_banner.ACTIVE_LIMIT_EXCEEDED'
+  ACTIVE_LIMIT_EXCEEDED: 'gacha_banner.ACTIVE_LIMIT_EXCEEDED',
+  INVALID_AMOUNT_ITEMS: 'gacha_banner.INVALID_AMOUNT_ITEMS'
 } as const
 
 export const GachaItemRateMessage = {
