@@ -22,6 +22,8 @@ import { isNotFoundPrismaError } from '@/shared/helpers'
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { TranslationHelperService } from '@/modules/translation/translation.helper.service'
+import { I18nService } from '@/i18n/i18n.service'
+import { UserExerciseAttemptMessage } from '@/i18n/message-keys'
 
 @Injectable()
 export class UserExerciseAttemptService {
@@ -33,7 +35,8 @@ export class UserExerciseAttemptService {
         private readonly userAnswerLogService: UserAnswerLogService,
         private readonly userProgressService: UserProgressService,
         private readonly exercisesService: ExercisesService,
-        private readonly translationHelper: TranslationHelperService
+        private readonly translationHelper: TranslationHelperService,
+        private readonly i18nService: I18nService
     ) { }
 
     async create(userId: number, exerciseId: number) {
@@ -288,26 +291,28 @@ export class UserExerciseAttemptService {
                 }
             }
 
+            // Nếu chưa trả lời hết, coi như FAIL
             if (unansweredQuestions.length > 0) {
-                // Persist time if provided even when still IN_PROGRESS
-                if (timeSeconds !== undefined) {
-                    await this.userExerciseAttemptRepository.update(
-                        { id: userExerciseAttemptId },
-                        { time: timeSeconds }
-                    )
-                }
-                this.logger.log(`Still ${unansweredQuestions.length} unanswered questions`)
+                const newStatus = 'FAIL'
+                const message = 'Bạn đã nộp bài nhưng chưa trả lời đủ câu hỏi'
+
+                await this.userExerciseAttemptRepository.update(
+                    { id: userExerciseAttemptId },
+                    { status: newStatus, ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
+                )
+                this.logger.log(`Updated attempt ${userExerciseAttemptId} to ${newStatus} - incomplete answers`)
+
                 return {
                     statusCode: 200,
-                    message: 'Bạn chưa trả lời đủ câu hỏi',
+                    message: message,
                     data: {
-                        isCompleted: false,
+                        isCompleted: true,
                         totalQuestions: allQuestions.length,
                         answeredQuestions: userAnswers.length,
                         unansweredQuestions: unansweredQuestions.length,
                         unansweredQuestionIds: unansweredQuestions.map(q => q.id),
                         allCorrect: false,
-                        status: 'IN_PROGRESS'
+                        status: newStatus
                     }
                 }
             }
@@ -579,7 +584,8 @@ export class UserExerciseAttemptService {
 
             let userExerciseAttemptId = id;
             const checkAttempt = await this.getStatus(id, userId)
-            if (checkAttempt.data.status === 'COMPLETED') {
+            // Nếu attempt đã COMPLETED hoặc FAIL, tạo attempt mới để user có thể làm lại
+            if (checkAttempt.data.status === 'COMPLETED' || checkAttempt.data.status === 'FAIL') {
                 const createAttempt = await this.create(userId, result.data.id)
                 userExerciseAttemptId = createAttempt.data.id
             }
@@ -620,7 +626,7 @@ export class UserExerciseAttemptService {
             if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAIL') {
                 return {
                     statusCode: 200,
-                    message: 'Bài tập chưa hoàn thành',
+                    message: this.i18nService.translate(UserExerciseAttemptMessage.REVIEW_NOT_COMPLETED, normalizedLang),
                     data: { status: attempt.status }
                 }
             }
@@ -630,10 +636,30 @@ export class UserExerciseAttemptService {
 
             // Load user answer logs for this attempt
             const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(id)
-            const logs: Array<{ questionBankId: number; answerId: number }> = (logsRes?.data?.results || []) as any
+            const logs: Array<{ questionBankId: number; answerId: number; isCorrect: boolean }> = (logsRes?.data?.results || []) as any
             const selectedByQuestion = new Map<number, number>(
                 logs.map((l) => [Number(l.questionBankId), Number(l.answerId)])
             )
+
+            // Tính tỷ lệ đúng trước khi xử lý review
+            const totalQuestions = testSet?.testSetQuestionBanks?.length || 0
+            const answeredCorrectCount = logs.filter((l: any) => l.isCorrect).length
+            const correctPercentage = totalQuestions > 0 ? (answeredCorrectCount / totalQuestions) * 100 : 0
+
+            // Chỉ cho xem review khi tỷ lệ đúng >= 80%
+            if (correctPercentage < 80) {
+                return {
+                    statusCode: 403,
+                    message: this.i18nService.translate(UserExerciseAttemptMessage.REVIEW_INSUFFICIENT_SCORE, normalizedLang),
+                    data: {
+                        status: attempt.status,
+                        totalQuestions,
+                        answeredCorrect: answeredCorrectCount,
+                        correctPercentage: Math.round(correctPercentage),
+                        minimumRequired: 80
+                    }
+                }
+            }
 
             const translateOrFallback = async (key?: string, jp?: string): Promise<string> => {
                 if (key) {
@@ -732,14 +758,14 @@ export class UserExerciseAttemptService {
 
                 return {
                     statusCode: 200,
-                    message: EXERCISES_MESSAGE.GET_SUCCESS,
+                    message: this.i18nService.translate(UserExerciseAttemptMessage.REVIEW_SUCCESS, normalizedLang),
                     data
                 }
             }
 
             return {
                 statusCode: 200,
-                message: EXERCISES_MESSAGE.GET_SUCCESS,
+                message: this.i18nService.translate(UserExerciseAttemptMessage.REVIEW_SUCCESS, normalizedLang),
                 data: exerciseRes.data
             }
         } catch (error) {
