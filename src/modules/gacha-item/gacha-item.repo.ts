@@ -277,4 +277,66 @@ export class GachaItemRepo {
       }
     }
   }
+
+  /**
+   * Update all items for a banner in a transaction
+   * Deletes old items and creates new ones
+   */
+  async updateManyByBanner({
+    bannerId,
+    updatedById,
+    items
+  }: {
+    bannerId: number
+    updatedById: number
+    items: Array<{
+      bannerId: number
+      pokemonId: number
+      gachaItemRateId: number
+    }>
+  }): Promise<GachaItem[]> {
+    return await this.prismaService.$transaction(async (prismaTx) => {
+      // Delete old items
+      await prismaTx.gachaItem.deleteMany({ where: { bannerId } })
+
+      // Create new items
+      await prismaTx.gachaItem.createMany({
+        data: items.map((item) => ({
+          bannerId: item.bannerId,
+          pokemonId: item.pokemonId,
+          gachaItemRateId: item.gachaItemRateId,
+          createdById: updatedById
+        }))
+      })
+
+      // Fetch created items to return
+      const created = await prismaTx.gachaItem.findMany({
+        where: {
+          bannerId,
+          pokemonId: { in: items.map((item) => item.pokemonId) }
+        },
+        include: {
+          pokemon: {
+            select: {
+              id: true,
+              nameJp: true,
+              nameTranslations: true,
+              imageUrl: true,
+              rarity: true
+            }
+          },
+          gachaItemRate: {
+            select: {
+              id: true,
+              starType: true,
+              rate: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+
+      return created
+    })
+  }
 }
