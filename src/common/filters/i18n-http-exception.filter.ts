@@ -57,14 +57,16 @@ export class I18nHttpExceptionFilter implements ExceptionFilter {
       }
       if (responseObj.data) {
         details = responseObj.data
+
+        message += `: ${responseObj.data.toString()}`
+        // message += `: ${JSON.stringify(responseObj.data).toString()}`
       }
     }
 
     const errorResponse = {
       statusCode: status,
       message: message,
-      error: HttpStatus[status],
-      ...(details && { details })
+      error: HttpStatus[status]
     }
 
     response.status(status).json(errorResponse)

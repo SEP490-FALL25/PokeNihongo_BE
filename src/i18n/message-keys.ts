@@ -402,7 +402,8 @@ export const GachaBannerMessage = {
   NOT_FOUND: 'gacha_banner.NOT_FOUND',
   ALREADY_EXISTS: 'gacha_banner.ALREADY_EXISTS',
   INVALID_DATA: 'gacha_banner.INVALID_DATA',
-  ACTIVE_LIMIT_EXCEEDED: 'gacha_banner.ACTIVE_LIMIT_EXCEEDED'
+  ACTIVE_LIMIT_EXCEEDED: 'gacha_banner.ACTIVE_LIMIT_EXCEEDED',
+  INVALID_AMOUNT_ITEMS: 'gacha_banner.INVALID_AMOUNT_ITEMS'
 } as const
 
 export const GachaItemRateMessage = {

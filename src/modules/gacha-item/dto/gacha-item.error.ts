@@ -74,7 +74,7 @@ export class PokemonHasPrevEvolutionException extends BadRequestException {
 }
 
 export class PokemonInvalidRarityWithStarTypeToAddException extends BadRequestException {
-  constructor(data?) {
+  constructor(data?: string) {
     super({
       message: GachaItemMessage.POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD,
       errorKey: GachaItemMessage.POKEMON_INVALID_RARITY_WITH_STAR_TYPE_TO_ADD,

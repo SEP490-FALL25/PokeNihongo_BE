@@ -380,7 +380,8 @@ export const enMessages = {
     NOT_FOUND: 'Gacha banner not found',
     ALREADY_EXISTS: 'Gacha banner already exists',
     INVALID_DATA: 'Invalid gacha banner data',
-    ACTIVE_LIMIT_EXCEEDED: 'Active banner limit exceeded (maximum 2 banners allowed)'
+    ACTIVE_LIMIT_EXCEEDED: 'Active banner limit exceeded (maximum 2 banners allowed)',
+    INVALID_AMOUNT_ITEMS: 'Invalid amount of items in the banner'
   },
   gacha_item_rate: {
     CREATE_SUCCESS: 'Gacha item rate created successfully',

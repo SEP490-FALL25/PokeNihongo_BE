@@ -27,3 +27,13 @@ export class GachaBannerActiveLimitExceededException extends BadRequestException
     })
   }
 }
+
+export class InvalidGachaBannerAmountItemsException extends BadRequestException {
+  constructor(data?: string) {
+    super({
+      message: GachaBannerMessage.INVALID_AMOUNT_ITEMS,
+      errorKey: GachaBannerMessage.INVALID_AMOUNT_ITEMS,
+      data: data || null
+    })
+  }
+}

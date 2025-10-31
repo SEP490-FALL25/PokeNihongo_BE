@@ -378,7 +378,9 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy banner gacha',
     ALREADY_EXISTS: 'Banner gacha đã tồn tại',
     INVALID_DATA: 'Dữ liệu banner gacha không hợp lệ',
-    ACTIVE_LIMIT_EXCEEDED: 'Số lượng banner ACTIVE đã vượt quá giới hạn (tối đa 2 banner)'
+    ACTIVE_LIMIT_EXCEEDED:
+      'Số lượng banner ACTIVE đã vượt quá giới hạn (tối đa 2 banner)',
+    INVALID_AMOUNT_ITEMS: 'Số lượng vật phẩm trong banner không hợp lệ '
   },
   gacha_item_rate: {
     CREATE_SUCCESS: 'Tạo tỉ lệ vật phẩm gacha thành công',

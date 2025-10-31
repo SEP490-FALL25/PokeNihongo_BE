@@ -371,7 +371,8 @@ export const jaMessages = {
 
     ALREADY_EXISTS: 'ガチャバナーは既に存在します',
     INVALID_DATA: '無効なガチャバナーデータです',
-    ACTIVE_LIMIT_EXCEEDED: 'アクティブバナーの数が上限を超えました（最大2つまで）'
+    ACTIVE_LIMIT_EXCEEDED: 'アクティブバナーの数が上限を超えました（最大2つまで）',
+    INVALID_AMOUNT_ITEMS: 'ガチャバナーには最低3つのアイテムが必要です'
   },
   gacha_item_rate: {
     CREATE_SUCCESS: 'ガチャアイテムの作成に成功しました',
