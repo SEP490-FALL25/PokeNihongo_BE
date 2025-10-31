@@ -704,7 +704,7 @@ model TestSet {
   audioUrl    String?       @db.VarChar(1000) // URL file âm thanh
   price       Decimal?      @db.Decimal(10, 2) // Giá bộ đề (nếu có)
   levelN      Int? // Cấp độ JLPT (1-5)
-  testType    QuestionType  @default(VOCABULARY) // Loại đề thi (vocabulary, grammar, kanji, listening, etc.)
+  testType    TestSetType   @default(VOCABULARY) // Loại đề thi (vocabulary, grammar, kanji, listening, etc.)
   status      TestSetStatus @default(DRAFT) // Trạng thái (DRAFT, ACTIVE, INACTIVE)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -1565,6 +1565,18 @@ enum QuestionType {
   MATCHING // Ghép cặp
 }
 
+enum TestSetType {
+  VOCABULARY // Từ vựng
+  GRAMMAR // Ngữ pháp
+  KANJI // Kanji
+  LISTENING // Nghe hiểu
+  READING // Đọc hiểu
+  SPEAKING // Nói
+  GENERAL // Tổng hợp
+  MATCHING // Ghép cặp
+  PLACEMENT_TEST_DONE // Kiểm tra đầu vào
+}
+
 enum WalletType {
   SPARKLES
   POKE_COINS
@@ -1621,3 +1633,11 @@ enum LessonContentsType {
   GRAMMAR
   KANJI
 }
+
+// enum TestStatus {
+//   PLACEMENT_TEST_DONE  // Kiểm tra đầu vào
+//   MATCH_TEST   // Trận đấu
+//   QUIZ_TEST   //Quiz 
+//   REVIEW_TEST // Ôn tập
+//   PRACTICE_TEST // Thi thử
+// }

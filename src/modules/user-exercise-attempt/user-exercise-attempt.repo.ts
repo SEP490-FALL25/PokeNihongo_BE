@@ -187,7 +187,7 @@ export class UserExerciseAttemptRepository {
 
         // Ưu tiên: attempt gần nhất (updatedAt gần nhất) là quan trọng nhất
         // Nhưng nếu có nhiều attempts cùng updatedAt, ưu tiên theo status
-        const priorityOrder = ['IN_PROGRESS', 'ABANDONED', 'SKIPPED', 'COMPLETED', 'FAIL']
+        const priorityOrder = ['IN_PROGRESS', 'ABANDONED', 'SKIPPED', 'NOT_STARTED', 'COMPLETED', 'FAIL']
 
         // Lấy attempt gần nhất (updatedAt gần nhất)
         const latestUpdatedAt = allAttempts[0].updatedAt
@@ -295,13 +295,13 @@ export class UserExerciseAttemptRepository {
                     })
                 }
 
-                // 3. Nếu vẫn không có attempt nào, tạo attempt mới
+                // 3. Nếu vẫn không có attempt nào, tạo attempt mới với status NOT_STARTED
                 if (!priorityAttempt) {
                     const newAttempt = await this.prismaService.userExerciseAttempt.create({
                         data: {
                             userId,
                             exerciseId,
-                            status: 'IN_PROGRESS'
+                            status: 'NOT_STARTED'
                         },
                         include: {
                             exercise: {
