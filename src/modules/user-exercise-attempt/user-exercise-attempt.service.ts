@@ -571,8 +571,8 @@ export class UserExerciseAttemptService {
 
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
 
-            // Only build review when attempt is COMPLETED
-            if (attempt.status !== 'COMPLETED') {
+            // Only build review when attempt is COMPLETED or FAIL
+            if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAIL') {
                 return {
                     statusCode: 200,
                     message: 'Bài tập chưa hoàn thành',
