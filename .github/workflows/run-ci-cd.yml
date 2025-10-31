@@ -1,49 +1,71 @@
-name: Build and Run with Docker Compose
+name: CI/CD Deploy Backend to VPS
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Use Node.js
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20.18.0
+          node-version: 20
 
       - name: Install pnpm
         run: npm install -g pnpm
 
-      - name: Debug lock file
-        run: |
-          echo "Current Directory: $(pwd)"
-          ls -la
-          if [ -f pnpm-lock.yaml ]; then
-            echo "pnpm-lock.yaml found"
-          else
-            echo "pnpm-lock.yaml not found"
-            exit 1
-          fi
-
-      - name: Cache pnpm dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
-      - name: Prisma generate
-        run: npx prisma generate
+      - name: Apply Prisma migrations
+        run: pnpm exec prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          
+      - name: Generate Prisma Client
+        run: pnpm exec prisma generate
 
-      - name: Build the project
-        run: pnpm build
+      - name: Build project
+        run: pnpm run build
+
+      - name: Copy Code to VPS
+        run: |
+          echo "${{ secrets.VPS_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+          mkdir -p .github/temp_build/Code
+          cp -r dist package.json pnpm-lock.yaml Dockerfile prisma .github/temp_build/Code/
+          tar -czf code.tar.gz -C .github/temp_build/Code .
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            mkdir -p /home/root/BE &&
+            rm -rf /home/root/BE/dist
+          "
+          scp -o StrictHostKeyChecking=no -i private_key.pem code.tar.gz \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/home/root/BE/
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            cd /home/root/BE &&
+            tar -xzf code.tar.gz &&
+            rm code.tar.gz
+          "
+          rm -f private_key.pem
+
+      - name: Restart backend container
+        run: |
+          echo "${{ secrets.VPS_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            cd /home/root/BE &&
+            docker stop pokenihongo-backend &&
+            docker rm pokenihongo-backend &&
+            
+          
+
+            docker compose up -d --build
+          "
+          rm -f private_key.pem
