@@ -56,10 +56,11 @@ export class PokemonDuplicateInGachaException extends BadRequestException {
 }
 
 export class MaxGachaItemsExceededException extends BadRequestException {
-  constructor() {
+  constructor(data?) {
     super({
       message: GachaItemMessage.MAX_ITEMS_EXCEEDED,
-      errorKey: GachaItemMessage.MAX_ITEMS_EXCEEDED
+      errorKey: GachaItemMessage.MAX_ITEMS_EXCEEDED,
+      data: data || null
     })
   }
 }
