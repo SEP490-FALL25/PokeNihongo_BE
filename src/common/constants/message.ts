@@ -350,7 +350,8 @@ export const USER_EXERCISE_ATTEMPT_MESSAGE = {
   EXERCISE_ABANDONED: 'Bài tập đã bị bỏ dở',
   CHECK_COMPLETION_SUCCESS: 'Kiểm tra trạng thái hoàn thành thành công',
   ABANDON_SUCCESS: 'Đánh dấu bài tập bỏ dở thành công',
-  GET_STATUS_SUCCESS: 'Lấy trạng thái bài tập thành công'
+  GET_STATUS_SUCCESS: 'Lấy trạng thái bài tập thành công',
+  FORBIDDEN_REVIEW_ACCESS: 'Bạn không có quyền xem review của lần thử này'
 }
 
 export const EXERCISES_MESSAGE = {
