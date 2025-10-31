@@ -15,6 +15,7 @@ import { GachaBannerRepo } from '../gacha-banner/gacha-banner.repo'
 import { GachaItemRateRepo } from '../gacha-item-rate/gacha-item-rate.repo'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
 import {
+  DuplicateStarTypeInListException,
   GachaBannerActiveException,
   GachaBannerExpiredException,
   GachaBannerInactiveException,
@@ -226,80 +227,146 @@ export class GachaItemService {
     data: UpdateWithListGachaItemBodyType,
     lang: string = 'vi'
   ) {
-    const { bannerId, items } = data
-    const banner = await this.validateGachaBannerForCreate(bannerId)
-
-    // Collect IDs
-    const allPokemonIds = new Set<number>()
-    const starTypes = new Set<GachaStarType>()
-    items.forEach((item) => {
-      starTypes.add(item.starType)
-      item.pokemons.forEach((id) => allPokemonIds.add(id))
-    })
-
-    // Batch fetch rates
-    const rates = await Promise.all(
-      Array.from(starTypes).map((st) => this.gachaItemRateRepo.getByType(st))
-    )
-    const rateMap = new Map<GachaStarType, number>()
-    rates.forEach((r, i) => r && rateMap.set(Array.from(starTypes)[i], r.id))
-
-    // Batch fetch pokemons
-    const pokemons = await Promise.all(
-      Array.from(allPokemonIds).map((id) => this.pokemonRepo.findById(id))
-    )
-    const pokemonMap = new Map(pokemons.filter((p) => p).map((p) => [p!.id, p!]))
-
-    // Prepare items
-    const itemsToCreate: Array<{
-      bannerId: number
-      pokemonId: number
-      gachaItemRateId: number
-      starType: GachaStarType
-    }> = []
-
-    for (const item of items) {
-      const rateId = rateMap.get(item.starType)
-      if (!rateId) throw new NotFoundRecordException()
-
-      for (const pokemonId of item.pokemons) {
-        const pokemon = pokemonMap.get(pokemonId)
-        if (!pokemon) throw new NotFoundRecordException()
-
-        if (RARITY_TO_STAR_TYPE[pokemon.rarity] !== item.starType)
-          throw new PokemonInvalidRarityWithStarTypeToAddException(
-            `pokedex_number: ${pokemon.pokedex_number}`
-          )
-
-        itemsToCreate.push({
-          bannerId,
-          pokemonId,
-          gachaItemRateId: rateId,
-          starType: item.starType
-        })
-      }
-    }
-
-    // Validate counts
-    const counts: Record<GachaStarType, number> = {
-      [GachaStarType.ONE]: 0,
-      [GachaStarType.TWO]: 0,
-      [GachaStarType.THREE]: 0,
-      [GachaStarType.FOUR]: 0,
-      [GachaStarType.FIVE]: 0
-    }
-    itemsToCreate.forEach((i) => counts[i.starType]++)
-    for (const [st, count] of Object.entries(counts)) {
-      if (count > 0)
-        await this.validateItemCountByStarType(banner, st as GachaStarType, count)
-    }
-
     try {
-      // Use repo transaction method
-      const created = await this.gachaItemRepo.updateManyByBanner({
-        bannerId,
-        updatedById,
-        items: itemsToCreate
+      // Use service-controlled transaction: delete → validate → create
+      const created = await this.gachaItemRepo.withTransaction(async (prismaTx) => {
+        const { bannerId, items } = data
+        const banner = await this.validateGachaBannerForCreate(bannerId)
+
+        // 1. Delete old items
+        await prismaTx.gachaItem.deleteMany({
+          where: { bannerId }
+        })
+
+        // Collect IDs
+        const allPokemonIds = new Set<number>()
+        const starTypes = new Set<GachaStarType>()
+        items.forEach((item) => {
+          starTypes.add(item.starType)
+          item.pokemons.forEach((id) => allPokemonIds.add(id))
+        })
+
+        // Batch fetch rates
+        const rates = await Promise.all(
+          Array.from(starTypes).map((st) => this.gachaItemRateRepo.getByType(st))
+        )
+        const rateMap = new Map<GachaStarType, number>()
+        rates.forEach((r, i) => r && rateMap.set(Array.from(starTypes)[i], r.id))
+
+        // Batch fetch pokemons
+        const pokemons = await Promise.all(
+          Array.from(allPokemonIds).map((id) => this.pokemonRepo.findById(id))
+        )
+        const pokemonMap = new Map(pokemons.filter((p) => p).map((p) => [p!.id, p!]))
+
+        // 2. Validate and prepare items (after delete, before create)
+        const itemsToCreate: Array<{
+          bannerId: number
+          pokemonId: number
+          gachaItemRateId: number
+        }> = []
+
+        const seenStarTypes = new Set<GachaStarType>()
+
+        for (const item of items) {
+          // Validate: Each starType should appear only once
+          if (seenStarTypes.has(item.starType)) {
+            throw new DuplicateStarTypeInListException()
+          }
+          seenStarTypes.add(item.starType)
+
+          const rateId = rateMap.get(item.starType)
+          if (!rateId) throw new NotFoundRecordException()
+
+          // Validate: No duplicate pokemonIds within the same starType
+          const pokemonIdsInThisStarType = new Set<number>()
+          for (const pokemonId of item.pokemons) {
+            if (pokemonIdsInThisStarType.has(pokemonId)) {
+              throw new PokemonDuplicateInGachaException()
+            }
+            pokemonIdsInThisStarType.add(pokemonId)
+
+            const pokemon = pokemonMap.get(pokemonId)
+            if (!pokemon) throw new NotFoundRecordException()
+
+            // Validate rarity matches star type
+            if (RARITY_TO_STAR_TYPE[pokemon.rarity] !== item.starType)
+              throw new PokemonInvalidRarityWithStarTypeToAddException(
+                `pokedex_number: ${pokemon.pokedex_number}`
+              )
+
+            itemsToCreate.push({
+              bannerId,
+              pokemonId,
+              gachaItemRateId: rateId
+            })
+          }
+        }
+
+        // 3. Validate counts against banner limits
+        const counts: Record<GachaStarType, number> = {
+          [GachaStarType.ONE]: 0,
+          [GachaStarType.TWO]: 0,
+          [GachaStarType.THREE]: 0,
+          [GachaStarType.FOUR]: 0,
+          [GachaStarType.FIVE]: 0
+        }
+        itemsToCreate.forEach((i) => counts[i.gachaItemRateId]++)
+
+        const limitMap = {
+          [GachaStarType.ONE]: banner.amount1Star,
+          [GachaStarType.TWO]: banner.amount2Star,
+          [GachaStarType.THREE]: banner.amount3Star,
+          [GachaStarType.FOUR]: banner.amount4Star,
+          [GachaStarType.FIVE]: banner.amount5Star
+        }
+
+        for (const [st, count] of Object.entries(counts)) {
+          const starType = st as GachaStarType
+          if (count > limitMap[starType]) {
+            throw new MaxGachaItemsExceededException(
+              `${starType}: ${count} > ${limitMap[starType]}`
+            )
+          }
+        }
+
+        // 4. Create new items
+        if (itemsToCreate.length > 0) {
+          await prismaTx.gachaItem.createMany({
+            data: itemsToCreate.map((item) => ({
+              ...item,
+              createdById: updatedById,
+              updatedById
+            }))
+          })
+        }
+
+        // 5. Fetch created items with relations
+        return await prismaTx.gachaItem.findMany({
+          where: {
+            bannerId,
+            pokemonId: { in: itemsToCreate.map((item) => item.pokemonId) }
+          },
+          include: {
+            pokemon: {
+              select: {
+                id: true,
+                nameJp: true,
+                nameTranslations: true,
+                imageUrl: true,
+                rarity: true
+              }
+            },
+            gachaItemRate: {
+              select: {
+                id: true,
+                starType: true,
+                rate: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
       })
 
       return {
