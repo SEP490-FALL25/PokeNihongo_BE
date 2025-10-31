@@ -83,3 +83,13 @@ export class PokemonInvalidRarityWithStarTypeToAddException extends BadRequestEx
     })
   }
 }
+
+export class DuplicateStarTypeInListException extends BadRequestException {
+  constructor(data?: string) {
+    super({
+      message: GachaItemMessage.DUPLICATE_STAR_TYPE_IN_LIST,
+      errorKey: GachaItemMessage.DUPLICATE_STAR_TYPE_IN_LIST,
+      data: data || null
+    })
+  }
+}
