@@ -9,6 +9,69 @@ import { GACHA_ITEM_FIELDS } from './entities/gacha-item.entity'
 export class GachaItemRepo {
   constructor(private readonly prismaService: PrismaService) {}
 
+  async getListPokemonWithGachaBannerId(bannerId: number, pagination: any) {
+    const { where: rawWhere = {}, orderBy } = parseQs(
+      pagination.qs,
+      [
+        'id',
+        'pokedex_number',
+        'nameJp',
+        'nameTranslations',
+        'imageUrl',
+        'rarity',
+        'types',
+        'nameTranslations.vi',
+        'nameTranslations.en',
+        'nameTranslations.ja'
+      ],
+      ['types', 'rarities'],
+      []
+    )
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    // Build base where for pokemon query
+    const where: any = { deletedAt: null, ...rawWhere }
+
+    // Fetch banner items to exclude their pokemon ids
+    const banner = await this.prismaService.gachaBanner.findUnique({
+      where: { id: bannerId, deletedAt: null },
+      include: { items: { select: { pokemonId: true } } }
+    })
+
+    const excludeIds = (banner?.items || []).map((i: any) => i.pokemonId)
+    if (excludeIds.length > 0) where.id = { notIn: excludeIds }
+
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.pokemon.count({ where }),
+      this.prismaService.pokemon.findMany({
+        where,
+        select: {
+          id: true,
+          pokedex_number: true,
+          nameJp: true,
+          nameTranslations: true,
+          imageUrl: true,
+          rarity: true
+        },
+        orderBy,
+        skip,
+        take
+      })
+    ])
+
+    return {
+      results: data,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
+    }
+  }
+
   async create({
     createdById,
     data
