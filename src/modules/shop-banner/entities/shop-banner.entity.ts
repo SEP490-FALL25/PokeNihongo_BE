@@ -91,7 +91,7 @@ export const GetShopBannerDetailByUserSchema = ShopBannerSchema.extend({
       canBuy: z.boolean()
     })
   )
-})
+}).nullable()
 
 export const GetShopBannerDetailResSchema = z.object({
   statusCode: z.number(),
