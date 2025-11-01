@@ -158,14 +158,26 @@ export class TestSetQuestionBankController {
     @Get('testset/:testSetId/full')
     @ApiBearerAuth()
     @ApiOperation({
-        summary: 'Lấy danh sách TestSetQuestionBank kèm QuestionBank và Answers',
-        description: 'Trả về các liên kết cùng dữ liệu QuestionBank và Answers với translations theo ngôn ngữ'
+        summary: 'Lấy danh sách TestSetQuestionBank',
+        description: 'Trả về các liên kết cùng dữ liệu QuestionBank'
     })
     async findFullByTestSetId(
         @Param('testSetId') testSetId: string,
+    ): Promise<MessageResDTO> {
+        return this.testSetQuestionBankService.findFullByTestSetId(Number(testSetId))
+    }
+
+    @Get('testset/:testSetId/full-with-answer')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Lấy danh sách TestSetQuestionBank kèm QuestionBank và Answers với translations theo ngôn ngữ',
+        description: 'Trả về các liên kết cùng dữ liệu QuestionBank và Answers với translations theo ngôn ngữ'
+    })
+    async findFullWithAnswerByTestSetId(
+        @Param('testSetId') testSetId: string,
         @I18nLang() languageCode: string
     ): Promise<MessageResDTO> {
-        return this.testSetQuestionBankService.findFullByTestSetId(Number(testSetId), languageCode)
+        return this.testSetQuestionBankService.findFullWithAnswerByTestSetId(Number(testSetId), languageCode)
     }
 
     @Delete('delete-many')
