@@ -358,3 +358,12 @@ export class DeleteManyTestsSwaggerDTO {
     ids: number[]
 }
 
+export class AddTestSetsToTestSwaggerDTO {
+    @ApiProperty({
+        example: [1, 2, 3],
+        description: 'Mảng các ID của TestSet cần thêm vào Test',
+        type: [Number]
+    })
+    testSetIds: number[]
+}
+

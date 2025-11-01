@@ -58,6 +58,7 @@ import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-
 import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-exercise-attempt.module'
 import { UserTestAttemptModule } from './modules/user-test-attempt/user-test-attempt.module'
 import { UserTestAnswerLogModule } from './modules/user-test-answer-log/user-test-answer-log.module'
+import { UserTestModule } from './modules/user-test/user-test.module'
 import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.module'
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserProgressModule } from './modules/user-progress/user-progress.module'
@@ -111,6 +112,7 @@ import { WebsocketsModule } from './websockets/websockets.module'
     UserExerciseAttemptModule,
     UserTestAttemptModule,
     UserTestAnswerLogModule,
+    UserTestModule,
     UserProgressModule,
     AchievementGroupModule,
     AchievementModule,

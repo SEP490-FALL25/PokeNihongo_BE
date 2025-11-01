@@ -55,10 +55,23 @@ export class TestSetQuestionBankService {
             const testsetType = testSet.data.testType
             const questionType = questionBank.data.questionType
 
+            // Ensure both values exist
+            if (!testsetType || !questionType) {
+                throw new BadRequestException(
+                    TEST_SET_QUESTIONBANK_MESSAGE.INVALID_TYPE_DATA
+                        .replace('{testsetType}', String(testsetType))
+                        .replace('{questionType}', String(questionType))
+                )
+            }
+
+            // Normalize to uppercase for comparison
+            const normalizedTestsetType = String(testsetType).toUpperCase().trim()
+            const normalizedQuestionType = String(questionType).toUpperCase().trim()
+
             // Check compatibility logic:
             // - If testsetType is GENERAL, allow any questionType
-            // - Otherwise, testsetType must match questionType
-            if (testsetType !== 'GENERAL' && testsetType !== questionType) {
+            // - Otherwise, testsetType must match questionType exactly
+            if (normalizedTestsetType !== 'GENERAL' && normalizedTestsetType !== normalizedQuestionType) {
                 throw TestSetQuestionBankTypeIncompatibleException
             }
 
@@ -144,10 +157,28 @@ export class TestSetQuestionBankService {
                     const questionType = questionBank.data.questionType
 
                     // Validate testsetType and questionType compatibility
-                    if (testsetType !== 'GENERAL' && testsetType !== questionType) {
+                    // Ensure both values exist and are strings
+                    if (!testsetType || !questionType) {
                         failedItems.push({
                             questionBankId,
-                            reason: `Loại không tương thích: TestSet có loại "${testsetType}" nhưng QuestionBank có loại "${questionType}"`
+                            reason: TEST_SET_QUESTIONBANK_MESSAGE.INVALID_TYPE_DATA
+                                .replace('{testsetType}', String(testsetType))
+                                .replace('{questionType}', String(questionType))
+                        })
+                        continue
+                    }
+
+                    // Normalize to uppercase for comparison
+                    const normalizedTestsetType = String(testsetType).toUpperCase().trim()
+                    const normalizedQuestionType = String(questionType).toUpperCase().trim()
+
+                    // Check compatibility logic:
+                    // - If testsetType is GENERAL, allow any questionType
+                    // - Otherwise, testsetType must match questionType exactly
+                    if (normalizedTestsetType !== 'GENERAL' && normalizedTestsetType !== normalizedQuestionType) {
+                        failedItems.push({
+                            questionBankId,
+                            reason: `Loại không tương thích: TestSet có loại "${testsetType}" nhưng QuestionBank có loại "${questionType}". Chỉ có thể thêm QuestionBank loại "${testsetType}" hoặc GENERAL vào TestSet loại "${testsetType}"`
                         })
                         continue
                     }
