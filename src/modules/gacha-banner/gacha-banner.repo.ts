@@ -355,12 +355,6 @@ export class GachaBannerRepo {
         nameTranslations: {
           where: { languageId: langId },
           select: { value: true }
-        },
-        items: {
-          include: {
-            gachaItemRate: true,
-            pokemon: true
-          }
         }
       },
       orderBy: { id: 'asc' }
