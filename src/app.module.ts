@@ -51,6 +51,7 @@ import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-p
 import { SpeakingModule } from './modules/speaking/speaking.module'
 import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module'
 import { TestSetModule } from './modules/testset/testset.module'
+import { TestModule } from './modules/test/test.module'
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module'
 import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.module'
 import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-request.module'
@@ -112,6 +113,7 @@ import { WebsocketsModule } from './websockets/websockets.module'
     AttendenceConfigModule,
     AttendanceModule,
     TestSetModule,
+    TestModule,
     TestSetQuestionBankModule,
     SpeakingModule,
     WalletModule,

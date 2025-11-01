@@ -44,6 +44,22 @@ export const TEST_SET_MESSAGE = {
   PERMISSION_DENIED: 'Bạn không có quyền thực hiện hành động này'
 }
 
+export const TEST_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo bài test thành công',
+  UPDATE_SUCCESS: 'Cập nhật bài test thành công',
+  DELETE_SUCCESS: 'Xóa bài test thành công',
+  GET_SUCCESS: 'Lấy thông tin bài test thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách bài test thành công',
+  NOT_FOUND: 'Không tìm thấy bài test',
+  ALREADY_EXISTS: 'Bài test đã tồn tại',
+  INVALID_DATA: 'Dữ liệu bài test không hợp lệ',
+  NAME_REQUIRED: 'Tên bài test không được để trống',
+  NAME_TOO_LONG: 'Tên bài test quá dài (tối đa 200 ký tự)',
+  TEST_TYPE_REQUIRED: 'Loại đề thi không được để trống',
+  PRICE_INVALID: 'Giá bài test không hợp lệ',
+  PERMISSION_DENIED: 'Bạn không có quyền thực hiện hành động này'
+}
+
 export const QUESTION_BANK_MESSAGE = {
   CREATE_SUCCESS: 'Tạo câu hỏi thành công',
   UPDATE_SUCCESS: 'Cập nhật câu hỏi thành công',
