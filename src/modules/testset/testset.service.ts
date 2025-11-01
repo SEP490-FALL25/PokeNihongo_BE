@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { TestSetRepository } from './testset.repo'
 import { CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, GetTestSetByIdParamsType, CreateTestSetWithMeaningsBodyType, UpdateTestSetWithMeaningsBodyType } from './entities/testset.entities'
-import { TestSetNotFoundException, TestSetPermissionDeniedException, TestSetAlreadyExistsException } from './dto/testset.error'
+import { TestSetNotFoundException, TestSetPermissionDeniedException, TestSetAlreadyExistsException, TestSetCannotChangeTestTypeException } from './dto/testset.error'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { TEST_SET_MESSAGE } from '@/common/constants/message'
@@ -241,6 +241,61 @@ export class TestSetService {
 
         // Validation
         this.validateTestSetData(data, true)
+
+        // Validate testType change nếu có update testType
+        if (data.testType && data.testType !== testSet.testType) {
+            // Lấy danh sách question types hiện có trong testSet
+            const testSetQuestionBanks = await this.prisma.testSetQuestionBank.findMany({
+                where: { testSetId: id },
+                include: {
+                    questionBank: {
+                        select: {
+                            questionType: true
+                        }
+                    }
+                }
+            })
+
+            // Lấy danh sách các question types duy nhất
+            const existingQuestionTypes = new Set(
+                testSetQuestionBanks.map(tsqb => tsqb.questionBank.questionType)
+            )
+
+            // Nếu testSet đang có questions
+            if (existingQuestionTypes.size > 0) {
+                const currentTestType = testSet.testType
+                const newTestType = data.testType
+
+                // Trường hợp 1: TestSet hiện tại là GENERAL và có nhiều loại question types
+                // → Không cho phép update thành type khác
+                if (currentTestType === 'GENERAL' && existingQuestionTypes.size > 1) {
+                    throw new TestSetCannotChangeTestTypeException(
+                        TEST_SET_MESSAGE.CANNOT_CHANGE_TEST_TYPE_GENERAL_MULTIPLE
+                    )
+                }
+
+                // Trường hợp 2: TestSet hiện tại có questionType cụ thể (VOCABULARY, GRAMMAR, KANJI, etc.)
+                // → Chỉ cho phép update thành cùng type hoặc GENERAL
+                if (currentTestType !== 'GENERAL') {
+                    if (newTestType !== currentTestType && newTestType !== 'GENERAL') {
+                        throw new TestSetCannotChangeTestTypeException(
+                            `${TEST_SET_MESSAGE.CANNOT_CHANGE_TEST_TYPE_SPECIFIC} (từ ${currentTestType} sang ${newTestType})`
+                        )
+                    }
+                }
+
+                // Trường hợp 3: Update từ GENERAL (chỉ có 1 loại question) sang type cụ thể
+                // → Chỉ cho phép nếu type mới khớp với question type hiện có
+                if (currentTestType === 'GENERAL' && newTestType !== 'GENERAL') {
+                    const singleQuestionType = Array.from(existingQuestionTypes)[0]
+                    if (newTestType !== singleQuestionType) {
+                        throw new TestSetCannotChangeTestTypeException(
+                            `${TEST_SET_MESSAGE.CANNOT_CHANGE_TEST_TYPE_GENERAL_SINGLE} ${singleQuestionType}`
+                        )
+                    }
+                }
+            }
+        }
 
         // Cập nhật testset với transaction
         const result = await this.prisma.$transaction(async (tx) => {
