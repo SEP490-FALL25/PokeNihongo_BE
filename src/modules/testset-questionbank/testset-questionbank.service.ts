@@ -289,7 +289,8 @@ export class TestSetQuestionBankService {
             throw InvalidTestSetQuestionBankDataException
         }
     }
-    async findFullByTestSetId(testSetId: number): Promise<MessageResDTO> {
+
+    async findFullByTestSetId(testSetId: number, languageCode: string = 'vi'): Promise<MessageResDTO> {
         try {
             this.logger.log(`Finding QuestionBanks with answers by testSetId: ${testSetId}`)
 
@@ -314,6 +315,18 @@ export class TestSetQuestionBankService {
                         .map(async (l) => {
                             const qb = idToQB.get(l.questionBankId)
                             if (!qb) return null
+
+                            // Map answers với translations
+                            const mappedAnswers = await Promise.all(
+                                (qb?.answers || []).map(async (ans: any) => {
+                                    const answerLabel = pickLabelFromComposite(ans?.answerJp || '', languageCode)
+                                    return {
+                                        id: ans.id,
+                                        answer: answerLabel
+                                    }
+                                })
+                            )
+
                             return {
                                 id: l.id, // id của TestSetQuestionBank
                                 questionOrder: l.questionOrder,
@@ -326,7 +339,8 @@ export class TestSetQuestionBankService {
                                 levelN: qb.levelN || null,
                                 createdById: qb.createdById || null,
                                 createdAt: qb.createdAt,
-                                updatedAt: qb.updatedAt
+                                updatedAt: qb.updatedAt,
+                                answers: mappedAnswers
                             }
                         })
                 )
@@ -346,7 +360,6 @@ export class TestSetQuestionBankService {
             throw InvalidTestSetQuestionBankDataException
         }
     }
-
 
     async findFullWithAnswerByTestSetId(testSetId: number, languageCode: string): Promise<MessageResDTO> {
         try {
@@ -440,7 +453,6 @@ export class TestSetQuestionBankService {
             throw InvalidTestSetQuestionBankDataException
         }
     }
-
 
     async update(id: number, data: UpdateTestSetQuestionBankBodyType): Promise<MessageResDTO> {
         try {
