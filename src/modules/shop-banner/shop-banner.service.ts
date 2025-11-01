@@ -624,6 +624,7 @@ export class ShopBannerService {
           message: this.i18nService.translate(ShopBannerMessage.GET_LIST_SUCCESS, lang)
         }
       }
+      console.log('date: ', date)
 
       const banner = await this.shopBannerRepo.findValidByDateWithLangId(date, langId)
 
