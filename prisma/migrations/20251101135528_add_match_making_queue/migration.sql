@@ -1,9 +1,6 @@
 -- CreateEnum
 CREATE TYPE "QueueStatus" AS ENUM ('WAITING', 'MATCHED');
 
--- CreateEnum
-CREATE TYPE "TestStatus" AS ENUM ('PLACEMENT_TEST_DONE', 'MATCH_TEST', 'QUIZ_TEST', 'REVIEW_TEST', 'PRACTICE_TEST');
-
 -- CreateTable
 CREATE TABLE "MatchmakingQueue" (
     "id" SERIAL NOT NULL,
