@@ -489,3 +489,9 @@ export const UserExerciseAttemptMessage = {
   REVIEW_INSUFFICIENT_SCORE: 'user_exercise_attempt.REVIEW_INSUFFICIENT_SCORE',
   REVIEW_SUCCESS: 'user_exercise_attempt.REVIEW_SUCCESS'
 } as const
+
+export const UserTestAttemptMessage = {
+  REVIEW_NOT_COMPLETED: 'user_test_attempt.REVIEW_NOT_COMPLETED',
+  REVIEW_INSUFFICIENT_SCORE: 'user_test_attempt.REVIEW_INSUFFICIENT_SCORE',
+  REVIEW_SUCCESS: 'user_test_attempt.REVIEW_SUCCESS'
+} as const
