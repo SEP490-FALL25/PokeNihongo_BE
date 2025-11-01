@@ -41,7 +41,10 @@ export const TEST_SET_MESSAGE = {
   AUDIO_URL_INVALID: 'URL âm thanh không hợp lệ',
   PRICE_INVALID: 'Giá bộ đề không hợp lệ',
   LEVEL_INVALID: 'Cấp độ JLPT không hợp lệ (1-5)',
-  PERMISSION_DENIED: 'Bạn không có quyền thực hiện hành động này'
+  PERMISSION_DENIED: 'Bạn không có quyền thực hiện hành động này',
+  CANNOT_CHANGE_TEST_TYPE_GENERAL_MULTIPLE: 'Không thể thay đổi testType từ GENERAL sang loại khác khi testSet đang chứa nhiều loại câu hỏi khác nhau',
+  CANNOT_CHANGE_TEST_TYPE_SPECIFIC: 'Không thể thay đổi testType. Chỉ có thể thay đổi thành cùng type hoặc GENERAL',
+  CANNOT_CHANGE_TEST_TYPE_GENERAL_SINGLE: 'Không thể thay đổi testType từ GENERAL sang type khác. TestSet hiện đang chứa câu hỏi loại'
 }
 
 export const TEST_MESSAGE = {

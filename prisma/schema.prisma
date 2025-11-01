@@ -71,8 +71,6 @@ model User {
   updatedAttendances       Attendance[]       @relation("AttendanceUpdatedBy")
   deletedAttendances       Attendance[]       @relation("AttendanceDeletedBy")
   createdTestSets          TestSet[]          @relation("TestSetCreatedBy")
-  createdTests             Test[]             @relation("TestCreatedBy")
-
   createdWallets            Wallet[]            @relation("WalletCreatedBy")
   updatedWallets            Wallet[]            @relation("WalletUpdatedBy")
   deletedWallets            Wallet[]            @relation("WalletDeletedBy")
@@ -718,10 +716,6 @@ model TestSet {
 
   // Quan hệ với TestSetQuestionBank (bảng nối)
   testSetQuestionBanks TestSetQuestionBank[]
-
-  // Quan hệ nhiều-nhiều với Test (Prisma tự động tạo bảng nối)
-  tests Test[]
-
   // Quan hệ với User
   creatorId Int?
   creator   User? @relation("TestSetCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -750,51 +744,9 @@ model Test {
   creatorId Int?
   creator   User? @relation("TestCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  // Quan hệ với UserTestAttempt
-  userTestAttempts UserTestAttempt[]
-
   @@index([testType])
   @@index([status])
   @@index([creatorId])
-}
-
-// Model UserTestAttempt (Lần thử Test của user)
-model UserTestAttempt {
-  id        Int               @id @default(autoincrement())
-  userId    Int
-  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  testId    Int
-  test      Test              @relation(fields: [testId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  time      Int?              @default(0) // Thời gian làm bài (giây)
-  status    TestAttemptStatus @default(IN_PROGRESS)
-  score     Int?              @default(0) // Điểm số
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-
-  // Quan hệ với UserTestAnswerLog
-  userTestAnswerLogs UserTestAnswerLog[]
-
-  @@index([userId])
-  @@index([testId])
-  @@index([status])
-}
-
-// Model UserTestAnswerLog (Log câu trả lời của user trong Test)
-model UserTestAnswerLog {
-  id                Int             @id @default(autoincrement())
-  isCorrect         Boolean         @default(false)
-  userTestAttemptId Int
-  userTestAttempt   UserTestAttempt @relation(fields: [userTestAttemptId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  questionBankId    Int
-  questionBank      QuestionBank    @relation(fields: [questionBankId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  answerId          Int
-  answer            Answer          @relation(fields: [answerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  @@index([userTestAttemptId])
-  @@index([questionBankId])
-  @@index([answerId])
 }
 
 // Model TestSetQuestionBank (Bảng nối giữa TestSet và QuestionBank)

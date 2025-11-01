@@ -24,3 +24,9 @@ export class TestSetInvalidDataException extends HttpException {
     }
 }
 
+export class TestSetCannotChangeTestTypeException extends HttpException {
+    constructor(message: string) {
+        super(message, HttpStatus.BAD_REQUEST)
+    }
+}
+

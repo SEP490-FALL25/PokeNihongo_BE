@@ -289,8 +289,66 @@ export class TestSetQuestionBankService {
             throw InvalidTestSetQuestionBankDataException
         }
     }
+    async findFullByTestSetId(testSetId: number): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Finding QuestionBanks with answers by testSetId: ${testSetId}`)
 
-    async findFullByTestSetId(testSetId: number, languageCode: string): Promise<MessageResDTO> {
+            const links = await this.testSetQuestionBankRepository.findByTestSetId(testSetId)
+
+            let questionBanks = [] as any[]
+            if (links.length > 0) {
+                // Lấy tất cả QuestionBank IDs
+                const questionBankIds = links.map(l => l.questionBankId)
+
+                // Lấy đầy đủ QuestionBanks với answers bằng cách gọi findOne cho mỗi ID
+                const qbPromises = questionBankIds.map(id => this.questionBankService.findOne(id))
+                const qbResults = await Promise.all(qbPromises)
+                const idToQB = new Map(
+                    qbResults.map((res: any) => [res.data.id, res.data])
+                )
+
+                // Map với translations
+                questionBanks = await Promise.all(
+                    links
+                        .sort((a, b) => a.questionOrder - b.questionOrder)
+                        .map(async (l) => {
+                            const qb = idToQB.get(l.questionBankId)
+                            if (!qb) return null
+                            return {
+                                id: l.id, // id của TestSetQuestionBank
+                                questionOrder: l.questionOrder,
+                                questionBankId: qb.id,
+                                questionJp: qb.questionJp || null,
+                                questionType: qb.questionType,
+                                audioUrl: qb.audioUrl || null,
+                                questionKey: qb.questionKey || null,
+                                pronunciation: qb.pronunciation || null,
+                                levelN: qb.levelN || null,
+                                createdById: qb.createdById || null,
+                                createdAt: qb.createdAt,
+                                updatedAt: qb.updatedAt
+                            }
+                        })
+                )
+                questionBanks = questionBanks.filter(Boolean) as any[]
+            }
+
+            return {
+                statusCode: 200,
+                data: questionBanks,
+                message: TEST_SET_QUESTIONBANK_MESSAGE.GET_LIST_SUCCESS
+            }
+        } catch (error) {
+            this.logger.error('Error finding QuestionBanks with answers by testSetId:', error)
+            if (error instanceof HttpException || error.message?.includes('không tồn tại')) {
+                throw error
+            }
+            throw InvalidTestSetQuestionBankDataException
+        }
+    }
+
+
+    async findFullWithAnswerByTestSetId(testSetId: number, languageCode: string): Promise<MessageResDTO> {
         try {
             this.logger.log(`Finding QuestionBanks with answers by testSetId: ${testSetId}, language: ${languageCode}`)
 
@@ -354,13 +412,15 @@ export class TestSetQuestionBankService {
                             return {
                                 id: l.id,
                                 questionOrder: l.questionOrder,
-                                questionBankId: qb.id,
-                                question: questionText,
-                                questionType: qb.questionType,
-                                audioUrl: qb.audioUrl,
-                                pronunciation: qb.pronunciation,
-                                levelN: qb.levelN,
-                                answers: mappedAnswers
+                                questionBank: {
+                                    id: qb.id,
+                                    question: questionText,
+                                    questionType: qb.questionType,
+                                    audioUrl: qb.audioUrl,
+                                    pronunciation: qb.pronunciation,
+                                    levelN: qb.levelN,
+                                    answers: mappedAnswers
+                                }
                             }
                         })
                 )
