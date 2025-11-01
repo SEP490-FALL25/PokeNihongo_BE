@@ -101,20 +101,19 @@ export const GetGachaBannerParamsSchema = z
   .strict()
 
 export const GetGachaBannerDetailByUserSchema = GachaBannerSchema.extend({
-  nameTranslation: z.string()
-  // items: z.array(
-  //   GachaItemSchema.extend({
-  //     // gachaItemRate: GachaItemRateSchema.pick({ rate: true, starType: true }),
-  //     pokemon: PokemonSchema.pick({
-  //       id: true,
-  //       pokedex_number: true,
-  //       nameJp: true,
-  //       nameTranslations: true,
-  //       imageUrl: true,
-  //       rarity: true
-  //     })
-  //   })
-  // )
+  nameTranslation: z.string(),
+  pokemon: PokemonSchema.pick({
+    id: true,
+    pokedex_number: true,
+    nameJp: true,
+    nameTranslations: true,
+    imageUrl: true,
+    rarity: true
+  })
+    .extend({
+      starType: z.string()
+    })
+    .nullable()
 })
 
 export const GetGachaBannerDetailResSchema = z.object({
