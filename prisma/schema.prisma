@@ -111,6 +111,7 @@ model User {
   userPokemons         UserPokemon[]
   userAchievements     UserAchievement[]
   userExerciseAttempts UserExerciseAttempt[]
+  userTestAttempts     UserTestAttempt[]
   userSpeakingAttempts UserSpeakingAttempt[]
   userProgresses       UserProgress[]
   attendances          Attendance[]
@@ -136,6 +137,7 @@ model User {
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  tests     Test[]    @relation("TestCreatedBy")
 
   @@index([deletedAt])
 }
@@ -688,6 +690,9 @@ model QuestionBank {
   // Quan hệ với UserAnswerLog
   userAnswerLogs UserAnswerLog[]
 
+  // Quan hệ với UserTestAnswerLog
+  userTestAnswerLogs UserTestAnswerLog[]
+
   // Quan hệ với UserSpeakingAttempt
   userSpeakingAttempts UserSpeakingAttempt[]
 
@@ -720,8 +725,36 @@ model TestSet {
   // Quan hệ với User
   creatorId            Int?
   creator              User?                 @relation("TestSetCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  Test                 Test?                 @relation(fields: [testId], references: [id])
+  testId               Int?
 
   @@index([levelN])
+  @@index([testType])
+  @@index([status])
+  @@index([creatorId])
+}
+
+// Thực thể bài kiểm tra tổng hợp
+model Test {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(200) // Tên bài test
+  description String?       @db.Text // Mô tả bài test
+  price       Decimal?      @db.Decimal(10, 2) // Giá bài test (nếu có)
+  testType    TestStatus    @default(PLACEMENT_TEST_DONE) // Loại đề thi
+  status      TestSetStatus @default(DRAFT) // Trạng thái (DRAFT, ACTIVE, INACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Quan hệ nhiều-nhiều với TestSet (Prisma tự động tạo bảng nối)
+  testSets TestSet[]
+
+  // Quan hệ với User
+  creatorId Int?
+  creator   User? @relation("TestCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  // Quan hệ với UserTestAttempt
+  userTestAttempts UserTestAttempt[]
+
   @@index([testType])
   @@index([status])
   @@index([creatorId])
@@ -764,6 +797,9 @@ model Answer {
   // Quan hệ với UserAnswerLog
   userAnswerLogs UserAnswerLog[]
 
+  // Quan hệ với UserTestAnswerLog
+  userTestAnswerLogs UserTestAnswerLog[]
+
   @@index([questionBankId])
   @@index([answerKey])
   @@index([isCorrect])
@@ -771,6 +807,15 @@ model Answer {
 
 // Enum cho trạng thái làm bài tập
 enum ExerciseAttemptStatus {
+  NOT_STARTED // Chưa bắt đầu
+  IN_PROGRESS // Đang làm
+  COMPLETED // Đã hoàn thành
+  FAIL // Đã hoàn thành nhưng sai
+  ABANDONED // Đã bỏ dở
+  SKIPPED // Đã bỏ qua
+}
+
+enum TestAttemptStatus {
   NOT_STARTED // Chưa bắt đầu
   IN_PROGRESS // Đang làm
   COMPLETED // Đã hoàn thành
@@ -815,6 +860,47 @@ model UserAnswerLog {
   @@index([userExerciseAttemptId])
   @@index([questionBankId])
   @@index([answerId])
+}
+
+// Model UserTestAttempt (Lần thử Test của user)
+model UserTestAttempt {
+  id        Int               @id @default(autoincrement())
+  userId    Int
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  testId    Int
+  test      Test              @relation(fields: [testId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  time      Int?              @default(0) // Thời gian làm bài (giây)
+  status    TestAttemptStatus @default(IN_PROGRESS)
+  score     Int?              @default(0) // Điểm số
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  // Quan hệ với UserTestAnswerLog
+  userTestAnswerLogs UserTestAnswerLog[]
+
+  @@index([userId])
+  @@index([testId])
+  @@index([status])
+}
+
+// Model UserTestAnswerLog (Log câu trả lời của user trong Test)
+model UserTestAnswerLog {
+  id                Int             @id @default(autoincrement())
+  isCorrect         Boolean         @default(false)
+  userTestAttemptId Int
+  userTestAttempt   UserTestAttempt @relation(fields: [userTestAttemptId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  questionBankId    Int
+  questionBank      QuestionBank    @relation(fields: [questionBankId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  answerId          Int
+  answer            Answer          @relation(fields: [answerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  turnNumber        Int? // Số thứ tự turn (nếu là matching)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([userTestAttemptId])
+  @@index([questionBankId])
+  @@index([answerId])
+  @@index([turnNumber])
 }
 
 // Model UserSpeakingAttempt (Lịch sử đánh giá phát âm của user)
