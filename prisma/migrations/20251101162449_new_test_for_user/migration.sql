@@ -78,6 +78,9 @@ CREATE INDEX "UserTestAnswerLog_answerId_idx" ON "UserTestAnswerLog"("answerId")
 -- CreateIndex
 CREATE INDEX "UserTestAnswerLog_turnNumber_idx" ON "UserTestAnswerLog"("turnNumber");
 
+-- AlterTable
+ALTER TABLE "TestSet" ADD COLUMN "testId" INTEGER;
+
 -- CreateIndex
 CREATE INDEX "TestSet_testId_idx" ON "TestSet"("testId");
 
