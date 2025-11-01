@@ -104,19 +104,23 @@ export class UserTestAnswerLogRepository {
         // Validate question belongs to the testSets of this attempt
         const attempt = await this.prismaService.userTestAttempt.findUnique({
             where: { id: data.userTestAttemptId },
-            select: { 
-                id: true, 
-                userId: true, 
-                test: { 
-                    select: { 
+            select: {
+                id: true,
+                userId: true,
+                test: {
+                    select: {
                         id: true,
-                        testSets: {
+                        testTestSets: {
                             select: {
-                                id: true
+                                testSet: {
+                                    select: {
+                                        id: true
+                                    }
+                                }
                             }
                         }
-                    } 
-                } 
+                    }
+                }
             }
         })
         if (!attempt) {
@@ -125,22 +129,22 @@ export class UserTestAnswerLogRepository {
         if (attempt.userId !== userId) {
             throw new Error('Attempt không thuộc về người dùng')
         }
-        if (!attempt.test?.testSets || attempt.test.testSets.length === 0) {
+        if (!attempt.test?.testTestSets || attempt.test.testTestSets.length === 0) {
             throw new Error('Bài test không có bộ đề (test set)')
         }
-        
+
         // Kiểm tra questionBank có thuộc về một trong các testSet của test này không
-        const testSetIds = attempt.test.testSets.map(ts => ts.id)
+        const testSetIds = attempt.test.testTestSets.map((tts: any) => tts.testSet.id)
         const link = await this.prismaService.testSetQuestionBank.findFirst({
-            where: { 
-                testSetId: { in: testSetIds }, 
-                questionBankId: data.questionBankId 
+            where: {
+                testSetId: { in: testSetIds },
+                questionBankId: data.questionBankId
             }
         })
         if (!link) {
             throw new Error('Câu hỏi không thuộc về bài test hiện tại')
         }
-        
+
         // Lấy thông tin answer để kiểm tra isCorrect và ràng buộc cùng câu hỏi
         const answer = await this.prismaService.answer.findUnique({
             where: { id: data.answerId },

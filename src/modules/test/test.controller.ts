@@ -12,6 +12,7 @@ import {
     CreateTestWithMeaningsBodyDTO,
     UpdateTestWithMeaningsBodyDTO,
     DeleteManyTestsBodyDTO,
+    AddTestSetsToTestBodyDTO,
 } from './dto/test.zod-dto'
 import {
     TestResponseSwaggerDTO,
@@ -21,7 +22,8 @@ import {
     UpdateTestSwaggerDTO,
     CreateTestWithMeaningsSwaggerDTO,
     UpdateTestWithMeaningsSwaggerDTO,
-    DeleteManyTestsSwaggerDTO
+    DeleteManyTestsSwaggerDTO,
+    AddTestSetsToTestSwaggerDTO
 } from './dto/test.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -96,6 +98,32 @@ export class TestController {
         return this.testService.findOne(Number(id), lang)
     }
 
+
+    @Get(':id/full')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy toàn bộ thông tin bài test kèm câu hỏi và câu trả lời' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy thông tin bài test thành công',
+        type: TestResponseSwaggerDTO
+    })
+    async findFull(@Param('id') id: string, @I18nLang() lang: string): Promise<MessageResDTO> {
+        return this.testService.findFullById(Number(id), lang)
+    }
+
+
+    @Get(':id/full-user')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy toàn bộ thông tin bài test kèm câu hỏi và câu trả lời' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy thông tin bài test thành công',
+        type: TestResponseSwaggerDTO
+    })
+    async findFullUser(@Param('id') id: string, @I18nLang() lang: string): Promise<MessageResDTO> {
+        return this.testService.findFullByIdForUser(Number(id), lang)
+    }
+
     @Put(':id/with-meanings')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Cập nhật bài test với meanings theo ID' })
@@ -159,6 +187,23 @@ export class TestController {
         @ActiveUser('userId') userId: number
     ): Promise<MessageResDTO> {
         return this.testService.deleteTest(Number(id), userId)
+    }
+
+    @Post(':id/testSets')
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Thêm nhiều TestSet vào Test' })
+    @ApiBody({ type: AddTestSetsToTestSwaggerDTO })
+    @ApiResponse({
+        status: 200,
+        description: 'Thêm TestSet vào Test thành công',
+        type: MessageResDTO
+    })
+    async addTestSetsToTest(
+        @Param('id') id: string,
+        @Body() body: AddTestSetsToTestBodyDTO
+    ): Promise<MessageResDTO> {
+        return this.testService.addTestSetsToTest(Number(id), body)
     }
 }
 

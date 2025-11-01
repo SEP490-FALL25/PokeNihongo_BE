@@ -60,7 +60,18 @@ export const TEST_MESSAGE = {
   NAME_TOO_LONG: 'Tên bài test quá dài (tối đa 200 ký tự)',
   TEST_TYPE_REQUIRED: 'Loại đề thi không được để trống',
   PRICE_INVALID: 'Giá bài test không hợp lệ',
-  PERMISSION_DENIED: 'Bạn không có quyền thực hiện hành động này'
+  PERMISSION_DENIED: 'Bạn không có quyền thực hiện hành động này',
+  ADD_TESTSETS_SUCCESS: 'Thêm TestSet vào Test thành công'
+}
+
+export const USER_TEST_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo UserTest thành công',
+  UPDATE_SUCCESS: 'Cập nhật UserTest thành công',
+  DELETE_SUCCESS: 'Xóa UserTest thành công',
+  GET_SUCCESS: 'Lấy thông tin UserTest thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách UserTest thành công',
+  NOT_FOUND: 'Không tìm thấy UserTest',
+  ALREADY_EXISTS: 'UserTest đã tồn tại'
 }
 
 export const QUESTION_BANK_MESSAGE = {
@@ -84,6 +95,7 @@ export const TEST_SET_QUESTIONBANK_MESSAGE = {
   ALREADY_EXISTS: 'TestSetQuestionBank đã tồn tại',
   INVALID_DATA: 'Dữ liệu TestSetQuestionBank không hợp lệ',
   TYPE_INCOMPATIBLE: 'Loại TestSet và QuestionBank không tương thích. Chỉ có thể liên kết khi TestSet có loại GENERAL hoặc khớp với loại QuestionBank',
+  INVALID_TYPE_DATA: 'Dữ liệu không hợp lệ: TestSet loại "{testsetType}" hoặc QuestionBank loại "{questionType}" không tồn tại',
   UPDATE_QUESTION_ORDER_SUCCESS: 'Cập nhật thứ tự câu hỏi thành công',
   DELETE_BY_TESTSET_SUCCESS: 'Xóa TestSetQuestionBank theo TestSet thành công',
   DELETE_BY_QUESTIONBANK_SUCCESS: 'Xóa TestSetQuestionBank theo QuestionBank thành công'

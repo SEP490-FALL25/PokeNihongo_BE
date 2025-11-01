@@ -43,6 +43,7 @@ import { Queue } from 'bull'
 import Redis from 'ioredis'
 import { LevelService } from '../level/level.service'
 import { UserProgressService } from '../user-progress/user-progress.service'
+import { UserTestService } from '../user-test/user-test.service'
 import { WalletService } from '../wallet/wallet.service'
 @Injectable()
 export class AuthService {
@@ -58,11 +59,12 @@ export class AuthService {
     private readonly uploadService: UploadService,
     private readonly i18nService: I18nService,
     private readonly userProgressService: UserProgressService,
+    private readonly userTestService: UserTestService,
     @InjectQueue('user-deletion') private readonly deletionQueue: Queue,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
     private readonly tokenService: TokenService,
     private readonly walletSer: WalletService
-  ) {}
+  ) { }
 
   async login(
     body: LoginBodyType & { userAgent: string; ip: string },
@@ -157,6 +159,9 @@ export class AuthService {
 
       // Khởi tạo UserProgress cho tất cả lesson
       await this.userProgressService.initUserProgress(user.id)
+
+      // Khởi tạo UserTest cho tất cả test miễn phí (price = 0 và status = ACTIVE)
+      await this.userTestService.initUserTests(user.id)
 
       // 4. Tạo mới accessToken và refreshToken
       const tokens = await this.generateTokens({

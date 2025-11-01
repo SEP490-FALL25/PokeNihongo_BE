@@ -91,6 +91,83 @@ export class TestRepository {
                 }))
         }
 
+        // Lấy testSets của test này qua bảng TestTestSet (nhiều-nhiều)
+        const testTestSets = await (this.prisma as any).testTestSet.findMany({
+            where: {
+                testId: id
+            },
+            include: {
+                testSet: true
+            },
+            orderBy: {
+                createdAt: 'asc'
+            }
+        })
+        const testSets = testTestSets.map((tts: any) => tts.testSet)
+
+        // Lấy translations cho từng testSet
+        const testSetsWithTranslations = await Promise.all(
+            testSets.map(async (testSet) => {
+                const testSetNameKey = `testset.${testSet.id}.name`
+                const testSetDescriptionKey = `testset.${testSet.id}.description`
+
+                const testSetTranslationWhere: any = {
+                    OR: [
+                        { key: testSetNameKey },
+                        { key: testSetDescriptionKey },
+                        { key: { startsWith: testSetNameKey + '.meaning.' } },
+                        { key: { startsWith: testSetDescriptionKey + '.meaning.' } }
+                    ]
+                }
+
+                if (language) {
+                    const languageRecord = await this.prisma.languages.findFirst({
+                        where: { code: language }
+                    })
+                    if (languageRecord) {
+                        testSetTranslationWhere.languageId = languageRecord.id
+                    }
+                }
+
+                const testSetTranslations = await this.prisma.translation.findMany({
+                    where: testSetTranslationWhere,
+                    include: {
+                        language: true
+                    }
+                })
+
+                let testSetName: any = testSet.name
+                let testSetDescription: any = testSet.description
+
+                if (language) {
+                    const nameTranslation = testSetTranslations.find(t => t.key.startsWith(testSetNameKey + '.meaning.'))
+                    const descriptionTranslation = testSetTranslations.find(t => t.key.startsWith(testSetDescriptionKey + '.meaning.'))
+                    testSetName = nameTranslation?.value || testSet.name
+                    testSetDescription = descriptionTranslation?.value || testSet.description
+                } else {
+                    const nameTranslations = testSetTranslations.filter(t => t.key.startsWith(testSetNameKey + '.meaning.'))
+                    const descriptionTranslations = testSetTranslations.filter(t => t.key.startsWith(testSetDescriptionKey + '.meaning.'))
+                    testSetName = nameTranslations.map(t => ({
+                        language: t.language.code,
+                        value: t.value
+                    }))
+                    testSetDescription = descriptionTranslations.map(t => ({
+                        language: t.language.code,
+                        value: t.value
+                    }))
+                }
+
+                return {
+                    ...testSet,
+                    price: testSet.price ? Number(testSet.price) : null,
+                    name: testSetName,
+                    description: testSetDescription,
+                }
+            })
+        )
+
+            ; (test as any).testSets = testSetsWithTranslations
+
         return test
     }
 
@@ -142,7 +219,7 @@ export class TestRepository {
                     },
                     _count: {
                         select: {
-                            testSets: true,
+                            testTestSets: true,
                             userTestAttempts: true,
                         },
                     },

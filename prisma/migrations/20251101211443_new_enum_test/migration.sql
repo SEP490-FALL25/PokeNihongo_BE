@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "TestStatus" ADD VALUE 'SUBSCRIPTION_TEST';
