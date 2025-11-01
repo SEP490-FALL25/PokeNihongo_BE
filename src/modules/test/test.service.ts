@@ -137,9 +137,11 @@ export class TestService {
         }
     }
 
-    async findAll(query: GetTestListQueryType, lang: string) {
+    async findAll(query: GetTestListQueryType, lang?: string) {
         try {
-            const { data, total } = await this.testRepo.findMany(query)
+            // Nếu lang là undefined (admin), repo sẽ lấy tất cả translations
+            // Nếu lang có giá trị (user), repo sẽ filter theo language đó
+            const { data, total } = await this.testRepo.findMany({ ...query, language: lang })
             const { currentPage, pageSize } = query
             const totalPage = Math.ceil(total / (typeof pageSize === 'number' ? pageSize : 10))
 

@@ -370,6 +370,35 @@ export const USER_EXERCISE_ATTEMPT_MESSAGE = {
   FORBIDDEN_REVIEW_ACCESS: 'Bạn không có quyền xem review của lần thử này'
 }
 
+export const USER_TEST_ATTEMPT_MESSAGE = {
+  CREATE_SUCCESS: 'Tạo lần thử bài test thành công',
+  UPDATE_SUCCESS: 'Cập nhật lần thử bài test thành công',
+  DELETE_SUCCESS: 'Xóa lần thử bài test thành công',
+  GET_SUCCESS: 'Lấy thông tin lần thử bài test thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách lần thử bài test thành công',
+  NOT_FOUND: 'Không tìm thấy lần thử bài test',
+  ALREADY_EXISTS: 'Lần thử bài test đã tồn tại',
+  INVALID_DATA: 'Dữ liệu lần thử bài test không hợp lệ',
+  TEST_NOT_FOUND: 'Không tìm thấy bài test',
+  TEST_COMPLETED: 'Bài test đã hoàn thành',
+  TEST_ABANDONED: 'Bài test đã bị bỏ dở',
+  CHECK_COMPLETION_SUCCESS: 'Kiểm tra trạng thái hoàn thành thành công',
+  ABANDON_SUCCESS: 'Đánh dấu bài test bỏ dở thành công',
+  GET_STATUS_SUCCESS: 'Lấy trạng thái bài test thành công',
+  FORBIDDEN_REVIEW_ACCESS: 'Bạn không có quyền xem review của lần thử này'
+}
+
+export const USER_TEST_ANSWER_LOG_MESSAGE = {
+  NOT_FOUND: 'Không tìm thấy log câu trả lời test',
+  ALREADY_EXISTS: 'Log câu trả lời test đã tồn tại',
+  INVALID_DATA: 'Dữ liệu log câu trả lời test không hợp lệ',
+  CREATE_SUCCESS: 'Tạo log câu trả lời test thành công',
+  UPDATE_SUCCESS: 'Cập nhật log câu trả lời test thành công',
+  DELETE_SUCCESS: 'Xóa log câu trả lời test thành công',
+  GET_SUCCESS: 'Lấy thông tin log câu trả lời test thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách log câu trả lời test thành công'
+}
+
 export const EXERCISES_MESSAGE = {
   CREATE_SUCCESS: 'Tạo bài tập thành công',
   UPDATE_SUCCESS: 'Cập nhật bài tập thành công',

@@ -1,5 +1,7 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
+import { ActiveRolePermissions } from '@/common/decorators/active-role-permissions.decorator'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
+import { RoleName } from '@/common/constants/role.constant'
 import {
     CreateTestBodyDTO,
     GetTestByIdParamsDTO,
@@ -70,8 +72,14 @@ export class TestController {
     })
     @ApiQuery({ type: GetTestListQuerySwaggerDTO })
     @ZodSerializerDto(TestListResDTO)
-    findAll(@Query() query: GetTestListQueryDTO, @I18nLang() lang: string) {
-        return this.testService.findAll(query, lang)
+    findAll(
+        @Query() query: GetTestListQueryDTO,
+        @I18nLang() lang: string,
+        @ActiveRolePermissions('name') roleName: string
+    ) {
+        // Nếu là admin thì lấy tất cả translations (không filter theo language)
+        const isAdmin = roleName === RoleName.Admin
+        return this.testService.findAll(query, isAdmin ? undefined : lang)
     }
 
     @Get(':id')
