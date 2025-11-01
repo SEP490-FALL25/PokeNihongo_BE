@@ -13,6 +13,7 @@ export class TestRepository {
                 name: 'temp', // Sẽ được cập nhật trong service
                 description: 'temp', // Sẽ được cập nhật trong service
                 price: data.price,
+                levelN: data.levelN,
                 testType: data.testType,
                 status: data.status,
                 creatorId: data.creatorId,
@@ -21,6 +22,7 @@ export class TestRepository {
         return {
             ...result,
             price: result.price ? Number(result.price) : null,
+            levelN: result.levelN,
             testType: result.testType as PrismaTestStatus,
         }
     }
@@ -34,6 +36,7 @@ export class TestRepository {
         const test = {
             ...result,
             price: result.price ? Number(result.price) : null,
+            levelN: result.levelN,
             testType: result.testType as PrismaTestStatus,
         }
 
@@ -92,7 +95,7 @@ export class TestRepository {
     }
 
     async findMany(query: GetTestListQueryType): Promise<{ data: TestType[]; total: number }> {
-        const { currentPage, pageSize, search, testType, status, creatorId, language, sortBy = 'createdAt', sort = 'desc' } = query
+        const { currentPage, pageSize, search, testType, status, levelN, creatorId, language, sortBy = 'createdAt', sort = 'desc' } = query
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -110,6 +113,10 @@ export class TestRepository {
 
         if (status) {
             where.status = status
+        }
+
+        if (levelN !== undefined) {
+            where.levelN = levelN
         }
 
         if (creatorId) {
@@ -150,6 +157,7 @@ export class TestRepository {
                 const result = {
                     ...test,
                     price: test.price ? Number(test.price) : null,
+                    levelN: test.levelN,
                     testType: test.testType as PrismaTestStatus,
                     // Remove _count and creator from the response
                     _count: undefined,
@@ -219,6 +227,7 @@ export class TestRepository {
             where: { id },
             data: {
                 ...(data.price !== undefined && { price: data.price }),
+                ...(data.levelN !== undefined && { levelN: data.levelN }),
                 ...(data.testType && { testType: data.testType }),
                 ...(data.status && { status: data.status }),
             },
@@ -226,6 +235,7 @@ export class TestRepository {
         return {
             ...result,
             price: result.price ? Number(result.price) : null,
+            levelN: result.levelN,
             testType: result.testType as PrismaTestStatus,
         }
     }
@@ -237,6 +247,7 @@ export class TestRepository {
         return {
             ...result,
             price: result.price ? Number(result.price) : null,
+            levelN: result.levelN,
             testType: result.testType as PrismaTestStatus,
         }
     }
@@ -301,6 +312,7 @@ export class TestRepository {
                     name: 'temp', // Tạm thời
                     description: 'temp', // Tạm thời
                     price: testData.price,
+                    levelN: testData.levelN,
                     testType: testData.testType,
                     status: testData.status,
                     creatorId: userId,
@@ -360,6 +372,7 @@ export class TestRepository {
             return {
                 ...updatedTest,
                 price: updatedTest.price ? Number(updatedTest.price) : null,
+                levelN: updatedTest.levelN,
                 testType: updatedTest.testType as PrismaTestStatus,
             }
         })
@@ -374,6 +387,7 @@ export class TestRepository {
                 where: { id },
                 data: {
                     ...(testData.price !== undefined && { price: testData.price }),
+                    ...(testData.levelN !== undefined && { levelN: testData.levelN }),
                     ...(testData.testType && { testType: testData.testType }),
                     ...(testData.status && { status: testData.status }),
                 }

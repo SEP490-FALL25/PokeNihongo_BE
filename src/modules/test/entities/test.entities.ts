@@ -24,6 +24,7 @@ export const TestSchema = z.object({
         }))
     ]).optional(),
     price: z.number().nullable().optional(),
+    levelN: z.number().int().min(0).max(5).nullable().optional(),
     testType: z.nativeEnum(PrismaTestStatus),
     status: z.nativeEnum(TestSetStatus),
     creatorId: z.number().nullable().optional(),
@@ -36,6 +37,7 @@ export const CreateTestBodySchema = z.object({
     name: z.string().optional(),
     description: z.string().nullable().optional(),
     price: z.number().nullable().optional(),
+    levelN: z.number().int().min(0).max(5).nullable().optional(),
     testType: z.nativeEnum(PrismaTestStatus),
     status: z.nativeEnum(TestSetStatus).default(TestSetStatus.DRAFT),
     translations: z.array(z.object({
@@ -48,6 +50,7 @@ export const CreateTestBodySchema = z.object({
 // Create Test with Meanings Schema
 export const CreateTestWithMeaningsBodySchema = z.object({
     price: z.number().nullable().optional(),
+    levelN: z.number().int().min(0).max(5).nullable().optional(),
     testType: z.nativeEnum(PrismaTestStatus),
     status: z.nativeEnum(TestSetStatus).default(TestSetStatus.DRAFT),
     meanings: z.array(z.object({
@@ -64,6 +67,7 @@ export const CreateTestWithMeaningsBodySchema = z.object({
 // Update Test Schema
 export const UpdateTestBodySchema = z.object({
     price: z.number().nullable().optional(),
+    levelN: z.number().int().min(0).max(5).nullable().optional(),
     testType: z.nativeEnum(PrismaTestStatus).optional(),
     status: z.nativeEnum(TestSetStatus).optional(),
     translations: z.array(z.object({
@@ -76,6 +80,7 @@ export const UpdateTestBodySchema = z.object({
 // Update Test with Meanings Schema
 export const UpdateTestWithMeaningsBodySchema = z.object({
     price: z.number().nullable().optional(),
+    levelN: z.number().int().min(0).max(5).nullable().optional(),
     testType: z.nativeEnum(PrismaTestStatus).optional(),
     status: z.nativeEnum(TestSetStatus).optional(),
     meanings: z.array(z.object({
@@ -130,9 +135,10 @@ export const GetTestListQuerySchema = z
         search: z.string().optional(),
         testType: z.nativeEnum(PrismaTestStatus).optional(),
         status: z.nativeEnum(TestSetStatus).optional(),
+        levelN: z.string().transform((val) => parseInt(val, 10)).optional(),
         creatorId: z.string().transform((val) => parseInt(val, 10)).optional(),
         language: z.string().optional(),
-        sortBy: z.enum(['id', 'name', 'testType', 'status', 'price', 'createdAt', 'updatedAt']).optional().default('createdAt'),
+        sortBy: z.enum(['id', 'name', 'testType', 'status', 'price', 'levelN', 'createdAt', 'updatedAt']).optional().default('createdAt'),
         sort: z.enum(['asc', 'desc']).optional().default('desc')
     })
     .strict()
