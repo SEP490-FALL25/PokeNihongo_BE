@@ -50,6 +50,20 @@ export class GachaItemController {
     })
   }
 
+  @Get('gacha-banner/:gachaBannerId')
+  @ZodSerializerDto(PaginationResponseDTO)
+  getListItemsByBannerId(
+    @Param('gachaBannerId', ParseIntPipe) gachaBannerId: number,
+    @Query() query: PaginationQueryDTO,
+    @I18nLang() lang: string
+  ) {
+    return this.gachaItemService.getListItemsByBannerId({
+      bannerId: gachaBannerId,
+      query,
+      lang
+    })
+  }
+
   @Post('random')
   @ZodSerializerDto(GetRandomGachaItemsResDTO)
   getRandomListItem(

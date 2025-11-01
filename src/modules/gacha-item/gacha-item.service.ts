@@ -364,8 +364,7 @@ export class GachaItemService {
                 rate: true
               }
             }
-          },
-          orderBy: { createdAt: 'desc' }
+          }
         })
       })
 
@@ -442,6 +441,23 @@ export class GachaItemService {
     lang: string
   }) {
     const data = await this.gachaItemRepo.getListPokemonWithGachaBannerId(bannerId, query)
+    return {
+      statusCode: 200,
+      data,
+      message: this.i18nService.translate(GachaItemMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  async getListItemsByBannerId({
+    bannerId,
+    query,
+    lang
+  }: {
+    bannerId: number
+    query: PaginationQueryDTO
+    lang: string
+  }) {
+    const data = await this.gachaItemRepo.getListItemsByBannerId(bannerId, query)
     return {
       statusCode: 200,
       data,
