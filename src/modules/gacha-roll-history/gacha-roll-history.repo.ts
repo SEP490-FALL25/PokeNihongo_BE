@@ -147,7 +147,25 @@ export class GachaRollHistoryRepo {
           ...filterWhere,
           userId
         },
-
+        include: {
+          pokemon: {
+            select: {
+              id: true,
+              pokedex_number: true,
+              nameJp: true,
+              nameTranslations: true,
+              imageUrl: true,
+              rarity: true
+            }
+          },
+          purchase: {
+            select: {
+              id: true,
+              rollCount: true,
+              totalCost: true
+            }
+          }
+        },
         orderBy,
         skip,
         take
