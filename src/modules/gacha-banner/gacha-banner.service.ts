@@ -637,10 +637,42 @@ export class GachaBannerService {
 
       // Lấy tất cả gacha banners có status = ACTIVE và trong khoảng thời gian hợp lệ
       const banners = await this.gachaBannerRepo.findValidByDateWithLangId(date, langId)
+      const rarityOrder = ['FIVE', 'FOUR', 'THREE', 'TWO', 'ONE'] as const
+
+      // Attach the first available pokemon (by rarity order) into each banner
+      const enrichedBanners = (banners || []).map((banner: any) => {
+        let chosen: any = null
+        for (const star of rarityOrder) {
+          const item = (banner.items || []).find(
+            (it: any) => it?.gachaItemRate?.starType === star
+          )
+          if (item && item.pokemon) {
+            const p = item.pokemon
+            chosen = {
+              id: p.id,
+              nameJp: p.nameJp,
+              nameTranslations: p.nameTranslations,
+              imageUrl: p.imageUrl,
+              rarity: p.rarity,
+              starType: star,
+              pokedex_number: p.pokedex_number
+            }
+            break
+          }
+        }
+        const { items, gachaItemRate, nameTranslations, ...bannerWithoutItems } = banner
+        // console.log(bannerWithoutItems)
+
+        return {
+          ...bannerWithoutItems,
+          pokemon: chosen
+        }
+      })
+      // console.log(enrichedBanners)
 
       return {
         statusCode: HttpStatus.OK,
-        data: banners,
+        data: enrichedBanners,
         message: this.i18nService.translate(GachaBannerMessage.GET_LIST_SUCCESS, lang)
       }
     } catch (error) {
