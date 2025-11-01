@@ -137,6 +137,13 @@ export const GetTestListQuerySchema = z
     })
     .strict()
 
+// Delete Many Tests Schema
+export const DeleteManyTestsBodySchema = z
+    .object({
+        ids: z.array(z.number()).min(1, 'Phải có ít nhất 1 ID để xóa')
+    })
+    .strict()
+
 // Types
 export type TestType = z.infer<typeof TestSchema>
 export type CreateTestBodyType = z.infer<typeof CreateTestBodySchema>
@@ -147,4 +154,5 @@ export type TestResType = z.infer<typeof TestResSchema>
 export type TestListResType = z.infer<typeof TestListResSchema>
 export type GetTestByIdParamsType = z.infer<typeof GetTestByIdParamsSchema>
 export type GetTestListQueryType = z.infer<typeof GetTestListQuerySchema>
+export type DeleteManyTestsBodyType = z.infer<typeof DeleteManyTestsBodySchema>
 

@@ -11,6 +11,7 @@ import {
     TestListResDTO,
     CreateTestWithMeaningsBodyDTO,
     UpdateTestWithMeaningsBodyDTO,
+    DeleteManyTestsBodyDTO,
 } from './dto/test.zod-dto'
 import {
     TestResponseSwaggerDTO,
@@ -19,7 +20,8 @@ import {
     CreateTestSwaggerDTO,
     UpdateTestSwaggerDTO,
     CreateTestWithMeaningsSwaggerDTO,
-    UpdateTestWithMeaningsSwaggerDTO
+    UpdateTestWithMeaningsSwaggerDTO,
+    DeleteManyTestsSwaggerDTO
 } from './dto/test.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -94,23 +96,6 @@ export class TestController {
         return this.testService.findOne(Number(id), lang)
     }
 
-    @Put(':id')
-    @ApiBearerAuth()
-    @ApiOperation({ summary: 'Cập nhật bài test theo ID' })
-    @ApiBody({ type: UpdateTestSwaggerDTO })
-    @ApiResponse({
-        status: 200,
-        description: 'Cập nhật bài test thành công',
-        type: TestResponseSwaggerDTO
-    })
-    async updateTest(
-        @Param('id') id: string,
-        @Body() body: UpdateTestBodyDTO,
-        @ActiveUser('userId') userId: number
-    ): Promise<MessageResDTO> {
-        return this.testService.updateTest(Number(id), body, userId)
-    }
-
     @Put(':id/with-meanings')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Cập nhật bài test với meanings theo ID' })
@@ -126,6 +111,38 @@ export class TestController {
         @ActiveUser('userId') userId: number
     ): Promise<MessageResDTO> {
         return this.testService.updateTestWithMeanings(Number(id), body, userId)
+    }
+
+    @Delete('bulk')
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Xóa nhiều bài test cùng lúc' })
+    @ApiBody({ type: DeleteManyTestsSwaggerDTO })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa nhiều bài test thành công',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 200 },
+                message: { type: 'string', example: 'Xóa thành công 3/3 bài test' },
+                data: {
+                    type: 'object',
+                    properties: {
+                        deletedCount: { type: 'number', example: 3 },
+                        deletedIds: { type: 'array', items: { type: 'number' }, example: [1, 2, 3] },
+                        requestedCount: { type: 'number', example: 3 },
+                        notFoundCount: { type: 'number', example: 0 }
+                    }
+                }
+            }
+        }
+    })
+    async deleteManyTests(
+        @Body() body: DeleteManyTestsBodyDTO,
+        @ActiveUser('userId') userId: number
+    ): Promise<MessageResDTO> {
+        return this.testService.deleteManyTests(body, userId)
     }
 
     @Delete(':id')

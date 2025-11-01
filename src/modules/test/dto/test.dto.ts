@@ -319,3 +319,12 @@ export class TestListResponseSwaggerDTO {
     message: string
 }
 
+export class DeleteManyTestsSwaggerDTO {
+    @ApiProperty({
+        example: [1, 2, 3],
+        description: 'Mảng các ID của bài test cần xóa',
+        type: [Number]
+    })
+    ids: number[]
+}
+

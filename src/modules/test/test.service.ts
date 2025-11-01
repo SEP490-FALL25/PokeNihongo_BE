@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common'
 import { TestRepository } from './test.repo'
-import { CreateTestBodyType, UpdateTestBodyType, GetTestListQueryType, CreateTestWithMeaningsBodyType, UpdateTestWithMeaningsBodyType } from './entities/test.entities'
+import { CreateTestBodyType, UpdateTestBodyType, GetTestListQueryType, CreateTestWithMeaningsBodyType, UpdateTestWithMeaningsBodyType, DeleteManyTestsBodyType } from './entities/test.entities'
 import { TestNotFoundException, TestPermissionDeniedException } from './dto/test.error'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
@@ -269,6 +269,66 @@ export class TestService {
             statusCode: 200,
             data: test,
             message: TEST_MESSAGE.DELETE_SUCCESS,
+        }
+    }
+
+    async deleteManyTests(data: DeleteManyTestsBodyType, userId: number): Promise<MessageResDTO> {
+        try {
+            const { ids } = data
+
+            // Validate input
+            if (!ids || ids.length === 0) {
+                throw new BadRequestException('Danh sách ID không được để trống')
+            }
+
+            // Kiểm tra giới hạn số lượng xóa cùng lúc
+            if (ids.length > 100) {
+                throw new BadRequestException('Chỉ được xóa tối đa 100 bài test cùng lúc')
+            }
+
+            // Lấy danh sách tests để kiểm tra quyền sở hữu
+            const tests = await this.prisma.test.findMany({
+                where: { id: { in: ids } },
+                select: { id: true, creatorId: true }
+            })
+
+            // Kiểm tra xem có test nào không tồn tại không
+            const foundIds = tests.map(test => test.id)
+            const notFoundIds = ids.filter(id => !foundIds.includes(id))
+
+            if (notFoundIds.length > 0) {
+                throw new BadRequestException(`Không tìm thấy bài test với ID: ${notFoundIds.join(', ')}`)
+            }
+
+            // Kiểm tra quyền sở hữu - tất cả tests phải thuộc về user
+            const unauthorizedTests = tests.filter(test => test.creatorId !== userId)
+            if (unauthorizedTests.length > 0) {
+                throw TestPermissionDeniedException
+            }
+
+            // Xóa nhiều tests
+            const result = await this.testRepo.deleteMany(ids)
+
+            if (result.deletedCount === 0) {
+                throw new BadRequestException('Không có bài test nào được xóa')
+            }
+
+            return {
+                statusCode: 200,
+                data: {
+                    deletedCount: result.deletedCount,
+                    deletedIds: result.deletedIds,
+                    requestedCount: ids.length,
+                    notFoundCount: ids.length - result.deletedCount
+                },
+                message: `Xóa thành công ${result.deletedCount}/${ids.length} bài test`
+            }
+        } catch (error) {
+            this.logger.error('Error deleting many tests:', error)
+            if (error instanceof BadRequestException || error instanceof TestPermissionDeniedException) {
+                throw error
+            }
+            throw new BadRequestException('Không thể xóa nhiều bài test')
         }
     }
 

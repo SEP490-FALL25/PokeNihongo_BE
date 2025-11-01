@@ -241,6 +241,56 @@ export class TestRepository {
         }
     }
 
+    async deleteMany(ids: number[]): Promise<{ deletedCount: number; deletedIds: number[] }> {
+        if (!ids || ids.length === 0) {
+            return { deletedCount: 0, deletedIds: [] }
+        }
+
+        return await this.prisma.$transaction(async (tx) => {
+            // Lấy thông tin tests để lấy name và description keys
+            const tests = await tx.test.findMany({
+                where: { id: { in: ids } },
+                select: { id: true, name: true, description: true }
+            })
+
+            const foundIds = tests.map(test => test.id)
+
+            // Xóa translations liên quan
+            const nameKeys = tests.map(test => `test.${test.id}.name`)
+            const descriptionKeys = tests.map(test => `test.${test.id}.description`)
+
+            // Tạo patterns để xóa translations
+            const keyPatterns = [
+                ...nameKeys.flatMap(key => [
+                    { key: { equals: key } },
+                    { key: { startsWith: key + '.meaning.' } }
+                ]),
+                ...descriptionKeys.flatMap(key => [
+                    { key: { equals: key } },
+                    { key: { startsWith: key + '.meaning.' } }
+                ])
+            ]
+
+            if (keyPatterns.length > 0) {
+                await tx.translation.deleteMany({
+                    where: {
+                        OR: keyPatterns
+                    }
+                })
+            }
+
+            // Xóa tests
+            const deleteResult = await tx.test.deleteMany({
+                where: { id: { in: foundIds } }
+            })
+
+            return {
+                deletedCount: deleteResult.count,
+                deletedIds: foundIds
+            }
+        })
+    }
+
     async createWithMeanings(data: CreateTestWithMeaningsBodyType, userId: number): Promise<TestType> {
         const { meanings, ...testData } = data
 

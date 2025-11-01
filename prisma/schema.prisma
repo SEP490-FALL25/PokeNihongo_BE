@@ -63,14 +63,14 @@ model User {
   updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
   deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
 
-  createdQuestionBanks     QuestionBank[]     @relation("QuestionBankCreatedBy")
-  createdAttendanceConfigs AttendanceConfig[] @relation("AttendanceConfigCreatedBy")
-  updatedAttendanceConfigs AttendanceConfig[] @relation("AttendanceConfigUpdatedBy")
-  deletedAttendanceConfigs AttendanceConfig[] @relation("AttendanceConfigDeletedBy")
-  createdAttendances       Attendance[]       @relation("AttendanceCreatedBy")
-  updatedAttendances       Attendance[]       @relation("AttendanceUpdatedBy")
-  deletedAttendances       Attendance[]       @relation("AttendanceDeletedBy")
-  createdTestSets          TestSet[]          @relation("TestSetCreatedBy")
+  createdQuestionBanks      QuestionBank[]      @relation("QuestionBankCreatedBy")
+  createdAttendanceConfigs  AttendanceConfig[]  @relation("AttendanceConfigCreatedBy")
+  updatedAttendanceConfigs  AttendanceConfig[]  @relation("AttendanceConfigUpdatedBy")
+  deletedAttendanceConfigs  AttendanceConfig[]  @relation("AttendanceConfigDeletedBy")
+  createdAttendances        Attendance[]        @relation("AttendanceCreatedBy")
+  updatedAttendances        Attendance[]        @relation("AttendanceUpdatedBy")
+  deletedAttendances        Attendance[]        @relation("AttendanceDeletedBy")
+  createdTestSets           TestSet[]           @relation("TestSetCreatedBy")
   createdWallets            Wallet[]            @relation("WalletCreatedBy")
   updatedWallets            Wallet[]            @relation("WalletUpdatedBy")
   deletedWallets            Wallet[]            @relation("WalletDeletedBy")
@@ -111,7 +111,7 @@ model User {
   userPokemons         UserPokemon[]
   userAchievements     UserAchievement[]
   userExerciseAttempts UserExerciseAttempt[]
-  userTestAttempts     UserTestAttempt[]
+  // userTestAttempts     UserTestAttempt[]
   userSpeakingAttempts UserSpeakingAttempt[]
   userProgresses       UserProgress[]
   attendances          Attendance[]
@@ -136,6 +136,7 @@ model User {
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  Test      Test[]
 
   @@index([deletedAt])
 }
@@ -685,7 +686,7 @@ model QuestionBank {
   userAnswerLogs UserAnswerLog[]
 
   // Quan hệ với UserTestAnswerLog
-  userTestAnswerLogs UserTestAnswerLog[]
+  // userTestAnswerLogs UserTestAnswerLog[]
 
   // Quan hệ với UserSpeakingAttempt
   userSpeakingAttempts UserSpeakingAttempt[]
@@ -717,8 +718,10 @@ model TestSet {
   // Quan hệ với TestSetQuestionBank (bảng nối)
   testSetQuestionBanks TestSetQuestionBank[]
   // Quan hệ với User
-  creatorId Int?
-  creator   User? @relation("TestSetCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  creatorId            Int?
+  creator              User?                 @relation("TestSetCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  Test                 Test?                 @relation(fields: [testId], references: [id])
+  testId               Int?
 
   @@index([levelN])
   @@index([testType])
@@ -787,7 +790,7 @@ model Answer {
   userAnswerLogs UserAnswerLog[]
 
   // Quan hệ với UserTestAnswerLog
-  userTestAnswerLogs UserTestAnswerLog[]
+  // userTestAnswerLogs UserTestAnswerLog[]
 
   @@index([questionBankId])
   @@index([answerKey])
