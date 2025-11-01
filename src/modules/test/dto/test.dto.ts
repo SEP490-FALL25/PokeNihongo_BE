@@ -52,6 +52,9 @@ export class TestSwaggerDTO {
     @ApiPropertyOptional({ example: 50000, description: 'Giá bài test (VND)' })
     price?: number
 
+    @ApiPropertyOptional({ example: 3, description: 'Cấp độ JLPT (0-5), 0 = nhiều cấp độ' })
+    levelN?: number
+
     @ApiProperty({ enum: TestStatus, example: TestStatus.PLACEMENT_TEST_DONE, description: 'Loại đề thi (PLACEMENT_TEST_DONE, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST)' })
     testType: TestStatus
 
@@ -86,6 +89,12 @@ export class CreateTestSwaggerDTO {
     })
     price?: number | null
 
+    @ApiPropertyOptional({
+        example: 3,
+        description: 'Cấp độ JLPT (0-5), 0 = nhiều cấp độ'
+    })
+    levelN?: number | null
+
     @ApiProperty({
         enum: TestStatus,
         example: TestStatus.PLACEMENT_TEST_DONE,
@@ -119,6 +128,12 @@ export class UpdateTestSwaggerDTO {
         description: 'Giá bài test (VND)'
     })
     price?: number | null
+
+    @ApiPropertyOptional({
+        example: 3,
+        description: 'Cấp độ JLPT (0-5), 0 = nhiều cấp độ'
+    })
+    levelN?: number | null
 
     @ApiPropertyOptional({
         enum: TestStatus,
@@ -172,6 +187,12 @@ export class CreateTestWithMeaningsSwaggerDTO {
         description: 'Giá bài test (VND)'
     })
     price?: number | null
+
+    @ApiPropertyOptional({
+        example: 3,
+        description: 'Cấp độ JLPT (0-5), 0 = nhiều cấp độ'
+    })
+    levelN?: number | null
 
     @ApiProperty({
         enum: TestStatus,
@@ -228,6 +249,12 @@ export class UpdateTestWithMeaningsSwaggerDTO {
     price?: number | null
 
     @ApiPropertyOptional({
+        example: 3,
+        description: 'Cấp độ JLPT (0-5), 0 = nhiều cấp độ'
+    })
+    levelN?: number | null
+
+    @ApiPropertyOptional({
         enum: TestStatus,
         example: TestStatus.MATCH_TEST,
         description: 'Loại đề thi (PLACEMENT_TEST_DONE, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST)'
@@ -258,6 +285,9 @@ export class GetTestListQuerySwaggerDTO {
     @ApiPropertyOptional({ enum: TestSetStatus, example: TestSetStatus.ACTIVE, description: 'Lọc theo trạng thái' })
     status?: TestSetStatus
 
+    @ApiPropertyOptional({ example: 3, description: 'Lọc theo cấp độ JLPT (0-5), 0 = nhiều cấp độ' })
+    levelN?: string
+
     @ApiPropertyOptional({ example: 1, description: 'Lọc theo ID người tạo' })
     creatorId?: string
 
@@ -265,7 +295,7 @@ export class GetTestListQuerySwaggerDTO {
     language?: string
 
     @ApiPropertyOptional({ example: 'createdAt', description: 'Sắp xếp theo field', default: 'createdAt' })
-    sortBy?: 'id' | 'name' | 'testType' | 'status' | 'price' | 'createdAt' | 'updatedAt'
+    sortBy?: 'id' | 'name' | 'testType' | 'status' | 'price' | 'levelN' | 'createdAt' | 'updatedAt'
 
     @ApiPropertyOptional({ example: 'desc', description: 'Thứ tự sắp xếp', default: 'desc' })
     sort?: 'asc' | 'desc'

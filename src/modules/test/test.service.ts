@@ -52,6 +52,10 @@ export class TestService {
             throw new BadRequestException('Giá bài test không được âm')
         }
 
+        if (data.levelN !== undefined && data.levelN !== null && (data.levelN < 0 || data.levelN > 5)) {
+            throw new BadRequestException('Cấp độ JLPT phải từ 0 đến 5')
+        }
+
         // Validation chỉ cho create (không phải update)
         if (!isUpdate) {
             const createData = data as CreateTestBodyType
@@ -207,9 +211,10 @@ export class TestService {
             const updatedTest = await (tx as any).test.update({
                 where: { id },
                 data: {
-                    price: data.price,
-                    testType: data.testType,
-                    status: data.status,
+                    ...(data.price !== undefined && { price: data.price }),
+                    ...(data.levelN !== undefined && { levelN: data.levelN }),
+                    ...(data.testType && { testType: data.testType }),
+                    ...(data.status && { status: data.status }),
                 }
             })
 
@@ -354,6 +359,10 @@ export class TestService {
 
         if (data.price !== undefined && data.price !== null && typeof data.price === 'number' && data.price < 0) {
             throw new BadRequestException('Giá bài test không được âm')
+        }
+
+        if (data.levelN !== undefined && data.levelN !== null && (data.levelN < 0 || data.levelN > 5)) {
+            throw new BadRequestException('Cấp độ JLPT phải từ 0 đến 5')
         }
 
         // Validation chỉ cho create (không phải update)
