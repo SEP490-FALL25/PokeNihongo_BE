@@ -111,6 +111,7 @@ model User {
   userPokemons         UserPokemon[]
   userAchievements     UserAchievement[]
   userExerciseAttempts UserExerciseAttempt[]
+  userTests            UserTest[]            @relation("UserTests")
   userTestAttempts     UserTestAttempt[]     @relation("UserTestAttempts")
   userSpeakingAttempts UserSpeakingAttempt[]
   userProgresses       UserProgress[]
@@ -722,18 +723,18 @@ model TestSet {
 
   // Quan hệ với TestSetQuestionBank (bảng nối)
   testSetQuestionBanks TestSetQuestionBank[]
+
+  // Quan hệ nhiều-nhiều với Test (bảng nối)
+  testTestSets TestTestSet[] @relation("TestSetTestTests")
+
   // Quan hệ với User
-  creatorId            Int?
-  creator              User?                 @relation("TestSetCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  // Quan hệ với Test
-  testId               Int?
-  test                 Test?                 @relation("TestTestSets", fields: [testId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  creatorId Int?
+  creator   User? @relation("TestSetCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([levelN])
   @@index([testType])
   @@index([status])
   @@index([creatorId])
-  @@index([testId])
 }
 
 // Thực thể bài kiểm tra tổng hợp
@@ -743,17 +744,21 @@ model Test {
   description String?       @db.Text // Mô tả bài test
   price       Decimal?      @db.Decimal(10, 2) // Giá bài test (nếu có)
   levelN      Int?          @default(0) // Cấp độ JLPT (0-5) 0 tức nhiều cấp độ
+  limit       Int?          @default(0) // Giới hạn số lần làm bài test
   testType    TestStatus    @default(PLACEMENT_TEST_DONE) // Loại đề thi
   status      TestSetStatus @default(DRAFT) // Trạng thái (DRAFT, ACTIVE, INACTIVE)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  // Quan hệ một-nhiều với TestSet
-  testSets TestSet[] @relation("TestTestSets")
+  // Quan hệ nhiều-nhiều với TestSet (bảng nối)
+  testTestSets TestTestSet[] @relation("TestTestSets")
 
   // Quan hệ với User
   creatorId Int?
   creator   User? @relation("TestCreatedBy", fields: [creatorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  // Quan hệ với UserTest (sở hữu)
+  userTests UserTest[] @relation("TestUserTests")
 
   // Quan hệ với UserTestAttempt
   userTestAttempts UserTestAttempt[] @relation("TestUserTestAttempts")
@@ -761,6 +766,25 @@ model Test {
   @@index([testType])
   @@index([status])
   @@index([creatorId])
+}
+
+// Model TestTestSet (Bảng nối giữa Test và TestSet - Nhiều-Nhiều)
+model TestTestSet {
+  id        Int      @id @default(autoincrement())
+  testId    Int // Foreign key đến Test
+  testSetId Int // Foreign key đến TestSet
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan hệ với Test
+  test Test @relation("TestTestSets", fields: [testId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Quan hệ với TestSet
+  testSet TestSet @relation("TestSetTestTests", fields: [testSetId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([testId, testSetId]) // Một Test chỉ có thể có một TestSet một lần
+  @@index([testId])
+  @@index([testSetId])
 }
 
 // Model TestSetQuestionBank (Bảng nối giữa TestSet và QuestionBank)
@@ -863,6 +887,23 @@ model UserAnswerLog {
   @@index([userExerciseAttemptId])
   @@index([questionBankId])
   @@index([answerId])
+}
+
+// Model UserTest (Sở hữu Test của user)
+model UserTest {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  user      User           @relation("UserTests", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  testId    Int
+  test      Test           @relation("TestUserTests", fields: [testId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  status    UserTestStatus @default(NOT_STARTED)
+  limit     Int?           @default(0) // Giới hạn số lần làm bài test
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([userId, testId]) // Một user chỉ sở hữu một test một lần
+  @@index([userId])
+  @@index([testId])
 }
 
 // Model UserTestAttempt (Lần thử Test của user)
@@ -1763,8 +1804,14 @@ enum LessonContentsType {
 
 enum TestStatus {
   PLACEMENT_TEST_DONE // Kiểm tra đầu vào
+  SUBSCRIPTION_TEST // Kiểm tra đầu vào cho subscription
   MATCH_TEST // Trận đấu
-  QUIZ_TEST //Quiz
+  QUIZ_TEST //Quiz 
   REVIEW_TEST // Ôn tập
   PRACTICE_TEST // Thi thử
+}
+
+enum UserTestStatus {
+  NOT_STARTED // Chưa được assign/kích hoạt
+  ACTIVE // Đã được assign và có thể sử dụng
 }

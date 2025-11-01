@@ -168,17 +168,21 @@ export class UserTestAttemptService {
             const test = await this.prisma.test.findUnique({
                 where: { id: attempt.testId },
                 include: {
-                    testSets: {
-                        select: { id: true }
+                    testTestSets: {
+                        select: {
+                            testSet: {
+                                select: { id: true }
+                            }
+                        }
                     }
                 }
             })
 
-            if (!test || !test.testSets || test.testSets.length === 0) {
+            if (!test || !test.testTestSets || test.testTestSets.length === 0) {
                 throw new Error('Test không có test set nào')
             }
 
-            const testSetIds = test.testSets.map(ts => ts.id)
+            const testSetIds = test.testTestSets.map(tts => tts.testSet.id)
 
             // 4. Lấy tất cả QuestionBanks từ tất cả TestSets
             const allQuestionBanks: any[] = []
@@ -264,17 +268,21 @@ export class UserTestAttemptService {
             const test = await this.prisma.test.findUnique({
                 where: { id: attempt.testId },
                 include: {
-                    testSets: {
-                        select: { id: true }
+                    testTestSets: {
+                        select: {
+                            testSet: {
+                                select: { id: true }
+                            }
+                        }
                     }
                 }
             })
 
-            if (!test || !test.testSets || test.testSets.length === 0) {
+            if (!test || !test.testTestSets || test.testTestSets.length === 0) {
                 throw new Error('Test không có test set nào')
             }
 
-            const testSetIds = test.testSets.map(ts => ts.id)
+            const testSetIds = test.testTestSets.map(tts => tts.testSet.id)
 
             // 4. Lấy tất cả QuestionBanks từ tất cả TestSets
             const allQuestionBanks: any[] = []
@@ -517,18 +525,22 @@ export class UserTestAttemptService {
             const test = await this.prisma.test.findUnique({
                 where: { id: testId },
                 include: {
-                    testSets: {
+                    testTestSets: {
                         include: {
-                            testSetQuestionBanks: {
+                            testSet: {
                                 include: {
-                                    questionBank: {
+                                    testSetQuestionBanks: {
                                         include: {
-                                            answers: true
+                                            questionBank: {
+                                                include: {
+                                                    answers: true
+                                                }
+                                            }
+                                        },
+                                        orderBy: {
+                                            questionOrder: 'asc'
                                         }
                                     }
-                                },
-                                orderBy: {
-                                    questionOrder: 'asc'
                                 }
                             }
                         }
@@ -536,7 +548,7 @@ export class UserTestAttemptService {
                 }
             })
 
-            if (!test || !test.testSets || test.testSets.length === 0) {
+            if (!test || !test.testTestSets || test.testTestSets.length === 0) {
                 throw new Error('Test không có test set nào')
             }
 
@@ -571,7 +583,8 @@ export class UserTestAttemptService {
             const allTestSets: any[] = []
             let totalQuestions = 0
 
-            for (const testSet of test.testSets) {
+            for (const testTestSet of test.testTestSets) {
+                const testSet = testTestSet.testSet
                 const testSetData: any = {
                     id: testSet.id,
                     name: testSet.name,
@@ -695,18 +708,22 @@ export class UserTestAttemptService {
             const test = await this.prisma.test.findUnique({
                 where: { id: attempt.testId },
                 include: {
-                    testSets: {
+                    testTestSets: {
                         include: {
-                            testSetQuestionBanks: {
+                            testSet: {
                                 include: {
-                                    questionBank: {
+                                    testSetQuestionBanks: {
                                         include: {
-                                            answers: true
+                                            questionBank: {
+                                                include: {
+                                                    answers: true
+                                                }
+                                            }
+                                        },
+                                        orderBy: {
+                                            questionOrder: 'asc'
                                         }
                                     }
-                                },
-                                orderBy: {
-                                    questionOrder: 'asc'
                                 }
                             }
                         }
@@ -714,7 +731,7 @@ export class UserTestAttemptService {
                 }
             })
 
-            if (!test || !test.testSets || test.testSets.length === 0) {
+            if (!test || !test.testTestSets || test.testTestSets.length === 0) {
                 throw new Error('Test không có test set nào')
             }
 
@@ -727,8 +744,8 @@ export class UserTestAttemptService {
 
             // Tính tỷ lệ đúng trước khi xử lý review
             let totalQuestions = 0
-            for (const testSet of test.testSets) {
-                totalQuestions += testSet.testSetQuestionBanks.length
+            for (const testTestSet of test.testTestSets) {
+                totalQuestions += testTestSet.testSet.testSetQuestionBanks.length
             }
             const answeredCorrectCount = logs.filter((l: any) => l.isCorrect).length
             const correctPercentage = totalQuestions > 0 ? (answeredCorrectCount / totalQuestions) * 100 : 0
@@ -761,7 +778,8 @@ export class UserTestAttemptService {
             let answeredCorrect = 0
             let answeredInCorrect = 0
 
-            for (const testSet of test.testSets) {
+            for (const testTestSet of test.testTestSets) {
+                const testSet = testTestSet.testSet
                 const testSetData: any = {
                     id: testSet.id,
                     name: testSet.name,

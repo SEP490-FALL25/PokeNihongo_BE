@@ -9,6 +9,7 @@ import {
     CreateTestWithMeaningsBodySchema,
     UpdateTestWithMeaningsBodySchema,
     DeleteManyTestsBodySchema,
+    AddTestSetsToTestBodySchema,
 } from '../entities/test.entities'
 
 // Create Test DTO
@@ -37,4 +38,7 @@ export class UpdateTestWithMeaningsBodyDTO extends createZodDto(UpdateTestWithMe
 
 // Delete Many Tests DTO
 export class DeleteManyTestsBodyDTO extends createZodDto(DeleteManyTestsBodySchema) { }
+
+// Add TestSets to Test DTO
+export class AddTestSetsToTestBodyDTO extends createZodDto(AddTestSetsToTestBodySchema) { }
 

@@ -150,6 +150,13 @@ export const DeleteManyTestsBodySchema = z
     })
     .strict()
 
+// Add TestSets to Test Schema
+export const AddTestSetsToTestBodySchema = z
+    .object({
+        testSetIds: z.array(z.number()).min(1, 'Phải có ít nhất 1 TestSet ID')
+    })
+    .strict()
+
 // Types
 export type TestType = z.infer<typeof TestSchema>
 export type CreateTestBodyType = z.infer<typeof CreateTestBodySchema>
@@ -161,4 +168,5 @@ export type TestListResType = z.infer<typeof TestListResSchema>
 export type GetTestByIdParamsType = z.infer<typeof GetTestByIdParamsSchema>
 export type GetTestListQueryType = z.infer<typeof GetTestListQuerySchema>
 export type DeleteManyTestsBodyType = z.infer<typeof DeleteManyTestsBodySchema>
+export type AddTestSetsToTestBodyType = z.infer<typeof AddTestSetsToTestBodySchema>
 
