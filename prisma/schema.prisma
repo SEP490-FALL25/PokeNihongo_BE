@@ -121,6 +121,7 @@ model User {
   gachaPurchases       GachaPurchase[]
   gachaRollHistories   GachaRollHistory[]
   userGachaPity        UserGachaPity[]
+  matchmakingQueue     MatchQueue?
 
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -492,6 +493,10 @@ model UserPokemon {
   exp       Int     @default(0) // exp hiện tại trên con này
   isEvolved Boolean @default(false) // đã tiến hóa chưa
   isMain    Boolean @default(false) // có phải con chính không
+
+  selectedPokemonInQueueAs1 MatchQueue[] @relation("SelectedQueuePoke1")
+  selectedPokemonInQueueAs2 MatchQueue[] @relation("SelectedQueuePoke2")
+  selectedPokemonInQueueAs3 MatchQueue[] @relation("SelectedQueuePoke3")
 
   // Timestamps
   deletedAt DateTime?
@@ -1524,6 +1529,41 @@ model UserGachaPity {
   @@index([userId])
 }
 
+// Hàng đợi khi user bấm tìm trận (kèm 3 Pokemon)
+model MatchQueue {
+  id Int @id @default(autoincrement())
+
+  userId Int  @unique // 1 user chỉ ở trong hàng đợi 1 lần
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  userElo Int // Snapshot Elo của user lúc vào hàng đợi
+  status  QueueStatus @default(WAITING)
+
+  queuedAt DateTime @default(now())
+
+  // 3 Pokemon user chọn TRƯỚC KHI tìm trận (ID từ UserPokemon)
+  selectedPokemon1Id Int
+  selectedPokemon1   UserPokemon @relation("SelectedQueuePoke1", fields: [selectedPokemon1Id], references: [id], onDelete: NoAction)
+
+  selectedPokemon2Id Int
+  selectedPokemon2   UserPokemon @relation("SelectedQueuePoke2", fields: [selectedPokemon2Id], references: [id], onDelete: NoAction)
+
+  selectedPokemon3Id Int
+  selectedPokemon3   UserPokemon @relation("SelectedQueuePoke3", fields: [selectedPokemon3Id], references: [id], onDelete: NoAction)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([status, userElo])
+  @@index([userId])
+}
+
+enum QueueStatus {
+  WAITING // Đang chờ
+  MATCHED // Đã tìm được trận
+}
+
 enum ProgressStatus {
   NOT_STARTED // Chưa bắt đầu
   IN_PROGRESS // Đang học
@@ -1721,7 +1761,7 @@ enum LessonContentsType {
 enum TestStatus {
   PLACEMENT_TEST_DONE // Kiểm tra đầu vào
   MATCH_TEST // Trận đấu
-  QUIZ_TEST //Quiz 
+  QUIZ_TEST //Quiz
   REVIEW_TEST // Ôn tập
   PRACTICE_TEST // Thi thử
 }

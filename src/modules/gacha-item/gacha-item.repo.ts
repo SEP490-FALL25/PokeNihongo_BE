@@ -283,6 +283,61 @@ export class GachaItemRepo {
     }
   }
 
+  async getListItemsByBannerId(bannerId: number, pagination: PaginationQueryType) {
+    // const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, [
+    //   ...GACHA_ITEM_FIELDS
+    // ])
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    const where: Prisma.GachaItemWhereInput = {
+      deletedAt: null,
+      // ...rawWhere,
+      bannerId
+    }
+
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.gachaItem.count({ where }),
+      this.prismaService.gachaItem.findMany({
+        where,
+        include: {
+          pokemon: {
+            select: {
+              id: true,
+              nameJp: true,
+              nameTranslations: true,
+              imageUrl: true,
+              rarity: true
+            }
+          },
+          gachaItemRate: {
+            select: {
+              id: true,
+              starType: true,
+              rate: true
+            }
+          }
+        },
+        orderBy: {
+          gachaItemRate: { starType: 'desc' }
+        },
+        skip,
+        take
+      })
+    ])
+
+    return {
+      results: data,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
+    }
+  }
+
   /**
    * Update all items for a banner in a transaction
    * Deletes old items and creates new ones
