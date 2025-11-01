@@ -1,5 +1,5 @@
 import { GachaPurchaseMessage, WalletMessage } from '@/i18n/message-keys'
-import { NotFoundException } from '@nestjs/common'
+import { BadRequestException, NotFoundException } from '@nestjs/common'
 
 export class GachaPurchaseNotFoundException extends NotFoundException {
   constructor() {
@@ -11,7 +11,7 @@ export class GachaPurchaseNotFoundException extends NotFoundException {
 }
 
 //ko du tien liuliu
-export class NotEnoughBalanceException extends NotFoundException {
+export class NotEnoughBalanceException extends BadRequestException {
   constructor() {
     super({
       message: WalletMessage.INSUFFICIENT_BALANCE,

@@ -157,7 +157,6 @@ export class GachaPurchaseService {
           )
         ])
         if (!updatedWallet) throw new NotEnoughBalanceException()
-        console.log('updatedWallet: ', updatedWallet)
         // 2. Create Wallet Transaction referencing the purchase
         const walletTrans = await this.walletTransRepo.create(
           {
@@ -235,12 +234,21 @@ export class GachaPurchaseService {
               r.starType === 'THREE' || r.starType === 'FOUR' || r.starType === 'FIVE'
           )
           if (!hasHighStar) {
-            const threeStarPool = gachaPool.filter(
-              (r) => r.starType === 'THREE' || r.starType === 'FOUR'
-            )
-            if (threeStarPool.length > 0) {
-              const guaranteed =
-                threeStarPool[Math.floor(Math.random() * threeStarPool.length)]
+            const poolThree = gachaPool.filter((r) => r.starType === 'THREE')
+            const poolFour = gachaPool.filter((r) => r.starType === 'FOUR')
+            const threeFourTotal = poolThree.length + poolFour.length
+            if (threeFourTotal > 0) {
+              // Weighted pick between THREE and FOUR at 2:8 ratio (20%:80%)
+              let guaranteed
+              if (poolThree.length > 0 && poolFour.length > 0) {
+                const pickFour = Math.random() < 0.8 // 80% chance FOUR
+                const chosenPool = pickFour ? poolFour : poolThree
+                guaranteed = chosenPool[Math.floor(Math.random() * chosenPool.length)]
+              } else if (poolFour.length > 0) {
+                guaranteed = poolFour[Math.floor(Math.random() * poolFour.length)]
+              } else {
+                guaranteed = poolThree[Math.floor(Math.random() * poolThree.length)]
+              }
               const lowStarIndexes = rollResults
                 .map((r, i) => (r.starType === 'ONE' || r.starType === 'TWO' ? i : -1))
                 .filter((i) => i !== -1)
