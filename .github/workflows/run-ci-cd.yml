@@ -61,11 +61,6 @@ jobs:
           chmod 600 private_key.pem
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
             cd /home/root/BE &&
-            docker stop pokenihongo-backend &&
-            docker rm pokenihongo-backend &&
-            
-          
-
             docker compose up -d --build
           "
           rm -f private_key.pem
