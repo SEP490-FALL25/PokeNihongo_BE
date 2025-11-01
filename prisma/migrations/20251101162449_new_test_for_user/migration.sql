@@ -4,9 +4,6 @@ CREATE TYPE "TestAttemptStatus" AS ENUM ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETE
 -- CreateEnum
 CREATE TYPE "TestStatus" AS ENUM ('PLACEMENT_TEST_DONE', 'MATCH_TEST', 'QUIZ_TEST', 'REVIEW_TEST', 'PRACTICE_TEST');
 
--- AlterTable
-ALTER TABLE "TestSet" ADD COLUMN     "testId" INTEGER;
-
 -- CreateTable
 CREATE TABLE "Test" (
     "id" SERIAL NOT NULL,
