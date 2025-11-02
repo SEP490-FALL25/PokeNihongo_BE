@@ -40,7 +40,7 @@ export class UserTestRepository {
     }
 
     async findMany(query: GetUserTestListQueryType): Promise<{ items: UserTestType[]; total: number; page: number; limit: number }> {
-        const { currentPage = 1, pageSize = 10, userId, testId, status } = query
+        const { currentPage = 1, pageSize = 10, userId, testId, status, testType } = query
         const skip = (Number(currentPage) - 1) * Number(pageSize)
 
         const where: any = {}
@@ -57,11 +57,18 @@ export class UserTestRepository {
             where.status = status
         }
 
+        // Filter theo testType nếu có - cần join với bảng Test
+        if (testType) {
+            where.test = {
+                testType: testType
+            }
+        }
+
         const [items, total] = await Promise.all([
             this.prisma.userTest.findMany({
                 where,
                 skip,
-                take: pageSize,
+                take: Number(pageSize),
                 orderBy: { createdAt: 'desc' }
             }),
             this.prisma.userTest.count({ where })
