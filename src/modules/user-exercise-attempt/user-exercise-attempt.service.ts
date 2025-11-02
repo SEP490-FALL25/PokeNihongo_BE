@@ -25,9 +25,6 @@ import { TranslationHelperService } from '@/modules/translation/translation.help
 import { I18nService } from '@/i18n/i18n.service'
 import { UserExerciseAttemptMessage } from '@/i18n/message-keys'
 import { pickLabelFromComposite } from '@/common/utils/prase.utils'
-import { UserRepo } from '@/modules/user/user.repo'
-import { LevelRepo } from '@/modules/level/level.repo'
-import { LEVEL_TYPE } from '@/common/constants/level.constant'
 
 @Injectable()
 export class UserExerciseAttemptService {
@@ -40,9 +37,7 @@ export class UserExerciseAttemptService {
         private readonly userProgressService: UserProgressService,
         private readonly exercisesService: ExercisesService,
         private readonly translationHelper: TranslationHelperService,
-        private readonly i18nService: I18nService,
-        private readonly userRepo: UserRepo,
-        private readonly levelRepo: LevelRepo
+        private readonly i18nService: I18nService
     ) { }
 
     async create(userId: number, exerciseId: number) {
@@ -891,135 +886,4 @@ export class UserExerciseAttemptService {
             // Không throw error để không ảnh hưởng đến flow chính
         }
     }
-
-    async supmitPlacementTestCompletion(userExerciseAttemptId: number, userId: number, timeSeconds?: number) {
-        try {
-            this.logger.log(`Submitting placement test completion for attempt: ${userExerciseAttemptId}`)
-
-            // 1. Lấy thông tin UserExerciseAttempt
-            const attempt = await this.userExerciseAttemptRepository.findById(userExerciseAttemptId)
-            if (!attempt) {
-                throw UserExerciseAttemptNotFoundException
-            }
-
-            // 2. Kiểm tra xem attempt có thuộc về user này không
-            if (attempt.userId !== userId) {
-                throw new Error('Unauthorized: This attempt does not belong to you')
-            }
-
-            // 3. Lấy thông tin Exercise để biết testSetId
-            const exercise = await this.exercisesService.findById(attempt.exerciseId)
-            if (!exercise || !exercise.testSetId) {
-                throw new Error('Exercise không có test set')
-            }
-
-            // 4. Lấy tất cả Question của TestSet
-            const questionsResult = await this.questionBankService.findByTestSetId(exercise.testSetId)
-            const allQuestions = questionsResult.data.results
-            this.logger.log(`Found ${allQuestions.length} questions for exercise ${attempt.exerciseId}`)
-
-            // 5. Lấy tất cả UserAnswerLog của attempt này
-            const answerLogsResult = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
-            const userAnswers = answerLogsResult.data.results
-            this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userExerciseAttemptId}`)
-
-            // 6. Tạo map để lấy câu trả lời nhanh
-            const answerMap = new Map<number, boolean>()
-            userAnswers.forEach(log => {
-                answerMap.set((log as any).questionBankId, log.isCorrect)
-            })
-
-            // 7. Nhóm questions theo levelN và tính tỷ lệ đúng
-            const questionsByLevel: Record<number, { total: number; correct: number }> = {
-                1: { total: 0, correct: 0 },
-                2: { total: 0, correct: 0 },
-                3: { total: 0, correct: 0 },
-                4: { total: 0, correct: 0 },
-                5: { total: 0, correct: 0 }
-            }
-
-            allQuestions.forEach(question => {
-                const levelN = question.levelN || 5 // Mặc định N5 nếu không có levelN
-                if (levelN >= 1 && levelN <= 5) {
-                    questionsByLevel[levelN].total++
-                    const isCorrect = answerMap.get(question.id) || false
-                    if (isCorrect) {
-                        questionsByLevel[levelN].correct++
-                    }
-                }
-            })
-
-            this.logger.log('Questions by level:', questionsByLevel)
-
-            // 8. Đánh giá levelN: Tìm level cao nhất (levelNumber nhỏ nhất) mà user đạt được >= 70%
-            // N5 = 5, N4 = 4, N3 = 3, N2 = 2, N1 = 1 (N1 là cao nhất)
-            let evaluatedLevelN = 5 // Mặc định N5 (thấp nhất)
-            const PASS_THRESHOLD = 0.7 // 70%
-
-            for (let levelN = 1; levelN <= 5; levelN++) {
-                const stats = questionsByLevel[levelN]
-                if (stats.total > 0) {
-                    const accuracy = stats.correct / stats.total
-                    if (accuracy >= PASS_THRESHOLD) {
-                        evaluatedLevelN = levelN
-                        this.logger.log(`User passed level N${levelN} with ${(accuracy * 100).toFixed(1)}% accuracy`)
-                        break // Tìm level cao nhất đầu tiên đạt được
-                    }
-                }
-            }
-
-            // Nếu không có level nào đạt 70%, kiểm tra xem có level nào có ít nhất 50% không
-            if (evaluatedLevelN === 5) {
-                for (let levelN = 1; levelN <= 5; levelN++) {
-                    const stats = questionsByLevel[levelN]
-                    if (stats.total > 0) {
-                        const accuracy = stats.correct / stats.total
-                        if (accuracy >= 0.5) {
-                            evaluatedLevelN = levelN
-                            this.logger.log(`User passed level N${levelN} with ${(accuracy * 100).toFixed(1)}% accuracy (minimum threshold)`)
-                            break
-                        }
-                    }
-                }
-            }
-
-            this.logger.log(`Evaluated levelN: ${evaluatedLevelN}`)
-
-            // 9. Tìm Level trong DB với levelNumber = evaluatedLevelN và levelType = USER
-            const level = await this.levelRepo.findByLevelAndType(evaluatedLevelN, LEVEL_TYPE.USER)
-            if (!level) {
-                this.logger.warn(`Level N${evaluatedLevelN} not found in database, keeping current user level`)
-            } else {
-                // 10. Cập nhật levelId của User
-                await this.userRepo.update({
-                    id: userId,
-                    updatedById: userId,
-                    data: { levelId: level.id }
-                })
-                this.logger.log(`Updated user ${userId} levelId to ${level.id} (N${evaluatedLevelN})`)
-            }
-
-            // 11. Update status và time
-            await this.userExerciseAttemptRepository.update(
-                { id: userExerciseAttemptId },
-                { status: 'COMPLETED', ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
-            )
-            this.logger.log(`Updated attempt ${userExerciseAttemptId} to COMPLETED`)
-
-            // 12. Trả về kết quả với levelN được đánh giá
-            return {
-                statusCode: 200,
-                message: 'Đánh giá trình độ hoàn thành',
-                data: {
-                    levelN: evaluatedLevelN,
-                    levelId: level?.id || null
-                }
-            }
-
-        } catch (error) {
-            this.logger.error('Error submitting placement test completion:', error)
-            throw error
-        }
-    }
-
 }

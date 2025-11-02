@@ -1014,8 +1014,15 @@ export class TestService {
             // Nếu có attempt gần nhất và là IN_PROGRESS → dùng lại (xử lý trường hợp rớt mạng)
             if (latestAttempt && latestAttempt.status === 'IN_PROGRESS') {
                 // Sử dụng attempt đó (không tạo mới, không giảm limit)
-                // Giữ lại lịch sử UserTestAnswerLog đã trả lời
+                // Xóa tất cả UserTestAnswerLog của attempt này để bắt đầu lại từ đầu
                 this.logger.log(`Found existing IN_PROGRESS UserTestAttempt with ID: ${latestAttempt.id} for user ${userId} and test ${testId}`)
+
+                const deletedLogsCount = await this.prisma.userTestAnswerLog.deleteMany({
+                    where: {
+                        userTestAttemptId: latestAttempt.id
+                    }
+                })
+                this.logger.log(`Deleted ${deletedLogsCount.count} UserTestAnswerLog for attempt ${latestAttempt.id}`)
 
                 userTestAttempt = {
                     id: latestAttempt.id,
