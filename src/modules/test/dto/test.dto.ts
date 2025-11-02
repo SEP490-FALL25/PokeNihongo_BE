@@ -58,7 +58,7 @@ export class TestSwaggerDTO {
     @ApiPropertyOptional({ example: 5, description: 'Giới hạn số lần làm bài test (0 = không giới hạn)' })
     limit?: number
 
-    @ApiProperty({ enum: TestStatus, example: TestStatus.PLACEMENT_TEST_DONE, description: 'Loại đề thi (PLACEMENT_TEST_DONE, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST)' })
+    @ApiProperty({ enum: TestStatus, example: TestStatus.PLACEMENT_TEST_DONE, description: 'Loại đề thi (PLACEMENT_TEST_DONE, SUBSCRIPTION_TEST, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST, READING_TEST, LISTENING_TEST, SPEAKING_TEST)' })
     testType: TestStatus
 
     @ApiProperty({ enum: TestSetStatus, example: TestSetStatus.ACTIVE, description: 'Trạng thái bài test' })
@@ -107,7 +107,7 @@ export class CreateTestSwaggerDTO {
     @ApiProperty({
         enum: TestStatus,
         example: TestStatus.PLACEMENT_TEST_DONE,
-        description: 'Loại đề thi (PLACEMENT_TEST_DONE, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST)'
+        description: 'Loại đề thi (PLACEMENT_TEST_DONE, SUBSCRIPTION_TEST, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST, READING_TEST, LISTENING_TEST, SPEAKING_TEST)'
     })
     testType: TestStatus
 
@@ -153,7 +153,7 @@ export class UpdateTestSwaggerDTO {
     @ApiPropertyOptional({
         enum: TestStatus,
         example: TestStatus.MATCH_TEST,
-        description: 'Loại đề thi (PLACEMENT_TEST_DONE, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST)'
+        description: 'Loại đề thi (PLACEMENT_TEST_DONE, SUBSCRIPTION_TEST, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST, READING_TEST, LISTENING_TEST, SPEAKING_TEST)'
     })
     testType?: TestStatus
 
@@ -218,7 +218,7 @@ export class CreateTestWithMeaningsSwaggerDTO {
     @ApiProperty({
         enum: TestStatus,
         example: TestStatus.PLACEMENT_TEST_DONE,
-        description: 'Loại đề thi (PLACEMENT_TEST_DONE, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST)'
+        description: 'Loại đề thi (PLACEMENT_TEST_DONE, SUBSCRIPTION_TEST, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST, READING_TEST, LISTENING_TEST, SPEAKING_TEST)'
     })
     testType: TestStatus
 
@@ -284,7 +284,7 @@ export class UpdateTestWithMeaningsSwaggerDTO {
     @ApiPropertyOptional({
         enum: TestStatus,
         example: TestStatus.MATCH_TEST,
-        description: 'Loại đề thi (PLACEMENT_TEST_DONE, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST)'
+        description: 'Loại đề thi (PLACEMENT_TEST_DONE, SUBSCRIPTION_TEST, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST, READING_TEST, LISTENING_TEST, SPEAKING_TEST)'
     })
     testType?: TestStatus
 
