@@ -512,3 +512,14 @@ export const LeaderboardSeasonMessage = {
   ALREADY_EXISTS: 'leaderboard_season.ALREADY_EXISTS',
   INVALID_DATA: 'leaderboard_season.INVALID_DATA'
 } as const
+
+export const MatchQueueMessage = {
+  CREATE_SUCCESS: 'match_queue.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'match_queue.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'match_queue.DELETE_SUCCESS',
+  GET_SUCCESS: 'match_queue.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'match_queue.GET_LIST_SUCCESS',
+  NOT_FOUND: 'match_queue.NOT_FOUND',
+  ALREADY_EXISTS: 'match_queue.ALREADY_EXISTS',
+  INVALID_DATA: 'match_queue.INVALID_DATA'
+} as const

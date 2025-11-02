@@ -481,5 +481,15 @@ export const enMessages = {
     NOT_FOUND: 'Leaderboard season not found',
     ALREADY_EXISTS: 'Leaderboard season already exists',
     INVALID_DATA: 'Invalid leaderboard season data'
+  },
+  match_queue: {
+    CREATE_SUCCESS: 'Match queue created successfully',
+    UPDATE_SUCCESS: 'Match queue updated successfully',
+    DELETE_SUCCESS: 'Match queue deleted successfully',
+    GET_SUCCESS: 'Match queue retrieved successfully',
+    GET_LIST_SUCCESS: 'Match queue list retrieved successfully',
+    NOT_FOUND: 'Match queue not found',
+    ALREADY_EXISTS: 'Match queue already exists',
+    INVALID_DATA: 'Invalid match queue data'
   }
 }

@@ -70,6 +70,7 @@ import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
 import { LeaderboardSeasonModule } from './modules/leaderboard-season/leaderboard-season.module';
+import { MatchQueueModule } from './modules/match-queue/match-queue.module';
 
 @Module({
   imports: [
@@ -138,7 +139,8 @@ import { LeaderboardSeasonModule } from './modules/leaderboard-season/leaderboar
     GachaPurchaseModule,
     GachaRollHistoryModule,
     WebsocketsModule,
-    LeaderboardSeasonModule
+    LeaderboardSeasonModule,
+    MatchQueueModule
   ],
 
   controllers: [],

@@ -1591,8 +1591,6 @@ model MatchQueue {
   userElo Int // Snapshot Elo của user lúc vào hàng đợi
   status  QueueStatus @default(WAITING)
 
-  queuedAt DateTime @default(now())
-
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?

@@ -460,5 +460,16 @@ export const jaMessages = {
     NOT_FOUND: 'ランキングシーズンが見つかりません',
     ALREADY_EXISTS: 'ランキングシーズンは既に存在します',
     INVALID_DATA: '無効なランキングシーズンデータです'
+  },
+  match_queue: {
+    CREATE_SUCCESS: 'マッチキューへの参加に成功しました',
+    UPDATE_SUCCESS: 'マッチキューの更新に成功しました',
+    DELETE_SUCCESS: 'マッチキューからの退出に成功しました',
+    GET_SUCCESS: 'マッチキュー情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'マッチキューリストの取得に成功しました',
+    NOT_FOUND: 'マッチキューが見つかりません',
+    ALREADY_EXISTS: 'マッチキューは既に存在します',
+
+    INVALID_DATA: '無効なマッチキューデータです'
   }
 }
