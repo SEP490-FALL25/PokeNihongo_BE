@@ -679,11 +679,8 @@ export class UserTestAttemptService {
                                 questionType: qb?.questionType,
                                 audioUrl: qb?.audioUrl,
                                 pronunciation: qb?.pronunciation,
-                                answers: mappedAnswers.map((ans: any) => ({
-                                    ...ans,
-                                    isSelected: userSelectedAnswerId === ans.id // Đánh dấu câu trả lời đã chọn
-                                })),
-                                selectedAnswerId: userSelectedAnswerId || undefined // ID câu trả lời đã chọn
+                                answers: mappedAnswers,
+                                selectedAnswerId: userSelectedAnswerId || undefined // ID câu trả lời đã chọn (nếu có)
                             }
                         }
                     })
