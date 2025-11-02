@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common'
 import { TestRepository } from './test.repo'
-import { CreateTestBodyType, UpdateTestBodyType, GetTestListQueryType, CreateTestWithMeaningsBodyType, UpdateTestWithMeaningsBodyType, DeleteManyTestsBodyType, AddTestSetsToTestBodyType } from './entities/test.entities'
+import { CreateTestBodyType, UpdateTestBodyType, GetTestListQueryType, CreateTestWithMeaningsBodyType, UpdateTestWithMeaningsBodyType, DeleteManyTestsBodyType, AddTestSetsToTestBodyType, RemoveTestSetsFromTestBodyType } from './entities/test.entities'
 import { TestNotFoundException, TestPermissionDeniedException } from './dto/test.error'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
@@ -100,6 +100,7 @@ export class TestService {
                         description: 'temp', // Tạm thời
                         price: data.price,
                         levelN: data.levelN,
+                        limit: data.limit,
                         testType: data.testType,
                         status: data.status,
                         creatorId: userId,
@@ -232,6 +233,7 @@ export class TestService {
                 data: {
                     ...(data.price !== undefined && { price: data.price }),
                     ...(data.levelN !== undefined && { levelN: data.levelN }),
+                    ...(data.limit !== undefined && { limit: data.limit }),
                     ...(data.testType && { testType: data.testType }),
                     ...(data.status && { status: data.status }),
                 }
@@ -501,6 +503,52 @@ export class TestService {
         }
     }
 
+    async removeTestSetsFromTest(testId: number, data: RemoveTestSetsFromTestBodyType): Promise<MessageResDTO> {
+        try {
+            // Validate test tồn tại
+            const test = await this.testRepo.findById(testId)
+            if (!test) {
+                throw TestNotFoundException
+            }
+
+            // Validate các TestSet có trong Test này
+            const testTestSets = await (this.prisma as any).testTestSet.findMany({
+                where: {
+                    testId: testId,
+                    testSetId: { in: data.testSetIds }
+                }
+            })
+
+            if (testTestSets.length === 0) {
+                throw new BadRequestException('Không có TestSet nào trong Test này để xóa')
+            }
+
+            // Xóa các bản ghi trong bảng TestTestSet
+            const deletedCount = await (this.prisma as any).testTestSet.deleteMany({
+                where: {
+                    testId: testId,
+                    testSetId: { in: data.testSetIds }
+                }
+            })
+
+            return {
+                statusCode: 200,
+                data: {
+                    testId,
+                    removedTestSetIds: data.testSetIds,
+                    count: deletedCount.count
+                },
+                message: TEST_MESSAGE.REMOVE_TESTSETS_SUCCESS,
+            }
+        } catch (error) {
+            this.logger.error('Error removing testSets from test:', error)
+            if (error instanceof TestNotFoundException || error instanceof BadRequestException) {
+                throw error
+            }
+            throw new BadRequestException('Không thể xóa TestSet khỏi Test')
+        }
+    }
+
     async findFullById(testId: number, language: string = 'vi'): Promise<MessageResDTO> {
         try {
             this.logger.log(`Finding full test by ID: ${testId}, language: ${language}`)
@@ -634,7 +682,6 @@ export class TestService {
             throw new BadRequestException('Không thể lấy thông tin bài test')
         }
     }
-
 
     async findFullByIdForUser(testId: number, language: string = 'vi'): Promise<MessageResDTO> {
         try {

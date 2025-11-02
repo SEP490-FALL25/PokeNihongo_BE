@@ -14,6 +14,7 @@ export class TestRepository {
                 description: 'temp', // Sẽ được cập nhật trong service
                 price: data.price,
                 levelN: data.levelN,
+                limit: data.limit,
                 testType: data.testType,
                 status: data.status,
                 creatorId: data.creatorId,
@@ -23,6 +24,7 @@ export class TestRepository {
             ...result,
             price: result.price ? Number(result.price) : null,
             levelN: result.levelN,
+            limit: result.limit,
             testType: result.testType as PrismaTestStatus,
         }
     }
@@ -37,6 +39,7 @@ export class TestRepository {
             ...result,
             price: result.price ? Number(result.price) : null,
             levelN: result.levelN,
+            limit: result.limit,
             testType: result.testType as PrismaTestStatus,
         }
 
@@ -235,6 +238,7 @@ export class TestRepository {
                     ...test,
                     price: test.price ? Number(test.price) : null,
                     levelN: test.levelN,
+                    limit: test.limit,
                     testType: test.testType as PrismaTestStatus,
                     // Remove _count and creator from the response
                     _count: undefined,
@@ -313,6 +317,7 @@ export class TestRepository {
             ...result,
             price: result.price ? Number(result.price) : null,
             levelN: result.levelN,
+            limit: result.limit,
             testType: result.testType as PrismaTestStatus,
         }
     }
@@ -325,6 +330,7 @@ export class TestRepository {
             ...result,
             price: result.price ? Number(result.price) : null,
             levelN: result.levelN,
+            limit: result.limit,
             testType: result.testType as PrismaTestStatus,
         }
     }
@@ -390,6 +396,7 @@ export class TestRepository {
                     description: 'temp', // Tạm thời
                     price: testData.price,
                     levelN: testData.levelN,
+                    limit: testData.limit,
                     testType: testData.testType,
                     status: testData.status,
                     creatorId: userId,
@@ -450,6 +457,7 @@ export class TestRepository {
                 ...updatedTest,
                 price: updatedTest.price ? Number(updatedTest.price) : null,
                 levelN: updatedTest.levelN,
+                limit: updatedTest.limit,
                 testType: updatedTest.testType as PrismaTestStatus,
             }
         })
@@ -465,6 +473,7 @@ export class TestRepository {
                 data: {
                     ...(testData.price !== undefined && { price: testData.price }),
                     ...(testData.levelN !== undefined && { levelN: testData.levelN }),
+                    ...(testData.limit !== undefined && { limit: testData.limit }),
                     ...(testData.testType && { testType: testData.testType }),
                     ...(testData.status && { status: testData.status }),
                 }
@@ -513,6 +522,8 @@ export class TestRepository {
             return {
                 ...updatedTest,
                 price: updatedTest.price ? Number(updatedTest.price) : null,
+                levelN: updatedTest.levelN,
+                limit: updatedTest.limit,
                 testType: updatedTest.testType as PrismaTestStatus,
             }
         })
