@@ -86,18 +86,41 @@ export class TestController {
         return this.testService.findAll(query, isAdmin ? undefined : lang)
     }
 
-    @Get(':id')
+    @Get(':id/placement-questions')
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Lấy thông tin bài test theo ID' })
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Lấy câu hỏi random cho placement test (3 N5, 4 N4, 3 N3)' })
     @ApiResponse({
         status: 200,
-        description: 'Lấy thông tin bài test thành công',
-        type: TestResponseSwaggerDTO
+        description: 'Lấy câu hỏi placement test thành công',
+        type: MessageResDTO
     })
-    findOne(@Param('id') id: string, @I18nLang() lang: string) {
-        return this.testService.findOne(Number(id), lang)
+    async getPlacementQuestions(
+        @Param('id') id: string,
+        @I18nLang() lang: string
+    ): Promise<MessageResDTO> {
+        return this.testService.getRandomQuestionsForPlacementTest(Number(id), lang)
     }
 
+    @Get(':id/random-questions')
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Lấy câu hỏi random theo level và số lượng' })
+    @ApiQuery({ name: 'levelN', type: Number, description: 'Level (1-5)', example: 5 })
+    @ApiQuery({ name: 'count', type: Number, description: 'Số lượng câu hỏi cần lấy', example: 10 })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy câu hỏi random thành công',
+        type: MessageResDTO
+    })
+    async getRandomQuestionsByLevel(
+        @Param('id') id: string,
+        @Query('levelN') levelN: string,
+        @Query('count') count: string,
+        @I18nLang() lang: string
+    ): Promise<MessageResDTO> {
+        return this.testService.getRandomQuestionsByLevel(Number(id), Number(levelN), Number(count), lang)
+    }
 
     @Get(':id/full')
     @ApiBearerAuth()
@@ -111,7 +134,6 @@ export class TestController {
         return this.testService.findFullById(Number(id), lang)
     }
 
-
     @Get(':id/full-user')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Lấy toàn bộ thông tin bài test kèm câu hỏi và câu trả lời' })
@@ -122,6 +144,18 @@ export class TestController {
     })
     async findFullUser(@Param('id') id: string, @I18nLang() lang: string): Promise<MessageResDTO> {
         return this.testService.findFullByIdForUser(Number(id), lang)
+    }
+
+    @Get(':id')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy thông tin bài test theo ID' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy thông tin bài test thành công',
+        type: TestResponseSwaggerDTO
+    })
+    findOne(@Param('id') id: string, @I18nLang() lang: string) {
+        return this.testService.findOne(Number(id), lang)
     }
 
     @Put(':id/with-meanings')
@@ -217,18 +251,6 @@ export class TestController {
     })
     async autoAddFreeTestSets() {
         return this.testService.autoAddFreeTestSets()
-    }
-
-    @Get('placement-test-done')
-    @ApiBearerAuth()
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Lấy danh sách Test PLACEMENT_TEST_DONE' })
-    @ApiResponse({
-        status: 200,
-        description: 'Thêm TestSet vào Test thành công',
-        type: MessageResDTO
-    })
-    async getPlacementTestDone() {
     }
 
 }

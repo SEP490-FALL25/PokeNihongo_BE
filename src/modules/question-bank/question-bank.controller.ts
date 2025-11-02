@@ -32,9 +32,11 @@ import {
     Param,
     Post,
     Put,
-    Query
+    Query,
+    Res
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { Response } from 'express'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { QuestionBankService } from './question-bank.service'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
@@ -91,8 +93,13 @@ export class QuestionBankController {
         description: 'Tạo câu hỏi và câu trả lời thành công',
         type: CreateQuestionBankWithAnswersResponseSwaggerDTO
     })
-    createWithAnswers(@Body() body: CreateQuestionBankWithAnswersBodyDTO, @ActiveUser('userId') userId: number) {
-        return this.questionBankService.createWithAnswers(body, userId)
+    createWithAnswers(
+        @Body() body: CreateQuestionBankWithAnswersBodyDTO,
+        @ActiveUser('userId') userId: number,
+        @Res() res: Response
+    ) {
+        const result = this.questionBankService.createWithAnswers(body, userId)
+        return result.then(data => res.status(data.statusCode).json(data)) as any
     }
 
     @Get()
