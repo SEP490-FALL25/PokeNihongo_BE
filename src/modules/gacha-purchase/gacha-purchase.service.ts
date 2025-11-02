@@ -115,7 +115,7 @@ export class GachaPurchaseService {
       const gachaPool = items.map((item) => {
         const rateObj = gachaItemRates.find((r) => r.id === item.gachaItemRateId)
         return {
-          id: item.id,
+          id: item.pokemonId,
           rate: rateObj?.rate ?? 0,
           starType: rateObj?.starType ?? 'ONE'
         }
@@ -289,7 +289,8 @@ export class GachaPurchaseService {
           if (roll.starType === 'FOUR') starNum = 4
           if (roll.starType === 'FIVE') starNum = 5
           // Lấy thông tin pokemon từ items[].pokemon (gachaBanner.items)
-          const itemInfo = gachaBanner.items.find((it) => it.id === roll.id)
+          const itemInfo = gachaBanner.items.find((it) => it.pokemonId === roll.id)
+
           let parseItem: any = {
             ...roll,
             isDuplicate: isOwned,
