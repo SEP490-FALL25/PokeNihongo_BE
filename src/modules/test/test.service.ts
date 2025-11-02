@@ -78,6 +78,19 @@ export class TestService {
             // Validation
             this.validateTestData(data, false)
 
+            // Kiểm tra nếu testType là PLACEMENT_TEST_DONE, chỉ cho phép tạo 1 test duy nhất trong toàn hệ thống
+            if (data.testType === 'PLACEMENT_TEST_DONE') {
+                const existingPlacementTest = await this.prisma.test.findFirst({
+                    where: {
+                        testType: 'PLACEMENT_TEST_DONE'
+                    }
+                })
+
+                if (existingPlacementTest) {
+                    throw new BadRequestException('Chỉ được tạo 1 test PLACEMENT_TEST_DONE duy nhất trong toàn hệ thống')
+                }
+            }
+
             // Tạo test với transaction
             const result = await this.prisma.$transaction(async (tx) => {
                 // Tạo test tạm thời để lấy ID
@@ -86,6 +99,7 @@ export class TestService {
                         name: 'temp', // Tạm thời
                         description: 'temp', // Tạm thời
                         price: data.price,
+                        levelN: data.levelN,
                         testType: data.testType,
                         status: data.status,
                         creatorId: userId,
@@ -383,6 +397,19 @@ export class TestService {
         try {
             // Validation
             this.validateTestWithMeaningsData(data, false)
+
+            // Kiểm tra nếu testType là PLACEMENT_TEST_DONE, chỉ cho phép tạo 1 test duy nhất trong toàn hệ thống
+            if (data.testType === 'PLACEMENT_TEST_DONE') {
+                const existingPlacementTest = await this.prisma.test.findFirst({
+                    where: {
+                        testType: 'PLACEMENT_TEST_DONE'
+                    }
+                })
+
+                if (existingPlacementTest) {
+                    throw new BadRequestException('Chỉ được tạo 1 test PLACEMENT_TEST_DONE duy nhất trong toàn hệ thống')
+                }
+            }
 
             // Tạo test với meanings
             const result = await this.testRepo.createWithMeanings(data, userId)
@@ -829,6 +856,336 @@ export class TestService {
         } catch (error) {
             this.logger.error('Error auto-adding free testSets:', error)
             throw new BadRequestException('Không thể tự động thêm TestSet')
+        }
+    }
+
+    async getRandomQuestionsForPlacementTest(testId: number, language: string = 'vi'): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Getting random questions for placement test: ${testId}, language: ${language}`)
+
+            // Validate test tồn tại và là PLACEMENT_TEST_DONE
+            const test = await this.testRepo.findById(testId)
+            if (!test) {
+                throw TestNotFoundException
+            }
+
+            if (test.testType !== 'PLACEMENT_TEST_DONE') {
+                throw new BadRequestException('Chỉ có thể lấy câu hỏi từ Test loại PLACEMENT_TEST_DONE')
+            }
+
+            // Lấy các TestSets của Test
+            const testTestSets = await (this.prisma as any).testTestSet.findMany({
+                where: { testId },
+                select: { testSetId: true }
+            })
+
+            if (testTestSets.length === 0) {
+                throw new BadRequestException('Test này chưa có TestSet nào')
+            }
+
+            const testSetIds = testTestSets.map((tts: any) => tts.testSetId)
+
+            // Lấy tất cả câu hỏi từ các TestSets, nhóm theo levelN
+            const allQuestions = await this.prisma.testSetQuestionBank.findMany({
+                where: {
+                    testSetId: { in: testSetIds }
+                },
+                include: {
+                    questionBank: {
+                        include: {
+                            answers: true
+                        }
+                    }
+                }
+            })
+
+            // Chỉ lấy các loại VOCABULARY, GRAMMAR, KANJI
+            const filteredQuestions = allQuestions.filter(
+                tsqb => ['VOCABULARY', 'GRAMMAR', 'KANJI'].includes(tsqb.questionBank.questionType)
+            )
+
+            // Nhóm câu hỏi theo levelN
+            const questionsByLevel = {
+                5: filteredQuestions.filter(q => q.questionBank.levelN === 5),
+                4: filteredQuestions.filter(q => q.questionBank.levelN === 4),
+                3: filteredQuestions.filter(q => q.questionBank.levelN === 3),
+                2: filteredQuestions.filter(q => q.questionBank.levelN === 2),
+                1: filteredQuestions.filter(q => q.questionBank.levelN === 1)
+            }
+
+            // Shuffle và lấy số lượng câu hỏi theo tỷ lệ: 3 câu N5, 4 câu N4, 3 câu N3
+            const shuffleArray = <T>(array: T[]): T[] => {
+                const shuffled = [...array]
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+                }
+                return shuffled
+            }
+
+            const getRandomQuestions = <T>(array: T[], count: number): T[] => {
+                const shuffled = shuffleArray(array)
+                return shuffled.slice(0, count)
+            }
+
+            const selectedN5 = getRandomQuestions(questionsByLevel[5], 3)
+            const selectedN4 = getRandomQuestions(questionsByLevel[4], 4)
+            const selectedN3 = getRandomQuestions(questionsByLevel[3], 3)
+
+            // Kiểm tra nếu không đủ câu hỏi
+            if (selectedN5.length < 3) {
+                this.logger.warn(`Chỉ có ${selectedN5.length} câu N5, cần 3`)
+            }
+            if (selectedN4.length < 4) {
+                this.logger.warn(`Chỉ có ${selectedN4.length} câu N4, cần 4`)
+            }
+            if (selectedN3.length < 3) {
+                this.logger.warn(`Chỉ có ${selectedN3.length} câu N3, cần 3`)
+            }
+
+            // Merge và shuffle lại tất cả câu hỏi đã chọn
+            const allSelected = [...selectedN5, ...selectedN4, ...selectedN3]
+            const finalQuestions = shuffleArray(allSelected)
+
+            // Map với translations và answers
+            const mappedQuestions = await Promise.all(
+                finalQuestions.map(async (tsqb: any) => {
+                    const qb = tsqb.questionBank
+
+                    // Lấy translations cho question nếu có
+                    let questionTranslation = qb.questionJp
+                    if (qb.questionKey && language) {
+                        const languageRecord = await this.prisma.languages.findFirst({
+                            where: { code: language }
+                        })
+                        if (languageRecord) {
+                            const translation = await this.prisma.translation.findFirst({
+                                where: {
+                                    key: qb.questionKey,
+                                    languageId: languageRecord.id
+                                }
+                            })
+                            if (translation) {
+                                questionTranslation = translation.value
+                            }
+                        }
+                    }
+
+                    // Map answers với translations
+                    const mappedAnswers = await Promise.all(
+                        (qb.answers || []).map(async (ans: any) => {
+                            let answerTranslation = ans.answerJp
+
+                            if (ans.answerKey && language) {
+                                const languageRecord = await this.prisma.languages.findFirst({
+                                    where: { code: language }
+                                })
+                                if (languageRecord) {
+                                    const translation = await this.prisma.translation.findFirst({
+                                        where: {
+                                            key: ans.answerKey,
+                                            languageId: languageRecord.id
+                                        }
+                                    })
+                                    if (translation) {
+                                        answerTranslation = translation.value
+                                    }
+                                }
+                            }
+
+                            return {
+                                id: ans.id,
+                                answer: answerTranslation,
+                                isCorrect: ans.isCorrect
+                            }
+                        })
+                    )
+
+                    return {
+                        id: tsqb.questionBankId,
+                        question: questionTranslation,
+                        questionType: qb.questionType,
+                        audioUrl: qb.audioUrl,
+                        pronunciation: qb.pronunciation,
+                        levelN: qb.levelN,
+                        answers: shuffleArray(mappedAnswers), // Shuffle answers
+                        isCorrect: undefined // Ẩn đáp án đúng khi trả về
+                    }
+                })
+            )
+
+            this.logger.log(`Selected ${finalQuestions.length} questions: ${selectedN5.length} N5, ${selectedN4.length} N4, ${selectedN3.length} N3`)
+
+            return {
+                statusCode: 200,
+                data: {
+                    questions: mappedQuestions,
+                    distribution: {
+                        level5: selectedN5.length,
+                        level4: selectedN4.length,
+                        level3: selectedN3.length,
+                        total: finalQuestions.length
+                    }
+                },
+                message: 'Lấy câu hỏi placement test thành công'
+            }
+        } catch (error) {
+            this.logger.error('Error getting random questions for placement test:', error)
+            if (error instanceof TestNotFoundException) {
+                throw error
+            }
+            throw new BadRequestException('Không thể lấy câu hỏi cho placement test')
+        }
+    }
+
+    async getRandomQuestionsByLevel(testId: number, levelN: number, count: number, language: string = 'vi'): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Getting ${count} random questions for level ${levelN} from test: ${testId}, language: ${language}`)
+
+            // Validate
+            if (![1, 2, 3, 4, 5].includes(levelN)) {
+                throw new BadRequestException('Level phải từ 1 đến 5')
+            }
+            if (count < 1) {
+                throw new BadRequestException('Số lượng câu hỏi phải lớn hơn 0')
+            }
+
+            // Validate test tồn tại
+            const test = await this.testRepo.findById(testId)
+            if (!test) {
+                throw TestNotFoundException
+            }
+
+            // Lấy các TestSets của Test
+            const testTestSets = await (this.prisma as any).testTestSet.findMany({
+                where: { testId },
+                select: { testSetId: true }
+            })
+
+            if (testTestSets.length === 0) {
+                throw new BadRequestException('Test này chưa có TestSet nào')
+            }
+
+            const testSetIds = testTestSets.map((tts: any) => tts.testSetId)
+
+            // Lấy tất cả câu hỏi có levelN cụ thể
+            const allQuestions = await this.prisma.testSetQuestionBank.findMany({
+                where: {
+                    testSetId: { in: testSetIds },
+                    questionBank: {
+                        levelN: levelN
+                    }
+                },
+                include: {
+                    questionBank: {
+                        include: {
+                            answers: true
+                        }
+                    }
+                }
+            })
+
+            // Shuffle và lấy số lượng cần thiết
+            const shuffleArray = <T>(array: T[]): T[] => {
+                const shuffled = [...array]
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+                }
+                return shuffled
+            }
+
+            const selectedQuestions = shuffleArray(allQuestions).slice(0, count)
+
+            // Kiểm tra nếu không đủ câu hỏi
+            if (selectedQuestions.length < count) {
+                this.logger.warn(`Chỉ có ${selectedQuestions.length} câu level ${levelN}, yêu cầu ${count}`)
+            }
+
+            // Map với translations và answers
+            const mappedQuestions = await Promise.all(
+                selectedQuestions.map(async (tsqb: any) => {
+                    const qb = tsqb.questionBank
+
+                    // Lấy translations cho question nếu có
+                    let questionTranslation = qb.questionJp
+                    if (qb.questionKey && language) {
+                        const languageRecord = await this.prisma.languages.findFirst({
+                            where: { code: language }
+                        })
+                        if (languageRecord) {
+                            const translation = await this.prisma.translation.findFirst({
+                                where: {
+                                    key: qb.questionKey,
+                                    languageId: languageRecord.id
+                                }
+                            })
+                            if (translation) {
+                                questionTranslation = translation.value
+                            }
+                        }
+                    }
+
+                    // Map answers với translations
+                    const mappedAnswers = await Promise.all(
+                        (qb.answers || []).map(async (ans: any) => {
+                            let answerTranslation = ans.answerJp
+
+                            if (ans.answerKey && language) {
+                                const languageRecord = await this.prisma.languages.findFirst({
+                                    where: { code: language }
+                                })
+                                if (languageRecord) {
+                                    const translation = await this.prisma.translation.findFirst({
+                                        where: {
+                                            key: ans.answerKey,
+                                            languageId: languageRecord.id
+                                        }
+                                    })
+                                    if (translation) {
+                                        answerTranslation = translation.value
+                                    }
+                                }
+                            }
+
+                            return {
+                                id: ans.id,
+                                answer: answerTranslation,
+                                isCorrect: ans.isCorrect
+                            }
+                        })
+                    )
+
+                    return {
+                        id: qb.id,
+                        question: questionTranslation,
+                        questionType: qb.questionType,
+                        audioUrl: qb.audioUrl,
+                        pronunciation: qb.pronunciation,
+                        levelN: qb.levelN,
+                        answers: shuffleArray(mappedAnswers), // Shuffle answers
+                        isCorrect: undefined // Ẩn đáp án đúng khi trả về
+                    }
+                })
+            )
+
+            this.logger.log(`Selected ${mappedQuestions.length} questions for level ${levelN}`)
+
+            return {
+                statusCode: 200,
+                data: {
+                    questions: mappedQuestions,
+                    levelN,
+                    count: mappedQuestions.length
+                },
+                message: `Lấy ${mappedQuestions.length} câu hỏi level N${levelN} thành công`
+            }
+        } catch (error) {
+            this.logger.error('Error getting random questions by level:', error)
+            if (error instanceof TestNotFoundException) {
+                throw error
+            }
+            throw new BadRequestException('Không thể lấy câu hỏi')
         }
     }
 }

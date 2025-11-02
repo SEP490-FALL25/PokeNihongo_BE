@@ -9,8 +9,10 @@ import {
     Post,
     Put,
     Query,
+    Res
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { Response } from 'express'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { UseGuards } from '@nestjs/common'
@@ -61,7 +63,6 @@ export class AnswerController {
     }
 
     @Post('multiple')
-    @HttpCode(HttpStatus.CREATED)
     @ApiOperation({
         summary: 'Tạo nhiều câu trả lời cùng lúc',
         description: 'Tạo nhiều câu trả lời cho một câu hỏi cùng lúc. Hệ thống sẽ kiểm tra từng câu trả lời và báo cáo kết quả chi tiết.' +
@@ -88,8 +89,12 @@ export class AnswerController {
     })
     @ApiBody({ type: CreateMultipleAnswersSwaggerDTO })
     @ZodSerializerDto(CreateMultipleAnswersResponseDTO)
-    async createMultipleAnswers(@Body() body: CreateMultipleAnswersBodyDTO) {
-        return await this.answerService.createMultiple(body)
+    async createMultipleAnswers(
+        @Body() body: CreateMultipleAnswersBodyDTO,
+        @Res() res: Response
+    ) {
+        const result = await this.answerService.createMultiple(body)
+        return res.status(result.statusCode).json(result) as any
     }
 
     @Get()

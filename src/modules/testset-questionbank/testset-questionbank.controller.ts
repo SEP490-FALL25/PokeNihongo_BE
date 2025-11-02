@@ -39,9 +39,11 @@ import {
     HttpStatus,
     Param,
     Post,
-    Put
+    Put,
+    Res
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { Response } from 'express'
 import { TestSetQuestionBankService } from './testset-questionbank.service'
 // no need to import DTO class for type annotation
 
@@ -110,9 +112,11 @@ export class TestSetQuestionBankController {
     })
     async createMultiple(
         @Body() body: CreateMultipleTestSetQuestionBankBodyType,
-        @ActiveUser('userId') userId: number
+        @ActiveUser('userId') userId: number,
+        @Res() res: Response
     ): Promise<MessageResDTO> {
-        return this.testSetQuestionBankService.createMultiple(body)
+        const result = await this.testSetQuestionBankService.createMultiple(body)
+        return res.status(result.statusCode).json(result) as any
     }
 
 
