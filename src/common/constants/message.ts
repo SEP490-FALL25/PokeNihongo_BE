@@ -62,7 +62,9 @@ export const TEST_MESSAGE = {
   TEST_TYPE_REQUIRED: 'Loại đề thi không được để trống',
   PRICE_INVALID: 'Giá bài test không hợp lệ',
   PERMISSION_DENIED: 'Bạn không có quyền thực hiện hành động này',
-  ADD_TESTSETS_SUCCESS: 'Thêm TestSet vào Test thành công'
+  ADD_TESTSETS_SUCCESS: 'Thêm TestSet vào Test thành công',
+  REMOVE_TESTSETS_SUCCESS: 'Xóa TestSet khỏi Test thành công',
+  DELETE_ALL_TESTSETS_SUCCESS: 'Xóa tất cả TestSet khỏi Test thành công'
 }
 
 export const USER_TEST_MESSAGE = {

@@ -13,6 +13,7 @@ import {
     UpdateTestWithMeaningsBodyDTO,
     DeleteManyTestsBodyDTO,
     AddTestSetsToTestBodyDTO,
+    RemoveTestSetsFromTestBodyDTO,
 } from './dto/test.zod-dto'
 import {
     TestResponseSwaggerDTO,
@@ -23,7 +24,8 @@ import {
     CreateTestWithMeaningsSwaggerDTO,
     UpdateTestWithMeaningsSwaggerDTO,
     DeleteManyTestsSwaggerDTO,
-    AddTestSetsToTestSwaggerDTO
+    AddTestSetsToTestSwaggerDTO,
+    RemoveTestSetsFromTestSwaggerDTO
 } from './dto/test.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -240,6 +242,23 @@ export class TestController {
         return this.testService.addTestSetsToTest(Number(id), body)
     }
 
+    @Delete(':id/testSets')
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Xóa nhiều TestSet khỏi Test' })
+    @ApiBody({ type: RemoveTestSetsFromTestSwaggerDTO })
+    @ApiResponse({
+        status: 200,
+        description: 'Xóa TestSet khỏi Test thành công',
+        type: MessageResDTO
+    })
+    async removeTestSetsFromTest(
+        @Param('id') id: string,
+        @Body() body: RemoveTestSetsFromTestBodyDTO
+    ): Promise<MessageResDTO> {
+        return this.testService.removeTestSetsFromTest(Number(id), body)
+    }
+
     @Post('auto-add-free-testsets')
     @ApiBearerAuth()
     @HttpCode(HttpStatus.OK)
@@ -252,6 +271,5 @@ export class TestController {
     async autoAddFreeTestSets() {
         return this.testService.autoAddFreeTestSets()
     }
-
 }
 
