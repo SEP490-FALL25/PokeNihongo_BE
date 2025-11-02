@@ -501,3 +501,14 @@ export const UserTestAttemptMessage = {
 export const UserHistoryMessage = {
   GET_LIST_SUCCESS: 'user_history.GET_LIST_SUCCESS'
 } as const
+
+export const LeaderboardSeasonMessage = {
+  CREATE_SUCCESS: 'leaderboard_season.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'leaderboard_season.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'leaderboard_season.DELETE_SUCCESS',
+  GET_SUCCESS: 'leaderboard_season.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'leaderboard_season.GET_LIST_SUCCESS',
+  NOT_FOUND: 'leaderboard_season.NOT_FOUND',
+  ALREADY_EXISTS: 'leaderboard_season.ALREADY_EXISTS',
+  INVALID_DATA: 'leaderboard_season.INVALID_DATA'
+} as const

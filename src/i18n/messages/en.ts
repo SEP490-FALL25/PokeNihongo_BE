@@ -471,5 +471,15 @@ export const enMessages = {
   },
   user_history: {
     GET_LIST_SUCCESS: 'User history retrieved successfully'
+  },
+  leader_board_sesson: {
+    CREATE_SUCCESS: 'Leaderboard season created successfully',
+    UPDATE_SUCCESS: 'Leaderboard season updated successfully',
+    DELETE_SUCCESS: 'Leaderboard season deleted successfully',
+    GET_SUCCESS: 'Leaderboard season retrieved successfully',
+    GET_LIST_SUCCESS: 'Leaderboard season list retrieved successfully',
+    NOT_FOUND: 'Leaderboard season not found',
+    ALREADY_EXISTS: 'Leaderboard season already exists',
+    INVALID_DATA: 'Invalid leaderboard season data'
   }
 }

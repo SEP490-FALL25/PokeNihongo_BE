@@ -49,26 +49,27 @@ import { ShopItemModule } from './modules/shop-item/shop-item.module'
 import { ShopPurchaseModule } from './modules/shop-purchase/shop-purchase.module'
 import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module'
 import { SpeakingModule } from './modules/speaking/speaking.module'
+import { TestModule } from './modules/test/test.module'
 import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module'
 import { TestSetModule } from './modules/testset/testset.module'
-import { TestModule } from './modules/test/test.module'
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module'
 import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.module'
 import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-request.module'
 import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-exercise-attempt.module'
-import { UserTestAttemptModule } from './modules/user-test-attempt/user-test-attempt.module'
-import { UserTestAnswerLogModule } from './modules/user-test-answer-log/user-test-answer-log.module'
-import { UserTestModule } from './modules/user-test/user-test.module'
 import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.module'
+import { UserHistoryModule } from './modules/user-history/user-history.module'
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserProgressModule } from './modules/user-progress/user-progress.module'
+import { UserTestAnswerLogModule } from './modules/user-test-answer-log/user-test-answer-log.module'
+import { UserTestAttemptModule } from './modules/user-test-attempt/user-test-attempt.module'
+import { UserTestModule } from './modules/user-test/user-test.module'
 import { UserModule } from './modules/user/user.module'
-import { UserHistoryModule } from './modules/user-history/user-history.module'
 import { WalletTransactionModule } from './modules/wallet-transaction/wallet-transaction.module'
 import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
+import { LeaderboardSeasonModule } from './modules/leaderboard-season/leaderboard-season.module';
 
 @Module({
   imports: [
@@ -136,7 +137,8 @@ import { WebsocketsModule } from './websockets/websockets.module'
     UserGachaPityModule,
     GachaPurchaseModule,
     GachaRollHistoryModule,
-    WebsocketsModule
+    WebsocketsModule,
+    LeaderboardSeasonModule
   ],
 
   controllers: [],

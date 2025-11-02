@@ -450,5 +450,15 @@ export const jaMessages = {
     REVIEW_INSUFFICIENT_SCORE:
       '解答レビューを表示するには、少なくとも80%の正解率が必要です',
     REVIEW_SUCCESS: '演習レビュー情報の取得に成功しました'
+  },
+  leader_board_sesson: {
+    CREATE_SUCCESS: 'ランキングシーズンの作成に成功しました',
+    UPDATE_SUCCESS: 'ランキングシーズンの更新に成功しました',
+    DELETE_SUCCESS: 'ランキングシーズンの削除に成功しました',
+    GET_SUCCESS: 'ランキングシーズン情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ランキングシーズンリストの取得に成功しました',
+    NOT_FOUND: 'ランキングシーズンが見つかりません',
+    ALREADY_EXISTS: 'ランキングシーズンは既に存在します',
+    INVALID_DATA: '無効なランキングシーズンデータです'
   }
 }

@@ -470,5 +470,15 @@ export const viMessages = {
   },
   user_history: {
     GET_LIST_SUCCESS: 'Lấy danh sách lịch sử làm bài thành công'
+  },
+  leader_board_sesson: {
+    CREATE_SUCCESS: 'Tạo mùa xếp hạng thành công',
+    UPDATE_SUCCESS: 'Cập nhật mùa xếp hạng thành công',
+    DELETE_SUCCESS: 'Xóa mùa xếp hạng thành công',
+    GET_SUCCESS: 'Lấy thông tin mùa xếp hạng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách mùa xếp hạng thành công',
+    NOT_FOUND: 'Không tìm thấy mùa xếp hạng',
+    ALREADY_EXISTS: 'Mùa xếp hạng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu mùa xếp hạng không hợp lệ'
   }
 }
