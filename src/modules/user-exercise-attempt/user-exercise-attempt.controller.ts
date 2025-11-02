@@ -117,6 +117,19 @@ export class UserExerciseAttemptController {
         return this.userExerciseAttemptService.remove(Number(id))
     }
 
+    @Put(':id/placement-test/submit-completion')
+    @ApiBearerAuth()
+    @ApiBody({ type: TimeSwaggerDTO })
+    @ApiOperation({ summary: 'Kiểm tra trạng thái hoàn thành bài tập' })
+    @ApiResponse({
+        status: 200,
+        description: 'Kiểm tra trạng thái hoàn thành thành công',
+        type: ExerciseCompletionResponseSwaggerDTO
+    })
+    supmitPlacementTestCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number, @Body() body: CheckExerciseCompletionBodyDTO) {
+        return this.userExerciseAttemptService.supmitPlacementTestCompletion(Number(id), userId, body?.time)
+    }
+
     @Put(':id/submit-completion')
     @ApiBearerAuth()
     @ApiBody({ type: TimeSwaggerDTO })
@@ -129,6 +142,9 @@ export class UserExerciseAttemptController {
     supmitCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number, @Body() body: CheckExerciseCompletionBodyDTO) {
         return this.userExerciseAttemptService.supmitExerciseCompletion(Number(id), userId, body?.time)
     }
+
+
+
 
     @Get(':id/check-completion')
     @ApiBearerAuth()

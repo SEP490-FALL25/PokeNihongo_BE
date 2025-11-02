@@ -998,59 +998,50 @@ export class TestService {
                 throw new BadRequestException('Bạn chưa có quyền làm bài test này')
             }
 
-            // Kiểm tra xem có UserTestAttempt đang IN_PROGRESS không (xử lý trường hợp rớt mạng)
-            const existingAttempt = await this.prisma.userTestAttempt.findFirst({
+            // Lấy attempt được tạo gần nhất của userId và testId (không phân biệt status)
+            const latestAttempt = await this.prisma.userTestAttempt.findFirst({
                 where: {
                     userId,
-                    testId,
-                    status: 'IN_PROGRESS'
+                    testId
                 },
                 orderBy: {
-                    createdAt: 'desc'
+                    createdAt: 'desc' // Lấy attempt được tạo gần nhất
                 }
             })
 
             let userTestAttempt
 
-            if (existingAttempt) {
-                // Nếu đã có attempt IN_PROGRESS, sử dụng attempt đó (không tạo mới, không giảm limit)
-                this.logger.log(`Found existing IN_PROGRESS UserTestAttempt with ID: ${existingAttempt.id}`)
-
-                // Xóa tất cả UserTestAnswerLog của attempt này để bắt đầu lại từ đầu
-                const deletedLogsCount = await this.prisma.userTestAnswerLog.deleteMany({
-                    where: {
-                        userTestAttemptId: existingAttempt.id
-                    }
-                })
-                this.logger.log(`Deleted ${deletedLogsCount.count} UserTestAnswerLog for attempt ${existingAttempt.id}`)
+            // Nếu có attempt gần nhất và là IN_PROGRESS → dùng lại (xử lý trường hợp rớt mạng)
+            if (latestAttempt && latestAttempt.status === 'IN_PROGRESS') {
+                // Sử dụng attempt đó (không tạo mới, không giảm limit)
+                // Giữ lại lịch sử UserTestAnswerLog đã trả lời
+                this.logger.log(`Found existing IN_PROGRESS UserTestAttempt with ID: ${latestAttempt.id} for user ${userId} and test ${testId}`)
 
                 userTestAttempt = {
-                    id: existingAttempt.id,
-                    userId: existingAttempt.userId,
-                    testId: existingAttempt.testId,
-                    status: existingAttempt.status,
-                    time: existingAttempt.time,
-                    score: existingAttempt.score,
-                    createdAt: existingAttempt.createdAt,
-                    updatedAt: existingAttempt.updatedAt
+                    id: latestAttempt.id,
+                    userId: latestAttempt.userId,
+                    testId: latestAttempt.testId,
+                    status: latestAttempt.status,
+                    time: latestAttempt.time,
+                    score: latestAttempt.score,
+                    createdAt: latestAttempt.createdAt,
+                    updatedAt: latestAttempt.updatedAt
                 }
             } else {
-                // Kiểm tra limit (undefined/null được coi như không giới hạn)
-                if (userTest.limit !== null && userTest.limit !== undefined && userTest.limit <= 0) {
-                    throw new BadRequestException('Bạn đã hết lượt làm bài test này')
+                // Nếu attempt gần nhất là COMPLETED hoặc không có attempt nào (lần đầu) → tạo mới
+                if (latestAttempt && latestAttempt.status === 'COMPLETED') {
+                    this.logger.log(`Found COMPLETED attempt (ID: ${latestAttempt.id}), creating new UserTestAttempt for user ${userId} and test ${testId}`)
+                } else {
+                    this.logger.log(`No existing attempt found (first time), creating new UserTestAttempt for user ${userId} and test ${testId}`)
                 }
 
-                // Tạo UserTestAttempt mới
+                // Tạo UserTestAttempt mới (không giảm limit)
                 userTestAttempt = await this.userTestAttemptRepo.create({
                     userId,
                     testId
                 })
 
                 this.logger.log(`Created new UserTestAttempt with ID: ${userTestAttempt.id}`)
-
-                // Giảm limit của UserTest sau khi tạo attempt mới
-                await this.userTestRepo.decrementLimit(userId, testId)
-                this.logger.log(`Decremented UserTest limit for user ${userId}, test ${testId}`)
             }
 
             // Lấy các TestSets của Test
