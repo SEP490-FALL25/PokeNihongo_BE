@@ -64,3 +64,12 @@ export const ForbiddenReviewAccessException = new HttpException(
     HttpStatus.FORBIDDEN
 )
 
+export const UnauthorizedUserTestAttemptAccessException = new HttpException(
+    {
+        statusCode: HttpStatus.FORBIDDEN,
+        message: USER_TEST_ATTEMPT_MESSAGE.UNAUTHORIZED_ACCESS,
+        error: 'UNAUTHORIZED_USER_TEST_ATTEMPT_ACCESS'
+    },
+    HttpStatus.FORBIDDEN
+)
+
