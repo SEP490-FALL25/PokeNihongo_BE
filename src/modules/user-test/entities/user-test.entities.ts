@@ -1,7 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
-import { UserTestStatus } from '@prisma/client'
+import { UserTestStatus, TestStatus } from '@prisma/client'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -109,7 +109,8 @@ export const GetUserTestListQuerySchema = z
         pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         userId: z.string().transform((val) => parseInt(val, 10)).optional(),
         testId: z.string().transform((val) => parseInt(val, 10)).optional(),
-        status: UserTestStatusSchema.optional()
+        status: UserTestStatusSchema.optional(),
+        testType: z.nativeEnum(TestStatus).optional()
     })
     .strict()
 

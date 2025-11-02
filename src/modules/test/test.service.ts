@@ -225,6 +225,32 @@ export class TestService {
         // Validation
         this.validateTestData(data, true)
 
+        // Kiểm tra nếu đang update testType sang READING_TEST/LISTENING_TEST/SPEAKING_TEST
+        // và test hiện tại có TestSet type khác thì không cho phép
+        if (data.testType && data.testType !== test.testType) {
+            const restrictedTestTypes = ['READING_TEST', 'LISTENING_TEST', 'SPEAKING_TEST']
+            if (restrictedTestTypes.includes(data.testType)) {
+                // Lấy tất cả TestSet hiện có trong test này
+                const testTestSets = await (this.prisma as any).testTestSet.findMany({
+                    where: { testId: id },
+                    include: { testSet: true }
+                })
+
+                if (testTestSets.length > 0) {
+                    const allowedTestSetType = data.testType.replace('_TEST', '') // READING_TEST -> READING
+                    const invalidTestSets = testTestSets.filter((tts: any) => tts.testSet.testType !== allowedTestSetType)
+
+                    if (invalidTestSets.length > 0) {
+                        const invalidIds = invalidTestSets.map((tts: any) => tts.testSet.id)
+                        throw new BadRequestException(
+                            `Không thể đổi testType sang ${data.testType} vì test đang chứa TestSet loại khác. ` +
+                            `Vui lòng xóa các TestSet không hợp lệ trước: ${invalidIds.join(', ')}`
+                        )
+                    }
+                }
+            }
+        }
+
         // Cập nhật test với transaction
         const result = await this.prisma.$transaction(async (tx) => {
             // Cập nhật test
@@ -445,6 +471,32 @@ export class TestService {
         // Validation
         this.validateTestWithMeaningsData(data, true)
 
+        // Kiểm tra nếu đang update testType sang READING_TEST/LISTENING_TEST/SPEAKING_TEST
+        // và test hiện tại có TestSet type khác thì không cho phép
+        if (data.testType && data.testType !== test.testType) {
+            const restrictedTestTypes = ['READING_TEST', 'LISTENING_TEST', 'SPEAKING_TEST']
+            if (restrictedTestTypes.includes(data.testType)) {
+                // Lấy tất cả TestSet hiện có trong test này
+                const testTestSets = await (this.prisma as any).testTestSet.findMany({
+                    where: { testId: id },
+                    include: { testSet: true }
+                })
+
+                if (testTestSets.length > 0) {
+                    const allowedTestSetType = data.testType.replace('_TEST', '') // READING_TEST -> READING
+                    const invalidTestSets = testTestSets.filter((tts: any) => tts.testSet.testType !== allowedTestSetType)
+
+                    if (invalidTestSets.length > 0) {
+                        const invalidIds = invalidTestSets.map((tts: any) => tts.testSet.id)
+                        throw new BadRequestException(
+                            `Không thể đổi testType sang ${data.testType} vì test đang chứa TestSet loại khác. ` +
+                            `Vui lòng xóa các TestSet không hợp lệ trước: ${invalidIds.join(', ')}`
+                        )
+                    }
+                }
+            }
+        }
+
         // Cập nhật test với meanings
         const result = await this.testRepo.updateWithMeanings(id, data)
 
@@ -474,6 +526,22 @@ export class TestService {
                 const foundIds = testSets.map(ts => ts.id)
                 const notFoundIds = data.testSetIds.filter(id => !foundIds.includes(id))
                 throw new BadRequestException(`Không tìm thấy TestSet với ID: ${notFoundIds.join(', ')}`)
+            }
+
+            // Kiểm tra nếu test là READING_TEST, LISTENING_TEST, hoặc SPEAKING_TEST
+            // thì chỉ cho phép thêm TestSet có cùng type (READING, LISTENING, SPEAKING)
+            const restrictedTestTypes = ['READING_TEST', 'LISTENING_TEST', 'SPEAKING_TEST']
+            if (restrictedTestTypes.includes(test.testType)) {
+                const allowedTestSetType = test.testType.replace('_TEST', '') // READING_TEST -> READING
+                const invalidTestSets = testSets.filter(ts => ts.testType !== allowedTestSetType)
+
+                if (invalidTestSets.length > 0) {
+                    const invalidIds = invalidTestSets.map(ts => ts.id)
+                    throw new BadRequestException(
+                        `Test loại ${test.testType} chỉ được thêm TestSet loại ${allowedTestSetType}. ` +
+                        `TestSet không hợp lệ: ${invalidIds.join(', ')}`
+                    )
+                }
             }
 
             // Tạo các bản ghi trong bảng TestTestSet (nhiều-nhiều)

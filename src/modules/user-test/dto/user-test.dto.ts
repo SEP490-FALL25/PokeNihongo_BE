@@ -112,6 +112,9 @@ export class GetUserTestListQuerySwaggerDTO {
 
     @ApiProperty({ example: 'ACTIVE', description: 'Trạng thái', enum: ['NOT_STARTED', 'ACTIVE'], required: false })
     status?: string
+
+    @ApiProperty({ enum: TestStatus, example: TestStatus.PLACEMENT_TEST_DONE, description: 'Lọc theo loại test', required: false })
+    testType?: TestStatus
 }
 
 
@@ -127,6 +130,9 @@ export class GetUserTestMyListQuerySwaggerDTO {
 
     @ApiProperty({ example: 'ACTIVE', description: 'Trạng thái', enum: ['NOT_STARTED', 'ACTIVE'], required: false })
     status?: string
+
+    @ApiProperty({ enum: TestStatus, example: TestStatus.PLACEMENT_TEST_DONE, description: 'Lọc theo loại test (type của test)', required: false })
+    type?: TestStatus
 }
 
 export class UserTestResponseSwaggerDTO {
@@ -177,38 +183,39 @@ export class UserTestListResponseSwaggerDTO {
     message: string
 }
 
+// Nested class cho pagination
+class PaginationSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'Trang hiện tại' })
+    current: number
+
+    @ApiProperty({ example: 10, description: 'Số lượng mỗi trang' })
+    pageSize: number
+
+    @ApiProperty({ example: 5, description: 'Tổng số trang' })
+    totalPage: number
+
+    @ApiProperty({ example: 50, description: 'Tổng số item' })
+    totalItem: number
+}
+
+// Nested class cho data property
+class UserTestMyListDataSwaggerDTO {
+    @ApiProperty({
+        type: [UserTestWithTestSwaggerDTO],
+        description: 'Danh sách UserTest với thông tin Test'
+    })
+    results: UserTestWithTestSwaggerDTO[]
+
+    @ApiProperty({ type: PaginationSwaggerDTO, description: 'Thông tin phân trang' })
+    pagination: PaginationSwaggerDTO
+}
+
 export class UserTestMyListResponseSwaggerDTO {
     @ApiProperty({ example: 200, description: 'Mã trạng thái HTTP' })
     statusCode: number
 
-    @ApiProperty({
-        type: 'object',
-        properties: {
-            results: {
-                type: 'array',
-                items: { $ref: '#/components/schemas/UserTestWithTestSwaggerDTO' }
-            },
-            pagination: {
-                type: 'object',
-                properties: {
-                    current: { type: 'number', example: 1 },
-                    pageSize: { type: 'number', example: 10 },
-                    totalPage: { type: 'number', example: 5 },
-                    totalItem: { type: 'number', example: 50 }
-                }
-            }
-        },
-        description: 'Dữ liệu danh sách UserTest với thông tin Test và phân trang'
-    })
-    data: {
-        results: UserTestWithTestSwaggerDTO[]
-        pagination: {
-            current: number
-            pageSize: number
-            totalPage: number
-            totalItem: number
-        }
-    }
+    @ApiProperty({ type: UserTestMyListDataSwaggerDTO, description: 'Dữ liệu danh sách UserTest với thông tin Test và phân trang' })
+    data: UserTestMyListDataSwaggerDTO
 
     @ApiProperty({ example: 'Lấy danh sách UserTest thành công', description: 'Thông báo' })
     message: string
