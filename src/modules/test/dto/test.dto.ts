@@ -55,6 +55,9 @@ export class TestSwaggerDTO {
     @ApiPropertyOptional({ example: 3, description: 'Cấp độ JLPT (0-5), 0 = nhiều cấp độ' })
     levelN?: number
 
+    @ApiPropertyOptional({ example: 5, description: 'Giới hạn số lần làm bài test (0 = không giới hạn)' })
+    limit?: number
+
     @ApiProperty({ enum: TestStatus, example: TestStatus.PLACEMENT_TEST_DONE, description: 'Loại đề thi (PLACEMENT_TEST_DONE, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST)' })
     testType: TestStatus
 
@@ -95,6 +98,12 @@ export class CreateTestSwaggerDTO {
     })
     levelN?: number | null
 
+    @ApiPropertyOptional({
+        example: 10,
+        description: 'Giới hạn số lần làm bài test (0 = không giới hạn)'
+    })
+    limit?: number | null
+
     @ApiProperty({
         enum: TestStatus,
         example: TestStatus.PLACEMENT_TEST_DONE,
@@ -134,6 +143,12 @@ export class UpdateTestSwaggerDTO {
         description: 'Cấp độ JLPT (0-5), 0 = nhiều cấp độ'
     })
     levelN?: number | null
+
+    @ApiPropertyOptional({
+        example: 10,
+        description: 'Giới hạn số lần làm bài test (0 = không giới hạn)'
+    })
+    limit?: number | null
 
     @ApiPropertyOptional({
         enum: TestStatus,
@@ -261,6 +276,12 @@ export class UpdateTestWithMeaningsSwaggerDTO {
     levelN?: number | null
 
     @ApiPropertyOptional({
+        example: 10,
+        description: 'Giới hạn số lần làm bài test'
+    })
+    limit?: number | null
+
+    @ApiPropertyOptional({
         enum: TestStatus,
         example: TestStatus.MATCH_TEST,
         description: 'Loại đề thi (PLACEMENT_TEST_DONE, MATCH_TEST, QUIZ_TEST, REVIEW_TEST, PRACTICE_TEST)'
@@ -368,6 +389,15 @@ export class AddTestSetsToTestSwaggerDTO {
     @ApiProperty({
         example: [1, 2, 3],
         description: 'Mảng các ID của TestSet cần thêm vào Test',
+        type: [Number]
+    })
+    testSetIds: number[]
+}
+
+export class RemoveTestSetsFromTestSwaggerDTO {
+    @ApiProperty({
+        example: [1, 2, 3],
+        description: 'Mảng các ID của TestSet cần xóa khỏi Test',
         type: [Number]
     })
     testSetIds: number[]

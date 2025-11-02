@@ -25,6 +25,7 @@ export const TestSchema = z.object({
     ]).optional(),
     price: z.number().nullable().optional(),
     levelN: z.number().int().min(0).max(5).nullable().optional(),
+    limit: z.number().int().min(0).nullable().optional(),
     testType: z.nativeEnum(PrismaTestStatus),
     status: z.nativeEnum(TestSetStatus),
     creatorId: z.number().nullable().optional(),
@@ -38,6 +39,7 @@ export const CreateTestBodySchema = z.object({
     description: z.string().nullable().optional(),
     price: z.number().nullable().optional(),
     levelN: z.number().int().min(0).max(5).nullable().optional(),
+    limit: z.number().int().min(0).nullable().optional(),
     testType: z.nativeEnum(PrismaTestStatus),
     status: z.nativeEnum(TestSetStatus).default(TestSetStatus.DRAFT),
     translations: z.array(z.object({
@@ -51,6 +53,7 @@ export const CreateTestBodySchema = z.object({
 export const CreateTestWithMeaningsBodySchema = z.object({
     price: z.number().nullable().optional(),
     levelN: z.number().int().min(0).max(5).nullable().optional(),
+    limit: z.number().int().min(0).nullable().optional(),
     testType: z.nativeEnum(PrismaTestStatus),
     status: z.nativeEnum(TestSetStatus).default(TestSetStatus.DRAFT),
     meanings: z.array(z.object({
@@ -68,6 +71,7 @@ export const CreateTestWithMeaningsBodySchema = z.object({
 export const UpdateTestBodySchema = z.object({
     price: z.number().nullable().optional(),
     levelN: z.number().int().min(0).max(5).nullable().optional(),
+    limit: z.number().int().min(0).nullable().optional(),
     testType: z.nativeEnum(PrismaTestStatus).optional(),
     status: z.nativeEnum(TestSetStatus).optional(),
     translations: z.array(z.object({
@@ -81,6 +85,7 @@ export const UpdateTestBodySchema = z.object({
 export const UpdateTestWithMeaningsBodySchema = z.object({
     price: z.number().nullable().optional(),
     levelN: z.number().int().min(0).max(5).nullable().optional(),
+    limit: z.number().int().min(0).nullable().optional(),
     testType: z.nativeEnum(PrismaTestStatus).optional(),
     status: z.nativeEnum(TestSetStatus).optional(),
     meanings: z.array(z.object({
@@ -157,6 +162,13 @@ export const AddTestSetsToTestBodySchema = z
     })
     .strict()
 
+// Remove TestSets from Test Schema
+export const RemoveTestSetsFromTestBodySchema = z
+    .object({
+        testSetIds: z.array(z.number()).min(1, 'Phải có ít nhất 1 TestSet ID')
+    })
+    .strict()
+
 // Types
 export type TestType = z.infer<typeof TestSchema>
 export type CreateTestBodyType = z.infer<typeof CreateTestBodySchema>
@@ -169,4 +181,5 @@ export type GetTestByIdParamsType = z.infer<typeof GetTestByIdParamsSchema>
 export type GetTestListQueryType = z.infer<typeof GetTestListQuerySchema>
 export type DeleteManyTestsBodyType = z.infer<typeof DeleteManyTestsBodySchema>
 export type AddTestSetsToTestBodyType = z.infer<typeof AddTestSetsToTestBodySchema>
+export type RemoveTestSetsFromTestBodyType = z.infer<typeof RemoveTestSetsFromTestBodySchema>
 
