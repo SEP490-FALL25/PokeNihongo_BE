@@ -10,6 +10,8 @@ import { LanguagesService } from '../languages/languages.service'
 import { TestSetRepository } from '../testset/testset.repo'
 import { TestSetNotFoundException } from '../testset/dto/testset.error'
 import { TestSetQuestionBankService } from '../testset-questionbank/testset-questionbank.service'
+import { UserTestAttemptRepository } from '../user-test-attempt/user-test-attempt.repo'
+import { UserTestRepository } from '../user-test/user-test.repo'
 
 @Injectable()
 export class TestService {
@@ -22,6 +24,8 @@ export class TestService {
         private readonly languagesService: LanguagesService,
         private readonly testSetRepo: TestSetRepository,
         private readonly testSetQuestionBankService: TestSetQuestionBankService,
+        private readonly userTestAttemptRepo: UserTestAttemptRepository,
+        private readonly userTestRepo: UserTestRepository,
     ) { }
 
     private isValidUrl(url: string): boolean {
@@ -974,9 +978,9 @@ export class TestService {
         }
     }
 
-    async getRandomQuestionsForPlacementTest(testId: number, language: string = 'vi'): Promise<MessageResDTO> {
+    async getRandomQuestionsForPlacementTest(testId: number, userId: number, language: string = 'vi'): Promise<MessageResDTO> {
         try {
-            this.logger.log(`Getting random questions for placement test: ${testId}, language: ${language}`)
+            this.logger.log(`Getting random questions for placement test: ${testId}, user: ${userId}, language: ${language}`)
 
             // Validate test tồn tại và là PLACEMENT_TEST_DONE
             const test = await this.testRepo.findById(testId)
@@ -986,6 +990,67 @@ export class TestService {
 
             if (test.testType !== 'PLACEMENT_TEST_DONE') {
                 throw new BadRequestException('Chỉ có thể lấy câu hỏi từ Test loại PLACEMENT_TEST_DONE')
+            }
+
+            // Kiểm tra UserTest tồn tại và limit
+            const userTest = await this.userTestRepo.findByUserAndTest(userId, testId)
+            if (!userTest) {
+                throw new BadRequestException('Bạn chưa có quyền làm bài test này')
+            }
+
+            // Kiểm tra xem có UserTestAttempt đang IN_PROGRESS không (xử lý trường hợp rớt mạng)
+            const existingAttempt = await this.prisma.userTestAttempt.findFirst({
+                where: {
+                    userId,
+                    testId,
+                    status: 'IN_PROGRESS'
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            })
+
+            let userTestAttempt
+
+            if (existingAttempt) {
+                // Nếu đã có attempt IN_PROGRESS, sử dụng attempt đó (không tạo mới, không giảm limit)
+                this.logger.log(`Found existing IN_PROGRESS UserTestAttempt with ID: ${existingAttempt.id}`)
+
+                // Xóa tất cả UserTestAnswerLog của attempt này để bắt đầu lại từ đầu
+                const deletedLogsCount = await this.prisma.userTestAnswerLog.deleteMany({
+                    where: {
+                        userTestAttemptId: existingAttempt.id
+                    }
+                })
+                this.logger.log(`Deleted ${deletedLogsCount.count} UserTestAnswerLog for attempt ${existingAttempt.id}`)
+
+                userTestAttempt = {
+                    id: existingAttempt.id,
+                    userId: existingAttempt.userId,
+                    testId: existingAttempt.testId,
+                    status: existingAttempt.status,
+                    time: existingAttempt.time,
+                    score: existingAttempt.score,
+                    createdAt: existingAttempt.createdAt,
+                    updatedAt: existingAttempt.updatedAt
+                }
+            } else {
+                // Kiểm tra limit (undefined/null được coi như không giới hạn)
+                if (userTest.limit !== null && userTest.limit !== undefined && userTest.limit <= 0) {
+                    throw new BadRequestException('Bạn đã hết lượt làm bài test này')
+                }
+
+                // Tạo UserTestAttempt mới
+                userTestAttempt = await this.userTestAttemptRepo.create({
+                    userId,
+                    testId
+                })
+
+                this.logger.log(`Created new UserTestAttempt with ID: ${userTestAttempt.id}`)
+
+                // Giảm limit của UserTest sau khi tạo attempt mới
+                await this.userTestRepo.decrementLimit(userId, testId)
+                this.logger.log(`Decremented UserTest limit for user ${userId}, test ${testId}`)
             }
 
             // Lấy các TestSets của Test
@@ -1134,6 +1199,7 @@ export class TestService {
             return {
                 statusCode: 200,
                 data: {
+                    userTestAttemptId: userTestAttempt.id,
                     questions: mappedQuestions,
                     distribution: {
                         level5: selectedN5.length,

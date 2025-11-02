@@ -16,10 +16,19 @@ export class GeminiService {
         private readonly prisma: PrismaService
     ) {
         const apiKey = this.configService.get<string>('gemini.apiKey')
-        if (!apiKey) {
-            this.logger.warn('GEMINI_API_KEY not found in environment variables')
+        if (!apiKey || apiKey.trim() === '') {
+            this.logger.error('GEMINI_API_KEY not found or empty in environment variables. Please set GEMINI_API_KEY in your .env file')
+            throw new Error('GEMINI_API_KEY is required but not configured')
         }
-        this.genAI = new GoogleGenerativeAI(apiKey || '')
+
+        // Log một phần API key để debug (chỉ log 8 ký tự đầu và cuối)
+        const maskedKey = apiKey.length > 16
+            ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 8)}`
+            : '***'
+        this.logger.log(`Gemini AI initializing with API key: ${maskedKey}`)
+
+        this.genAI = new GoogleGenerativeAI(apiKey)
+        this.logger.log('Gemini AI initialized successfully')
     }
 
     /**
@@ -58,7 +67,16 @@ export class GeminiService {
             const model = this.genAI.getGenerativeModel({ model: this.modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response
+
+            if (!response) {
+                throw new Error('Empty response from Gemini API')
+            }
+
             const text = response.text()
+
+            if (!text || text.trim() === '') {
+                throw new Error('Empty text in Gemini API response')
+            }
 
             // Parse response từ Gemini
             const evaluation = this.parseSpeakingEvaluationResponse(text)
@@ -90,7 +108,13 @@ export class GeminiService {
             if (error instanceof BadRequestException) {
                 throw error
             }
-            throw new BadRequestException('Không thể đánh giá phát âm')
+
+            // Kiểm tra nếu là lỗi 403 Forbidden (API key issue)
+            if (error && typeof error === 'object' && 'status' in error && error.status === 403) {
+                throw new BadRequestException('Lỗi xác thực API key. Vui lòng kiểm tra GEMINI_API_KEY trong file .env')
+            }
+
+            throw new BadRequestException('Không thể đánh giá phát âm: ' + (error instanceof Error ? error.message : String(error)))
         }
     }
 
@@ -148,7 +172,16 @@ export class GeminiService {
             const model = this.genAI.getGenerativeModel({ model: this.modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response
+
+            if (!response) {
+                throw new Error('Empty response from Gemini API')
+            }
+
             const text = response.text()
+
+            if (!text || text.trim() === '') {
+                throw new Error('Empty text in Gemini API response')
+            }
 
             // Parse response từ Gemini
             const recommendations = this.parseRecommendationsResponse(text, analysis)
@@ -159,7 +192,13 @@ export class GeminiService {
             }
         } catch (error) {
             this.logger.error('Error getting personalized recommendations:', error)
-            throw new BadRequestException('Không thể lấy gợi ý cá nhân hóa')
+
+            // Kiểm tra nếu là lỗi 403 Forbidden (API key issue)
+            if (error && typeof error === 'object' && 'status' in error && error.status === 403) {
+                throw new BadRequestException('Lỗi xác thực API key. Vui lòng kiểm tra GEMINI_API_KEY trong file .env')
+            }
+
+            throw new BadRequestException('Không thể lấy gợi ý cá nhân hóa: ' + (error instanceof Error ? error.message : String(error)))
         }
     }
 
