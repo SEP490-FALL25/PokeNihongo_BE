@@ -459,5 +459,16 @@ export const viMessages = {
     REVIEW_INSUFFICIENT_SCORE:
       'Bạn cần đạt ít nhất 80% số câu trả lời đúng để xem đáp án',
     REVIEW_SUCCESS: 'Lấy thông tin đáp án bài tập thành công'
+  },
+  user_test_attempt: {
+    REVIEW_NOT_COMPLETED: 'Bài test chưa hoàn thành',
+    REVIEW_INSUFFICIENT_SCORE:
+      'Bạn cần đạt ít nhất 80% số câu trả lời đúng để xem đáp án',
+    REVIEW_SUCCESS: 'Lấy thông tin đáp án bài test thành công',
+    OUT_OF_LIMIT: 'Bạn đã hết lượt làm bài test này',
+    USER_TEST_NOT_FOUND: 'Không tìm thấy UserTest'
+  },
+  user_history: {
+    GET_LIST_SUCCESS: 'Lấy danh sách lịch sử làm bài thành công'
   }
 }

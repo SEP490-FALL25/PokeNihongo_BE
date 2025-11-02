@@ -435,3 +435,7 @@ export const EXERCISES_MESSAGE = {
   AUDIO_URL_INVALID: 'URL audio không hợp lệ',
   EXERCISE_TYPE_INVALID: 'Loại bài tập không hợp lệ'
 }
+
+export const USER_HISTORY_MESSAGE = {
+  GET_LIST_SUCCESS: 'Lấy danh sách lịch sử làm bài thành công'
+}

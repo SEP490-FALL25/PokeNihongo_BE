@@ -9,6 +9,7 @@ import { TestSetModule } from '../testset/testset.module'
 import { TestSetQuestionBankModule } from '../testset-questionbank/testset-questionbank.module'
 import { TranslationModule } from '../translation/translation.module'
 import { PrismaService } from '@/shared/services/prisma.service'
+import { UserTestRepository } from '../user-test/user-test.repo'
 
 @Module({
     imports: [
@@ -20,7 +21,7 @@ import { PrismaService } from '@/shared/services/prisma.service'
         TranslationModule
     ],
     controllers: [UserTestAttemptController],
-    providers: [UserTestAttemptService, UserTestAttemptRepository, PrismaService],
+    providers: [UserTestAttemptService, UserTestAttemptRepository, UserTestRepository, PrismaService],
     exports: [UserTestAttemptService, UserTestAttemptRepository]
 })
 export class UserTestAttemptModule { }
