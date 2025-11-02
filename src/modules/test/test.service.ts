@@ -734,5 +734,102 @@ export class TestService {
             throw new BadRequestException('Không thể lấy thông tin bài test')
         }
     }
+
+    async autoAddFreeTestSets(): Promise<MessageResDTO> {
+        try {
+            this.logger.log('Starting auto-add free testSets to PLACEMENT_TEST_DONE tests')
+
+            // Tìm tất cả Test có type PLACEMENT_TEST_DONE
+            const placementTests = await this.prisma.test.findMany({
+                where: {
+                    testType: 'PLACEMENT_TEST_DONE',
+                    status: 'ACTIVE'
+                },
+                select: {
+                    id: true
+                }
+            })
+
+            if (placementTests.length === 0) {
+                this.logger.warn('No PLACEMENT_TEST_DONE tests found')
+                return {
+                    statusCode: 200,
+                    data: {
+                        totalTests: 0,
+                        totalTestSetsAdded: 0
+                    },
+                    message: 'Không có Test PLACEMENT_TEST_DONE nào trong hệ thống'
+                }
+            }
+
+            // Tìm tất cả TestSet có price = 0, status = ACTIVE, và testType là VOCABULARY, GRAMMAR, hoặc KANJI
+            const freeTestSets = await this.prisma.testSet.findMany({
+                where: {
+                    price: 0,
+                    status: 'ACTIVE',
+                    testType: {
+                        in: ['VOCABULARY', 'GRAMMAR', 'KANJI']
+                    }
+                },
+                select: {
+                    id: true
+                }
+            })
+
+            if (freeTestSets.length === 0) {
+                this.logger.warn('No free testSets found')
+                return {
+                    statusCode: 200,
+                    data: {
+                        totalTests: placementTests.length,
+                        totalTestSetsAdded: 0
+                    },
+                    message: 'Không có TestSet free nào trong hệ thống'
+                }
+            }
+
+            let totalAdded = 0
+
+            // Thêm các TestSet free vào từng Test PLACEMENT_TEST_DONE
+            for (const test of placementTests) {
+                const testSetIds = freeTestSets.map(ts => ts.id)
+
+                // Lấy danh sách TestSet đã có trong Test này
+                const existingTestTestSets = await (this.prisma as any).testTestSet.findMany({
+                    where: { testId: test.id },
+                    select: { testSetId: true }
+                })
+
+                const existingTestSetIds = existingTestTestSets.map((tts: any) => tts.testSetId)
+                const newTestSetIds = testSetIds.filter(id => !existingTestSetIds.includes(id))
+
+                if (newTestSetIds.length > 0) {
+                    await (this.prisma as any).testTestSet.createMany({
+                        data: newTestSetIds.map(testSetId => ({
+                            testId: test.id,
+                            testSetId: testSetId
+                        }))
+                    })
+
+                    totalAdded += newTestSetIds.length
+                    this.logger.log(`Added ${newTestSetIds.length} testSets to Test ID ${test.id}`)
+                }
+            }
+
+            this.logger.log(`Successfully added ${totalAdded} testSets to ${placementTests.length} tests`)
+
+            return {
+                statusCode: 200,
+                data: {
+                    totalTests: placementTests.length,
+                    totalTestSetsAdded: totalAdded
+                },
+                message: `Đã thêm ${totalAdded} TestSet vào ${placementTests.length} Test PLACEMENT_TEST_DONE`
+            }
+        } catch (error) {
+            this.logger.error('Error auto-adding free testSets:', error)
+            throw new BadRequestException('Không thể tự động thêm TestSet')
+        }
+    }
 }
 
