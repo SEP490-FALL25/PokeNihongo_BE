@@ -79,6 +79,20 @@ export class TestSetController {
         return this.testSetService.findAll(query, lang)
     }
 
+    @Get('basic')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách bộ đề với phân trang và tìm kiếm' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách bộ đề thành công',
+        type: TestSetListResponseSwaggerDTO
+    })
+    @ApiQuery({ type: GetTestSetListQuerySwaggerDTO })
+    @ZodSerializerDto(TestSetListResDTO)
+    findAllBasic(@Query() query: GetTestSetListQueryDTO, @I18nLang() lang: string) {
+        return this.testSetService.findAllBasic(query, lang)
+    }
+
     @Get(':id')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Lấy thông tin bộ đề theo ID' })
