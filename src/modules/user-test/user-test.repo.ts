@@ -90,6 +90,38 @@ export class UserTestRepository {
     }
 
     /**
+     * Giảm limit của UserTest và cập nhật status nếu cần
+     */
+    async decrementLimit(userId: number, testId: number): Promise<UserTestType | null> {
+        // Lấy UserTest hiện tại
+        const userTest = await this.findByUserAndTest(userId, testId)
+        if (!userTest) {
+            return null
+        }
+
+        // Nếu limit = null hoặc limit = 0, không giảm (không giới hạn)
+        if (userTest.limit === null || userTest.limit === undefined || userTest.limit === 0) {
+            return userTest
+        }
+
+        // Giảm limit
+        const newLimit = userTest.limit - 1
+
+        // Nếu giảm xuống còn 0, đổi status thành NOT_STARTED
+        const updateData: any = { limit: newLimit }
+        if (newLimit === 0) {
+            updateData.status = UserTestStatus.NOT_STARTED
+        }
+
+        const result = await this.prisma.userTest.update({
+            where: { id: userTest.id },
+            data: updateData
+        })
+
+        return result as UserTestType
+    }
+
+    /**
      * Lấy tất cả Test có status = ACTIVE và KHÔNG phải MATCH_TEST
      */
     async getActiveTests(): Promise<{ id: number; testType: TestStatus; limit: number | null }[]> {

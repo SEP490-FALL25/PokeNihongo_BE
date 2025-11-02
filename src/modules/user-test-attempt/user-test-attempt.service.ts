@@ -12,6 +12,7 @@ import {
 } from '@/modules/user-test-attempt/dto/user-test-attempt.error'
 import { TEST_MESSAGE, USER_TEST_ATTEMPT_MESSAGE } from '@/common/constants/message'
 import { UserTestAttemptRepository } from '@/modules/user-test-attempt/user-test-attempt.repo'
+import { UserTestRepository } from '@/modules/user-test/user-test.repo'
 import { QuestionBankService } from '@/modules/question-bank/question-bank.service'
 import { UserTestAnswerLogService } from '@/modules/user-test-answer-log/user-test-answer-log.service'
 import { TestService } from '@/modules/test/test.service'
@@ -31,6 +32,7 @@ export class UserTestAttemptService {
 
     constructor(
         private readonly userTestAttemptRepository: UserTestAttemptRepository,
+        private readonly userTestRepository: UserTestRepository,
         private readonly questionBankService: QuestionBankService,
         private readonly userTestAnswerLogService: UserTestAnswerLogService,
         private readonly testService: TestService,
@@ -474,51 +476,30 @@ export class UserTestAttemptService {
         }
     }
 
-    async getTestAttemptByTestId(id: number, userId: number, languageCode: string): Promise<MessageResDTO | null> {
+    async getTestAttemptByTestId(testId: number, userId: number, languageCode: string): Promise<MessageResDTO | null> {
         try {
-            // Lấy attempt base để biết testId
-            const baseAttemptRes = await this.findOne(id, languageCode)
-            const baseAttempt = baseAttemptRes.data as any
+            const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
 
-            // Kiểm tra attempt có thuộc về user này không
-            if (baseAttempt?.userId !== userId) {
-                throw ForbiddenReviewAccessException
+            // Kiểm tra và giảm limit của UserTest
+            const userTest = await this.userTestRepository.findByUserAndTest(userId, testId)
+            if (!userTest) {
+                const message = this.i18nService.translate(UserTestAttemptMessage.USER_TEST_NOT_FOUND, normalizedLang)
+                throw new HttpException(message || 'Không tìm thấy UserTest', 400)
             }
 
-            const testId = baseAttempt.testId
-
-            // Tìm attempt gần nhất theo thứ tự ưu tiên: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAIL
-            const latestAttempt = await this.userTestAttemptRepository.findLatestByPriority(userId, testId)
-
-            if (!latestAttempt) {
-                throw UserTestAttemptNotFoundException
+            // Kiểm tra limit (undefined được coi như không giới hạn)
+            if (userTest.limit !== null && userTest.limit !== undefined && userTest.limit <= 0) {
+                const message = this.i18nService.translate(UserTestAttemptMessage.OUT_OF_LIMIT, normalizedLang)
+                throw new HttpException(message || 'Bạn đã hết lượt làm bài test này', 400)
             }
 
-            // Nếu attempt gần nhất là SKIPPED, COMPLETED hoặc FAIL → tạo attempt mới hoàn toàn
-            let attempt = latestAttempt
-            let userTestAttemptId = latestAttempt.id
-            let shouldLoadOldAnswers = false // Chỉ load answers cũ nếu là ABANDONED
+            // Giảm limit trước khi cho phép làm bài
+            await this.userTestRepository.decrementLimit(userId, testId)
 
-            if (latestAttempt.status === 'NOT_STARTED') {
-                // Nếu là NOT_STARTED, update thành IN_PROGRESS
-                this.logger.log(`Latest attempt is NOT_STARTED, updating to IN_PROGRESS for user ${userId}, test ${testId}`)
-                const updatedAttempt = await this.userTestAttemptRepository.update(
-                    { id: latestAttempt.id },
-                    { status: 'IN_PROGRESS' }
-                )
-                attempt = updatedAttempt as any
-                userTestAttemptId = attempt.id
-                shouldLoadOldAnswers = false
-            } else if (latestAttempt.status === 'SKIPPED' || latestAttempt.status === 'COMPLETED' || latestAttempt.status === 'FAIL') {
-                this.logger.log(`Latest attempt is ${latestAttempt.status}, creating new attempt for user ${userId}, test ${testId}`)
-                const createAttempt = await this.create(userId, testId)
-                attempt = createAttempt.data as any
-                userTestAttemptId = attempt.id
-                shouldLoadOldAnswers = false
-            } else if (latestAttempt.status === 'ABANDONED') {
-                // Nếu là ABANDONED, load answers cũ để khôi phục
-                shouldLoadOldAnswers = true
-            }
+            // Tạo attempt mới mỗi lần vào làm (không có IN_PROGRESS/ABANDONED nữa)
+            const createAttempt = await this.create(userId, testId)
+            const attempt = createAttempt.data as any
+            const userTestAttemptId = attempt.id
 
             // Lấy thông tin Test với các TestSets
             const testRes = await this.testService.findOne(testId, languageCode)
@@ -552,32 +533,8 @@ export class UserTestAttemptService {
                 throw new Error('Test không có test set nào')
             }
 
-            const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
-
-            // Load user answer logs chỉ nếu cần khôi phục (ABANDONED)
-            let selectedAnswerIds = new Set<number>()
+            // Load user answer logs (hiện tại chưa có logs nào vì mới tạo)
             let answeredCount = 0
-            if (shouldLoadOldAnswers) {
-                try {
-                    const logsRes = await this.userTestAnswerLogService.findByUserTestAttemptId(userTestAttemptId)
-                    const logs = (logsRes?.data?.results || []) as any[]
-                    answeredCount = logs.length
-                    if (attempt?.status === 'ABANDONED') {
-                        const ids = logs.map((log: any) => log.answerId).filter((v: any) => typeof v === 'number')
-                        selectedAnswerIds = new Set<number>(ids)
-                    }
-                } catch (e) {
-                    this.logger.warn('Cannot load user test answer logs', e as any)
-                }
-            } else {
-                try {
-                    const logsRes = await this.userTestAnswerLogService.findByUserTestAttemptId(userTestAttemptId)
-                    const logs = (logsRes?.data?.results || []) as any[]
-                    answeredCount = logs.length
-                } catch (e) {
-                    this.logger.warn('Cannot load user test answer logs', e as any)
-                }
-            }
 
             // Xử lý các TestSets và Questions
             const allTestSets: any[] = []
@@ -622,11 +579,9 @@ export class UserTestAttemptService {
                         const mappedAnswers = await Promise.all(
                             (qb?.answers || []).map(async (ans: any) => {
                                 const answerLabel = pickLabelFromComposite(ans?.answerJp || '', normalizedLang)
-                                const isChosen = selectedAnswerIds.has(ans.id)
                                 return {
                                     id: ans.id,
-                                    answer: answerLabel,
-                                    ...(isChosen ? { choose: 'choose' } : {})
+                                    answer: answerLabel
                                 }
                             })
                         )

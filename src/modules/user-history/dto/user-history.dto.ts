@@ -1,0 +1,102 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+
+export enum HistoryType {
+    TEST = 'TEST',
+    EXERCISE = 'EXERCISE'
+}
+
+export class HistoryItemSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID của attempt' })
+    id: number
+
+    @ApiProperty({ enum: HistoryType, example: HistoryType.TEST, description: 'Loại lịch sử (TEST hoặc EXERCISE)' })
+    type: HistoryType
+
+    @ApiPropertyOptional({ example: 1, description: 'ID của Test (nếu type = TEST)' })
+    testId?: number | null
+
+    @ApiPropertyOptional({ example: 'Kiểm tra từ vựng N3', description: 'Tên test (nếu type = TEST)' })
+    testName?: string | null
+
+    @ApiPropertyOptional({ example: 1, description: 'ID của Exercise (nếu type = EXERCISE)' })
+    exerciseId?: number | null
+
+    @ApiPropertyOptional({ example: 'Bài tập N3', description: 'Tên exercise (nếu type = EXERCISE)' })
+    exerciseName?: string | null
+
+    @ApiProperty({ example: 'COMPLETED', description: 'Trạng thái (COMPLETED, FAIL, etc.)' })
+    status: string
+
+    @ApiPropertyOptional({ example: 80, description: 'Điểm số (%)' })
+    score?: number | null
+
+    @ApiProperty({ example: 10, description: 'Tổng số câu hỏi' })
+    totalQuestions: number
+
+    @ApiProperty({ example: 8, description: 'Số câu trả lời đúng' })
+    correctAnswers: number
+
+    @ApiProperty({ example: 2, description: 'Số câu trả lời sai' })
+    incorrectAnswers: number
+
+    @ApiPropertyOptional({ example: 1200, description: 'Thời gian làm bài (giây)' })
+    time?: number | null
+
+    @ApiProperty({ example: '2024-01-01T10:00:00.000Z', description: 'Thời gian tạo' })
+    createdAt: Date
+
+    @ApiProperty({ example: '2024-01-01T10:20:00.000Z', description: 'Thời gian cập nhật' })
+    updatedAt: Date
+}
+
+export class GetHistoryListQuerySwaggerDTO {
+    @ApiPropertyOptional({ example: 1, description: 'Trang hiện tại' })
+    currentPage?: number
+
+    @ApiPropertyOptional({ example: 10, description: 'Số item mỗi trang' })
+    pageSize?: number
+
+    @ApiPropertyOptional({ enum: HistoryType, example: HistoryType.TEST, description: 'Filter theo loại (TEST hoặc EXERCISE)' })
+    type?: HistoryType
+
+    @ApiPropertyOptional({ example: 'COMPLETED', description: 'Filter theo status' })
+    status?: string
+}
+
+export class HistoryListResponseSwaggerDTO {
+    @ApiProperty({ example: 200, description: 'Mã trạng thái HTTP' })
+    statusCode: number
+
+    @ApiProperty({
+        type: 'object',
+        properties: {
+            results: {
+                type: 'array',
+                items: { $ref: '#/components/schemas/HistoryItemSwaggerDTO' }
+            },
+            pagination: {
+                type: 'object',
+                properties: {
+                    current: { type: 'number', example: 1 },
+                    pageSize: { type: 'number', example: 10 },
+                    totalPage: { type: 'number', example: 5 },
+                    totalItem: { type: 'number', example: 50 }
+                }
+            }
+        },
+        description: 'Dữ liệu danh sách lịch sử và phân trang'
+    })
+    data: {
+        results: HistoryItemSwaggerDTO[]
+        pagination: {
+            current: number
+            pageSize: number
+            totalPage: number
+            totalItem: number
+        }
+    }
+
+    @ApiProperty({ example: 'Lấy danh sách lịch sử thành công', description: 'Thông báo' })
+    message: string
+}
+
