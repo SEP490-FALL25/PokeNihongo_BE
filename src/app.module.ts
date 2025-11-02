@@ -63,6 +63,7 @@ import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.m
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserProgressModule } from './modules/user-progress/user-progress.module'
 import { UserModule } from './modules/user/user.module'
+import { UserHistoryModule } from './modules/user-history/user-history.module'
 import { WalletTransactionModule } from './modules/wallet-transaction/wallet-transaction.module'
 import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
@@ -114,6 +115,7 @@ import { WebsocketsModule } from './websockets/websockets.module'
     UserTestAnswerLogModule,
     UserTestModule,
     UserProgressModule,
+    UserHistoryModule,
     AchievementGroupModule,
     AchievementModule,
     AttendenceConfigModule,

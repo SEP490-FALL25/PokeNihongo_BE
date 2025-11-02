@@ -493,5 +493,11 @@ export const UserExerciseAttemptMessage = {
 export const UserTestAttemptMessage = {
   REVIEW_NOT_COMPLETED: 'user_test_attempt.REVIEW_NOT_COMPLETED',
   REVIEW_INSUFFICIENT_SCORE: 'user_test_attempt.REVIEW_INSUFFICIENT_SCORE',
-  REVIEW_SUCCESS: 'user_test_attempt.REVIEW_SUCCESS'
+  REVIEW_SUCCESS: 'user_test_attempt.REVIEW_SUCCESS',
+  OUT_OF_LIMIT: 'user_test_attempt.OUT_OF_LIMIT',
+  USER_TEST_NOT_FOUND: 'user_test_attempt.USER_TEST_NOT_FOUND'
+} as const
+
+export const UserHistoryMessage = {
+  GET_LIST_SUCCESS: 'user_history.GET_LIST_SUCCESS'
 } as const
