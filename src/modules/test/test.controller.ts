@@ -205,5 +205,31 @@ export class TestController {
     ): Promise<MessageResDTO> {
         return this.testService.addTestSetsToTest(Number(id), body)
     }
+
+    @Post('auto-add-free-testsets')
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Tự động thêm tất cả TestSet free (price = 0, ACTIVE) vào Test PLACEMENT_TEST_DONE' })
+    @ApiResponse({
+        status: 200,
+        description: 'Thêm TestSet vào Test thành công',
+        type: MessageResDTO
+    })
+    async autoAddFreeTestSets() {
+        return this.testService.autoAddFreeTestSets()
+    }
+
+    @Get('placement-test-done')
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Lấy danh sách Test PLACEMENT_TEST_DONE' })
+    @ApiResponse({
+        status: 200,
+        description: 'Thêm TestSet vào Test thành công',
+        type: MessageResDTO
+    })
+    async getPlacementTestDone() {
+    }
+
 }
 

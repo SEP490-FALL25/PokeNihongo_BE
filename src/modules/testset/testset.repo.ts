@@ -226,6 +226,137 @@ export class TestSetRepository {
         return { data, total }
     }
 
+    async findManyBasic(query: GetTestSetListQueryType): Promise<{ data: TestSetType[]; total: number }> {
+        const { currentPage, pageSize, search, levelN, testType, status, creatorId, language, sortBy = 'createdAt', sort = 'desc', noExercies } = query
+        const skip = (currentPage - 1) * pageSize
+
+        const where: any = {}
+
+        if (search) {
+            where.OR = [
+                { name: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
+                { content: { contains: search, mode: 'insensitive' } },
+            ]
+        }
+
+        if (levelN) {
+            where.levelN = levelN
+        }
+
+        if (testType) {
+            where.testType = testType
+        }
+
+        if (status) {
+            where.status = status
+        }
+
+        if (creatorId) {
+            where.creatorId = creatorId
+        }
+
+        // Lọc testSet chưa có exercises nếu yêu cầu
+        const extraWhere = noExercies ? { exercises: { none: {} } } : {}
+
+        const orderBy: any = {}
+        orderBy[sortBy] = sort
+
+        const [rawData, total] = await Promise.all([
+            this.prisma.testSet.findMany({
+                where: { ...where, ...extraWhere },
+                skip,
+                take: pageSize,
+                orderBy,
+                include: {
+                    creator: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                        },
+                    },
+                    _count: {
+                        select: {
+                            testSetQuestionBanks: true,
+                            exercises: true,
+                        },
+                    },
+                },
+            }),
+            this.prisma.testSet.count({ where: { ...where, ...extraWhere } }),
+        ])
+
+        // Lấy translation cho từng testset
+        const data = await Promise.all(
+            rawData.map(async (testSet) => {
+                const result = {
+                    ...testSet,
+                    price: testSet.price ? Number(testSet.price) : null,
+                    testType: testSet.testType as PrismaTestSetType,
+                    // Remove _count and creator from the response
+                    _count: undefined,
+                    creator: undefined,
+                }
+
+                // Lấy translations cho name và description
+                const nameKey = `testset.${testSet.id}.name`
+                const descriptionKey = `testset.${testSet.id}.description`
+
+                const translationWhere: any = {
+                    OR: [
+                        { key: nameKey },
+                        { key: descriptionKey },
+                        { key: { startsWith: nameKey + '.meaning.' } },
+                        { key: { startsWith: descriptionKey + '.meaning.' } }
+                    ]
+                }
+
+                // Nếu có language, chỉ lấy translation của ngôn ngữ đó
+                if (language) {
+                    const languageRecord = await this.prisma.languages.findFirst({
+                        where: { code: language }
+                    })
+                    if (languageRecord) {
+                        translationWhere.languageId = languageRecord.id
+                    }
+                }
+
+                const translations = await this.prisma.translation.findMany({
+                    where: translationWhere,
+                    include: {
+                        language: true
+                    }
+                })
+
+                if (language) {
+                    // Nếu có language filter, chỉ lấy 1 translation cho name và description
+                    const nameTranslation = translations.find(t => t.key.startsWith(nameKey + '.meaning.'))
+                    const descriptionTranslation = translations.find(t => t.key.startsWith(descriptionKey + '.meaning.'))
+                        ; (result as any).name = nameTranslation?.value || testSet.name
+                        ; (result as any).description = descriptionTranslation?.value || testSet.description
+                } else {
+                    // Nếu không có language filter, trả về mảng translations theo định dạng yêu cầu
+                    const nameTranslations = translations.filter(t => t.key.startsWith(nameKey + '.meaning.'))
+                    const descriptionTranslations = translations.filter(t => t.key.startsWith(descriptionKey + '.meaning.'))
+
+                        ; (result as any).name = nameTranslations.map(t => ({
+                            language: t.language.code,
+                            value: t.value
+                        }))
+                        ; (result as any).description = descriptionTranslations.map(t => ({
+                            language: t.language.code,
+                            value: t.value
+                        }))
+                }
+
+                return result
+            })
+        )
+
+        return { data, total }
+    }
+
     async update(id: number, data: UpdateTestSetBodyType): Promise<TestSetType> {
         const result = await this.prisma.testSet.update({
             where: { id },

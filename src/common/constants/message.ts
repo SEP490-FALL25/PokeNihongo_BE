@@ -44,7 +44,8 @@ export const TEST_SET_MESSAGE = {
   PERMISSION_DENIED: 'Bạn không có quyền thực hiện hành động này',
   CANNOT_CHANGE_TEST_TYPE_GENERAL_MULTIPLE: 'Không thể thay đổi testType từ GENERAL sang loại khác khi testSet đang chứa nhiều loại câu hỏi khác nhau',
   CANNOT_CHANGE_TEST_TYPE_SPECIFIC: 'Không thể thay đổi testType. Chỉ có thể thay đổi thành cùng type hoặc GENERAL',
-  CANNOT_CHANGE_TEST_TYPE_GENERAL_SINGLE: 'Không thể thay đổi testType từ GENERAL sang type khác. TestSet hiện đang chứa câu hỏi loại'
+  CANNOT_CHANGE_TEST_TYPE_GENERAL_SINGLE: 'Không thể thay đổi testType từ GENERAL sang type khác. TestSet hiện đang chứa câu hỏi loại',
+  CANNOT_CHANGE_LEVELN_HAS_QUESTIONS: 'Không thể thay đổi levelN khi testSet đã có câu hỏi, trừ khi testType là GENERAL'
 }
 
 export const TEST_MESSAGE = {

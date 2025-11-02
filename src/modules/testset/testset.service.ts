@@ -56,8 +56,8 @@ export class TestSetService {
             throw new BadRequestException('Giá bộ đề không được âm')
         }
 
-        if (data.levelN !== undefined && data.levelN !== null && (data.levelN < 1 || data.levelN > 5)) {
-            throw new BadRequestException('Cấp độ JLPT phải từ 1 đến 5')
+        if (data.levelN !== undefined && data.levelN !== null && (data.levelN < 0 || data.levelN > 5)) {
+            throw new BadRequestException('Cấp độ JLPT phải từ 0 đến 5 (0 = nhiều cấp độ)')
         }
 
         // Validation chỉ cho create (không phải update)
@@ -205,6 +205,31 @@ export class TestSetService {
         }
     }
 
+    async findAllBasic(query: GetTestSetListQueryType, lang: string) {
+        try {
+            const { data, total } = await this.testSetRepo.findManyBasic(query)
+            const { currentPage, pageSize } = query
+            const totalPage = Math.ceil(total / pageSize)
+
+            return {
+                statusCode: 200,
+                data: {
+                    results: data,
+                    pagination: {
+                        current: currentPage,
+                        pageSize,
+                        totalPage,
+                        totalItem: total,
+                    },
+                },
+                message: TEST_SET_MESSAGE.GET_LIST_SUCCESS,
+            }
+        } catch (error) {
+            this.logger.error('Error finding test sets:', error)
+            throw new BadRequestException('Không thể lấy danh sách bộ đề')
+        }
+    }
+
     async findOne(id: number, lang: string) {
         try {
             const testSet = await this.testSetRepo.findById(id, lang)
@@ -241,6 +266,27 @@ export class TestSetService {
 
         // Validation
         this.validateTestSetData(data, true)
+
+        // Validate levelN change nếu có update levelN
+        if (data.levelN !== undefined && data.levelN !== testSet.levelN) {
+            // Kiểm tra xem testSet có câu hỏi không
+            const questionCount = await this.prisma.testSetQuestionBank.count({
+                where: { testSetId: id }
+            })
+
+            // Nếu có câu hỏi và testType KHÔNG phải GENERAL, không cho phép đổi levelN
+            // Trừ khi đổi SANG levelN = 0 (nhiều cấp độ) hoặc ĐANG Ở levelN = 0
+            if (questionCount > 0 && testSet.testType !== 'GENERAL') {
+                // Cho phép nếu:
+                // 1. Đổi SANG levelN = 0 (tức là muốn chuyển sang nhiều cấp độ)
+                // 2. Đang Ở levelN = 0 (tức là đã ở nhiều cấp độ, có thể đổi)
+                if (data.levelN !== 0 && testSet.levelN !== 0) {
+                    throw new BadRequestException(
+                        TEST_SET_MESSAGE.CANNOT_CHANGE_LEVELN_HAS_QUESTIONS
+                    )
+                }
+            }
+        }
 
         // Validate testType change nếu có update testType
         if (data.testType && data.testType !== testSet.testType) {
@@ -399,8 +445,8 @@ export class TestSetService {
             throw new BadRequestException('Giá bộ đề không được âm')
         }
 
-        if (data.levelN !== undefined && data.levelN !== null && (data.levelN < 1 || data.levelN > 5)) {
-            throw new BadRequestException('Cấp độ JLPT phải từ 1 đến 5')
+        if (data.levelN !== undefined && data.levelN !== null && (data.levelN < 0 || data.levelN > 5)) {
+            throw new BadRequestException('Cấp độ JLPT phải từ 0 đến 5 (0 = nhiều cấp độ)')
         }
 
         // Validation chỉ cho create (không phải update)
@@ -448,6 +494,27 @@ export class TestSetService {
 
         // Validation
         this.validateTestSetWithMeaningsData(data, true)
+
+        // Validate levelN change nếu có update levelN
+        if (data.levelN !== undefined && data.levelN !== testSet.levelN) {
+            // Kiểm tra xem testSet có câu hỏi không
+            const questionCount = await this.prisma.testSetQuestionBank.count({
+                where: { testSetId: id }
+            })
+
+            // Nếu có câu hỏi và testType KHÔNG phải GENERAL, không cho phép đổi levelN
+            // Trừ khi đổi SANG levelN = 0 (nhiều cấp độ) hoặc ĐANG Ở levelN = 0
+            if (questionCount > 0 && testSet.testType !== 'GENERAL') {
+                // Cho phép nếu:
+                // 1. Đổi SANG levelN = 0 (tức là muốn chuyển sang nhiều cấp độ)
+                // 2. Đang Ở levelN = 0 (tức là đã ở nhiều cấp độ, có thể đổi)
+                if (data.levelN !== 0 && testSet.levelN !== 0) {
+                    throw new BadRequestException(
+                        TEST_SET_MESSAGE.CANNOT_CHANGE_LEVELN_HAS_QUESTIONS
+                    )
+                }
+            }
+        }
 
         // Validate testType change nếu có update testType
         if (data.testType && data.testType !== testSet.testType) {
