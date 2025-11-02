@@ -432,6 +432,9 @@ export class GetTestSetListQuerySwaggerDTO {
 
     @ApiPropertyOptional({ example: 'true', description: 'Nếu true, chỉ lấy những testSet chưa có Exercise nào gắn vào' })
     noExercies?: boolean
+
+    @ApiPropertyOptional({ example: 'true', description: 'Nếu true, chỉ lấy những testSet có price = 0 (miễn phí). Nếu false hoặc không truyền, lấy tất cả' })
+    noPrice?: boolean
 }
 
 

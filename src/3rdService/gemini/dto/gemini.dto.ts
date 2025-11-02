@@ -1,43 +1,46 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsEnum, IsOptional, IsString } from 'class-validator'
-import { GeminiModel } from './gemini.enums'
+import { IsNumber, IsOptional, IsString } from 'class-validator'
 
-export class GenerateTextDto {
-  @IsOptional()
-  @IsString()
+export class EvaluateSpeakingDto {
   @ApiProperty({
-    example: 'chào bạn',
-    description: 'Nội dung văn bản đầu vào để Gemini AI tạo ra văn bản mới.'
+    example: 'こんにちは',
+    description: 'Câu tiếng Nhật cần đánh giá phát âm'
   })
-  prompt: string
+  @IsString()
+  text: string
 
-  @IsOptional()
-  @IsEnum(GeminiModel) // Đảm bảo đây là enum
   @ApiProperty({
-    enum: GeminiModel, // Chỉ định enum để Swagger hiển thị dropdown
-    description: 'Chọn model Gemini AI để sử dụng cho việc tạo văn bản.',
-    example: GeminiModel.GEMINI_1_5_PRO_001,
+    example: 'https://example.com/audio/user-audio.mp3',
+    description: 'URL audio file của user'
+  })
+  @IsString()
+  audioUrl: string
+
+  @ApiProperty({
+    example: 'こんにちは',
+    description: 'Transcription từ audio (nếu có)',
     required: false
   })
-  modelName?: GeminiModel // Kiểu dữ liệu là enum
+  @IsOptional()
+  @IsString()
+  transcription?: string
 }
 
-export class GenerateImageDescriptionDto {
-  @IsOptional()
-  @IsString()
+export class GetPersonalizedRecommendationsDto {
   @ApiProperty({
-    example: 'chào bạn',
-    description: 'Nội dung văn bản đầu vào để Gemini AI tạo ra văn bản mới.'
+    example: 1,
+    description: 'ID của user'
   })
-  prompt: string
+  @IsNumber()
+  userId: number
 
-  @IsOptional()
-  @IsEnum(GeminiModel) // Đảm bảo đây là enum
   @ApiProperty({
-    enum: GeminiModel, // Chỉ định enum để Swagger hiển thị dropdown
-    description: 'Chọn model Gemini AI để sử dụng cho việc tạo văn bản.',
-    example: GeminiModel.GEMINI_1_5_PRO_001,
-    required: false
+    example: 10,
+    description: 'Số lượng gợi ý muốn nhận',
+    required: false,
+    default: 10
   })
-  modelName?: GeminiModel // Kiểu dữ liệu là enum
+  @IsOptional()
+  @IsNumber()
+  limit?: number
 }
