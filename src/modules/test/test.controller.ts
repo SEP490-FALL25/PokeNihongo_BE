@@ -91,7 +91,7 @@ export class TestController {
     @Get(':id/placement-questions')
     @ApiBearerAuth()
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Lấy câu hỏi random cho placement test (3 N5, 4 N4, 3 N3)' })
+    @ApiOperation({ summary: 'Lấy câu hỏi random cho placement test (3 N5, 4 N4, 3 N3) và tạo UserTestAttempt' })
     @ApiResponse({
         status: 200,
         description: 'Lấy câu hỏi placement test thành công',
@@ -99,9 +99,10 @@ export class TestController {
     })
     async getPlacementQuestions(
         @Param('id') id: string,
+        @ActiveUser('userId') userId: number,
         @I18nLang() lang: string
     ): Promise<MessageResDTO> {
-        return this.testService.getRandomQuestionsForPlacementTest(Number(id), lang)
+        return this.testService.getRandomQuestionsForPlacementTest(Number(id), userId, lang)
     }
 
     @Get(':id/random-questions')
