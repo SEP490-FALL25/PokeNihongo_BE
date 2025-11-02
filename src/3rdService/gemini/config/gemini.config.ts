@@ -1,7 +1,22 @@
 import { registerAs } from '@nestjs/config'
 
 export default registerAs('gemini', () => ({
+  // Option 1: API Key (simple)
   apiKey: process.env.GEMINI_API_KEY || '',
+
+  // Option 2: Google Cloud Service Account (shared with Speech service)
+  // Ưu tiên dùng service account nếu có (cùng credentials với Speech)
+  useServiceAccount: !!(
+    process.env.GOOGLE_CLOUD_CLIENT_EMAIL &&
+    process.env.GOOGLE_CLOUD_PRIVATE_KEY &&
+    process.env.GOOGLE_CLOUD_PROJECT_ID
+  ),
+  serviceAccount: {
+    clientEmail: process.env.GOOGLE_CLOUD_CLIENT_EMAIL || '',
+    privateKey: process.env.GOOGLE_CLOUD_PRIVATE_KEY || '',
+    projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || ''
+  },
+
   generationConfig: {
     temperature: parseFloat(process.env.GEMINI_TEMPERATURE || '0.7'),
     topP: parseFloat(process.env.GEMINI_TOP_P || '0.95'),

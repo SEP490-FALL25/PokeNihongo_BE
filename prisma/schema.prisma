@@ -101,6 +101,9 @@ model User {
   createdShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceCreatedBy")
   updatedShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceUpdatedBy")
   deletedShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceDeletedBy")
+  createdGeminiConfigs      GeminiConfig[]      @relation("GeminiConfigCreatedBy")
+  updatedGeminiConfigs      GeminiConfig[]      @relation("GeminiConfigUpdatedBy")
+  deletedGeminiConfigs      GeminiConfig[]      @relation("GeminiConfigDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -114,6 +117,7 @@ model User {
   userTests            UserTest[]            @relation("UserTests")
   userTestAttempts     UserTestAttempt[]     @relation("UserTestAttempts")
   userSpeakingAttempts UserSpeakingAttempt[]
+  userAIConversations  UserAIConversation[]
   userProgresses       UserProgress[]
   attendances          Attendance[]
   Wallet               Wallet[]
@@ -1817,4 +1821,53 @@ enum TestStatus {
 enum UserTestStatus {
   NOT_STARTED // Chưa được assign/kích hoạt
   ACTIVE // Đã được assign và có thể sử dụng
+}
+
+enum GeminiConfigType {
+  SPEAKING_EVALUATION // Đánh giá phát âm SPEAKING
+  PERSONALIZED_RECOMMENDATIONS // Gợi ý cá nhân hóa
+  AI_KAIWA // Hội thoại AI (AI Kaiwa)
+}
+
+model GeminiConfig {
+  id         Int              @id @default(autoincrement())
+  configType GeminiConfigType @unique // Loại config
+  modelName  String           @default("gemini-1.5-pro") @db.VarChar(100) // Tên model Gemini
+  prompt     String           @db.Text // Prompt template (có thể có placeholder như {{text}}, {{transcription}}, etc.)
+  isActive   Boolean          @default(true) // Có đang sử dụng không
+
+  createdById Int?
+  createdBy   User? @relation("GeminiConfigCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("GeminiConfigUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("GeminiConfigDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([deletedAt])
+  @@index([configType, isActive])
+}
+
+// Model UserAIConversation (Lịch sử hội thoại AI Kaiwa)
+model UserAIConversation {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  conversationId String  @db.VarChar(100) // ID để group các messages trong cùng 1 conversation
+  role           String  @db.VarChar(20) // USER hoặc AI
+  message        String  @db.Text // Nội dung tin nhắn
+  audioUrl       String? @db.VarChar(1000) // URL file audio (nếu có, cho AI response)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([conversationId])
+  @@index([createdAt])
+  @@index([deletedAt])
 }

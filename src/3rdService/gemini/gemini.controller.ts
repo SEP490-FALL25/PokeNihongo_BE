@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger'
+import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { GeminiService } from './gemini.service'
-import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto } from './dto/gemini.dto'
-import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse } from './dto/gemini.response.dto'
+import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto } from './dto/gemini.dto'
+import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse } from './dto/gemini.response.dto'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 
 @ApiTags('Gemini')
@@ -63,6 +63,36 @@ export class GeminiController {
             statusCode: 200,
             data: result,
             message: 'Lấy gợi ý cá nhân hóa thành công'
+        }
+    }
+
+    @Post('kaiwa')
+    @UseInterceptors(FileInterceptor('audio'))
+    @ApiOperation({ 
+        summary: 'AI Kaiwa - Hội thoại với AI bằng tiếng Nhật với Speech-to-Text và Pronunciation Assessment',
+        description: 'Hỗ trợ cả text message và audio file. Nếu có audio, sẽ tự động convert sang text. Có thể đánh giá phát âm nếu có reference text.'
+    })
+    @ApiBody({ type: AIKaiwaDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Hội thoại AI thành công',
+        type: Object
+    })
+    async aiKaiwa(
+        @ActiveUser('userId') userId: number,
+        @Body() body: AIKaiwaDto,
+        @UploadedFile() audioFile?: Express.Multer.File
+    ): Promise<{ statusCode: number; data: AIKaiwaResponse; message: string }> {
+        // Nếu có upload audio file, cần upload lên cloud trước và lấy URL
+        // Tạm thời giữ nguyên logic hiện tại, user sẽ upload audio lên trước và gửi URL
+        // Hoặc có thể thêm logic upload file ở đây nếu cần
+        
+        const result = await this.geminiService.aiKaiwa(userId, body)
+
+        return {
+            statusCode: 200,
+            data: result,
+            message: 'Hội thoại AI thành công'
         }
     }
 }

@@ -1,21 +1,105 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleAuth } from 'google-auth-library'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { EvaluateSpeakingDto } from './dto/gemini.dto'
-import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse } from './dto/gemini.response.dto'
+// import { GeminiConfigType } from '@prisma/client' // Will be available after migration
+import { GeminiConfigRepo } from '@/modules/gemini-config/gemini-config.repo'
+import { TextToSpeechService } from '../speech/text-to-speech.service'
+import { SpeechToTextService } from '../speech/speech-to-text.service'
+import { UploadService } from '../upload/upload.service'
+import { SpeakingService } from '@/modules/speaking/speaking.service'
+import { EvaluateSpeakingDto, AIKaiwaDto } from './dto/gemini.dto'
+import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse } from './dto/gemini.response.dto'
+import { v4 as uuidv4 } from 'uuid'
+import axios from 'axios'
 
 @Injectable()
 export class GeminiService {
     private readonly logger = new Logger(GeminiService.name)
-    private readonly genAI: GoogleGenerativeAI
-    private readonly modelName: string = 'gemini-1.5-pro'
+    private genAI: GoogleGenerativeAI | null = null
+    private readonly useServiceAccount: boolean
+    private auth: GoogleAuth | null = null
+    private readonly geminiConfig: any
 
     constructor(
         private readonly configService: ConfigService,
-        private readonly prisma: PrismaService
+        private readonly prisma: PrismaService,
+        private readonly geminiConfigRepo: GeminiConfigRepo,
+        private readonly textToSpeechService: TextToSpeechService,
+        private readonly speechToTextService: SpeechToTextService,
+        private readonly uploadService: UploadService,
+        private readonly speakingService: SpeakingService
     ) {
-        const apiKey = this.configService.get<string>('gemini.apiKey')
+        this.geminiConfig = this.configService.get('gemini')
+        const useServiceAccount = this.geminiConfig?.useServiceAccount || false
+
+        // Ưu tiên dùng service account nếu có (cùng credentials với Speech service)
+        if (useServiceAccount && this.geminiConfig?.serviceAccount) {
+            const { clientEmail, privateKey, projectId } = this.geminiConfig.serviceAccount
+
+            if (clientEmail && privateKey && projectId) {
+                try {
+                    // Khởi tạo GoogleAuth với service account credentials
+                    this.auth = new GoogleAuth({
+                        credentials: {
+                            client_email: clientEmail,
+                            private_key: privateKey.replace(/\\n/g, '\n'),
+                            project_id: projectId
+                        },
+                        scopes: ['https://www.googleapis.com/auth/generative-language']
+                    })
+
+                    this.useServiceAccount = true
+                    this.logger.log(`Gemini AI will use Google Cloud service account (project: ${projectId})`)
+                    return
+                } catch (error) {
+                    this.logger.warn('Failed to initialize service account, falling back to API key:', error)
+                }
+            }
+        }
+
+        // Fallback về API key nếu không có service account hoặc service account fail
+        this.initializeWithApiKey(this.geminiConfig?.apiKey || '')
+        this.useServiceAccount = false
+    }
+
+    /**
+     * Lấy GoogleGenerativeAI instance (lazy initialization cho service account)
+     */
+    private async getGenAI(): Promise<GoogleGenerativeAI> {
+        if (this.genAI) {
+            return this.genAI
+        }
+
+        if (this.useServiceAccount && this.auth) {
+            try {
+                // Lấy access token từ service account
+                const token = await this.auth.getAccessToken()
+                if (!token) {
+                    throw new Error('Failed to get access token from service account')
+                }
+
+                // Sử dụng token làm API key
+                this.genAI = new GoogleGenerativeAI(token as string)
+                this.logger.log('Gemini AI initialized with Google Cloud service account token')
+                return this.genAI
+            } catch (error) {
+                this.logger.error('Failed to get access token from service account, falling back to API key:', error)
+                // Fallback về API key
+                return this.initializeWithApiKey(this.geminiConfig?.apiKey || '')
+            }
+        }
+
+        // Nếu đã được khởi tạo với API key
+        if (!this.genAI) {
+            throw new Error('Gemini AI not initialized. Please check your configuration.')
+        }
+
+        return this.genAI
+    }
+
+    private initializeWithApiKey(apiKey: string): GoogleGenerativeAI {
         if (!apiKey || apiKey.trim() === '') {
             this.logger.error('GEMINI_API_KEY not found or empty in environment variables. Please set GEMINI_API_KEY in your .env file')
             throw new Error('GEMINI_API_KEY is required but not configured')
@@ -29,6 +113,7 @@ export class GeminiService {
 
         this.genAI = new GoogleGenerativeAI(apiKey)
         this.logger.log('Gemini AI initialized successfully')
+        return this.genAI
     }
 
     /**
@@ -60,11 +145,16 @@ export class GeminiService {
                 throw new BadRequestException('QuestionBank phải là loại SPEAKING')
             }
 
-            // Prompt cho Gemini để đánh giá phát âm
-            const prompt = this.buildSpeakingEvaluationPrompt(data.text, data.transcription || data.text)
+            // Lấy config từ DB hoặc dùng default
+            const config = await this.geminiConfigRepo.findByConfigType('SPEAKING_EVALUATION' as any) || null
+            const prompt = config
+                ? this.replacePlaceholders(String(config.prompt || ''), { text: data.text, transcription: data.transcription || data.text })
+                : this.buildSpeakingEvaluationPrompt(data.text, data.transcription || data.text)
+            const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
 
             // Gọi Gemini API
-            const model = this.genAI.getGenerativeModel({ model: this.modelName })
+            const genAI = await this.getGenAI()
+            const model = genAI.getGenerativeModel({ model: modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response
 
@@ -165,11 +255,16 @@ export class GeminiService {
             // Phân tích dữ liệu để tìm điểm yếu và điểm mạnh
             const analysis = this.analyzeUserPerformance(exerciseAttempts, testAttempts)
 
-            // Tạo prompt cho Gemini để đưa ra gợi ý
-            const prompt = this.buildRecommendationPrompt(analysis, limit)
+            // Lấy config từ DB hoặc dùng default
+            const config = await this.geminiConfigRepo.findByConfigType('PERSONALIZED_RECOMMENDATIONS' as any) || null
+            const prompt = config
+                ? this.replacePlaceholders(String(config.prompt || ''), { analysis: JSON.stringify(analysis), limit: limit.toString() })
+                : this.buildRecommendationPrompt(analysis, limit)
+            const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
 
             // Gọi Gemini API
-            const model = this.genAI.getGenerativeModel({ model: this.modelName })
+            const genAI = await this.getGenAI()
+            const model = genAI.getGenerativeModel({ model: modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response
 
@@ -203,7 +298,283 @@ export class GeminiService {
     }
 
     /**
-     * Build prompt cho đánh giá SPEAKING
+     * AI Kaiwa - Hội thoại với AI bằng tiếng Nhật
+     */
+    async aiKaiwa(
+        userId: number,
+        data: AIKaiwaDto
+    ): Promise<AIKaiwaResponse> {
+        try {
+            this.logger.log(`AI Kaiwa request from user ${userId}, conversationId: ${data.conversationId || 'new'}`)
+
+            // Validate input: phải có message hoặc audioUrl
+            if (!data.message && !data.audioUrl) {
+                throw new BadRequestException('Phải có message hoặc audioUrl')
+            }
+
+            let userMessage: string = data.message || ''
+            let transcription: string | undefined = undefined
+            let pronunciationAssessment: any = undefined
+
+            // Nếu có audioUrl, convert audio sang text bằng Speech-to-Text
+            if (data.audioUrl) {
+                try {
+                    this.logger.log(`Converting audio to text: ${data.audioUrl}`)
+
+                    // Download audio file
+                    const audioResponse = await axios.get(data.audioUrl, {
+                        responseType: 'arraybuffer'
+                    })
+                    const audioBuffer = Buffer.from(audioResponse.data)
+
+                    // Convert audio to text
+                    const speechResult = await this.speechToTextService.convertAudioToText(audioBuffer, {
+                        languageCode: 'ja-JP',
+                        enableAutomaticPunctuation: true
+                    })
+
+                    transcription = speechResult.transcript
+                    userMessage = transcription || userMessage // Ưu tiên transcription nếu có
+
+                    this.logger.log(`Speech-to-Text result: ${transcription} (confidence: ${speechResult.confidence})`)
+
+                    // Đánh giá phát âm nếu có reference text và assessPronunciation = true
+                    if (data.assessPronunciation && data.message && transcription) {
+                        try {
+                            // Option 1: Sử dụng SpeakingService để đánh giá (đơn giản hơn, dựa trên confidence)
+                            // Option 2: Sử dụng Gemini để đánh giá chi tiết hơn
+
+                            // Tái sử dụng logic từ SpeakingService - chỉ tính toán dựa trên confidence
+                            const baseScore = Math.min(speechResult.confidence * 100, 100)
+                            const accuracy = Math.round(baseScore)
+                            const pronunciationScore = Math.round(baseScore * 0.9 + (transcription.length > 0 ? 10 : 0))
+                            const fluencyScore = Math.round(baseScore * 0.85 + (speechResult.confidence > 0.8 ? 15 : 0))
+                            const overallScore = Math.round((accuracy * 0.4 + pronunciationScore * 0.3 + fluencyScore * 0.3))
+
+                            // So sánh với reference text bằng Gemini để có đánh giá chi tiết hơn
+                            const config = await this.geminiConfigRepo.findByConfigType('SPEAKING_EVALUATION' as any) || null
+                            const prompt = config
+                                ? this.replacePlaceholders(String(config.prompt || ''), {
+                                    text: data.message,
+                                    transcription: transcription
+                                })
+                                : this.buildSpeakingEvaluationPrompt(data.message, transcription)
+
+                            const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
+                            const genAI = await this.getGenAI()
+                            const model = genAI.getGenerativeModel({ model: modelName })
+                            const result = await model.generateContent(prompt)
+                            const response = await result.response
+                            const evaluationText = response.text()
+
+                            if (evaluationText) {
+                                const evaluation = this.parseSpeakingEvaluationResponse(evaluationText)
+                                pronunciationAssessment = {
+                                    accuracy: evaluation.accuracy,
+                                    pronunciation: evaluation.pronunciation,
+                                    fluency: evaluation.fluency,
+                                    overallScore: evaluation.overallScore,
+                                    feedback: evaluation.feedback,
+                                    suggestions: evaluation.suggestions,
+                                    confidence: speechResult.confidence
+                                }
+                                this.logger.log(`Pronunciation assessment completed: ${evaluation.overallScore}/100`)
+                            } else {
+                                // Fallback: dùng scores từ SpeakingService logic
+                                let feedback = ''
+                                if (overallScore >= 90) {
+                                    feedback = 'Phát âm xuất sắc! Hãy tiếp tục luyện tập.'
+                                } else if (overallScore >= 80) {
+                                    feedback = 'Phát âm tốt, cần cải thiện một chút về độ trôi chảy.'
+                                } else if (overallScore >= 70) {
+                                    feedback = 'Phát âm khá tốt, hãy luyện tập thêm để cải thiện.'
+                                } else if (overallScore >= 60) {
+                                    feedback = 'Cần luyện tập thêm về phát âm và độ trôi chảy.'
+                                } else {
+                                    feedback = 'Hãy luyện tập nhiều hơn để cải thiện phát âm.'
+                                }
+
+                                pronunciationAssessment = {
+                                    accuracy,
+                                    pronunciation: pronunciationScore,
+                                    fluency: fluencyScore,
+                                    overallScore,
+                                    feedback,
+                                    suggestions: [],
+                                    confidence: speechResult.confidence
+                                }
+                            }
+                        } catch (evalError) {
+                            this.logger.warn('Failed to assess pronunciation, continuing without assessment:', evalError)
+                            // Không throw error, chỉ log warning
+                        }
+                    }
+                } catch (audioError) {
+                    this.logger.error('Failed to process audio:', audioError)
+                    throw new BadRequestException('Không thể xử lý audio file: ' + (audioError instanceof Error ? audioError.message : String(audioError)))
+                }
+            }
+
+            if (!userMessage || userMessage.trim() === '') {
+                throw new BadRequestException('Không thể lấy được message từ audio hoặc text')
+            }
+
+            // Generate hoặc dùng conversationId có sẵn
+            const conversationId = data.conversationId || `conv_${userId}_${Date.now()}_${uuidv4().substring(0, 8)}`
+
+            // Lấy lịch sử hội thoại (nếu có)
+            const conversationHistory = await (this.prisma as any).userAIConversation.findMany({
+                where: {
+                    userId,
+                    conversationId,
+                    deletedAt: null
+                },
+                orderBy: {
+                    createdAt: 'asc'
+                },
+                take: 20 // Lấy 20 messages gần nhất
+            })
+
+            // Xây dựng conversation context cho Gemini
+            const history = conversationHistory.map(conv => ({
+                role: conv.role === 'USER' ? 'user' : 'model',
+                parts: [{ text: conv.message }]
+            }))
+
+            // Thêm message hiện tại của user
+            history.push({
+                role: 'user',
+                parts: [{ text: userMessage }]
+            })
+
+            // Lấy config từ DB hoặc dùng default
+            const config = await this.geminiConfigRepo.findByConfigType('AI_KAIWA' as any) || null
+            const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
+
+            // System prompt từ config hoặc default
+            const systemPrompt = (config?.prompt as string) || `Bạn là một người bạn Nhật Bản thân thiện và nhiệt tình. Hãy trò chuyện tự nhiên bằng tiếng Nhật với người học. Hãy:
+- Trả lời ngắn gọn, tự nhiên như đang trò chuyện với bạn
+- Sử dụng ngôn ngữ phù hợp với trình độ người học
+- Động viên và tạo động lực cho người học
+- Đưa ra gợi ý về cách cải thiện nếu có lỗi
+- Giữ cuộc trò chuyện vui vẻ và thú vị`
+
+            // Gọi Gemini API
+            const genAI = await this.getGenAI()
+            const model = genAI.getGenerativeModel({ model: modelName })
+
+            // Tạo chat session với history
+            const chat = model.startChat({
+                history: history.slice(0, -1) as any, // Bỏ message cuối (message hiện tại)
+                systemInstruction: systemPrompt
+            })
+
+            // Gửi message và nhận response
+            const result = await chat.sendMessage(userMessage as any)
+            const response = await result.response
+            const aiResponse = response.text()
+
+            if (!aiResponse || aiResponse.trim() === '') {
+                throw new Error('Empty response from Gemini API')
+            }
+
+            // Lưu user message vào DB (lưu cả message gốc và transcription nếu có)
+            const userMessageToSave = data.audioUrl && transcription
+                ? `[Audio] ${transcription}`
+                : userMessage
+
+            await (this.prisma as any).userAIConversation.create({
+                data: {
+                    userId,
+                    conversationId,
+                    role: 'USER',
+                    message: userMessageToSave
+                }
+            })
+
+            // Lưu AI response vào DB (tạm thời chưa có audioUrl)
+            const aiConversation = await (this.prisma as any).userAIConversation.create({
+                data: {
+                    userId,
+                    conversationId,
+                    role: 'AI',
+                    message: aiResponse,
+                    audioUrl: null
+                }
+            })
+
+            let audioUrl: string | undefined = undefined
+
+            // Convert to audio nếu includeAudio = true
+            if (data.includeAudio !== false) {
+                try {
+                    const audioResult = await this.textToSpeechService.convertTextToSpeech(aiResponse, {
+                        languageCode: 'ja-JP',
+                        voiceName: 'ja-JP-Wavenet-A',
+                        audioEncoding: 'MP3'
+                    })
+
+                    // Upload audio lên cloud (tạo file object tạm từ buffer)
+                    const audioFile = {
+                        buffer: audioResult.audioContent,
+                        originalname: `ai-kaiwa-${aiConversation.id}.mp3`,
+                        mimetype: 'audio/mpeg',
+                        size: audioResult.audioContent.length
+                    } as Express.Multer.File
+
+                    const uploadResult = await this.uploadService.uploadFile(audioFile, 'ai-kaiwa')
+                    audioUrl = uploadResult.url
+
+                    // Update audioUrl trong DB
+                    await (this.prisma as any).userAIConversation.update({
+                        where: { id: aiConversation.id },
+                        data: { audioUrl }
+                    })
+
+                    this.logger.log(`Generated audio for AI response: ${audioUrl}`)
+                } catch (audioError) {
+                    this.logger.warn('Failed to generate audio, continuing without audio:', audioError)
+                    // Không throw error, chỉ log warning và tiếp tục
+                }
+            }
+
+            this.logger.log(`AI Kaiwa completed for user ${userId}, conversationId: ${conversationId}`)
+
+            return {
+                conversationId,
+                message: aiResponse,
+                audioUrl,
+                pronunciationAssessment,
+                transcription
+            }
+        } catch (error) {
+            this.logger.error('Error in AI Kaiwa:', error)
+            if (error instanceof BadRequestException) {
+                throw error
+            }
+
+            // Kiểm tra nếu là lỗi 403 Forbidden (API key issue)
+            if (error && typeof error === 'object' && 'status' in error && error.status === 403) {
+                throw new BadRequestException('Lỗi xác thực API key. Vui lòng kiểm tra GEMINI_API_KEY trong file .env')
+            }
+
+            throw new BadRequestException('Không thể thực hiện hội thoại AI: ' + (error instanceof Error ? error.message : String(error)))
+        }
+    }
+
+    /**
+     * Replace placeholders trong prompt template
+     */
+    private replacePlaceholders(template: string, variables: Record<string, string>): string {
+        let result = template
+        for (const [key, value] of Object.entries(variables)) {
+            result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value)
+        }
+        return result
+    }
+
+    /**
+     * Build prompt cho đánh giá SPEAKING (default)
      */
     private buildSpeakingEvaluationPrompt(text: string, transcription: string): string {
         return `Bạn là giáo viên tiếng Nhật chuyên nghiệp. Hãy đánh giá phát âm tiếng Nhật của học viên.

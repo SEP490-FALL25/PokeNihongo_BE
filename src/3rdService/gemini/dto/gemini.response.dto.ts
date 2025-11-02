@@ -26,3 +26,19 @@ export interface PersonalizedRecommendationsResponse {
         strongAreas: string[]
     }
 }
+
+export interface AIKaiwaResponse {
+    conversationId: string
+    message: string // Response từ AI (text)
+    audioUrl?: string // URL audio nếu includeAudio = true
+    pronunciationAssessment?: {
+        accuracy: number
+        pronunciation: number
+        fluency: number
+        overallScore: number
+        feedback: string
+        suggestions: string[]
+        confidence: number
+    } // Đánh giá phát âm nếu có assessPronunciation = true
+    transcription?: string // Transcription từ audio nếu có audioUrl
+}
