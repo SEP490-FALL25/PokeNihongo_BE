@@ -194,6 +194,12 @@ export class CreateTestWithMeaningsSwaggerDTO {
     })
     levelN?: number | null
 
+    @ApiPropertyOptional({
+        example: 10,
+        description: 'Giới hạn số lần làm bài test'
+    })
+    limit?: number | null
+
     @ApiProperty({
         enum: TestStatus,
         example: TestStatus.PLACEMENT_TEST_DONE,
