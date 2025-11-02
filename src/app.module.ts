@@ -71,6 +71,7 @@ import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
 import { LeaderboardSeasonModule } from './modules/leaderboard-season/leaderboard-season.module';
 import { MatchQueueModule } from './modules/match-queue/match-queue.module';
+import { MatchModule } from './modules/match/match.module';
 
 @Module({
   imports: [
@@ -140,7 +141,8 @@ import { MatchQueueModule } from './modules/match-queue/match-queue.module';
     GachaRollHistoryModule,
     WebsocketsModule,
     LeaderboardSeasonModule,
-    MatchQueueModule
+    MatchQueueModule,
+    MatchModule
   ],
 
   controllers: [],

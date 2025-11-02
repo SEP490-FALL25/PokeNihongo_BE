@@ -490,5 +490,18 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy hàng đợi trận đấu',
     ALREADY_EXISTS: 'Hàng đợi trận đấu đã tồn tại',
     INVALID_DATA: 'Dữ liệu hàng đợi trận đấu không hợp lệ'
+  },
+  match: {
+    CREATE_SUCCESS: 'Tạo trận đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật trận đấu thành công',
+    DELETE_SUCCESS: 'Xóa trận đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin trận đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách trận đấu thành công',
+
+    NOT_FOUND: 'Không tìm thấy trận đấu',
+    ALREADY_EXISTS: 'Trận đấu đã tồn tại',
+
+    INVALID_DATA: 'Dữ liệu trận đấu không hợp lệ',
+    NOT_HAVE_ACTIVE_LEADERBOARD_SEASON: 'Không có mùa xếp hạng đang hoạt động'
   }
 }

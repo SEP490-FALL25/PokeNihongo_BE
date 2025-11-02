@@ -471,5 +471,17 @@ export const jaMessages = {
     ALREADY_EXISTS: 'マッチキューは既に存在します',
 
     INVALID_DATA: '無効なマッチキューデータです'
+  },
+  match: {
+    CREATE_SUCCESS: 'マッチの作成に成功しました',
+    UPDATE_SUCCESS: 'マッチの更新に成功しました',
+    DELETE_SUCCESS: 'マッチの削除に成功しました',
+    GET_SUCCESS: 'マッチ情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'マッチリストの取得に成功しました',
+    NOT_FOUND: 'マッチが見つかりません',
+    ALREADY_EXISTS: 'マッチは既に存在します',
+    INVALID_DATA: '無効なマッチデータです',
+    NOT_HAVE_ACTIVE_LEADERBOARD_SEASON:
+      'アクティブなランキングシーズンが存在しません。マッチを開始できません。'
   }
 }

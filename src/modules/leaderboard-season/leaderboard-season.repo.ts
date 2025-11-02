@@ -247,4 +247,13 @@ export class LeaderboardSeasonRepo {
       }
     })
   }
+
+  findActiveSeason(): Promise<LeaderboardSeasonType | null> {
+    return this.prismaService.leaderboardSeason.findFirst({
+      where: {
+        isActive: true,
+        deletedAt: null
+      }
+    })
+  }
 }

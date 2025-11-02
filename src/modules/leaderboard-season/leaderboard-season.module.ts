@@ -8,6 +8,7 @@ import { LeaderboardSeasonService } from './leaderboard-season.service'
 @Module({
   imports: [TranslationModule, LanguagesModule],
   controllers: [LeaderboardSeasonController],
-  providers: [LeaderboardSeasonService, LeaderboardSeasonRepo]
+  providers: [LeaderboardSeasonService, LeaderboardSeasonRepo],
+  exports: [LeaderboardSeasonService, LeaderboardSeasonRepo]
 })
 export class LeaderboardSeasonModule {}
