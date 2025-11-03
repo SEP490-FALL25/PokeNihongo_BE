@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFil
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger'
 import { FileInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express'
 import { GeminiService } from './gemini.service'
-import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto, ChatWithGeminiDto, ChatWithGeminiMultipartDto } from './dto/gemini.dto'
+import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto, ChatWithGeminiDto, ChatWithGeminiMultipartDto, RecommendationsMultipartDto } from './dto/gemini.dto'
 import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 
@@ -38,32 +38,25 @@ export class GeminiController {
             message: 'Đánh giá phát âm thành công'
         }
     }
-    
-    @Get('recommendations')
+
+    @Post('recommendations')
+    @UseInterceptors(AnyFilesInterceptor())
+    @ApiConsumes('multipart/form-data')
     @ApiOperation({ summary: 'Lấy gợi ý cá nhân hóa dựa trên dữ liệu học tập' })
-    @ApiQuery({ name: 'limit', type: Number, required: false, description: 'Số lượng gợi ý (mặc định: 10)' })
-    @ApiResponse({
-        status: 200,
-        description: 'Lấy gợi ý cá nhân hóa thành công',
-        type: Object
-    })
+    @ApiBody({ type: RecommendationsMultipartDto })
+    @ApiResponse({ status: 200, description: 'Lấy gợi ý cá nhân hóa thành công', type: Object })
     async getPersonalizedRecommendations(
         @ActiveUser('userId') userId: number,
-        @Query('limit') limit?: string
+        @Body() body: RecommendationsMultipartDto
     ): Promise<{ statusCode: number; data: PersonalizedRecommendationsResponse; message: string }> {
-        const limitNumber = limit ? Number(limit) : 10
-
+        const limitNumber = body?.limit ? Number(body.limit) : 10
         if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 50) {
             throw new BadRequestException('Limit phải là số từ 1 đến 50')
         }
-
-        const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber)
-
-        return {
-            statusCode: 200,
-            data: result,
-            message: 'Lấy gợi ý cá nhân hóa thành công'
-        }
+        const forceUseSA = body?.useServiceAccount === 'true'
+        const modelName = body?.modelName
+        const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber, forceUseSA, modelName)
+        return { statusCode: 200, data: result, message: 'Lấy gợi ý cá nhân hóa thành công' }
     }
 
     @Post('kaiwa')

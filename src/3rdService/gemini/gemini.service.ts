@@ -9,6 +9,7 @@ import { TextToSpeechService } from '../speech/text-to-speech.service'
 import { SpeechToTextService } from '../speech/speech-to-text.service'
 import { UploadService } from '../upload/upload.service'
 import { SpeakingService } from '@/modules/speaking/speaking.service'
+import { DataAccessService } from '@/shared/services/data-access.service'
 import { EvaluateSpeakingDto, AIKaiwaDto, ChatWithGeminiDto } from './dto/gemini.dto'
 import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
 import { v4 as uuidv4 } from 'uuid'
@@ -32,7 +33,8 @@ export class GeminiService {
         private readonly textToSpeechService: TextToSpeechService,
         private readonly speechToTextService: SpeechToTextService,
         private readonly uploadService: UploadService,
-        private readonly speakingService: SpeakingService
+        private readonly speakingService: SpeakingService,
+        private readonly dataAccessService: DataAccessService
     ) {
         this.geminiConfig = this.configService.get('gemini')
         const useServiceAccount = this.geminiConfig?.useServiceAccount || false
@@ -365,58 +367,49 @@ export class GeminiService {
      */
     async getPersonalizedRecommendations(
         userId: number,
-        limit: number = 10
+        limit: number = 10,
+        forceUseServiceAccount?: boolean,
+        modelNameOverride?: string
     ): Promise<PersonalizedRecommendationsResponse> {
         try {
             this.logger.log(`Getting personalized recommendations for user ${userId}`)
-
-            // Lấy dữ liệu từ userExerciseAttempt
-            const exerciseAttempts = await this.prisma.userExerciseAttempt.findMany({
-                where: { userId },
-                include: {
-                    exercise: {
-                        include: {
-                            lesson: true
-                        }
-                    },
-                    userAnswerLogs: {
-                        include: {
-                            questionBank: true
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 50 // Lấy 50 attempt gần nhất để phân tích
-            })
-
-            // Lấy dữ liệu từ userTestAttempt
-            const testAttempts = await this.prisma.userTestAttempt.findMany({
-                where: { userId },
-                include: {
-                    test: true,
-                    userTestAnswerLogs: {
-                        include: {
-                            questionBank: true
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 20 // Lấy 20 test attempt gần nhất
-            })
-
-            // Phân tích dữ liệu để tìm điểm yếu và điểm mạnh
-            const analysis = this.analyzeUserPerformance(exerciseAttempts, testAttempts)
-
             // Lấy config default theo mapping service ↔ config
             const svcCfg = await this.geminiConfigRepo.getDefaultConfigForService('PERSONALIZED_RECOMMENDATIONS' as any)
             const config: any = svcCfg?.geminiConfig || null
+            const policy = (config?.geminiConfigModel?.extraParams as any)?.policy
+
+            let analysis: any
+            if (policy) {
+                // Lấy dữ liệu theo policy (scope + whitelist + masking)
+                const safeData = await this.dataAccessService.getAiSafeData(userId, policy)
+                analysis = { data: safeData }
+            } else {
+                // Fallback legacy: query trực tiếp để phân tích
+                const exerciseAttempts = await this.prisma.userExerciseAttempt.findMany({
+                    where: { userId },
+                    include: {
+                        exercise: { include: { lesson: true } },
+                        userAnswerLogs: { include: { questionBank: true } }
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    take: 50
+                })
+                const testAttempts = await this.prisma.userTestAttempt.findMany({
+                    where: { userId },
+                    include: { test: true, userTestAnswerLogs: { include: { questionBank: true } } },
+                    orderBy: { createdAt: 'desc' },
+                    take: 20
+                })
+                analysis = this.analyzeUserPerformance(exerciseAttempts, testAttempts)
+            }
+
             const prompt = config
                 ? this.replacePlaceholders(String(config.prompt || ''), { analysis: JSON.stringify(analysis), limit: limit.toString() })
                 : this.buildRecommendationPrompt(analysis, limit)
-            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
+            const modelName = (modelNameOverride as string) || (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-2.5-pro'
 
             // Gọi Gemini API - chọn API key dựa trên model
-            const genAI = await this.getGenAIForModel(modelName)
+            const genAI = await this.getGenAIForModel(modelName, forceUseServiceAccount)
             const model = genAI.getGenerativeModel({ model: modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response

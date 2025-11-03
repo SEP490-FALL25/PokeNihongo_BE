@@ -188,3 +188,36 @@ export class ChatWithGeminiMultipartDto {
   @IsString()
   useServiceAccount?: string
 }
+
+// Swagger DTO cho multipart/form-data của recommendations
+export class RecommendationsMultipartDto {
+  @ApiProperty({
+    example: '10',
+    description: 'Số lượng gợi ý muốn nhận (string trong multipart)',
+    required: false,
+    default: '10'
+  })
+  @IsOptional()
+  @IsString()
+  limit?: string
+
+  @ApiProperty({
+    example: 'false',
+    description: 'Bật/tắt Service Account. "true" = dùng Service Account, "false" = dùng API Key (mặc định: false)',
+    required: false,
+    default: 'false'
+  })
+  @IsOptional()
+  @IsString()
+  useServiceAccount?: string
+
+  @ApiProperty({
+    example: 'gemini-2.5-pro',
+    enum: GeminiModel,
+    description: 'Chọn model (override). Nếu bỏ trống sẽ dùng model của config mặc định',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  modelName?: string
+}
