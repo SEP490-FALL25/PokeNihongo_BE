@@ -228,6 +228,26 @@ export class GeminiConfigService {
     }
   }
 
+  async updateConfigModelPolicy(
+    { id, policy, updatedById }: { id: number; policy: any; updatedById: number },
+    lang: string = 'vi'
+  ) {
+    try {
+      await this.getLang(lang)
+      // Fetch existing for merge
+      const current = await this.geminiConfigRepo.findConfigModelById(id)
+      if (!current) throw new NotFoundRecordException()
+      const currentExtra = (current as any)?.extraParams
+      const baseExtra = currentExtra && typeof currentExtra === 'object' && !Array.isArray(currentExtra) ? currentExtra : {}
+      const nextExtra = { ...(baseExtra as Record<string, any>), policy }
+      const updated = await this.geminiConfigRepo.updateConfigModel({ id, data: { extraParams: nextExtra }, updatedById })
+      return { statusCode: HttpStatus.OK, data: updated, message: this.i18nService.translate('UPDATE_SUCCESS', lang) }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) throw new NotFoundRecordException()
+      throw error
+    }
+  }
+
   async deleteConfigModel({ id, deletedById }: { id: number; deletedById: number }, lang: string = 'vi') {
     try {
       await this.getLang(lang)
@@ -237,6 +257,31 @@ export class GeminiConfigService {
       if (isNotFoundPrismaError(error)) throw new NotFoundRecordException()
       throw error
     }
+  }
+
+  // GeminiServiceConfig mapping APIs
+  async createServiceConfig(data: { serviceType: PrismaGeminiConfigType; geminiConfigId: number; isDefault?: boolean; isActive?: boolean }) {
+    return this.geminiConfigRepo.createServiceConfig(data)
+  }
+
+  async listServiceConfigs(serviceType: PrismaGeminiConfigType) {
+    return this.geminiConfigRepo.listServiceConfigs(serviceType as any)
+  }
+
+  async setDefaultServiceConfig(id: number) {
+    return this.geminiConfigRepo.setDefaultServiceConfig(id)
+  }
+
+  async toggleServiceConfig(id: number, isActive: boolean) {
+    return this.geminiConfigRepo.toggleServiceConfig(id, isActive)
+  }
+
+  async deleteServiceConfig(id: number) {
+    return this.geminiConfigRepo.deleteServiceConfig(id)
+  }
+
+  async getDefaultConfigForService(serviceType: PrismaGeminiConfigType) {
+    return this.geminiConfigRepo.getDefaultConfigForService(serviceType as any)
   }
 }
 
