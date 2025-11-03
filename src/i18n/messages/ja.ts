@@ -504,5 +504,15 @@ export const jaMessages = {
 
     ALREADY_EXISTS: 'マッチ参加者は既に存在します',
     INVALID_DATA: '無効なマッチ参加者データです'
+  },
+  match_round_participant: {
+    CREATE_SUCCESS: 'マッチラウンド参加者の作成に成功しました',
+    UPDATE_SUCCESS: 'マッチラウンド参加者の更新に成功しました',
+    DELETE_SUCCESS: 'マッチラウンド参加者の削除に成功しました',
+    GET_SUCCESS: 'マッチラウンド参加者情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'マッチラウンド参加者リストの取得に成功しました',
+    NOT_FOUND: 'マッチラウンド参加者が見つかりません',
+    ALREADY_EXISTS: 'マッチラウンド参加者は既に存在します',
+    INVALID_DATA: '無効なマッチラウンド参加者データです'
   }
 }

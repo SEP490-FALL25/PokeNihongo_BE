@@ -1,35 +1,35 @@
 import { createZodDto } from 'nestjs-zod'
 import {
-  CreateMatchParticipantBodySchema,
-  CreateMatchParticipantResSchema,
-  GetMatchParticipantDetailResSchema,
-  GetMatchParticipantParamsSchema,
-  UpdateMatchParticipantBodySchema,
-  UpdateMatchParticipantResSchema,
+  CreateMatchRoundParticipantBodySchema,
+  CreateMatchRoundParticipantResSchema,
+  GetMatchRoundParticipantDetailResSchema,
+  GetMatchRoundParticipantParamsSchema,
+  UpdateMatchRoundParticipantBodySchema,
+  UpdateMatchRoundParticipantResSchema,
   UpdateWithListItemResSchema
 } from '../entities/match-round-participant.entity'
 
 // Request DTOs
-export class CreateMatchParticipantBodyDTO extends createZodDto(
-  CreateMatchParticipantBodySchema
+export class CreateMatchRoundParticipantBodyDTO extends createZodDto(
+  CreateMatchRoundParticipantBodySchema
 ) {}
 
-export class UpdateMatchParticipantBodyDTO extends createZodDto(
-  UpdateMatchParticipantBodySchema
+export class UpdateMatchRoundParticipantBodyDTO extends createZodDto(
+  UpdateMatchRoundParticipantBodySchema
 ) {}
 
-export class GetMatchParticipantParamsDTO extends createZodDto(
-  GetMatchParticipantParamsSchema
+export class GetMatchRoundParticipantParamsDTO extends createZodDto(
+  GetMatchRoundParticipantParamsSchema
 ) {}
 
 // Response DTOs
-export class CreateMatchParticipantResDTO extends createZodDto(
-  CreateMatchParticipantResSchema
+export class CreateMatchRoundParticipantResDTO extends createZodDto(
+  CreateMatchRoundParticipantResSchema
 ) {}
-export class UpdateMatchParticipantResDTO extends createZodDto(
-  UpdateMatchParticipantResSchema
+export class UpdateMatchRoundParticipantResDTO extends createZodDto(
+  UpdateMatchRoundParticipantResSchema
 ) {}
 export class UpdateWithListItemResDTO extends createZodDto(UpdateWithListItemResSchema) {}
-export class GetMatchParticipantDetailResDTO extends createZodDto(
-  GetMatchParticipantDetailResSchema
+export class GetMatchRoundParticipantDetailResDTO extends createZodDto(
+  GetMatchRoundParticipantDetailResSchema
 ) {}

@@ -1,3 +1,4 @@
+import { MatchRoundParticipantStatus } from '@/common/constants/match.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
@@ -7,70 +8,82 @@ import { z } from 'zod'
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
 
-// Base MatchParticipant Schema
-export const MatchParticipantSchema = z.object({
+// Base MatchRoundParticipant Schema
+export const MatchRoundParticipantSchema = z.object({
   id: z.number(),
   matchParticipantId: z.number(),
   matchRoundId: z.number(),
   selectedUserPokemonId: z.number().nullable(),
   points: z.number().nullable(),
-  totalTimeMs: z.number().default(0),
+  totalTimeMs: z.number().nullable(),
+  questionsTotal: z.number(),
+  status: z
+    .enum([
+      MatchRoundParticipantStatus.SELECTING_POKEMON,
+      MatchRoundParticipantStatus.PENDING,
+      MatchRoundParticipantStatus.IN_PROGRESS,
+      MatchRoundParticipantStatus.COMPLETED
+    ])
+    .default(MatchRoundParticipantStatus.SELECTING_POKEMON),
   deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })
 
 // Create Schema
-export const CreateMatchParticipantBodySchema = MatchParticipantSchema.pick({
-  matchId: true,
-  userId: true
+export const CreateMatchRoundParticipantBodySchema = MatchRoundParticipantSchema.pick({
+  matchParticipantId: true,
+  matchRoundId: true,
+  selectedUserPokemonId: true
 }).strict()
 
-export const CreateMatchParticipantResSchema = z.object({
+export const CreateMatchRoundParticipantResSchema = z.object({
   statusCode: z.number(),
-  data: MatchParticipantSchema,
+  data: MatchRoundParticipantSchema,
   message: z.string()
 })
 
 // Update Schema
-export const UpdateMatchParticipantBodySchema =
-  CreateMatchParticipantBodySchema.partial().strict()
+export const UpdateMatchRoundParticipantBodySchema =
+  CreateMatchRoundParticipantBodySchema.partial().strict()
 
-export const UpdateMatchParticipantResSchema = CreateMatchParticipantResSchema
+export const UpdateMatchRoundParticipantResSchema = CreateMatchRoundParticipantResSchema
 
 export const UpdateWithListItemResSchema = z.object({
   statusCode: z.number(),
-  data: z.array(MatchParticipantSchema),
+  data: z.array(MatchRoundParticipantSchema),
   message: z.string()
 })
 
 // Query Schema
-export const GetMatchParticipantParamsSchema = z.object({
-  matchParticipantId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
+export const GetMatchRoundParticipantParamsSchema = z.object({
+  matchRoundParticipantId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
 
-export const GetMatchParticipantDetailSchema = MatchParticipantSchema
+export const GetMatchRoundParticipantDetailSchema = MatchRoundParticipantSchema
 
-export const GetMatchParticipantDetailResSchema = z.object({
+export const GetMatchRoundParticipantDetailResSchema = z.object({
   statusCode: z.number(),
-  data: GetMatchParticipantDetailSchema,
+  data: GetMatchRoundParticipantDetailSchema,
   message: z.string()
 })
 
 // Type exports
-export type MatchParticipantType = z.infer<typeof MatchParticipantSchema>
-export type CreateMatchParticipantBodyType = z.infer<
-  typeof CreateMatchParticipantBodySchema
+export type MatchRoundParticipantType = z.infer<typeof MatchRoundParticipantSchema>
+export type CreateMatchRoundParticipantBodyType = z.infer<
+  typeof CreateMatchRoundParticipantBodySchema
 >
-export type UpdateMatchParticipantBodyType = z.infer<
-  typeof UpdateMatchParticipantBodySchema
+export type UpdateMatchRoundParticipantBodyType = z.infer<
+  typeof UpdateMatchRoundParticipantBodySchema
 >
-export type GetMatchParticipantParamsType = z.infer<
-  typeof GetMatchParticipantParamsSchema
+export type GetMatchRoundParticipantParamsType = z.infer<
+  typeof GetMatchRoundParticipantParamsSchema
 >
 
 // Field for query
-export type MatchParticipantFieldType = keyof z.infer<typeof MatchParticipantSchema>
+export type MatchRoundParticipantFieldType = keyof z.infer<
+  typeof MatchRoundParticipantSchema
+>
 export const MATCH_PARTICIPANT_FIELDS = Object.keys(
-  MatchParticipantSchema.shape
-) as MatchParticipantFieldType[]
+  MatchRoundParticipantSchema.shape
+) as MatchRoundParticipantFieldType[]

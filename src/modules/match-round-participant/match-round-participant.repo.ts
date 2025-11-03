@@ -4,14 +4,14 @@ import { Injectable } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
-  CreateMatchParticipantBodyType,
+  CreateMatchRoundParticipantBodyType,
   MATCH_PARTICIPANT_FIELDS,
-  MatchParticipantType,
-  UpdateMatchParticipantBodyType
+  MatchRoundParticipantType,
+  UpdateMatchRoundParticipantBodyType
 } from './entities/match-round-participant.entity'
 
 @Injectable()
-export class MatchParticipantRepo {
+export class MatchRoundParticipantRepo {
   constructor(private prismaService: PrismaService) {}
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
     return this.prismaService.$transaction(callback)
@@ -22,15 +22,14 @@ export class MatchParticipantRepo {
       data
     }: {
       createdById: number
-      data: CreateMatchParticipantBodyType
+      data: CreateMatchRoundParticipantBodyType
     },
     prismaTx?: PrismaClient
-  ): Promise<MatchParticipantType> {
+  ): Promise<MatchRoundParticipantType> {
     const client = prismaTx || this.prismaService
-    return client.matchParticipant.create({
+    return client.matchRoundParticipant.create({
       data: {
-        ...data,
-        userId: data.userId || createdById
+        ...data
       }
     })
   }
@@ -42,13 +41,13 @@ export class MatchParticipantRepo {
       updatedById
     }: {
       id: number
-      data: UpdateMatchParticipantBodyType
+      data: UpdateMatchRoundParticipantBodyType
       updatedById?: number
     },
     prismaTx?: PrismaClient
-  ): Promise<MatchParticipantType> {
+  ): Promise<MatchRoundParticipantType> {
     const client = prismaTx || this.prismaService
-    return client.matchParticipant.update({
+    return client.matchRoundParticipant.update({
       where: {
         id,
         deletedAt: null
@@ -63,13 +62,13 @@ export class MatchParticipantRepo {
     id: number,
     isHard?: boolean,
     prismaTx?: PrismaClient
-  ): Promise<MatchParticipantType> {
+  ): Promise<MatchRoundParticipantType> {
     const client = prismaTx || this.prismaService
     return isHard
-      ? client.matchParticipant.delete({
+      ? client.matchRoundParticipant.delete({
           where: { id }
         })
-      : client.matchParticipant.update({
+      : client.matchRoundParticipant.update({
           where: {
             id,
             deletedAt: null
@@ -92,10 +91,10 @@ export class MatchParticipantRepo {
     }
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.matchParticipant.count({
+      this.prismaService.matchRoundParticipant.count({
         where: filterWhere
       }),
-      this.prismaService.matchParticipant.findMany({
+      this.prismaService.matchRoundParticipant.findMany({
         where: filterWhere,
 
         orderBy,
@@ -115,8 +114,8 @@ export class MatchParticipantRepo {
     }
   }
 
-  findById(id: number): Promise<MatchParticipantType | null> {
-    return this.prismaService.matchParticipant.findUnique({
+  findById(id: number): Promise<MatchRoundParticipantType | null> {
+    return this.prismaService.matchRoundParticipant.findUnique({
       where: {
         id,
         deletedAt: null

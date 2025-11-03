@@ -1843,9 +1843,9 @@ enum RoundStatus {
 
 /// Trạng thái chi tiết của 1 user trong 1 round (model MatchRoundParticipant)
 enum RoundResultStatus {
-  SELECTING_POKEMON // Đang chọn Pokémon
-  PENDING
-  IN_PROGRESS // Đang làm bài
+  SELECTING_POKEMON
+  PENDING // Chờ đối thủ chọn Pokémon
+  IN_PROGRESS // Đang làm bài (10 phút)
   COMPLETED // User đã nộp bài (points, time)
 }
 

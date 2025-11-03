@@ -1,20 +1,20 @@
-import { MatchParticipantMessage } from '@/i18n/message-keys'
+import { MatchRoundParticipantMessage } from '@/i18n/message-keys'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 
-export class MatchParticipantNotFoundException extends NotFoundException {
+export class MatchRoundParticipantNotFoundException extends NotFoundException {
   constructor() {
     super({
-      message: MatchParticipantMessage.NOT_FOUND,
-      errorKey: MatchParticipantMessage.NOT_FOUND
+      message: MatchRoundParticipantMessage.NOT_FOUND,
+      errorKey: MatchRoundParticipantMessage.NOT_FOUND
     })
   }
 }
 
-export class MatchParticipantAlreadyExistsException extends BadRequestException {
+export class MatchRoundParticipantAlreadyExistsException extends BadRequestException {
   constructor() {
     super({
-      message: MatchParticipantMessage.ALREADY_EXISTS,
-      errorKey: MatchParticipantMessage.ALREADY_EXISTS
+      message: MatchRoundParticipantMessage.ALREADY_EXISTS,
+      errorKey: MatchRoundParticipantMessage.ALREADY_EXISTS
     })
   }
 }

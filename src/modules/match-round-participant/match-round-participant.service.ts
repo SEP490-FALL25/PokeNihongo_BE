@@ -1,5 +1,5 @@
 import { I18nService } from '@/i18n/i18n.service'
-import { MatchParticipantMessage } from '@/i18n/message-keys'
+import { MatchRoundParticipantMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
@@ -8,53 +8,56 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
-import { MatchParticipantNotFoundException } from './dto/match-round-participant.error'
+import { MatchRoundParticipantNotFoundException } from './dto/match-round-participant.error'
 import {
-  CreateMatchParticipantBodyType,
-  UpdateMatchParticipantBodyType
+  CreateMatchRoundParticipantBodyType,
+  UpdateMatchRoundParticipantBodyType
 } from './entities/match-round-participant.entity'
-import { MatchParticipantRepo } from './match-round-participant.repo'
+import { MatchRoundParticipantRepo } from './match-round-participant.repo'
 
 @Injectable()
-export class MatchParticipantService {
+export class MatchRoundParticipantService {
   constructor(
-    private matchParticipantRepo: MatchParticipantRepo,
+    private matchRoundParticipantRepo: MatchRoundParticipantRepo,
 
     private readonly i18nService: I18nService
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
-    const data = await this.matchParticipantRepo.list(pagination)
+    const data = await this.matchRoundParticipantRepo.list(pagination)
     return {
       statusCode: 200,
       data,
-      message: this.i18nService.translate(MatchParticipantMessage.GET_LIST_SUCCESS, lang)
+      message: this.i18nService.translate(
+        MatchRoundParticipantMessage.GET_LIST_SUCCESS,
+        lang
+      )
     }
   }
 
   // Helper method to calculate weaknesses for a Pokemon (copied from PokemonService)
   async findById(id: number, lang: string = 'vi') {
-    const matchParticipant = await this.matchParticipantRepo.findById(id)
-    if (!matchParticipant) {
-      throw new MatchParticipantNotFoundException()
+    const matchRoundParticipant = await this.matchRoundParticipantRepo.findById(id)
+    if (!matchRoundParticipant) {
+      throw new MatchRoundParticipantNotFoundException()
     }
 
     return {
       statusCode: 200,
-      data: matchParticipant,
-      message: this.i18nService.translate(MatchParticipantMessage.GET_LIST_SUCCESS, lang)
+      data: matchRoundParticipant,
+      message: this.i18nService.translate(
+        MatchRoundParticipantMessage.GET_LIST_SUCCESS,
+        lang
+      )
     }
   }
 
   async create(
-    { userId, data }: { userId: number; data: CreateMatchParticipantBodyType },
+    { userId, data }: { userId: number; data: CreateMatchRoundParticipantBodyType },
     lang: string = 'vi'
   ) {
     try {
-      // check coi co truyen userId ko, neu ko thi lay cua created_by
-      data.userId = data.userId || userId
-
-      const result = await this.matchParticipantRepo.create({
+      const result = await this.matchRoundParticipantRepo.create({
         createdById: userId,
         data: {
           ...data
@@ -63,7 +66,10 @@ export class MatchParticipantService {
       return {
         statusCode: 201,
         data: result,
-        message: this.i18nService.translate(MatchParticipantMessage.CREATE_SUCCESS, lang)
+        message: this.i18nService.translate(
+          MatchRoundParticipantMessage.CREATE_SUCCESS,
+          lang
+        )
       }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
@@ -86,31 +92,34 @@ export class MatchParticipantService {
       userId
     }: {
       id: number
-      data: UpdateMatchParticipantBodyType
+      data: UpdateMatchRoundParticipantBodyType
       userId?: number
     },
     lang: string = 'vi'
   ) {
     try {
       //check coi thang user nay co pity nao dang pending ko, co thi ko dc tao them
-      const existingPity = await this.matchParticipantRepo.findById(id)
+      const existingPity = await this.matchRoundParticipantRepo.findById(id)
       if (!existingPity) {
-        throw new MatchParticipantNotFoundException()
+        throw new MatchRoundParticipantNotFoundException()
       }
 
-      const matchParticipant = await this.matchParticipantRepo.update({
+      const matchRoundParticipant = await this.matchRoundParticipantRepo.update({
         id,
         data: data,
         updatedById: userId
       })
       return {
         statusCode: 200,
-        data: matchParticipant,
-        message: this.i18nService.translate(MatchParticipantMessage.UPDATE_SUCCESS, lang)
+        data: matchRoundParticipant,
+        message: this.i18nService.translate(
+          MatchRoundParticipantMessage.UPDATE_SUCCESS,
+          lang
+        )
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw new MatchParticipantNotFoundException()
+        throw new MatchRoundParticipantNotFoundException()
       }
 
       if (isForeignKeyConstraintPrismaError(error)) {
@@ -122,20 +131,23 @@ export class MatchParticipantService {
 
   async delete({ id, userId }: { id: number; userId?: number }, lang: string = 'vi') {
     try {
-      const existMatchParticipant = await this.matchParticipantRepo.findById(id)
-      if (!existMatchParticipant) {
-        throw new MatchParticipantNotFoundException()
+      const existMatchRoundParticipant = await this.matchRoundParticipantRepo.findById(id)
+      if (!existMatchRoundParticipant) {
+        throw new MatchRoundParticipantNotFoundException()
       }
 
-      await this.matchParticipantRepo.delete(id)
+      await this.matchRoundParticipantRepo.delete(id)
       return {
         statusCode: 200,
         data: null,
-        message: this.i18nService.translate(MatchParticipantMessage.DELETE_SUCCESS, lang)
+        message: this.i18nService.translate(
+          MatchRoundParticipantMessage.DELETE_SUCCESS,
+          lang
+        )
       }
     } catch (error) {
       if (isNotFoundPrismaError(error)) {
-        throw new MatchParticipantNotFoundException()
+        throw new MatchRoundParticipantNotFoundException()
       }
       throw error
     }
