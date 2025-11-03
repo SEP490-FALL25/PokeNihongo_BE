@@ -18,7 +18,7 @@ import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { GeminiConfigService } from './gemini-config.service'
 import { GeminiConfigListQuerySwaggerDTO, GeminiModelListQuerySwaggerDTO, GeminiConfigModelListQuerySwaggerDTO } from './dto/gemini-config.query.dto'
-import { CreateGeminiConfigModelSwaggerDTO, UpdateGeminiConfigModelSwaggerDTO } from './dto/gemini-config-model.dto'
+import { CreateGeminiConfigModelSwaggerDTO, UpdateGeminiConfigModelSwaggerDTO, ApplyPresetBodySwaggerDTO, UpdateConfigModelPolicyBodySwaggerDTO } from './dto/gemini-config-model.dto'
 import { CreateGeminiConfigModelBodyDTO, UpdateGeminiConfigModelBodyDTO, GeminiConfigModelResDTO } from './dto/gemini-config.zod-dto'
 import { SchemaIntrospectService } from './schema-introspect.service'
 
@@ -45,6 +45,19 @@ export class GeminiConfigController {
   @ApiQuery({ type: GeminiModelListQuerySwaggerDTO })
   listModels(@I18nLang() lang: string) {
     return this.geminiConfigService.listModels(lang)
+  }
+
+  // Presets
+  @Get('presets')
+  @ApiOperation({ summary: 'Danh sách presets cấu hình model' })
+  listPresets(@I18nLang() lang: string) {
+    return this.geminiConfigService.listPresets(lang)
+  }
+
+  @Post('presets/seed-default')
+  @ApiOperation({ summary: 'Seed các preset mặc định vào DB' })
+  seedPresets(@I18nLang() lang: string) {
+    return this.geminiConfigService.seedDefaultPresets(lang)
   }
 
   @Post('models/seed-default')
@@ -101,7 +114,7 @@ export class GeminiConfigController {
   @Patch('config-models/:id/policy')
   @ApiOperation({ summary: 'Cập nhật policy AI vào extraParams.policy của GeminiConfigModel' })
   @ApiParam({ name: 'id', type: Number, required: true })
-  @ApiBody({ schema: { example: { policy: { purpose: 'AI_KAIWA', entities: [{ entity: 'UserProgress', scope: 'SELF_ONLY', fields: ['lessonId'] }], maskingRules: { email: 'mask' } } } } })
+  @ApiBody({ type: UpdateConfigModelPolicyBodySwaggerDTO })
   setConfigModelPolicy(
     @Param('id') id: number,
     @Body() body: { policy: any },
@@ -109,6 +122,19 @@ export class GeminiConfigController {
     @I18nLang() lang: string
   ) {
     return this.geminiConfigService.updateConfigModelPolicy({ id: Number(id), policy: body?.policy || {}, updatedById: userId }, lang)
+  }
+
+  @Patch('config-models/:id/preset')
+  @ApiOperation({ summary: 'Áp dụng preset tham số model (temperature/topP/topK) vào GeminiConfigModel' })
+  @ApiParam({ name: 'id', type: Number, required: true })
+  @ApiBody({ type: ApplyPresetBodySwaggerDTO })
+  applyPreset(
+    @Param('id') id: number,
+    @Body() body: { presetKey: string },
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.geminiConfigService.applyPresetToConfigModel({ id: Number(id), presetKey: body?.presetKey, updatedById: userId }, lang)
   }
 
   @Delete('config-models/:id')
