@@ -48,28 +48,28 @@ export class QuestionBankController {
 
 
 
-    @Post('with-meanings')
-    @ApiBearerAuth()
-    @ApiOperation({
-        summary: 'Tạo câu hỏi mới với nghĩa và bản dịch',
-        description: `Tạo câu hỏi mới với nghĩa và bản dịch. 
+//     @Post('with-meanings')
+//     @ApiBearerAuth()
+//     @ApiOperation({
+//         summary: 'Tạo câu hỏi mới với nghĩa và bản dịch',
+//         description: `Tạo câu hỏi mới với nghĩa và bản dịch. 
         
-**Quy tắc đặc biệt:**
-- **audioUrl**: Optional - chỉ khi questionType là LISTENING và không truyền thì hệ thống sẽ tự động gen text-to-speech từ questionJp
-- **SPEAKING**: Bắt buộc phải có pronunciation (cách phát âm romaji)
-- **Các loại khác**: audioUrl và pronunciation là tùy chọn
+// **Quy tắc đặc biệt:**
+// - **audioUrl**: Optional - chỉ khi questionType là LISTENING và không truyền thì hệ thống sẽ tự động gen text-to-speech từ questionJp
+// - **SPEAKING**: Bắt buộc phải có pronunciation (cách phát âm romaji)
+// - **Các loại khác**: audioUrl và pronunciation là tùy chọn
 
-**Loại câu hỏi hỗ trợ:** VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, MATCHING` })
-    @ApiBody({ type: CreateQuestionBankWithMeaningsSwaggerDTO })
-    @ApiResponse({
-        status: 201,
-        description: 'Tạo câu hỏi với nghĩa thành công',
-        type: QuestionBankResponseSwaggerDTO
-    })
-    @ZodSerializerDto(QuestionBankResDTO)
-    createWithMeanings(@Body() body: CreateQuestionBankWithMeaningsBodyDTO, @ActiveUser('userId') userId: number) {
-        return this.questionBankService.createWithMeanings(body, userId)
-    }
+// **Loại câu hỏi hỗ trợ:** VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, MATCHING` })
+//     @ApiBody({ type: CreateQuestionBankWithMeaningsSwaggerDTO })
+//     @ApiResponse({
+//         status: 201,
+//         description: 'Tạo câu hỏi với nghĩa thành công',
+//         type: QuestionBankResponseSwaggerDTO
+//     })
+//     @ZodSerializerDto(QuestionBankResDTO)
+//     createWithMeanings(@Body() body: CreateQuestionBankWithMeaningsBodyDTO, @ActiveUser('userId') userId: number) {
+//         return this.questionBankService.createWithMeanings(body, userId)
+//     }
 
     @Post('with-answers')
     @ApiBearerAuth()
