@@ -5,17 +5,19 @@ import { I18nService } from '@/i18n/i18n.service'
 import { NotFoundRecordException } from 'src/shared/error'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared/helpers'
 import { LanguagesRepository } from '../languages/languages.repo'
-import { GeminiConfigRepo } from './gemini-config.repo'
+import { GeminiConfigRepo, GeminiPresetRepo } from './gemini-config.repo'
 import { GeminiConfigAlreadyExistsException } from './dto/gemini-config.error'
 import {
   CreateGeminiConfigBodyType,
   UpdateGeminiConfigBodyType
 } from './entities/gemini-config.entity'
+import { getPresetByKey, GEMINI_PRESETS } from '@/3rdService/gemini/config/gemini-presets'
 
 @Injectable()
 export class GeminiConfigService {
   constructor(
     private geminiConfigRepo: GeminiConfigRepo,
+    private readonly geminiPresetRepo: GeminiPresetRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository
   ) { }
@@ -282,6 +284,50 @@ export class GeminiConfigService {
 
   async getDefaultConfigForService(serviceType: PrismaGeminiConfigType) {
     return this.geminiConfigRepo.getDefaultConfigForService(serviceType as any)
+  }
+
+  // Apply a preset to a GeminiConfigModel (by id)
+  async applyPresetToConfigModel({ id, presetKey, updatedById }: { id: number; presetKey: string; updatedById: number }, lang: string = 'vi') {
+    await this.getLang(lang)
+    const preset = getPresetByKey(presetKey)
+    if (!preset) {
+      throw new NotFoundRecordException()
+    }
+    // Upsert preset to DB then link by id
+    const upserted = await this.geminiPresetRepo.upsertByKey({
+      key: preset.key,
+      name: preset.name,
+      description: preset.description,
+      temperature: preset.config.temperature ?? null,
+      topP: preset.config.topP ?? null,
+      topK: preset.config.topK ?? null,
+      isEnabled: true
+    })
+    const updated = await this.geminiConfigRepo.updateConfigModel({ id, data: { presetId: upserted.id }, updatedById })
+    return { statusCode: HttpStatus.OK, data: { updated, preset: upserted }, message: this.i18nService.translate('UPDATE_SUCCESS', lang) }
+  }
+
+  async listPresets(lang: string = 'vi') {
+    await this.getLang(lang)
+    const data = await this.geminiPresetRepo.listPresets()
+    return { statusCode: HttpStatus.OK, data, message: this.i18nService.translate('GET_SUCCESS', lang) }
+  }
+
+  async seedDefaultPresets(lang: string = 'vi') {
+    await this.getLang(lang)
+    for (const p of GEMINI_PRESETS) {
+      await this.geminiPresetRepo.upsertByKey({
+        key: p.key,
+        name: p.name,
+        description: p.description,
+        temperature: p.config.temperature ?? null,
+        topP: p.config.topP ?? null,
+        topK: p.config.topK ?? null,
+        isEnabled: true
+      })
+    }
+    const data = await this.geminiPresetRepo.listPresets()
+    return { statusCode: HttpStatus.OK, data, message: this.i18nService.translate('UPDATE_SUCCESS', lang) }
   }
 }
 

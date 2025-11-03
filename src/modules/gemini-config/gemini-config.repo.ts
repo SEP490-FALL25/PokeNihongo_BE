@@ -200,6 +200,7 @@ export class GeminiConfigRepo {
     private static readonly GEMINI_CONFIG_MODEL_FIELDS = [
         'name',
         'geminiModelId',
+        'presetId',
         'isEnabled',
         'createdAt',
         'updatedAt'
@@ -214,7 +215,7 @@ export class GeminiConfigRepo {
             this.prismaService.geminiConfigModel.count({ where: { deletedAt: null, ...where } }),
             this.prismaService.geminiConfigModel.findMany({
                 where: { deletedAt: null, ...where },
-                include: { geminiModel: true },
+                include: { geminiModel: true, preset: true },
                 orderBy,
                 skip,
                 take
@@ -235,7 +236,7 @@ export class GeminiConfigRepo {
     findConfigModelById(id: number) {
         return this.prismaService.geminiConfigModel.findUnique({
             where: { id, deletedAt: null },
-            include: { geminiModel: true }
+            include: { geminiModel: true, preset: true }
         })
     }
 
@@ -263,6 +264,27 @@ export class GeminiConfigRepo {
     async existsConfigModel(id: number): Promise<boolean> {
         const found = await this.prismaService.geminiConfigModel.findFirst({ where: { id, deletedAt: null } })
         return !!found
+    }
+}
+
+@Injectable()
+export class GeminiPresetRepo {
+    constructor(private prismaService: PrismaService) { }
+
+    listPresets() {
+        return (this.prismaService as any).geminiModelPreset.findMany({ orderBy: { key: 'asc' } })
+    }
+
+    async upsertByKey(data: { key: string; name: string; description?: string; temperature?: number | null; topP?: number | null; topK?: number | null; isEnabled?: boolean }) {
+        return (this.prismaService as any).geminiModelPreset.upsert({
+            where: { key: data.key },
+            update: { ...data },
+            create: { ...data }
+        })
+    }
+
+    findByKey(key: string) {
+        return (this.prismaService as any).geminiModelPreset.findUnique({ where: { key } })
     }
 }
 
