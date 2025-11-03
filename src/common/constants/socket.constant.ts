@@ -6,6 +6,7 @@ export interface MatchFoundPayload {
     id: number
     status: string
     createdAt: Date
+    endTime?: Date
   }
   opponent: {
     id: number

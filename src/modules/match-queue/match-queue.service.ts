@@ -2,7 +2,11 @@ import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { MatchQueueMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
-import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
+import {
+  addTimeUTC,
+  isNotFoundPrismaError,
+  isUniqueConstraintPrismaError
+} from '@/shared/helpers'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { InjectQueue } from '@nestjs/bull'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
@@ -227,7 +231,8 @@ export class MatchQueueService implements OnModuleInit {
         {
           id: matchData.id,
           status: matchData.status,
-          createdAt: matchData.createdAt
+          createdAt: matchData.createdAt,
+          endTime: addTimeUTC(new Date(), TIME_OUT_USER_MS)
         },
         {
           id: participant1Data.id,

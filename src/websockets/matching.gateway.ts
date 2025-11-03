@@ -20,6 +20,7 @@ interface MatchData {
   id: number
   status: string
   createdAt: Date
+  endTime: Date
 }
 
 interface ParticipantData {
@@ -30,7 +31,7 @@ interface ParticipantData {
 }
 
 @WebSocketGateway({
-  namespace: 'matching'
+  namespace: '/matching'
 })
 @Injectable()
 export class MatchingGateway {
@@ -51,7 +52,6 @@ export class MatchingGateway {
   @SubscribeMessage(MATCHING_EVENTS.JOIN_MATCHING_ROOM)
   handleJoinMatchingRoom(@ConnectedSocket() client: Socket): void {
     const userId = client.data?.userId
-    console.log(client.data)
 
     if (!userId) {
       this.logger.warn(
@@ -139,7 +139,8 @@ export class MatchingGateway {
         match: {
           id: match.id,
           status: match.status,
-          createdAt: match.createdAt
+          createdAt: match.createdAt,
+          endTime: match.endTime
         },
         opponent: {
           id: user2.id,
@@ -161,7 +162,8 @@ export class MatchingGateway {
         match: {
           id: match.id,
           status: match.status,
-          createdAt: match.createdAt
+          createdAt: match.createdAt,
+          endTime: match.endTime
         },
         opponent: {
           id: user1.id,

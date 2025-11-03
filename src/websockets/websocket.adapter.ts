@@ -35,17 +35,25 @@ export class WebsocketAdapter extends IoAdapter {
           const { authorization } = socket.handshake.auth
           if (!authorization) throw MissingTokenException
 
-          const token = authorization.split(' ')[1]
+          // Handle both "Bearer token" and "token" formats
+          let token: string
+          if (authorization.startsWith('Bearer ')) {
+            token = authorization.split(' ')[1]
+          } else {
+            token = authorization
+          }
+
           if (!token) throw MissingTokenException
 
           const user = await this.tokenService.veryfyAccessTokenToGuestOrUser(token)
-
           //Guard check user
           const isUser = (payload: any): payload is AccessTokenPayload =>
             payload && 'userId' in payload && 'roleId' in payload
 
           if (isUser(user)) {
-            console.log(user)
+            this.logger.debug(
+              `[WebsocketAdapter] User verified: userId=${user.userId}, roleId=${user.roleId}`
+            )
 
             // Store user info in socket.data for use in gateways
             socket.data.userId = user.userId
@@ -56,6 +64,9 @@ export class WebsocketAdapter extends IoAdapter {
             const homePageRoom = ROOM_SOCKET.HOME_PAGE
             socket.join(homePageRoom)
           } else {
+            this.logger.warn(
+              `[WebsocketAdapter] Invalid user payload - missing userId or roleId: ${JSON.stringify(user)}`
+            )
             throw InvalidTokenException
           }
 
