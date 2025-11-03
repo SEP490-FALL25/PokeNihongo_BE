@@ -470,7 +470,8 @@ export const jaMessages = {
     NOT_FOUND: 'マッチキューが見つかりません',
     ALREADY_EXISTS: 'マッチキューは既に存在します',
 
-    INVALID_DATA: '無効なマッチキューデータです'
+    INVALID_DATA: '無効なマッチキューデータです',
+    USER_NOT_ENOUGH_CONDITION: 'ユーザーがマッチキューの条件を満たしていません'
   },
   match: {
     CREATE_SUCCESS: 'マッチの作成に成功しました',

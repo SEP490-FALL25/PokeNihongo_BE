@@ -490,7 +490,8 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Match queue list retrieved successfully',
     NOT_FOUND: 'Match queue not found',
     ALREADY_EXISTS: 'Match queue already exists',
-    INVALID_DATA: 'Invalid match queue data'
+    INVALID_DATA: 'Invalid match queue data',
+    USER_NOT_ENOUGH_CONDITION: 'User does not meet the conditions to join the match queue'
   },
   match: {
     CREATE_SUCCESS: 'Match created successfully',

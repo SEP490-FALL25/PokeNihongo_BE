@@ -513,4 +513,13 @@ export class UserPokemonRepo {
       }
     })
   }
+
+  async countPokemonByUser(userId: number): Promise<number> {
+    return this.prismaService.userPokemon.count({
+      where: {
+        userId,
+        deletedAt: null
+      }
+    })
+  }
 }

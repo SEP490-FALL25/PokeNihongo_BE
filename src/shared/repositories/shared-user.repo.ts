@@ -1,3 +1,4 @@
+import { LevelType } from '@/modules/level/entities/level.entity'
 import { Injectable } from '@nestjs/common'
 import { PermissionType } from 'src/shared/models/shared-permission.model'
 import { RoleType } from 'src/shared/models/shared-role.model'
@@ -113,6 +114,22 @@ export class SharedUserRepository {
       },
       data: {
         levelId
+      }
+    })
+  }
+
+  findUniqueWithLevel(
+    where: WhereUniqueUserType
+  ): Promise<
+    (UserType & { level: Pick<LevelType, 'id' | 'levelNumber'> | null }) | null
+  > {
+    return this.prismaService.user.findFirst({
+      where: {
+        ...where,
+        deletedAt: null
+      },
+      include: {
+        level: true
       }
     })
   }

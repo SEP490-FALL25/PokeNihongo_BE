@@ -489,7 +489,8 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách hàng đợi trận đấu thành công',
     NOT_FOUND: 'Không tìm thấy hàng đợi trận đấu',
     ALREADY_EXISTS: 'Hàng đợi trận đấu đã tồn tại',
-    INVALID_DATA: 'Dữ liệu hàng đợi trận đấu không hợp lệ'
+    INVALID_DATA: 'Dữ liệu hàng đợi trận đấu không hợp lệ',
+    USER_NOT_ENOUGH_CONDITION: ' Bạn không đủ điều kiện để tham gia hàng đợi trận đấu'
   },
   match: {
     CREATE_SUCCESS: 'Tạo trận đấu thành công',

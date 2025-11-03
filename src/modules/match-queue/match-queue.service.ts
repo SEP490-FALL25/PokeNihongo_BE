@@ -5,7 +5,12 @@ import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/h
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { Injectable } from '@nestjs/common'
 import { QueueStatus } from '@prisma/client'
-import { MatchQueueAlreadyExistsException } from './dto/match-queue.error'
+import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
+import { UserNotFoundException } from '../user/dto/user.error'
+import {
+  MatchQueueAlreadyExistsException,
+  UserNotEnoughConditionException
+} from './dto/match-queue.error'
 import { MatchQueueRepo } from './match-queue.repo'
 
 @Injectable()
@@ -13,7 +18,8 @@ export class MatchQueueService {
   constructor(
     private matchQueueRepo: MatchQueueRepo,
     private readonly i18nService: I18nService,
-    private readonly sharedUserRepo: SharedUserRepository
+    private readonly sharedUserRepo: SharedUserRepository,
+    private readonly userPokeRepo: UserPokemonRepo
   ) {}
 
   async create(
@@ -25,9 +31,19 @@ export class MatchQueueService {
     lang: string = 'vi'
   ) {
     try {
-      const user = await this.sharedUserRepo.findUnique({
+      const user = await this.sharedUserRepo.findUniqueWithLevel({
         id: createdById
       })
+      if (!user) {
+        throw new UserNotFoundException()
+      }
+      // user du level 5 chua ?, du 6 pokemon chua?
+      const userPokemons = await this.userPokeRepo.countPokemonByUser(createdById)
+
+      if ((user.level?.levelNumber || 0) < 5 || userPokemons < 6) {
+        throw new UserNotEnoughConditionException()
+      }
+
       // Tạo matchQueue trước
       const result = await this.matchQueueRepo.create({
         createdById,
@@ -37,6 +53,7 @@ export class MatchQueueService {
           status: QueueStatus.WAITING
         }
       })
+      // tạo xong, có đứa vào hàng đợi, để cập nhật lại danh sách chờ
 
       return {
         data: result,

@@ -521,7 +521,8 @@ export const MatchQueueMessage = {
   GET_LIST_SUCCESS: 'match_queue.GET_LIST_SUCCESS',
   NOT_FOUND: 'match_queue.NOT_FOUND',
   ALREADY_EXISTS: 'match_queue.ALREADY_EXISTS',
-  INVALID_DATA: 'match_queue.INVALID_DATA'
+  INVALID_DATA: 'match_queue.INVALID_DATA',
+  USER_NOT_ENOUGH_CONDITION: 'match_queue.USER_NOT_ENOUGH_CONDITION'
 } as const
 
 export const MatchMessage = {
