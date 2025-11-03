@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger'
+import { FileInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express'
 import { GeminiService } from './gemini.service'
-import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto } from './dto/gemini.dto'
-import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse } from './dto/gemini.response.dto'
+import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto, ChatWithGeminiDto, ChatWithGeminiMultipartDto } from './dto/gemini.dto'
+import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 
 @ApiTags('Gemini')
@@ -38,7 +38,7 @@ export class GeminiController {
             message: 'Đánh giá phát âm thành công'
         }
     }
-
+    
     @Get('recommendations')
     @ApiOperation({ summary: 'Lấy gợi ý cá nhân hóa dựa trên dữ liệu học tập' })
     @ApiQuery({ name: 'limit', type: Number, required: false, description: 'Số lượng gợi ý (mặc định: 10)' })
@@ -63,6 +63,77 @@ export class GeminiController {
             statusCode: 200,
             data: result,
             message: 'Lấy gợi ý cá nhân hóa thành công'
+        }
+    }
+
+    @Post('kaiwa')
+    @UseInterceptors(FileInterceptor('audio'))
+    @ApiOperation({
+        summary: 'AI Kaiwa - Hội thoại với AI bằng tiếng Nhật với Speech-to-Text và Pronunciation Assessment',
+        description: 'Hỗ trợ cả text message và audio file. Nếu có audio, sẽ tự động convert sang text. Có thể đánh giá phát âm nếu có reference text.'
+    })
+    @ApiBody({ type: AIKaiwaDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Hội thoại AI thành công',
+        type: Object
+    })
+    async aiKaiwa(
+        @ActiveUser('userId') userId: number,
+        @Body() body: AIKaiwaDto,
+        @UploadedFile() audioFile?: Express.Multer.File
+    ): Promise<{ statusCode: number; data: AIKaiwaResponse; message: string }> {
+        // Nếu có upload audio file, cần upload lên cloud trước và lấy URL
+        // Tạm thời giữ nguyên logic hiện tại, user sẽ upload audio lên trước và gửi URL
+        // Hoặc có thể thêm logic upload file ở đây nếu cần
+
+        const result = await this.geminiService.aiKaiwa(userId, body)
+
+        return {
+            statusCode: 200,
+            data: result,
+            message: 'Hội thoại AI thành công'
+        }
+    }
+
+
+    //chat with gemini
+    @Post('chat')
+    @UseInterceptors(AnyFilesInterceptor()) // Cần interceptor để parse multipart/form-data
+    @ApiConsumes('multipart/form-data')
+    @ApiOperation({
+        summary: 'Chat với Gemini',
+        description: 'API chat đơn giản với Gemini AI. Hỗ trợ conversation history và chọn model tùy chỉnh.'
+    })
+    @ApiBody({ type: ChatWithGeminiMultipartDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Chat với Gemini thành công',
+        type: Object
+    })
+    async chatWithGemini(
+        @ActiveUser('userId') userId: number,
+        @Body() body: ChatWithGeminiMultipartDto
+    ): Promise<{ statusCode: number; data: ChatWithGeminiResponse; message: string }> {
+        // Validate và convert multipart form data to DTO format
+        if (!body || !body.message) {
+            throw new BadRequestException('Message là bắt buộc')
+        }
+
+        const chatDto: ChatWithGeminiDto = {
+            message: body.message,
+            conversationId: body.conversationId,
+            modelName: body.modelName as any,
+            saveHistory: body.saveHistory === 'true' || body.saveHistory === undefined || body.saveHistory === '',
+            useServiceAccount: body.useServiceAccount === 'true'
+        }
+
+        const result = await this.geminiService.chatWithGemini(userId, chatDto)
+
+        return {
+            statusCode: 200,
+            data: result,
+            message: 'Chat với Gemini thành công'
         }
     }
 }
