@@ -60,10 +60,7 @@ export class RoleService {
       statusCode: 200,
       data: {
         // role: roleWithoutPermissions,
-        permissions: {
-          results: permissionsWithFlag,
-          pagination: permissionsResult.pagination
-        }
+        permissions: permissionsWithFlag
       },
       message: this.i18nService.translate(RoleMessage.GET_SUCCESS, lang)
     }

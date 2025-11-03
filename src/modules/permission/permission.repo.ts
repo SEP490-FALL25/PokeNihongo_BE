@@ -14,6 +14,7 @@ export class PermissionRepo {
   constructor(private prismaService: PrismaService) {}
 
   async list(pagination: PaginationQueryType) {
+    pagination.pageSize = 10000
     const { where, orderBy } = parseQs(pagination.qs, PERMISSION_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
