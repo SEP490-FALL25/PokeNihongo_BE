@@ -1,7 +1,7 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { PaginationResponseSchema } from '@/shared/models/response.model'
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Patch } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
@@ -20,11 +20,15 @@ import { GeminiConfigService } from './gemini-config.service'
 import { GeminiConfigListQuerySwaggerDTO, GeminiModelListQuerySwaggerDTO, GeminiConfigModelListQuerySwaggerDTO } from './dto/gemini-config.query.dto'
 import { CreateGeminiConfigModelSwaggerDTO, UpdateGeminiConfigModelSwaggerDTO } from './dto/gemini-config-model.dto'
 import { CreateGeminiConfigModelBodyDTO, UpdateGeminiConfigModelBodyDTO, GeminiConfigModelResDTO } from './dto/gemini-config.zod-dto'
+import { SchemaIntrospectService } from './schema-introspect.service'
 
 @Controller('gemini-config')
 @ApiBearerAuth()
 export class GeminiConfigController {
-  constructor(private readonly geminiConfigService: GeminiConfigService) { }
+  constructor(
+    private readonly geminiConfigService: GeminiConfigService,
+    private readonly schemaIntrospectService: SchemaIntrospectService
+  ) { }
 
   @Get()
   @ZodSerializerDto(PaginationResponseSchema)
@@ -58,6 +62,12 @@ export class GeminiConfigController {
     return this.geminiConfigService.listConfigModels(query as any, lang)
   }
 
+  @Get('admin/schema')
+  @ApiOperation({ summary: 'Liệt kê model/field (đã lọc an toàn) cho Admin cấu hình policy' })
+  getAdminSchema() {
+    return { statusCode: 200, data: this.schemaIntrospectService.listModels(), message: 'GET_SUCCESS' }
+  }
+
   @Get('config-models/:id')
   @ApiOperation({ summary: 'Chi tiết Gemini Config Model theo ID' })
   @ApiParam({ name: 'id', type: Number, required: true, description: 'ID của GeminiConfigModel' })
@@ -88,6 +98,19 @@ export class GeminiConfigController {
     return this.geminiConfigService.updateConfigModel({ id: Number(id), data: body, updatedById: userId }, lang)
   }
 
+  @Patch('config-models/:id/policy')
+  @ApiOperation({ summary: 'Cập nhật policy AI vào extraParams.policy của GeminiConfigModel' })
+  @ApiParam({ name: 'id', type: Number, required: true })
+  @ApiBody({ schema: { example: { policy: { purpose: 'AI_KAIWA', entities: [{ entity: 'UserProgress', scope: 'SELF_ONLY', fields: ['lessonId'] }], maskingRules: { email: 'mask' } } } } })
+  setConfigModelPolicy(
+    @Param('id') id: number,
+    @Body() body: { policy: any },
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.geminiConfigService.updateConfigModelPolicy({ id: Number(id), policy: body?.policy || {}, updatedById: userId }, lang)
+  }
+
   @Delete('config-models/:id')
   @ApiOperation({ summary: 'Xoá mềm Gemini Config Model' })
   @ApiParam({ name: 'id', type: Number, required: true, description: 'ID của GeminiConfigModel' })
@@ -108,7 +131,7 @@ export class GeminiConfigController {
     return this.geminiConfigService.findById(params.geminiConfigId, lang)
   }
 
-  @Post()
+  @Post("/promt")
   @ZodSerializerDto(CreateGeminiConfigResDTO)
   @ApiBody({ type: CreateGeminiConfigSwaggerDTO })
   create(
