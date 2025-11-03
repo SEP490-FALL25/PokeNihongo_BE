@@ -149,7 +149,7 @@ export class GeminiConfigController {
   }
 
   // Base GeminiConfig endpoints (dynamic path placed AFTER static routes)
-  @Get(':geminiConfigId')
+  @Get('/promt:geminiConfigId')
   @ApiOperation({ summary: 'Chi tiết Gemini Config theo ID' })
   @ApiParam({ name: 'geminiConfigId', type: Number, required: true, description: 'ID của GeminiConfig', example: 1 })
   @ZodSerializerDto(GetGeminiConfigResDTO)
@@ -174,7 +174,7 @@ export class GeminiConfigController {
     )
   }
 
-  @Put(':geminiConfigId')
+  @Put('/promt:geminiConfigId')
   @ZodSerializerDto(UpdateGeminiConfigResDTO)
   @ApiParam({ name: 'geminiConfigId', type: Number, required: true, description: 'ID của GeminiConfig', example: 1 })
   @ApiBody({ type: UpdateGeminiConfigSwaggerDTO })
@@ -194,7 +194,7 @@ export class GeminiConfigController {
     )
   }
 
-  @Delete(':geminiConfigId')
+  @Delete('/promt:geminiConfigId')
   @ZodSerializerDto(MessageResDTO)
   @ApiParam({ name: 'geminiConfigId', type: Number, required: true, description: 'ID của GeminiConfig', example: 1 })
   delete(
