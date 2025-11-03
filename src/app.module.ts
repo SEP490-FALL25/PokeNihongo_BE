@@ -74,6 +74,7 @@ import { MatchQueueModule } from './modules/match-queue/match-queue.module';
 import { MatchModule } from './modules/match/match.module';
 import { MatchRoundModule } from './modules/match-round/match-round.module';
 import { MatchParticipantModule } from './modules/match-participant/match-participant.module';
+import { MatchRoundParticipantModule } from './modules/match-round-participant/match-round-participant.module';
 
 @Module({
   imports: [
@@ -146,7 +147,8 @@ import { MatchParticipantModule } from './modules/match-participant/match-partic
     MatchQueueModule,
     MatchModule,
     MatchRoundModule,
-    MatchParticipantModule
+    MatchParticipantModule,
+    MatchRoundParticipantModule
   ],
 
   controllers: [],

@@ -64,47 +64,50 @@ model User {
   updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
   deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
 
-  createdQuestionBanks      QuestionBank[]      @relation("QuestionBankCreatedBy")
-  createdAttendanceConfigs  AttendanceConfig[]  @relation("AttendanceConfigCreatedBy")
-  updatedAttendanceConfigs  AttendanceConfig[]  @relation("AttendanceConfigUpdatedBy")
-  deletedAttendanceConfigs  AttendanceConfig[]  @relation("AttendanceConfigDeletedBy")
-  createdAttendances        Attendance[]        @relation("AttendanceCreatedBy")
-  updatedAttendances        Attendance[]        @relation("AttendanceUpdatedBy")
-  deletedAttendances        Attendance[]        @relation("AttendanceDeletedBy")
-  createdTestSets           TestSet[]           @relation("TestSetCreatedBy")
-  createdWallets            Wallet[]            @relation("WalletCreatedBy")
-  updatedWallets            Wallet[]            @relation("WalletUpdatedBy")
-  deletedWallets            Wallet[]            @relation("WalletDeletedBy")
-  createdWalletTransactions WalletTransaction[] @relation("WalletTransactionCreatedBy")
-  updatedWalletTransactions WalletTransaction[] @relation("WalletTransactionUpdatedBy")
-  deletedWalletTransactions WalletTransaction[] @relation("WalletTransactionDeletedBy")
-  createdShopBanners        ShopBanner[]        @relation("ShopBannerCreatedBy")
-  updatedShopBanners        ShopBanner[]        @relation("ShopBannerUpdatedBy")
-  deletedShopBanners        ShopBanner[]        @relation("ShopBannerDeletedBy")
-  createdShopPurchases      ShopPurchase[]      @relation("ShopPurchaseCreatedBy")
-  updatedShopPurchases      ShopPurchase[]      @relation("ShopPurchaseUpdatedBy")
-  deletedShopPurchases      ShopPurchase[]      @relation("ShopPurchaseDeletedBy")
-  createdShopItems          ShopItem[]          @relation("ShopItemCreatedBy")
-  updatedShopItems          ShopItem[]          @relation("ShopItemUpdatedBy")
-  deletedShopItems          ShopItem[]          @relation("ShopItemDeletedBy")
-  createdGachaBanners       GachaBanner[]       @relation("GachaBannerCreatedBy")
-  updatedGachaBanners       GachaBanner[]       @relation("GachaBannerUpdatedBy")
-  deletedGachaBanners       GachaBanner[]       @relation("GachaBannerDeletedBy")
-  createdGachaItemRates     GachaItemRate[]     @relation("GachaItemRateCreatedBy")
-  updatedGachaItemRates     GachaItemRate[]     @relation("GachaItemRateUpdatedBy")
-  deletedGachaItemRates     GachaItemRate[]     @relation("GachaItemRateDeletedBy")
-  createdGachaItems         GachaItem[]         @relation("GachaItemCreatedBy")
-  updatedGachaItems         GachaItem[]         @relation("GachaItemUpdatedBy")
-  deletedGachaItems         GachaItem[]         @relation("GachaItemDeletedBy")
-  createdGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseCreatedBy")
-  updatedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseUpdatedBy")
-  deletedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseDeletedBy")
-  createdShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceCreatedBy")
-  updatedShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceUpdatedBy")
-  deletedShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceDeletedBy")
-  createdLeaderboardSeasons LeaderboardSeason[] @relation("LeaderboardSeasonCreatedBy")
-  updatedLeaderboardSeasons LeaderboardSeason[] @relation("LeaderboardSeasonUpdatedBy")
-  deletedLeaderboardSeasons LeaderboardSeason[] @relation("LeaderboardSeasonDeletedBy")
+  createdQuestionBanks                QuestionBank[]                @relation("QuestionBankCreatedBy")
+  createdAttendanceConfigs            AttendanceConfig[]            @relation("AttendanceConfigCreatedBy")
+  updatedAttendanceConfigs            AttendanceConfig[]            @relation("AttendanceConfigUpdatedBy")
+  deletedAttendanceConfigs            AttendanceConfig[]            @relation("AttendanceConfigDeletedBy")
+  createdAttendances                  Attendance[]                  @relation("AttendanceCreatedBy")
+  updatedAttendances                  Attendance[]                  @relation("AttendanceUpdatedBy")
+  deletedAttendances                  Attendance[]                  @relation("AttendanceDeletedBy")
+  createdTestSets                     TestSet[]                     @relation("TestSetCreatedBy")
+  createdWallets                      Wallet[]                      @relation("WalletCreatedBy")
+  updatedWallets                      Wallet[]                      @relation("WalletUpdatedBy")
+  deletedWallets                      Wallet[]                      @relation("WalletDeletedBy")
+  createdWalletTransactions           WalletTransaction[]           @relation("WalletTransactionCreatedBy")
+  updatedWalletTransactions           WalletTransaction[]           @relation("WalletTransactionUpdatedBy")
+  deletedWalletTransactions           WalletTransaction[]           @relation("WalletTransactionDeletedBy")
+  createdShopBanners                  ShopBanner[]                  @relation("ShopBannerCreatedBy")
+  updatedShopBanners                  ShopBanner[]                  @relation("ShopBannerUpdatedBy")
+  deletedShopBanners                  ShopBanner[]                  @relation("ShopBannerDeletedBy")
+  createdShopPurchases                ShopPurchase[]                @relation("ShopPurchaseCreatedBy")
+  updatedShopPurchases                ShopPurchase[]                @relation("ShopPurchaseUpdatedBy")
+  deletedShopPurchases                ShopPurchase[]                @relation("ShopPurchaseDeletedBy")
+  createdShopItems                    ShopItem[]                    @relation("ShopItemCreatedBy")
+  updatedShopItems                    ShopItem[]                    @relation("ShopItemUpdatedBy")
+  deletedShopItems                    ShopItem[]                    @relation("ShopItemDeletedBy")
+  createdGachaBanners                 GachaBanner[]                 @relation("GachaBannerCreatedBy")
+  updatedGachaBanners                 GachaBanner[]                 @relation("GachaBannerUpdatedBy")
+  deletedGachaBanners                 GachaBanner[]                 @relation("GachaBannerDeletedBy")
+  createdGachaItemRates               GachaItemRate[]               @relation("GachaItemRateCreatedBy")
+  updatedGachaItemRates               GachaItemRate[]               @relation("GachaItemRateUpdatedBy")
+  deletedGachaItemRates               GachaItemRate[]               @relation("GachaItemRateDeletedBy")
+  createdGachaItems                   GachaItem[]                   @relation("GachaItemCreatedBy")
+  updatedGachaItems                   GachaItem[]                   @relation("GachaItemUpdatedBy")
+  deletedGachaItems                   GachaItem[]                   @relation("GachaItemDeletedBy")
+  createdGachaPurchases               GachaPurchase[]               @relation("GachaPurchaseCreatedBy")
+  updatedGachaPurchases               GachaPurchase[]               @relation("GachaPurchaseUpdatedBy")
+  deletedGachaPurchases               GachaPurchase[]               @relation("GachaPurchaseDeletedBy")
+  createdShopRarityPrices             ShopRarityPrice[]             @relation("ShopRarityPriceCreatedBy")
+  updatedShopRarityPrices             ShopRarityPrice[]             @relation("ShopRarityPriceUpdatedBy")
+  deletedShopRarityPrices             ShopRarityPrice[]             @relation("ShopRarityPriceDeletedBy")
+  createdLeaderboardSeasons           LeaderboardSeason[]           @relation("LeaderboardSeasonCreatedBy")
+  updatedLeaderboardSeasons           LeaderboardSeason[]           @relation("LeaderboardSeasonUpdatedBy")
+  deletedLeaderboardSeasons           LeaderboardSeason[]           @relation("LeaderboardSeasonDeletedBy")
+  createdDebuffMatchRoundParticipants DebuffMatchRoundParticipant[] @relation("DebuffMatchRoundParticipantCreatedBy")
+  updatedDebuffMatchRoundParticipants DebuffMatchRoundParticipant[] @relation("DebuffMatchRoundParticipantUpdatedBy")
+  deletedDebuffMatchRoundParticipants DebuffMatchRoundParticipant[] @relation("DebuffMatchRoundParticipantDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -1696,14 +1699,19 @@ model MatchRoundParticipant {
   matchRound   MatchRound @relation(fields: [matchRoundId], references: [id], onDelete: Cascade)
 
   // --- POKÉMON ĐÃ CHỌN CHO ROUND NÀY ---
+  startTimeSelected     DateTime? // Thời gian bắt đầu chọn Pokémon
   selectedUserPokemonId Int? // Ban đầu null, được update khi chọn
   selectedUserPokemon   UserPokemon? @relation(fields: [selectedUserPokemonId], references: [id], onDelete: NoAction)
 
+  //debuff áp dụng cho participant này trong round này
+  debuffId Int?
+  debuff   DebuffMatchRoundParticipant? @relation(fields: [debuffId], references: [id], onDelete: SetNull)
+
   // --- KẾT QUẢ CHI TIẾT ---
-  points         Int               @default(0)
-  totalTimeMs    Int               @default(0)
+  points         Int?
+  totalTimeMs    Int?
   questionsTotal Int               @default(10) // 11 nếu bị debuff
-  status         RoundResultStatus @default(PENDING) // PENDING, COMPLETED
+  status         RoundResultStatus @default(SELECTING_POKEMON) // PENDING, COMPLETED
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1712,6 +1720,27 @@ model MatchRoundParticipant {
   // 1 user chỉ có 1 record cho 1 round
   @@unique([matchParticipantId, matchRoundId])
   @@index([selectedUserPokemonId])
+}
+
+model DebuffMatchRoundParticipant {
+  id          Int              @id @default(autoincrement())
+  nameKey     String           @unique
+  typeDebuff  MatchDebuffType? // LOSE_QUESTION, TIME_PENALTY
+  valueDebuff Int // Số câu hỏi mất đi hoặc số ms bị phạt thêm
+
+  matchRoundParticipants MatchRoundParticipant[]
+
+  // meta
+  createdById Int?
+  createdBy   User? @relation("DebuffMatchRoundParticipantCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("DebuffMatchRoundParticipantDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("DebuffMatchRoundParticipantUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model LeaderboardSeason {
@@ -1784,6 +1813,12 @@ model UserSeasonHistory {
   @@unique([userId, seasonId]) // 1 user chỉ có 1 record lịch sử cho 1 mùa
 }
 
+enum MatchDebuffType {
+  ADD_QUESTION // Mất câu hỏi (tăng tổng số câu hỏi của đối thủ lên 1)
+  DECREASE_POINT // Giảm điểm 1 câu (cộng thêm thời gian làm bài)
+  DISCOMFORT_VISION // Giảm tầm nhìn (khó nhìn câu hỏi hơn)
+}
+
 enum MatchRoundNumber {
   ONE
   TWO
@@ -1808,7 +1843,9 @@ enum RoundStatus {
 
 /// Trạng thái chi tiết của 1 user trong 1 round (model MatchRoundParticipant)
 enum RoundResultStatus {
-  PENDING // User chưa nộp bài
+  SELECTING_POKEMON // Đang chọn Pokémon
+  PENDING
+  IN_PROGRESS // Đang làm bài
   COMPLETED // User đã nộp bài (points, time)
 }
 
