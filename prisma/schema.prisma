@@ -150,13 +150,15 @@ model User {
   deletedUsers User[] @relation("DeletorUsers")
 
   deletedAt                 DateTime?
-  createdAt                 DateTime            @default(now())
-  updatedAt                 DateTime            @updatedAt
-  tests                     Test[]              @relation("TestCreatedBy")
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  tests                     Test[]                 @relation("TestCreatedBy")
   // Audit backlink for GeminiConfigModel
-  createdGeminiConfigModels GeminiConfigModel[] @relation("GeminiConfigModelCreatedBy")
-  updatedGeminiConfigModels GeminiConfigModel[] @relation("GeminiConfigModelUpdatedBy")
-  deletedGeminiConfigModels GeminiConfigModel[] @relation("GeminiConfigModelDeletedBy")
+  createdGeminiConfigModels GeminiConfigModel[]    @relation("GeminiConfigModelCreatedBy")
+  updatedGeminiConfigModels GeminiConfigModel[]    @relation("GeminiConfigModelUpdatedBy")
+  deletedGeminiConfigModels GeminiConfigModel[]    @relation("GeminiConfigModelDeletedBy")
+  UserAIRecommendation      UserAIRecommendation[]
+  UserSrsReview             UserSrsReview[]
 
   @@index([deletedAt])
 }
@@ -2061,6 +2063,37 @@ enum LessonContentsType {
   KANJI
 }
 
+// === SRS review cho Vocabulary / Grammar / Kanji ===
+enum SrsContentType {
+  VOCABULARY
+  GRAMMAR
+  KANJI
+}
+
+model UserSrsReview {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Nội dung cần ôn: VOCABULARY | GRAMMAR | KANJI
+  contentType SrsContentType
+  contentId   Int
+
+  // Lõi SRS
+  srsLevel       Int      @default(0)
+  nextReviewDate DateTime @default(now())
+
+  // Phân tích điểm yếu
+  incorrectStreak Int     @default(0)
+  isLeech         Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, contentType, contentId])
+  @@index([userId, nextReviewDate])
+}
+
 // AI Policy scope for data access
 enum AiPolicyScope {
   SELF_ONLY
@@ -2078,6 +2111,48 @@ enum TestStatus {
   READING_TEST // Đọc hiểu
   LISTENING_TEST // Nghe hiểu
   SPEAKING_TEST // Nói
+}
+
+// === AI Recommendations ===
+enum RecommendationTargetType {
+  EXERCISE
+  TEST
+  LESSON
+  VOCABULARY
+}
+
+enum RecommendationSourceType {
+  PERSONALIZED
+  SRS
+}
+
+enum RecommendationStatus {
+  PENDING
+  DONE
+  DISMISSED
+}
+
+model UserAIRecommendation {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Đối tượng được khuyến nghị (exercise/test/lesson/vocabulary)
+  targetType RecommendationTargetType
+  targetId   Int
+
+  reason    String                   @db.VarChar(1000)
+  source    RecommendationSourceType @default(PERSONALIZED)
+  modelUsed String?                  @db.VarChar(100)
+
+  status    RecommendationStatus @default(PENDING)
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, targetType, targetId])
 }
 
 enum UserTestStatus {

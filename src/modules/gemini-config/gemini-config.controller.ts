@@ -117,11 +117,13 @@ export class GeminiConfigController {
   @ApiBody({ type: UpdateConfigModelPolicyBodySwaggerDTO })
   setConfigModelPolicy(
     @Param('id') id: number,
-    @Body() body: { policy: any },
+    @Body() body: { policy?: any; purpose?: string; entities?: any[] },
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.geminiConfigService.updateConfigModelPolicy({ id: Number(id), policy: body?.policy || {}, updatedById: userId }, lang)
+    // Nếu body có "policy" key thì dùng luôn, nếu không thì wrap toàn bộ body thành policy
+    const policy = body?.policy || (body?.purpose || body?.entities ? body : {})
+    return this.geminiConfigService.updateConfigModelPolicy({ id: Number(id), policy, updatedById: userId }, lang)
   }
 
   @Patch('config-models/:id/preset')
