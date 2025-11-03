@@ -36,12 +36,16 @@ const configSchema = z.object({
   GOOGLE_REDIRECT_URI: z.string().optional(),
   GOOGLE_CLIENT_REDIRECT_URI: z.string().optional(),
   FE_URL: z.string().url().optional(),
-  
+
   //Google Cloud Text-to-Speech (Optional)
   GOOGLE_CLOUD_PROJECT_ID: z.string().optional(),
   GOOGLE_CLOUD_CLIENT_EMAIL: z.string().optional(),
   GOOGLE_CLOUD_PRIVATE_KEY: z.string().optional(),
 
+  // Gemini AI (Optional - có thể dùng API key hoặc service account)
+  GEMINI_API_KEY: z.string().optional(),
+  // Gemini Flash API Key (Optional - riêng cho Flash models)
+  GEMINI_FLASH_API_KEY: z.string().optional(),
 
   // Mail
   MAIL_HOST: z.string().optional(),

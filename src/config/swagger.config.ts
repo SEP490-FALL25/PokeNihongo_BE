@@ -18,14 +18,25 @@ function setupSwagger(app: INestApplication) {
   }
   
   const configBuilt = config.build()
-  const document = SwaggerModule.createDocument(app, configBuilt)
+  const document = SwaggerModule.createDocument(app, configBuilt, {
+    extraModels: [], // Có thể thêm các models bổ sung nếu cần
+  })
+  
   SwaggerModule.setup('api-docs', app, document, {
     customSiteTitle: appName,
     swaggerOptions: {
       persistAuthorization: true,
       tagsSorter: 'alpha',
-      operationsSorter: '-method'
-    }
+      operationsSorter: '-method',
+      displayRequestDuration: true,
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+    },
+    customCss: `
+      .swagger-ui .topbar { display: none; }
+      .swagger-ui .scheme-container { background: #fafafa; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+    `
   })
 }
 
