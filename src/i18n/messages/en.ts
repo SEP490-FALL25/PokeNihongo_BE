@@ -534,5 +534,15 @@ export const enMessages = {
     NOT_FOUND: 'Match round participant not found',
     ALREADY_EXISTS: 'Match round participant already exists',
     INVALID_DATA: 'Invalid match round participant data'
+  },
+  debuff_round: {
+    CREATE_SUCCESS: 'Debuff round created successfully',
+    UPDATE_SUCCESS: 'Debuff round updated successfully',
+    DELETE_SUCCESS: 'Debuff round deleted successfully',
+    GET_SUCCESS: 'Debuff round retrieved successfully',
+    GET_LIST_SUCCESS: 'Debuff round list retrieved successfully',
+    NOT_FOUND: 'Debuff round not found',
+    ALREADY_EXISTS: 'Debuff round already exists',
+    INVALID_DATA: 'Invalid debuff round data'
   }
 }

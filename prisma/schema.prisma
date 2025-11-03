@@ -269,6 +269,9 @@ model Translation {
   leaderboardSeasonNameKey String?
   leaderboardSeason        LeaderboardSeason? @relation("LeaderboardSeasonNameRelation", fields: [leaderboardSeasonNameKey], references: [nameKey], onDelete: Cascade)
 
+  debuffRoundNameKey String?
+  debuffRound        DebuffRound? @relation("DebuffRoundNameRelation", fields: [debuffRoundNameKey], references: [nameKey], onDelete: Cascade)
+
   @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
   @@index([languageId])
   @@index([key])
@@ -1729,6 +1732,9 @@ model DebuffRound {
   valueDebuff Int // Số câu hỏi mất đi hoặc số ms bị phạt thêm
 
   matchRoundParticipants MatchRoundParticipant[]
+
+  //translate
+  nameTranslations Translation[] @relation("DebuffRoundNameRelation")
 
   // meta
   createdById Int?

@@ -514,5 +514,16 @@ export const jaMessages = {
     NOT_FOUND: 'マッチラウンド参加者が見つかりません',
     ALREADY_EXISTS: 'マッチラウンド参加者は既に存在します',
     INVALID_DATA: '無効なマッチラウンド参加者データです'
+  },
+  debuff_round: {
+    CREATE_SUCCESS: 'デバフラウンドの作成に成功しました',
+    UPDATE_SUCCESS: 'デバフラウンドの更新に成功しました',
+    DELETE_SUCCESS: 'デバフラウンドの削除に成功しました',
+    GET_SUCCESS: 'デバフラウンド情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'デバフラウンドリストの取得に成功しました',
+
+    NOT_FOUND: 'デバフラウンドが見つかりません',
+    ALREADY_EXISTS: 'デバフラウンドは既に存在します',
+    INVALID_DATA: '無効なデバフラウンドデータです'
   }
 }

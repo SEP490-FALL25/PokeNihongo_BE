@@ -571,3 +571,14 @@ export const MatchRoundParticipantMessage = {
 
   INVALID_DATA: 'match_round_participant.INVALID_DATA'
 } as const
+
+export const DebuffRoundMessage = {
+  CREATE_SUCCESS: 'debuff_round.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'debuff_round.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'debuff_round.DELETE_SUCCESS',
+  GET_SUCCESS: 'debuff_round.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'debuff_round.GET_LIST_SUCCESS',
+  NOT_FOUND: 'debuff_round.NOT_FOUND',
+  ALREADY_EXISTS: 'debuff_round.ALREADY_EXISTS',
+  INVALID_DATA: 'debuff_round.INVALID_DATA'
+} as const

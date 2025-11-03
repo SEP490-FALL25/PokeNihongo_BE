@@ -533,5 +533,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy người tham gia vòng đấu',
     ALREADY_EXISTS: 'Người tham gia vòng đấu đã tồn tại',
     INVALID_DATA: 'Dữ liệu người tham gia vòng đấu không hợp lệ'
+  },
+  debuff_round: {
+    CREATE_SUCCESS: 'Tạo debuff vòng đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật debuff vòng đấu thành công',
+    DELETE_SUCCESS: 'Xóa debuff vòng đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin debuff vòng đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách debuff vòng đấu thành công',
+    NOT_FOUND: 'Không tìm thấy debuff vòng đấu',
+    ALREADY_EXISTS: 'Debuff vòng đấu đã tồn tại',
+    INVALID_DATA: 'Dữ liệu debuff vòng đấu không hợp lệ'
   }
 }
