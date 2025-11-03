@@ -29,8 +29,12 @@ export class RoleController {
 
   @Get(':roleId')
   @ZodSerializerDto(GetRoleDetailResDTO)
-  findById(@Param() params: GetRoleParamsDTO, @I18nLang() lang: string) {
-    return this.roleService.findById(params.roleId, lang)
+  findById(
+    @Param() params: GetRoleParamsDTO,
+    @Query() query: PaginationQueryDTO,
+    @I18nLang() lang: string
+  ) {
+    return this.roleService.findById(params.roleId, query, lang)
   }
 
   @Post()
