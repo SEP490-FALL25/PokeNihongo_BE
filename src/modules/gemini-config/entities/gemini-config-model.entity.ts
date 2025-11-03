@@ -10,9 +10,7 @@ export const GeminiConfigModelSchema = z.object({
   id: z.number(),
   name: z.string().min(1).max(255),
   geminiModelId: z.number(),
-  temperature: z.number().optional().nullable(),
-  topP: z.number().optional().nullable(),
-  topK: z.number().optional().nullable(),
+  presetId: z.number().optional().nullable(),
   maxTokens: z.number().optional().nullable(),
   jsonMode: z.boolean().optional().nullable(),
   systemInstruction: z.string().optional().nullable(),
@@ -30,9 +28,7 @@ export const GeminiConfigModelSchema = z.object({
 export const CreateGeminiConfigModelBodySchema = GeminiConfigModelSchema.pick({
   name: true,
   geminiModelId: true,
-  temperature: true,
-  topP: true,
-  topK: true,
+  presetId: true,
   maxTokens: true,
   jsonMode: true,
   systemInstruction: true,
@@ -40,9 +36,7 @@ export const CreateGeminiConfigModelBodySchema = GeminiConfigModelSchema.pick({
   extraParams: true,
   isEnabled: true
 }).partial({
-  temperature: true,
-  topP: true,
-  topK: true,
+  presetId: true,
   maxTokens: true,
   jsonMode: true,
   systemInstruction: true,

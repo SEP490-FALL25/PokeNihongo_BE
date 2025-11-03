@@ -2156,14 +2156,15 @@ model GeminiConfigModel {
   geminiModel   GeminiModel @relation(fields: [geminiModelId], references: [id], onDelete: Restrict)
 
   // Tham số tuỳ chọn cho model
-  temperature       Float?
-  topP              Float?
-  topK              Int?
   maxTokens         Int?
   jsonMode          Boolean? @default(false)
   systemInstruction String?  @db.Text
   safetySettings    Json?
   extraParams       Json?
+
+  // Tham chiếu preset cấu hình (ưu tiên presetId nếu có)
+  presetId Int?
+  preset   GeminiModelPreset? @relation(fields: [presetId], references: [id], onDelete: SetNull)
 
   isEnabled Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -2182,6 +2183,27 @@ model GeminiConfigModel {
   geminiConfigs GeminiConfig[]
 
   @@index([deletedAt])
+  @@index([presetId])
+}
+
+// Lưu preset thông số cho Gemini model (áp dụng cho nhiều ConfigModel)
+model GeminiModelPreset {
+  id          Int     @id @default(autoincrement())
+  key         String  @unique @db.VarChar(100)
+  name        String  @db.VarChar(200)
+  description String? @db.Text
+
+  // Thông số cấu hình
+  temperature Float?
+  topP        Float?
+  topK        Int?
+
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Backlink
+  configModels GeminiConfigModel[]
 }
 
 // Mapping service ↔ config: service chỉ dùng được config đã được gán

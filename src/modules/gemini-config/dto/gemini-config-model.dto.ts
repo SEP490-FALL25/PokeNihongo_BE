@@ -10,14 +10,8 @@ export class GeminiConfigModelSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID tham chiếu tới GeminiModel' })
     geminiModelId: number
 
-    @ApiPropertyOptional({ example: 0.7, description: 'Nhiệt độ mẫu' })
-    temperature?: number | null
-
-    @ApiPropertyOptional({ example: 0.9 })
-    topP?: number | null
-
-    @ApiPropertyOptional({ example: 40 })
-    topK?: number | null
+    @ApiPropertyOptional({ example: 3, description: 'Tham chiếu preset nếu có' })
+    presetId?: number | null
 
     @ApiPropertyOptional({ example: 2048 })
     maxTokens?: number | null
@@ -36,6 +30,8 @@ export class GeminiConfigModelSwaggerDTO {
 
     @ApiPropertyOptional({ example: true })
     isEnabled?: boolean
+
+
 }
 
 export class CreateGeminiConfigModelSwaggerDTO {
@@ -45,14 +41,7 @@ export class CreateGeminiConfigModelSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID tham chiếu tới GeminiModel' })
     geminiModelId: number
 
-    @ApiPropertyOptional({ example: 0.7 })
-    temperature?: number | null
-
-    @ApiPropertyOptional({ example: 0.9 })
-    topP?: number | null
-
-    @ApiPropertyOptional({ example: 40 })
-    topK?: number | null
+    // temperature/topP/topK đã chuyển sang preset; không còn trên model
 
     @ApiPropertyOptional({ example: 2048 })
     maxTokens?: number | null
@@ -71,6 +60,9 @@ export class CreateGeminiConfigModelSwaggerDTO {
 
     @ApiPropertyOptional({ example: true })
     isEnabled?: boolean
+
+    @ApiPropertyOptional({ example: 3, description: 'presetId nếu muốn gắn ngay' })
+    presetId?: number | null
 }
 
 export class UpdateGeminiConfigModelSwaggerDTO {
@@ -80,14 +72,7 @@ export class UpdateGeminiConfigModelSwaggerDTO {
     @ApiPropertyOptional({ example: 2 })
     geminiModelId?: number
 
-    @ApiPropertyOptional({ example: 0.6 })
-    temperature?: number | null
-
-    @ApiPropertyOptional({ example: 0.95 })
-    topP?: number | null
-
-    @ApiPropertyOptional({ example: 50 })
-    topK?: number | null
+    // temperature/topP/topK đã chuyển sang preset; không còn trên model
 
     @ApiPropertyOptional({ example: 3072 })
     maxTokens?: number | null
@@ -106,6 +91,29 @@ export class UpdateGeminiConfigModelSwaggerDTO {
 
     @ApiPropertyOptional({ example: false })
     isEnabled?: boolean
+
+    @ApiPropertyOptional({ example: 4 })
+    presetId?: number | null
+}
+
+export class ApplyPresetBodySwaggerDTO {
+    @ApiProperty({ example: 'BALANCED', description: 'Key của preset cần áp dụng' })
+    presetKey: string
+}
+
+export class UpdateConfigModelPolicyBodySwaggerDTO {
+    @ApiProperty({
+        example: {
+            policy: {
+                purpose: 'PERSONALIZED_RECOMMENDATIONS',
+                entities: [
+                    { entity: 'UserProgress', scope: 'SELF_ONLY', fields: ['lessonId', 'progressPercentage', 'lastAccessedAt'] }
+                ],
+                maskingRules: { email: 'mask' }
+            }
+        }
+    })
+    policy: any
 }
 
 
