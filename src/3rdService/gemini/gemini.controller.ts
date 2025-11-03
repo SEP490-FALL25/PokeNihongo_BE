@@ -53,8 +53,7 @@ export class GeminiController {
         if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 50) {
             throw new BadRequestException('Limit phải là số từ 1 đến 50')
         }
-        const forceUseSA = body?.useServiceAccount === 'true'
-        const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber, forceUseSA)
+        const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber)
         const ui = {
             title: 'Làm lại để cải thiện',
             items: (result.recommendations || []).map((r: any) => ({
@@ -81,8 +80,7 @@ export class GeminiController {
         if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 50) {
             throw new BadRequestException('Limit phải là số từ 1 đến 50')
         }
-        const forceUseSA = body?.useServiceAccount === 'true'
-        const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber, forceUseSA, {
+        const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber, {
             createSrs: true,
             allowedTypes: ['VOCABULARY', 'GRAMMAR', 'KANJI']
         })
@@ -112,8 +110,7 @@ export class GeminiController {
         if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 50) {
             throw new BadRequestException('Limit phải là số từ 1 đến 50')
         }
-        const forceUseSA = body?.useServiceAccount === 'true'
-        const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber, forceUseSA, {
+        const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber, {
             createSrs: true, // Tạo SRS cho TEST/EXERCISE
             allowedTypes: ['TEST', 'EXERCISE'] // Chỉ recommend TEST/EXERCISE đã làm sai
         })
