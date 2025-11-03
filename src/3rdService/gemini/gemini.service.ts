@@ -537,10 +537,11 @@ export class GeminiService {
      * Focus on incorrect answers for SRS mapping
      */
     private buildSummaryFromSafeData(safeData: Record<string, any[]>, limit: number) {
-        const answerLogs = (safeData['UserAnswerLog'] || []).slice(0, 200)
-        const testAnswerLogs = (safeData['UserTestAnswerLog'] || []).slice(0, 200)
-        const exerciseAttempts = (safeData['UserExerciseAttempt'] || []).slice(0, 50)
-        const testAttempts = (safeData['UserTestAttempt'] || []).slice(0, 50)
+        // Data đã được limit ở DataAccessService theo policy config, không cần slice nữa
+        const answerLogs = safeData['UserAnswerLog'] || []
+        const testAnswerLogs = safeData['UserTestAnswerLog'] || []
+        const exerciseAttempts = safeData['UserExerciseAttempt'] || []
+        const testAttempts = safeData['UserTestAttempt'] || []
         const questionBanks = safeData['QuestionBank'] || []
         const answers = safeData['Answer'] || []
         const vocabularies = safeData['Vocabulary'] || []
