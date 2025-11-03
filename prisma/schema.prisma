@@ -2073,10 +2073,10 @@ enum SrsContentType {
 }
 
 model UserSrsReview {
-  id     Int  @id @default(autoincrement())
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  message   String? @db.Text
+  id      Int     @id @default(autoincrement())
+  userId  Int
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message String? @db.Text
 
   // Nội dung cần ôn: VOCABULARY | GRAMMAR | KANJI
   contentType SrsContentType
@@ -2122,6 +2122,8 @@ enum RecommendationTargetType {
   TEST
   LESSON
   VOCABULARY
+  GRAMMAR
+  KANJI
 }
 
 enum RecommendationSourceType {
