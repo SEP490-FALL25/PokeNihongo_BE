@@ -64,7 +64,7 @@ export class QuestionBankService {
             }
 
             // Xử lý audioUrl - chỉ khi questionType là LISTENING thì mới tự tạo text-to-speech
-            if (body.questionType === 'LISTENING' && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
+            if (body.questionType === QuestionType.LISTENING && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
                 body.audioUrl = await this.textToSpeechService.generateAudioFromText(body.questionJp, 'question-bank', 'question_bank')
             }
 
@@ -115,7 +115,7 @@ export class QuestionBankService {
         }
 
         // Rule 2: SPEAKING - pronunciation is required
-        if (body.questionType === 'SPEAKING' && (!body.pronunciation || body.pronunciation.trim().length === 0)) {
+        if (body.questionType === QuestionType.SPEAKING && (!body.pronunciation || body.pronunciation.trim().length === 0)) {
             throw new BadRequestException('SPEAKING type bắt buộc phải có pronunciation (cách phát âm romaji)')
         }
 
@@ -177,7 +177,7 @@ export class QuestionBankService {
             }
 
             // LISTENING: xử lý TTS
-            if ((body as any).questionType === 'LISTENING') {
+            if ((body as any).questionType === QuestionType.LISTENING) {
                 // Nếu không gửi audioUrl nhưng có questionJp, tự động tạo TTS
                 if ((body.audioUrl === undefined || body.audioUrl === null) && (body as any).questionJp) {
                     body.audioUrl = await this.textToSpeechService.generateAudioFromText((body as any).questionJp, 'question-bank', 'question_bank')
@@ -243,7 +243,7 @@ export class QuestionBankService {
             }
 
             // Xử lý audioUrl - chỉ khi questionType là LISTENING thì mới tự tạo text-to-speech
-            if (body.questionType === 'LISTENING' && body.questionJp && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
+            if (body.questionType === QuestionType.LISTENING && body.questionJp && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
                 body.audioUrl = await this.textToSpeechService.generateAudioFromText(body.questionJp, 'question-bank', 'question_bank')
             }
 
@@ -468,7 +468,7 @@ export class QuestionBankService {
             }
 
             // Xử lý audioUrl - chỉ khi questionType là LISTENING thì mới tự tạo text-to-speech
-            if (body.questionType === 'LISTENING' && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
+            if (body.questionType === QuestionType.LISTENING && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
                 body.audioUrl = await this.textToSpeechService.generateAudioFromText(body.questionJp, 'question-bank', 'question_bank')
             }
 
