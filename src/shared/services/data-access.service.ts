@@ -46,7 +46,10 @@ export class DataAccessService {
     }
 
     private buildWhere(userId: number, entity: AiPolicyEntity): any {
-        const base: any = { ...(entity.filter || {}) }
+        // Resolve $nowMinusDays tokens in filter
+        const resolvedFilter = this.resolveTimeFilters(entity.filter || {})
+        const base: any = { ...resolvedFilter }
+
         // Map by entity to correct relational filter; not all tables have userId column
         switch (entity.entity) {
             case 'UserAnswerLog':
@@ -60,6 +63,8 @@ export class DataAccessService {
                     userTestAttempt: { userId }
                 }
             case 'QuestionBank':
+            case 'Answer':
+            case 'Vocabulary':
                 // PUBLIC entity - do not add user filter
                 return base
             default:
@@ -68,6 +73,32 @@ export class DataAccessService {
                 }
                 return base
         }
+    }
+
+    /**
+     * Resolve $nowMinusDays tokens to actual ISO dates
+     * Example: { "$nowMinusDays": { "createdAt": 7 } } -> { "createdAt": { "gte": "2025-10-28T00:00:00.000Z" } }
+     */
+    private resolveTimeFilters(filter: Record<string, any>): Record<string, any> {
+        const resolved: Record<string, any> = {}
+        for (const [key, value] of Object.entries(filter)) {
+            if (key === '$nowMinusDays' && typeof value === 'object') {
+                // Handle $nowMinusDays: { "createdAt": 7 }
+                for (const [field, days] of Object.entries(value)) {
+                    const daysNum = Number(days)
+                    if (!isNaN(daysNum) && daysNum > 0) {
+                        const date = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000)
+                        resolved[field] = { gte: date.toISOString() }
+                    }
+                }
+            } else if (typeof value === 'object' && !Array.isArray(value)) {
+                // Recursively resolve nested objects
+                resolved[key] = this.resolveTimeFilters(value)
+            } else {
+                resolved[key] = value
+            }
+        }
+        return resolved
     }
 
     private buildSelect(fields: string[]): any {

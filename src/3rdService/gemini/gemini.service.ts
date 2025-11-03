@@ -370,7 +370,8 @@ export class GeminiService {
     async getPersonalizedRecommendations(
         userId: number,
         limit: number = 10,
-        forceUseServiceAccount?: boolean
+        forceUseServiceAccount?: boolean,
+        options?: { createSrs?: boolean; allowedTypes?: string[] }
     ): Promise<PersonalizedRecommendationsResponse> {
         try {
             this.logger.log(`Getting personalized recommendations for user ${userId}`)
@@ -436,26 +437,84 @@ export class GeminiService {
             }
 
             // Parse response từ Gemini
-            const recommendations = this.parseRecommendationsResponse(text, analysis)
+            let recommendations = this.parseRecommendationsResponse(text, analysis)
+            if (options?.allowedTypes && options.allowedTypes.length > 0) {
+                const allow = new Set(options.allowedTypes.map(t => String(t).toUpperCase()))
+                recommendations = recommendations.filter((r: any) => allow.has(String(r.contentType || '').toUpperCase()))
+            }
             const payload: PersonalizedRecommendationsResponse = {
                 recommendations: recommendations.slice(0, limit),
                 summary: analysis
             }
-            // Lưu recommendations vào DB để FE có thể hiển thị lại/ghi nhận hành động
+            // Tạo SRS reviews từ recommendations
             try {
-                const rows = (payload.recommendations || []).map((r: any) => ({
+                // SRS types: VOCABULARY, GRAMMAR, KANJI, TEST, EXERCISE
+                const validSrsTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI', 'TEST', 'EXERCISE']
+                const srsRows = (options?.createSrs ? (payload.recommendations || []) : []).map((r: any) => {
+                    const contentType = (r.contentType || 'VOCABULARY').toUpperCase()
+                    const contentId = Number(r.contentId) || 0
+
+                    // Validate contentType và contentId
+                    if (!contentId || !validSrsTypes.includes(contentType)) {
+                        if (contentType && !validSrsTypes.includes(contentType)) {
+                            this.logger.warn(`Skipping invalid contentType: ${contentType} (contentId: ${contentId})`)
+                        }
+                        return null
+                    }
+
+                    return {
+                        userId,
+                        contentType,
+                        contentId,
+                        message: r.message || r.reason || '',
+                        srsLevel: 0, // Mới học
+                        nextReviewDate: new Date(), // Ôn ngay
+                        incorrectStreak: 0,
+                        isLeech: false
+                    }
+                }).filter(Boolean)
+
+                if (srsRows.length > 0) {
+                    // Upsert SRS (create hoặc update nếu đã tồn tại)
+                    for (const srs of srsRows as any[]) {
+                        if (!srs) continue
+                        await (this.prisma as any).userSrsReview.upsert({
+                            where: {
+                                userId_contentType_contentId: {
+                                    userId: srs.userId,
+                                    contentType: srs.contentType as any,
+                                    contentId: srs.contentId
+                                }
+                            },
+                            update: {
+                                srsLevel: 0, // Reset về level 0 nếu đã có
+                                nextReviewDate: new Date(),
+                                incorrectStreak: 0,
+                                isLeech: false,
+                                message: srs.message || '',
+                                updatedAt: new Date()
+                            },
+                            create: srs
+                        })
+                    }
+                    this.logger.log(`Created/updated ${srsRows.length} SRS reviews`)
+                }
+
+                // Lưu recommendations vào DB để FE có thể hiển thị lại/ghi nhận hành động
+                const recRows = (payload.recommendations || []).map((r: any) => ({
                     userId,
-                    targetType: (r.type || 'exercise').toUpperCase(),
-                    targetId: Number(r.id) || 0,
+                    targetType: (r.contentType || 'VOCABULARY').toUpperCase(),
+                    targetId: Number(r.contentId) || 0,
                     reason: String(r.reason || ''),
                     source: 'PERSONALIZED',
                     modelUsed: modelName
-                }))
-                if (rows.length > 0) {
-                    await (this.prisma as any).userAIRecommendation.createMany({ data: rows, skipDuplicates: true })
+                })).filter((r: any) => r.targetId > 0)
+
+                if (recRows.length > 0) {
+                    await (this.prisma as any).userAIRecommendation.createMany({ data: recRows, skipDuplicates: true })
                 }
             } catch (e) {
-                this.logger.warn('Failed to persist recommendations', e as any)
+                this.logger.warn('Failed to persist SRS/recommendations', e as any)
             }
 
             // Cache 120s
@@ -475,53 +534,143 @@ export class GeminiService {
 
     /**
      * Build compact analysis from safeData (policy result) to minimize tokens
+     * Focus on incorrect answers for SRS mapping
      */
     private buildSummaryFromSafeData(safeData: Record<string, any[]>, limit: number) {
-        const exerciseAttempts = (safeData['UserExerciseAttempt'] || []).slice(0, 50)
-        const testAttempts = (safeData['UserTestAttempt'] || []).slice(0, 20)
         const answerLogs = (safeData['UserAnswerLog'] || []).slice(0, 200)
         const testAnswerLogs = (safeData['UserTestAnswerLog'] || []).slice(0, 200)
+        const exerciseAttempts = (safeData['UserExerciseAttempt'] || []).slice(0, 50)
+        const testAttempts = (safeData['UserTestAttempt'] || []).slice(0, 50)
         const questionBanks = safeData['QuestionBank'] || []
+        const answers = safeData['Answer'] || []
+        const vocabularies = safeData['Vocabulary'] || []
+        const existingSrs = (safeData['UserSrsReview'] || []).map((s: any) => `${s.contentType}-${s.contentId}`)
 
-        const qbIdToType = new Map<number, string>()
+        // Build maps for quick lookup
+        const qbMap = new Map<number, any>()
         for (const qb of questionBanks) {
-            if (qb && qb.id != null) qbIdToType.set(qb.id as number, qb.questionType || 'UNKNOWN')
+            if (qb && qb.id != null) qbMap.set(qb.id as number, qb)
         }
 
-        const questionTypeStats: { [key: string]: { correct: number; total: number } } = {}
-        const bump = (type: string, correct: boolean) => {
-            if (!questionTypeStats[type]) questionTypeStats[type] = { correct: 0, total: 0 }
-            questionTypeStats[type].total++
-            if (correct) questionTypeStats[type].correct++
+        const answerMap = new Map<number, any>()
+        for (const ans of answers) {
+            if (ans && ans.id != null) answerMap.set(ans.id as number, ans)
         }
+
+        // Build exercise/test attempt maps for quick lookup
+        const exerciseAttemptMap = new Map<number, number>() // attemptId -> exerciseId
+        for (const attempt of exerciseAttempts) {
+            if (attempt.id && attempt.exerciseId) {
+                exerciseAttemptMap.set(attempt.id, attempt.exerciseId)
+            }
+        }
+
+        const testAttemptMap = new Map<number, number>() // attemptId -> testId
+        for (const attempt of testAttempts) {
+            if (attempt.id && attempt.testId) {
+                testAttemptMap.set(attempt.id, attempt.testId)
+            }
+        }
+
+        // Collect incorrect answers (recent, within 7 days)
+        const recentIncorrect: any[] = []
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
         for (const log of answerLogs) {
-            const type = qbIdToType.get(log.questionBankId) || 'UNKNOWN'
-            bump(type, !!log.isCorrect)
-        }
-        for (const log of testAnswerLogs) {
-            const type = qbIdToType.get(log.questionBankId) || 'UNKNOWN'
-            bump(type, !!log.isCorrect)
+            if (!log.isCorrect && log.questionBankId) {
+                const qb = qbMap.get(log.questionBankId)
+                if (qb && log.createdAt && new Date(log.createdAt) >= sevenDaysAgo) {
+                    const ans = log.answerId ? answerMap.get(log.answerId) : null
+                    const exerciseId = log.userExerciseAttemptId ? exerciseAttemptMap.get(log.userExerciseAttemptId) : null
+                    recentIncorrect.push({
+                        questionBankId: log.questionBankId,
+                        questionType: qb.questionType,
+                        questionJp: qb.questionJp || '',
+                        levelN: qb.levelN,
+                        createdAt: log.createdAt,
+                        answerJp: ans?.answerJp || '',
+                        exerciseId
+                    })
+                }
+            }
         }
 
-        const weakAreas: string[] = []
-        const strongAreas: string[] = []
-        Object.entries(questionTypeStats).forEach(([type, stats]) => {
-            if (stats.total >= 5) {
-                const acc = (stats.correct / stats.total) * 100
-                if (acc < 60) weakAreas.push(type)
-                else if (acc > 80) strongAreas.push(type)
+        for (const log of testAnswerLogs) {
+            if (!log.isCorrect && log.questionBankId) {
+                const qb = qbMap.get(log.questionBankId)
+                if (qb && log.createdAt && new Date(log.createdAt) >= sevenDaysAgo) {
+                    const ans = log.answerId ? answerMap.get(log.answerId) : null
+                    const testId = log.userTestAttemptId ? testAttemptMap.get(log.userTestAttemptId) : null
+                    recentIncorrect.push({
+                        questionBankId: log.questionBankId,
+                        questionType: qb.questionType,
+                        questionJp: qb.questionJp || '',
+                        levelN: qb.levelN,
+                        createdAt: log.createdAt,
+                        answerJp: ans?.answerJp || '',
+                        testId
+                    })
+                }
             }
-        })
+        }
+
+        // Sort by most recent
+        recentIncorrect.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+        // Group failed tests/exercises
+        const failedTests = new Map<number, { testId: number; score?: number; updatedAt: any; questionTypes: Set<string> }>()
+        const failedExercises = new Map<number, { exerciseId: number; updatedAt: any; questionTypes: Set<string> }>()
+
+        for (const attempt of testAttempts) {
+            if (attempt.score !== null && (attempt.score < 60 || attempt.status === 'FAIL')) {
+                const existing = failedTests.get(attempt.testId) || { testId: attempt.testId, score: attempt.score, updatedAt: attempt.updatedAt, questionTypes: new Set<string>() }
+                // Thêm question types từ test answer logs
+                for (const tal of testAnswerLogs) {
+                    if (tal.userTestAttemptId === attempt.id && !tal.isCorrect) {
+                        const qb = qbMap.get(tal.questionBankId)
+                        if (qb) existing.questionTypes.add(qb.questionType)
+                    }
+                }
+                failedTests.set(attempt.testId, existing)
+            }
+        }
+
+        for (const attempt of exerciseAttempts) {
+            if (attempt.status === 'FAIL' || attempt.status === 'ABANDONED') {
+                const existing = failedExercises.get(attempt.exerciseId) || { exerciseId: attempt.exerciseId, updatedAt: attempt.updatedAt, questionTypes: new Set<string>() }
+                // Thêm question types từ answer logs
+                for (const al of answerLogs) {
+                    if (al.userExerciseAttemptId === attempt.id && !al.isCorrect) {
+                        const qb = qbMap.get(al.questionBankId)
+                        if (qb) existing.questionTypes.add(qb.questionType)
+                    }
+                }
+                failedExercises.set(attempt.exerciseId, existing)
+            }
+        }
 
         return {
-            totalExerciseAttempts: exerciseAttempts.length,
-            totalTestAttempts: testAttempts.length,
-            weakAreas,
-            strongAreas,
-            // recent ids to give LLM anchors (trim to avoid token bloat)
-            recentExercises: exerciseAttempts.slice(0, Math.min(20, exerciseAttempts.length)).map((e: any) => ({ id: e.exerciseId, updatedAt: e.updatedAt })),
-            recentTests: testAttempts.slice(0, Math.min(10, testAttempts.length)).map((t: any) => ({ id: t.testId, score: t.score, updatedAt: t.updatedAt }))
+            recentIncorrect: recentIncorrect.slice(0, 100),
+            vocabularies: vocabularies.slice(0, 500).map((v: any) => ({
+                id: v.id,
+                wordJp: v.wordJp,
+                reading: v.reading,
+                levelN: v.levelN
+            })),
+            failedTests: Array.from(failedTests.values()).map((t: any) => ({
+                testId: t.testId,
+                score: t.score,
+                updatedAt: t.updatedAt,
+                questionTypes: Array.from(t.questionTypes)
+            })),
+            failedExercises: Array.from(failedExercises.values()).map((e: any) => ({
+                exerciseId: e.exerciseId,
+                updatedAt: e.updatedAt,
+                questionTypes: Array.from(e.questionTypes)
+            })),
+            srs: {
+                existing: existingSrs
+            }
         }
     }
 
@@ -1073,12 +1222,12 @@ Chỉ trả về JSON array, không có text thừa. Sắp xếp theo priority t
                 throw new Error('Response không phải là array')
             }
 
+            // Parse format mới: contentType, contentId (cho SRS), message khuyến nghị
             return parsed.map(item => ({
-                type: item.type || 'exercise',
-                id: item.id || 0,
-                title: item.title || 'Không có tiêu đề',
-                description: item.description || '',
+                contentType: item.contentType || 'VOCABULARY', // VOCABULARY | GRAMMAR | KANJI
+                contentId: Number(item.contentId) || 0,
                 reason: item.reason || '',
+                message: item.message || '',
                 priority: item.priority || 'medium'
             }))
         } catch (error) {
