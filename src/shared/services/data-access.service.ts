@@ -7,6 +7,7 @@ export type AiPolicyEntity = {
     scope: AiPolicyScope
     fields: string[]
     filter?: Record<string, any>
+    limit?: number // Số lượng records tối đa để lấy từ entity này
 }
 
 export type AiContextPolicy = {
@@ -26,7 +27,7 @@ export class DataAccessService {
         const result: Record<string, any[]> = {}
         for (const e of policy.entities || []) {
             try {
-                const modelName = this.toCamel(e.entity)
+                const modelName = this.toCamel(e.entity) // example: userAnswerLog -> userAnswerLog
                 const model = (this.prisma as any)[modelName]
                 if (!model || typeof model.findMany !== 'function') {
                     this.logger.warn(`Model "${modelName}" (from entity "${e.entity}") not found in Prisma Client. Skipping.`)
@@ -35,7 +36,16 @@ export class DataAccessService {
                 }
                 const where = this.buildWhere(userId, e)
                 const select = this.buildSelect(e.fields)
-                const data = await model.findMany({ where, select })
+                // Apply limit nếu admin config
+                const query: any = { where, select }
+                if (e.limit && e.limit > 0) {
+                    query.take = e.limit
+                    // Thêm orderBy để lấy records mới nhất (nếu có createdAt trong fields)
+                    if (e.fields && e.fields.includes('createdAt')) {
+                        query.orderBy = { createdAt: 'desc' }
+                    }
+                }
+                const data = await model.findMany(query)
                 result[e.entity] = (data || []).map((row: any) => this.applyMasking(row, policy.maskingRules || {}))
             } catch (error) {
                 this.logger.error(`Error fetching data for entity "${e.entity}":`, error)
