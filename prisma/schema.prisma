@@ -139,10 +139,14 @@ model User {
   deletedBy    User?  @relation("DeletorUsers", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
   deletedUsers User[] @relation("DeletorUsers")
 
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  tests     Test[]    @relation("TestCreatedBy")
+  deletedAt                 DateTime?
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  tests                     Test[]              @relation("TestCreatedBy")
+  // Audit backlink for GeminiConfigModel
+  createdGeminiConfigModels GeminiConfigModel[] @relation("GeminiConfigModelCreatedBy")
+  updatedGeminiConfigModels GeminiConfigModel[] @relation("GeminiConfigModelUpdatedBy")
+  deletedGeminiConfigModels GeminiConfigModel[] @relation("GeminiConfigModelDeletedBy")
 
   @@index([deletedAt])
 }
@@ -1830,11 +1834,11 @@ enum GeminiConfigType {
 }
 
 model GeminiConfig {
-  id         Int              @id @default(autoincrement())
-  configType GeminiConfigType @unique // Loại config
-  modelName  String           @default("gemini-1.5-pro") @db.VarChar(100) // Tên model Gemini
-  prompt     String           @db.Text // Prompt template (có thể có placeholder như {{text}}, {{transcription}}, etc.)
-  isActive   Boolean          @default(true) // Có đang sử dụng không
+  id                  Int               @id @default(autoincrement())
+  geminiConfigModelId Int
+  geminiConfigModel   GeminiConfigModel @relation(fields: [geminiConfigModelId], references: [id], onDelete: Restrict)
+  prompt              String            @db.Text // Prompt template (có thể có placeholder như {{text}}, {{transcription}}, etc.)
+  isActive            Boolean           @default(true) // Có đang sử dụng không
 
   createdById Int?
   createdBy   User? @relation("GeminiConfigCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -1843,12 +1847,14 @@ model GeminiConfig {
   deletedById Int?
   deletedBy   User? @relation("GeminiConfigDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedAt           DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  GeminiServiceConfig GeminiServiceConfig[]
 
   @@index([deletedAt])
-  @@index([configType, isActive])
+  @@index([isActive])
+  @@index([geminiConfigModelId])
 }
 
 // Model UserAIConversation (Lịch sử hội thoại AI Kaiwa)
@@ -1870,4 +1876,67 @@ model UserAIConversation {
   @@index([conversationId])
   @@index([createdAt])
   @@index([deletedAt])
+}
+
+model GeminiModel {
+  id                Int                 @id @default(autoincrement())
+  provider          String              @default("GEMINI") @db.VarChar(50)
+  key               String              @unique @db.VarChar(100) // ví dụ: gemini-2.5-pro
+  displayName       String              @db.VarChar(100)
+  description       String?             @db.Text
+  isEnabled         Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  GeminiConfigModel GeminiConfigModel[]
+}
+
+// System-level model cấu hình bởi hệ thống, tham chiếu tới GeminiModel (vendor)
+model GeminiConfigModel {
+  id            Int         @id @default(autoincrement())
+  name          String      @db.VarChar(100) // Tên hiển thị cho FE
+  geminiModelId Int
+  geminiModel   GeminiModel @relation(fields: [geminiModelId], references: [id], onDelete: Restrict)
+
+  // Tham số tuỳ chọn cho model
+  temperature       Float?
+  topP              Float?
+  topK              Int?
+  maxTokens         Int?
+  jsonMode          Boolean? @default(false)
+  systemInstruction String?  @db.Text
+  safetySettings    Json?
+  extraParams       Json?
+
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Audit (admin)
+  createdById Int?
+  createdBy   User?     @relation("GeminiConfigModelCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User?     @relation("GeminiConfigModelUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User?     @relation("GeminiConfigModelDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedAt   DateTime?
+
+  // Quan hệ
+  geminiConfigs GeminiConfig[]
+
+  @@index([deletedAt])
+}
+
+// Mapping service ↔ config: service chỉ dùng được config đã được gán
+model GeminiServiceConfig {
+  id             Int              @id @default(autoincrement())
+  serviceType    GeminiConfigType
+  geminiConfigId Int
+  geminiConfig   GeminiConfig     @relation(fields: [geminiConfigId], references: [id], onDelete: Cascade)
+
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([serviceType, geminiConfigId])
 }

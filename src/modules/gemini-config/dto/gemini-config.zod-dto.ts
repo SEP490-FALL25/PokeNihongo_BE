@@ -7,6 +7,12 @@ import {
     UpdateGeminiConfigBodySchema,
     UpdateGeminiConfigResSchema
 } from '../entities/gemini-config.entity'
+import {
+    CreateGeminiConfigModelBodySchema,
+    UpdateGeminiConfigModelBodySchema,
+    GetParamsGeminiConfigModelSchema,
+    GeminiConfigModelResSchema
+} from '../entities/gemini-config-model.entity'
 
 export class CreateGeminiConfigBodyDTO extends createZodDto(
     CreateGeminiConfigBodySchema
@@ -25,5 +31,19 @@ export class GetParamsGeminiConfigDTO extends createZodDto(
 ) { }
 export class GetGeminiConfigResDTO extends createZodDto(
     GetGeminiConfigResSchema
+) { }
+
+// GeminiConfigModel DTOs
+export class CreateGeminiConfigModelBodyDTO extends createZodDto(
+    CreateGeminiConfigModelBodySchema
+) { }
+export class UpdateGeminiConfigModelBodyDTO extends createZodDto(
+    UpdateGeminiConfigModelBodySchema
+) { }
+export class GetParamsGeminiConfigModelDTO extends createZodDto(
+    GetParamsGeminiConfigModelSchema
+) { }
+export class GeminiConfigModelResDTO extends createZodDto(
+    GeminiConfigModelResSchema
 ) { }
 

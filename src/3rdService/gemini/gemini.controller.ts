@@ -38,7 +38,7 @@ export class GeminiController {
             message: 'Đánh giá phát âm thành công'
         }
     }
-
+    
     @Get('recommendations')
     @ApiOperation({ summary: 'Lấy gợi ý cá nhân hóa dựa trên dữ liệu học tập' })
     @ApiQuery({ name: 'limit', type: Number, required: false, description: 'Số lượng gợi ý (mặc định: 10)' })

@@ -13,6 +13,8 @@ import { EvaluateSpeakingDto, AIKaiwaDto, ChatWithGeminiDto } from './dto/gemini
 import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
 import { v4 as uuidv4 } from 'uuid'
 import axios from 'axios'
+import { GEMINI_DEFAULT_CONFIGS } from './config/gemini-default-configs'
+import { GeminiConfigType } from '@prisma/client'
 
 @Injectable()
 export class GeminiService {
@@ -88,8 +90,8 @@ export class GeminiService {
         const isFlashModel = normalizedModelName.includes('flash')
 
         // Nếu forceUseServiceAccount được set, ưu tiên theo flag này
-        const shouldUseServiceAccount = forceUseServiceAccount !== undefined 
-            ? forceUseServiceAccount 
+        const shouldUseServiceAccount = forceUseServiceAccount !== undefined
+            ? forceUseServiceAccount
             : (this.useServiceAccount && !isApiKeyOnlyModel)
 
         // Nếu là Flash model
@@ -177,6 +179,66 @@ export class GeminiService {
     }
 
     /**
+     * Seed/update default Gemini configs into database
+     */
+    async seedDefaultConfigs(): Promise<{ updated: number; created: number; restored: number; summary: Array<{ configType: string; modelName: string; isActive: boolean }> }> {
+        let updated = 0
+        let created = 0
+        let restored = 0
+
+        for (const config of GEMINI_DEFAULT_CONFIGS) {
+            try {
+                const existing = await (this.prisma as any).geminiConfig.findUnique({
+                    where: { configType: config.configType as GeminiConfigType }
+                })
+
+                if (existing && !existing.deletedAt) {
+                    await (this.prisma as any).geminiConfig.update({
+                        where: { configType: config.configType as GeminiConfigType },
+                        data: {
+                            modelName: config.modelName,
+                            prompt: config.prompt,
+                            isActive: config.isActive
+                        }
+                    })
+                    updated++
+                } else if (existing && existing.deletedAt) {
+                    await (this.prisma as any).geminiConfig.update({
+                        where: { configType: config.configType as GeminiConfigType },
+                        data: {
+                            modelName: config.modelName,
+                            prompt: config.prompt,
+                            isActive: config.isActive,
+                            deletedAt: null,
+                            deletedById: null
+                        }
+                    })
+                    restored++
+                } else {
+                    await (this.prisma as any).geminiConfig.create({
+                        data: {
+                            configType: config.configType as GeminiConfigType,
+                            modelName: config.modelName,
+                            prompt: config.prompt,
+                            isActive: config.isActive
+                        }
+                    })
+                    created++
+                }
+            } catch (err) {
+                this.logger.error(`Seed config failed for ${config.configType}:`, err)
+            }
+        }
+
+        const all = await (this.prisma as any).geminiConfig.findMany({
+            where: { deletedAt: null },
+            select: { configType: true, modelName: true, isActive: true }
+        })
+
+        return { updated, created, restored, summary: all }
+    }
+
+    /**
      * Khởi tạo GoogleGenerativeAI với API key
      */
     private initializeWithApiKey(apiKey: string, modelType: string = ''): GoogleGenerativeAI {
@@ -234,12 +296,13 @@ export class GeminiService {
                 throw new BadRequestException('QuestionBank phải là loại SPEAKING')
             }
 
-            // Lấy config từ DB hoặc dùng default
-            const config = await this.geminiConfigRepo.findByConfigType('SPEAKING_EVALUATION' as any) || null
+            // Lấy config default theo mapping service ↔ config
+            const svcCfg = await this.geminiConfigRepo.getDefaultConfigForService('SPEAKING_EVALUATION' as any)
+            const config: any = svcCfg?.geminiConfig || null
             const prompt = config
                 ? this.replacePlaceholders(String(config.prompt || ''), { text: data.text, transcription: data.transcription || data.text })
                 : this.buildSpeakingEvaluationPrompt(data.text, data.transcription || data.text)
-            const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
+            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
 
             // Gọi Gemini API - chọn API key dựa trên model
             const genAI = await this.getGenAIForModel(modelName)
@@ -344,12 +407,13 @@ export class GeminiService {
             // Phân tích dữ liệu để tìm điểm yếu và điểm mạnh
             const analysis = this.analyzeUserPerformance(exerciseAttempts, testAttempts)
 
-            // Lấy config từ DB hoặc dùng default
-            const config = await this.geminiConfigRepo.findByConfigType('PERSONALIZED_RECOMMENDATIONS' as any) || null
+            // Lấy config default theo mapping service ↔ config
+            const svcCfg = await this.geminiConfigRepo.getDefaultConfigForService('PERSONALIZED_RECOMMENDATIONS' as any)
+            const config: any = svcCfg?.geminiConfig || null
             const prompt = config
                 ? this.replacePlaceholders(String(config.prompt || ''), { analysis: JSON.stringify(analysis), limit: limit.toString() })
                 : this.buildRecommendationPrompt(analysis, limit)
-            const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
+            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
 
             // Gọi Gemini API - chọn API key dựa trên model
             const genAI = await this.getGenAIForModel(modelName)
@@ -441,7 +505,8 @@ export class GeminiService {
                             const overallScore = Math.round((accuracy * 0.4 + pronunciationScore * 0.3 + fluencyScore * 0.3))
 
                             // So sánh với reference text bằng Gemini để có đánh giá chi tiết hơn
-                            const config = await this.geminiConfigRepo.findByConfigType('SPEAKING_EVALUATION' as any) || null
+                            const svcCfg = await this.geminiConfigRepo.getDefaultConfigForService('SPEAKING_EVALUATION' as any)
+                            const config: any = svcCfg?.geminiConfig || null
                             const prompt = config
                                 ? this.replacePlaceholders(String(config.prompt || ''), {
                                     text: data.message,
@@ -449,7 +514,7 @@ export class GeminiService {
                                 })
                                 : this.buildSpeakingEvaluationPrompt(data.message, transcription)
 
-                            const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
+                            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
                             const genAI = await this.getGenAIForModel(modelName)
                             const model = genAI.getGenerativeModel({ model: modelName })
                             const result = await model.generateContent(prompt)
@@ -536,9 +601,10 @@ export class GeminiService {
                 parts: [{ text: userMessage }]
             })
 
-            // Lấy config từ DB hoặc dùng default
-            const config = await this.geminiConfigRepo.findByConfigType('AI_KAIWA' as any) || null
-            const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
+            // Lấy config default theo mapping service ↔ config
+            const svcCfg = await this.geminiConfigRepo.getDefaultConfigForService('AI_KAIWA' as any)
+            const config: any = svcCfg?.geminiConfig || null
+            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
 
             // System prompt từ config hoặc default
             const systemPrompt = (config?.prompt as string) || `Bạn là một người bạn Nhật Bản thân thiện và nhiệt tình. Hãy trò chuyện tự nhiên bằng tiếng Nhật với người học. Hãy:
