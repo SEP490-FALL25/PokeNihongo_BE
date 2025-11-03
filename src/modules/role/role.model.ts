@@ -1,4 +1,3 @@
-import { PaginationDataSchema } from '@/shared/models/response.model'
 import { PermissionSchema } from 'src/shared/models/shared-permission.model'
 import { RoleSchema } from 'src/shared/models/shared-role.model'
 import { z } from 'zod'
@@ -33,7 +32,7 @@ export const GetRoleDetailResSchema = z.object({
   data: z.object({
     // role: RoleSchema,
     // return the full list of permissions available in the system
-    permissions: PaginationDataSchema
+    permissions: z.array(PermissionSchema.extend({ hasPermission: z.boolean() }))
   }),
   message: z.string()
 })
