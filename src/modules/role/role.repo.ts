@@ -28,14 +28,7 @@ export class RoleRepo {
         where: { deletedAt: null, ...where },
         orderBy,
         skip,
-        take,
-        include: {
-          permissions: {
-            where: {
-              deletedAt: null
-            }
-          }
-        }
+        take
       })
     ])
 
@@ -60,6 +53,9 @@ export class RoleRepo {
         permissions: {
           where: {
             deletedAt: null
+          },
+          orderBy: {
+            module: 'asc'
           }
         }
       }
@@ -91,7 +87,7 @@ export class RoleRepo {
     data: UpdateRoleBodyType
   }): Promise<RoleType> {
     // Kiểm tra nếu có bất cứ permissionId nào mà đã soft delete thì không cho phép cập nhật
-    if (data.permissionIds.length > 0) {
+    if (Array.isArray(data.permissionIds) && data.permissionIds.length > 0) {
       const permissions = await this.prismaService.permission.findMany({
         where: {
           id: {
@@ -115,9 +111,9 @@ export class RoleRepo {
         name: data.name,
         description: data.description,
         isActive: data.isActive,
-        permissions: {
-          set: data.permissionIds.map((id) => ({ id }))
-        },
+        permissions: Array.isArray(data.permissionIds)
+          ? { set: data.permissionIds.map((id) => ({ id })) }
+          : undefined,
         updatedById
       },
       include: {
