@@ -513,5 +513,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy vòng đấu',
     ALREADY_EXISTS: 'Vòng đấu đã tồn tại',
     INVALID_DATA: 'Dữ liệu vòng đấu không hợp lệ'
+  },
+  match_participant: {
+    CREATE_SUCCESS: 'Tạo người tham gia trận đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật người tham gia trận đấu thành công',
+    DELETE_SUCCESS: 'Xóa người tham gia trận đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin người tham gia trận đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách người tham gia trận đấu thành công',
+    NOT_FOUND: 'Không tìm thấy người tham gia trận đấu',
+    ALREADY_EXISTS: 'Người tham gia trận đấu đã tồn tại',
+    INVALID_DATA: 'Dữ liệu người tham gia trận đấu không hợp lệ'
   }
 }

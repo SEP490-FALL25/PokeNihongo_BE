@@ -1640,7 +1640,7 @@ model MatchParticipant {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Trạng thái chấp nhận ban đầu
-  hasAccepted Boolean @default(false)
+  hasAccepted Boolean?
 
   // Quan hệ 1-n: 1 người tham gia có 3 "kết quả round"
   roundResults MatchRoundParticipant[]

@@ -73,6 +73,7 @@ import { LeaderboardSeasonModule } from './modules/leaderboard-season/leaderboar
 import { MatchQueueModule } from './modules/match-queue/match-queue.module';
 import { MatchModule } from './modules/match/match.module';
 import { MatchRoundModule } from './modules/match-round/match-round.module';
+import { MatchParticipantModule } from './modules/match-participant/match-participant.module';
 
 @Module({
   imports: [
@@ -144,7 +145,8 @@ import { MatchRoundModule } from './modules/match-round/match-round.module';
     LeaderboardSeasonModule,
     MatchQueueModule,
     MatchModule,
-    MatchRoundModule
+    MatchRoundModule,
+    MatchParticipantModule
   ],
 
   controllers: [],
