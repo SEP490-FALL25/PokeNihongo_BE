@@ -35,17 +35,7 @@ const GeminiConfigModelBase = z.object({
   updatedAt: z.date().optional()
 })
 
-export const GeminiConfigModelSchema = GeminiConfigModelBase.superRefine((data, ctx) => {
-  if (data.maxTokens == null) return
-  const limit = data.jsonMode ? MAX_TOKENS_JSON_MODE : MAX_TOKENS_DEFAULT
-  if (data.maxTokens > limit) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['maxTokens'],
-      message: `maxTokens must be ≤ ${limit} when jsonMode=${!!data.jsonMode}`
-    })
-  }
-})
+export const GeminiConfigModelSchema = GeminiConfigModelBase
 
 export const CreateGeminiConfigModelBodySchema = GeminiConfigModelBase.pick({
   name: true,
