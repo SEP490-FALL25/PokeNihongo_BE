@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { FileInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express'
 import { GeminiService } from './gemini.service'
-import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto, ChatWithGeminiDto } from './dto/gemini.dto'
+import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto, ChatWithGeminiDto, ChatWithGeminiMultipartDto } from './dto/gemini.dto'
 import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 
@@ -99,11 +99,13 @@ export class GeminiController {
 
     //chat with gemini
     @Post('chat')
+    @UseInterceptors(AnyFilesInterceptor()) // Cần interceptor để parse multipart/form-data
+    @ApiConsumes('multipart/form-data')
     @ApiOperation({
         summary: 'Chat với Gemini',
         description: 'API chat đơn giản với Gemini AI. Hỗ trợ conversation history và chọn model tùy chỉnh.'
     })
-    @ApiBody({ type: ChatWithGeminiDto })
+    @ApiBody({ type: ChatWithGeminiMultipartDto })
     @ApiResponse({
         status: 200,
         description: 'Chat với Gemini thành công',
@@ -111,9 +113,22 @@ export class GeminiController {
     })
     async chatWithGemini(
         @ActiveUser('userId') userId: number,
-        @Body() body: ChatWithGeminiDto
+        @Body() body: ChatWithGeminiMultipartDto
     ): Promise<{ statusCode: number; data: ChatWithGeminiResponse; message: string }> {
-        const result = await this.geminiService.chatWithGemini(userId, body)
+        // Validate và convert multipart form data to DTO format
+        if (!body || !body.message) {
+            throw new BadRequestException('Message là bắt buộc')
+        }
+
+        const chatDto: ChatWithGeminiDto = {
+            message: body.message,
+            conversationId: body.conversationId,
+            modelName: body.modelName as any,
+            saveHistory: body.saveHistory === 'true' || body.saveHistory === undefined || body.saveHistory === '',
+            useServiceAccount: body.useServiceAccount === 'true'
+        }
+
+        const result = await this.geminiService.chatWithGemini(userId, chatDto)
 
         return {
             statusCode: 200,

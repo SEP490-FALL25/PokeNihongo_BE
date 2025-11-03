@@ -10,6 +10,7 @@
     "reset-sequences": "ts-node initialScript/reset-sequences.ts",
     "init-seed-data": "ts-node initialScript/index.ts && ts-node initialScript/import-elemental-types.ts && ts-node initialScript/import-type-effectiveness.ts",
     "seed-kanji-vocabulary": "ts-node initialScript/seed-default-data.ts",
+    "seed-gemini-configs": "ts-node initialScript/seed-gemini-configs.ts",
     "create-permissions": "ts-node initialScript/create-permissions.ts",
     "import-pokemons": "ts-node initialScript/import-pokemons.ts",
     "test-import-pokemons": "ts-node initialScript/test-import-pokemons.ts",

@@ -76,14 +76,21 @@ export class GeminiService {
 
     /**
      * Lấy GoogleGenerativeAI instance dựa trên model name
-     * - Các models trong apiKeyOnlyModels: chỉ dùng API key, không dùng service account
+     * @param modelName - Tên model Gemini
+     * @param forceUseServiceAccount - Force dùng Service Account nếu true, force dùng API Key nếu false, auto nếu undefined
+     * - Các models trong apiKeyOnlyModels: chỉ dùng API key, không dùng service account (trừ khi force)
      * - Nếu model chứa "flash" → dùng GEMINI_FLASH_API_KEY (nếu có), fallback về GEMINI_API_KEY hoặc serviceAccount
      * - Nếu model không phải flash → dùng GEMINI_API_KEY hoặc serviceAccount
      */
-    private async getGenAIForModel(modelName: string): Promise<GoogleGenerativeAI> {
+    private async getGenAIForModel(modelName: string, forceUseServiceAccount?: boolean): Promise<GoogleGenerativeAI> {
         const normalizedModelName = modelName.toLowerCase()
         const isApiKeyOnlyModel = this.apiKeyOnlyModels.some(m => normalizedModelName.includes(m.toLowerCase()))
         const isFlashModel = normalizedModelName.includes('flash')
+
+        // Nếu forceUseServiceAccount được set, ưu tiên theo flag này
+        const shouldUseServiceAccount = forceUseServiceAccount !== undefined 
+            ? forceUseServiceAccount 
+            : (this.useServiceAccount && !isApiKeyOnlyModel)
 
         // Nếu là Flash model
         if (isFlashModel) {
@@ -91,23 +98,25 @@ export class GeminiService {
                 return this.genAIFlash
             }
 
-            // Với apiKeyOnlyModels, bỏ qua service account, chỉ dùng API key
-            if (!isApiKeyOnlyModel) {
-                // Ưu tiên dùng service account nếu có (chỉ với models không trong whitelist)
-                if (this.useServiceAccount && this.auth) {
-                    try {
-                        const token = await this.auth.getAccessToken()
-                        if (!token) {
-                            throw new Error('Failed to get access token from service account')
-                        }
-                        this.genAIFlash = new GoogleGenerativeAI(token as string)
-                        this.logger.log('Gemini Flash initialized with Google Cloud service account token')
-                        return this.genAIFlash
-                    } catch (error) {
-                        this.logger.warn('Failed to get access token for Flash, falling back to API key:', error)
+            // Nếu force dùng Service Account
+            if (shouldUseServiceAccount && this.auth) {
+                try {
+                    const token = await this.auth.getAccessToken()
+                    if (!token) {
+                        throw new Error('Failed to get access token from service account')
                     }
+                    this.genAIFlash = new GoogleGenerativeAI(token as string)
+                    this.logger.log(`Gemini Flash initialized with Google Cloud service account token (forced: ${forceUseServiceAccount !== undefined})`)
+                    return this.genAIFlash
+                } catch (error) {
+                    if (forceUseServiceAccount === true) {
+                        throw new Error(`Failed to use Service Account: ${error instanceof Error ? error.message : String(error)}`)
+                    }
+                    this.logger.warn('Failed to get access token for Flash, falling back to API key:', error)
                 }
-            } else {
+            } else if (forceUseServiceAccount === true && !this.auth) {
+                throw new Error('Service Account được yêu cầu nhưng chưa được cấu hình. Vui lòng kiểm tra GOOGLE_CLOUD_* credentials trong .env')
+            } else if (!isApiKeyOnlyModel && forceUseServiceAccount === undefined) {
                 this.logger.log(`Model ${modelName} is configured to use API key only (skipping service account)`)
             }
 
@@ -134,23 +143,25 @@ export class GeminiService {
             return this.genAI
         }
 
-        // Với apiKeyOnlyModels, bỏ qua service account, chỉ dùng API key
-        if (!isApiKeyOnlyModel) {
-            // Ưu tiên dùng service account nếu có (chỉ với models không trong whitelist)
-            if (this.useServiceAccount && this.auth) {
-                try {
-                    const token = await this.auth.getAccessToken()
-                    if (!token) {
-                        throw new Error('Failed to get access token from service account')
-                    }
-                    this.genAI = new GoogleGenerativeAI(token as string)
-                    this.logger.log('Gemini Pro initialized with Google Cloud service account token')
-                    return this.genAI
-                } catch (error) {
-                    this.logger.error('Failed to get access token from service account, falling back to API key:', error)
+        // Nếu force dùng Service Account
+        if (shouldUseServiceAccount && this.auth) {
+            try {
+                const token = await this.auth.getAccessToken()
+                if (!token) {
+                    throw new Error('Failed to get access token from service account')
                 }
+                this.genAI = new GoogleGenerativeAI(token as string)
+                this.logger.log(`Gemini Pro initialized with Google Cloud service account token (forced: ${forceUseServiceAccount !== undefined})`)
+                return this.genAI
+            } catch (error) {
+                if (forceUseServiceAccount === true) {
+                    throw new Error(`Failed to use Service Account: ${error instanceof Error ? error.message : String(error)}`)
+                }
+                this.logger.error('Failed to get access token from service account, falling back to API key:', error)
             }
-        } else {
+        } else if (forceUseServiceAccount === true && !this.auth) {
+            throw new Error('Service Account được yêu cầu nhưng chưa được cấu hình. Vui lòng kiểm tra GOOGLE_CLOUD_* credentials trong .env')
+        } else if (!isApiKeyOnlyModel && forceUseServiceAccount === undefined) {
             this.logger.log(`Model ${modelName} is configured to use API key only (skipping service account)`)
         }
 

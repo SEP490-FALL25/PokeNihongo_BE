@@ -128,4 +128,63 @@ export class ChatWithGeminiDto {
   })
   @IsOptional()
   saveHistory?: boolean
+
+  @ApiProperty({
+    example: false,
+    description: 'Bật/tắt Service Account. true = dùng Service Account, false = dùng API Key (mặc định: false - dùng API Key)',
+    required: false,
+    default: false
+  })
+  @IsOptional()
+  useServiceAccount?: boolean
+}
+
+// Swagger DTO cho multipart/form-data
+export class ChatWithGeminiMultipartDto {
+  @ApiProperty({
+    example: 'Xin chào, bạn có thể giúp tôi học tiếng Nhật không?',
+    description: 'Tin nhắn từ user',
+    required: true
+  })
+  @IsString()
+  message: string
+
+  @ApiProperty({
+    example: 'conv_123456789',
+    description: 'ID của conversation (nếu là conversation mới thì không cần, sẽ tự generate)',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  conversationId?: string
+
+  @ApiProperty({
+    example: 'gemini-2.5-pro',
+    enum: GeminiModel,
+    description: 'Tên model Gemini muốn sử dụng (mặc định: gemini-2.5-pro). Có thể chọn từ dropdown',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  modelName?: string
+
+  @ApiProperty({
+    example: 'true',
+    description: 'Có lưu lịch sử conversation vào DB không (mặc định: true). Gửi dưới dạng string "true" hoặc "false"',
+    required: false,
+    default: 'true'
+  })
+  @IsOptional()
+  @IsString()
+  saveHistory?: string
+
+  @ApiProperty({
+    example: 'false',
+    description: 'Bật/tắt Service Account. "true" = dùng Service Account, "false" = dùng API Key (mặc định: false - dùng API Key)',
+    required: false,
+    default: 'false'
+  })
+  @IsOptional()
+  @IsString()
+  useServiceAccount?: string
 }
