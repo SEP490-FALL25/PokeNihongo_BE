@@ -7,7 +7,7 @@ import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { HashingService } from '@/shared/services/hashing.service'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { TokenService } from '@/shared/services/token.service'
-import { Global, Module } from '@nestjs/common'
+import { Global, Module, forwardRef } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { JwtModule } from '@nestjs/jwt'
 import { SharedUserDeletionProcessor } from './workers/user-deletion.processor'
@@ -26,6 +26,8 @@ const sharedServices = [
     JwtModule,
     BullQueueModule.forRoot(),
     BullQueueModule.registerQueue('user-deletion')
+    // Không import GeminiModule ở đây để tránh circular dependency
+    // GeminiModule sẽ được import trong AppModule và export GeminiService
   ],
   controllers: [],
   providers: [
@@ -42,6 +44,7 @@ const sharedServices = [
     ...sharedServices,
     AccessTokenGuard,
     APIKeyGuard
+    // GeminiService sẽ được export từ GeminiModule, không cần export ở đây
   ]
 })
 export class SharedModule { }
