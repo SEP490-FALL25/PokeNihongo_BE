@@ -15,7 +15,7 @@ import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiw
 import { v4 as uuidv4 } from 'uuid'
 import axios from 'axios'
 import { GEMINI_DEFAULT_CONFIGS } from './config/gemini-default-configs'
-import { GeminiConfigType } from '@prisma/client'
+import { GeminiConfigType, RecommendationTargetType } from '@prisma/client'
 
 @Injectable()
 export class GeminiService {
@@ -501,14 +501,28 @@ export class GeminiService {
                 }
 
                 // Lưu recommendations vào DB để FE có thể hiển thị lại/ghi nhận hành động
-                const recRows = (payload.recommendations || []).map((r: any) => ({
-                    userId,
-                    targetType: (r.contentType || 'VOCABULARY').toUpperCase(),
-                    targetId: Number(r.contentId) || 0,
-                    reason: String(r.reason || ''),
-                    source: 'PERSONALIZED',
-                    modelUsed: modelName
-                })).filter((r: any) => r.targetId > 0)
+                const recRows = (payload.recommendations || []).map((r: any) => {
+                    // Map contentType từ AI response sang RecommendationTargetType enum
+                    const contentTypeUpper = (r.contentType || 'VOCABULARY').toUpperCase()
+                    let targetType: RecommendationTargetType = RecommendationTargetType.VOCABULARY
+
+                    // Validate và map đúng enum value
+                    if (contentTypeUpper === 'VOCABULARY') targetType = RecommendationTargetType.VOCABULARY
+                    else if (contentTypeUpper === 'GRAMMAR') targetType = RecommendationTargetType.GRAMMAR
+                    else if (contentTypeUpper === 'KANJI') targetType = RecommendationTargetType.KANJI
+                    else if (contentTypeUpper === 'EXERCISE') targetType = RecommendationTargetType.EXERCISE
+                    else if (contentTypeUpper === 'TEST') targetType = RecommendationTargetType.TEST
+                    else if (contentTypeUpper === 'LESSON') targetType = RecommendationTargetType.LESSON
+
+                    return {
+                        userId,
+                        targetType,
+                        targetId: Number(r.contentId) || 0,
+                        reason: String(r.reason || ''),
+                        source: 'PERSONALIZED',
+                        modelUsed: modelName
+                    }
+                }).filter((r: any) => r.targetId > 0)
 
                 if (recRows.length > 0) {
                     await (this.prisma as any).userAIRecommendation.createMany({ data: recRows, skipDuplicates: true })
