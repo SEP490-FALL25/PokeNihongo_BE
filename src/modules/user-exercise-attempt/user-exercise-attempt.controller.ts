@@ -117,6 +117,8 @@ export class UserExerciseAttemptController {
         return this.userExerciseAttemptService.remove(Number(id))
     }
 
+    
+
     @Put(':id/submit-completion')
     @ApiBearerAuth()
     @ApiBody({ type: TimeSwaggerDTO })
@@ -129,6 +131,8 @@ export class UserExerciseAttemptController {
     supmitCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number, @Body() body: CheckExerciseCompletionBodyDTO) {
         return this.userExerciseAttemptService.supmitExerciseCompletion(Number(id), userId, body?.time)
     }
+
+
 
     @Get(':id/check-completion')
     @ApiBearerAuth()

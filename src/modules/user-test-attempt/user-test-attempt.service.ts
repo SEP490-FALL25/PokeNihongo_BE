@@ -8,7 +8,8 @@ import {
     InvalidUserTestAttemptDataException,
     UserTestAttemptNotFoundException,
     TestNotFoundException,
-    ForbiddenReviewAccessException
+    ForbiddenReviewAccessException,
+    UnauthorizedUserTestAttemptAccessException
 } from '@/modules/user-test-attempt/dto/user-test-attempt.error'
 import { TEST_MESSAGE, USER_TEST_ATTEMPT_MESSAGE } from '@/common/constants/message'
 import { UserTestAttemptRepository } from '@/modules/user-test-attempt/user-test-attempt.repo'
@@ -25,6 +26,9 @@ import { I18nService } from '@/i18n/i18n.service'
 import { UserTestAttemptMessage } from '@/i18n/message-keys'
 import { pickLabelFromComposite } from '@/common/utils/prase.utils'
 import { PrismaService } from '@/shared/services/prisma.service'
+import { UserRepo } from '@/modules/user/user.repo'
+import { LevelRepo } from '@/modules/level/level.repo'
+import { LEVEL_TYPE } from '@/common/constants/level.constant'
 
 @Injectable()
 export class UserTestAttemptService {
@@ -40,7 +44,9 @@ export class UserTestAttemptService {
         private readonly testSetQuestionBankService: TestSetQuestionBankService,
         private readonly translationHelper: TranslationHelperService,
         private readonly i18nService: I18nService,
-        private readonly prisma: PrismaService
+        private readonly prisma: PrismaService,
+        private readonly userRepo: UserRepo,
+        private readonly levelRepo: LevelRepo
     ) { }
 
     async create(userId: number, testId: number) {
@@ -260,7 +266,12 @@ export class UserTestAttemptService {
                 throw UserTestAttemptNotFoundException
             }
 
-            // 2. Lấy thông tin Test để biết các TestSets
+            // 2. Kiểm tra xem attempt có thuộc về user này không
+            if (attempt.userId !== userId) {
+                throw UnauthorizedUserTestAttemptAccessException
+            }
+
+            // 3. Lấy thông tin Test để biết các TestSets
             const testRes = await this.testService.findOne(attempt.testId, 'vi')
             if (!testRes || !testRes.data) {
                 throw TestNotFoundException
@@ -412,7 +423,7 @@ export class UserTestAttemptService {
 
             // 2. Kiểm tra xem attempt có thuộc về user này không
             if (attempt.userId !== userId) {
-                throw new Error('Unauthorized: This attempt does not belong to you')
+                throw UnauthorizedUserTestAttemptAccessException
             }
 
             // 3. Kiểm tra xem attempt có đang IN_PROGRESS không
@@ -456,7 +467,7 @@ export class UserTestAttemptService {
 
             // 2. Kiểm tra xem attempt có thuộc về user này không
             if (attempt.userId !== userId) {
-                throw new Error('Unauthorized: This attempt does not belong to you')
+                throw UnauthorizedUserTestAttemptAccessException
             }
 
             const message = this.i18nService.translate(
@@ -493,13 +504,68 @@ export class UserTestAttemptService {
                 throw new HttpException(message || 'Bạn đã hết lượt làm bài test này', 400)
             }
 
-            // Giảm limit trước khi cho phép làm bài
-            await this.userTestRepository.decrementLimit(userId, testId)
+            // Tìm attempt IN_PROGRESS gần nhất của user với test này
+            const inProgressAttempt = await this.prisma.userTestAttempt.findFirst({
+                where: {
+                    userId,
+                    testId,
+                    status: 'IN_PROGRESS'
+                },
+                orderBy: {
+                    createdAt: 'desc' // Lấy attempt được tạo gần nhất
+                }
+            })
 
-            // Tạo attempt mới mỗi lần vào làm (không có IN_PROGRESS/ABANDONED nữa)
-            const createAttempt = await this.create(userId, testId)
-            const attempt = createAttempt.data as any
-            const userTestAttemptId = attempt.id
+            let attempt: any
+            let userTestAttemptId: number
+
+            if (inProgressAttempt) {
+                // Kiểm tra thời gian: nếu attempt được tạo/update hơn 1 tiếng trước → ABANDONED và tạo mới
+                const now = new Date()
+                const attemptTime = inProgressAttempt.updatedAt || inProgressAttempt.createdAt
+                const timeDiffMs = now.getTime() - attemptTime.getTime()
+                const oneHourMs = 60 * 60 * 1000 // 1 tiếng = 3,600,000ms
+
+                if (timeDiffMs > oneHourMs) {
+                    // Quá 1 tiếng → đánh dấu ABANDONED và tạo mới
+                    this.logger.log(`Attempt ${inProgressAttempt.id} is older than 1 hour (${Math.round(timeDiffMs / (60 * 1000))} minutes), marking as ABANDONED and creating new one`)
+                    await this.prisma.userTestAttempt.update({
+                        where: { id: inProgressAttempt.id },
+                        data: { status: 'ABANDONED' }
+                    })
+
+                    // Giảm limit và tạo attempt mới
+                    await this.userTestRepository.decrementLimit(userId, testId)
+                    const createAttempt = await this.create(userId, testId)
+                    attempt = createAttempt.data as any
+                    userTestAttemptId = attempt.id
+                } else {
+                    // Dưới 1 tiếng → reuse và update updatedAt
+                    this.logger.log(`Found existing IN_PROGRESS attempt (ID: ${inProgressAttempt.id}) for user ${userId} and test ${testId}, reusing it (age: ${Math.round(timeDiffMs / (60 * 1000))} minutes)`)
+
+                    // Update updatedAt để reset timer
+                    await this.prisma.userTestAttempt.update({
+                        where: { id: inProgressAttempt.id },
+                        data: { updatedAt: now }
+                    })
+
+                    attempt = await this.userTestAttemptRepository.findById(inProgressAttempt.id)
+                    if (!attempt) {
+                        throw UserTestAttemptNotFoundException
+                    }
+                    userTestAttemptId = attempt.id
+                }
+            } else {
+                // Nếu không có IN_PROGRESS (có thể là ABANDONED, COMPLETED, FAIL hoặc chưa có) → tạo mới
+                this.logger.log(`No IN_PROGRESS attempt found for user ${userId} and test ${testId}, creating new attempt`)
+
+                // Giảm limit trước khi cho phép làm bài (chỉ khi tạo mới)
+                await this.userTestRepository.decrementLimit(userId, testId)
+
+                const createAttempt = await this.create(userId, testId)
+                attempt = createAttempt.data as any
+                userTestAttemptId = attempt.id
+            }
 
             // Lấy thông tin Test với các TestSets
             const testRes = await this.testService.findOne(testId, languageCode)
@@ -533,8 +599,21 @@ export class UserTestAttemptService {
                 throw new Error('Test không có test set nào')
             }
 
-            // Load user answer logs (hiện tại chưa có logs nào vì mới tạo)
+            // Load user answer logs (nếu reuse attempt IN_PROGRESS thì có thể đã có logs)
             let answeredCount = 0
+            let userAnswerLogs: any[] = []
+            const answerLogsResult = await this.userTestAnswerLogService.findByUserTestAttemptId(userTestAttemptId)
+            if (answerLogsResult?.data?.results) {
+                userAnswerLogs = answerLogsResult.data.results
+                answeredCount = userAnswerLogs.length
+                this.logger.log(`Found ${answeredCount} existing answer logs for attempt ${userTestAttemptId}`)
+            }
+
+            // Tạo map để check xem question nào đã được trả lời và câu trả lời là gì
+            const answeredQuestionMap = new Map<number, number>() // questionBankId -> answerId
+            userAnswerLogs.forEach((log: any) => {
+                answeredQuestionMap.set(log.questionBankId, log.answerId)
+            })
 
             // Xử lý các TestSets và Questions
             const allTestSets: any[] = []
@@ -588,6 +667,9 @@ export class UserTestAttemptService {
 
                         totalQuestions++
 
+                        // Kiểm tra xem user đã trả lời câu này chưa (khi reuse attempt IN_PROGRESS)
+                        const userSelectedAnswerId = answeredQuestionMap.get(qb?.id)
+
                         return {
                             id: item.id,
                             questionOrder: item.questionOrder,
@@ -597,7 +679,8 @@ export class UserTestAttemptService {
                                 questionType: qb?.questionType,
                                 audioUrl: qb?.audioUrl,
                                 pronunciation: qb?.pronunciation,
-                                answers: mappedAnswers
+                                answers: mappedAnswers,
+                                selectedAnswerId: userSelectedAnswerId || undefined // ID câu trả lời đã chọn (nếu có)
                             }
                         }
                     })
@@ -837,6 +920,197 @@ export class UserTestAttemptService {
             }
         } catch (error) {
             this.logger.error('Error building test attempt review:', error)
+            if (error instanceof HttpException) {
+                throw error
+            }
+            throw error
+        }
+    }
+
+    async submitPlacementTestCompletion(userTestAttemptId: number, userId: number, timeSeconds?: number) {
+        try {
+            this.logger.log(`Submitting placement test completion for attempt: ${userTestAttemptId}`)
+
+            // 1. Lấy thông tin UserTestAttempt
+            const attempt = await this.userTestAttemptRepository.findById(userTestAttemptId)
+            if (!attempt) {
+                throw UserTestAttemptNotFoundException
+            }
+
+            // 2. Kiểm tra xem attempt có thuộc về user này không
+            if (attempt.userId !== userId) {
+                throw UnauthorizedUserTestAttemptAccessException
+            }
+
+            // 3. Lấy thông tin Test để lấy các TestSets
+            const test = await this.testService.findOne(attempt.testId, 'vi')
+            if (!test || !test.data) {
+                throw TestNotFoundException
+            }
+
+            // 4. Lấy các TestSets của Test
+            const testTestSets = await this.prisma.testTestSet.findMany({
+                where: { testId: attempt.testId },
+                select: { testSetId: true }
+            })
+
+            if (testTestSets.length === 0) {
+                throw new HttpException('Test này chưa có TestSet nào', 400)
+            }
+
+            const testSetIds = testTestSets.map((tts: any) => tts.testSetId)
+
+            // 5. Lấy tất cả Question từ các TestSets
+            const allQuestions = await this.prisma.testSetQuestionBank.findMany({
+                where: {
+                    testSetId: { in: testSetIds }
+                },
+                include: {
+                    questionBank: {
+                        select: {
+                            id: true,
+                            levelN: true,
+                            questionType: true
+                        }
+                    }
+                }
+            })
+
+            // Chỉ lấy các loại VOCABULARY, GRAMMAR, KANJI
+            const filteredQuestions = allQuestions.filter(
+                tsqb => ['VOCABULARY', 'GRAMMAR', 'KANJI'].includes(tsqb.questionBank.questionType)
+            )
+
+            this.logger.log(`Found ${filteredQuestions.length} questions for test ${attempt.testId}`)
+
+            // 6. Lấy tất cả UserTestAnswerLog của attempt này
+            const answerLogsResult = await this.userTestAnswerLogService.findByUserTestAttemptId(userTestAttemptId)
+            const userAnswers = answerLogsResult.data.results
+            this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userTestAttemptId}`)
+
+            // 7. Tạo map để lấy câu trả lời nhanh
+            const answerMap = new Map<number, boolean>()
+            userAnswers.forEach((log: any) => {
+                answerMap.set(log.questionBankId, log.isCorrect)
+            })
+
+            // 8. Nhóm questions theo levelN và tính tỷ lệ đúng
+            const questionsByLevel: Record<number, { total: number; correct: number }> = {
+                1: { total: 0, correct: 0 },
+                2: { total: 0, correct: 0 },
+                3: { total: 0, correct: 0 },
+                4: { total: 0, correct: 0 },
+                5: { total: 0, correct: 0 }
+            }
+
+            filteredQuestions.forEach((tsqb: any) => {
+                const levelN = tsqb.questionBank.levelN || 5 // Mặc định N5 nếu không có levelN
+                if (levelN >= 1 && levelN <= 5) {
+                    questionsByLevel[levelN].total++
+                    const isCorrect = answerMap.get(tsqb.questionBank.id) || false
+                    if (isCorrect) {
+                        questionsByLevel[levelN].correct++
+                    }
+                }
+            })
+
+            this.logger.log('Questions by level:', questionsByLevel)
+
+            // 9. Đánh giá levelN với ngưỡng linh hoạt cho từng level
+            // N5 = 5 (dễ nhất), N4 = 4, N3 = 3
+            // Logic: Duyệt tuần tự từ N5 → N4 → N3 với ngưỡng cụ thể cho từng level
+            // - N5: đúng >= 2/3 câu (66.7%)
+            // - N4: đúng >= 3/4 câu (75%)
+            // - N3: đúng >= 2/3 câu (66.7%)
+            let evaluatedLevelN = 5 // Mặc định N5 (thấp nhất)
+
+            // Bước 1: Kiểm tra N5 (3 câu) - Ngưỡng: đúng >= 2 câu (66.7%)
+            const n5Stats = questionsByLevel[5]
+            if (n5Stats.total > 0) {
+                if (n5Stats.correct >= 2) {
+                    // Đỗ N5: đúng >= 2/3 câu
+                    evaluatedLevelN = 4 // Cập nhật trình độ tạm thời
+                    this.logger.log(`User passed N5: ${n5Stats.correct}/${n5Stats.total} correct (>= 66.7%), moving to N4`)
+                } else {
+                    // Trượt N5: đúng < 2 câu
+                    evaluatedLevelN = 5
+                    this.logger.log(`User failed N5: ${n5Stats.correct}/${n5Stats.total} correct (< 66.7%), final level: N5`)
+                }
+            } else {
+                this.logger.warn(`No N5 questions found, keeping level at N5`)
+            }
+
+            // Bước 2: Kiểm tra N4 (4 câu) - Ngưỡng: đúng >= 3 câu (75%)
+            if (evaluatedLevelN === 4) {
+                const n4Stats = questionsByLevel[4]
+                if (n4Stats.total > 0) {
+                    if (n4Stats.correct >= 3) {
+                        // Đỗ N4: đúng >= 3/4 câu
+                        evaluatedLevelN = 3 // Cập nhật trình độ tạm thời
+                        this.logger.log(`User passed N4: ${n4Stats.correct}/${n4Stats.total} correct (>= 75%), moving to N3`)
+                    } else {
+                        // Trượt N4: đúng < 3 câu
+                        evaluatedLevelN = 4
+                        this.logger.log(`User failed N4: ${n4Stats.correct}/${n4Stats.total} correct (< 75%), final level: N4`)
+                    }
+                } else {
+                    this.logger.warn(`No N4 questions found, keeping level at N4`)
+                }
+            }
+
+            // Bước 3: Kiểm tra N3 (3 câu) - Ngưỡng: đúng >= 2 câu (66.7%)
+            if (evaluatedLevelN === 3) {
+                const n3Stats = questionsByLevel[3]
+                if (n3Stats.total > 0) {
+                    if (n3Stats.correct >= 2) {
+                        // Đỗ N3: đúng >= 2/3 câu
+                        evaluatedLevelN = 2 // Sẵn sàng học N2
+                        this.logger.log(`User passed N3: ${n3Stats.correct}/${n3Stats.total} correct (>= 66.7%), final level: N2`)
+                    } else {
+                        // Trượt N3: đúng < 2 câu
+                        evaluatedLevelN = 3
+                        this.logger.log(`User failed N3: ${n3Stats.correct}/${n3Stats.total} correct (< 66.7%), final level: N3`)
+                    }
+                } else {
+                    this.logger.warn(`No N3 questions found, keeping level at N3`)
+                }
+            }
+
+            this.logger.log(`Final evaluated levelN: N${evaluatedLevelN}`)
+
+            // 10. Tìm Level trong DB với levelNumber = evaluatedLevelN và levelType = USER
+            const level = await this.levelRepo.findByLevelAndType(evaluatedLevelN, LEVEL_TYPE.USER)
+            if (!level) {
+                this.logger.warn(`Level N${evaluatedLevelN} not found in database, keeping current user level`)
+            } else {
+                // 11. Cập nhật levelId của User
+                await this.userRepo.update({
+                    id: userId,
+                    updatedById: userId,
+                    data: { levelId: level.id }
+                })
+                this.logger.log(`Updated user ${userId} levelId to ${level.id} (N${evaluatedLevelN})`)
+            }
+
+            // 12. Update status và time của UserTestAttempt
+            await this.userTestAttemptRepository.update(
+                { id: userTestAttemptId },
+                { status: 'COMPLETED', ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
+            )
+            this.logger.log(`Updated attempt ${userTestAttemptId} to COMPLETED`)
+
+            // 13. Trả về kết quả với levelN được đánh giá
+            return {
+                statusCode: 200,
+                message: 'Đánh giá trình độ hoàn thành',
+                data: {
+                    levelN: evaluatedLevelN,
+                    levelId: level?.id || null
+                }
+            }
+
+        } catch (error) {
+            this.logger.error('Error submitting placement test completion:', error)
             if (error instanceof HttpException) {
                 throw error
             }

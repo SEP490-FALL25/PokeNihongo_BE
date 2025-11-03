@@ -886,5 +886,4 @@ export class UserExerciseAttemptService {
             // Không throw error để không ảnh hưởng đến flow chính
         }
     }
-
 }

@@ -2054,6 +2054,9 @@ enum TestStatus {
   QUIZ_TEST //Quiz
   REVIEW_TEST // Ôn tập
   PRACTICE_TEST // Thi thử
+  READING_TEST // Đọc hiểu
+  LISTENING_TEST // Nghe hiểu
+  SPEAKING_TEST // Nói
 }
 
 enum UserTestStatus {

@@ -96,7 +96,7 @@ export class TestSetRepository {
 
 
     async findMany(query: GetTestSetListQueryType): Promise<{ data: TestSetType[]; total: number }> {
-        const { currentPage, pageSize, search, levelN, testType, status, creatorId, language, sortBy = 'createdAt', sort = 'desc', noExercies } = query
+        const { currentPage, pageSize, search, levelN, testType, status, creatorId, language, sortBy = 'createdAt', sort = 'desc', noExercies, noPrice } = query
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -123,6 +123,11 @@ export class TestSetRepository {
 
         if (creatorId) {
             where.creatorId = creatorId
+        }
+
+        // Lọc testSet có price = 0 nếu noPrice = true
+        if (noPrice === true) {
+            where.price = 0
         }
 
         // Lọc testSet chưa có exercises nếu yêu cầu
@@ -227,7 +232,7 @@ export class TestSetRepository {
     }
 
     async findManyBasic(query: GetTestSetListQueryType): Promise<{ data: TestSetType[]; total: number }> {
-        const { currentPage, pageSize, search, levelN, testType, status, creatorId, language, sortBy = 'createdAt', sort = 'desc', noExercies } = query
+        const { currentPage, pageSize, search, levelN, testType, status, creatorId, language, sortBy = 'createdAt', sort = 'desc', noExercies, noPrice } = query
         const skip = (currentPage - 1) * pageSize
 
         const where: any = {}
@@ -254,6 +259,11 @@ export class TestSetRepository {
 
         if (creatorId) {
             where.creatorId = creatorId
+        }
+
+        // Lọc testSet có price = 0 nếu noPrice = true
+        if (noPrice === true) {
+            where.price = 0
         }
 
         // Lọc testSet chưa có exercises nếu yêu cầu

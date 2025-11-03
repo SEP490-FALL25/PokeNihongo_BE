@@ -65,11 +65,19 @@ export class UserTestController {
     })
     @ZodSerializerDto(UserTestMyListResDTO)
     async getMy(
-        @Query() query: GetUserTestListQueryDTO,
+        @Query() query: any,
         @ActiveUser('userId') userId: number,
         @I18nLang() lang: string
     ) {
-        return this.userTestService.findAll({ ...query, userId }, lang)
+        // Map 'type' parameter to 'testType' for service
+        const { type, ...restQuery } = query
+        const queryParams: GetUserTestListQueryDTO = {
+            ...restQuery,
+            userId,
+            ...(type && { testType: type })
+        }
+
+        return this.userTestService.findAll(queryParams, lang)
     }
 
     @Get(':id')

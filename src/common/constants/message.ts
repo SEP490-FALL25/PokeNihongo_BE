@@ -403,7 +403,8 @@ export const USER_TEST_ATTEMPT_MESSAGE = {
   CHECK_COMPLETION_SUCCESS: 'Kiểm tra trạng thái hoàn thành thành công',
   ABANDON_SUCCESS: 'Đánh dấu bài test bỏ dở thành công',
   GET_STATUS_SUCCESS: 'Lấy trạng thái bài test thành công',
-  FORBIDDEN_REVIEW_ACCESS: 'Bạn không có quyền xem review của lần thử này'
+  FORBIDDEN_REVIEW_ACCESS: 'Bạn không có quyền xem review của lần thử này',
+  UNAUTHORIZED_ACCESS: 'Bạn không có quyền truy cập lần thử bài test này'
 }
 
 export const USER_TEST_ANSWER_LOG_MESSAGE = {

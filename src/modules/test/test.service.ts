@@ -10,6 +10,8 @@ import { LanguagesService } from '../languages/languages.service'
 import { TestSetRepository } from '../testset/testset.repo'
 import { TestSetNotFoundException } from '../testset/dto/testset.error'
 import { TestSetQuestionBankService } from '../testset-questionbank/testset-questionbank.service'
+import { UserTestAttemptRepository } from '../user-test-attempt/user-test-attempt.repo'
+import { UserTestRepository } from '../user-test/user-test.repo'
 
 @Injectable()
 export class TestService {
@@ -22,6 +24,8 @@ export class TestService {
         private readonly languagesService: LanguagesService,
         private readonly testSetRepo: TestSetRepository,
         private readonly testSetQuestionBankService: TestSetQuestionBankService,
+        private readonly userTestAttemptRepo: UserTestAttemptRepository,
+        private readonly userTestRepo: UserTestRepository,
     ) { }
 
     private isValidUrl(url: string): boolean {
@@ -224,6 +228,32 @@ export class TestService {
 
         // Validation
         this.validateTestData(data, true)
+
+        // Kiểm tra nếu đang update testType sang READING_TEST/LISTENING_TEST/SPEAKING_TEST
+        // và test hiện tại có TestSet type khác thì không cho phép
+        if (data.testType && data.testType !== test.testType) {
+            const restrictedTestTypes = ['READING_TEST', 'LISTENING_TEST', 'SPEAKING_TEST']
+            if (restrictedTestTypes.includes(data.testType)) {
+                // Lấy tất cả TestSet hiện có trong test này
+                const testTestSets = await (this.prisma as any).testTestSet.findMany({
+                    where: { testId: id },
+                    include: { testSet: true }
+                })
+
+                if (testTestSets.length > 0) {
+                    const allowedTestSetType = data.testType.replace('_TEST', '') // READING_TEST -> READING
+                    const invalidTestSets = testTestSets.filter((tts: any) => tts.testSet.testType !== allowedTestSetType)
+
+                    if (invalidTestSets.length > 0) {
+                        const invalidIds = invalidTestSets.map((tts: any) => tts.testSet.id)
+                        throw new BadRequestException(
+                            `Không thể đổi testType sang ${data.testType} vì test đang chứa TestSet loại khác. ` +
+                            `Vui lòng xóa các TestSet không hợp lệ trước: ${invalidIds.join(', ')}`
+                        )
+                    }
+                }
+            }
+        }
 
         // Cập nhật test với transaction
         const result = await this.prisma.$transaction(async (tx) => {
@@ -445,6 +475,32 @@ export class TestService {
         // Validation
         this.validateTestWithMeaningsData(data, true)
 
+        // Kiểm tra nếu đang update testType sang READING_TEST/LISTENING_TEST/SPEAKING_TEST
+        // và test hiện tại có TestSet type khác thì không cho phép
+        if (data.testType && data.testType !== test.testType) {
+            const restrictedTestTypes = ['READING_TEST', 'LISTENING_TEST', 'SPEAKING_TEST']
+            if (restrictedTestTypes.includes(data.testType)) {
+                // Lấy tất cả TestSet hiện có trong test này
+                const testTestSets = await (this.prisma as any).testTestSet.findMany({
+                    where: { testId: id },
+                    include: { testSet: true }
+                })
+
+                if (testTestSets.length > 0) {
+                    const allowedTestSetType = data.testType.replace('_TEST', '') // READING_TEST -> READING
+                    const invalidTestSets = testTestSets.filter((tts: any) => tts.testSet.testType !== allowedTestSetType)
+
+                    if (invalidTestSets.length > 0) {
+                        const invalidIds = invalidTestSets.map((tts: any) => tts.testSet.id)
+                        throw new BadRequestException(
+                            `Không thể đổi testType sang ${data.testType} vì test đang chứa TestSet loại khác. ` +
+                            `Vui lòng xóa các TestSet không hợp lệ trước: ${invalidIds.join(', ')}`
+                        )
+                    }
+                }
+            }
+        }
+
         // Cập nhật test với meanings
         const result = await this.testRepo.updateWithMeanings(id, data)
 
@@ -474,6 +530,22 @@ export class TestService {
                 const foundIds = testSets.map(ts => ts.id)
                 const notFoundIds = data.testSetIds.filter(id => !foundIds.includes(id))
                 throw new BadRequestException(`Không tìm thấy TestSet với ID: ${notFoundIds.join(', ')}`)
+            }
+
+            // Kiểm tra nếu test là READING_TEST, LISTENING_TEST, hoặc SPEAKING_TEST
+            // thì chỉ cho phép thêm TestSet có cùng type (READING, LISTENING, SPEAKING)
+            const restrictedTestTypes = ['READING_TEST', 'LISTENING_TEST', 'SPEAKING_TEST']
+            if (restrictedTestTypes.includes(test.testType)) {
+                const allowedTestSetType = test.testType.replace('_TEST', '') // READING_TEST -> READING
+                const invalidTestSets = testSets.filter(ts => ts.testType !== allowedTestSetType)
+
+                if (invalidTestSets.length > 0) {
+                    const invalidIds = invalidTestSets.map(ts => ts.id)
+                    throw new BadRequestException(
+                        `Test loại ${test.testType} chỉ được thêm TestSet loại ${allowedTestSetType}. ` +
+                        `TestSet không hợp lệ: ${invalidIds.join(', ')}`
+                    )
+                }
             }
 
             // Tạo các bản ghi trong bảng TestTestSet (nhiều-nhiều)
@@ -906,9 +978,9 @@ export class TestService {
         }
     }
 
-    async getRandomQuestionsForPlacementTest(testId: number, language: string = 'vi'): Promise<MessageResDTO> {
+    async getRandomQuestionsForPlacementTest(testId: number, userId: number, language: string = 'vi'): Promise<MessageResDTO> {
         try {
-            this.logger.log(`Getting random questions for placement test: ${testId}, language: ${language}`)
+            this.logger.log(`Getting random questions for placement test: ${testId}, user: ${userId}, language: ${language}`)
 
             // Validate test tồn tại và là PLACEMENT_TEST_DONE
             const test = await this.testRepo.findById(testId)
@@ -918,6 +990,65 @@ export class TestService {
 
             if (test.testType !== 'PLACEMENT_TEST_DONE') {
                 throw new BadRequestException('Chỉ có thể lấy câu hỏi từ Test loại PLACEMENT_TEST_DONE')
+            }
+
+            // Kiểm tra UserTest tồn tại và limit
+            const userTest = await this.userTestRepo.findByUserAndTest(userId, testId)
+            if (!userTest) {
+                throw new BadRequestException('Bạn chưa có quyền làm bài test này')
+            }
+
+            // Lấy attempt được tạo gần nhất của userId và testId (không phân biệt status)
+            const latestAttempt = await this.prisma.userTestAttempt.findFirst({
+                where: {
+                    userId,
+                    testId
+                },
+                orderBy: {
+                    createdAt: 'desc' // Lấy attempt được tạo gần nhất
+                }
+            })
+
+            let userTestAttempt
+
+            // Nếu có attempt gần nhất và là IN_PROGRESS → dùng lại (xử lý trường hợp rớt mạng)
+            if (latestAttempt && latestAttempt.status === 'IN_PROGRESS') {
+                // Sử dụng attempt đó (không tạo mới, không giảm limit)
+                // Xóa tất cả UserTestAnswerLog của attempt này để bắt đầu lại từ đầu
+                this.logger.log(`Found existing IN_PROGRESS UserTestAttempt with ID: ${latestAttempt.id} for user ${userId} and test ${testId}`)
+
+                const deletedLogsCount = await this.prisma.userTestAnswerLog.deleteMany({
+                    where: {
+                        userTestAttemptId: latestAttempt.id
+                    }
+                })
+                this.logger.log(`Deleted ${deletedLogsCount.count} UserTestAnswerLog for attempt ${latestAttempt.id}`)
+
+                userTestAttempt = {
+                    id: latestAttempt.id,
+                    userId: latestAttempt.userId,
+                    testId: latestAttempt.testId,
+                    status: latestAttempt.status,
+                    time: latestAttempt.time,
+                    score: latestAttempt.score,
+                    createdAt: latestAttempt.createdAt,
+                    updatedAt: latestAttempt.updatedAt
+                }
+            } else {
+                // Nếu attempt gần nhất là COMPLETED hoặc không có attempt nào (lần đầu) → tạo mới
+                if (latestAttempt && latestAttempt.status === 'COMPLETED') {
+                    this.logger.log(`Found COMPLETED attempt (ID: ${latestAttempt.id}), creating new UserTestAttempt for user ${userId} and test ${testId}`)
+                } else {
+                    this.logger.log(`No existing attempt found (first time), creating new UserTestAttempt for user ${userId} and test ${testId}`)
+                }
+
+                // Tạo UserTestAttempt mới (không giảm limit)
+                userTestAttempt = await this.userTestAttemptRepo.create({
+                    userId,
+                    testId
+                })
+
+                this.logger.log(`Created new UserTestAttempt with ID: ${userTestAttempt.id}`)
             }
 
             // Lấy các TestSets của Test
@@ -1042,8 +1173,7 @@ export class TestService {
 
                             return {
                                 id: ans.id,
-                                answer: answerTranslation,
-                                isCorrect: ans.isCorrect
+                                answer: answerTranslation
                             }
                         })
                     )
@@ -1055,8 +1185,7 @@ export class TestService {
                         audioUrl: qb.audioUrl,
                         pronunciation: qb.pronunciation,
                         levelN: qb.levelN,
-                        answers: shuffleArray(mappedAnswers), // Shuffle answers
-                        isCorrect: undefined // Ẩn đáp án đúng khi trả về
+                        answers: shuffleArray(mappedAnswers) // Shuffle answers
                     }
                 })
             )
@@ -1066,6 +1195,7 @@ export class TestService {
             return {
                 statusCode: 200,
                 data: {
+                    userTestAttemptId: userTestAttempt.id,
                     questions: mappedQuestions,
                     distribution: {
                         level5: selectedN5.length,

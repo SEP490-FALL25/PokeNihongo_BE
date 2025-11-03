@@ -211,6 +211,10 @@ export const GetTestSetListQuerySchema = z
         noExercies: z
             .string()
             .optional()
+            .transform((val) => val === 'true'),
+        noPrice: z
+            .string()
+            .optional()
             .transform((val) => val === 'true')
     })
     .strict()

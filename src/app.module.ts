@@ -7,6 +7,7 @@ import { ConfigModule } from '@nestjs/config'
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { ScheduleModule } from '@nestjs/schedule'
 import { ZodSerializerInterceptor } from 'nestjs-zod'
+import { GeminiModule } from './3rdService/gemini/gemini.module'
 import { MailModule } from './3rdService/mail/mail.module'
 import { SpeechModule } from './3rdService/speech/speech.module'
 import { UploadModule } from './3rdService/upload/upload.module'
@@ -84,6 +85,7 @@ import { MatchRoundParticipantModule } from './modules/match-round-participant/m
     ScheduleModule.forRoot(),
     I18nModule, // Add I18n module
 
+    // GeminiModule,
     MailModule,
     UploadModule,
     SpeechModule,

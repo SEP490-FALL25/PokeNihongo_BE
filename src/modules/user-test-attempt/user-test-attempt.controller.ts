@@ -18,6 +18,7 @@ import {
     TestCompletionResponseSwaggerDTO,
     TimeSwaggerDTO,
 } from '@/modules/user-test-attempt/dto/user-test-attempt.dto'
+import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
     Body,
     Controller,
@@ -126,6 +127,20 @@ export class UserTestAttemptController {
     })
     submitCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number, @Body() body: CheckTestCompletionBodyDTO) {
         return this.userTestAttemptService.submitTestCompletion(Number(id), userId, body?.time)
+    }
+
+
+    @Put(':id/placement-test/submit-completion')
+    @ApiBearerAuth()
+    @ApiBody({ type: TimeSwaggerDTO })
+    @ApiOperation({ summary: 'Nộp bài placement test và đánh giá trình độ (levelN)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Nộp bài placement test thành công',
+        type: MessageResDTO
+    })
+    supmitPlacementTestCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number, @Body() body: CheckTestCompletionBodyDTO) {
+        return this.userTestAttemptService.submitPlacementTestCompletion(Number(id), userId, body?.time)
     }
 
     @Get(':id/check-completion')
