@@ -8,6 +8,7 @@ import { MatchService } from './match.service'
 @Module({
   imports: [LeaderboardSeasonModule, LanguagesModule],
   controllers: [MatchController],
-  providers: [MatchService, MatchRepo]
+  providers: [MatchService, MatchRepo],
+  exports: [MatchService, MatchRepo]
 })
 export class MatchModule {}

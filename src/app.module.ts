@@ -72,6 +72,7 @@ import { WebsocketsModule } from './websockets/websockets.module'
 import { LeaderboardSeasonModule } from './modules/leaderboard-season/leaderboard-season.module';
 import { MatchQueueModule } from './modules/match-queue/match-queue.module';
 import { MatchModule } from './modules/match/match.module';
+import { MatchRoundModule } from './modules/match-round/match-round.module';
 
 @Module({
   imports: [
@@ -142,7 +143,8 @@ import { MatchModule } from './modules/match/match.module';
     WebsocketsModule,
     LeaderboardSeasonModule,
     MatchQueueModule,
-    MatchModule
+    MatchModule,
+    MatchRoundModule
   ],
 
   controllers: [],

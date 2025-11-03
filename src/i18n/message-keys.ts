@@ -536,3 +536,14 @@ export const MatchMessage = {
   INVALID_DATA: 'match.INVALID_DATA',
   NOT_HAVE_ACTIVE_LEADERBOARD_SEASON: 'match.NOT_HAVE_ACTIVE_LEADERBOARD_SEASON'
 } as const
+
+export const MatchRoundMessage = {
+  CREATE_SUCCESS: 'match_round.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'match_round.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'match_round.DELETE_SUCCESS',
+  GET_SUCCESS: 'match_round.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'match_round.GET_LIST_SUCCESS',
+  NOT_FOUND: 'match_round.NOT_FOUND',
+  ALREADY_EXISTS: 'match_round.ALREADY_EXISTS',
+  INVALID_DATA: 'match_round.INVALID_DATA'
+} as const

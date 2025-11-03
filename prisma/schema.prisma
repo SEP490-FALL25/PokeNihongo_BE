@@ -1801,6 +1801,7 @@ enum MatchStatus {
 /// Trạng thái của 1 Round (model MatchRound)
 enum RoundStatus {
   SELECTING_POKEMON // Đang trong giai đoạn chọn Pokemon cho round
+  PENDING // chờ round khác chọn pokemon
   IN_PROGRESS // Đang trong giai đoạn làm bài (10 phút)
   COMPLETED // Đã so sánh xong kết quả
 }

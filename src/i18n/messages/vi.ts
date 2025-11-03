@@ -503,5 +503,15 @@ export const viMessages = {
 
     INVALID_DATA: 'Dữ liệu trận đấu không hợp lệ',
     NOT_HAVE_ACTIVE_LEADERBOARD_SEASON: 'Không có mùa xếp hạng đang hoạt động'
+  },
+  match_round: {
+    CREATE_SUCCESS: 'Tạo vòng đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật vòng đấu thành công',
+    DELETE_SUCCESS: 'Xóa vòng đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin vòng đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách vòng đấu thành công',
+    NOT_FOUND: 'Không tìm thấy vòng đấu',
+    ALREADY_EXISTS: 'Vòng đấu đã tồn tại',
+    INVALID_DATA: 'Dữ liệu vòng đấu không hợp lệ'
   }
 }

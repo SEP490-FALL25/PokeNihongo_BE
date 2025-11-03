@@ -502,5 +502,16 @@ export const enMessages = {
     ALREADY_EXISTS: 'Match already exists',
     INVALID_DATA: 'Invalid match data',
     NOT_HAVE_ACTIVE_LEADERBOARD_SEASON: 'No active leaderboard season available'
+  },
+  match_round: {
+    CREATE_SUCCESS: 'Match round created successfully',
+    UPDATE_SUCCESS: 'Match round updated successfully',
+    DELETE_SUCCESS: 'Match round deleted successfully',
+    GET_SUCCESS: 'Match round retrieved successfully',
+
+    GET_LIST_SUCCESS: 'Match round list retrieved successfully',
+    NOT_FOUND: 'Match round not found',
+    ALREADY_EXISTS: 'Match round already exists',
+    INVALID_DATA: 'Invalid match round data'
   }
 }

@@ -483,5 +483,15 @@ export const jaMessages = {
     INVALID_DATA: '無効なマッチデータです',
     NOT_HAVE_ACTIVE_LEADERBOARD_SEASON:
       'アクティブなランキングシーズンが存在しません。マッチを開始できません。'
+  },
+  match_round: {
+    CREATE_SUCCESS: 'マッチラウンドの作成に成功しました',
+    UPDATE_SUCCESS: 'マッチラウンドの更新に成功しました',
+    DELETE_SUCCESS: 'マッチラウンドの削除に成功しました',
+    GET_SUCCESS: 'マッチラウンド情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'マッチラウンドリストの取得に成功しました',
+    NOT_FOUND: 'マッチラウンドが見つかりません',
+    ALREADY_EXISTS: 'マッチラウンドは既に存在します',
+    INVALID_DATA: '無効なマッチラウンドデータです'
   }
 }
