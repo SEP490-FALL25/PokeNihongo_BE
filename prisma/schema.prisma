@@ -2068,12 +2068,15 @@ enum SrsContentType {
   VOCABULARY
   GRAMMAR
   KANJI
+  TEST
+  EXERCISE
 }
 
 model UserSrsReview {
   id     Int  @id @default(autoincrement())
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String? @db.Text
 
   // Nội dung cần ôn: VOCABULARY | GRAMMAR | KANJI
   contentType SrsContentType

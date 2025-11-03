@@ -76,9 +76,33 @@ export class GeminiConfigController {
   }
 
   @Get('admin/schema')
-  @ApiOperation({ summary: 'Liệt kê model/field (đã lọc an toàn) cho Admin cấu hình policy' })
-  getAdminSchema() {
-    return { statusCode: 200, data: this.schemaIntrospectService.listModels(), message: 'GET_SUCCESS' }
+  @ApiOperation({ summary: 'Liệt kê tên bảng (đã lọc an toàn) cho Admin cấu hình policy' })
+  @ApiQuery({ name: 'q', required: false, description: 'Từ khóa tìm kiếm theo tên bảng' })
+  getAdminSchema(@Query('q') q?: string) {
+    const names = this.schemaIntrospectService.listModels().map((m) => m.name)
+    const filtered = q ? names.filter((n) => n.toLowerCase().includes(String(q).toLowerCase())) : names
+    return { statusCode: 200, data: filtered, message: 'GET_SUCCESS' }
+  }
+
+  @Get('admin/schema/fields')
+  @ApiOperation({ summary: 'Nhập mảng entity name → trả về danh sách field của từng entity' })
+  @ApiQuery({ name: 'entities', required: true, description: 'Danh sách entity, phân tách bởi dấu phẩy. Ví dụ: User,QuestionBank' })
+  getAdminSchemaFields(@Query('entities') entities?: string) {
+    const models = this.schemaIntrospectService.listModels()
+    const nameToFields = new Map<string, string[]>(
+      models.map((m) => [m.name, (m.fields || []).map((f: any) => f.name)])
+    )
+    const requested = (entities || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => !!s)
+
+    const data: Record<string, string[]> = {}
+    for (const n of requested) {
+      if (nameToFields.has(n)) data[n] = nameToFields.get(n) as string[]
+    }
+
+    return { statusCode: 200, data, message: 'GET_SUCCESS' }
   }
 
   @Get('config-models/:id')

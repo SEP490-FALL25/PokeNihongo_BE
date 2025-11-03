@@ -57,9 +57,76 @@ export class GeminiController {
         const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber, forceUseSA)
         const ui = {
             title: 'Làm lại để cải thiện',
-            items: (result.recommendations || []).map((r: any) => ({ type: r.type, id: r.id, reason: r.reason }))
+            items: (result.recommendations || []).map((r: any) => ({
+                contentType: r.contentType,
+                contentId: r.contentId,
+                reason: r.reason,
+                priority: r.priority
+            }))
         }
         return { statusCode: 200, data: ui, message: 'Lấy gợi ý cá nhân hóa thành công' }
+    }
+
+    // SRS-only recommendations (Vocabulary/Grammar/Kanji) + tạo SRS
+    @Post('recommendations/srs')
+    @UseInterceptors(AnyFilesInterceptor())
+    @ApiConsumes('multipart/form-data')
+    @ApiOperation({ summary: 'Gợi ý ôn tập SRS (Vocabulary/Grammar/Kanji)' })
+    @ApiBody({ type: RecommendationsMultipartDto })
+    async getSrsRecommendations(
+        @ActiveUser('userId') userId: number,
+        @Body() body: RecommendationsMultipartDto
+    ) {
+        const limitNumber = body?.limit ? Number(body.limit) : 10
+        if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 50) {
+            throw new BadRequestException('Limit phải là số từ 1 đến 50')
+        }
+        const forceUseSA = body?.useServiceAccount === 'true'
+        const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber, forceUseSA, {
+            createSrs: true,
+            allowedTypes: ['VOCABULARY', 'GRAMMAR', 'KANJI']
+        })
+        const ui = {
+            title: 'Ôn lại để ghi nhớ',
+            items: (result.recommendations || []).map((r: any) => ({
+                contentType: r.contentType,
+                contentId: r.contentId,
+                reason: r.reason,
+                priority: r.priority
+            }))
+        }
+        return { statusCode: 200, data: ui, message: 'GET_SUCCESS' }
+    }
+
+    // Skill recommendations (Reading/Listening/Speaking) - tạo SRS cho TEST/EXERCISE
+    @Post('recommendations/skills')
+    @UseInterceptors(AnyFilesInterceptor())
+    @ApiConsumes('multipart/form-data')
+    @ApiOperation({ summary: 'Gợi ý luyện kỹ năng (Reading/Listening/Speaking) - recommend TEST/EXERCISE đã làm sai' })
+    @ApiBody({ type: RecommendationsMultipartDto })
+    async getSkillRecommendations(
+        @ActiveUser('userId') userId: number,
+        @Body() body: RecommendationsMultipartDto
+    ) {
+        const limitNumber = body?.limit ? Number(body.limit) : 10
+        if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 50) {
+            throw new BadRequestException('Limit phải là số từ 1 đến 50')
+        }
+        const forceUseSA = body?.useServiceAccount === 'true'
+        const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber, forceUseSA, {
+            createSrs: true, // Tạo SRS cho TEST/EXERCISE
+            allowedTypes: ['TEST', 'EXERCISE'] // Chỉ recommend TEST/EXERCISE đã làm sai
+        })
+        const ui = {
+            title: 'Luyện kỹ năng để cải thiện',
+            items: (result.recommendations || []).map((r: any) => ({
+                contentType: r.contentType,
+                contentId: r.contentId,
+                reason: r.reason,
+                priority: r.priority
+            }))
+        }
+        return { statusCode: 200, data: ui, message: 'GET_SUCCESS' }
     }
 
     @Post('kaiwa')
