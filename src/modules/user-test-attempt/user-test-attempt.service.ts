@@ -8,7 +8,8 @@ import {
     InvalidUserTestAttemptDataException,
     UserTestAttemptNotFoundException,
     TestNotFoundException,
-    ForbiddenReviewAccessException
+    ForbiddenReviewAccessException,
+    UnauthorizedUserTestAttemptAccessException
 } from '@/modules/user-test-attempt/dto/user-test-attempt.error'
 import { TEST_MESSAGE, USER_TEST_ATTEMPT_MESSAGE } from '@/common/constants/message'
 import { UserTestAttemptRepository } from '@/modules/user-test-attempt/user-test-attempt.repo'
@@ -265,7 +266,12 @@ export class UserTestAttemptService {
                 throw UserTestAttemptNotFoundException
             }
 
-            // 2. Lấy thông tin Test để biết các TestSets
+            // 2. Kiểm tra xem attempt có thuộc về user này không
+            if (attempt.userId !== userId) {
+                throw UnauthorizedUserTestAttemptAccessException
+            }
+
+            // 3. Lấy thông tin Test để biết các TestSets
             const testRes = await this.testService.findOne(attempt.testId, 'vi')
             if (!testRes || !testRes.data) {
                 throw TestNotFoundException
@@ -417,7 +423,7 @@ export class UserTestAttemptService {
 
             // 2. Kiểm tra xem attempt có thuộc về user này không
             if (attempt.userId !== userId) {
-                throw new Error('Unauthorized: This attempt does not belong to you')
+                throw UnauthorizedUserTestAttemptAccessException
             }
 
             // 3. Kiểm tra xem attempt có đang IN_PROGRESS không
@@ -461,7 +467,7 @@ export class UserTestAttemptService {
 
             // 2. Kiểm tra xem attempt có thuộc về user này không
             if (attempt.userId !== userId) {
-                throw new Error('Unauthorized: This attempt does not belong to you')
+                throw UnauthorizedUserTestAttemptAccessException
             }
 
             const message = this.i18nService.translate(
@@ -498,13 +504,68 @@ export class UserTestAttemptService {
                 throw new HttpException(message || 'Bạn đã hết lượt làm bài test này', 400)
             }
 
-            // Giảm limit trước khi cho phép làm bài
-            await this.userTestRepository.decrementLimit(userId, testId)
+            // Tìm attempt IN_PROGRESS gần nhất của user với test này
+            const inProgressAttempt = await this.prisma.userTestAttempt.findFirst({
+                where: {
+                    userId,
+                    testId,
+                    status: 'IN_PROGRESS'
+                },
+                orderBy: {
+                    createdAt: 'desc' // Lấy attempt được tạo gần nhất
+                }
+            })
 
-            // Tạo attempt mới mỗi lần vào làm (không có IN_PROGRESS/ABANDONED nữa)
-            const createAttempt = await this.create(userId, testId)
-            const attempt = createAttempt.data as any
-            const userTestAttemptId = attempt.id
+            let attempt: any
+            let userTestAttemptId: number
+
+            if (inProgressAttempt) {
+                // Kiểm tra thời gian: nếu attempt được tạo/update hơn 1 tiếng trước → ABANDONED và tạo mới
+                const now = new Date()
+                const attemptTime = inProgressAttempt.updatedAt || inProgressAttempt.createdAt
+                const timeDiffMs = now.getTime() - attemptTime.getTime()
+                const oneHourMs = 60 * 60 * 1000 // 1 tiếng = 3,600,000ms
+
+                if (timeDiffMs > oneHourMs) {
+                    // Quá 1 tiếng → đánh dấu ABANDONED và tạo mới
+                    this.logger.log(`Attempt ${inProgressAttempt.id} is older than 1 hour (${Math.round(timeDiffMs / (60 * 1000))} minutes), marking as ABANDONED and creating new one`)
+                    await this.prisma.userTestAttempt.update({
+                        where: { id: inProgressAttempt.id },
+                        data: { status: 'ABANDONED' }
+                    })
+
+                    // Giảm limit và tạo attempt mới
+                    await this.userTestRepository.decrementLimit(userId, testId)
+                    const createAttempt = await this.create(userId, testId)
+                    attempt = createAttempt.data as any
+                    userTestAttemptId = attempt.id
+                } else {
+                    // Dưới 1 tiếng → reuse và update updatedAt
+                    this.logger.log(`Found existing IN_PROGRESS attempt (ID: ${inProgressAttempt.id}) for user ${userId} and test ${testId}, reusing it (age: ${Math.round(timeDiffMs / (60 * 1000))} minutes)`)
+
+                    // Update updatedAt để reset timer
+                    await this.prisma.userTestAttempt.update({
+                        where: { id: inProgressAttempt.id },
+                        data: { updatedAt: now }
+                    })
+
+                    attempt = await this.userTestAttemptRepository.findById(inProgressAttempt.id)
+                    if (!attempt) {
+                        throw UserTestAttemptNotFoundException
+                    }
+                    userTestAttemptId = attempt.id
+                }
+            } else {
+                // Nếu không có IN_PROGRESS (có thể là ABANDONED, COMPLETED, FAIL hoặc chưa có) → tạo mới
+                this.logger.log(`No IN_PROGRESS attempt found for user ${userId} and test ${testId}, creating new attempt`)
+
+                // Giảm limit trước khi cho phép làm bài (chỉ khi tạo mới)
+                await this.userTestRepository.decrementLimit(userId, testId)
+
+                const createAttempt = await this.create(userId, testId)
+                attempt = createAttempt.data as any
+                userTestAttemptId = attempt.id
+            }
 
             // Lấy thông tin Test với các TestSets
             const testRes = await this.testService.findOne(testId, languageCode)
@@ -538,8 +599,21 @@ export class UserTestAttemptService {
                 throw new Error('Test không có test set nào')
             }
 
-            // Load user answer logs (hiện tại chưa có logs nào vì mới tạo)
+            // Load user answer logs (nếu reuse attempt IN_PROGRESS thì có thể đã có logs)
             let answeredCount = 0
+            let userAnswerLogs: any[] = []
+            const answerLogsResult = await this.userTestAnswerLogService.findByUserTestAttemptId(userTestAttemptId)
+            if (answerLogsResult?.data?.results) {
+                userAnswerLogs = answerLogsResult.data.results
+                answeredCount = userAnswerLogs.length
+                this.logger.log(`Found ${answeredCount} existing answer logs for attempt ${userTestAttemptId}`)
+            }
+
+            // Tạo map để check xem question nào đã được trả lời và câu trả lời là gì
+            const answeredQuestionMap = new Map<number, number>() // questionBankId -> answerId
+            userAnswerLogs.forEach((log: any) => {
+                answeredQuestionMap.set(log.questionBankId, log.answerId)
+            })
 
             // Xử lý các TestSets và Questions
             const allTestSets: any[] = []
@@ -593,6 +667,9 @@ export class UserTestAttemptService {
 
                         totalQuestions++
 
+                        // Kiểm tra xem user đã trả lời câu này chưa (khi reuse attempt IN_PROGRESS)
+                        const userSelectedAnswerId = answeredQuestionMap.get(qb?.id)
+
                         return {
                             id: item.id,
                             questionOrder: item.questionOrder,
@@ -602,7 +679,8 @@ export class UserTestAttemptService {
                                 questionType: qb?.questionType,
                                 audioUrl: qb?.audioUrl,
                                 pronunciation: qb?.pronunciation,
-                                answers: mappedAnswers
+                                answers: mappedAnswers,
+                                selectedAnswerId: userSelectedAnswerId || undefined // ID câu trả lời đã chọn (nếu có)
                             }
                         }
                     })
@@ -861,7 +939,7 @@ export class UserTestAttemptService {
 
             // 2. Kiểm tra xem attempt có thuộc về user này không
             if (attempt.userId !== userId) {
-                throw new Error('Unauthorized: This attempt does not belong to you')
+                throw UnauthorizedUserTestAttemptAccessException
             }
 
             // 3. Lấy thông tin Test để lấy các TestSets
