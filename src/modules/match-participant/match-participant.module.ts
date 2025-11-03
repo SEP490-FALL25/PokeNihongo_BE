@@ -5,6 +5,7 @@ import { MatchParticipantService } from './match-participant.service'
 
 @Module({
   controllers: [MatchParticipantController],
-  providers: [MatchParticipantService, MatchParticipantRepo]
+  providers: [MatchParticipantService, MatchParticipantRepo],
+  exports: [MatchParticipantService, MatchParticipantRepo]
 })
 export class MatchParticipantModule {}

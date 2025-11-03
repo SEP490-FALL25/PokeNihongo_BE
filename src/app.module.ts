@@ -23,10 +23,10 @@ import { AchievementModule } from './modules/achievement/achievement.module'
 import { AnswerModule } from './modules/answer/answer.module'
 import { AttendanceModule } from './modules/attendance/attendance.module'
 import { AttendenceConfigModule } from './modules/attendence-config/attendence-config.module'
-import { GeminiConfigModule } from './modules/gemini-config/gemini-config.module'
 import { DailyRequestModule } from './modules/daily-request/daily-request.module'
 import { ElementalTypeModule } from './modules/elemental-type/elemental-type.module'
 import { ExercisesModule } from './modules/exercises/exercises.module'
+import { GeminiConfigModule } from './modules/gemini-config/gemini-config.module'
 import { GrammarUsageModule } from './modules/grammar-usage/grammar-usage.module'
 import { GrammarModule } from './modules/grammar/grammar.module'
 import { KanjiModule } from './modules/kanji/kanji.module'
@@ -38,12 +38,20 @@ import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
 
+import { HandleMatchmakingCronjob } from './cronjobs/handle-matchmaking.cronjob'
 import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
+import { DebuffRoundModule } from './modules/debuff-round/debuff-round.module'
 import { GachaBannerModule } from './modules/gacha-banner/gacha-banner.module'
 import { GachaItemRateModule } from './modules/gacha-item-rate/gacha-item-rate.module'
 import { GachaItemModule } from './modules/gacha-item/gacha-item.module'
 import { GachaPurchaseModule } from './modules/gacha-purchase/gacha-purchase.module'
 import { GachaRollHistoryModule } from './modules/gacha-roll-history/gacha-roll-history.module'
+import { LeaderboardSeasonModule } from './modules/leaderboard-season/leaderboard-season.module'
+import { MatchParticipantModule } from './modules/match-participant/match-participant.module'
+import { MatchQueueModule } from './modules/match-queue/match-queue.module'
+import { MatchRoundParticipantModule } from './modules/match-round-participant/match-round-participant.module'
+import { MatchRoundModule } from './modules/match-round/match-round.module'
+import { MatchModule } from './modules/match/match.module'
 import { QuestionBankModule } from './modules/question-bank/question-bank.module'
 import { RewardModule } from './modules/reward/reward.module'
 import { ShopBannerModule } from './modules/shop-banner/shop-banner.module'
@@ -71,13 +79,6 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
-import { LeaderboardSeasonModule } from './modules/leaderboard-season/leaderboard-season.module';
-import { MatchQueueModule } from './modules/match-queue/match-queue.module';
-import { MatchModule } from './modules/match/match.module';
-import { MatchRoundModule } from './modules/match-round/match-round.module';
-import { MatchParticipantModule } from './modules/match-participant/match-participant.module';
-import { MatchRoundParticipantModule } from './modules/match-round-participant/match-round-participant.module';
-import { DebuffRoundModule } from './modules/debuff-round/debuff-round.module';
 
 @Module({
   imports: [
@@ -160,6 +161,7 @@ import { DebuffRoundModule } from './modules/debuff-round/debuff-round.module';
   controllers: [],
   providers: [
     HandleShopBannerCronjob,
+    HandleMatchmakingCronjob, // Cronjob chạy mỗi 5s để xử lý matchmaking
     {
       provide: APP_PIPE,
       useClass: CustomZodValidationPipe
