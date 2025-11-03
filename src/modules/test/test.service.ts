@@ -1173,8 +1173,7 @@ export class TestService {
 
                             return {
                                 id: ans.id,
-                                answer: answerTranslation,
-                                isCorrect: ans.isCorrect
+                                answer: answerTranslation
                             }
                         })
                     )
@@ -1186,8 +1185,7 @@ export class TestService {
                         audioUrl: qb.audioUrl,
                         pronunciation: qb.pronunciation,
                         levelN: qb.levelN,
-                        answers: shuffleArray(mappedAnswers), // Shuffle answers
-                        isCorrect: undefined // Ẩn đáp án đúng khi trả về
+                        answers: shuffleArray(mappedAnswers) // Shuffle answers
                     }
                 })
             )

@@ -3,6 +3,7 @@ import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 import { I18nService } from 'src/i18n/i18n.service'
 import { RoleMessage } from 'src/i18n/message-keys'
+import { PermissionRepo } from 'src/modules/permission/permission.repo'
 import {
   ProhibitedActionOnBaseRoleException,
   RoleAlreadyExistsException
@@ -16,6 +17,7 @@ import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared
 export class RoleService {
   constructor(
     private roleRepo: RoleRepo,
+    private permissionRepo: PermissionRepo,
     private i18nService: I18nService
   ) {}
 
@@ -27,13 +29,42 @@ export class RoleService {
     }
   }
 
-  async findById(id: number, lang: string = 'vi') {
+  async findById(id: number, query: PaginationQueryType, lang: string = 'vi') {
     const role = await this.roleRepo.findById(id)
     if (!role) {
       throw new NotFoundRecordException()
     }
+
+    // 1) Fetch permissions with pagination/filter from query
+    const permissionsResult = await this.permissionRepo.list(query)
+    const permissions = permissionsResult.results
+
+    // 2) Build a set of permission identifiers that this role has
+    const rolePermissionsArray = Array.isArray((role as any).permissions)
+      ? (role as any).permissions
+      : []
+    const rolePermissionIds = new Set(
+      rolePermissionsArray.map((p: any) => p.id ?? p.name)
+    )
+
+    // 3) Add hasPermission flag to each permission in the filtered list
+    const permissionsWithFlag = permissions.map((perm: any) => ({
+      ...perm,
+      hasPermission: rolePermissionIds.has(perm.id ?? perm.name)
+    }))
+
+    // 4) Remove permissions from role object
+    const { permissions: _, ...roleWithoutPermissions } = role as any
+
     return {
-      data: role,
+      statusCode: 200,
+      data: {
+        // role: roleWithoutPermissions,
+        permissions: {
+          results: permissionsWithFlag,
+          pagination: permissionsResult.pagination
+        }
+      },
       message: this.i18nService.translate(RoleMessage.GET_SUCCESS, lang)
     }
   }
