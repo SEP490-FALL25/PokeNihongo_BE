@@ -1,7 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { GoogleAuth } from 'google-auth-library'
 import { PrismaService } from '@/shared/services/prisma.service'
 // import { GeminiConfigType } from '@prisma/client' // Will be available after migration
 import { GeminiConfigRepo } from '@/modules/gemini-config/gemini-config.repo'
@@ -22,8 +21,6 @@ export class GeminiService {
     private readonly logger = new Logger(GeminiService.name)
     private genAI: GoogleGenerativeAI | null = null // Cho Pro models
     private genAIFlash: GoogleGenerativeAI | null = null // Cho Flash models
-    private readonly useServiceAccount: boolean
-    private auth: GoogleAuth | null = null
     private readonly geminiConfig: any
     // In-memory short TTL cache for recommendations
     private readonly shortCache = new Map<string, { value: PersonalizedRecommendationsResponse; expireAt: number }>()
@@ -39,91 +36,23 @@ export class GeminiService {
         private readonly dataAccessService: DataAccessService
     ) {
         this.geminiConfig = this.configService.get('gemini')
-        const useServiceAccount = this.geminiConfig?.useServiceAccount || false
-
-        // Ưu tiên dùng service account nếu có (cùng credentials với Speech service)
-        if (useServiceAccount && this.geminiConfig?.serviceAccount) {
-            const { clientEmail, privateKey, projectId } = this.geminiConfig.serviceAccount
-
-            if (clientEmail && privateKey && projectId) {
-                try {
-                    // Khởi tạo GoogleAuth với service account credentials
-                    this.auth = new GoogleAuth({
-                        credentials: {
-                            client_email: clientEmail,
-                            private_key: privateKey.replace(/\\n/g, '\n'),
-                            project_id: projectId
-                        },
-                        scopes: ['https://www.googleapis.com/auth/generative-language']
-                    })
-
-                    this.useServiceAccount = true
-                    this.logger.log(`Gemini AI will use Google Cloud service account (project: ${projectId})`)
-                    return
-                } catch (error) {
-                    this.logger.warn('Failed to initialize service account, falling back to API key:', error)
-                }
-            }
-        }
-
-        // Khởi tạo API keys (nếu có) - lazy initialization
-        this.useServiceAccount = false
         this.logger.log('Gemini AI will use API keys (lazy initialization per model)')
     }
 
     /**
-     * Danh sách các models chỉ sử dụng API key (không dùng service account)
-     */
-    private readonly apiKeyOnlyModels = [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'text-embedding-004'
-    ]
-
-    /**
      * Lấy GoogleGenerativeAI instance dựa trên model name
+     * Chỉ sử dụng API Key (không dùng Service Account)
      * @param modelName - Tên model Gemini
-     * @param forceUseServiceAccount - Force dùng Service Account nếu true, force dùng API Key nếu false, auto nếu undefined
-     * - Các models trong apiKeyOnlyModels: chỉ dùng API key, không dùng service account (trừ khi force)
-     * - Nếu model chứa "flash" → dùng GEMINI_FLASH_API_KEY (nếu có), fallback về GEMINI_API_KEY hoặc serviceAccount
-     * - Nếu model không phải flash → dùng GEMINI_API_KEY hoặc serviceAccount
      */
-    private async getGenAIForModel(modelName: string, forceUseServiceAccount?: boolean): Promise<GoogleGenerativeAI> {
+    private getGenAIForModel(modelName: string): GoogleGenerativeAI {
         const normalizedModelName = modelName.toLowerCase()
-        const isApiKeyOnlyModel = this.apiKeyOnlyModels.some(m => normalizedModelName.includes(m.toLowerCase()))
         const isFlashModel = normalizedModelName.includes('flash')
-
-        // Nếu forceUseServiceAccount được set, ưu tiên theo flag này
-        const shouldUseServiceAccount = forceUseServiceAccount !== undefined
-            ? forceUseServiceAccount
-            : (this.useServiceAccount && !isApiKeyOnlyModel)
 
         // Nếu là Flash model
         if (isFlashModel) {
+            // Kiểm tra cache
             if (this.genAIFlash) {
                 return this.genAIFlash
-            }
-
-            // Nếu force dùng Service Account
-            if (shouldUseServiceAccount && this.auth) {
-                try {
-                    const token = await this.auth.getAccessToken()
-                    if (!token) {
-                        throw new Error('Failed to get access token from service account')
-                    }
-                    this.genAIFlash = new GoogleGenerativeAI(token as string)
-                    this.logger.log(`Gemini Flash initialized with Google Cloud service account token (forced: ${forceUseServiceAccount !== undefined})`)
-                    return this.genAIFlash
-                } catch (error) {
-                    if (forceUseServiceAccount === true) {
-                        throw new Error(`Failed to use Service Account: ${error instanceof Error ? error.message : String(error)}`)
-                    }
-                    this.logger.warn('Failed to get access token for Flash, falling back to API key:', error)
-                }
-            } else if (forceUseServiceAccount === true && !this.auth) {
-                throw new Error('Service Account được yêu cầu nhưng chưa được cấu hình. Vui lòng kiểm tra GOOGLE_CLOUD_* credentials trong .env')
-            } else if (!isApiKeyOnlyModel && forceUseServiceAccount === undefined) {
-                this.logger.log(`Model ${modelName} is configured to use API key only (skipping service account)`)
             }
 
             // Ưu tiên dùng Flash API key nếu có
@@ -145,30 +74,9 @@ export class GeminiService {
         }
 
         // Nếu là Pro model hoặc model khác
+        // Kiểm tra cache
         if (this.genAI) {
             return this.genAI
-        }
-
-        // Nếu force dùng Service Account
-        if (shouldUseServiceAccount && this.auth) {
-            try {
-                const token = await this.auth.getAccessToken()
-                if (!token) {
-                    throw new Error('Failed to get access token from service account')
-                }
-                this.genAI = new GoogleGenerativeAI(token as string)
-                this.logger.log(`Gemini Pro initialized with Google Cloud service account token (forced: ${forceUseServiceAccount !== undefined})`)
-                return this.genAI
-            } catch (error) {
-                if (forceUseServiceAccount === true) {
-                    throw new Error(`Failed to use Service Account: ${error instanceof Error ? error.message : String(error)}`)
-                }
-                this.logger.error('Failed to get access token from service account, falling back to API key:', error)
-            }
-        } else if (forceUseServiceAccount === true && !this.auth) {
-            throw new Error('Service Account được yêu cầu nhưng chưa được cấu hình. Vui lòng kiểm tra GOOGLE_CLOUD_* credentials trong .env')
-        } else if (!isApiKeyOnlyModel && forceUseServiceAccount === undefined) {
-            this.logger.log(`Model ${modelName} is configured to use API key only (skipping service account)`)
         }
 
         // Dùng regular API key
@@ -177,7 +85,7 @@ export class GeminiService {
             throw new Error('GEMINI_API_KEY is required but not configured. Please set GEMINI_API_KEY in your .env file')
         }
 
-        const modelType = isApiKeyOnlyModel ? (normalizedModelName.includes('embedding') ? 'Embedding' : 'Pro') : 'Pro'
+        const modelType = normalizedModelName.includes('embedding') ? 'Embedding' : 'Pro'
         this.genAI = this.initializeWithApiKey(apiKey, modelType)
         return this.genAI
     }
@@ -264,9 +172,9 @@ export class GeminiService {
 
     /**
      * @deprecated Sử dụng getGenAIForModel() thay vì method này
-     * Lấy GoogleGenerativeAI instance (lazy initialization cho service account)
+     * Lấy GoogleGenerativeAI instance
      */
-    private async getGenAI(): Promise<GoogleGenerativeAI> {
+    private getGenAI(): GoogleGenerativeAI {
         // Default dùng Pro model
         return this.getGenAIForModel('gemini-1.5-pro')
     }
@@ -309,7 +217,7 @@ export class GeminiService {
             const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
 
             // Gọi Gemini API - chọn API key dựa trên model
-            const genAI = await this.getGenAIForModel(modelName)
+            const genAI = this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response
@@ -370,7 +278,6 @@ export class GeminiService {
     async getPersonalizedRecommendations(
         userId: number,
         limit: number = 10,
-        forceUseServiceAccount?: boolean,
         options?: { createSrs?: boolean; allowedTypes?: string[] }
     ): Promise<PersonalizedRecommendationsResponse> {
         try {
@@ -421,7 +328,7 @@ export class GeminiService {
             const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-2.5-pro'
 
             // Gọi Gemini API - chọn API key dựa trên model
-            const genAI = await this.getGenAIForModel(modelName, forceUseServiceAccount)
+            const genAI = this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response
@@ -783,7 +690,7 @@ export class GeminiService {
                                 : this.buildSpeakingEvaluationPrompt(data.message, transcription)
 
                             const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
-                            const genAI = await this.getGenAIForModel(modelName)
+                            const genAI = this.getGenAIForModel(modelName)
                             const model = genAI.getGenerativeModel({ model: modelName })
                             const result = await model.generateContent(prompt)
                             const response = await result.response
@@ -883,7 +790,7 @@ export class GeminiService {
 - Giữ cuộc trò chuyện vui vẻ và thú vị`
 
             // Gọi Gemini API - chọn API key dựa trên model
-            const genAI = await this.getGenAIForModel(modelName)
+            const genAI = this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
 
             // Tạo chat session với history
@@ -1044,7 +951,7 @@ export class GeminiService {
             this.logger.log(`Using model: ${modelName}`)
 
             // Gọi Gemini API - chọn API key dựa trên model
-            const genAI = await this.getGenAIForModel(modelName)
+            const genAI = this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
 
             // Tạo chat session với history
