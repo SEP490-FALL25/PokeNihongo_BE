@@ -12,8 +12,6 @@ import {
   UpdateDebuffRoundBodyType
 } from './entities/debuff-round.entity'
 
-type DebuffRoundPrismaType = Omit<DebuffRoundType, 'nameKey'> & { name: string }
-
 @Injectable()
 export class DebuffRoundRepo {
   constructor(private prismaService: PrismaService) {}
@@ -125,7 +123,7 @@ export class DebuffRoundRepo {
     return result
   }
 
-  async list(pagination: PaginationQueryType, langId?: number) {
+  async list(pagination: PaginationQueryType, langId?: number, isAdmin: boolean = false) {
     const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, DEBUFF_FIELDS)
 
     const skip = (pagination.currentPage - 1) * pagination.pageSize
@@ -166,12 +164,10 @@ export class DebuffRoundRepo {
       this.prismaService.debuffRound.findMany({
         where,
         include: {
-          nameTranslations: langId
-            ? {
-                where: childNameIncludeWhere,
-                select: { value: true }
-              }
-            : undefined
+          // Always include all translations with languageId for service-level mapping
+          nameTranslations: {
+            select: { value: true, languageId: true }
+          }
         },
         orderBy,
         skip,
@@ -182,9 +178,15 @@ export class DebuffRoundRepo {
     // Map results to include nameTranslation and exclude nameTranslations array
     const results = data.map((d: any) => {
       const { nameTranslations, ...rest } = d
+      // Find single translation for current langId if provided
+      const single = langId
+        ? (nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
+          d.nameKey)
+        : undefined
       return {
         ...rest,
-        nameTranslation: langId ? (nameTranslations?.[0]?.value ?? d.nameKey) : undefined
+        nameTranslations, // keep raw translations for service to format to all languages
+        nameTranslation: single
       }
     })
 
@@ -198,12 +200,29 @@ export class DebuffRoundRepo {
       }
     }
   }
-
   findById(id: number): Promise<DebuffRoundType | null> {
     return this.prismaService.debuffRound.findUnique({
       where: {
         id,
         deletedAt: null
+      }
+    })
+  }
+
+  findByIdWithLangId(
+    id: number,
+    isAllLang: boolean,
+    langId: number
+  ): Promise<DebuffRoundType | null> {
+    return this.prismaService.debuffRound.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        nameTranslations: isAllLang
+          ? { select: { value: true, languageId: true } }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } }
       }
     })
   }

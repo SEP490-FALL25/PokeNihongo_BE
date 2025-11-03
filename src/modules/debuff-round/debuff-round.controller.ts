@@ -1,5 +1,4 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
-import { IsPublic } from '@/common/decorators/auth.decorator'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
@@ -35,10 +34,13 @@ export class DebuffRoundController {
   constructor(private readonly debuffRoundService: DebuffRoundService) {}
 
   @Get()
-  @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
-  list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
-    return this.debuffRoundService.list(query, lang)
+  list(
+    @Query() query: PaginationQueryDTO,
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string
+  ) {
+    return this.debuffRoundService.list(query, lang, roleName)
   }
 
   @Post()
@@ -58,10 +60,13 @@ export class DebuffRoundController {
   }
 
   @Get(':debuffRoundId')
-  @IsPublic()
   @ZodSerializerDto(GetDebuffRoundDetailResDTO)
-  findById(@Param() params: GetDebuffRoundParamsDTO, @I18nLang() lang: string) {
-    return this.debuffRoundService.findById(params.debuffRoundId, lang)
+  findById(
+    @Param() params: GetDebuffRoundParamsDTO,
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string
+  ) {
+    return this.debuffRoundService.findById(params.debuffRoundId, roleName, lang)
   }
 
   @Put(':debuffRoundId')

@@ -1,8 +1,8 @@
+import { MatchDebuffType } from '@/common/constants/debuff.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { DebuffRoundMessage } from '@/i18n/message-keys'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
-import { MatchDebuffType } from '@prisma/client'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
 extendZodWithOpenApi(z)
@@ -11,11 +11,13 @@ patchNestJsSwagger()
 export const DebuffRoundSchema = z.object({
   id: z.number(),
   nameKey: z.string(),
-  typeDebuff: z.enum([
-    MatchDebuffType.ADD_QUESTION,
-    MatchDebuffType.DECREASE_POINT,
-    MatchDebuffType.DISCOMFORT_VISION
-  ]),
+  typeDebuff: z
+    .enum([
+      MatchDebuffType.ADD_QUESTION,
+      MatchDebuffType.DECREASE_POINT,
+      MatchDebuffType.DISCOMFORT_VISION
+    ])
+    .default(MatchDebuffType.ADD_QUESTION),
   valueDebuff: z.number(),
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
@@ -77,7 +79,8 @@ export const GetDebuffRoundDetailWithAllLangResSchema = z.object({
 export const GetDebuffRoundDetailResSchema = z.object({
   statusCode: z.number(),
   data: DebuffRoundSchema.extend({
-    nameTranslation: z.string().nullable().optional()
+    nameTranslation: z.string().nullable().optional(),
+    nameTranslations: TranslationInputSchema.optional().nullable()
   }),
   message: z.string()
 })

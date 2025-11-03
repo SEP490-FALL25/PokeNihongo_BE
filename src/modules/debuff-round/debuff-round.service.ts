@@ -1,3 +1,4 @@
+import { RoleName } from '@/common/constants/role.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { DebuffRoundMessage } from '@/i18n/message-keys'
 import {
@@ -32,17 +33,69 @@ export class DebuffRoundService {
     private readonly translationRepo: TranslationRepository
   ) {}
 
-  async list(pagination: PaginationQueryType, lang: string = 'vi') {
+  private async convertTranslationsToLangCodes(
+    nameTranslations: Array<{ languageId: number; value: string }>
+  ): Promise<Array<{ key: string; value: string }>> {
+    if (!nameTranslations || nameTranslations.length === 0) return []
+
+    const allLangIds = Array.from(new Set(nameTranslations.map((t) => t.languageId)))
+    const langs = await this.languageRepo.getWithListId(allLangIds)
+    const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+
+    return nameTranslations.map((t) => ({
+      key: idToCode.get(t.languageId) || String(t.languageId),
+      value: t.value
+    }))
+  }
+
+  async list(pagination: PaginationQueryType, lang: string = 'vi', roleName: string) {
     const langId = await this.languageRepo.getIdByCode(lang)
-    const data = await this.debuffRoundRepo.list(pagination, langId ?? undefined)
+    const isAdmin = roleName === RoleName.Admin ? true : false
+
+    if (!langId) {
+      return {
+        data: null,
+        message: this.i18nService.translate(DebuffRoundMessage.GET_LIST_SUCCESS, lang)
+      }
+    }
+
+    const data = await this.debuffRoundRepo.list(pagination, langId ?? undefined, isAdmin)
+
+    // Convert nameTranslations cho từng item trong results
+    if (data.results && Array.isArray(data.results)) {
+      const resultsWithConvertedTranslations = await Promise.all(
+        data.results.map(async (item: any) => {
+          if (item.nameTranslations && Array.isArray(item.nameTranslations)) {
+            const convertedTranslations = await this.convertTranslationsToLangCodes(
+              item.nameTranslations
+            )
+            return {
+              ...item,
+              nameTranslations: convertedTranslations
+            }
+          }
+          return item
+        })
+      )
+
+      return {
+        data: {
+          ...data,
+          results: resultsWithConvertedTranslations
+        },
+        message: this.i18nService.translate(DebuffRoundMessage.GET_LIST_SUCCESS, lang)
+      }
+    }
+
     return {
       data,
       message: this.i18nService.translate(DebuffRoundMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number, lang: string = 'vi') {
+  async findById(id: number, roleName: string, lang: string = 'vi') {
     const langId = await this.languageRepo.getIdByCode(lang)
+    const isAdmin = roleName === RoleName.Admin ? true : false
 
     if (!langId) {
       return {
@@ -51,17 +104,28 @@ export class DebuffRoundService {
       }
     }
 
-    const debuffRound = await this.debuffRoundRepo.findById(id, langId)
+    const debuffRound = await this.debuffRoundRepo.findByIdWithLangId(id, isAdmin, langId)
     if (!debuffRound) {
       throw new NotFoundRecordException()
     }
 
+    const nameTranslations = await this.convertTranslationsToLangCodes(
+      (debuffRound as any).nameTranslations || []
+    )
+
+    const currentTranslation = ((debuffRound as any).nameTranslations || []).find(
+      (t: any) => t.languageId === langId
+    )
+    console.log(nameTranslations)
+
+    // Remove raw nameTranslations from shopBanner
+    const { nameTranslations: _, ...leaderboardWithoutTranslations } = debuffRound as any
+
     const data = {}
     const result = {
-      ...debuffRound,
-      nameTranslation: (debuffRound as any).nameTranslations?.[0]?.value ?? null,
-      descriptionTranslation:
-        (debuffRound as any).descriptionTranslations?.[0]?.value ?? null
+      ...leaderboardWithoutTranslations,
+      nameTranslation: currentTranslation?.value ?? null,
+      ...(isAdmin ? { nameTranslations } : {})
     }
 
     return {
@@ -87,7 +151,6 @@ export class DebuffRoundService {
       return await this.debuffRoundRepo.withTransaction(async (prismaTx) => {
         const nameKey = `debuffRound.name.${Date.now()}`
 
-        // Convert data for create
         const dataCreate: CreateDebuffRoundBodyType = {
           nameKey,
           typeDebuff: data.typeDebuff,
@@ -213,8 +276,12 @@ export class DebuffRoundService {
         // Prepare data for update
         const dataUpdate: Partial<UpdateDebuffRoundBodyType> = {}
 
-        if (data.typeDebuff !== undefined) dataUpdate.typeDebuff = data.typeDebuff
-        if (data.valueDebuff !== undefined) dataUpdate.valueDebuff = data.valueDebuff
+        if (data.typeDebuff !== undefined) {
+          dataUpdate.typeDebuff = data.typeDebuff
+        }
+        if (data.valueDebuff !== undefined) {
+          dataUpdate.valueDebuff = data.valueDebuff
+        }
 
         // Handle translations if provided
         if (data.nameTranslations) {

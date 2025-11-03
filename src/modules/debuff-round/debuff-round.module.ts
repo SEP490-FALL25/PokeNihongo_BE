@@ -1,9 +1,13 @@
-import { Module } from '@nestjs/common';
-import { DebuffRoundService } from './debuff-round.service';
-import { DebuffRoundController } from './debuff-round.controller';
+import { Module } from '@nestjs/common'
+import { LanguagesModule } from '../languages/languages.module'
+import { TranslationModule } from '../translation/translation.module'
+import { DebuffRoundController } from './debuff-round.controller'
+import { DebuffRoundRepo } from './debuff-round.repo'
+import { DebuffRoundService } from './debuff-round.service'
 
 @Module({
+  imports: [LanguagesModule, TranslationModule],
   controllers: [DebuffRoundController],
-  providers: [DebuffRoundService],
+  providers: [DebuffRoundService, DebuffRoundRepo]
 })
 export class DebuffRoundModule {}

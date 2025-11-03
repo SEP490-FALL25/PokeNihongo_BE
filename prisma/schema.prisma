@@ -1726,9 +1726,9 @@ model MatchRoundParticipant {
 }
 
 model DebuffRound {
-  id          Int              @id @default(autoincrement())
-  nameKey     String           @unique
-  typeDebuff  MatchDebuffType? // LOSE_QUESTION, TIME_PENALTY
+  id          Int             @id @default(autoincrement())
+  nameKey     String          @unique
+  typeDebuff  MatchDebuffType @default(ADD_QUESTION)
   valueDebuff Int // Số câu hỏi mất đi hoặc số ms bị phạt thêm
 
   matchRoundParticipants MatchRoundParticipant[]
