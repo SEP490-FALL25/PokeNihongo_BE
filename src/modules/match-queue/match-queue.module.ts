@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { WebsocketsModule } from 'src/websockets/websockets.module'
 import { LeaderboardSeasonModule } from '../leaderboard-season/leaderboard-season.module'
 import { MatchParticipantModule } from '../match-participant/match-participant.module'
 import { MatchModule } from '../match/match.module'
@@ -12,7 +13,8 @@ import { MatchQueueService } from './match-queue.service'
     UserPokemonModule,
     MatchModule,
     MatchParticipantModule,
-    LeaderboardSeasonModule
+    LeaderboardSeasonModule,
+    WebsocketsModule
   ],
   controllers: [MatchQueueController],
   providers: [MatchQueueService, MatchQueueRepo],

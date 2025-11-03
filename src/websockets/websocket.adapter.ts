@@ -45,6 +45,13 @@ export class WebsocketAdapter extends IoAdapter {
             payload && 'userId' in payload && 'roleId' in payload
 
           if (isUser(user)) {
+            console.log(user)
+
+            // Store user info in socket.data for use in gateways
+            socket.data.userId = user.userId
+            socket.data.roleId = user.roleId
+            socket.data.deviceId = user.deviceId
+
             // cho vao homepage room
             const homePageRoom = ROOM_SOCKET.HOME_PAGE
             socket.join(homePageRoom)
@@ -59,7 +66,7 @@ export class WebsocketAdapter extends IoAdapter {
       })()
     }
 
-    ;['/'].forEach((namespace) => {
+    ;['/', '/matching'].forEach((namespace) => {
       server.of(namespace).use(authMiddleware)
     })
     return server

@@ -1,10 +1,14 @@
+import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { MatchQueueMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
+import { InjectQueue } from '@nestjs/bull'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { QueueStatus } from '@prisma/client'
+import { Queue } from 'bull'
+import { MatchingGateway } from 'src/websockets/matching.gateway'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import { MatchParticipantRepo } from '../match-participant/match-participant.repo'
 import { MatchRepo } from '../match/match.repo'
@@ -16,6 +20,9 @@ import {
 } from './dto/match-queue.error'
 import { MatchQueueRepo } from './match-queue.repo'
 import { MatchmakingQueueManager } from './matchmaking-queue-manager'
+
+const TIME_KICK_USER_MS = 10000 // 10s
+const TIME_OUT_USER_MS = 25000 // 25s
 
 @Injectable()
 export class MatchQueueService implements OnModuleInit {
@@ -29,7 +36,10 @@ export class MatchQueueService implements OnModuleInit {
     private readonly userPokeRepo: UserPokemonRepo,
     private readonly matchRepo: MatchRepo,
     private readonly matchParticipantRepo: MatchParticipantRepo,
-    private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo
+    private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
+    @InjectQueue(BullQueue.MATCH_PARTICIPANT_TIMEOUT)
+    private readonly matchParticipantTimeoutQueue: Queue,
+    private readonly matchingGateway: MatchingGateway
   ) {
     this.queueManager = new MatchmakingQueueManager()
   }
@@ -101,8 +111,8 @@ export class MatchQueueService implements OnModuleInit {
       // Xóa khỏi DB
       await this.matchQueueRepo.delete({ deletedById: userId })
 
-      // TODO: Send notification to user via WebSocket
-      // this.websocketGateway.notifyUser(userId, { type: 'MATCHMAKING_FAILED', reason })
+      // Send notification to user via WebSocket
+      this.matchingGateway.notifyMatchmakingFailed(userId, reason)
     } catch (error) {
       this.logger.error(`[MatchmakingRun] Error kicking user ${userId}:`, error)
     }
@@ -124,6 +134,11 @@ export class MatchQueueService implements OnModuleInit {
         return
       }
 
+      let createdMatchId: number = 0
+      let matchData: any
+      let participant1Data: any
+      let participant2Data: any
+
       await this.matchRepo.withTransaction(async (prismaTx) => {
         // 1. Tạo Match
         const match = await this.matchRepo.create(
@@ -136,8 +151,11 @@ export class MatchQueueService implements OnModuleInit {
           prismaTx
         )
 
+        createdMatchId = match.id
+        matchData = match
+
         // 2. Tạo 2 MatchParticipant
-        await Promise.all([
+        const [participant1, participant2] = await Promise.all([
           this.matchParticipantRepo.create(
             {
               createdById: userId1,
@@ -160,7 +178,36 @@ export class MatchQueueService implements OnModuleInit {
           )
         ])
 
-        // 3. Xóa 2 users khỏi MatchQueue (DB)
+        participant1Data = participant1
+        participant2Data = participant2
+
+        // 3. Schedule Bull jobs cho timeout (25s)
+        await Promise.all([
+          this.matchParticipantTimeoutQueue.add(
+            BullAction.CHECK_ACCEPTANCE_TIMEOUT,
+            {
+              matchParticipantId: participant1.id,
+              matchId: match.id,
+              userId: userId1
+            },
+            { delay: TIME_OUT_USER_MS } // 25 seconds
+          ),
+          this.matchParticipantTimeoutQueue.add(
+            BullAction.CHECK_ACCEPTANCE_TIMEOUT,
+            {
+              matchParticipantId: participant2.id,
+              matchId: match.id,
+              userId: userId2
+            },
+            { delay: TIME_OUT_USER_MS } // 25 seconds
+          )
+        ])
+
+        this.logger.log(
+          `[MatchmakingRun] Scheduled timeout jobs for participants ${participant1.id} and ${participant2.id}`
+        )
+
+        // 4. Xóa 2 users khỏi MatchQueue (DB)
         await Promise.all([
           prismaTx.matchQueue.delete({ where: { userId: userId1 } }),
           prismaTx.matchQueue.delete({ where: { userId: userId2 } })
@@ -175,9 +222,26 @@ export class MatchQueueService implements OnModuleInit {
       this.queueManager.removeUser(userId1)
       this.queueManager.removeUser(userId2)
 
-      // TODO: Send notification to both users via WebSocket
-      // this.websocketGateway.notifyUser(userId1, { type: 'MATCH_FOUND', matchId: match.id })
-      // this.websocketGateway.notifyUser(userId2, { type: 'MATCH_FOUND', matchId: match.id })
+      // 5. Send notification to both users via WebSocket with full data
+      await this.matchingGateway.notifyMatchFoundEnhanced(
+        {
+          id: matchData.id,
+          status: matchData.status,
+          createdAt: matchData.createdAt
+        },
+        {
+          id: participant1Data.id,
+          hasAccepted: participant1Data.hasAccepted,
+          userId: participant1Data.userId,
+          matchId: participant1Data.matchId
+        },
+        {
+          id: participant2Data.id,
+          hasAccepted: participant2Data.hasAccepted,
+          userId: participant2Data.userId,
+          matchId: participant2Data.matchId
+        }
+      )
     } catch (error) {
       this.logger.error(
         `[MatchmakingRun] Error creating match for users ${userId1} and ${userId2}:`,
