@@ -3,12 +3,6 @@ import { Prisma } from '@prisma/client'
 
 type IntrospectField = {
     name: string
-    type: string
-    isList: boolean
-    isRequired: boolean
-    isId: boolean
-    isUnique: boolean
-    isRelation: boolean
 }
 
 type IntrospectModel = {
@@ -43,15 +37,7 @@ export class SchemaIntrospectService {
                 name: m.name,
                 fields: m.fields
                     .filter((f) => !this.fieldBlacklist.has(f.name))
-                    .map((f) => ({
-                        name: f.name,
-                        type: typeof f.type === 'string' ? (f.type as string) : 'Json',
-                        isList: !!f.isList,
-                        isRequired: !!(f as any).isRequired,
-                        isId: !!(f as any).isId,
-                        isUnique: !!(f as any).isUnique,
-                        isRelation: !!(f as any).relationName
-                    }))
+                    .map((f) => ({ name: f.name }))
             }))
             .sort((a, b) => a.name.localeCompare(b.name))
     }

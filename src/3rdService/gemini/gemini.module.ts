@@ -8,6 +8,7 @@ import { GeminiConfigModule } from '@/modules/gemini-config/gemini-config.module
 import { SpeechModule } from '../speech/speech.module'
 import { SpeakingModule } from '@/modules/speaking/speaking.module'
 import { UploadModule } from '../upload/upload.module'
+import { DataAccessService } from '@/shared/services/data-access.service'
 
 @Module({
     imports: [
@@ -20,7 +21,8 @@ import { UploadModule } from '../upload/upload.module'
     controllers: [GeminiController],
     providers: [
         GeminiService,
-        PrismaService
+        PrismaService,
+        DataAccessService
     ],
     exports: [GeminiService] // Export để SharedModule và các module khác có thể sử dụng
 })
