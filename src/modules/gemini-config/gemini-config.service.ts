@@ -263,7 +263,17 @@ export class GeminiConfigService {
 
   // GeminiServiceConfig mapping APIs
   async createServiceConfig(data: { serviceType: PrismaGeminiConfigType; geminiConfigId: number; isDefault?: boolean; isActive?: boolean }) {
-    return this.geminiConfigRepo.createServiceConfig(data)
+    try {
+      return await this.geminiConfigRepo.createServiceConfig(data)
+    } catch (error) {
+      if (isUniqueConstraintPrismaError(error)) {
+        // Friendly message when mapping already exists
+        throw new (require('@nestjs/common').BadRequestException)(
+          'Mapping serviceType + geminiConfigId đã tồn tại'
+        )
+      }
+      throw error
+    }
   }
 
   async listServiceConfigs(serviceType: PrismaGeminiConfigType) {

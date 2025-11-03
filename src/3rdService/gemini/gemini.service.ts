@@ -9,6 +9,7 @@ import { TextToSpeechService } from '../speech/text-to-speech.service'
 import { SpeechToTextService } from '../speech/speech-to-text.service'
 import { UploadService } from '../upload/upload.service'
 import { SpeakingService } from '@/modules/speaking/speaking.service'
+import { DataAccessService } from '@/shared/services/data-access.service'
 import { EvaluateSpeakingDto, AIKaiwaDto, ChatWithGeminiDto } from './dto/gemini.dto'
 import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
 import { v4 as uuidv4 } from 'uuid'
@@ -24,6 +25,8 @@ export class GeminiService {
     private readonly useServiceAccount: boolean
     private auth: GoogleAuth | null = null
     private readonly geminiConfig: any
+    // In-memory short TTL cache for recommendations
+    private readonly shortCache = new Map<string, { value: PersonalizedRecommendationsResponse; expireAt: number }>()
 
     constructor(
         private readonly configService: ConfigService,
@@ -32,7 +35,8 @@ export class GeminiService {
         private readonly textToSpeechService: TextToSpeechService,
         private readonly speechToTextService: SpeechToTextService,
         private readonly uploadService: UploadService,
-        private readonly speakingService: SpeakingService
+        private readonly speakingService: SpeakingService,
+        private readonly dataAccessService: DataAccessService
     ) {
         this.geminiConfig = this.configService.get('gemini')
         const useServiceAccount = this.geminiConfig?.useServiceAccount || false
@@ -365,58 +369,58 @@ export class GeminiService {
      */
     async getPersonalizedRecommendations(
         userId: number,
-        limit: number = 10
+        limit: number = 10,
+        forceUseServiceAccount?: boolean
     ): Promise<PersonalizedRecommendationsResponse> {
         try {
             this.logger.log(`Getting personalized recommendations for user ${userId}`)
-
-            // Lấy dữ liệu từ userExerciseAttempt
-            const exerciseAttempts = await this.prisma.userExerciseAttempt.findMany({
-                where: { userId },
-                include: {
-                    exercise: {
-                        include: {
-                            lesson: true
-                        }
-                    },
-                    userAnswerLogs: {
-                        include: {
-                            questionBank: true
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 50 // Lấy 50 attempt gần nhất để phân tích
-            })
-
-            // Lấy dữ liệu từ userTestAttempt
-            const testAttempts = await this.prisma.userTestAttempt.findMany({
-                where: { userId },
-                include: {
-                    test: true,
-                    userTestAnswerLogs: {
-                        include: {
-                            questionBank: true
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 20 // Lấy 20 test attempt gần nhất
-            })
-
-            // Phân tích dữ liệu để tìm điểm yếu và điểm mạnh
-            const analysis = this.analyzeUserPerformance(exerciseAttempts, testAttempts)
-
+            // Cache key (policy-independent best-effort). If policy changes often, TTL is short.
+            const cacheKey = `rec:${userId}:${limit}`
+            const cached = this.shortCache.get(cacheKey)
+            const now = Date.now()
+            if (cached && cached.expireAt > now) {
+                return cached.value
+            }
             // Lấy config default theo mapping service ↔ config
             const svcCfg = await this.geminiConfigRepo.getDefaultConfigForService('PERSONALIZED_RECOMMENDATIONS' as any)
             const config: any = svcCfg?.geminiConfig || null
+            const policy = (config?.geminiConfigModel?.extraParams as any)?.policy
+
+            let analysis: any
+            if (policy) {
+                // Lấy dữ liệu theo policy (scope + whitelist + masking)
+                const safeData = await this.dataAccessService.getAiSafeData(userId, policy)
+                analysis = this.buildSummaryFromSafeData(safeData, limit)
+            } else {
+                // Fallback legacy: query trực tiếp để phân tích
+                const [exerciseAttempts, testAttempts] = await Promise.all([
+                    this.prisma.userExerciseAttempt.findMany({
+                        where: { userId },
+                        include: {
+                            exercise: { include: { lesson: true } },
+                            userAnswerLogs: { include: { questionBank: true } }
+                        },
+                        orderBy: { updatedAt: 'desc' },
+                        take: 50
+                    }),
+                    this.prisma.userTestAttempt.findMany({
+                        where: { userId },
+                        include: { test: true, userTestAnswerLogs: { include: { questionBank: true } } },
+                        orderBy: { updatedAt: 'desc' },
+                        take: 50
+                    })
+                ])
+                analysis = this.analyzeUserPerformance(exerciseAttempts, testAttempts)
+            }
+
             const prompt = config
                 ? this.replacePlaceholders(String(config.prompt || ''), { analysis: JSON.stringify(analysis), limit: limit.toString() })
                 : this.buildRecommendationPrompt(analysis, limit)
-            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
+            // Chỉ dùng model từ config, không cho override từ request
+            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-2.5-pro'
 
             // Gọi Gemini API - chọn API key dựa trên model
-            const genAI = await this.getGenAIForModel(modelName)
+            const genAI = await this.getGenAIForModel(modelName, forceUseServiceAccount)
             const model = genAI.getGenerativeModel({ model: modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response
@@ -433,11 +437,30 @@ export class GeminiService {
 
             // Parse response từ Gemini
             const recommendations = this.parseRecommendationsResponse(text, analysis)
-
-            return {
+            const payload: PersonalizedRecommendationsResponse = {
                 recommendations: recommendations.slice(0, limit),
                 summary: analysis
             }
+            // Lưu recommendations vào DB để FE có thể hiển thị lại/ghi nhận hành động
+            try {
+                const rows = (payload.recommendations || []).map((r: any) => ({
+                    userId,
+                    targetType: (r.type || 'exercise').toUpperCase(),
+                    targetId: Number(r.id) || 0,
+                    reason: String(r.reason || ''),
+                    source: 'PERSONALIZED',
+                    modelUsed: modelName
+                }))
+                if (rows.length > 0) {
+                    await (this.prisma as any).userAIRecommendation.createMany({ data: rows, skipDuplicates: true })
+                }
+            } catch (e) {
+                this.logger.warn('Failed to persist recommendations', e as any)
+            }
+
+            // Cache 120s
+            this.shortCache.set(cacheKey, { value: payload, expireAt: now + 120_000 })
+            return payload
         } catch (error) {
             this.logger.error('Error getting personalized recommendations:', error)
 
@@ -448,6 +471,87 @@ export class GeminiService {
 
             throw new BadRequestException('Không thể lấy gợi ý cá nhân hóa: ' + (error instanceof Error ? error.message : String(error)))
         }
+    }
+
+    /**
+     * Build compact analysis from safeData (policy result) to minimize tokens
+     */
+    private buildSummaryFromSafeData(safeData: Record<string, any[]>, limit: number) {
+        const exerciseAttempts = (safeData['UserExerciseAttempt'] || []).slice(0, 50)
+        const testAttempts = (safeData['UserTestAttempt'] || []).slice(0, 20)
+        const answerLogs = (safeData['UserAnswerLog'] || []).slice(0, 200)
+        const testAnswerLogs = (safeData['UserTestAnswerLog'] || []).slice(0, 200)
+        const questionBanks = safeData['QuestionBank'] || []
+
+        const qbIdToType = new Map<number, string>()
+        for (const qb of questionBanks) {
+            if (qb && qb.id != null) qbIdToType.set(qb.id as number, qb.questionType || 'UNKNOWN')
+        }
+
+        const questionTypeStats: { [key: string]: { correct: number; total: number } } = {}
+        const bump = (type: string, correct: boolean) => {
+            if (!questionTypeStats[type]) questionTypeStats[type] = { correct: 0, total: 0 }
+            questionTypeStats[type].total++
+            if (correct) questionTypeStats[type].correct++
+        }
+
+        for (const log of answerLogs) {
+            const type = qbIdToType.get(log.questionBankId) || 'UNKNOWN'
+            bump(type, !!log.isCorrect)
+        }
+        for (const log of testAnswerLogs) {
+            const type = qbIdToType.get(log.questionBankId) || 'UNKNOWN'
+            bump(type, !!log.isCorrect)
+        }
+
+        const weakAreas: string[] = []
+        const strongAreas: string[] = []
+        Object.entries(questionTypeStats).forEach(([type, stats]) => {
+            if (stats.total >= 5) {
+                const acc = (stats.correct / stats.total) * 100
+                if (acc < 60) weakAreas.push(type)
+                else if (acc > 80) strongAreas.push(type)
+            }
+        })
+
+        return {
+            totalExerciseAttempts: exerciseAttempts.length,
+            totalTestAttempts: testAttempts.length,
+            weakAreas,
+            strongAreas,
+            // recent ids to give LLM anchors (trim to avoid token bloat)
+            recentExercises: exerciseAttempts.slice(0, Math.min(20, exerciseAttempts.length)).map((e: any) => ({ id: e.exerciseId, updatedAt: e.updatedAt })),
+            recentTests: testAttempts.slice(0, Math.min(10, testAttempts.length)).map((t: any) => ({ id: t.testId, score: t.score, updatedAt: t.updatedAt }))
+        }
+    }
+
+    // === Saved recommendations (DB) ===
+    async listSavedRecommendations(userId: number, status?: 'PENDING' | 'DONE' | 'DISMISSED', limit: number = 50) {
+        const where: any = { userId }
+        if (status) where.status = status
+        const rows = await (this.prisma as any).userAIRecommendation.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            take: limit
+        })
+        // Chuẩn hoá UI
+        return {
+            title: 'Làm lại để cải thiện',
+            items: rows.map((r: any) => ({
+                type: (r.targetType || 'EXERCISE').toLowerCase(),
+                id: r.targetId,
+                reason: r.reason,
+                status: r.status,
+                createdAt: r.createdAt
+            }))
+        }
+    }
+
+    async updateRecommendationStatus(userId: number, id: number, status: 'DONE' | 'DISMISSED') {
+        const rec = await (this.prisma as any).userAIRecommendation.findFirst({ where: { id, userId } })
+        if (!rec) throw new (require('@nestjs/common').BadRequestException)('Recommendation không tồn tại')
+        const updated = await (this.prisma as any).userAIRecommendation.update({ where: { id }, data: { status } })
+        return { id: updated.id, status: updated.status }
     }
 
     /**
