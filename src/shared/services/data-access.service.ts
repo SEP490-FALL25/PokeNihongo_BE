@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from './prisma.service'
+import { AiPolicyScope } from '@prisma/client'
 
 export type AiPolicyEntity = {
     entity: string
-    scope: 'SELF_ONLY' | 'GROUP' | 'PUBLIC'
+    scope: AiPolicyScope
     fields: string[]
     filter?: Record<string, any>
 }
@@ -32,7 +33,7 @@ export class DataAccessService {
 
     private buildWhere(userId: number, entity: AiPolicyEntity): any {
         const base: any = { ...(entity.filter || {}) }
-        if (entity.scope === 'SELF_ONLY') {
+        if (entity.scope === AiPolicyScope.SELF_ONLY) {
             base.userId = userId
         }
         return base

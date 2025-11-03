@@ -2061,6 +2061,13 @@ enum LessonContentsType {
   KANJI
 }
 
+// AI Policy scope for data access
+enum AiPolicyScope {
+  SELF_ONLY
+  GROUP
+  PUBLIC
+}
+
 enum TestStatus {
   PLACEMENT_TEST_DONE // Kiểm tra đầu vào
   SUBSCRIPTION_TEST // Kiểm tra đầu vào cho subscription
