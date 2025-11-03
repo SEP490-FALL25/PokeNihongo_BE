@@ -44,6 +44,8 @@ const configSchema = z.object({
 
   // Gemini AI (Optional - có thể dùng API key hoặc service account)
   GEMINI_API_KEY: z.string().optional(),
+  // Gemini Flash API Key (Optional - riêng cho Flash models)
+  GEMINI_FLASH_API_KEY: z.string().optional(),
 
   // Mail
   MAIL_HOST: z.string().optional(),

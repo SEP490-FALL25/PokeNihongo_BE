@@ -80,11 +80,11 @@ import { WebsocketsModule } from './websockets/websockets.module'
     ScheduleModule.forRoot(),
     I18nModule, // Add I18n module
 
-    GeminiModule,
+    SharedModule, // Import SharedModule trước (Global module)
+    GeminiModule, // Import GeminiModule sau SharedModule để có thể sử dụng PrismaService
     MailModule,
     UploadModule,
     SpeechModule,
-    SharedModule,
     AuthModule,
     RoleModule,
     PermissionModule,

@@ -2,8 +2,8 @@ import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFil
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { GeminiService } from './gemini.service'
-import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto } from './dto/gemini.dto'
-import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse } from './dto/gemini.response.dto'
+import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto, ChatWithGeminiDto } from './dto/gemini.dto'
+import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 
 @ApiTags('Gemini')
@@ -68,7 +68,7 @@ export class GeminiController {
 
     @Post('kaiwa')
     @UseInterceptors(FileInterceptor('audio'))
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'AI Kaiwa - Hội thoại với AI bằng tiếng Nhật với Speech-to-Text và Pronunciation Assessment',
         description: 'Hỗ trợ cả text message và audio file. Nếu có audio, sẽ tự động convert sang text. Có thể đánh giá phát âm nếu có reference text.'
     })
@@ -86,13 +86,39 @@ export class GeminiController {
         // Nếu có upload audio file, cần upload lên cloud trước và lấy URL
         // Tạm thời giữ nguyên logic hiện tại, user sẽ upload audio lên trước và gửi URL
         // Hoặc có thể thêm logic upload file ở đây nếu cần
-        
+
         const result = await this.geminiService.aiKaiwa(userId, body)
 
         return {
             statusCode: 200,
             data: result,
             message: 'Hội thoại AI thành công'
+        }
+    }
+
+
+    //chat with gemini
+    @Post('chat')
+    @ApiOperation({
+        summary: 'Chat với Gemini',
+        description: 'API chat đơn giản với Gemini AI. Hỗ trợ conversation history và chọn model tùy chỉnh.'
+    })
+    @ApiBody({ type: ChatWithGeminiDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Chat với Gemini thành công',
+        type: Object
+    })
+    async chatWithGemini(
+        @ActiveUser('userId') userId: number,
+        @Body() body: ChatWithGeminiDto
+    ): Promise<{ statusCode: number; data: ChatWithGeminiResponse; message: string }> {
+        const result = await this.geminiService.chatWithGemini(userId, body)
+
+        return {
+            statusCode: 200,
+            data: result,
+            message: 'Chat với Gemini thành công'
         }
     }
 }

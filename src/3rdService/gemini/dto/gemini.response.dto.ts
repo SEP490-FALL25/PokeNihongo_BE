@@ -42,3 +42,9 @@ export interface AIKaiwaResponse {
     } // Đánh giá phát âm nếu có assessPronunciation = true
     transcription?: string // Transcription từ audio nếu có audioUrl
 }
+
+export interface ChatWithGeminiResponse {
+    conversationId: string
+    message: string // Response từ AI (text)
+    modelUsed: string // Tên model đã sử dụng
+}

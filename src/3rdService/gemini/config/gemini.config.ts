@@ -1,8 +1,11 @@
 import { registerAs } from '@nestjs/config'
 
 export default registerAs('gemini', () => ({
-  // Option 1: API Key (simple)
+  // Option 1: API Key (simple) - cho Pro models
   apiKey: process.env.GEMINI_API_KEY || '',
+
+  // Option 1b: Flash API Key (riêng cho Flash models)
+  flashApiKey: process.env.GEMINI_FLASH_API_KEY || '',
 
   // Option 2: Google Cloud Service Account (shared with Speech service)
   // Ưu tiên dùng service account nếu có (cùng credentials với Speech)

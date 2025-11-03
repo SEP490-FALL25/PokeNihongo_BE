@@ -9,15 +9,16 @@ import { TextToSpeechService } from '../speech/text-to-speech.service'
 import { SpeechToTextService } from '../speech/speech-to-text.service'
 import { UploadService } from '../upload/upload.service'
 import { SpeakingService } from '@/modules/speaking/speaking.service'
-import { EvaluateSpeakingDto, AIKaiwaDto } from './dto/gemini.dto'
-import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse } from './dto/gemini.response.dto'
+import { EvaluateSpeakingDto, AIKaiwaDto, ChatWithGeminiDto } from './dto/gemini.dto'
+import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
 import { v4 as uuidv4 } from 'uuid'
 import axios from 'axios'
 
 @Injectable()
 export class GeminiService {
     private readonly logger = new Logger(GeminiService.name)
-    private genAI: GoogleGenerativeAI | null = null
+    private genAI: GoogleGenerativeAI | null = null // Cho Pro models
+    private genAIFlash: GoogleGenerativeAI | null = null // Cho Flash models
     private readonly useServiceAccount: boolean
     private auth: GoogleAuth | null = null
     private readonly geminiConfig: any
@@ -59,61 +60,138 @@ export class GeminiService {
             }
         }
 
-        // Fallback về API key nếu không có service account hoặc service account fail
-        this.initializeWithApiKey(this.geminiConfig?.apiKey || '')
+        // Khởi tạo API keys (nếu có) - lazy initialization
         this.useServiceAccount = false
+        this.logger.log('Gemini AI will use API keys (lazy initialization per model)')
     }
 
     /**
-     * Lấy GoogleGenerativeAI instance (lazy initialization cho service account)
+     * Danh sách các models chỉ sử dụng API key (không dùng service account)
      */
-    private async getGenAI(): Promise<GoogleGenerativeAI> {
+    private readonly apiKeyOnlyModels = [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'text-embedding-004'
+    ]
+
+    /**
+     * Lấy GoogleGenerativeAI instance dựa trên model name
+     * - Các models trong apiKeyOnlyModels: chỉ dùng API key, không dùng service account
+     * - Nếu model chứa "flash" → dùng GEMINI_FLASH_API_KEY (nếu có), fallback về GEMINI_API_KEY hoặc serviceAccount
+     * - Nếu model không phải flash → dùng GEMINI_API_KEY hoặc serviceAccount
+     */
+    private async getGenAIForModel(modelName: string): Promise<GoogleGenerativeAI> {
+        const normalizedModelName = modelName.toLowerCase()
+        const isApiKeyOnlyModel = this.apiKeyOnlyModels.some(m => normalizedModelName.includes(m.toLowerCase()))
+        const isFlashModel = normalizedModelName.includes('flash')
+
+        // Nếu là Flash model
+        if (isFlashModel) {
+            if (this.genAIFlash) {
+                return this.genAIFlash
+            }
+
+            // Với apiKeyOnlyModels, bỏ qua service account, chỉ dùng API key
+            if (!isApiKeyOnlyModel) {
+                // Ưu tiên dùng service account nếu có (chỉ với models không trong whitelist)
+                if (this.useServiceAccount && this.auth) {
+                    try {
+                        const token = await this.auth.getAccessToken()
+                        if (!token) {
+                            throw new Error('Failed to get access token from service account')
+                        }
+                        this.genAIFlash = new GoogleGenerativeAI(token as string)
+                        this.logger.log('Gemini Flash initialized with Google Cloud service account token')
+                        return this.genAIFlash
+                    } catch (error) {
+                        this.logger.warn('Failed to get access token for Flash, falling back to API key:', error)
+                    }
+                }
+            } else {
+                this.logger.log(`Model ${modelName} is configured to use API key only (skipping service account)`)
+            }
+
+            // Ưu tiên dùng Flash API key nếu có
+            const flashApiKey = this.geminiConfig?.flashApiKey || ''
+            if (flashApiKey && flashApiKey.trim() !== '') {
+                this.genAIFlash = this.initializeWithApiKey(flashApiKey, 'Flash')
+                return this.genAIFlash
+            }
+
+            // Fallback về regular API key nếu có
+            const apiKey = this.geminiConfig?.apiKey || ''
+            if (apiKey && apiKey.trim() !== '') {
+                this.logger.warn('GEMINI_FLASH_API_KEY not found, using GEMINI_API_KEY for Flash model')
+                this.genAIFlash = this.initializeWithApiKey(apiKey, 'Flash (fallback)')
+                return this.genAIFlash
+            }
+
+            throw new Error('No API key configured for Flash models. Please set GEMINI_FLASH_API_KEY or GEMINI_API_KEY in .env')
+        }
+
+        // Nếu là Pro model hoặc model khác
         if (this.genAI) {
             return this.genAI
         }
 
-        if (this.useServiceAccount && this.auth) {
-            try {
-                // Lấy access token từ service account
-                const token = await this.auth.getAccessToken()
-                if (!token) {
-                    throw new Error('Failed to get access token from service account')
+        // Với apiKeyOnlyModels, bỏ qua service account, chỉ dùng API key
+        if (!isApiKeyOnlyModel) {
+            // Ưu tiên dùng service account nếu có (chỉ với models không trong whitelist)
+            if (this.useServiceAccount && this.auth) {
+                try {
+                    const token = await this.auth.getAccessToken()
+                    if (!token) {
+                        throw new Error('Failed to get access token from service account')
+                    }
+                    this.genAI = new GoogleGenerativeAI(token as string)
+                    this.logger.log('Gemini Pro initialized with Google Cloud service account token')
+                    return this.genAI
+                } catch (error) {
+                    this.logger.error('Failed to get access token from service account, falling back to API key:', error)
                 }
-
-                // Sử dụng token làm API key
-                this.genAI = new GoogleGenerativeAI(token as string)
-                this.logger.log('Gemini AI initialized with Google Cloud service account token')
-                return this.genAI
-            } catch (error) {
-                this.logger.error('Failed to get access token from service account, falling back to API key:', error)
-                // Fallback về API key
-                return this.initializeWithApiKey(this.geminiConfig?.apiKey || '')
             }
+        } else {
+            this.logger.log(`Model ${modelName} is configured to use API key only (skipping service account)`)
         }
 
-        // Nếu đã được khởi tạo với API key
-        if (!this.genAI) {
-            throw new Error('Gemini AI not initialized. Please check your configuration.')
+        // Dùng regular API key
+        const apiKey = this.geminiConfig?.apiKey || ''
+        if (!apiKey || apiKey.trim() === '') {
+            throw new Error('GEMINI_API_KEY is required but not configured. Please set GEMINI_API_KEY in your .env file')
         }
 
+        const modelType = isApiKeyOnlyModel ? (normalizedModelName.includes('embedding') ? 'Embedding' : 'Pro') : 'Pro'
+        this.genAI = this.initializeWithApiKey(apiKey, modelType)
         return this.genAI
     }
 
-    private initializeWithApiKey(apiKey: string): GoogleGenerativeAI {
+    /**
+     * Khởi tạo GoogleGenerativeAI với API key
+     */
+    private initializeWithApiKey(apiKey: string, modelType: string = ''): GoogleGenerativeAI {
         if (!apiKey || apiKey.trim() === '') {
-            this.logger.error('GEMINI_API_KEY not found or empty in environment variables. Please set GEMINI_API_KEY in your .env file')
-            throw new Error('GEMINI_API_KEY is required but not configured')
+            throw new Error('API key is required but not provided')
         }
 
         // Log một phần API key để debug (chỉ log 8 ký tự đầu và cuối)
         const maskedKey = apiKey.length > 16
             ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 8)}`
             : '***'
-        this.logger.log(`Gemini AI initializing with API key: ${maskedKey}`)
+        const typeLabel = modelType ? ` (${modelType})` : ''
+        this.logger.log(`Gemini AI${typeLabel} initializing with API key: ${maskedKey}`)
 
-        this.genAI = new GoogleGenerativeAI(apiKey)
-        this.logger.log('Gemini AI initialized successfully')
-        return this.genAI
+        const genAI = new GoogleGenerativeAI(apiKey)
+        this.logger.log(`Gemini AI${typeLabel} initialized successfully`)
+        return genAI
+    }
+
+    /**
+     * @deprecated Sử dụng getGenAIForModel() thay vì method này
+     * Lấy GoogleGenerativeAI instance (lazy initialization cho service account)
+     */
+    private async getGenAI(): Promise<GoogleGenerativeAI> {
+        // Default dùng Pro model
+        return this.getGenAIForModel('gemini-1.5-pro')
     }
 
     /**
@@ -152,8 +230,8 @@ export class GeminiService {
                 : this.buildSpeakingEvaluationPrompt(data.text, data.transcription || data.text)
             const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
 
-            // Gọi Gemini API
-            const genAI = await this.getGenAI()
+            // Gọi Gemini API - chọn API key dựa trên model
+            const genAI = await this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response
@@ -262,8 +340,8 @@ export class GeminiService {
                 : this.buildRecommendationPrompt(analysis, limit)
             const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
 
-            // Gọi Gemini API
-            const genAI = await this.getGenAI()
+            // Gọi Gemini API - chọn API key dựa trên model
+            const genAI = await this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response
@@ -361,7 +439,7 @@ export class GeminiService {
                                 : this.buildSpeakingEvaluationPrompt(data.message, transcription)
 
                             const modelName = (config?.modelName as string) || 'gemini-1.5-pro'
-                            const genAI = await this.getGenAI()
+                            const genAI = await this.getGenAIForModel(modelName)
                             const model = genAI.getGenerativeModel({ model: modelName })
                             const result = await model.generateContent(prompt)
                             const response = await result.response
@@ -459,8 +537,8 @@ export class GeminiService {
 - Đưa ra gợi ý về cách cải thiện nếu có lỗi
 - Giữ cuộc trò chuyện vui vẻ và thú vị`
 
-            // Gọi Gemini API
-            const genAI = await this.getGenAI()
+            // Gọi Gemini API - chọn API key dựa trên model
+            const genAI = await this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
 
             // Tạo chat session với history
@@ -559,6 +637,132 @@ export class GeminiService {
             }
 
             throw new BadRequestException('Không thể thực hiện hội thoại AI: ' + (error instanceof Error ? error.message : String(error)))
+        }
+    }
+
+    /**
+     * Chat với Gemini - API đơn giản chỉ text, không có audio/pronunciation assessment
+     */
+    async chatWithGemini(
+        userId: number,
+        data: ChatWithGeminiDto
+    ): Promise<ChatWithGeminiResponse> {
+        try {
+            this.logger.log(`Chat with Gemini request from user ${userId}, conversationId: ${data.conversationId || 'new'}`)
+
+            // Validate input
+            if (!data.message || data.message.trim() === '') {
+                throw new BadRequestException('Message không được để trống')
+            }
+
+            // Generate hoặc dùng conversationId có sẵn
+            const conversationId = data.conversationId || `chat_${userId}_${Date.now()}_${uuidv4().substring(0, 8)}`
+
+            // Lấy lịch sử hội thoại (nếu có và saveHistory = true)
+            let history: any[] = []
+            if (data.saveHistory !== false) {
+                const conversationHistory = await (this.prisma as any).userAIConversation.findMany({
+                    where: {
+                        userId,
+                        conversationId,
+                        deletedAt: null
+                    },
+                    orderBy: {
+                        createdAt: 'asc'
+                    },
+                    take: 20 // Lấy 20 messages gần nhất
+                })
+
+                // Xây dựng conversation context cho Gemini
+                history = conversationHistory.map(conv => ({
+                    role: conv.role === 'USER' ? 'user' : 'model',
+                    parts: [{ text: conv.message }]
+                }))
+            }
+
+            // Thêm message hiện tại của user
+            history.push({
+                role: 'user',
+                parts: [{ text: data.message }]
+            })
+
+            // Chọn model - nếu là enum thì lấy value, nếu là string thì dùng trực tiếp
+            let modelName: string
+            if (!data.modelName) {
+                modelName = 'gemini-2.5-pro'
+            } else if (typeof data.modelName === 'string') {
+                modelName = data.modelName
+            } else {
+                // Nếu là enum, lấy giá trị của enum
+                modelName = data.modelName as string
+            }
+            this.logger.log(`Using model: ${modelName}`)
+
+            // Gọi Gemini API - chọn API key dựa trên model
+            const genAI = await this.getGenAIForModel(modelName)
+            const model = genAI.getGenerativeModel({ model: modelName })
+
+            // Tạo chat session với history
+            const chat = model.startChat({
+                history: history.slice(0, -1) as any, // Bỏ message cuối (message hiện tại)
+            })
+
+            // Gửi message và nhận response
+            const result = await chat.sendMessage(data.message as any)
+            const response = await result.response
+            const aiResponse = response.text()
+
+            if (!aiResponse || aiResponse.trim() === '') {
+                throw new Error('Empty response from Gemini API')
+            }
+
+            // Lưu vào DB nếu saveHistory = true
+            if (data.saveHistory !== false) {
+                try {
+                    // Lưu user message vào DB
+                    await (this.prisma as any).userAIConversation.create({
+                        data: {
+                            userId,
+                            conversationId,
+                            role: 'USER',
+                            message: data.message
+                        }
+                    })
+
+                    // Lưu AI response vào DB
+                    await (this.prisma as any).userAIConversation.create({
+                        data: {
+                            userId,
+                            conversationId,
+                            role: 'AI',
+                            message: aiResponse
+                        }
+                    })
+                } catch (dbError) {
+                    this.logger.warn('Failed to save conversation history to DB:', dbError)
+                    // Không throw error, chỉ log warning
+                }
+            }
+
+            this.logger.log(`Chat with Gemini completed for user ${userId}, conversationId: ${conversationId}`)
+
+            return {
+                conversationId,
+                message: aiResponse,
+                modelUsed: modelName
+            }
+        } catch (error) {
+            this.logger.error('Error in chat with Gemini:', error)
+            if (error instanceof BadRequestException) {
+                throw error
+            }
+
+            // Kiểm tra nếu là lỗi 403 Forbidden (API key issue)
+            if (error && typeof error === 'object' && 'status' in error && error.status === 403) {
+                throw new BadRequestException('Lỗi xác thực API key. Vui lòng kiểm tra GEMINI_API_KEY hoặc GEMINI_FLASH_API_KEY trong file .env')
+            }
+
+            throw new BadRequestException('Không thể chat với Gemini: ' + (error instanceof Error ? error.message : String(error)))
         }
     }
 

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsNumber, IsOptional, IsString, IsEnum } from 'class-validator'
+import { GeminiModel } from './gemini.enums'
 
 export class EvaluateSpeakingDto {
   @ApiProperty({
@@ -90,4 +91,41 @@ export class AIKaiwaDto {
   })
   @IsOptional()
   assessPronunciation?: boolean
+}
+
+export class ChatWithGeminiDto {
+  @ApiProperty({
+    example: 'Xin chào, bạn có thể giúp tôi học tiếng Nhật không?',
+    description: 'Tin nhắn từ user'
+  })
+  @IsString()
+  message: string
+
+  @ApiProperty({
+    example: 'conv_123456789',
+    description: 'ID của conversation (nếu là conversation mới thì không cần, sẽ tự generate)',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  conversationId?: string
+
+  @ApiProperty({
+    example: GeminiModel.GEMINI_2_5_PRO,
+    enum: GeminiModel,
+    description: 'Tên model Gemini muốn sử dụng (mặc định: gemini-2.5-pro)',
+    required: false
+  })
+  @IsOptional()
+  @IsEnum(GeminiModel)
+  modelName?: GeminiModel | string
+
+  @ApiProperty({
+    example: false,
+    description: 'Có lưu lịch sử conversation vào DB không (mặc định: true)',
+    required: false,
+    default: true
+  })
+  @IsOptional()
+  saveHistory?: boolean
 }
