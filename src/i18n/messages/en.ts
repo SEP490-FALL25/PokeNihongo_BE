@@ -471,5 +471,78 @@ export const enMessages = {
   },
   user_history: {
     GET_LIST_SUCCESS: 'User history retrieved successfully'
+  },
+  leader_board_sesson: {
+    CREATE_SUCCESS: 'Leaderboard season created successfully',
+    UPDATE_SUCCESS: 'Leaderboard season updated successfully',
+    DELETE_SUCCESS: 'Leaderboard season deleted successfully',
+    GET_SUCCESS: 'Leaderboard season retrieved successfully',
+    GET_LIST_SUCCESS: 'Leaderboard season list retrieved successfully',
+    NOT_FOUND: 'Leaderboard season not found',
+    ALREADY_EXISTS: 'Leaderboard season already exists',
+    INVALID_DATA: 'Invalid leaderboard season data'
+  },
+  match_queue: {
+    CREATE_SUCCESS: 'Match queue created successfully',
+    UPDATE_SUCCESS: 'Match queue updated successfully',
+    DELETE_SUCCESS: 'Match queue deleted successfully',
+    GET_SUCCESS: 'Match queue retrieved successfully',
+    GET_LIST_SUCCESS: 'Match queue list retrieved successfully',
+    NOT_FOUND: 'Match queue not found',
+    ALREADY_EXISTS: 'Match queue already exists',
+    INVALID_DATA: 'Invalid match queue data'
+  },
+  match: {
+    CREATE_SUCCESS: 'Match created successfully',
+    UPDATE_SUCCESS: 'Match updated successfully',
+    DELETE_SUCCESS: 'Match deleted successfully',
+    GET_SUCCESS: 'Match retrieved successfully',
+    GET_LIST_SUCCESS: 'Match list retrieved successfully',
+    NOT_FOUND: 'Match not found',
+    ALREADY_EXISTS: 'Match already exists',
+    INVALID_DATA: 'Invalid match data',
+    NOT_HAVE_ACTIVE_LEADERBOARD_SEASON: 'No active leaderboard season available'
+  },
+  match_round: {
+    CREATE_SUCCESS: 'Match round created successfully',
+    UPDATE_SUCCESS: 'Match round updated successfully',
+    DELETE_SUCCESS: 'Match round deleted successfully',
+    GET_SUCCESS: 'Match round retrieved successfully',
+
+    GET_LIST_SUCCESS: 'Match round list retrieved successfully',
+    NOT_FOUND: 'Match round not found',
+    ALREADY_EXISTS: 'Match round already exists',
+    INVALID_DATA: 'Invalid match round data'
+  },
+  match_participant: {
+    CREATE_SUCCESS: 'Match participant created successfully',
+    UPDATE_SUCCESS: 'Match participant updated successfully',
+    DELETE_SUCCESS: 'Match participant deleted successfully',
+    GET_SUCCESS: 'Match participant retrieved successfully',
+    GET_LIST_SUCCESS: 'Match participant list retrieved successfully',
+
+    NOT_FOUND: 'Match participant not found',
+    ALREADY_EXISTS: 'Match participant already exists',
+    INVALID_DATA: 'Invalid match participant data'
+  },
+  match_round_participant: {
+    CREATE_SUCCESS: 'Match round participant created successfully',
+    UPDATE_SUCCESS: 'Match round participant updated successfully',
+    DELETE_SUCCESS: 'Match round participant deleted successfully',
+    GET_SUCCESS: 'Match round participant retrieved successfully',
+    GET_LIST_SUCCESS: 'Match round participant list retrieved successfully',
+    NOT_FOUND: 'Match round participant not found',
+    ALREADY_EXISTS: 'Match round participant already exists',
+    INVALID_DATA: 'Invalid match round participant data'
+  },
+  debuff_round: {
+    CREATE_SUCCESS: 'Debuff round created successfully',
+    UPDATE_SUCCESS: 'Debuff round updated successfully',
+    DELETE_SUCCESS: 'Debuff round deleted successfully',
+    GET_SUCCESS: 'Debuff round retrieved successfully',
+    GET_LIST_SUCCESS: 'Debuff round list retrieved successfully',
+    NOT_FOUND: 'Debuff round not found',
+    ALREADY_EXISTS: 'Debuff round already exists',
+    INVALID_DATA: 'Invalid debuff round data'
   }
 }

@@ -470,5 +470,78 @@ export const viMessages = {
   },
   user_history: {
     GET_LIST_SUCCESS: 'Lấy danh sách lịch sử làm bài thành công'
+  },
+  leader_board_sesson: {
+    CREATE_SUCCESS: 'Tạo mùa xếp hạng thành công',
+    UPDATE_SUCCESS: 'Cập nhật mùa xếp hạng thành công',
+    DELETE_SUCCESS: 'Xóa mùa xếp hạng thành công',
+    GET_SUCCESS: 'Lấy thông tin mùa xếp hạng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách mùa xếp hạng thành công',
+    NOT_FOUND: 'Không tìm thấy mùa xếp hạng',
+    ALREADY_EXISTS: 'Mùa xếp hạng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu mùa xếp hạng không hợp lệ'
+  },
+  match_queue: {
+    CREATE_SUCCESS: 'Tham gia hàng đợi trận đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật hàng đợi trận đấu thành công',
+    DELETE_SUCCESS: 'Thoát hàng đợi trận đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin hàng đợi trận đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách hàng đợi trận đấu thành công',
+    NOT_FOUND: 'Không tìm thấy hàng đợi trận đấu',
+    ALREADY_EXISTS: 'Hàng đợi trận đấu đã tồn tại',
+    INVALID_DATA: 'Dữ liệu hàng đợi trận đấu không hợp lệ'
+  },
+  match: {
+    CREATE_SUCCESS: 'Tạo trận đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật trận đấu thành công',
+    DELETE_SUCCESS: 'Xóa trận đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin trận đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách trận đấu thành công',
+
+    NOT_FOUND: 'Không tìm thấy trận đấu',
+    ALREADY_EXISTS: 'Trận đấu đã tồn tại',
+
+    INVALID_DATA: 'Dữ liệu trận đấu không hợp lệ',
+    NOT_HAVE_ACTIVE_LEADERBOARD_SEASON: 'Không có mùa xếp hạng đang hoạt động'
+  },
+  match_round: {
+    CREATE_SUCCESS: 'Tạo vòng đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật vòng đấu thành công',
+    DELETE_SUCCESS: 'Xóa vòng đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin vòng đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách vòng đấu thành công',
+    NOT_FOUND: 'Không tìm thấy vòng đấu',
+    ALREADY_EXISTS: 'Vòng đấu đã tồn tại',
+    INVALID_DATA: 'Dữ liệu vòng đấu không hợp lệ'
+  },
+  match_participant: {
+    CREATE_SUCCESS: 'Tạo người tham gia trận đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật người tham gia trận đấu thành công',
+    DELETE_SUCCESS: 'Xóa người tham gia trận đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin người tham gia trận đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách người tham gia trận đấu thành công',
+    NOT_FOUND: 'Không tìm thấy người tham gia trận đấu',
+    ALREADY_EXISTS: 'Người tham gia trận đấu đã tồn tại',
+    INVALID_DATA: 'Dữ liệu người tham gia trận đấu không hợp lệ'
+  },
+  match_round_participant: {
+    CREATE_SUCCESS: 'Tạo người tham gia vòng đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật người tham gia vòng đấu thành công',
+    DELETE_SUCCESS: 'Xóa người tham gia vòng đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin người tham gia vòng đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách người tham gia vòng đấu thành công',
+    NOT_FOUND: 'Không tìm thấy người tham gia vòng đấu',
+    ALREADY_EXISTS: 'Người tham gia vòng đấu đã tồn tại',
+    INVALID_DATA: 'Dữ liệu người tham gia vòng đấu không hợp lệ'
+  },
+  debuff_round: {
+    CREATE_SUCCESS: 'Tạo debuff vòng đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật debuff vòng đấu thành công',
+    DELETE_SUCCESS: 'Xóa debuff vòng đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin debuff vòng đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách debuff vòng đấu thành công',
+    NOT_FOUND: 'Không tìm thấy debuff vòng đấu',
+    ALREADY_EXISTS: 'Debuff vòng đấu đã tồn tại',
+    INVALID_DATA: 'Dữ liệu debuff vòng đấu không hợp lệ'
   }
 }

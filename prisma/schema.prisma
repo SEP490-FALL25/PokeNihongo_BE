@@ -19,6 +19,7 @@ model User {
   premiumCoins Int        @default(0)
   freeCoins    Int        @default(0)
   exp          Int        @default(0)
+  eloscore     Int        @default(0)
   roleId       Int
   role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   levelId      Int?
@@ -63,47 +64,53 @@ model User {
   updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
   deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
 
-  createdQuestionBanks      QuestionBank[]      @relation("QuestionBankCreatedBy")
-  createdAttendanceConfigs  AttendanceConfig[]  @relation("AttendanceConfigCreatedBy")
-  updatedAttendanceConfigs  AttendanceConfig[]  @relation("AttendanceConfigUpdatedBy")
-  deletedAttendanceConfigs  AttendanceConfig[]  @relation("AttendanceConfigDeletedBy")
-  createdAttendances        Attendance[]        @relation("AttendanceCreatedBy")
-  updatedAttendances        Attendance[]        @relation("AttendanceUpdatedBy")
-  deletedAttendances        Attendance[]        @relation("AttendanceDeletedBy")
-  createdTestSets           TestSet[]           @relation("TestSetCreatedBy")
-  createdWallets            Wallet[]            @relation("WalletCreatedBy")
-  updatedWallets            Wallet[]            @relation("WalletUpdatedBy")
-  deletedWallets            Wallet[]            @relation("WalletDeletedBy")
-  createdWalletTransactions WalletTransaction[] @relation("WalletTransactionCreatedBy")
-  updatedWalletTransactions WalletTransaction[] @relation("WalletTransactionUpdatedBy")
-  deletedWalletTransactions WalletTransaction[] @relation("WalletTransactionDeletedBy")
-  createdShopBanners        ShopBanner[]        @relation("ShopBannerCreatedBy")
-  updatedShopBanners        ShopBanner[]        @relation("ShopBannerUpdatedBy")
-  deletedShopBanners        ShopBanner[]        @relation("ShopBannerDeletedBy")
-  createdShopPurchases      ShopPurchase[]      @relation("ShopPurchaseCreatedBy")
-  updatedShopPurchases      ShopPurchase[]      @relation("ShopPurchaseUpdatedBy")
-  deletedShopPurchases      ShopPurchase[]      @relation("ShopPurchaseDeletedBy")
-  createdShopItems          ShopItem[]          @relation("ShopItemCreatedBy")
-  updatedShopItems          ShopItem[]          @relation("ShopItemUpdatedBy")
-  deletedShopItems          ShopItem[]          @relation("ShopItemDeletedBy")
-  createdGachaBanners       GachaBanner[]       @relation("GachaBannerCreatedBy")
-  updatedGachaBanners       GachaBanner[]       @relation("GachaBannerUpdatedBy")
-  deletedGachaBanners       GachaBanner[]       @relation("GachaBannerDeletedBy")
-  createdGachaItemRates     GachaItemRate[]     @relation("GachaItemRateCreatedBy")
-  updatedGachaItemRates     GachaItemRate[]     @relation("GachaItemRateUpdatedBy")
-  deletedGachaItemRates     GachaItemRate[]     @relation("GachaItemRateDeletedBy")
-  createdGachaItems         GachaItem[]         @relation("GachaItemCreatedBy")
-  updatedGachaItems         GachaItem[]         @relation("GachaItemUpdatedBy")
-  deletedGachaItems         GachaItem[]         @relation("GachaItemDeletedBy")
-  createdGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseCreatedBy")
-  updatedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseUpdatedBy")
-  deletedGachaPurchases     GachaPurchase[]     @relation("GachaPurchaseDeletedBy")
-  createdShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceCreatedBy")
-  updatedShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceUpdatedBy")
-  deletedShopRarityPrices   ShopRarityPrice[]   @relation("ShopRarityPriceDeletedBy")
-  createdGeminiConfigs      GeminiConfig[]      @relation("GeminiConfigCreatedBy")
-  updatedGeminiConfigs      GeminiConfig[]      @relation("GeminiConfigUpdatedBy")
-  deletedGeminiConfigs      GeminiConfig[]      @relation("GeminiConfigDeletedBy")
+  createdQuestionBanks                QuestionBank[]      @relation("QuestionBankCreatedBy")
+  createdAttendanceConfigs            AttendanceConfig[]  @relation("AttendanceConfigCreatedBy")
+  updatedAttendanceConfigs            AttendanceConfig[]  @relation("AttendanceConfigUpdatedBy")
+  deletedAttendanceConfigs            AttendanceConfig[]  @relation("AttendanceConfigDeletedBy")
+  createdAttendances                  Attendance[]        @relation("AttendanceCreatedBy")
+  updatedAttendances                  Attendance[]        @relation("AttendanceUpdatedBy")
+  deletedAttendances                  Attendance[]        @relation("AttendanceDeletedBy")
+  createdTestSets                     TestSet[]           @relation("TestSetCreatedBy")
+  createdWallets                      Wallet[]            @relation("WalletCreatedBy")
+  updatedWallets                      Wallet[]            @relation("WalletUpdatedBy")
+  deletedWallets                      Wallet[]            @relation("WalletDeletedBy")
+  createdWalletTransactions           WalletTransaction[] @relation("WalletTransactionCreatedBy")
+  updatedWalletTransactions           WalletTransaction[] @relation("WalletTransactionUpdatedBy")
+  deletedWalletTransactions           WalletTransaction[] @relation("WalletTransactionDeletedBy")
+  createdShopBanners                  ShopBanner[]        @relation("ShopBannerCreatedBy")
+  updatedShopBanners                  ShopBanner[]        @relation("ShopBannerUpdatedBy")
+  deletedShopBanners                  ShopBanner[]        @relation("ShopBannerDeletedBy")
+  createdShopPurchases                ShopPurchase[]      @relation("ShopPurchaseCreatedBy")
+  updatedShopPurchases                ShopPurchase[]      @relation("ShopPurchaseUpdatedBy")
+  deletedShopPurchases                ShopPurchase[]      @relation("ShopPurchaseDeletedBy")
+  createdShopItems                    ShopItem[]          @relation("ShopItemCreatedBy")
+  updatedShopItems                    ShopItem[]          @relation("ShopItemUpdatedBy")
+  deletedShopItems                    ShopItem[]          @relation("ShopItemDeletedBy")
+  createdGachaBanners                 GachaBanner[]       @relation("GachaBannerCreatedBy")
+  updatedGachaBanners                 GachaBanner[]       @relation("GachaBannerUpdatedBy")
+  deletedGachaBanners                 GachaBanner[]       @relation("GachaBannerDeletedBy")
+  createdGachaItemRates               GachaItemRate[]     @relation("GachaItemRateCreatedBy")
+  updatedGachaItemRates               GachaItemRate[]     @relation("GachaItemRateUpdatedBy")
+  deletedGachaItemRates               GachaItemRate[]     @relation("GachaItemRateDeletedBy")
+  createdGachaItems                   GachaItem[]         @relation("GachaItemCreatedBy")
+  updatedGachaItems                   GachaItem[]         @relation("GachaItemUpdatedBy")
+  deletedGachaItems                   GachaItem[]         @relation("GachaItemDeletedBy")
+  createdGachaPurchases               GachaPurchase[]     @relation("GachaPurchaseCreatedBy")
+  updatedGachaPurchases               GachaPurchase[]     @relation("GachaPurchaseUpdatedBy")
+  deletedGachaPurchases               GachaPurchase[]     @relation("GachaPurchaseDeletedBy")
+  createdShopRarityPrices             ShopRarityPrice[]   @relation("ShopRarityPriceCreatedBy")
+  updatedShopRarityPrices             ShopRarityPrice[]   @relation("ShopRarityPriceUpdatedBy")
+  deletedShopRarityPrices             ShopRarityPrice[]   @relation("ShopRarityPriceDeletedBy")
+  createdLeaderboardSeasons           LeaderboardSeason[] @relation("LeaderboardSeasonCreatedBy")
+  updatedLeaderboardSeasons           LeaderboardSeason[] @relation("LeaderboardSeasonUpdatedBy")
+  deletedLeaderboardSeasons           LeaderboardSeason[] @relation("LeaderboardSeasonDeletedBy")
+  createdDebuffMatchRoundParticipants DebuffRound[]       @relation("DebuffMatchRoundParticipantCreatedBy")
+  updatedDebuffMatchRoundParticipants DebuffRound[]       @relation("DebuffMatchRoundParticipantUpdatedBy")
+  deletedDebuffMatchRoundParticipants DebuffRound[]       @relation("DebuffMatchRoundParticipantDeletedBy")
+  createdGeminiConfigs                GeminiConfig[]      @relation("GeminiConfigCreatedBy")
+  updatedGeminiConfigs                GeminiConfig[]      @relation("GeminiConfigUpdatedBy")
+  deletedGeminiConfigs                GeminiConfig[]      @relation("GeminiConfigDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -127,6 +134,9 @@ model User {
   gachaRollHistories   GachaRollHistory[]
   userGachaPity        UserGachaPity[]
   matchmakingQueue     MatchQueue?
+  matchWins            Match[]               @relation("WonMatches")
+  matchParticipants    MatchParticipant[]
+  userSeasonHistories  UserSeasonHistory[]
 
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -263,6 +273,12 @@ model Translation {
 
   gachaBannerNameKey String?
   gachaBanner        GachaBanner? @relation("GachaBannerNameRelation", fields: [gachaBannerNameKey], references: [nameKey], onDelete: Cascade)
+
+  leaderboardSeasonNameKey String?
+  leaderboardSeason        LeaderboardSeason? @relation("LeaderboardSeasonNameRelation", fields: [leaderboardSeasonNameKey], references: [nameKey], onDelete: Cascade)
+
+  debuffRoundNameKey String?
+  debuffRound        DebuffRound? @relation("DebuffRoundNameRelation", fields: [debuffRoundNameKey], references: [nameKey], onDelete: Cascade)
 
   @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
   @@index([languageId])
@@ -503,9 +519,7 @@ model UserPokemon {
   isEvolved Boolean @default(false) // đã tiến hóa chưa
   isMain    Boolean @default(false) // có phải con chính không
 
-  selectedPokemonInQueueAs1 MatchQueue[] @relation("SelectedQueuePoke1")
-  selectedPokemonInQueueAs2 MatchQueue[] @relation("SelectedQueuePoke2")
-  selectedPokemonInQueueAs3 MatchQueue[] @relation("SelectedQueuePoke3")
+  matchRoundParticipants MatchRoundParticipant[]
 
   // Timestamps
   deletedAt DateTime?
@@ -1591,18 +1605,6 @@ model MatchQueue {
   userElo Int // Snapshot Elo của user lúc vào hàng đợi
   status  QueueStatus @default(WAITING)
 
-  queuedAt DateTime @default(now())
-
-  // 3 Pokemon user chọn TRƯỚC KHI tìm trận (ID từ UserPokemon)
-  selectedPokemon1Id Int
-  selectedPokemon1   UserPokemon @relation("SelectedQueuePoke1", fields: [selectedPokemon1Id], references: [id], onDelete: NoAction)
-
-  selectedPokemon2Id Int
-  selectedPokemon2   UserPokemon @relation("SelectedQueuePoke2", fields: [selectedPokemon2Id], references: [id], onDelete: NoAction)
-
-  selectedPokemon3Id Int
-  selectedPokemon3   UserPokemon @relation("SelectedQueuePoke3", fields: [selectedPokemon3Id], references: [id], onDelete: NoAction)
-
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -1611,9 +1613,258 @@ model MatchQueue {
   @@index([userId])
 }
 
+/// Đại diện cho toàn bộ 1 trận đấu
+model Match {
+  id     Int         @id @default(autoincrement())
+  status MatchStatus @default(PENDING)
+
+  leaderboardSeasonId Int
+  leaderboardSeason   LeaderboardSeason @relation(fields: [leaderboardSeasonId], references: [id])
+
+  // --- KẾT QUẢ CHUNG CUỘC ---
+  // Được cập nhật khi 3 MatchRound đều COMPLETED
+  winnerId  Int?
+  winner    User? @relation("WonMatches", fields: [winnerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  eloGained Int?
+  eloLost   Int?
+  // ---
+
+  // Quan hệ 1-n: 1 trận có 2 người tham gia
+  participants MatchParticipant[]
+
+  // Quan hệ 1-n: 1 trận có 3 round
+  rounds MatchRound[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([status])
+  @@index([winnerId])
+}
+
+// Đại diện cho 1 user tham gia 1 trận đấu (Lưu trạng thái Accept)
+model MatchParticipant {
+  id Int @id @default(autoincrement())
+
+  matchId Int
+  match   Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Trạng thái chấp nhận ban đầu
+  hasAccepted Boolean?
+
+  // Quan hệ 1-n: 1 người tham gia có 3 "kết quả round"
+  roundResults MatchRoundParticipant[]
+
+  // Quan hệ ngược (để biết ai thắng round nào)
+  wonRounds MatchRound[] @relation("RoundWinner")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([matchId, userId])
+}
+
+/// Đại diện cho 1 Round (Vòng 1, 2, 3) của 1 Trận đấu
+model MatchRound {
+  id Int @id @default(autoincrement())
+
+  matchId Int
+  match   Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  // "sẽ có roundOrder làm điều đó"
+  roundNumber MatchRoundNumber @default(ONE) // 1, 2, hoặc 3
+
+  status RoundStatus @default(SELECTING_POKEMON)
+
+  // --- KẾT QUẢ ROUND ---
+  // Được cập nhật sau khi so sánh 2 record "con"
+  roundWinnerId Int?
+  roundWinner   MatchParticipant? @relation("RoundWinner", fields: [roundWinnerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // ---
+
+  // Quan hệ 1-n: 1 round có 2 "người tham gia round" (User A và B)
+  participants MatchRoundParticipant[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([matchId, roundNumber]) // Đảm bảo R1, R2, R3 là duy nhất cho 1 trận
+}
+
+/// Bảng chi tiết: Lưu Pokémon đã chọn VÀ Kết quả (điểm, thời gian) của 1 user cho 1 round
+model MatchRoundParticipant {
+  id Int @id @default(autoincrement())
+
+  // Liên kết với người tham gia (Ai?)
+  matchParticipantId Int
+  matchParticipant   MatchParticipant @relation(fields: [matchParticipantId], references: [id], onDelete: Cascade)
+
+  // Liên kết với round (Round nào?)
+  matchRoundId Int
+  matchRound   MatchRound @relation(fields: [matchRoundId], references: [id], onDelete: Cascade)
+
+  // --- POKÉMON ĐÃ CHỌN CHO ROUND NÀY ---
+  startTimeSelected     DateTime? // Thời gian bắt đầu chọn Pokémon
+  selectedUserPokemonId Int? // Ban đầu null, được update khi chọn
+  selectedUserPokemon   UserPokemon? @relation(fields: [selectedUserPokemonId], references: [id], onDelete: NoAction)
+
+  //debuff áp dụng cho participant này trong round này
+  debuffId Int?
+  debuff   DebuffRound? @relation(fields: [debuffId], references: [id], onDelete: SetNull)
+
+  // --- KẾT QUẢ CHI TIẾT ---
+  points         Int?
+  totalTimeMs    Int?
+  questionsTotal Int               @default(10) // 11 nếu bị debuff
+  status         RoundResultStatus @default(SELECTING_POKEMON) // PENDING, COMPLETED
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // 1 user chỉ có 1 record cho 1 round
+  @@unique([matchParticipantId, matchRoundId])
+  @@index([selectedUserPokemonId])
+}
+
+model DebuffRound {
+  id          Int             @id @default(autoincrement())
+  nameKey     String          @unique
+  typeDebuff  MatchDebuffType @default(ADD_QUESTION)
+  valueDebuff Int // Số câu hỏi mất đi hoặc số ms bị phạt thêm
+
+  matchRoundParticipants MatchRoundParticipant[]
+
+  //translate
+  nameTranslations Translation[] @relation("DebuffRoundNameRelation")
+
+  // meta
+  createdById Int?
+  createdBy   User? @relation("DebuffMatchRoundParticipantCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("DebuffMatchRoundParticipantDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("DebuffMatchRoundParticipantUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model LeaderboardSeason {
+  id        Int      @id @default(autoincrement())
+  nameKey   String   @unique
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true) // Mùa giải đang diễn ra
+
+  ranks   Rank[] // Các bậc rank trong mùa này
+  matches Match[] // Các trận đấu trong mùa này
+
+  // --- THÊM MỚI ---
+  // Lịch sử user của mùa này
+  userHistories UserSeasonHistory[]
+
+  //translate
+  nameTranslations Translation[] @relation("LeaderboardSeasonNameRelation")
+
+  // meta
+  createdById Int?
+  createdBy   User? @relation("LeaderboardSeasonCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("LeaderboardSeasonDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("LeaderboardSeasonUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([isActive])
+}
+
+model Rank {
+  id Int @id @default(autoincrement())
+
+  seasonId Int
+  season   LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  name    String // "N5", "N4", "N3"
+  minElo  Int // 0, 1001, 2001
+  maxElo  Int? // 1000, 2000, 3000 (hoặc null cho rank cao nhất)
+  iconUrl String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([seasonId, name])
+  @@index([seasonId, minElo])
+}
+
+model UserSeasonHistory {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  seasonId Int
+  season   LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  finalElo  Int // Elo cuối cùng của user ở mùa giải này
+  finalRank String // Tên rank cuối cùng (vd: "N4")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([userId, seasonId]) // 1 user chỉ có 1 record lịch sử cho 1 mùa
+}
+
+enum MatchDebuffType {
+  ADD_QUESTION // Mất câu hỏi (tăng tổng số câu hỏi của đối thủ lên 1)
+  DECREASE_POINT // Giảm điểm 1 câu (cộng thêm thời gian làm bài)
+  DISCOMFORT_VISION // Giảm tầm nhìn (khó nhìn câu hỏi hơn)
+}
+
+enum MatchRoundNumber {
+  ONE
+  TWO
+  THREE
+}
+
+/// Trạng thái của toàn bộ trận đấu (model Match)
+enum MatchStatus {
+  PENDING // Đang chờ Accept/Reject
+  IN_PROGRESS // Đang chơi (bao gồm cả chọn Pokemon và làm bài)
+  COMPLETED // Đã xong 3 round, đã tính ELO
+  CANCELLED // Bị hủy
+}
+
+/// Trạng thái của 1 Round (model MatchRound)
+enum RoundStatus {
+  SELECTING_POKEMON // Đang trong giai đoạn chọn Pokemon cho round
+  PENDING // chờ round khác chọn pokemon
+  IN_PROGRESS // Đang trong giai đoạn làm bài (10 phút)
+  COMPLETED // Đã so sánh xong kết quả
+}
+
+/// Trạng thái chi tiết của 1 user trong 1 round (model MatchRoundParticipant)
+enum RoundResultStatus {
+  SELECTING_POKEMON
+  PENDING // Chờ đối thủ chọn Pokémon
+  IN_PROGRESS // Đang làm bài (10 phút)
+  COMPLETED // User đã nộp bài (points, time)
+}
+
 enum QueueStatus {
   WAITING // Đang chờ
-  MATCHED // Đã tìm được trận
 }
 
 enum ProgressStatus {
@@ -1814,7 +2065,7 @@ enum TestStatus {
   PLACEMENT_TEST_DONE // Kiểm tra đầu vào
   SUBSCRIPTION_TEST // Kiểm tra đầu vào cho subscription
   MATCH_TEST // Trận đấu
-  QUIZ_TEST //Quiz 
+  QUIZ_TEST //Quiz
   REVIEW_TEST // Ôn tập
   PRACTICE_TEST // Thi thử
   READING_TEST // Đọc hiểu
