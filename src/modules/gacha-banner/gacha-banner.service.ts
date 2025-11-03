@@ -185,7 +185,6 @@ export class GachaBannerService {
     const nameTranslations = await this.convertTranslationsToLangCodes(
       (gachaBanner as any).nameTranslations || []
     )
-    console.log('sau convert: ', nameTranslations)
 
     // Find current translation by langId
     const currentTranslation = ((gachaBanner as any).nameTranslations || []).find(

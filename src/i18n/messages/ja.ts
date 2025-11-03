@@ -450,5 +450,80 @@ export const jaMessages = {
     REVIEW_INSUFFICIENT_SCORE:
       '解答レビューを表示するには、少なくとも80%の正解率が必要です',
     REVIEW_SUCCESS: '演習レビュー情報の取得に成功しました'
+  },
+  leader_board_sesson: {
+    CREATE_SUCCESS: 'ランキングシーズンの作成に成功しました',
+    UPDATE_SUCCESS: 'ランキングシーズンの更新に成功しました',
+    DELETE_SUCCESS: 'ランキングシーズンの削除に成功しました',
+    GET_SUCCESS: 'ランキングシーズン情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ランキングシーズンリストの取得に成功しました',
+    NOT_FOUND: 'ランキングシーズンが見つかりません',
+    ALREADY_EXISTS: 'ランキングシーズンは既に存在します',
+    INVALID_DATA: '無効なランキングシーズンデータです'
+  },
+  match_queue: {
+    CREATE_SUCCESS: 'マッチキューへの参加に成功しました',
+    UPDATE_SUCCESS: 'マッチキューの更新に成功しました',
+    DELETE_SUCCESS: 'マッチキューからの退出に成功しました',
+    GET_SUCCESS: 'マッチキュー情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'マッチキューリストの取得に成功しました',
+    NOT_FOUND: 'マッチキューが見つかりません',
+    ALREADY_EXISTS: 'マッチキューは既に存在します',
+
+    INVALID_DATA: '無効なマッチキューデータです'
+  },
+  match: {
+    CREATE_SUCCESS: 'マッチの作成に成功しました',
+    UPDATE_SUCCESS: 'マッチの更新に成功しました',
+    DELETE_SUCCESS: 'マッチの削除に成功しました',
+    GET_SUCCESS: 'マッチ情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'マッチリストの取得に成功しました',
+    NOT_FOUND: 'マッチが見つかりません',
+    ALREADY_EXISTS: 'マッチは既に存在します',
+    INVALID_DATA: '無効なマッチデータです',
+    NOT_HAVE_ACTIVE_LEADERBOARD_SEASON:
+      'アクティブなランキングシーズンが存在しません。マッチを開始できません。'
+  },
+  match_round: {
+    CREATE_SUCCESS: 'マッチラウンドの作成に成功しました',
+    UPDATE_SUCCESS: 'マッチラウンドの更新に成功しました',
+    DELETE_SUCCESS: 'マッチラウンドの削除に成功しました',
+    GET_SUCCESS: 'マッチラウンド情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'マッチラウンドリストの取得に成功しました',
+    NOT_FOUND: 'マッチラウンドが見つかりません',
+    ALREADY_EXISTS: 'マッチラウンドは既に存在します',
+    INVALID_DATA: '無効なマッチラウンドデータです'
+  },
+  match_participant: {
+    CREATE_SUCCESS: 'マッチ参加者の作成に成功しました',
+    UPDATE_SUCCESS: 'マッチ参加者の更新に成功しました',
+    DELETE_SUCCESS: 'マッチ参加者の削除に成功しました',
+    GET_SUCCESS: 'マッチ参加者情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'マッチ参加者リストの取得に成功しました',
+    NOT_FOUND: 'マッチ参加者が見つかりません',
+
+    ALREADY_EXISTS: 'マッチ参加者は既に存在します',
+    INVALID_DATA: '無効なマッチ参加者データです'
+  },
+  match_round_participant: {
+    CREATE_SUCCESS: 'マッチラウンド参加者の作成に成功しました',
+    UPDATE_SUCCESS: 'マッチラウンド参加者の更新に成功しました',
+    DELETE_SUCCESS: 'マッチラウンド参加者の削除に成功しました',
+    GET_SUCCESS: 'マッチラウンド参加者情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'マッチラウンド参加者リストの取得に成功しました',
+    NOT_FOUND: 'マッチラウンド参加者が見つかりません',
+    ALREADY_EXISTS: 'マッチラウンド参加者は既に存在します',
+    INVALID_DATA: '無効なマッチラウンド参加者データです'
+  },
+  debuff_round: {
+    CREATE_SUCCESS: 'デバフラウンドの作成に成功しました',
+    UPDATE_SUCCESS: 'デバフラウンドの更新に成功しました',
+    DELETE_SUCCESS: 'デバフラウンドの削除に成功しました',
+    GET_SUCCESS: 'デバフラウンド情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'デバフラウンドリストの取得に成功しました',
+
+    NOT_FOUND: 'デバフラウンドが見つかりません',
+    ALREADY_EXISTS: 'デバフラウンドは既に存在します',
+    INVALID_DATA: '無効なデバフラウンドデータです'
   }
 }

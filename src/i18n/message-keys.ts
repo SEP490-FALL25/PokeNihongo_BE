@@ -501,3 +501,84 @@ export const UserTestAttemptMessage = {
 export const UserHistoryMessage = {
   GET_LIST_SUCCESS: 'user_history.GET_LIST_SUCCESS'
 } as const
+
+export const LeaderboardSeasonMessage = {
+  CREATE_SUCCESS: 'leaderboard_season.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'leaderboard_season.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'leaderboard_season.DELETE_SUCCESS',
+  GET_SUCCESS: 'leaderboard_season.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'leaderboard_season.GET_LIST_SUCCESS',
+  NOT_FOUND: 'leaderboard_season.NOT_FOUND',
+  ALREADY_EXISTS: 'leaderboard_season.ALREADY_EXISTS',
+  INVALID_DATA: 'leaderboard_season.INVALID_DATA'
+} as const
+
+export const MatchQueueMessage = {
+  CREATE_SUCCESS: 'match_queue.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'match_queue.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'match_queue.DELETE_SUCCESS',
+  GET_SUCCESS: 'match_queue.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'match_queue.GET_LIST_SUCCESS',
+  NOT_FOUND: 'match_queue.NOT_FOUND',
+  ALREADY_EXISTS: 'match_queue.ALREADY_EXISTS',
+  INVALID_DATA: 'match_queue.INVALID_DATA'
+} as const
+
+export const MatchMessage = {
+  CREATE_SUCCESS: 'match.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'match.UPDATE_SUCCESS',
+
+  DELETE_SUCCESS: 'match.DELETE_SUCCESS',
+  GET_SUCCESS: 'match.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'match.GET_LIST_SUCCESS',
+  NOT_FOUND: 'match.NOT_FOUND',
+  ALREADY_EXISTS: 'match.ALREADY_EXISTS',
+  INVALID_DATA: 'match.INVALID_DATA',
+  NOT_HAVE_ACTIVE_LEADERBOARD_SEASON: 'match.NOT_HAVE_ACTIVE_LEADERBOARD_SEASON'
+} as const
+
+export const MatchRoundMessage = {
+  CREATE_SUCCESS: 'match_round.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'match_round.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'match_round.DELETE_SUCCESS',
+  GET_SUCCESS: 'match_round.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'match_round.GET_LIST_SUCCESS',
+  NOT_FOUND: 'match_round.NOT_FOUND',
+  ALREADY_EXISTS: 'match_round.ALREADY_EXISTS',
+  INVALID_DATA: 'match_round.INVALID_DATA'
+} as const
+
+export const MatchParticipantMessage = {
+  CREATE_SUCCESS: 'match_participant.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'match_participant.UPDATE_SUCCESS',
+
+  DELETE_SUCCESS: 'match_participant.DELETE_SUCCESS',
+  GET_SUCCESS: 'match_participant.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'match_participant.GET_LIST_SUCCESS',
+  NOT_FOUND: 'match_participant.NOT_FOUND',
+  ALREADY_EXISTS: 'match_participant.ALREADY_EXISTS',
+  INVALID_DATA: 'match_participant.INVALID_DATA'
+} as const
+
+export const MatchRoundParticipantMessage = {
+  CREATE_SUCCESS: 'match_round_participant.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'match_round_participant.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'match_round_participant.DELETE_SUCCESS',
+  GET_SUCCESS: 'match_round_participant.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'match_round_participant.GET_LIST_SUCCESS',
+  NOT_FOUND: 'match_round_participant.NOT_FOUND',
+  ALREADY_EXISTS: 'match_round_participant.ALREADY_EXISTS',
+
+  INVALID_DATA: 'match_round_participant.INVALID_DATA'
+} as const
+
+export const DebuffRoundMessage = {
+  CREATE_SUCCESS: 'debuff_round.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'debuff_round.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'debuff_round.DELETE_SUCCESS',
+  GET_SUCCESS: 'debuff_round.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'debuff_round.GET_LIST_SUCCESS',
+  NOT_FOUND: 'debuff_round.NOT_FOUND',
+  ALREADY_EXISTS: 'debuff_round.ALREADY_EXISTS',
+  INVALID_DATA: 'debuff_round.INVALID_DATA'
+} as const
