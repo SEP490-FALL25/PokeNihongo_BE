@@ -11,6 +11,7 @@ import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { TEST_SET_QUESTIONBANK_MESSAGE } from '@/common/constants/message'
 import { BadRequestException } from '@nestjs/common'
 import { Injectable, Logger, HttpException } from '@nestjs/common'
+import { PrismaService } from '@/shared/services/prisma.service'
 import { TranslationHelperService } from '@/modules/translation/translation.helper.service'
 import { pickLabelFromComposite } from '@/common/utils/prase.utils'
 import {
@@ -31,7 +32,8 @@ export class TestSetQuestionBankService {
         private readonly testSetQuestionBankRepository: TestSetQuestionBankRepository,
         private readonly testSetService: TestSetService,
         private readonly questionBankService: QuestionBankService,
-        private readonly translationHelper: TranslationHelperService
+        private readonly translationHelper: TranslationHelperService,
+        private readonly prismaService: PrismaService
     ) { }
 
     async create(data: CreateTestSetQuestionBankBodyType): Promise<MessageResDTO> {
@@ -367,7 +369,6 @@ export class TestSetQuestionBankService {
                                 audioUrl: qb.audioUrl || null,
                                 questionKey: qb.questionKey || null,
                                 pronunciation: qb.pronunciation || null,
-                                order: qb.order || null,
                                 role: qb.role || null,
                                 levelN: qb.levelN || null,
                                 createdById: qb.createdById || null,
@@ -464,7 +465,6 @@ export class TestSetQuestionBankService {
                                     questionType: qb.questionType,
                                     audioUrl: qb.audioUrl,
                                     pronunciation: qb.pronunciation,
-                                    order: qb.order || null,
                                     levelN: qb.levelN,
                                     answers: mappedAnswers
                                 }

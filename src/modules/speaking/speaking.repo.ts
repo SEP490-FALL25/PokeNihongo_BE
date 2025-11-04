@@ -32,7 +32,6 @@ export class SpeakingRepository {
                         questionJp: true,
                         questionType: true,
                         pronunciation: true,
-                        order: true,
                         role: true,
                         levelN: true,
                     },

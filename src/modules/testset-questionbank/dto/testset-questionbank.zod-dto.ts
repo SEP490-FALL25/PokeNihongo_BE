@@ -8,6 +8,7 @@ import {
     GetTestSetQuestionBankByTestSetIdParamsSchema,
     GetTestSetQuestionBankByIdParamsSchema,
     UpdateQuestionOrderSchema,
+    BatchUpdateQuestionOrderSchema,
     DeleteManyTestSetQuestionBankBodySchema
 } from '../entities/testset-questionbank.entities'
 
@@ -17,6 +18,7 @@ export const UpdateTestSetQuestionBankBodyDTO = createZodDto(UpdateTestSetQuesti
 export const GetTestSetQuestionBankByTestSetIdParamsDTO = createZodDto(GetTestSetQuestionBankByTestSetIdParamsSchema)
 export const GetTestSetQuestionBankByIdParamsDTO = createZodDto(GetTestSetQuestionBankByIdParamsSchema)
 export const UpdateQuestionOrderDTO = createZodDto(UpdateQuestionOrderSchema)
+export const BatchUpdateQuestionOrderDTO = createZodDto(BatchUpdateQuestionOrderSchema)
 export const DeleteManyTestSetQuestionBankBodyDTO = createZodDto(DeleteManyTestSetQuestionBankBodySchema)
 
 // Response DTOs

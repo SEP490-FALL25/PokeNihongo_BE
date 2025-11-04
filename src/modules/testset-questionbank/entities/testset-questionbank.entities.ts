@@ -53,6 +53,16 @@ export const UpdateQuestionOrderSchema = z
     })
     .strict()
 
+// Batch Update Question Order Schema (for drag & drop)
+export const BatchUpdateQuestionOrderSchema = z
+    .object({
+        orders: z.array(z.object({
+            id: z.number().int().positive(), // ID của TestSetQuestionBank
+            questionOrder: z.number().int().positive()
+        })).min(1, 'Phải có ít nhất 1 order')
+    })
+    .strict()
+
 // Delete Many Schema
 export const DeleteManyTestSetQuestionBankBodySchema = z
     .object({
@@ -84,4 +94,5 @@ export type CreateMultipleTestSetQuestionBankResponseType = z.infer<typeof Creat
 export type GetTestSetQuestionBankByTestSetIdParamsType = z.infer<typeof GetTestSetQuestionBankByTestSetIdParamsSchema>
 export type GetTestSetQuestionBankByIdParamsType = z.infer<typeof GetTestSetQuestionBankByIdParamsSchema>
 export type UpdateQuestionOrderType = z.infer<typeof UpdateQuestionOrderSchema>
+export type BatchUpdateQuestionOrderType = z.infer<typeof BatchUpdateQuestionOrderSchema>
 export type DeleteManyTestSetQuestionBankBodyType = z.infer<typeof DeleteManyTestSetQuestionBankBodySchema>
