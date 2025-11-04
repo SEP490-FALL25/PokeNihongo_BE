@@ -5,8 +5,10 @@ import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
+  ChoosePokemonMatchRoundParticipantBodyDTO,
   CreateMatchRoundParticipantBodyDTO,
   CreateMatchRoundParticipantResDTO,
+  GetMatchRoundByRoundParamsDTO,
   GetMatchRoundParticipantDetailResDTO,
   GetMatchRoundParticipantParamsDTO,
   UpdateMatchRoundParticipantBodyDTO,
@@ -50,6 +52,24 @@ export class MatchRoundParticipantController {
       {
         userId,
         data: body
+      },
+      lang
+    )
+  }
+
+  @Put('choose-pokemon/round/:matchRoundId')
+  @ZodSerializerDto(UpdateMatchRoundParticipantResDTO)
+  choosePokeWithRound(
+    @Body() body: ChoosePokemonMatchRoundParticipantBodyDTO,
+    @Param() params: GetMatchRoundByRoundParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.matchRoundParticipantService.choosePokemonWithRound(
+      {
+        data: body,
+        matchRoundId: params.matchRoundId,
+        userId
       },
       lang
     )

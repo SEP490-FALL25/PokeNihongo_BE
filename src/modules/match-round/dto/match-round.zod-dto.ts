@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod'
 import {
   CreateMatchRoundBodySchema,
   CreateMatchRoundResSchema,
+  GetMatchRoundDetailForUserResponseSchema,
   GetMatchRoundDetailResSchema,
   GetMatchRoundDetailWithAllLangResSchema,
   GetMatchRoundParamsSchema,
@@ -25,4 +26,8 @@ export class GetMatchRoundDetailResDTO extends createZodDto(
 
 export class GetMatchRoundDetailWithAllLangResDTO extends createZodDto(
   GetMatchRoundDetailWithAllLangResSchema
+) {}
+
+export class GetMatchRoundDetailForUserResDTO extends createZodDto(
+  GetMatchRoundDetailForUserResponseSchema
 ) {}

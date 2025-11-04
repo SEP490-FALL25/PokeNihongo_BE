@@ -1,12 +1,13 @@
+import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Process, Processor } from '@nestjs/bull'
 import { Job } from 'bull'
 
-@Processor('user-deletion')
+@Processor(BullQueue.USER_DELETION)
 export class SharedUserDeletionProcessor {
   constructor(private readonly prisma: PrismaService) {}
 
-  @Process('delete-inactive-user')
+  @Process(BullAction.DELETE_INACTIVE_USER)
   async handleDeletion(job: Job<{ userId: number }>): Promise<void> {
     const { userId } = job.data
     await this.prisma.user.deleteMany({

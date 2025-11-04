@@ -9,3 +9,21 @@ export class MatchQueueAlreadyExistsException extends ConflictException {
     })
   }
 }
+
+export class UserNotEnoughConditionException extends ConflictException {
+  constructor() {
+    super({
+      message: MatchQueueMessage.USER_NOT_ENOUGH_CONDITION,
+      errorKey: MatchQueueMessage.USER_NOT_ENOUGH_CONDITION
+    })
+  }
+}
+
+export class YouHasMatchException extends ConflictException {
+  constructor() {
+    super({
+      message: MatchQueueMessage.YOU_HAS_MATCH,
+      errorKey: MatchQueueMessage.YOU_HAS_MATCH
+    })
+  }
+}

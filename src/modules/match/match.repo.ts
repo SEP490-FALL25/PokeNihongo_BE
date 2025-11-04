@@ -5,6 +5,7 @@ import { MatchStatusType } from '@/common/constants/match.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
+import { MatchParticipantType } from '../match-participant/entities/match-participant.entity'
 import {
   CreateMatchBodyType,
   MATCH_FIELDS,
@@ -136,6 +137,65 @@ export class MatchRepo {
       }
     })
   }
+  findByIdWithParticipant(
+    id: number
+  ): Promise<(MatchType & { participants: MatchParticipantType[] }) | null> {
+    return this.prismaService.match.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        participants: true
+      }
+    })
+  }
+
+  findInProgressByUserId(userId: number): Promise<MatchType | null> {
+    return this.prismaService.match.findFirst({
+      where: {
+        status: 'IN_PROGRESS',
+        deletedAt: null,
+        participants: {
+          some: {
+            userId
+          }
+        }
+      },
+      include: {
+        participants: {
+          include: {
+            user: true
+          }
+        }
+      }
+    })
+  }
+
+  getMatchWithRoundsByUserId(userId: number) {
+    return this.prismaService.match.findFirst({
+      where: {
+        status: 'IN_PROGRESS',
+        deletedAt: null,
+        participants: {
+          some: {
+            userId
+          }
+        }
+      },
+      include: {
+        rounds: {
+          include: {
+            participants: {
+              select: {
+                selectedUserPokemonId: true
+              }
+            }
+          }
+        }
+      }
+    })
+  }
 
   updateWithStatusById(status: MatchStatusType, id: number): Promise<MatchType> {
     return this.prismaService.match.update({
@@ -168,6 +228,20 @@ export class MatchRepo {
         winnerId,
         eloGained,
         eloLost
+      }
+    })
+  }
+
+  findActiveMatchByUserId(userId: number): Promise<MatchType | null> {
+    return this.prismaService.match.findFirst({
+      where: {
+        status: 'IN_PROGRESS',
+        deletedAt: null,
+        participants: {
+          some: {
+            userId
+          }
+        }
       }
     })
   }

@@ -1,14 +1,18 @@
-import envConfig from './config/env.config'
 import { RequestMethod, VersioningType } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { AppModule } from './app.module'
+import envConfig from './config/env.config'
 import setupSwagger from './config/swagger.config'
+import { WebsocketAdapter } from './websockets/websocket.adapter'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
-  const corsOrigin = envConfig.APP_CORS_ORIGIN.split(',');
+  // Enable WebSocket adapter for authentication
+  app.useWebSocketAdapter(new WebsocketAdapter(app))
+
+  const corsOrigin = envConfig.APP_CORS_ORIGIN.split(',')
   app.enableCors({
     origin: corsOrigin,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',

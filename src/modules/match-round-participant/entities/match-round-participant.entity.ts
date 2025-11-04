@@ -13,6 +13,8 @@ export const MatchRoundParticipantSchema = z.object({
   id: z.number(),
   matchParticipantId: z.number(),
   matchRoundId: z.number(),
+  orderSelected: z.number().default(1),
+  endTimeSelected: z.date().nullable(),
   selectedUserPokemonId: z.number().nullable(),
   points: z.number().nullable(),
   totalTimeMs: z.number().nullable(),
@@ -44,8 +46,18 @@ export const CreateMatchRoundParticipantResSchema = z.object({
 })
 
 // Update Schema
-export const UpdateMatchRoundParticipantBodySchema =
-  CreateMatchRoundParticipantBodySchema.partial().strict()
+export const UpdateMatchRoundParticipantBodySchema = MatchRoundParticipantSchema.pick({
+  matchParticipantId: true,
+  matchRoundId: true,
+  selectedUserPokemonId: true,
+  endTimeSelected: true,
+  status: true
+})
+  .partial()
+  .strict()
+export const ChoosePokemonMatchRoundParticipantBodySchema = z.object({
+  pokemonId: z.number()
+})
 
 export const UpdateMatchRoundParticipantResSchema = CreateMatchRoundParticipantResSchema
 
@@ -58,6 +70,10 @@ export const UpdateWithListItemResSchema = z.object({
 // Query Schema
 export const GetMatchRoundParticipantParamsSchema = z.object({
   matchRoundParticipantId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
+})
+
+export const GetMatchRoundParticipantByRoundParamsSchema = z.object({
+  matchRoundId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
 
 export const GetMatchRoundParticipantDetailSchema = MatchRoundParticipantSchema
@@ -78,6 +94,10 @@ export type UpdateMatchRoundParticipantBodyType = z.infer<
 >
 export type GetMatchRoundParticipantParamsType = z.infer<
   typeof GetMatchRoundParticipantParamsSchema
+>
+
+export type ChoosePokemonMatchRoundParticipantBodyType = z.infer<
+  typeof ChoosePokemonMatchRoundParticipantBodySchema
 >
 
 // Field for query
