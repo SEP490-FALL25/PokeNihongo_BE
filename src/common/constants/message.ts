@@ -440,3 +440,16 @@ export const EXERCISES_MESSAGE = {
 export const USER_HISTORY_MESSAGE = {
   GET_LIST_SUCCESS: 'Lấy danh sách lịch sử làm bài thành công'
 }
+
+export const SRS_REVIEW_MESSAGE = {
+  GET_SUCCESS: 'Lấy thông tin SRS thành công',
+  GET_LIST_SUCCESS: 'Lấy danh sách SRS thành công',
+  UPDATE_SUCCESS: 'Cập nhật SRS thành công',
+  UPSERT_SUCCESS: 'Tạo/cập nhật SRS thành công'
+}
+
+export const SRS_MESSAGE = {
+  FORBIDDEN_ACCESS: 'Bạn không có quyền truy cập bản ghi SRS này',
+  NOT_FOUND: 'Không tìm thấy bản ghi SRS',
+  INVALID_DATA: 'Dữ liệu SRS không hợp lệ'
+}

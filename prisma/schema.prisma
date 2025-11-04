@@ -2089,6 +2089,8 @@ model UserSrsReview {
   // Phân tích điểm yếu
   incorrectStreak Int     @default(0)
   isLeech         Boolean @default(false)
+  // Đánh dấu người dùng đã đọc/đã xem phân tích liên quan
+  isRead          Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2124,6 +2126,7 @@ enum RecommendationTargetType {
   VOCABULARY
   GRAMMAR
   KANJI
+  QUESTION_BANK
 }
 
 enum RecommendationSourceType {
