@@ -227,6 +227,9 @@ export class GeminiService {
             }
 
             const text = response.text()
+            try {
+                this.logger.debug(`[RECOMMEND] Raw Gemini text (first 600 chars): ${String(text ?? '').slice(0, 600)}`)
+            } catch { }
 
             if (!text || text.trim() === '') {
                 throw new Error('Empty text in Gemini API response')
@@ -300,25 +303,8 @@ export class GeminiService {
                 const safeData = await this.dataAccessService.getAiSafeData(userId, policy)
                 analysis = this.buildSummaryFromSafeData(safeData, limit)
             } else {
-                // Fallback legacy: query trực tiếp để phân tích
-                const [exerciseAttempts, testAttempts] = await Promise.all([
-                    this.prisma.userExerciseAttempt.findMany({
-                        where: { userId },
-                        include: {
-                            exercise: { include: { lesson: true } },
-                            userAnswerLogs: { include: { questionBank: true } }
-                        },
-                        orderBy: { updatedAt: 'desc' },
-                        take: 50
-                    }),
-                    this.prisma.userTestAttempt.findMany({
-                        where: { userId },
-                        include: { test: true, userTestAnswerLogs: { include: { questionBank: true } } },
-                        orderBy: { updatedAt: 'desc' },
-                        take: 50
-                    })
-                ])
-                analysis = this.analyzeUserPerformance(exerciseAttempts, testAttempts)
+                // Bắt buộc phải có policy, nếu không thì từ chối xử lý
+                throw new BadRequestException('PERSONALIZED_RECOMMENDATIONS policy is required but not configured')
             }
 
             const prompt = config
@@ -330,9 +316,12 @@ export class GeminiService {
             // Gọi Gemini API - chọn API key dựa trên model
             const genAI = this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
-            const result = await model.generateContent(prompt)
-            const response = await result.response
 
+            this.logger.warn(`[RECOMMEND] Prompt: ${prompt}`)
+            const result = await model.generateContent(prompt)
+
+            const response = await result.response
+            this.logger.warn(`[RECOMMEND] Response: ${response}`)
             if (!response) {
                 throw new Error('Empty response from Gemini API')
             }
@@ -345,6 +334,23 @@ export class GeminiService {
 
             // Parse response từ Gemini
             let recommendations = this.parseRecommendationsResponse(text, analysis)
+            this.logger.warn(`[RECOMMEND] Invalid items (contentId<=0): ${JSON.stringify(recommendations)}`)
+            try {
+                const invalid = (recommendations || []).filter((r: any) => !(r?.targetId || r?.contentId) || Number(r.targetId || r.contentId) <= 0)
+                const valid = (recommendations || []).filter((r: any) => (r?.targetId || r?.contentId) && Number(r.targetId || r.contentId) > 0)
+                this.logger.log(`[RECOMMEND] Parsed items: total=${recommendations?.length || 0}, valid=${valid.length}, invalid=${invalid.length}`)
+                if (invalid.length > 0) {
+                    this.logger.warn(`[RECOMMEND] Invalid items (contentId<=0): ${JSON.stringify(invalid).slice(0, 500)}`)
+                }
+                for (const it of recommendations || []) {
+                    try {
+                        const qb = it.sourceQuestionBankId || it.questionBankId || 0
+                        const tt = (it.targetType || it.contentType || '').toString()
+                        const tid = Number(it.targetId || it.contentId) || 0
+                        this.logger.debug(`[RECOMMEND][ITEM] qbId=${qb} -> ${tt}#${tid} reason="${String(it.reason || '').slice(0, 80)}" priority=${it.priority}`)
+                    } catch { }
+                }
+            } catch { }
             if (options?.allowedTypes && options.allowedTypes.length > 0) {
                 const allow = new Set(options.allowedTypes.map(t => String(t).toUpperCase()))
                 recommendations = recommendations.filter((r: any) => allow.has(String(r.contentType || '').toUpperCase()))
@@ -358,8 +364,8 @@ export class GeminiService {
                 // SRS types: VOCABULARY, GRAMMAR, KANJI, TEST, EXERCISE
                 const validSrsTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI', 'TEST', 'EXERCISE']
                 const srsRows = (options?.createSrs ? (payload.recommendations || []) : []).map((r: any) => {
-                    const contentType = (r.contentType || 'VOCABULARY').toUpperCase()
-                    const contentId = Number(r.contentId) || 0
+                    const contentType = String(r.targetType || r.contentType || 'VOCABULARY').toUpperCase()
+                    const contentId = Number(r.targetId || r.contentId) || 0
 
                     // Validate contentType và contentId
                     if (!contentId || !validSrsTypes.includes(contentType)) {
@@ -382,10 +388,29 @@ export class GeminiService {
                 }).filter(Boolean)
 
                 if (srsRows.length > 0) {
-                    // Upsert SRS (create hoặc update nếu đã tồn tại)
                     for (const srs of srsRows as any[]) {
                         if (!srs) continue
-                        await (this.prisma as any).userSrsReview.upsert({
+                        const existing = await (this.prisma as any).userSrsReview.findUnique({
+                            where: {
+                                userId_contentType_contentId: {
+                                    userId: srs.userId,
+                                    contentType: srs.contentType as any,
+                                    contentId: srs.contentId
+                                }
+                            }
+                        })
+                        if (!existing) {
+                            await (this.prisma as any).userSrsReview.create({ data: { ...srs, isRead: false } })
+                            this.logger.debug(`[SRS][CREATE] ${srs.contentType}#${srs.contentId} message="${String(srs.message || '').slice(0, 80)}"`)
+                            continue
+                        }
+                        const now = new Date()
+                        const nextReviewDate = new Date(now)
+                        nextReviewDate.setDate(nextReviewDate.getDate() + 1)
+                        let incorrectStreak = existing.incorrectStreak
+                        if (!existing.isRead) incorrectStreak += 1
+                        const isLeech = incorrectStreak >= 5
+                        await (this.prisma as any).userSrsReview.update({
                             where: {
                                 userId_contentType_contentId: {
                                     userId: srs.userId,
@@ -393,27 +418,51 @@ export class GeminiService {
                                     contentId: srs.contentId
                                 }
                             },
-                            update: {
-                                srsLevel: 0, // Reset về level 0 nếu đã có
-                                nextReviewDate: new Date(),
-                                incorrectStreak: 0,
-                                isLeech: false,
-                                message: srs.message || '',
-                                updatedAt: new Date()
-                            },
-                            create: srs
+                            data: {
+                                nextReviewDate,
+                                incorrectStreak,
+                                isLeech,
+                                message: srs.message || undefined
+                            }
                         })
+                        this.logger.debug(`[SRS][UPDATE] ${srs.contentType}#${srs.contentId} incorrectStreak=${incorrectStreak} isLeech=${isLeech}`)
+                        if (existing.isRead) {
+                            await (this.prisma as any).userAIRecommendation.create({
+                                data: {
+                                    userId: srs.userId,
+                                    targetType: srs.contentType as any,
+                                    targetId: srs.contentId,
+                                    reason: srs.message || 'Ôn lại để củng cố',
+                                    source: 'SRS',
+                                    modelUsed: modelName
+                                }
+                            }).catch(() => { })
+                            this.logger.debug(`[RECOMMEND][FROM_SRS] ${srs.contentType}#${srs.contentId}`)
+                        }
                     }
-                    this.logger.log(`Created/updated ${srsRows.length} SRS reviews`)
+                    this.logger.log(`Processed ${srsRows.length} SRS reviews (create/update)`)
                 }
 
                 // Lưu recommendations vào DB để FE có thể hiển thị lại/ghi nhận hành động
                 const recRows = (payload.recommendations || []).map((r: any) => {
-                    // Map contentType từ AI response sang RecommendationTargetType enum
-                    const contentTypeUpper = (r.contentType || 'VOCABULARY').toUpperCase()
-                    let targetType: RecommendationTargetType = RecommendationTargetType.VOCABULARY
+                    // Nếu có questionBankId hợp lệ, tag Recommendation tới QUESTION_BANK trước
+                    const qbId = Number(r.sourceQuestionBankId || r.questionBankId) || 0
+                    if (qbId > 0) {
+                        const row = {
+                            userId,
+                            targetType: 'QUESTION_BANK' as any,
+                            targetId: qbId,
+                            reason: String(r.reason || ''),
+                            source: 'PERSONALIZED',
+                            modelUsed: modelName
+                        }
+                        this.logger.debug(`[RECOMMEND][SAVE] QUESTION_BANK#${qbId} reason="${String(r.reason || '').slice(0, 80)}"`)
+                        return row
+                    }
 
-                    // Validate và map đúng enum value
+                    // Fallback: Map theo contentType
+                    const contentTypeUpper = String(r.targetType || r.contentType || 'VOCABULARY').toUpperCase()
+                    let targetType: RecommendationTargetType = RecommendationTargetType.VOCABULARY
                     if (contentTypeUpper === 'VOCABULARY') targetType = RecommendationTargetType.VOCABULARY
                     else if (contentTypeUpper === 'GRAMMAR') targetType = RecommendationTargetType.GRAMMAR
                     else if (contentTypeUpper === 'KANJI') targetType = RecommendationTargetType.KANJI
@@ -421,18 +470,21 @@ export class GeminiService {
                     else if (contentTypeUpper === 'TEST') targetType = RecommendationTargetType.TEST
                     else if (contentTypeUpper === 'LESSON') targetType = RecommendationTargetType.LESSON
 
-                    return {
+                    const row = {
                         userId,
                         targetType,
-                        targetId: Number(r.contentId) || 0,
+                        targetId: Number(r.targetId || r.contentId) || 0,
                         reason: String(r.reason || ''),
                         source: 'PERSONALIZED',
                         modelUsed: modelName
                     }
+                    this.logger.debug(`[RECOMMEND][SAVE] ${String(targetType)}#${row.targetId} reason="${String(r.reason || '').slice(0, 80)}"`)
+                    return row
                 }).filter((r: any) => r.targetId > 0)
 
                 if (recRows.length > 0) {
                     await (this.prisma as any).userAIRecommendation.createMany({ data: recRows, skipDuplicates: true })
+                    this.logger.log(`[RECOMMEND] Saved ${recRows.length} recommendations`)
                 }
             } catch (e) {
                 this.logger.warn('Failed to persist SRS/recommendations', e as any)
@@ -573,7 +625,7 @@ export class GeminiService {
 
         return {
             recentIncorrect: recentIncorrect.slice(0, 100),
-            vocabularies: vocabularies.slice(0, 500).map((v: any) => ({
+            vocabularies: vocabularies.map((v: any) => ({
                 id: v.id,
                 wordJp: v.wordJp,
                 reading: v.reading,
@@ -1144,14 +1196,24 @@ Chỉ trả về JSON array, không có text thừa. Sắp xếp theo priority t
                 throw new Error('Response không phải là array')
             }
 
-            // Parse format mới: contentType, contentId (cho SRS), message khuyến nghị
-            return parsed.map(item => ({
-                contentType: item.contentType || 'VOCABULARY', // VOCABULARY | GRAMMAR | KANJI
-                contentId: Number(item.contentId) || 0,
-                reason: item.reason || '',
-                message: item.message || '',
-                priority: item.priority || 'medium'
-            }))
+            // Parse format mới: có thể kèm questionBankId/target
+            return parsed.map(item => {
+                // New prompt schema
+                const sourceQuestionBankId = Number(item.sourceQuestionBankId || item.questionBankId) || 0
+                const targetType = String(item.targetType || item.contentType || 'VOCABULARY').toUpperCase()
+                const targetId = Number(item.targetId || item.contentId) || 0
+                return {
+                    sourceQuestionBankId,
+                    targetType,
+                    targetId,
+                    // Backward-compat fields for downstream usage
+                    contentType: targetType,
+                    contentId: targetId,
+                    reason: item.reason || '',
+                    message: item.message || '',
+                    priority: item.priority || 'medium'
+                }
+            })
         } catch (error) {
             this.logger.error('Error parsing recommendations response:', error)
             return []

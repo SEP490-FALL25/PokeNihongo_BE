@@ -367,6 +367,8 @@ export class TestSetQuestionBankService {
                                 audioUrl: qb.audioUrl || null,
                                 questionKey: qb.questionKey || null,
                                 pronunciation: qb.pronunciation || null,
+                                order: qb.order || null,
+                                role: qb.role || null,
                                 levelN: qb.levelN || null,
                                 createdById: qb.createdById || null,
                                 createdAt: qb.createdAt,
@@ -462,6 +464,7 @@ export class TestSetQuestionBankService {
                                     questionType: qb.questionType,
                                     audioUrl: qb.audioUrl,
                                     pronunciation: qb.pronunciation,
+                                    order: qb.order || null,
                                     levelN: qb.levelN,
                                     answers: mappedAnswers
                                 }

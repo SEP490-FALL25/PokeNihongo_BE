@@ -54,11 +54,16 @@ export class GeminiController {
             throw new BadRequestException('Limit phải là số từ 1 đến 50')
         }
         const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber)
+        const rawItems = (result.recommendations || [])
+        const filtered = rawItems.filter((r: any) => Number(r.targetId || r.contentId) > 0)
+        if (rawItems.length !== filtered.length) {
+            try { console.warn(`[RECOMMEND][UI] filtered out ${rawItems.length - filtered.length} invalid items (contentId<=0)`) } catch { }
+        }
         const ui = {
             title: 'Làm lại để cải thiện',
-            items: (result.recommendations || []).map((r: any) => ({
-                contentType: r.contentType,
-                contentId: r.contentId,
+            items: filtered.map((r: any) => ({
+                contentType: r.targetType || r.contentType,
+                contentId: r.targetId || r.contentId,
                 reason: r.reason,
                 priority: r.priority
             }))
@@ -84,11 +89,17 @@ export class GeminiController {
             createSrs: true,
             allowedTypes: ['VOCABULARY', 'GRAMMAR', 'KANJI']
         })
+        const rawItems = (result.recommendations || [])
+        const filtered = rawItems.filter((r: any) => Number(r.targetId || r.contentId) > 0)
+        if (rawItems.length !== filtered.length) {
+            try { console.warn(`[RECOMMEND][UI] filtered out ${rawItems.length - filtered.length} invalid SRS items`) } catch { }
+        }
         const ui = {
             title: 'Ôn lại để ghi nhớ',
-            items: (result.recommendations || []).map((r: any) => ({
-                contentType: r.contentType,
-                contentId: r.contentId,
+            items: filtered.map((r: any) => ({
+                contentType: r.targetType || r.contentType,
+                contentId: r.targetId || r.contentId,
+                questionBankId: r.sourceQuestionBankId || r.questionBankId,
                 reason: r.reason,
                 priority: r.priority
             }))
@@ -114,11 +125,16 @@ export class GeminiController {
             createSrs: true, // Tạo SRS cho TEST/EXERCISE
             allowedTypes: ['TEST', 'EXERCISE'] // Chỉ recommend TEST/EXERCISE đã làm sai
         })
+        const rawItems = (result.recommendations || [])
+        const filtered = rawItems.filter((r: any) => Number(r.targetId || r.contentId) > 0)
+        if (rawItems.length !== filtered.length) {
+            try { console.warn(`[RECOMMEND][UI] filtered out ${rawItems.length - filtered.length} invalid skill items`) } catch { }
+        }
         const ui = {
             title: 'Luyện kỹ năng để cải thiện',
-            items: (result.recommendations || []).map((r: any) => ({
-                contentType: r.contentType,
-                contentId: r.contentId,
+            items: filtered.map((r: any) => ({
+                contentType: r.targetType || r.contentType,
+                contentId: r.targetId || r.contentId,
                 reason: r.reason,
                 priority: r.priority
             }))
