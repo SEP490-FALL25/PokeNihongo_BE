@@ -12,10 +12,10 @@ export class HandleMatchmakingCronjob {
   @Cron('*/5 * * * * *')
   async runMatchmaking() {
     try {
-      this.logger.debug('[Matchmaking Cronjob] Running matchmaking process...')
+      // this.logger.debug('[Matchmaking Cronjob] Running matchmaking process...')
       await this.matchQueueService.handleMatchmakingRun()
     } catch (error) {
-      this.logger.error('[Matchmaking Cronjob] Error during matchmaking:', error)
+      // this.logger.error('[Matchmaking Cronjob] Error during matchmaking:', error)
     }
   }
 }

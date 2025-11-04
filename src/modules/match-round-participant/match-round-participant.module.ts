@@ -2,14 +2,20 @@ import { WebsocketsModule } from '@/websockets/websockets.module'
 import { forwardRef, Module } from '@nestjs/common'
 import { MatchRoundModule } from '../match-round/match-round.module'
 import { MatchModule } from '../match/match.module'
+import { UserPokemonModule } from '../user-pokemon/user-pokemon.module'
 import { MatchRoundParticipantController } from './match-round-participant.controller'
 import { MatchRoundParticipantRepo } from './match-round-participant.repo'
 import { MatchRoundParticipantService } from './match-round-participant.service'
 
 @Module({
-  imports: [MatchModule, forwardRef(() => MatchRoundModule), WebsocketsModule],
+  imports: [
+    MatchModule,
+    forwardRef(() => MatchRoundModule),
+    WebsocketsModule,
+    UserPokemonModule
+  ],
   controllers: [MatchRoundParticipantController],
   providers: [MatchRoundParticipantService, MatchRoundParticipantRepo],
-  exports: [MatchRoundParticipantRepo]
+  exports: [MatchRoundParticipantService, MatchRoundParticipantRepo]
 })
 export class MatchRoundParticipantModule {}

@@ -18,3 +18,12 @@ export class UserNotEnoughConditionException extends ConflictException {
     })
   }
 }
+
+export class YouHasMatchException extends ConflictException {
+  constructor() {
+    super({
+      message: MatchQueueMessage.YOU_HAS_MATCH,
+      errorKey: MatchQueueMessage.YOU_HAS_MATCH
+    })
+  }
+}

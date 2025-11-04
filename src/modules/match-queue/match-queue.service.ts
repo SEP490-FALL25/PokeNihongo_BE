@@ -20,13 +20,14 @@ import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import { UserNotFoundException } from '../user/dto/user.error'
 import {
   MatchQueueAlreadyExistsException,
-  UserNotEnoughConditionException
+  UserNotEnoughConditionException,
+  YouHasMatchException
 } from './dto/match-queue.error'
 import { MatchQueueRepo } from './match-queue.repo'
 import { MatchmakingQueueManager } from './matchmaking-queue-manager'
 
 const TIME_KICK_USER_MS = 10000 // 10s
-const TIME_OUT_USER_MS = 55000 // 25s
+const TIME_OUT_USER_MS = 25000 // 25s
 
 @Injectable()
 export class MatchQueueService implements OnModuleInit {
@@ -75,7 +76,7 @@ export class MatchQueueService implements OnModuleInit {
     try {
       const queueSize = this.queueManager.getQueueSize()
       if (queueSize === 0) {
-        this.logger.debug('[MatchmakingRun] No users in queue')
+        // this.logger.debug('[MatchmakingRun] No users in queue')
         return
       }
 
@@ -270,10 +271,16 @@ export class MatchQueueService implements OnModuleInit {
       if (!user) {
         throw new UserNotFoundException()
       }
+
+      // kiem tra xem user co dang trong tran khong
+      const existingMatching = await this.matchRepo.findActiveMatchByUserId(createdById)
+      if (existingMatching) {
+        throw new YouHasMatchException()
+      }
       // user du level 5 chua ?, du 6 pokemon chua?
       const userPokemons = await this.userPokeRepo.countPokemonByUser(createdById)
 
-      if ((user.level?.levelNumber || 0) < 1 || userPokemons < 1) {
+      if ((user.level?.levelNumber || 0) < 1 || userPokemons < 5) {
         throw new UserNotEnoughConditionException()
       }
 

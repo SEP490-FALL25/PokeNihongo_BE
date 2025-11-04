@@ -159,6 +159,10 @@ export class UserPokemonService {
 
     // 1. Lấy danh sách tất cả pokemon
     const pokemonData = await this.pokemonRepo.getPokemonListWithPokemonUser(query)
+    const pokemonIdToRarity = new Map<number, string>()
+    ;(pokemonData.results || []).forEach((p: any) => {
+      pokemonIdToRarity.set(p.id, p.rarity)
+    })
 
     // 2. Lấy danh sách pokemon của user
     const userPokemons = await this.userPokemonRepo.getByUserId(userId)
@@ -692,17 +696,44 @@ export class UserPokemonService {
   ) {
     // 1. Lấy danh sách tất cả pokemon
     const pokemonData = await this.pokemonRepo.getPokemonListWithPokemonUser(query)
+    const pokemonIdToRarity = new Map<number, string>()
+    ;(pokemonData.results || []).forEach((p: any) => {
+      pokemonIdToRarity.set(p.id, p.rarity)
+    })
 
     // 2. Lấy danh sách userPokemon của user
     const userPokemons = await this.userPokemonRepo.getUserPokemons(userId)
     // Tạo set các pokemonId mà user sở hữu
     const userPokemonIds = new Set(userPokemons.map((up) => up.pokemonId))
+    const userUpIdSet = new Set(userPokemons.map((up) => up.id))
+    const upIdToPokemon = new Map<number, { pokemonId: number; rarity: string }>()
+    for (const up of userPokemons) {
+      upIdToPokemon.set(up.id, {
+        pokemonId: up.pokemonId,
+        rarity: pokemonIdToRarity.get(up.pokemonId) || ''
+      })
+    }
     // 3. dựa vào userId tìm ra match
     const matches = await this.matchRepo.getMatchWithRoundsByUserId(userId)
     const roundUserPokemonIds =
       matches?.rounds
         .flatMap((round) => round.participants.map((p) => p.selectedUserPokemonId))
         .filter((id) => typeof id === 'number') || []
+
+    // Selected userPokemonIds that belong to this user (not opponent)
+    const selectedByUserUpIds = roundUserPokemonIds.filter((id) =>
+      userUpIdSet.has(id as number)
+    ) as number[]
+
+    // Check if the user has already selected any LEGENDARY pokemon in current match rounds
+    let hasSelectedLegendary = false
+    for (const upId of selectedByUserUpIds) {
+      const info = upIdToPokemon.get(upId)
+      if (info && info.rarity === 'LEGENDARY') {
+        hasSelectedLegendary = true
+        break
+      }
+    }
 
     //4. Map pokemon với thông tin userPokemon
     // - Danh sách pokemon: chỉ những pokemon mà user đang sở hữu (userPokemonIds)
@@ -721,13 +752,15 @@ export class UserPokemonService {
       .map((pokemon: any) => {
         const userUpIds = upIdsByPokemonId.get(pokemon.id) || []
         const selectedInRound = userUpIds.some((id) => roundUserPokemonIds.includes(id))
+        // Apply LEGENDARY rule: if user already selected a LEGENDARY, all LEGENDARY cannot be picked
+        const legendaryBlocked = hasSelectedLegendary && pokemon.rarity === 'LEGENDARY'
         return {
           id: pokemon.id,
           nameJp: pokemon.nameJp,
           nameTranslations: pokemon.nameTranslations,
           imageUrl: pokemon.imageUrl,
           rarity: pokemon.rarity,
-          canPick: !selectedInRound
+          canPick: !(selectedInRound || legendaryBlocked)
         }
       })
 

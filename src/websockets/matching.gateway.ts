@@ -3,6 +3,7 @@ import { TokenService } from '@/shared/services/token.service'
 import { Injectable, Logger } from '@nestjs/common'
 import {
   ConnectedSocket,
+  MessageBody,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer
@@ -49,8 +50,8 @@ export class MatchingGateway {
    * Handle user joining matching room
    * userId is extracted from verified token in socket.data (set by adapter)
    */
-  @SubscribeMessage(MATCHING_EVENTS.JOIN_MATCHING_ROOM)
-  handleJoinMatchingRoom(@ConnectedSocket() client: Socket): void {
+  @SubscribeMessage(MATCHING_EVENTS.JOIN_SEARCHING_ROOM)
+  handleJoinSearchingRoom(@ConnectedSocket() client: Socket): void {
     const userId = client.data?.userId
 
     if (!userId) {
@@ -60,7 +61,7 @@ export class MatchingGateway {
       return
     }
 
-    const roomName = SOCKET_ROOM.getMatchingRoom(userId)
+    const roomName = SOCKET_ROOM.getMatchingRoomByUserId(userId)
     client.join(roomName)
 
     this.logger.debug(
@@ -71,8 +72,8 @@ export class MatchingGateway {
   /**
    * Handle user leaving matching room
    */
-  @SubscribeMessage(MATCHING_EVENTS.LEAVE_MATCHING_ROOM)
-  handleLeaveMatchingRoom(@ConnectedSocket() client: Socket): void {
+  @SubscribeMessage(MATCHING_EVENTS.LEAVE_SEARCHING_ROOM)
+  handleLeaveSearchingRoom(@ConnectedSocket() client: Socket): void {
     const userId = client.data?.userId
 
     if (!userId) {
@@ -82,7 +83,7 @@ export class MatchingGateway {
       return
     }
 
-    const roomName = SOCKET_ROOM.getMatchingRoom(userId)
+    const roomName = SOCKET_ROOM.getMatchingRoomByUserId(userId)
     client.leave(roomName)
 
     this.logger.debug(
@@ -94,7 +95,7 @@ export class MatchingGateway {
    * Gửi notification cho 1 user cụ thể
    */
   notifyUser(userId: number, payload: MatchingEventPayload): void {
-    const roomName = SOCKET_ROOM.getMatchingRoom(userId)
+    const roomName = SOCKET_ROOM.getMatchingRoomByUserId(userId)
     console.log('roomName: ', roomName)
 
     this.server.to(roomName).emit(MATCHING_EVENTS.MATCHING_EVENT, payload)
@@ -288,73 +289,124 @@ export class MatchingGateway {
 
   /**
    * Gửi notification khi Pokemon được chọn
+   * Emits to the match room (matching_{matchId}) so both users receive updates
+   * Data follows GetMatchRoundDetailForUserResSchema format
    */
   notifyPokemonSelected(
+    matchId: number,
     matchRoundId: number,
-    matchRound: any,
+    data: {
+      match: {
+        id: number
+        status: string
+        participants: Array<{
+          id: number
+          userId: number
+          user: {
+            id: number
+            name: string
+            email: string
+            eloscore: number
+            avatar: string | null
+          }
+        }>
+      }
+      rounds: Array<{
+        id: number
+        roundNumber: string
+        status: string
+        endTimeRound: Date | null
+        participants: Array<{
+          id: number
+          matchParticipantId: number
+          orderSelected: number
+          endTimeSelected: Date | null
+          selectedUserPokemonId: number | null
+          selectedUserPokemon: {
+            id: number
+            userId: number
+            pokemonId: number
+            pokemon: {
+              id: number
+              pokedex_number: number
+              nameJp: string
+              nameTranslations: any
+              imageUrl: string | null
+              rarity: string
+            } | null
+          } | null
+        }>
+      }>
+    },
     participant: any,
     opponent: any
   ): void {
-    const room = SOCKET_ROOM.getMatchRoundRoom(matchRoundId)
+    const room = SOCKET_ROOM.getMatchRoom(matchId)
 
     const payload = {
       type: 'POKEMON_SELECTED',
+      matchId,
       matchRoundId,
-      matchRound,
-      participant,
-      opponent
+      data
     }
 
-    this.server.to(room).emit(MATCHING_EVENTS.MATCHING_EVENT, payload)
+    console.log('notifyPokemonSelected payload: ', JSON.stringify(payload, null, 2))
+    console.log('match-room: ', room)
+
+    this.server.to(room).emit(MATCHING_EVENTS.SELECT_POKEMON, payload)
 
     this.logger.log(
-      `[MatchingGateway] Notified room ${room} about Pokemon selection in match-round ${matchRoundId}`
+      `[MatchingGateway] Notified room ${room} about Pokemon selection in match ${matchId}, round ${matchRoundId}`
     )
   }
 
   /**
-   * Join match round room
+   * Join match room
+   * Both users in the match join the same room using matchId
+   * This allows real-time updates for Pokemon selection to both players across all rounds
    */
-  @SubscribeMessage('join-match-round-room')
-  handleJoinMatchRoundRoom(
+  @SubscribeMessage(MATCHING_EVENTS.JOIN_MATCHING_ROOM)
+  handleJoinMatchRoom(
     @ConnectedSocket() client: Socket,
-    payload: { matchRoundId: number }
+    @MessageBody() payload: { matchId: number }
   ): void {
     const userId = client.data.userId
 
-    if (!userId || !payload.matchRoundId) {
+    if (!userId || !payload.matchId) {
       this.logger.warn(
-        `[MatchingGateway] Invalid join-match-round-room request from socket ${client.id}`
+        `[MatchingGateway] Invalid join-match-room request from socket ${client.id}`
       )
       return
     }
 
-    const room = SOCKET_ROOM.getMatchRoundRoom(payload.matchRoundId)
+    // Both users join the same room using matchId with pattern: matching_{matchId}
+    const room = SOCKET_ROOM.getMatchRoom(payload.matchId)
     client.join(room)
 
-    this.logger.log(`[MatchingGateway] User ${userId} joined match-round room: ${room}`)
+    this.logger.log(`[MatchingGateway] User ${userId} joined shared match room: ${room}`)
   }
 
   /**
-   * Leave match round room
+   * Leave match room
+   * User leaves the shared room when they're done with the match
    */
-  @SubscribeMessage('leave-match-round-room')
-  handleLeaveMatchRoundRoom(
+  @SubscribeMessage(MATCHING_EVENTS.LEAVE_MATCHING_ROOM)
+  handleLeaveMatchRoom(
     @ConnectedSocket() client: Socket,
-    payload: { matchRoundId: number }
+    @MessageBody() payload: { matchId: number }
   ): void {
     const userId = client.data.userId
 
-    if (!userId || !payload.matchRoundId) {
+    if (!userId || !payload.matchId) {
       this.logger.warn(
-        `[MatchingGateway] Invalid leave-match-round-room request from socket ${client.id}`
+        `[MatchingGateway] Invalid leave-match-room request from socket ${client.id}`
       )
       return
     }
 
-    const room = SOCKET_ROOM.getMatchRoundRoom(payload.matchRoundId)
+    const room = SOCKET_ROOM.getMatchRoom(payload.matchId)
     client.leave(room)
 
-    this.logger.log(`[MatchingGateway] User ${userId} left match-round room: ${room}`)
+    this.logger.log(`[MatchingGateway] User ${userId} left shared match room: ${room}`)
   }
 }

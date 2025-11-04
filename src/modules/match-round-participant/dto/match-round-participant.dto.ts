@@ -1,5 +1,6 @@
 import { createZodDto } from 'nestjs-zod'
 import {
+  ChoosePokemonMatchRoundParticipantBodySchema,
   CreateMatchRoundParticipantBodySchema,
   CreateMatchRoundParticipantResSchema,
   GetMatchRoundParticipantByRoundParamsSchema,
@@ -37,4 +38,8 @@ export class UpdateMatchRoundParticipantResDTO extends createZodDto(
 export class UpdateWithListItemResDTO extends createZodDto(UpdateWithListItemResSchema) {}
 export class GetMatchRoundParticipantDetailResDTO extends createZodDto(
   GetMatchRoundParticipantDetailResSchema
+) {}
+
+export class ChoosePokemonMatchRoundParticipantBodyDTO extends createZodDto(
+  ChoosePokemonMatchRoundParticipantBodySchema
 ) {}

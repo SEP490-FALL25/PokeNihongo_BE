@@ -231,4 +231,18 @@ export class MatchRepo {
       }
     })
   }
+
+  findActiveMatchByUserId(userId: number): Promise<MatchType | null> {
+    return this.prismaService.match.findFirst({
+      where: {
+        status: 'IN_PROGRESS',
+        deletedAt: null,
+        participants: {
+          some: {
+            userId
+          }
+        }
+      }
+    })
+  }
 }

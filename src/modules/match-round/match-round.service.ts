@@ -67,37 +67,60 @@ export class MatchRoundService {
     // Lấy danh sách match-rounds với matchId
     const matchRounds: any[] = await this.matchRoundRepo.listNowByUser(match.id)
 
-    // Tìm participant và opponent từ match
-    const participant = match.participants.find((p) => p.userId === userId)
-    const opponent = match.participants.find((p) => p.userId !== userId)
+    // Chuẩn hóa dữ liệu theo GetMatchRoundDetailForUserResSchema
+    const matchSerialized = {
+      id: match.id,
+      status: match.status,
+      participants: (match.participants || []).map((mp: any) => ({
+        id: mp.id,
+        userId: mp.userId,
+        user: mp.user
+          ? {
+              id: mp.user.id,
+              name: mp.user.name,
+              email: mp.user.email,
+              eloscore: mp.user.eloscore,
+              avatar: mp.user.avatar
+            }
+          : null
+      }))
+    }
 
-    // Chuyển đổi mỗi match-round: participant/opponent tương ứng với user
-    const roundsWithParticipants = matchRounds.map((round) => {
-      const userParticipant = round.participants.find(
-        (p) => p.matchParticipant.userId === userId
-      )
-      const opponentParticipant = round.participants.find(
-        (p) => p.matchParticipant.userId !== userId
-      )
-
-      // Bỏ participants gốc, thay bằng participant/opponent
-      const { participants, ...roundWithoutParticipants } = round
-
-      return {
-        ...roundWithoutParticipants,
-        participant: userParticipant,
-        opponent: opponentParticipant
-      }
-    })
+    const roundsSerialized = (matchRounds || []).map((round: any) => ({
+      id: round.id,
+      roundNumber: round.roundNumber,
+      status: round.status,
+      endTimeRound: round.endTimeRound,
+      participants: (round.participants || []).map((rp: any) => ({
+        id: rp.id,
+        matchParticipantId: rp.matchParticipantId,
+        orderSelected: rp.orderSelected,
+        endTimeSelected: rp.endTimeSelected,
+        selectedUserPokemonId: rp.selectedUserPokemonId,
+        selectedUserPokemon: rp.selectedUserPokemon
+          ? {
+              id: rp.selectedUserPokemon.id,
+              userId: rp.selectedUserPokemon.userId,
+              pokemonId: rp.selectedUserPokemon.pokemonId,
+              pokemon: rp.selectedUserPokemon.pokemon
+                ? {
+                    id: rp.selectedUserPokemon.pokemon.id,
+                    pokedex_number: rp.selectedUserPokemon.pokemon.pokedex_number,
+                    nameJp: rp.selectedUserPokemon.pokemon.nameJp,
+                    nameTranslations: rp.selectedUserPokemon.pokemon.nameTranslations,
+                    imageUrl: rp.selectedUserPokemon.pokemon.imageUrl,
+                    rarity: rp.selectedUserPokemon.pokemon.rarity
+                  }
+                : null
+            }
+          : null
+      }))
+    }))
 
     return {
       data: {
-        match: {
-          ...match,
-          participant,
-          opponent
-        },
-        rounds: roundsWithParticipants
+        match: matchSerialized,
+        rounds: roundsSerialized
       },
       message: this.i18nService.translate(MatchRoundMessage.GET_LIST_SUCCESS, lang)
     }
