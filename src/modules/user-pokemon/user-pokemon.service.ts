@@ -12,6 +12,7 @@ import { Injectable } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { LevelRepo } from '../level/level.repo'
+import { MatchRepo } from '../match/match.repo'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
 import {
   ErrorInitLevelPokemonException,
@@ -31,6 +32,7 @@ export class UserPokemonService {
   constructor(
     private userPokemonRepo: UserPokemonRepo,
     private pokemonRepo: PokemonRepo,
+    private readonly matchRepo: MatchRepo,
     private levelRepo: LevelRepo,
     private readonly sharedUserRepository: SharedUserRepository,
     private readonly i18nService: I18nService,
@@ -680,6 +682,71 @@ export class UserPokemonService {
       statusCode: 200,
       data: result,
       message: this.i18nService.translate(UserPokemonMessage.GET_DETAIL_SUCCESS, lang)
+    }
+  }
+
+  async getPokemonListWithUserByRounds(
+    query: PaginationQueryType,
+    userId: number,
+    lang: string = 'vi'
+  ) {
+    // 1. Lấy danh sách tất cả pokemon
+    const pokemonData = await this.pokemonRepo.getPokemonListWithPokemonUser(query)
+
+    // 2. Lấy danh sách userPokemon của user
+    const userPokemons = await this.userPokemonRepo.getUserPokemons(userId)
+    // Tạo set các pokemonId mà user sở hữu
+    const userPokemonIds = new Set(userPokemons.map((up) => up.pokemonId))
+    // 3. dựa vào userId tìm ra match
+    const matches = await this.matchRepo.getMatchWithRoundsByUserId(userId)
+    const roundUserPokemonIds =
+      matches?.rounds
+        .flatMap((round) => round.participants.map((p) => p.selectedUserPokemonId))
+        .filter((id) => typeof id === 'number') || []
+
+    //4. Map pokemon với thông tin userPokemon
+    // - Danh sách pokemon: chỉ những pokemon mà user đang sở hữu (userPokemonIds)
+    // - Mỗi pokemon kèm field canPick: true nếu user có bất kỳ userPokemonId nào của pokemon này nằm trong roundUserPokemonIds
+
+    // Tạo map pokemonId -> danh sách userPokemonId mà user sở hữu
+    const upIdsByPokemonId = new Map<number, number[]>()
+    for (const up of userPokemons) {
+      const arr = upIdsByPokemonId.get(up.pokemonId) || []
+      arr.push(up.id)
+      upIdsByPokemonId.set(up.pokemonId, arr)
+    }
+
+    const pokemonListWithUser = (pokemonData.results || [])
+      .filter((pokemon: any) => userPokemonIds.has(pokemon.id))
+      .map((pokemon: any) => {
+        const userUpIds = upIdsByPokemonId.get(pokemon.id) || []
+        const selectedInRound = userUpIds.some((id) => roundUserPokemonIds.includes(id))
+        return {
+          id: pokemon.id,
+          nameJp: pokemon.nameJp,
+          nameTranslations: pokemon.nameTranslations,
+          imageUrl: pokemon.imageUrl,
+          rarity: pokemon.rarity,
+          canPick: !selectedInRound
+        }
+      })
+
+    // Recalculate pagination based on filtered results (user-owned Pokemon only)
+    const totalUserOwnedPokemons = pokemonListWithUser.length
+    const updatedPagination = {
+      current: query.currentPage,
+      pageSize: query.pageSize,
+      totalPage: Math.ceil(totalUserOwnedPokemons / query.pageSize),
+      totalItem: pokemonListWithUser.length
+    }
+
+    return {
+      statusCode: 200,
+      data: {
+        results: pokemonListWithUser,
+        pagination: updatedPagination
+      },
+      message: this.i18nService.translate(UserPokemonMessage.GET_LIST_SUCCESS, lang)
     }
   }
 }

@@ -38,7 +38,6 @@ import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
 
-import { HandleMatchmakingCronjob } from './cronjobs/handle-matchmaking.cronjob'
 import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
 import { DebuffRoundModule } from './modules/debuff-round/debuff-round.module'
 import { GachaBannerModule } from './modules/gacha-banner/gacha-banner.module'
@@ -161,7 +160,7 @@ import { WebsocketsModule } from './websockets/websockets.module'
   controllers: [],
   providers: [
     HandleShopBannerCronjob,
-    HandleMatchmakingCronjob, // Cronjob chạy mỗi 5s để xử lý matchmaking
+    // HandleMatchmakingCronjob, // Cronjob chạy mỗi 5s để xử lý matchmaking
     {
       provide: APP_PIPE,
       useClass: CustomZodValidationPipe

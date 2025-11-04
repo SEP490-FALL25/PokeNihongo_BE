@@ -491,4 +491,6 @@ export class MatchParticipantService {
       throw error
     }
   }
+
+  async getListPokemonByUser(userId: number, lang: string = 'vi') {}
 }

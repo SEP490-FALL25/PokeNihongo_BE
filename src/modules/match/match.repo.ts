@@ -172,6 +172,31 @@ export class MatchRepo {
     })
   }
 
+  getMatchWithRoundsByUserId(userId: number) {
+    return this.prismaService.match.findFirst({
+      where: {
+        status: 'IN_PROGRESS',
+        deletedAt: null,
+        participants: {
+          some: {
+            userId
+          }
+        }
+      },
+      include: {
+        rounds: {
+          include: {
+            participants: {
+              select: {
+                selectedUserPokemonId: true
+              }
+            }
+          }
+        }
+      }
+    })
+  }
+
   updateWithStatusById(status: MatchStatusType, id: number): Promise<MatchType> {
     return this.prismaService.match.update({
       where: {
