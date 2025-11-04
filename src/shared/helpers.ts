@@ -129,3 +129,16 @@ export function mapTypesDisplayName(
     display_name: getDisplayName(t?.display_name, lang)
   }))
 }
+
+export function addTimeUTC(date, msToAdd) {
+  const utc = Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    date.getUTCSeconds(),
+    date.getUTCMilliseconds() + msToAdd
+  )
+  return new Date(utc)
+}

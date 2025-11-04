@@ -9,8 +9,7 @@ import {
   CreateMatchParticipantResDTO,
   GetMatchParticipantDetailResDTO,
   GetMatchParticipantParamsDTO,
-  UpdateMatchParticipantBodyDTO,
-  UpdateMatchParticipantResDTO
+  UpdateMatchParticipantBodyDTO
 } from './dto/match-participant.dto'
 import { MatchParticipantService } from './match-participant.service'
 
@@ -51,7 +50,7 @@ export class MatchParticipantController {
   }
 
   @Put(':matchParticipantId')
-  @ZodSerializerDto(UpdateMatchParticipantResDTO)
+  // @ZodSerializerDto(UpdateMatchParticipantResDTO)
   update(
     @Body() body: UpdateMatchParticipantBodyDTO,
     @Param() params: GetMatchParticipantParamsDTO,

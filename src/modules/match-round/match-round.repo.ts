@@ -1,10 +1,11 @@
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
-import { RoundStatus } from '@/common/constants/match.constant'
+import { MatchRoundNumberType, RoundStatus } from '@/common/constants/match.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
+import { MatchRoundParticipantType } from '../match-round-participant/entities/match-round-participant.entity'
 import {
   CreateMatchRoundBodyType,
   MATCH_FIELDS,
@@ -126,10 +127,62 @@ export class MatchRoundRepo {
     }
   }
 
+  async listByUser(pagination: PaginationQueryType, userId: number) {
+    const { where: rawWhere = {}, orderBy } = parseQs(pagination.qs, MATCH_FIELDS)
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    // Build base where
+    const where: any = { deletedAt: null, ...rawWhere }
+
+    // Support filtering by nameTranslation/nameTranslations via relational filter
+
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.matchRound.count({ where }),
+      this.prismaService.matchRound.findMany({
+        where,
+        include: {
+          participants: {
+            orderBy: {
+              orderSelected: 'asc'
+            }
+          }
+        },
+        orderBy,
+        skip,
+        take
+      })
+    ])
+
+    return {
+      results: data,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
+    }
+  }
+
   findById(id: number): Promise<MatchRoundType | null> {
     return this.prismaService.matchRound.findUnique({
       where: {
         id,
+        deletedAt: null
+      }
+    })
+  }
+
+  findByMatchIdAndRoundNumber(
+    matchId: number,
+    roundNumber: MatchRoundNumberType
+  ): Promise<MatchRoundType | null> {
+    return this.prismaService.matchRound.findFirst({
+      where: {
+        matchId,
+        roundNumber: roundNumber as any, // roundNumber từ FE là number, nhưng DB schema là enum
         deletedAt: null
       }
     })
@@ -151,6 +204,96 @@ export class MatchRoundRepo {
         roundWinnerId,
         status: RoundStatus.COMPLETED,
         updatedAt: new Date()
+      }
+    })
+  }
+
+  findByIdWithParticipant(
+    id: number
+  ): Promise<(MatchRoundType & { participants: MatchRoundParticipantType[] }) | null> {
+    return this.prismaService.matchRound.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        participants: true
+      }
+    }) as unknown as Promise<
+      (MatchRoundType & { participants: MatchRoundParticipantType[] }) | null
+    >
+  }
+
+  findByIdWithMatchAndParticipants(id: number) {
+    return this.prismaService.matchRound.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        match: {
+          include: {
+            participants: true
+          }
+        },
+        participants: true
+      }
+    })
+  }
+
+  findPreviousRoundWithParticipants(
+    matchId: number,
+    currentRoundNumber: MatchRoundNumberType
+  ) {
+    // Map để lấy round trước đó
+    const previousRoundMap = {
+      TWO: 'ONE',
+      THREE: 'TWO'
+    }
+
+    const previousRoundNumber = previousRoundMap[currentRoundNumber]
+    if (!previousRoundNumber) return null
+
+    return this.prismaService.matchRound.findFirst({
+      where: {
+        matchId,
+        roundNumber: previousRoundNumber as any,
+        deletedAt: null
+      },
+      include: {
+        participants: {
+          orderBy: {
+            orderSelected: 'asc'
+          }
+        }
+      }
+    })
+  }
+
+  listNowByUser(matchId: number) {
+    return this.prismaService.matchRound.findMany({
+      where: {
+        matchId,
+        deletedAt: null
+      },
+      include: {
+        participants: {
+          include: {
+            matchParticipant: {
+              include: {
+                user: true
+              }
+            },
+            selectedUserPokemon: {
+              include: {
+                pokemon: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        roundNumber: 'asc'
       }
     })
   }

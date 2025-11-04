@@ -34,6 +34,22 @@ export class MatchRoundParticipantRepo {
     })
   }
 
+  createBulk(
+    data: Array<{
+      matchRoundId: number
+      matchParticipantId: number
+      selectedUserPokemonId: number | null
+      orderSelected?: number
+      endTimeSelected?: Date | null
+    }>,
+    prismaTx?: PrismaClient
+  ): Promise<{ count: number }> {
+    const client = prismaTx || this.prismaService
+    return client.matchRoundParticipant.createMany({
+      data
+    })
+  }
+
   update(
     {
       id,
@@ -121,5 +137,27 @@ export class MatchRoundParticipantRepo {
         deletedAt: null
       }
     })
+  }
+
+  async findByMatchRoundIdAndUserId(
+    matchRoundId: number,
+    userId: number
+  ): Promise<MatchRoundParticipantType | null> {
+    return this.prismaService.matchRoundParticipant.findFirst({
+      where: {
+        matchRoundId,
+        matchParticipant: {
+          userId
+        },
+        deletedAt: null
+      }
+    })
+  }
+
+  async findMany(options: {
+    where: any
+    orderBy?: any
+  }): Promise<MatchRoundParticipantType[]> {
+    return this.prismaService.matchRoundParticipant.findMany(options)
   }
 }

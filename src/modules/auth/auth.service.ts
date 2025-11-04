@@ -2,6 +2,7 @@ import { BullQueueService } from '@/3rdService/bull/bull-queue.service'
 import { MailService } from '@/3rdService/mail/mail.service'
 import { UploadService } from '@/3rdService/upload/upload.service'
 import { TypeOfVerificationCode } from '@/common/constants/auth.constant'
+import { BullQueue } from '@/common/constants/bull-action.constant'
 import { RoleName } from '@/common/constants/role.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { AuthMessage } from '@/i18n/message-keys'
@@ -60,11 +61,11 @@ export class AuthService {
     private readonly i18nService: I18nService,
     private readonly userProgressService: UserProgressService,
     private readonly userTestService: UserTestService,
-    @InjectQueue('user-deletion') private readonly deletionQueue: Queue,
+    @InjectQueue(BullQueue.USER_DELETION) private readonly deletionQueue: Queue,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
     private readonly tokenService: TokenService,
     private readonly walletSer: WalletService
-  ) { }
+  ) {}
 
   async login(
     body: LoginBodyType & { userAgent: string; ip: string },

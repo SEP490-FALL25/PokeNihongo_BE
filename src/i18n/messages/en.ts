@@ -490,7 +490,10 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Match queue list retrieved successfully',
     NOT_FOUND: 'Match queue not found',
     ALREADY_EXISTS: 'Match queue already exists',
-    INVALID_DATA: 'Invalid match queue data'
+    INVALID_DATA: 'Invalid match queue data',
+    USER_NOT_ENOUGH_CONDITION:
+      'User does not meet the conditions to join the match queue',
+    YOU_HAS_MATCH: 'You are already in an active match'
   },
   match: {
     CREATE_SUCCESS: 'Match created successfully',
@@ -523,7 +526,8 @@ export const enMessages = {
 
     NOT_FOUND: 'Match participant not found',
     ALREADY_EXISTS: 'Match participant already exists',
-    INVALID_DATA: 'Invalid match participant data'
+    INVALID_DATA: 'Invalid match participant data',
+    INVALID_ACTION: 'Invalid action for match participant'
   },
   match_round_participant: {
     CREATE_SUCCESS: 'Match round participant created successfully',
