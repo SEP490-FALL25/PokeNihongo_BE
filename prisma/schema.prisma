@@ -150,13 +150,15 @@ model User {
   deletedUsers User[] @relation("DeletorUsers")
 
   deletedAt                 DateTime?
-  createdAt                 DateTime            @default(now())
-  updatedAt                 DateTime            @updatedAt
-  tests                     Test[]              @relation("TestCreatedBy")
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  tests                     Test[]                 @relation("TestCreatedBy")
   // Audit backlink for GeminiConfigModel
-  createdGeminiConfigModels GeminiConfigModel[] @relation("GeminiConfigModelCreatedBy")
-  updatedGeminiConfigModels GeminiConfigModel[] @relation("GeminiConfigModelUpdatedBy")
-  deletedGeminiConfigModels GeminiConfigModel[] @relation("GeminiConfigModelDeletedBy")
+  createdGeminiConfigModels GeminiConfigModel[]    @relation("GeminiConfigModelCreatedBy")
+  updatedGeminiConfigModels GeminiConfigModel[]    @relation("GeminiConfigModelUpdatedBy")
+  deletedGeminiConfigModels GeminiConfigModel[]    @relation("GeminiConfigModelDeletedBy")
+  UserAIRecommendation      UserAIRecommendation[]
+  UserSrsReview             UserSrsReview[]
 
   @@index([deletedAt])
 }
@@ -698,9 +700,10 @@ model QuestionBank {
   audioUrl     String?      @db.VarChar(1000) // URL file âm thanh
   questionKey  String?      @db.VarChar(200) // Key để dịch câu hỏi
 
-  pronunciation String? @db.VarChar(1000) // Phiên âm (romaji)
-  levelN        Int?    @default(1) // Độ khó (1-5)
+  role          RoleSpeaking?
 
+  pronunciation String?       @db.VarChar(1000) // Phiên âm (romaji)
+  levelN        Int?          @default(1) // Độ khó (1-5)
   // Audit fields
   createdById Int?
   createdBy   User? @relation("QuestionBankCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -2062,6 +2065,42 @@ enum LessonContentsType {
   KANJI
 }
 
+// === SRS review cho Vocabulary / Grammar / Kanji ===
+enum SrsContentType {
+  VOCABULARY
+  GRAMMAR
+  KANJI
+  TEST
+  EXERCISE
+}
+
+model UserSrsReview {
+  id      Int     @id @default(autoincrement())
+  userId  Int
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message String? @db.Text
+
+  // Nội dung cần ôn: VOCABULARY | GRAMMAR | KANJI
+  contentType SrsContentType
+  contentId   Int
+
+  // Lõi SRS
+  srsLevel       Int      @default(0)
+  nextReviewDate DateTime @default(now())
+
+  // Phân tích điểm yếu
+  incorrectStreak Int     @default(0)
+  isLeech         Boolean @default(false)
+  // Đánh dấu người dùng đã đọc/đã xem phân tích liên quan
+  isRead          Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, contentType, contentId])
+  @@index([userId, nextReviewDate])
+}
+
 // AI Policy scope for data access
 enum AiPolicyScope {
   SELF_ONLY
@@ -2081,6 +2120,51 @@ enum TestStatus {
   SPEAKING_TEST // Nói
 }
 
+// === AI Recommendations ===
+enum RecommendationTargetType {
+  EXERCISE
+  TEST
+  LESSON
+  VOCABULARY
+  GRAMMAR
+  KANJI
+  QUESTION_BANK
+}
+
+enum RecommendationSourceType {
+  PERSONALIZED
+  SRS
+}
+
+enum RecommendationStatus {
+  PENDING
+  DONE
+  DISMISSED
+}
+
+model UserAIRecommendation {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Đối tượng được khuyến nghị (exercise/test/lesson/vocabulary)
+  targetType RecommendationTargetType
+  targetId   Int
+
+  reason    String                   @db.VarChar(1000)
+  source    RecommendationSourceType @default(PERSONALIZED)
+  modelUsed String?                  @db.VarChar(100)
+
+  status    RecommendationStatus @default(PENDING)
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, targetType, targetId])
+}
+
 enum UserTestStatus {
   NOT_STARTED // Chưa được assign/kích hoạt
   ACTIVE // Đã được assign và có thể sử dụng
@@ -2090,6 +2174,7 @@ enum GeminiConfigType {
   SPEAKING_EVALUATION // Đánh giá phát âm SPEAKING
   PERSONALIZED_RECOMMENDATIONS // Gợi ý cá nhân hóa
   AI_KAIWA // Hội thoại AI (AI Kaiwa)
+  PERSONALIZED_RECOMMENDATIONS_ANALYZE
 }
 
 model GeminiConfig {
@@ -2157,14 +2242,15 @@ model GeminiConfigModel {
   geminiModel   GeminiModel @relation(fields: [geminiModelId], references: [id], onDelete: Restrict)
 
   // Tham số tuỳ chọn cho model
-  temperature       Float?
-  topP              Float?
-  topK              Int?
   maxTokens         Int?
   jsonMode          Boolean? @default(false)
   systemInstruction String?  @db.Text
   safetySettings    Json?
   extraParams       Json?
+
+  // Tham chiếu preset cấu hình (ưu tiên presetId nếu có)
+  presetId Int?
+  preset   GeminiModelPreset? @relation(fields: [presetId], references: [id], onDelete: SetNull)
 
   isEnabled Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -2183,6 +2269,27 @@ model GeminiConfigModel {
   geminiConfigs GeminiConfig[]
 
   @@index([deletedAt])
+  @@index([presetId])
+}
+
+// Lưu preset thông số cho Gemini model (áp dụng cho nhiều ConfigModel)
+model GeminiModelPreset {
+  id          Int     @id @default(autoincrement())
+  key         String  @unique @db.VarChar(100)
+  name        String  @db.VarChar(200)
+  description String? @db.Text
+
+  // Thông số cấu hình
+  temperature Float?
+  topP        Float?
+  topK        Int?
+
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Backlink
+  configModels GeminiConfigModel[]
 }
 
 // Mapping service ↔ config: service chỉ dùng được config đã được gán
@@ -2198,4 +2305,9 @@ model GeminiServiceConfig {
   updatedAt DateTime @updatedAt
 
   @@unique([serviceType, geminiConfigId])
+}
+
+enum RoleSpeaking {
+  A
+  B
 }

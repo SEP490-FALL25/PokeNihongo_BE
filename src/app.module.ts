@@ -59,6 +59,7 @@ import { ShopItemModule } from './modules/shop-item/shop-item.module'
 import { ShopPurchaseModule } from './modules/shop-purchase/shop-purchase.module'
 import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module'
 import { SpeakingModule } from './modules/speaking/speaking.module'
+import { SrsReviewModule } from './modules/srs-review/srs-review.module'
 import { TestModule } from './modules/test/test.module'
 import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module'
 import { TestSetModule } from './modules/testset/testset.module'
@@ -155,7 +156,8 @@ import { WebsocketsModule } from './websockets/websockets.module'
     MatchRoundModule,
     MatchParticipantModule,
     MatchRoundParticipantModule,
-    DebuffRoundModule
+    DebuffRoundModule,
+    SrsReviewModule
   ],
 
   controllers: [],

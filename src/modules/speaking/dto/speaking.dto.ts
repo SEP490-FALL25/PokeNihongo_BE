@@ -109,8 +109,8 @@ export class EvaluateSpeakingRequestSwaggerDTO {
     @ApiProperty({ example: 101, description: 'ID câu hỏi' })
     questionBankId: number
 
-    @ApiProperty({ example: 'https://example.com/user-audio.mp3', description: 'URL file âm thanh của user' })
-    userAudioUrl: string
+    @ApiPropertyOptional({ example: 'https://example.com/user-audio.mp3', description: 'URL file âm thanh của user (optional nếu đã upload file audio)' })
+    userAudioUrl?: string
 
     @ApiPropertyOptional({ example: 'ja-JP', description: 'Mã ngôn ngữ (mặc định: ja-JP)' })
     languageCode?: string

@@ -1,7 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
-import { QuestionType } from '@prisma/client'
+import { QuestionType, RoleSpeaking } from '@prisma/client'
 import e from 'express'
 
 extendZodWithOpenApi(z)
@@ -14,6 +14,8 @@ export const QuestionBankSchema = z.object({
     questionType: z.nativeEnum(QuestionType),
     audioUrl: z.string().url().nullable().optional(),
     questionKey: z.string().nullable().optional(),
+
+    role: z.nativeEnum(RoleSpeaking).nullable().optional(),
     pronunciation: z.string().nullable().optional(),
     levelN: z.number().min(1).max(5).nullable().optional(),
     createdAt: z.date(),
@@ -36,6 +38,7 @@ export const CreateQuestionBankBodySchema = QuestionBankSchema.pick({
     questionType: true,
     audioUrl: true,
     questionKey: true,
+    role: true,
     pronunciation: true,
     levelN: true
 }).strict()
@@ -45,6 +48,7 @@ export const UpdateQuestionBankBodySchema = QuestionBankSchema.pick({
     questionType: true,
     audioUrl: true,
     questionKey: true,
+    role: true,
     pronunciation: true,
     levelN: true
 }).partial().strict()
@@ -111,6 +115,7 @@ export const CreateQuestionBankWithMeaningsBodySchema = z.object({
     questionType: z.nativeEnum(QuestionType),
     audioUrl: z.string().nullable().optional(),
     questionKey: z.string().nullable().optional(),
+    role: z.nativeEnum(RoleSpeaking).nullable().optional(),
     pronunciation: z.string().nullable().optional(),
     levelN: z.number().min(1).max(5).nullable().optional(),
     meanings: z.array(z.object({
@@ -124,6 +129,7 @@ export const UpdateQuestionBankWithMeaningsBodySchema = z.object({
     questionType: z.nativeEnum(QuestionType).optional(),
     audioUrl: z.string().nullable().optional(),
     questionKey: z.string().nullable().optional(),
+    role: z.nativeEnum(RoleSpeaking).nullable().optional(),
     pronunciation: z.string().nullable().optional(),
     levelN: z.number().min(1).max(5).nullable().optional(),
     meanings: z.array(z.object({
@@ -137,6 +143,8 @@ export const CreateQuestionBankWithAnswersBodySchema = z.object({
     questionJp: z.string(),
     questionType: z.nativeEnum(QuestionType),
     audioUrl: z.string().nullable().optional(),
+    questionKey: z.string().nullable().optional(),
+    role: z.nativeEnum(RoleSpeaking).nullable().optional(),
     pronunciation: z.string().nullable().optional(),
     levelN: z.number().min(1).max(5).nullable().optional(),
     meanings: z.array(z.object({
@@ -171,6 +179,8 @@ export const UpdatedQuestionBankWithAnswersBodySchema = z.object({
     questionJp: z.string(),
     questionType: z.nativeEnum(QuestionType),
     audioUrl: z.string().nullable().optional(),
+    questionKey: z.string().nullable().optional(),
+    role: z.nativeEnum(RoleSpeaking).nullable().optional(),
     pronunciation: z.string().nullable().optional(),
     levelN: z.number().min(1).max(5).nullable().optional(),
     meanings: z.array(z.object({

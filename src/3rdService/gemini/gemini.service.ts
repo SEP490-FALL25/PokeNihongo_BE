@@ -1,7 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { GoogleAuth } from 'google-auth-library'
 import { PrismaService } from '@/shared/services/prisma.service'
 // import { GeminiConfigType } from '@prisma/client' // Will be available after migration
 import { GeminiConfigRepo } from '@/modules/gemini-config/gemini-config.repo'
@@ -9,21 +8,22 @@ import { TextToSpeechService } from '../speech/text-to-speech.service'
 import { SpeechToTextService } from '../speech/speech-to-text.service'
 import { UploadService } from '../upload/upload.service'
 import { SpeakingService } from '@/modules/speaking/speaking.service'
+import { DataAccessService } from '@/shared/services/data-access.service'
 import { EvaluateSpeakingDto, AIKaiwaDto, ChatWithGeminiDto } from './dto/gemini.dto'
 import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
 import { v4 as uuidv4 } from 'uuid'
 import axios from 'axios'
 import { GEMINI_DEFAULT_CONFIGS } from './config/gemini-default-configs'
-import { GeminiConfigType } from '@prisma/client'
+import { GeminiConfigType, RecommendationTargetType } from '@prisma/client'
 
 @Injectable()
 export class GeminiService {
     private readonly logger = new Logger(GeminiService.name)
     private genAI: GoogleGenerativeAI | null = null // Cho Pro models
     private genAIFlash: GoogleGenerativeAI | null = null // Cho Flash models
-    private readonly useServiceAccount: boolean
-    private auth: GoogleAuth | null = null
     private readonly geminiConfig: any
+    // In-memory short TTL cache for recommendations
+    private readonly shortCache = new Map<string, { value: PersonalizedRecommendationsResponse; expireAt: number }>()
 
     constructor(
         private readonly configService: ConfigService,
@@ -32,94 +32,27 @@ export class GeminiService {
         private readonly textToSpeechService: TextToSpeechService,
         private readonly speechToTextService: SpeechToTextService,
         private readonly uploadService: UploadService,
-        private readonly speakingService: SpeakingService
+        private readonly speakingService: SpeakingService,
+        private readonly dataAccessService: DataAccessService
     ) {
         this.geminiConfig = this.configService.get('gemini')
-        const useServiceAccount = this.geminiConfig?.useServiceAccount || false
-
-        // Ưu tiên dùng service account nếu có (cùng credentials với Speech service)
-        if (useServiceAccount && this.geminiConfig?.serviceAccount) {
-            const { clientEmail, privateKey, projectId } = this.geminiConfig.serviceAccount
-
-            if (clientEmail && privateKey && projectId) {
-                try {
-                    // Khởi tạo GoogleAuth với service account credentials
-                    this.auth = new GoogleAuth({
-                        credentials: {
-                            client_email: clientEmail,
-                            private_key: privateKey.replace(/\\n/g, '\n'),
-                            project_id: projectId
-                        },
-                        scopes: ['https://www.googleapis.com/auth/generative-language']
-                    })
-
-                    this.useServiceAccount = true
-                    this.logger.log(`Gemini AI will use Google Cloud service account (project: ${projectId})`)
-                    return
-                } catch (error) {
-                    this.logger.warn('Failed to initialize service account, falling back to API key:', error)
-                }
-            }
-        }
-
-        // Khởi tạo API keys (nếu có) - lazy initialization
-        this.useServiceAccount = false
         this.logger.log('Gemini AI will use API keys (lazy initialization per model)')
     }
 
     /**
-     * Danh sách các models chỉ sử dụng API key (không dùng service account)
-     */
-    private readonly apiKeyOnlyModels = [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'text-embedding-004'
-    ]
-
-    /**
      * Lấy GoogleGenerativeAI instance dựa trên model name
+     * Chỉ sử dụng API Key (không dùng Service Account)
      * @param modelName - Tên model Gemini
-     * @param forceUseServiceAccount - Force dùng Service Account nếu true, force dùng API Key nếu false, auto nếu undefined
-     * - Các models trong apiKeyOnlyModels: chỉ dùng API key, không dùng service account (trừ khi force)
-     * - Nếu model chứa "flash" → dùng GEMINI_FLASH_API_KEY (nếu có), fallback về GEMINI_API_KEY hoặc serviceAccount
-     * - Nếu model không phải flash → dùng GEMINI_API_KEY hoặc serviceAccount
      */
-    private async getGenAIForModel(modelName: string, forceUseServiceAccount?: boolean): Promise<GoogleGenerativeAI> {
+    private getGenAIForModel(modelName: string): GoogleGenerativeAI {
         const normalizedModelName = modelName.toLowerCase()
-        const isApiKeyOnlyModel = this.apiKeyOnlyModels.some(m => normalizedModelName.includes(m.toLowerCase()))
         const isFlashModel = normalizedModelName.includes('flash')
-
-        // Nếu forceUseServiceAccount được set, ưu tiên theo flag này
-        const shouldUseServiceAccount = forceUseServiceAccount !== undefined
-            ? forceUseServiceAccount
-            : (this.useServiceAccount && !isApiKeyOnlyModel)
 
         // Nếu là Flash model
         if (isFlashModel) {
+            // Kiểm tra cache
             if (this.genAIFlash) {
                 return this.genAIFlash
-            }
-
-            // Nếu force dùng Service Account
-            if (shouldUseServiceAccount && this.auth) {
-                try {
-                    const token = await this.auth.getAccessToken()
-                    if (!token) {
-                        throw new Error('Failed to get access token from service account')
-                    }
-                    this.genAIFlash = new GoogleGenerativeAI(token as string)
-                    this.logger.log(`Gemini Flash initialized with Google Cloud service account token (forced: ${forceUseServiceAccount !== undefined})`)
-                    return this.genAIFlash
-                } catch (error) {
-                    if (forceUseServiceAccount === true) {
-                        throw new Error(`Failed to use Service Account: ${error instanceof Error ? error.message : String(error)}`)
-                    }
-                    this.logger.warn('Failed to get access token for Flash, falling back to API key:', error)
-                }
-            } else if (forceUseServiceAccount === true && !this.auth) {
-                throw new Error('Service Account được yêu cầu nhưng chưa được cấu hình. Vui lòng kiểm tra GOOGLE_CLOUD_* credentials trong .env')
-            } else if (!isApiKeyOnlyModel && forceUseServiceAccount === undefined) {
-                this.logger.log(`Model ${modelName} is configured to use API key only (skipping service account)`)
             }
 
             // Ưu tiên dùng Flash API key nếu có
@@ -141,30 +74,9 @@ export class GeminiService {
         }
 
         // Nếu là Pro model hoặc model khác
+        // Kiểm tra cache
         if (this.genAI) {
             return this.genAI
-        }
-
-        // Nếu force dùng Service Account
-        if (shouldUseServiceAccount && this.auth) {
-            try {
-                const token = await this.auth.getAccessToken()
-                if (!token) {
-                    throw new Error('Failed to get access token from service account')
-                }
-                this.genAI = new GoogleGenerativeAI(token as string)
-                this.logger.log(`Gemini Pro initialized with Google Cloud service account token (forced: ${forceUseServiceAccount !== undefined})`)
-                return this.genAI
-            } catch (error) {
-                if (forceUseServiceAccount === true) {
-                    throw new Error(`Failed to use Service Account: ${error instanceof Error ? error.message : String(error)}`)
-                }
-                this.logger.error('Failed to get access token from service account, falling back to API key:', error)
-            }
-        } else if (forceUseServiceAccount === true && !this.auth) {
-            throw new Error('Service Account được yêu cầu nhưng chưa được cấu hình. Vui lòng kiểm tra GOOGLE_CLOUD_* credentials trong .env')
-        } else if (!isApiKeyOnlyModel && forceUseServiceAccount === undefined) {
-            this.logger.log(`Model ${modelName} is configured to use API key only (skipping service account)`)
         }
 
         // Dùng regular API key
@@ -173,7 +85,7 @@ export class GeminiService {
             throw new Error('GEMINI_API_KEY is required but not configured. Please set GEMINI_API_KEY in your .env file')
         }
 
-        const modelType = isApiKeyOnlyModel ? (normalizedModelName.includes('embedding') ? 'Embedding' : 'Pro') : 'Pro'
+        const modelType = normalizedModelName.includes('embedding') ? 'Embedding' : 'Pro'
         this.genAI = this.initializeWithApiKey(apiKey, modelType)
         return this.genAI
     }
@@ -260,9 +172,9 @@ export class GeminiService {
 
     /**
      * @deprecated Sử dụng getGenAIForModel() thay vì method này
-     * Lấy GoogleGenerativeAI instance (lazy initialization cho service account)
+     * Lấy GoogleGenerativeAI instance
      */
-    private async getGenAI(): Promise<GoogleGenerativeAI> {
+    private getGenAI(): GoogleGenerativeAI {
         // Default dùng Pro model
         return this.getGenAIForModel('gemini-1.5-pro')
     }
@@ -305,7 +217,7 @@ export class GeminiService {
             const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
 
             // Gọi Gemini API - chọn API key dựa trên model
-            const genAI = await this.getGenAIForModel(modelName)
+            const genAI = this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
             const result = await model.generateContent(prompt)
             const response = await result.response
@@ -315,6 +227,9 @@ export class GeminiService {
             }
 
             const text = response.text()
+            try {
+                this.logger.debug(`[RECOMMEND] Raw Gemini text (first 600 chars): ${String(text ?? '').slice(0, 600)}`)
+            } catch { }
 
             if (!text || text.trim() === '') {
                 throw new Error('Empty text in Gemini API response')
@@ -365,62 +280,48 @@ export class GeminiService {
      */
     async getPersonalizedRecommendations(
         userId: number,
-        limit: number = 10
+        limit: number = 10,
+        options?: { createSrs?: boolean; allowedTypes?: string[] }
     ): Promise<PersonalizedRecommendationsResponse> {
         try {
             this.logger.log(`Getting personalized recommendations for user ${userId}`)
-
-            // Lấy dữ liệu từ userExerciseAttempt
-            const exerciseAttempts = await this.prisma.userExerciseAttempt.findMany({
-                where: { userId },
-                include: {
-                    exercise: {
-                        include: {
-                            lesson: true
-                        }
-                    },
-                    userAnswerLogs: {
-                        include: {
-                            questionBank: true
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 50 // Lấy 50 attempt gần nhất để phân tích
-            })
-
-            // Lấy dữ liệu từ userTestAttempt
-            const testAttempts = await this.prisma.userTestAttempt.findMany({
-                where: { userId },
-                include: {
-                    test: true,
-                    userTestAnswerLogs: {
-                        include: {
-                            questionBank: true
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 20 // Lấy 20 test attempt gần nhất
-            })
-
-            // Phân tích dữ liệu để tìm điểm yếu và điểm mạnh
-            const analysis = this.analyzeUserPerformance(exerciseAttempts, testAttempts)
-
+            // Cache key (policy-independent best-effort). If policy changes often, TTL is short.
+            const cacheKey = `rec:${userId}:${limit}`
+            const cached = this.shortCache.get(cacheKey)
+            const now = Date.now()
+            if (cached && cached.expireAt > now) {
+                return cached.value
+            }
             // Lấy config default theo mapping service ↔ config
             const svcCfg = await this.geminiConfigRepo.getDefaultConfigForService('PERSONALIZED_RECOMMENDATIONS' as any)
             const config: any = svcCfg?.geminiConfig || null
+            const policy = (config?.geminiConfigModel?.extraParams as any)?.policy
+
+            let analysis: any
+            if (policy) {
+                // Lấy dữ liệu theo policy (scope + whitelist + masking)
+                const safeData = await this.dataAccessService.getAiSafeData(userId, policy)
+                analysis = this.buildSummaryFromSafeData(safeData, limit)
+            } else {
+                // Bắt buộc phải có policy, nếu không thì từ chối xử lý
+                throw new BadRequestException('PERSONALIZED_RECOMMENDATIONS policy is required but not configured')
+            }
+
             const prompt = config
                 ? this.replacePlaceholders(String(config.prompt || ''), { analysis: JSON.stringify(analysis), limit: limit.toString() })
                 : this.buildRecommendationPrompt(analysis, limit)
-            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
+            // Chỉ dùng model từ config, không cho override từ request
+            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-2.5-pro'
 
             // Gọi Gemini API - chọn API key dựa trên model
-            const genAI = await this.getGenAIForModel(modelName)
+            const genAI = this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
-            const result = await model.generateContent(prompt)
-            const response = await result.response
 
+            this.logger.warn(`[RECOMMEND] Prompt: ${prompt}`)
+            const result = await model.generateContent(prompt)
+
+            const response = await result.response
+            this.logger.warn(`[RECOMMEND] Response: ${response}`)
             if (!response) {
                 throw new Error('Empty response from Gemini API')
             }
@@ -432,12 +333,166 @@ export class GeminiService {
             }
 
             // Parse response từ Gemini
-            const recommendations = this.parseRecommendationsResponse(text, analysis)
-
-            return {
+            let recommendations = this.parseRecommendationsResponse(text, analysis)
+            this.logger.warn(`[RECOMMEND] Invalid items (contentId<=0): ${JSON.stringify(recommendations)}`)
+            try {
+                const invalid = (recommendations || []).filter((r: any) => !(r?.targetId || r?.contentId) || Number(r.targetId || r.contentId) <= 0)
+                const valid = (recommendations || []).filter((r: any) => (r?.targetId || r?.contentId) && Number(r.targetId || r.contentId) > 0)
+                this.logger.log(`[RECOMMEND] Parsed items: total=${recommendations?.length || 0}, valid=${valid.length}, invalid=${invalid.length}`)
+                if (invalid.length > 0) {
+                    this.logger.warn(`[RECOMMEND] Invalid items (contentId<=0): ${JSON.stringify(invalid).slice(0, 500)}`)
+                }
+                for (const it of recommendations || []) {
+                    try {
+                        const qb = it.sourceQuestionBankId || it.questionBankId || 0
+                        const tt = (it.targetType || it.contentType || '').toString()
+                        const tid = Number(it.targetId || it.contentId) || 0
+                        this.logger.debug(`[RECOMMEND][ITEM] qbId=${qb} -> ${tt}#${tid} reason="${String(it.reason || '').slice(0, 80)}" priority=${it.priority}`)
+                    } catch { }
+                }
+            } catch { }
+            if (options?.allowedTypes && options.allowedTypes.length > 0) {
+                const allow = new Set(options.allowedTypes.map(t => String(t).toUpperCase()))
+                recommendations = recommendations.filter((r: any) => allow.has(String(r.contentType || '').toUpperCase()))
+            }
+            const payload: PersonalizedRecommendationsResponse = {
                 recommendations: recommendations.slice(0, limit),
                 summary: analysis
             }
+            // Tạo SRS reviews từ recommendations
+            try {
+                // SRS types: VOCABULARY, GRAMMAR, KANJI, TEST, EXERCISE
+                const validSrsTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI', 'TEST', 'EXERCISE']
+                const srsRows = (options?.createSrs ? (payload.recommendations || []) : []).map((r: any) => {
+                    const contentType = String(r.targetType || r.contentType || 'VOCABULARY').toUpperCase()
+                    const contentId = Number(r.targetId || r.contentId) || 0
+
+                    // Validate contentType và contentId
+                    if (!contentId || !validSrsTypes.includes(contentType)) {
+                        if (contentType && !validSrsTypes.includes(contentType)) {
+                            this.logger.warn(`Skipping invalid contentType: ${contentType} (contentId: ${contentId})`)
+                        }
+                        return null
+                    }
+
+                    return {
+                        userId,
+                        contentType,
+                        contentId,
+                        message: r.message || r.reason || '',
+                        srsLevel: 0, // Mới học
+                        nextReviewDate: new Date(), // Ôn ngay
+                        incorrectStreak: 0,
+                        isLeech: false
+                    }
+                }).filter(Boolean)
+
+                if (srsRows.length > 0) {
+                    for (const srs of srsRows as any[]) {
+                        if (!srs) continue
+                        const existing = await (this.prisma as any).userSrsReview.findUnique({
+                            where: {
+                                userId_contentType_contentId: {
+                                    userId: srs.userId,
+                                    contentType: srs.contentType as any,
+                                    contentId: srs.contentId
+                                }
+                            }
+                        })
+                        if (!existing) {
+                            await (this.prisma as any).userSrsReview.create({ data: { ...srs, isRead: false } })
+                            this.logger.debug(`[SRS][CREATE] ${srs.contentType}#${srs.contentId} message="${String(srs.message || '').slice(0, 80)}"`)
+                            continue
+                        }
+                        const now = new Date()
+                        const nextReviewDate = new Date(now)
+                        nextReviewDate.setDate(nextReviewDate.getDate() + 1)
+                        let incorrectStreak = existing.incorrectStreak
+                        if (!existing.isRead) incorrectStreak += 1
+                        const isLeech = incorrectStreak >= 5
+                        await (this.prisma as any).userSrsReview.update({
+                            where: {
+                                userId_contentType_contentId: {
+                                    userId: srs.userId,
+                                    contentType: srs.contentType as any,
+                                    contentId: srs.contentId
+                                }
+                            },
+                            data: {
+                                nextReviewDate,
+                                incorrectStreak,
+                                isLeech,
+                                message: srs.message || undefined
+                            }
+                        })
+                        this.logger.debug(`[SRS][UPDATE] ${srs.contentType}#${srs.contentId} incorrectStreak=${incorrectStreak} isLeech=${isLeech}`)
+                        if (existing.isRead) {
+                            await (this.prisma as any).userAIRecommendation.create({
+                                data: {
+                                    userId: srs.userId,
+                                    targetType: srs.contentType as any,
+                                    targetId: srs.contentId,
+                                    reason: srs.message || 'Ôn lại để củng cố',
+                                    source: 'SRS',
+                                    modelUsed: modelName
+                                }
+                            }).catch(() => { })
+                            this.logger.debug(`[RECOMMEND][FROM_SRS] ${srs.contentType}#${srs.contentId}`)
+                        }
+                    }
+                    this.logger.log(`Processed ${srsRows.length} SRS reviews (create/update)`)
+                }
+
+                // Lưu recommendations vào DB để FE có thể hiển thị lại/ghi nhận hành động
+                const recRows = (payload.recommendations || []).map((r: any) => {
+                    // Nếu có questionBankId hợp lệ, tag Recommendation tới QUESTION_BANK trước
+                    const qbId = Number(r.sourceQuestionBankId || r.questionBankId) || 0
+                    if (qbId > 0) {
+                        const row = {
+                            userId,
+                            targetType: 'QUESTION_BANK' as any,
+                            targetId: qbId,
+                            reason: String(r.reason || ''),
+                            source: 'PERSONALIZED',
+                            modelUsed: modelName
+                        }
+                        this.logger.debug(`[RECOMMEND][SAVE] QUESTION_BANK#${qbId} reason="${String(r.reason || '').slice(0, 80)}"`)
+                        return row
+                    }
+
+                    // Fallback: Map theo contentType
+                    const contentTypeUpper = String(r.targetType || r.contentType || 'VOCABULARY').toUpperCase()
+                    let targetType: RecommendationTargetType = RecommendationTargetType.VOCABULARY
+                    if (contentTypeUpper === 'VOCABULARY') targetType = RecommendationTargetType.VOCABULARY
+                    else if (contentTypeUpper === 'GRAMMAR') targetType = RecommendationTargetType.GRAMMAR
+                    else if (contentTypeUpper === 'KANJI') targetType = RecommendationTargetType.KANJI
+                    else if (contentTypeUpper === 'EXERCISE') targetType = RecommendationTargetType.EXERCISE
+                    else if (contentTypeUpper === 'TEST') targetType = RecommendationTargetType.TEST
+                    else if (contentTypeUpper === 'LESSON') targetType = RecommendationTargetType.LESSON
+
+                    const row = {
+                        userId,
+                        targetType,
+                        targetId: Number(r.targetId || r.contentId) || 0,
+                        reason: String(r.reason || ''),
+                        source: 'PERSONALIZED',
+                        modelUsed: modelName
+                    }
+                    this.logger.debug(`[RECOMMEND][SAVE] ${String(targetType)}#${row.targetId} reason="${String(r.reason || '').slice(0, 80)}"`)
+                    return row
+                }).filter((r: any) => r.targetId > 0)
+
+                if (recRows.length > 0) {
+                    await (this.prisma as any).userAIRecommendation.createMany({ data: recRows, skipDuplicates: true })
+                    this.logger.log(`[RECOMMEND] Saved ${recRows.length} recommendations`)
+                }
+            } catch (e) {
+                this.logger.warn('Failed to persist SRS/recommendations', e as any)
+            }
+
+            // Cache 120s
+            this.shortCache.set(cacheKey, { value: payload, expireAt: now + 120_000 })
+            return payload
         } catch (error) {
             this.logger.error('Error getting personalized recommendations:', error)
 
@@ -448,6 +503,178 @@ export class GeminiService {
 
             throw new BadRequestException('Không thể lấy gợi ý cá nhân hóa: ' + (error instanceof Error ? error.message : String(error)))
         }
+    }
+
+    /**
+     * Build compact analysis from safeData (policy result) to minimize tokens
+     * Focus on incorrect answers for SRS mapping
+     */
+    private buildSummaryFromSafeData(safeData: Record<string, any[]>, limit: number) {
+        // Data đã được limit ở DataAccessService theo policy config, không cần slice nữa
+        const answerLogs = safeData['UserAnswerLog'] || []
+        const testAnswerLogs = safeData['UserTestAnswerLog'] || []
+        const exerciseAttempts = safeData['UserExerciseAttempt'] || []
+        const testAttempts = safeData['UserTestAttempt'] || []
+        const questionBanks = safeData['QuestionBank'] || []
+        const answers = safeData['Answer'] || []
+        const vocabularies = safeData['Vocabulary'] || []
+        const existingSrs = (safeData['UserSrsReview'] || []).map((s: any) => `${s.contentType}-${s.contentId}`)
+
+        // Build maps for quick lookup
+        const qbMap = new Map<number, any>()
+        for (const qb of questionBanks) {
+            if (qb && qb.id != null) qbMap.set(qb.id as number, qb)
+        }
+
+        const answerMap = new Map<number, any>()
+        for (const ans of answers) {
+            if (ans && ans.id != null) answerMap.set(ans.id as number, ans)
+        }
+
+        // Build exercise/test attempt maps for quick lookup
+        const exerciseAttemptMap = new Map<number, number>() // attemptId -> exerciseId
+        for (const attempt of exerciseAttempts) {
+            if (attempt.id && attempt.exerciseId) {
+                exerciseAttemptMap.set(attempt.id, attempt.exerciseId)
+            }
+        }
+
+        const testAttemptMap = new Map<number, number>() // attemptId -> testId
+        for (const attempt of testAttempts) {
+            if (attempt.id && attempt.testId) {
+                testAttemptMap.set(attempt.id, attempt.testId)
+            }
+        }
+
+        // Collect incorrect answers (recent, within 7 days)
+        const recentIncorrect: any[] = []
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
+        for (const log of answerLogs) {
+            if (!log.isCorrect && log.questionBankId) {
+                const qb = qbMap.get(log.questionBankId)
+                if (qb && log.createdAt && new Date(log.createdAt) >= sevenDaysAgo) {
+                    const ans = log.answerId ? answerMap.get(log.answerId) : null
+                    const exerciseId = log.userExerciseAttemptId ? exerciseAttemptMap.get(log.userExerciseAttemptId) : null
+                    recentIncorrect.push({
+                        questionBankId: log.questionBankId,
+                        questionType: qb.questionType,
+                        questionJp: qb.questionJp || '',
+                        levelN: qb.levelN,
+                        createdAt: log.createdAt,
+                        answerJp: ans?.answerJp || '',
+                        exerciseId
+                    })
+                }
+            }
+        }
+
+        for (const log of testAnswerLogs) {
+            if (!log.isCorrect && log.questionBankId) {
+                const qb = qbMap.get(log.questionBankId)
+                if (qb && log.createdAt && new Date(log.createdAt) >= sevenDaysAgo) {
+                    const ans = log.answerId ? answerMap.get(log.answerId) : null
+                    const testId = log.userTestAttemptId ? testAttemptMap.get(log.userTestAttemptId) : null
+                    recentIncorrect.push({
+                        questionBankId: log.questionBankId,
+                        questionType: qb.questionType,
+                        questionJp: qb.questionJp || '',
+                        levelN: qb.levelN,
+                        createdAt: log.createdAt,
+                        answerJp: ans?.answerJp || '',
+                        testId
+                    })
+                }
+            }
+        }
+
+        // Sort by most recent
+        recentIncorrect.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+        // Group failed tests/exercises
+        const failedTests = new Map<number, { testId: number; score?: number; updatedAt: any; questionTypes: Set<string> }>()
+        const failedExercises = new Map<number, { exerciseId: number; updatedAt: any; questionTypes: Set<string> }>()
+
+        for (const attempt of testAttempts) {
+            if (attempt.score !== null && (attempt.score < 60 || attempt.status === 'FAIL')) {
+                const existing = failedTests.get(attempt.testId) || { testId: attempt.testId, score: attempt.score, updatedAt: attempt.updatedAt, questionTypes: new Set<string>() }
+                // Thêm question types từ test answer logs
+                for (const tal of testAnswerLogs) {
+                    if (tal.userTestAttemptId === attempt.id && !tal.isCorrect) {
+                        const qb = qbMap.get(tal.questionBankId)
+                        if (qb) existing.questionTypes.add(qb.questionType)
+                    }
+                }
+                failedTests.set(attempt.testId, existing)
+            }
+        }
+
+        for (const attempt of exerciseAttempts) {
+            if (attempt.status === 'FAIL' || attempt.status === 'ABANDONED') {
+                const existing = failedExercises.get(attempt.exerciseId) || { exerciseId: attempt.exerciseId, updatedAt: attempt.updatedAt, questionTypes: new Set<string>() }
+                // Thêm question types từ answer logs
+                for (const al of answerLogs) {
+                    if (al.userExerciseAttemptId === attempt.id && !al.isCorrect) {
+                        const qb = qbMap.get(al.questionBankId)
+                        if (qb) existing.questionTypes.add(qb.questionType)
+                    }
+                }
+                failedExercises.set(attempt.exerciseId, existing)
+            }
+        }
+
+        return {
+            recentIncorrect: recentIncorrect.slice(0, 100),
+            vocabularies: vocabularies.map((v: any) => ({
+                id: v.id,
+                wordJp: v.wordJp,
+                reading: v.reading,
+                levelN: v.levelN
+            })),
+            failedTests: Array.from(failedTests.values()).map((t: any) => ({
+                testId: t.testId,
+                score: t.score,
+                updatedAt: t.updatedAt,
+                questionTypes: Array.from(t.questionTypes)
+            })),
+            failedExercises: Array.from(failedExercises.values()).map((e: any) => ({
+                exerciseId: e.exerciseId,
+                updatedAt: e.updatedAt,
+                questionTypes: Array.from(e.questionTypes)
+            })),
+            srs: {
+                existing: existingSrs
+            }
+        }
+    }
+
+    // === Saved recommendations (DB) ===
+    async listSavedRecommendations(userId: number, status?: 'PENDING' | 'DONE' | 'DISMISSED', limit: number = 50) {
+        const where: any = { userId }
+        if (status) where.status = status
+        const rows = await (this.prisma as any).userAIRecommendation.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            take: limit
+        })
+        // Chuẩn hoá UI
+        return {
+            title: 'Làm lại để cải thiện',
+            items: rows.map((r: any) => ({
+                type: (r.targetType || 'EXERCISE').toLowerCase(),
+                id: r.targetId,
+                reason: r.reason,
+                status: r.status,
+                createdAt: r.createdAt
+            }))
+        }
+    }
+
+    async updateRecommendationStatus(userId: number, id: number, status: 'DONE' | 'DISMISSED') {
+        const rec = await (this.prisma as any).userAIRecommendation.findFirst({ where: { id, userId } })
+        if (!rec) throw new (require('@nestjs/common').BadRequestException)('Recommendation không tồn tại')
+        const updated = await (this.prisma as any).userAIRecommendation.update({ where: { id }, data: { status } })
+        return { id: updated.id, status: updated.status }
     }
 
     /**
@@ -515,7 +742,7 @@ export class GeminiService {
                                 : this.buildSpeakingEvaluationPrompt(data.message, transcription)
 
                             const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-1.5-pro'
-                            const genAI = await this.getGenAIForModel(modelName)
+                            const genAI = this.getGenAIForModel(modelName)
                             const model = genAI.getGenerativeModel({ model: modelName })
                             const result = await model.generateContent(prompt)
                             const response = await result.response
@@ -615,7 +842,7 @@ export class GeminiService {
 - Giữ cuộc trò chuyện vui vẻ và thú vị`
 
             // Gọi Gemini API - chọn API key dựa trên model
-            const genAI = await this.getGenAIForModel(modelName)
+            const genAI = this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
 
             // Tạo chat session với history
@@ -776,7 +1003,7 @@ export class GeminiService {
             this.logger.log(`Using model: ${modelName}`)
 
             // Gọi Gemini API - chọn API key dựa trên model
-            const genAI = await this.getGenAIForModel(modelName)
+            const genAI = this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
 
             // Tạo chat session với history
@@ -969,14 +1196,24 @@ Chỉ trả về JSON array, không có text thừa. Sắp xếp theo priority t
                 throw new Error('Response không phải là array')
             }
 
-            return parsed.map(item => ({
-                type: item.type || 'exercise',
-                id: item.id || 0,
-                title: item.title || 'Không có tiêu đề',
-                description: item.description || '',
-                reason: item.reason || '',
-                priority: item.priority || 'medium'
-            }))
+            // Parse format mới: có thể kèm questionBankId/target
+            return parsed.map(item => {
+                // New prompt schema
+                const sourceQuestionBankId = Number(item.sourceQuestionBankId || item.questionBankId) || 0
+                const targetType = String(item.targetType || item.contentType || 'VOCABULARY').toUpperCase()
+                const targetId = Number(item.targetId || item.contentId) || 0
+                return {
+                    sourceQuestionBankId,
+                    targetType,
+                    targetId,
+                    // Backward-compat fields for downstream usage
+                    contentType: targetType,
+                    contentId: targetId,
+                    reason: item.reason || '',
+                    message: item.message || '',
+                    priority: item.priority || 'medium'
+                }
+            })
         } catch (error) {
             this.logger.error('Error parsing recommendations response:', error)
             return []

@@ -18,7 +18,7 @@ import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { GeminiConfigService } from './gemini-config.service'
 import { GeminiConfigListQuerySwaggerDTO, GeminiModelListQuerySwaggerDTO, GeminiConfigModelListQuerySwaggerDTO } from './dto/gemini-config.query.dto'
-import { CreateGeminiConfigModelSwaggerDTO, UpdateGeminiConfigModelSwaggerDTO } from './dto/gemini-config-model.dto'
+import { CreateGeminiConfigModelSwaggerDTO, UpdateGeminiConfigModelSwaggerDTO, ApplyPresetBodySwaggerDTO, UpdateConfigModelPolicyBodySwaggerDTO } from './dto/gemini-config-model.dto'
 import { CreateGeminiConfigModelBodyDTO, UpdateGeminiConfigModelBodyDTO, GeminiConfigModelResDTO } from './dto/gemini-config.zod-dto'
 import { SchemaIntrospectService } from './schema-introspect.service'
 
@@ -30,7 +30,7 @@ export class GeminiConfigController {
     private readonly schemaIntrospectService: SchemaIntrospectService
   ) { }
 
-  @Get()
+  @Get('promt')
   @ZodSerializerDto(PaginationResponseSchema)
   @ApiOperation({ summary: 'Danh sách Gemini Configs (có phân trang + lọc)' })
   @ApiQuery({ type: GeminiConfigListQuerySwaggerDTO })
@@ -45,6 +45,19 @@ export class GeminiConfigController {
   @ApiQuery({ type: GeminiModelListQuerySwaggerDTO })
   listModels(@I18nLang() lang: string) {
     return this.geminiConfigService.listModels(lang)
+  }
+
+  // Presets
+  @Get('presets')
+  @ApiOperation({ summary: 'Danh sách presets cấu hình model' })
+  listPresets(@I18nLang() lang: string) {
+    return this.geminiConfigService.listPresets(lang)
+  }
+
+  @Post('presets/seed-default')
+  @ApiOperation({ summary: 'Seed các preset mặc định vào DB' })
+  seedPresets(@I18nLang() lang: string) {
+    return this.geminiConfigService.seedDefaultPresets(lang)
   }
 
   @Post('models/seed-default')
@@ -63,9 +76,33 @@ export class GeminiConfigController {
   }
 
   @Get('admin/schema')
-  @ApiOperation({ summary: 'Liệt kê model/field (đã lọc an toàn) cho Admin cấu hình policy' })
-  getAdminSchema() {
-    return { statusCode: 200, data: this.schemaIntrospectService.listModels(), message: 'GET_SUCCESS' }
+  @ApiOperation({ summary: 'Liệt kê tên bảng (đã lọc an toàn) cho Admin cấu hình policy' })
+  @ApiQuery({ name: 'q', required: false, description: 'Từ khóa tìm kiếm theo tên bảng' })
+  getAdminSchema(@Query('q') q?: string) {
+    const names = this.schemaIntrospectService.listModels().map((m) => m.name)
+    const filtered = q ? names.filter((n) => n.toLowerCase().includes(String(q).toLowerCase())) : names
+    return { statusCode: 200, data: filtered, message: 'GET_SUCCESS' }
+  }
+
+  @Get('admin/schema/fields')
+  @ApiOperation({ summary: 'Nhập mảng entity name → trả về danh sách field của từng entity' })
+  @ApiQuery({ name: 'entities', required: true, description: 'Danh sách entity, phân tách bởi dấu phẩy. Ví dụ: User,QuestionBank' })
+  getAdminSchemaFields(@Query('entities') entities?: string) {
+    const models = this.schemaIntrospectService.listModels()
+    const nameToFields = new Map<string, string[]>(
+      models.map((m) => [m.name, (m.fields || []).map((f: any) => f.name)])
+    )
+    const requested = (entities || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => !!s)
+
+    const data: Record<string, string[]> = {}
+    for (const n of requested) {
+      if (nameToFields.has(n)) data[n] = nameToFields.get(n) as string[]
+    }
+
+    return { statusCode: 200, data, message: 'GET_SUCCESS' }
   }
 
   @Get('config-models/:id')
@@ -101,14 +138,29 @@ export class GeminiConfigController {
   @Patch('config-models/:id/policy')
   @ApiOperation({ summary: 'Cập nhật policy AI vào extraParams.policy của GeminiConfigModel' })
   @ApiParam({ name: 'id', type: Number, required: true })
-  @ApiBody({ schema: { example: { policy: { purpose: 'AI_KAIWA', entities: [{ entity: 'UserProgress', scope: 'SELF_ONLY', fields: ['lessonId'] }], maskingRules: { email: 'mask' } } } } })
+  @ApiBody({ type: UpdateConfigModelPolicyBodySwaggerDTO })
   setConfigModelPolicy(
     @Param('id') id: number,
-    @Body() body: { policy: any },
+    @Body() body: { policy?: any; purpose?: string; entities?: any[] },
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.geminiConfigService.updateConfigModelPolicy({ id: Number(id), policy: body?.policy || {}, updatedById: userId }, lang)
+    // Nếu body có "policy" key thì dùng luôn, nếu không thì wrap toàn bộ body thành policy
+    const policy = body?.policy || (body?.purpose || body?.entities ? body : {})
+    return this.geminiConfigService.updateConfigModelPolicy({ id: Number(id), policy, updatedById: userId }, lang)
+  }
+
+  @Patch('config-models/:id/preset')
+  @ApiOperation({ summary: 'Áp dụng preset tham số model (temperature/topP/topK) vào GeminiConfigModel' })
+  @ApiParam({ name: 'id', type: Number, required: true })
+  @ApiBody({ type: ApplyPresetBodySwaggerDTO })
+  applyPreset(
+    @Param('id') id: number,
+    @Body() body: { presetKey: string },
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.geminiConfigService.applyPresetToConfigModel({ id: Number(id), presetKey: body?.presetKey, updatedById: userId }, lang)
   }
 
   @Delete('config-models/:id')
@@ -123,7 +175,7 @@ export class GeminiConfigController {
   }
 
   // Base GeminiConfig endpoints (dynamic path placed AFTER static routes)
-  @Get(':geminiConfigId')
+  @Get('promt/:geminiConfigId')
   @ApiOperation({ summary: 'Chi tiết Gemini Config theo ID' })
   @ApiParam({ name: 'geminiConfigId', type: Number, required: true, description: 'ID của GeminiConfig', example: 1 })
   @ZodSerializerDto(GetGeminiConfigResDTO)
@@ -131,7 +183,7 @@ export class GeminiConfigController {
     return this.geminiConfigService.findById(params.geminiConfigId, lang)
   }
 
-  @Post("/promt")
+  @Post("promt")
   @ZodSerializerDto(CreateGeminiConfigResDTO)
   @ApiBody({ type: CreateGeminiConfigSwaggerDTO })
   create(
@@ -148,7 +200,7 @@ export class GeminiConfigController {
     )
   }
 
-  @Put(':geminiConfigId')
+  @Put('promt/:geminiConfigId')
   @ZodSerializerDto(UpdateGeminiConfigResDTO)
   @ApiParam({ name: 'geminiConfigId', type: Number, required: true, description: 'ID của GeminiConfig', example: 1 })
   @ApiBody({ type: UpdateGeminiConfigSwaggerDTO })
@@ -168,7 +220,7 @@ export class GeminiConfigController {
     )
   }
 
-  @Delete(':geminiConfigId')
+  @Delete('promt/:geminiConfigId')
   @ZodSerializerDto(MessageResDTO)
   @ApiParam({ name: 'geminiConfigId', type: Number, required: true, description: 'ID của GeminiConfig', example: 1 })
   delete(

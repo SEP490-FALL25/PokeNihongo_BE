@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { QuestionBankStatusEnum, QuestionType } from '@/common/enum/enum'
+import { RoleSpeaking } from '@prisma/client'
 
 export class QuestionBankSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của ngân hàng câu hỏi' })
@@ -59,6 +60,14 @@ export class CreateQuestionBankWithMeaningsSwaggerDTO {
     })
     pronunciation?: string
 
+    @ApiProperty({
+        example: RoleSpeaking.A,
+        enum: RoleSpeaking,
+        description: 'Vai trò trong SPEAKING (A hoặc B)',
+        required: false
+    })
+    role?: RoleSpeaking
+
     @ApiProperty({ example: 3, description: 'Cấp độ JLPT (1-5)', required: false })
     levelN?: number
 
@@ -109,6 +118,14 @@ export class UpdateQuestionBankWithMeaningsSwaggerDTO {
         required: false
     })
     pronunciation?: string
+
+    @ApiProperty({
+        example: RoleSpeaking.A,
+        enum: RoleSpeaking,
+        description: 'Vai trò trong SPEAKING (A hoặc B)',
+        required: false
+    })
+    role?: RoleSpeaking
 
     @ApiProperty({ example: 3, description: 'Cấp độ JLPT (1-5)', required: false })
     levelN?: number
@@ -332,6 +349,14 @@ export class CreateQuestionBankWithAnswersSwaggerDTO {
         required: false
     })
     pronunciation?: string
+
+    @ApiProperty({
+        example: RoleSpeaking.A,
+        enum: RoleSpeaking,
+        description: 'Vai trò trong SPEAKING (A hoặc B)',
+        required: false
+    })
+    role?: RoleSpeaking
 
     @ApiProperty({
         example: 3,

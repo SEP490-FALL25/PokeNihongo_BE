@@ -6,14 +6,22 @@ import { z } from 'zod'
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
 
-export const GeminiConfigModelSchema = z.object({
+const MAX_TOKENS_JSON_MODE = 3072
+const MAX_TOKENS_DEFAULT = 2000
+const MIN_TOKENS = 1024
+
+const GeminiConfigModelBase = z.object({
   id: z.number(),
   name: z.string().min(1).max(255),
   geminiModelId: z.number(),
-  temperature: z.number().optional().nullable(),
-  topP: z.number().optional().nullable(),
-  topK: z.number().optional().nullable(),
-  maxTokens: z.number().optional().nullable(),
+  presetId: z.number().optional().nullable(),
+  maxTokens: z
+    .number()
+    .int()
+    .min(MIN_TOKENS, { message: `maxTokens must be ≥ ${MIN_TOKENS}` })
+    .max(MAX_TOKENS_JSON_MODE)
+    .optional()
+    .nullable(),
   jsonMode: z.boolean().optional().nullable(),
   systemInstruction: z.string().optional().nullable(),
   safetySettings: z.any().optional().nullable(),
@@ -27,12 +35,12 @@ export const GeminiConfigModelSchema = z.object({
   updatedAt: z.date().optional()
 })
 
-export const CreateGeminiConfigModelBodySchema = GeminiConfigModelSchema.pick({
+export const GeminiConfigModelSchema = GeminiConfigModelBase
+
+export const CreateGeminiConfigModelBodySchema = GeminiConfigModelBase.pick({
   name: true,
   geminiModelId: true,
-  temperature: true,
-  topP: true,
-  topK: true,
+  presetId: true,
   maxTokens: true,
   jsonMode: true,
   systemInstruction: true,
@@ -40,9 +48,7 @@ export const CreateGeminiConfigModelBodySchema = GeminiConfigModelSchema.pick({
   extraParams: true,
   isEnabled: true
 }).partial({
-  temperature: true,
-  topP: true,
-  topK: true,
+  presetId: true,
   maxTokens: true,
   jsonMode: true,
   systemInstruction: true,

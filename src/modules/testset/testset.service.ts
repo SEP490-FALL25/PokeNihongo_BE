@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { TestSetRepository } from './testset.repo'
-import { CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, GetTestSetByIdParamsType, CreateTestSetWithMeaningsBodyType, UpdateTestSetWithMeaningsBodyType } from './entities/testset.entities'
+import { CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, GetTestSetByIdParamsType, CreateTestSetWithMeaningsBodyType, UpdateTestSetWithMeaningsBodyType, CreateTestSetWithQuestionBodyType, UpsertTestSetWithQuestionBanksBodyType } from './entities/testset.entities'
 import { TestSetNotFoundException, TestSetPermissionDeniedException, TestSetAlreadyExistsException, TestSetCannotChangeTestTypeException } from './dto/testset.error'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { TEST_SET_MESSAGE } from '@/common/constants/message'
 import { TranslationService } from '../translation/translation.service'
 import { LanguagesService } from '../languages/languages.service'
+import { QuestionBankService } from '../question-bank/question-bank.service'
+import { CreateQuestionBankWithMeaningsBodyType } from '../question-bank/entities/question-bank.entities'
 
 @Injectable()
 export class TestSetService {
@@ -17,6 +19,7 @@ export class TestSetService {
         private readonly prisma: PrismaService,
         private readonly translationService: TranslationService,
         private readonly languagesService: LanguagesService,
+        private readonly questionBankService: QuestionBankService,
     ) { }
 
     private isValidUrl(url: string): boolean {
@@ -63,7 +66,8 @@ export class TestSetService {
         // Validation chỉ cho create (không phải update)
         if (!isUpdate) {
             const createData = data as CreateTestSetBodyType
-            if (!createData.name || createData.name.trim().length === 0) {
+            // Chỉ validate name nếu có field name (không phải upsert schema)
+            if ('name' in createData && (!createData.name || createData.name.trim().length === 0)) {
                 throw new BadRequestException('Tên bộ đề không được để trống')
             }
             if (!createData.testType) {
@@ -581,5 +585,515 @@ export class TestSetService {
         }
     }
 
+    // Upsert: Tạo mới nếu không có id, cập nhật nếu có id
+    async upsertTestSetWithQuestionBanks(
+        data: UpsertTestSetWithQuestionBanksBodyType,
+        userId: number
+    ): Promise<MessageResDTO> {
+        const id = data.id
+        const isUpdate = id !== null && id !== undefined
+
+        if (isUpdate && id) {
+            const existingTestSet = await this.testSetRepo.findById(id)
+            if (!existingTestSet) {
+                throw TestSetNotFoundException
+            }
+        }
+
+        try {
+            // Validation
+            if (isUpdate) {
+                this.validateTestSetData(data, true)
+            } else {
+                // Khi tạo mới, validate bắt buộc
+                if (!data.testType) {
+                    throw new BadRequestException('testType là bắt buộc khi tạo mới')
+                }
+                if (!data.translations || data.translations.length === 0) {
+                    throw new BadRequestException('translations là bắt buộc khi tạo mới')
+                }
+                this.validateTestSetData(data, false)
+
+                // Khi tạo mới, phải có ít nhất questionBanks
+                if (!data.questionBanks || data.questionBanks.length === 0) {
+                    throw new BadRequestException('Phải có ít nhất 1 questionBank khi tạo mới')
+                }
+            }
+
+
+            // Validate questionBanks nếu có
+            if (data.questionBanks && data.questionBanks.length > 0) {
+                // Kiểm tra không có trùng lặp id (nếu có)
+                const ids = data.questionBanks.filter(qb => 'id' in qb && qb.id).map(qb => qb.id!)
+                const uniqueIds = new Set(ids)
+                if (uniqueIds.size !== ids.length) {
+                    throw new BadRequestException('Danh sách questionBanks có trùng lặp id (TestSetQuestionBank.id)')
+                }
+            }
+
+            // Tạo questionBank mới trước (nếu có) - ngoài transaction
+            // Phân loại: có id = questionBank đã có (chỉ update order), không có id = tạo mới
+            const newQuestionBankIds: number[] = []
+            const questionBankMap = new Map<number, number>() // Map: TestSetQuestionBank.id -> QuestionBank.id
+
+            if (data.questionBanks && data.questionBanks.length > 0) {
+                // Lấy tất cả TestSetQuestionBank hiện có để map (chỉ khi update)
+                const existingTestSetQuestionBanks = isUpdate && id ? await this.prisma.testSetQuestionBank.findMany({
+                    where: { testSetId: id },
+                    select: { id: true, questionBankId: true }
+                }) : []
+                const testSetQuestionBankMap = new Map(existingTestSetQuestionBanks.map(item => [item.id, item.questionBankId]))
+
+                for (const questionBankData of data.questionBanks) {
+                    // Nếu có id trong questionBankData, đây là TestSetQuestionBank.id (để update order và meanings)
+                    if ('id' in questionBankData && questionBankData.id) {
+                        // Tìm questionBankId từ TestSetQuestionBank.id
+                        const questionBankId = testSetQuestionBankMap.get(questionBankData.id)
+                        if (questionBankId) {
+                            questionBankMap.set(questionBankData.id, questionBankId)
+                            
+                            // Nếu có meanings, sẽ upsert translations trong transaction
+                            // Lưu vào questionBankMap để xử lý sau
+                        }
+                    } else {
+                        // Không có id = tạo questionBank mới
+                        const createQuestionBankData: CreateQuestionBankWithMeaningsBodyType = {
+                            questionJp: questionBankData.questionJp!,
+                            questionType: questionBankData.questionType,
+                            audioUrl: questionBankData.audioUrl || null,
+                            pronunciation: questionBankData.pronunciation || null,
+                            role: questionBankData.role || null,
+                            levelN: questionBankData.levelN || null,
+                            meanings: questionBankData.meanings || [],
+                            questionKey: null
+                        }
+
+                        const questionBankResult = await this.questionBankService.createWithMeanings(createQuestionBankData, userId)
+
+                        if (questionBankResult.data && typeof questionBankResult.data === 'object' && 'id' in questionBankResult.data) {
+                            newQuestionBankIds.push((questionBankResult.data as any).id)
+                        }
+                    }
+                }
+            }
+
+            // Upsert testset với transaction
+            const result = await this.prisma.$transaction(async (tx) => {
+                let testSet
+
+                if (isUpdate && id) {
+                    // Update testset
+                    testSet = await tx.testSet.update({
+                        where: { id: id },
+                        data: {
+                            content: data.content,
+                            audioUrl: data.audioUrl,
+                            price: data.price,
+                            levelN: data.levelN,
+                            testType: data.testType,
+                            status: data.status,
+                        }
+                    })
+                } else {
+                    // Create testset
+                    testSet = await tx.testSet.create({
+                        data: {
+                            name: 'temp',
+                            description: 'temp',
+                            content: data.content,
+                            audioUrl: data.audioUrl,
+                            price: data.price,
+                            levelN: data.levelN,
+                            testType: data.testType,
+                            status: data.status,
+                            creatorId: userId,
+                        }
+                    })
+
+                    // Tạo keys và cập nhật
+                    const nameKey = `testset.${testSet.id}.name`
+                    const descriptionKey = `testset.${testSet.id}.description`
+
+                    testSet = await tx.testSet.update({
+                        where: { id: testSet.id },
+                        data: {
+                            name: nameKey,
+                            description: descriptionKey
+                        }
+                    })
+                }
+
+                const testSetId = testSet.id
+                const nameKey = `testset.${testSetId}.name`
+                const descriptionKey = `testset.${testSetId}.description`
+
+                // Cập nhật translations
+                if (data.translations && data.translations.length > 0) {
+                    for (const translation of data.translations) {
+                        const language = await this.languagesService.findByCode({ code: translation.language_code })
+                        if (language?.data) {
+                            const key = translation.field === 'name' ? nameKey : descriptionKey
+                            await tx.translation.upsert({
+                                where: {
+                                    languageId_key: {
+                                        key: key,
+                                        languageId: language.data.id
+                                    }
+                                },
+                                update: { value: translation.value },
+                                create: {
+                                    key: key,
+                                    languageId: language.data.id,
+                                    value: translation.value
+                                }
+                            })
+                        }
+                    }
+                }
+
+                // Xử lý questionBanks - order tự động dựa vào vị trí trong mảng
+                if (data.questionBanks && data.questionBanks.length > 0) {
+                    // Lấy tất cả TestSetQuestionBank hiện có
+                    const existingItems = await tx.testSetQuestionBank.findMany({
+                        where: { testSetId: testSetId },
+                        select: { id: true, questionBankId: true }
+                    })
+                    const testSetQuestionBankMap = new Map(existingItems.map(item => [item.id, item.questionBankId]))
+                    const existingTestSetQuestionBankIds = new Set(existingItems.map(item => item.id))
+
+                    // Phân loại: có id = đã có (update order), không có id = tạo mới
+                    const itemsToUpdate: Array<{ testSetQuestionBankId: number; questionBankId: number; order: number }> = []
+                    let newQuestionBankIndex = 0
+
+                    for (let i = 0; i < data.questionBanks.length; i++) {
+                        const questionBankData = data.questionBanks[i]
+                        const order = i + 1
+
+                        // Nếu có id = TestSetQuestionBank đã có, update order và meanings (nếu có)
+                        if ('id' in questionBankData && questionBankData.id) {
+                            const testSetQuestionBankId = questionBankData.id
+
+                            // Validate ID thuộc về testSet này
+                            if (!existingTestSetQuestionBankIds.has(testSetQuestionBankId)) {
+                                throw new BadRequestException(`TestSetQuestionBank với ID ${testSetQuestionBankId} không thuộc về TestSet này`)
+                            }
+
+                            const questionBankId = testSetQuestionBankMap.get(testSetQuestionBankId)
+                            if (questionBankId) {
+                                // Lấy questionBank info để update
+                                const questionBank = await tx.questionBank.findUnique({
+                                    where: { id: questionBankId },
+                                    select: { questionKey: true, questionType: true }
+                                })
+
+                                if (!questionBank) {
+                                    throw new BadRequestException(`QuestionBank với ID ${questionBankId} không tồn tại`)
+                                }
+
+                                // Update questionBank info nếu có
+                                if (questionBankData.questionJp || questionBankData.pronunciation || 
+                                    questionBankData.audioUrl !== undefined || questionBankData.role !== undefined || 
+                                    questionBankData.levelN !== undefined) {
+                                    await tx.questionBank.update({
+                                        where: { id: questionBankId },
+                                        data: {
+                                            questionJp: questionBankData.questionJp || undefined,
+                                            pronunciation: questionBankData.pronunciation !== undefined ? questionBankData.pronunciation : undefined,
+                                            audioUrl: questionBankData.audioUrl !== undefined ? questionBankData.audioUrl : undefined,
+                                            role: questionBankData.role !== undefined ? questionBankData.role : undefined,
+                                            levelN: questionBankData.levelN !== undefined ? questionBankData.levelN : undefined,
+                                        }
+                                    })
+                                }
+
+                                // Upsert meanings/translations nếu có
+                                if (questionBankData.meanings && questionBankData.meanings.length > 0) {
+                                    // Lấy questionKey của questionBank này (đảm bảo chỉ update translations của questionBank này)
+                                    const questionKey = questionBank.questionKey || `question.${questionBank.questionType}.${questionBankId}`
+                                    
+                                    // Lấy tất cả meaningKeys hiện có của questionBank này (tự động, không cần FE truyền)
+                                    const existingMeaningKeys = await tx.translation.findMany({
+                                        where: {
+                                            key: { startsWith: questionKey + '.meaning.' }
+                                        },
+                                        select: { key: true },
+                                        distinct: ['key'],
+                                        orderBy: { key: 'asc' }
+                                    })
+                                    
+                                    // Tạo map: meaningKey -> index (để match với thứ tự trong request)
+                                    const existingKeysArray = existingMeaningKeys.map(t => t.key).sort()
+                                    
+                                    for (let i = 0; i < questionBankData.meanings.length; i++) {
+                                        const meaning = questionBankData.meanings[i]
+                                        
+                                        // Tự động lấy meaningKey: ưu tiên dùng meaningKey đã có của questionBank này theo thứ tự
+                                        // Nếu không đủ → tạo mới
+                                        let meaningKey: string
+                                        if (i < existingKeysArray.length) {
+                                            // Dùng meaningKey đã có của questionBank này
+                                            meaningKey = existingKeysArray[i]
+                                        } else {
+                                            // Tạo mới meaningKey nếu chưa đủ
+                                            meaningKey = `${questionKey}.meaning.${i + 1}`
+                                        }
+
+                                        // Upsert translations cho từng ngôn ngữ
+                                        for (const [languageCode, translationValue] of Object.entries(meaning.translations)) {
+                                            const language = await this.languagesService.findByCode({ code: languageCode })
+                                            
+                                            if (language?.data) {
+                                                // Upsert: nếu đã có translation với cùng languageId và key (của questionBank này) → update
+                                                // Nếu chưa có → create
+                                                await tx.translation.upsert({
+                                                    where: {
+                                                        languageId_key: {
+                                                            languageId: language.data.id,
+                                                            key: meaningKey
+                                                        }
+                                                    },
+                                                    update: {
+                                                        value: translationValue
+                                                    },
+                                                    create: {
+                                                        languageId: language.data.id,
+                                                        key: meaningKey,
+                                                        value: translationValue
+                                                    }
+                                                })
+                                            }
+                                        }
+                                    }
+                                }
+
+                                itemsToUpdate.push({
+                                    testSetQuestionBankId,
+                                    questionBankId,
+                                    order
+                                })
+                            }
+                        } else {
+                            // Không có id = tạo questionBank mới
+                            if (newQuestionBankIndex < newQuestionBankIds.length) {
+                                const questionBankId = newQuestionBankIds[newQuestionBankIndex]
+                                itemsToUpdate.push({
+                                    testSetQuestionBankId: 0, // 0 = tạo mới
+                                    questionBankId,
+                                    order
+                                })
+                                newQuestionBankIndex++
+                            }
+                        }
+                    }
+
+                    // Nếu update, xóa tất cả questionBank cũ trước
+                    if (isUpdate) {
+                        await tx.testSetQuestionBank.deleteMany({
+                            where: { testSetId: testSetId }
+                        })
+                    }
+
+                    // Tạo lại tất cả với order mới
+                    for (const item of itemsToUpdate) {
+                        await tx.testSetQuestionBank.create({
+                            data: {
+                                testSetId: testSetId,
+                                questionBankId: item.questionBankId,
+                                questionOrder: item.order
+                            }
+                        })
+                    }
+                }
+
+                // Lấy testSet với questionBanks để trả về đầy đủ thông tin
+                const testSetWithQuestions = await tx.testSet.findUnique({
+                    where: { id: testSet.id },
+                    include: {
+                        testSetQuestionBanks: {
+                            include: {
+                                questionBank: {
+                                    select: {
+                                        id: true,
+                                        questionJp: true,
+                                        questionType: true,
+                                        audioUrl: true,
+                                        pronunciation: true,
+                                        role: true,
+                                        levelN: true,
+                                        questionKey: true
+                                    }
+                                }
+                            },
+                            orderBy: {
+                                questionOrder: 'asc'
+                            }
+                        }
+                    }
+                })
+
+                return testSetWithQuestions
+            })
+
+            return {
+                statusCode: isUpdate ? 200 : 201,
+                data: result,
+                message: isUpdate ? TEST_SET_MESSAGE.UPDATE_SUCCESS : TEST_SET_MESSAGE.CREATE_SUCCESS,
+            }
+        } catch (error) {
+            if (error instanceof BadRequestException || error instanceof TestSetNotFoundException || error instanceof TestSetPermissionDeniedException) {
+                throw error
+            }
+            this.logger.error(`Error ${isUpdate ? 'updating' : 'creating'} testset with questionBanks:`, error)
+            throw new BadRequestException(`Không thể ${isUpdate ? 'cập nhật' : 'tạo'} bộ đề với questionBank`)
+        }
+    }
+
+    // Lấy testset với questionBanks và full translations
+    async findOneWithQuestionBanksFull(id: number): Promise<MessageResDTO> {
+        try {
+            const testSet = await this.prisma.testSet.findUnique({
+                where: { id },
+                include: {
+                    testSetQuestionBanks: {
+                        include: {
+                            questionBank: true
+                        },
+                        orderBy: {
+                            questionOrder: 'asc'
+                        }
+                    }
+                }
+            })
+
+            if (!testSet) {
+                throw TestSetNotFoundException
+            }
+
+            // Lấy full translations cho testset (name và description)
+            const nameKey = `testset.${id}.name`
+            const descriptionKey = `testset.${id}.description`
+
+            const testSetTranslations = await this.prisma.translation.findMany({
+                where: {
+                    OR: [
+                        { key: nameKey },
+                        { key: descriptionKey }
+                    ]
+                },
+                include: {
+                    language: true
+                }
+            })
+
+            // Format translations cho testset
+            const nameTranslations: Array<{ language: string; value: string }> = []
+            const descriptionTranslations: Array<{ language: string; value: string }> = []
+
+            testSetTranslations.forEach(trans => {
+                const translation = {
+                    language: trans.language.code,
+                    value: trans.value
+                }
+                if (trans.key === nameKey) {
+                    nameTranslations.push(translation)
+                } else if (trans.key === descriptionKey) {
+                    descriptionTranslations.push(translation)
+                }
+            })
+
+            // Lấy full translations cho mỗi questionBank
+            const questionBanksWithTranslations = await Promise.all(
+                testSet.testSetQuestionBanks.map(async (testSetQuestionBank) => {
+                    const questionBank = testSetQuestionBank.questionBank
+                    let meanings: Array<{ language: string; value: string }> = []
+
+                    if (questionBank.questionKey) {
+                        // Lấy tất cả translations cho questionBank
+                        const questionTranslations = await this.prisma.translation.findMany({
+                            where: {
+                                OR: [
+                                    { key: questionBank.questionKey },
+                                    { key: { startsWith: questionBank.questionKey + '.meaning.' } }
+                                ]
+                            },
+                            include: {
+                                language: true
+                            }
+                        })
+
+                        // Nếu không tìm thấy và key có format cũ, thử tìm theo format mới
+                        if (questionTranslations.length === 0 && questionBank.questionKey.includes('.question')) {
+                            const newKey = questionBank.questionKey.replace('.question', '').replace(/^(\w+)\.(\d+)$/, 'question.$1.$2')
+                            const newTranslations = await this.prisma.translation.findMany({
+                                where: {
+                                    OR: [
+                                        { key: newKey },
+                                        { key: { startsWith: newKey + '.meaning.' } }
+                                    ]
+                                },
+                                include: {
+                                    language: true
+                                }
+                            })
+                            meanings = newTranslations.map(t => ({
+                                language: t.language.code,
+                                value: t.value
+                            }))
+                        } else {
+                            meanings = questionTranslations.map(t => ({
+                                language: t.language.code,
+                                value: t.value
+                            }))
+                        }
+                    }
+
+                    return {
+                        id: testSetQuestionBank.id,
+                        questionOrder: testSetQuestionBank.questionOrder,
+                        questionBank: {
+                            id: questionBank.id,
+                            questionJp: questionBank.questionJp,
+                            questionType: questionBank.questionType,
+                            audioUrl: questionBank.audioUrl,
+                            pronunciation: questionBank.pronunciation,
+                            role: questionBank.role,
+                            levelN: questionBank.levelN,
+                            questionKey: questionBank.questionKey,
+                            meanings: meanings
+                        }
+                    }
+                })
+            )
+
+            // Format response
+            const result = {
+                id: testSet.id,
+                name: nameTranslations.length > 0 ? nameTranslations : testSet.name,
+                description: descriptionTranslations.length > 0 ? descriptionTranslations : testSet.description,
+                content: testSet.content,
+                audioUrl: testSet.audioUrl,
+                price: testSet.price ? Number(testSet.price) : null,
+                levelN: testSet.levelN,
+                testType: testSet.testType,
+                status: testSet.status,
+                creatorId: testSet.creatorId,
+                createdAt: testSet.createdAt,
+                updatedAt: testSet.updatedAt,
+                testSetQuestionBanks: questionBanksWithTranslations
+            }
+
+            return {
+                statusCode: 200,
+                data: result,
+                message: TEST_SET_MESSAGE.GET_SUCCESS,
+            }
+        } catch (error) {
+            this.logger.error('Error finding testset with questionBanks full:', error)
+            if (error instanceof TestSetNotFoundException) {
+                throw error
+            }
+            throw new BadRequestException('Không thể lấy thông tin bộ đề với questionBanks')
+        }
+    }
 
 }

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { RoleSpeaking } from '@prisma/client'
 import { TestSetStatus, TestSetType } from '@prisma/client'
 
 export class TestSetSwaggerDTO {
@@ -95,6 +96,13 @@ export class QuestionBankSwaggerDTO {
 
     @ApiPropertyOptional({ example: 'gakkou', description: 'Phiên âm (romaji)' })
     pronunciation?: string
+
+    @ApiPropertyOptional({
+        example: RoleSpeaking.A,
+        enum: RoleSpeaking,
+        description: 'Vai trò trong SPEAKING (A hoặc B)'
+    })
+    role?: RoleSpeaking
 
     @ApiPropertyOptional({ example: 3, description: 'Cấp độ JLPT (1-5)' })
     levelN?: number
@@ -512,4 +520,175 @@ export class TestSetWithQuestionsResponseSwaggerDTO {
 
     @ApiProperty({ example: 'Lấy thông tin bộ đề thi với câu hỏi thành công', description: 'Thông báo kết quả' })
     message: string
+}
+
+export class CreateTestSetWithQuestionSwaggerDTO {
+    @ApiPropertyOptional({
+        example: '２月１４日は、日本ではバレンタインデーです。キリスト教の特別な日ですが、日本では、女の人が好きな人にチョコレートなどのプレゼントをする日になりました。世界にも同じような日があります。ブラジルでは、６月１２日が「恋人の日」と呼ばれる日です。その日は、男の人も女の人もプレゼントを用意して、恋人におくります。 ブラジルでは、日本のようにチョコレートではなく、写真立てに写真を入れて、プレゼントするそうです。',
+        description: 'Bài đọc bằng tiếng nhật'
+    })
+    content?: string | null
+
+    @ApiProperty({
+        example: [
+            { field: 'name', language_code: 'vi', value: 'Đề thi từ vựng N3 - Phần 1' },
+            { field: 'name', language_code: 'en', value: 'N3 Vocabulary Test - Part 1' },
+            { field: 'description', language_code: 'vi', value: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản' },
+            { field: 'description', language_code: 'en', value: 'N3 vocabulary test with 50 basic vocabulary questions' }
+        ],
+        description: 'Translations cho name và description'
+    })
+    translations?: Array<{ field: 'name' | 'description'; language_code: string; value: string }>
+
+    @ApiPropertyOptional({
+        example: 'https://storage.googleapis.com/pokenihongo-audio/testset-n3-vocab-instruction.mp3',
+        description: 'URL file âm thanh hướng dẫn làm bài'
+    })
+    audioUrl?: string | null
+
+    @ApiPropertyOptional({
+        example: 50000,
+        description: 'Giá bộ đề thi (VND)'
+    })
+    price?: number | null
+
+    @ApiPropertyOptional({
+        example: 3,
+        description: 'Cấp độ JLPT (1-5)'
+    })
+    levelN?: number | null
+
+    @ApiProperty({
+        enum: TestSetType,
+        example: TestSetType.VOCABULARY,
+        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, PLACEMENT_TEST_DONE)'
+    })
+    testType: TestSetType
+
+    @ApiPropertyOptional({
+        enum: TestSetStatus,
+        example: TestSetStatus.DRAFT,
+        description: 'Trạng thái bộ đề thi',
+        default: TestSetStatus.DRAFT
+    })
+    status?: TestSetStatus
+
+    @ApiProperty({
+        example: [101, 102, 103, 104, 105],
+        description: 'Danh sách ID các questionBank cần thêm vào bộ đề',
+        type: [Number]
+    })
+    questionBankIds: number[]
+}
+
+export class UpsertTestSetWithQuestionBanksSwaggerDTO {
+    @ApiPropertyOptional({
+        example: 1,
+        description: 'ID của TestSet (nếu có = update, nếu không có = tạo mới)'
+    })
+    id?: number
+
+    @ApiPropertyOptional({
+        example: '２月１４日は、日本ではバレンタインデーです。キリスト教の特別な日ですが、日本では、女の人が好きな人にチョコレートなどのプレゼントをする日になりました。世界にも同じような日があります。ブラジルでは、６月１２日が「恋人の日」と呼ばれる日です。その日は、男の人も女の人もプレゼントを用意して、恋人におくります。 ブラジルでは、日本のようにチョコレートではなく、写真立てに写真を入れて、プレゼントするそうです。',
+        description: 'Bài đọc bằng tiếng nhật'
+    })
+    content?: string | null
+
+    @ApiPropertyOptional({
+        example: [
+            { field: 'name', language_code: 'vi', value: 'Đề thi từ vựng N3 - Phần 1' },
+            { field: 'name', language_code: 'en', value: 'N3 Vocabulary Test - Part 1' },
+            { field: 'description', language_code: 'vi', value: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản' },
+            { field: 'description', language_code: 'en', value: 'N3 vocabulary test with 50 basic vocabulary questions' }
+        ],
+        description: 'Translations cho name và description (bắt buộc khi tạo mới, optional khi update)'
+    })
+    translations?: Array<{ field: 'name' | 'description'; language_code: string; value: string }>
+
+    @ApiPropertyOptional({
+        example: 'https://storage.googleapis.com/pokenihongo-audio/testset-n3-vocab-instruction.mp3',
+        description: 'URL file âm thanh hướng dẫn làm bài'
+    })
+    audioUrl?: string | null
+
+    @ApiPropertyOptional({
+        example: 50000,
+        description: 'Giá bộ đề thi (VND)'
+    })
+    price?: number | null
+
+    @ApiPropertyOptional({
+        example: 3,
+        description: 'Cấp độ JLPT (1-5)'
+    })
+    levelN?: number | null
+
+    @ApiPropertyOptional({
+        enum: TestSetType,
+        example: TestSetType.VOCABULARY,
+        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, PLACEMENT_TEST_DONE). Bắt buộc khi tạo mới'
+    })
+    testType?: TestSetType
+
+    @ApiPropertyOptional({
+        enum: TestSetStatus,
+        example: TestSetStatus.DRAFT,
+        description: 'Trạng thái bộ đề thi'
+    })
+    status?: TestSetStatus
+
+    @ApiPropertyOptional({
+        example: [
+            {
+                id: 1,  // ID của TestSetQuestionBank (nếu có = update order, nếu không = tạo mới)
+                questionJp: '学',
+                questionType: 'VOCABULARY',
+                audioUrl: 'https://storage.googleapis.com/pokenihongo-audio/question-101-gakkou.mp3',
+                role: RoleSpeaking.A,
+                pronunciation: 'gakkou',
+                levelN: 3,
+                meanings: [
+                    {
+                        translations: {
+                            'vi': 'Trường học',
+                            'en': 'School',
+                            'ja': '学校'
+                        }
+                    }
+                ]
+            },
+            {
+                id: 2,  // Có id = update order dựa vào vị trí trong mảng (order = 2)
+                questionJp: '先生',
+                questionType: 'VOCABULARY',
+                role: RoleSpeaking.B,
+                pronunciation: 'sensei',
+                levelN: 3,
+                meanings: [
+                    {
+                        translations: {
+                            'vi': 'Giáo viên',
+                            'en': 'Teacher',
+                            'ja': '生'
+                        }
+                    }
+                ]
+            }
+        ],
+        description: 'Danh sách questionBank. Order tự động = vị trí trong mảng (index + 1). Nếu có id = TestSetQuestionBank.id (update order), nếu không có id = tạo questionBank mới',
+        type: [Object]
+    })
+    questionBanks?: Array<{
+        id?: number  // ID của TestSetQuestionBank (optional)
+        questionJp?: string
+        questionType?: string
+        audioUrl?: string | null
+        pronunciation?: string | null
+        role?: string | null
+        levelN?: number | null
+        meanings?: Array<{
+            meaningKey?: string | null
+            translations: Record<string, string>
+        }>
+    }>
 }
