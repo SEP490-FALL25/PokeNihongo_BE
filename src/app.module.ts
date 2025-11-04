@@ -78,6 +78,7 @@ import { MatchRoundModule } from './modules/match-round/match-round.module';
 import { MatchParticipantModule } from './modules/match-participant/match-participant.module';
 import { MatchRoundParticipantModule } from './modules/match-round-participant/match-round-participant.module';
 import { DebuffRoundModule } from './modules/debuff-round/debuff-round.module';
+import { SrsReviewModule } from './modules/srs-review/srs-review.module';
 
 @Module({
   imports: [
@@ -154,7 +155,8 @@ import { DebuffRoundModule } from './modules/debuff-round/debuff-round.module';
     MatchRoundModule,
     MatchParticipantModule,
     MatchRoundParticipantModule,
-    DebuffRoundModule
+    DebuffRoundModule,
+    SrsReviewModule
   ],
 
   controllers: [],
