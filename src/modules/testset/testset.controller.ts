@@ -10,6 +10,7 @@ import {
     TestSetListResDTO,
     CreateTestSetWithMeaningsBodyDTO,
     UpdateTestSetWithMeaningsBodyDTO,
+    UpsertTestSetWithQuestionBanksBodyDTO,
 } from './dto/testset.zod-dto'
 import {
     TestSetResponseSwaggerDTO,
@@ -19,7 +20,8 @@ import {
     CreateTestSetSwaggerDTO,
     UpdateTestSetSwaggerDTO,
     CreateTestSetWithMeaningsSwaggerDTO,
-    UpdateTestSetWithMeaningsSwaggerDTO
+    UpdateTestSetWithMeaningsSwaggerDTO,
+    UpsertTestSetWithQuestionBanksSwaggerDTO
 } from './dto/testset.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import {
@@ -34,7 +36,7 @@ import {
     Put,
     Query,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { TestSetService } from './testset.service'
 
@@ -42,6 +44,21 @@ import { TestSetService } from './testset.service'
 @Controller('testset')
 export class TestSetController {
     constructor(private readonly testSetService: TestSetService) { }
+
+
+    @Post('upsert-with-question-banks')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Upsert bộ đề với questionBank (Tạo mới hoặc Cập nhật)',
+        description: 'Nếu không có id trong body → tạo mới testset. Nếu có id → cập nhật testset. Có thể: tạo questionBank mới, update thông tin testset/questionBank, và update vị trí order (drag & drop) trong 1 API'
+    })
+    @ApiBody({ type: UpsertTestSetWithQuestionBanksSwaggerDTO })
+    async upsertTestSetWithQuestionBanks(
+        @Body() body: UpsertTestSetWithQuestionBanksBodyDTO,
+        @ActiveUser('userId') userId: number
+    ): Promise<MessageResDTO> {
+        return this.testSetService.upsertTestSetWithQuestionBanks(body, userId)
+    }
 
 
 
@@ -103,6 +120,26 @@ export class TestSetController {
     })
     findOne(@Param('id') id: string, @I18nLang() lang: string) {
         return this.testSetService.findOne(Number(id), lang)
+    }
+
+    @Get(':id/with-question-banks-full')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Lấy thông tin bộ đề với questionBanks và full translations',
+        description: 'Lấy testset với tất cả questionBanks kèm full translations (không filter theo ngôn ngữ)'
+    })
+    @ApiParam({
+        name: 'id',
+        description: 'ID của TestSet',
+        example: 1
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy thông tin bộ đề với questionBanks và full translations thành công',
+        type: TestSetWithQuestionsResponseSwaggerDTO
+    })
+    findOneWithQuestionBanksFull(@Param('id') id: string) {
+        return this.testSetService.findOneWithQuestionBanksFull(Number(id))
     }
 
     @Put(':id')

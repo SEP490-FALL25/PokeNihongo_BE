@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpException } from '@nestjs/common'
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common'
 import { SpeakingRepository } from './speaking.repo'
 import {
     CreateUserSpeakingAttemptType,
@@ -145,29 +145,56 @@ export class SpeakingService {
         }
     }
 
-    async evaluateSpeaking(data: EvaluateSpeakingRequestType, userId: number): Promise<MessageResDTO> {
+    async evaluateSpeaking(data: EvaluateSpeakingRequestType, userId: number, audioFile?: Express.Multer.File): Promise<MessageResDTO> {
         try {
+            // Đảm bảo questionBankId là number (có thể là string từ multipart/form-data)
+            const questionBankId = typeof data.questionBankId === 'string'
+                ? parseInt(data.questionBankId, 10)
+                : data.questionBankId
+
+            if (isNaN(questionBankId) || questionBankId <= 0) {
+                throw new HttpException('questionBankId không hợp lệ', HttpStatus.BAD_REQUEST)
+            }
+
             // Kiểm tra QuestionBank tồn tại
             const questionBank = await this.prisma.questionBank.findUnique({
-                where: { id: data.questionBankId }
+                where: { id: questionBankId }
             })
 
             if (!questionBank) {
                 throw QuestionBankNotFoundException
             }
 
+            // Xử lý file audio: upload file nếu có, hoặc dùng URL nếu không có file
+            let userAudioUrl: string
+
+            if (audioFile) {
+                // Upload file audio lên storage
+                this.logger.log(`Uploading audio file: ${audioFile.originalname}`)
+                const uploadResult = await this.uploadService.uploadFile(audioFile, 'speaking/audio')
+                userAudioUrl = uploadResult.url
+                this.logger.log(`Audio uploaded successfully: ${userAudioUrl}`)
+            } else if (data.userAudioUrl) {
+                // Sử dụng URL đã cung cấp
+                userAudioUrl = data.userAudioUrl
+                this.logger.log(`Using provided audio URL: ${userAudioUrl}`)
+            } else {
+                // Không có file và không có URL
+                throw new HttpException(SPEAKING_MESSAGE.AUDIO_URL_REQUIRED, HttpStatus.BAD_REQUEST)
+            }
+
             // Use Google Speech-to-Text API for evaluation
             const startTime = Date.now()
 
             // Call Google Speech API for evaluation
-            const evaluation = await this.evaluateSpeechWithGoogleAPI(data.userAudioUrl, data.languageCode)
+            const evaluation = await this.evaluateSpeechWithGoogleAPI(userAudioUrl, data.languageCode)
 
             const processingTime = Date.now() - startTime
 
             // Tạo UserSpeakingAttempt
             const userSpeakingAttempt = await this.speakingRepo.create({
-                questionBankId: data.questionBankId,
-                userAudioUrl: data.userAudioUrl,
+                questionBankId: questionBankId,
+                userAudioUrl: userAudioUrl,
                 userTranscription: evaluation.transcription,
                 confidence: evaluation.confidence,
                 accuracy: evaluation.accuracy,

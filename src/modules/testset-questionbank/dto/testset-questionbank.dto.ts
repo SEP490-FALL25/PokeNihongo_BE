@@ -48,6 +48,22 @@ export class UpdateQuestionOrderSwaggerDTO {
     questionOrder: number
 }
 
+export class BatchUpdateQuestionOrderSwaggerDTO {
+    @ApiProperty({
+        example: [
+            { id: 1, questionOrder: 1 },
+            { id: 2, questionOrder: 2 },
+            { id: 3, questionOrder: 3 }
+        ],
+        description: 'Danh sách ID và thứ tự mới của các câu hỏi (cho drag & drop)',
+        type: [Object]
+    })
+    orders: Array<{
+        id: number
+        questionOrder: number
+    }>
+}
+
 export class DeleteManyTestSetQuestionBankSwaggerDTO {
     @ApiProperty({
         example: [1, 2, 3],

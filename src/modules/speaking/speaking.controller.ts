@@ -33,10 +33,44 @@ import {
     Post,
     Put,
     Query,
+    UploadedFile,
+    UseInterceptors,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { SpeakingService } from './speaking.service'
+import { BadRequestException } from '@nestjs/common'
+
+// Multer config cho audio file upload
+const audioFileFilter = (req: any, file: Express.Multer.File, callback: (error: Error | null, acceptFile: boolean) => void) => {
+    const allowedMimeTypes = [
+        'audio/mpeg',
+        'audio/mp3',
+        'audio/wav',
+        'audio/wave',
+        'audio/x-wav',
+        'audio/m4a',
+        'audio/x-m4a',
+        'audio/ogg',
+        'audio/aac',
+        'audio/flac',
+        'audio/webm',
+        'audio/mp4'
+    ]
+
+    if (!file.mimetype || !allowedMimeTypes.includes(file.mimetype)) {
+        return callback(new BadRequestException('Chỉ chấp nhận file audio (mp3, wav, m4a, ogg, aac, flac, webm)'), false)
+    }
+    callback(null, true)
+}
+
+const audioUploadOptions = {
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+    },
+    fileFilter: audioFileFilter
+}
 
 @ApiTags('Speaking')
 @Controller('speaking')
@@ -156,9 +190,39 @@ export class SpeakingController {
 
     @Post('evaluate')
     @ApiBearerAuth()
+    @UseInterceptors(FileInterceptor('audio', audioUploadOptions))
+    @ApiConsumes('multipart/form-data')
     @ApiOperation({
         summary: 'Đánh giá phát âm bằng Google Speech-to-Text API',
-        description: 'Gửi file âm thanh để đánh giá phát âm và lưu kết quả'
+        description: 'Gửi file âm thanh để đánh giá phát âm và lưu kết quả. Có thể upload file audio hoặc gửi URL audio'
+    })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                audio: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'File audio (mp3, wav, m4a). Nếu không có file, có thể dùng userAudioUrl'
+                },
+                questionBankId: {
+                    type: 'number',
+                    description: 'ID câu hỏi',
+                    example: 101
+                },
+                userAudioUrl: {
+                    type: 'string',
+                    description: 'URL file audio (optional nếu đã upload file)',
+                    example: 'https://example.com/user-audio.mp3'
+                },
+                languageCode: {
+                    type: 'string',
+                    description: 'Mã ngôn ngữ (mặc định: ja-JP)',
+                    example: 'ja-JP'
+                }
+            },
+            required: ['questionBankId']
+        }
     })
     @ApiResponse({
         status: 200,
@@ -167,9 +231,10 @@ export class SpeakingController {
     })
     @ZodSerializerDto(EvaluateSpeakingResponseDTO)
     async evaluateSpeaking(
+        @UploadedFile() audioFile: Express.Multer.File,
         @Body() body: EvaluateSpeakingRequestDTO,
         @ActiveUser('userId') userId: number
     ): Promise<MessageResDTO> {
-        return this.speakingService.evaluateSpeaking(body, userId)
+        return this.speakingService.evaluateSpeaking(body, userId, audioFile)
     }
 }

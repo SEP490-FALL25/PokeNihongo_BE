@@ -8,6 +8,8 @@ import {
     GetTestSetListQuerySchema,
     CreateTestSetWithMeaningsBodySchema,
     UpdateTestSetWithMeaningsBodySchema,
+    CreateTestSetWithQuestionBodySchema,
+    UpsertTestSetWithQuestionBanksBodySchema,
 } from '../entities/testset.entities'
 
 // Create TestSet DTO
@@ -33,4 +35,10 @@ export class CreateTestSetWithMeaningsBodyDTO extends createZodDto(CreateTestSet
 
 // Update TestSet with Meanings DTO
 export class UpdateTestSetWithMeaningsBodyDTO extends createZodDto(UpdateTestSetWithMeaningsBodySchema) { }
+
+// Create TestSet with QuestionBanks DTO
+export class CreateTestSetWithQuestionBodyDTO extends createZodDto(CreateTestSetWithQuestionBodySchema) { }
+
+// Upsert TestSet with QuestionBanks DTO (gộp create và update)
+export class UpsertTestSetWithQuestionBanksBodyDTO extends createZodDto(UpsertTestSetWithQuestionBanksBodySchema) { }
 
