@@ -524,7 +524,8 @@ export const enMessages = {
 
     NOT_FOUND: 'Match participant not found',
     ALREADY_EXISTS: 'Match participant already exists',
-    INVALID_DATA: 'Invalid match participant data'
+    INVALID_DATA: 'Invalid match participant data',
+    INVALID_ACTION: 'Invalid action for match participant'
   },
   match_round_participant: {
     CREATE_SUCCESS: 'Match round participant created successfully',

@@ -123,4 +123,13 @@ export class MatchParticipantRepo {
       }
     })
   }
+
+  findByMatchId(matchId: number): Promise<MatchParticipantType[]> {
+    return this.prismaService.matchParticipant.findMany({
+      where: {
+        matchId,
+        deletedAt: null
+      }
+    })
+  }
 }

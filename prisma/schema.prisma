@@ -1679,8 +1679,8 @@ model MatchRound {
   // "sẽ có roundOrder làm điều đó"
   roundNumber MatchRoundNumber @default(ONE) // 1, 2, hoặc 3
 
-  status RoundStatus @default(SELECTING_POKEMON)
-
+  status        RoundStatus       @default(SELECTING_POKEMON)
+  endTimeRound  DateTime? // Thời gian kết thúc round (khi status thành improgress )
   // --- KẾT QUẢ ROUND ---
   // Được cập nhật sau khi so sánh 2 record "con"
   roundWinnerId Int?
@@ -1710,7 +1710,8 @@ model MatchRoundParticipant {
   matchRound   MatchRound @relation(fields: [matchRoundId], references: [id], onDelete: Cascade)
 
   // --- POKÉMON ĐÃ CHỌN CHO ROUND NÀY ---
-  startTimeSelected     DateTime? // Thời gian bắt đầu chọn Pokémon
+  orderSelected         Int          @default(1) // Thứ tự chọn Pokémon (1, 2, 3)
+  endTimeSelected       DateTime? // Thời gian kết thúc chọn Pokémon
   selectedUserPokemonId Int? // Ban đầu null, được update khi chọn
   selectedUserPokemon   UserPokemon? @relation(fields: [selectedUserPokemonId], references: [id], onDelete: NoAction)
 

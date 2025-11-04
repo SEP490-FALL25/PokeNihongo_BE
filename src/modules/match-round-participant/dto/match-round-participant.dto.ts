@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod'
 import {
   CreateMatchRoundParticipantBodySchema,
   CreateMatchRoundParticipantResSchema,
+  GetMatchRoundParticipantByRoundParamsSchema,
   GetMatchRoundParticipantDetailResSchema,
   GetMatchRoundParticipantParamsSchema,
   UpdateMatchRoundParticipantBodySchema,
@@ -20,6 +21,10 @@ export class UpdateMatchRoundParticipantBodyDTO extends createZodDto(
 
 export class GetMatchRoundParticipantParamsDTO extends createZodDto(
   GetMatchRoundParticipantParamsSchema
+) {}
+
+export class GetMatchRoundByRoundParamsDTO extends createZodDto(
+  GetMatchRoundParticipantByRoundParamsSchema
 ) {}
 
 // Response DTOs

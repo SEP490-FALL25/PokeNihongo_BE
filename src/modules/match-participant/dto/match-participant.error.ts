@@ -18,3 +18,12 @@ export class MatchParticipantAlreadyExistsException extends BadRequestException 
     })
   }
 }
+
+export class MatchParticipantInvalidActionException extends BadRequestException {
+  constructor() {
+    super({
+      message: MatchParticipantMessage.INVALID_ACTION,
+      errorKey: MatchParticipantMessage.INVALID_ACTION
+    })
+  }
+}

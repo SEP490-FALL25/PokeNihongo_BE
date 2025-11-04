@@ -33,10 +33,19 @@ export interface MatchStatusUpdatePayload {
   message?: string
 }
 
+export interface PokemonSelectedPayload {
+  type: 'POKEMON_SELECTED'
+  matchRoundId: number
+  matchRound: any
+  participant: any
+  opponent: any
+}
+
 export type MatchingEventPayload =
   | MatchFoundPayload
   | MatchmakingFailedPayload
   | MatchStatusUpdatePayload
+  | PokemonSelectedPayload
 
 // ========== SOCKET EVENTS ==========
 export const MATCHING_EVENTS = {
@@ -55,6 +64,12 @@ export const SOCKET_ROOM = {
    * Pattern: matching_{userId}
    */
   getMatchingRoom: (userId: number): string => `matching_${userId}`,
+
+  /**
+   * Get match round room name
+   * Pattern: match_round_{matchRoundId}
+   */
+  getMatchRoundRoom: (matchRoundId: number): string => `match_round_${matchRoundId}`,
 
   /**
    * Get user room name (legacy pattern)

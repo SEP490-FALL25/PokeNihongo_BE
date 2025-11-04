@@ -7,6 +7,7 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateMatchRoundParticipantBodyDTO,
   CreateMatchRoundParticipantResDTO,
+  GetMatchRoundByRoundParamsDTO,
   GetMatchRoundParticipantDetailResDTO,
   GetMatchRoundParticipantParamsDTO,
   UpdateMatchRoundParticipantBodyDTO,
@@ -50,6 +51,24 @@ export class MatchRoundParticipantController {
       {
         userId,
         data: body
+      },
+      lang
+    )
+  }
+
+  @Put('choose-pokemon/round/:matchRoundId')
+  @ZodSerializerDto(UpdateMatchRoundParticipantResDTO)
+  choosePokeWithRound(
+    @Body() body: UpdateMatchRoundParticipantBodyDTO,
+    @Param() params: GetMatchRoundByRoundParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.matchRoundParticipantService.choosePokemonWithRound(
+      {
+        data: body,
+        matchRoundId: params.matchRoundId,
+        userId
       },
       lang
     )

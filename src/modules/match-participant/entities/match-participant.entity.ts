@@ -31,8 +31,11 @@ export const CreateMatchParticipantResSchema = z.object({
 })
 
 // Update Schema
-export const UpdateMatchParticipantBodySchema =
-  CreateMatchParticipantBodySchema.partial().strict()
+export const UpdateMatchParticipantBodySchema = CreateMatchParticipantBodySchema.extend({
+  hasAccepted: z.boolean().nullable()
+})
+  .partial()
+  .strict()
 
 export const UpdateMatchParticipantResSchema = CreateMatchParticipantResSchema
 

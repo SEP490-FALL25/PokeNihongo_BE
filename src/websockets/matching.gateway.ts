@@ -95,6 +95,8 @@ export class MatchingGateway {
    */
   notifyUser(userId: number, payload: MatchingEventPayload): void {
     const roomName = SOCKET_ROOM.getMatchingRoom(userId)
+    console.log('roomName: ', roomName)
+
     this.server.to(roomName).emit(MATCHING_EVENTS.MATCHING_EVENT, payload)
 
     this.logger.debug(
@@ -282,5 +284,77 @@ export class MatchingGateway {
     this.logger.log(
       `[MatchingGateway] Notified users ${userIds.join(', ')} about match ${matchId} status: ${status}`
     )
+  }
+
+  /**
+   * Gửi notification khi Pokemon được chọn
+   */
+  notifyPokemonSelected(
+    matchRoundId: number,
+    matchRound: any,
+    participant: any,
+    opponent: any
+  ): void {
+    const room = SOCKET_ROOM.getMatchRoundRoom(matchRoundId)
+
+    const payload = {
+      type: 'POKEMON_SELECTED',
+      matchRoundId,
+      matchRound,
+      participant,
+      opponent
+    }
+
+    this.server.to(room).emit(MATCHING_EVENTS.MATCHING_EVENT, payload)
+
+    this.logger.log(
+      `[MatchingGateway] Notified room ${room} about Pokemon selection in match-round ${matchRoundId}`
+    )
+  }
+
+  /**
+   * Join match round room
+   */
+  @SubscribeMessage('join-match-round-room')
+  handleJoinMatchRoundRoom(
+    @ConnectedSocket() client: Socket,
+    payload: { matchRoundId: number }
+  ): void {
+    const userId = client.data.userId
+
+    if (!userId || !payload.matchRoundId) {
+      this.logger.warn(
+        `[MatchingGateway] Invalid join-match-round-room request from socket ${client.id}`
+      )
+      return
+    }
+
+    const room = SOCKET_ROOM.getMatchRoundRoom(payload.matchRoundId)
+    client.join(room)
+
+    this.logger.log(`[MatchingGateway] User ${userId} joined match-round room: ${room}`)
+  }
+
+  /**
+   * Leave match round room
+   */
+  @SubscribeMessage('leave-match-round-room')
+  handleLeaveMatchRoundRoom(
+    @ConnectedSocket() client: Socket,
+    payload: { matchRoundId: number }
+  ): void {
+    const userId = client.data.userId
+
+    if (!userId || !payload.matchRoundId) {
+      this.logger.warn(
+        `[MatchingGateway] Invalid leave-match-round-room request from socket ${client.id}`
+      )
+      return
+    }
+
+    const room = SOCKET_ROOM.getMatchRoundRoom(payload.matchRoundId)
+    client.leave(room)
+
+    this.logger.log(`[MatchingGateway] User ${userId} left match-round room: ${room}`)
   }
 }

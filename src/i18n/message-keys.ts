@@ -558,7 +558,8 @@ export const MatchParticipantMessage = {
   GET_LIST_SUCCESS: 'match_participant.GET_LIST_SUCCESS',
   NOT_FOUND: 'match_participant.NOT_FOUND',
   ALREADY_EXISTS: 'match_participant.ALREADY_EXISTS',
-  INVALID_DATA: 'match_participant.INVALID_DATA'
+  INVALID_DATA: 'match_participant.INVALID_DATA',
+  INVALID_ACTION: 'match_participant.INVALID_ACTION'
 } as const
 
 export const MatchRoundParticipantMessage = {

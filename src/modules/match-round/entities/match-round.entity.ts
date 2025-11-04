@@ -21,6 +21,7 @@ export const MatchRoundSchema = z.object({
       RoundStatus.COMPLETED
     ])
     .default(RoundStatus.SELECTING_POKEMON),
+  endTimeRound: z.date().nullable(),
   roundWinnerId: z.number().optional().nullable(),
   deletedAt: z.date().nullable(),
   createdAt: z.date(),
