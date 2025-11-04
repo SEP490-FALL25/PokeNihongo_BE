@@ -700,7 +700,6 @@ model QuestionBank {
   audioUrl     String?      @db.VarChar(1000) // URL file âm thanh
   questionKey  String?      @db.VarChar(200) // Key để dịch câu hỏi
 
-  order Int?          @default(0) // Thứ tự câu hỏi trong bộ đề
   role          RoleSpeaking?
 
   pronunciation String?       @db.VarChar(1000) // Phiên âm (romaji)

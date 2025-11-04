@@ -60,7 +60,7 @@ export class CreateQuestionBankWithMeaningsSwaggerDTO {
     })
     pronunciation?: string
 
-        @ApiProperty({
+    @ApiProperty({
         example: RoleSpeaking.A,
         enum: RoleSpeaking,
         description: 'Vai trò trong SPEAKING (A hoặc B)',
@@ -68,10 +68,7 @@ export class CreateQuestionBankWithMeaningsSwaggerDTO {
     })
     role?: RoleSpeaking
 
-    @ApiProperty({ example: 1, description: 'Thứ tự câu hỏi', required: false })
-    order?: number
-
-    @ApiProperty({ example: 3, description: 'Cấp độ JLPT (1-5)', required: false })                                                                             
+    @ApiProperty({ example: 3, description: 'Cấp độ JLPT (1-5)', required: false })
     levelN?: number
 
     @ApiProperty({
@@ -122,7 +119,7 @@ export class UpdateQuestionBankWithMeaningsSwaggerDTO {
     })
     pronunciation?: string
 
-        @ApiProperty({
+    @ApiProperty({
         example: RoleSpeaking.A,
         enum: RoleSpeaking,
         description: 'Vai trò trong SPEAKING (A hoặc B)',
@@ -130,10 +127,7 @@ export class UpdateQuestionBankWithMeaningsSwaggerDTO {
     })
     role?: RoleSpeaking
 
-    @ApiProperty({ example: 1, description: 'Thứ tự câu hỏi', required: false })
-    order?: number
-
-    @ApiProperty({ example: 3, description: 'Cấp độ JLPT (1-5)', required: false })                                                                             
+    @ApiProperty({ example: 3, description: 'Cấp độ JLPT (1-5)', required: false })
     levelN?: number
 
     @ApiProperty({
@@ -363,9 +357,6 @@ export class CreateQuestionBankWithAnswersSwaggerDTO {
         required: false
     })
     role?: RoleSpeaking
-
-    @ApiProperty({ example: 1, description: 'Thứ tự câu hỏi', required: false })
-    order?: number
 
     @ApiProperty({
         example: 3,

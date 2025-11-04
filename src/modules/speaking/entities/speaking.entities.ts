@@ -87,10 +87,13 @@ export const GetUserSpeakingAttemptListQuerySchema = z
     .strict()
 
 // Evaluate Speaking Request Schema
+// Note: userAudioUrl is optional because file can be uploaded via multipart/form-data
+// Validation in service ensures at least one is provided (file or URL)
+// questionBankId can be number or string (from multipart/form-data), will be converted in service
 export const EvaluateSpeakingRequestSchema = z
     .object({
-        questionBankId: z.number().int().positive(),
-        userAudioUrl: z.string().url(),
+        questionBankId: z.union([z.number().int().positive(), z.string()]),
+        userAudioUrl: z.string().url().optional(),
         languageCode: z.string().optional().default('ja-JP')
     })
     .strict()
