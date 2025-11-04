@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { RoleSpeaking } from '@prisma/client'
 import { TestSetStatus, TestSetType } from '@prisma/client'
 
 export class TestSetSwaggerDTO {
@@ -96,10 +97,20 @@ export class QuestionBankSwaggerDTO {
     @ApiPropertyOptional({ example: 'gakkou', description: 'Phiên âm (romaji)' })
     pronunciation?: string
 
+        @ApiPropertyOptional({
+        example: RoleSpeaking.A,
+        enum: RoleSpeaking,
+        description: 'Vai trò trong SPEAKING (A hoặc B)'
+    })
+    role?: RoleSpeaking
+
+    @ApiPropertyOptional({ example: 1, description: 'Thứ tự câu hỏi' })
+    order?: number
+
     @ApiPropertyOptional({ example: 3, description: 'Cấp độ JLPT (1-5)' })
     levelN?: number
 
-    @ApiProperty({ example: 1, description: 'Thứ tự câu hỏi trong bộ đề' })
+    @ApiProperty({ example: 1, description: 'Thứ tự câu hỏi trong bộ đề' })     
     questionOrder: number
 }
 

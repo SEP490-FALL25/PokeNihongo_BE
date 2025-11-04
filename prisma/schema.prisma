@@ -700,9 +700,11 @@ model QuestionBank {
   audioUrl     String?      @db.VarChar(1000) // URL file âm thanh
   questionKey  String?      @db.VarChar(200) // Key để dịch câu hỏi
 
-  pronunciation String? @db.VarChar(1000) // Phiên âm (romaji)
-  levelN        Int?    @default(1) // Độ khó (1-5)
+  order Int?          @default(0) // Thứ tự câu hỏi trong bộ đề
+  role          RoleSpeaking?
 
+  pronunciation String?       @db.VarChar(1000) // Phiên âm (romaji)
+  levelN        Int?          @default(1) // Độ khó (1-5)
   // Audit fields
   createdById Int?
   createdBy   User? @relation("QuestionBankCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -2172,6 +2174,7 @@ enum GeminiConfigType {
   SPEAKING_EVALUATION // Đánh giá phát âm SPEAKING
   PERSONALIZED_RECOMMENDATIONS // Gợi ý cá nhân hóa
   AI_KAIWA // Hội thoại AI (AI Kaiwa)
+  PERSONALIZED_RECOMMENDATIONS_ANALYZE
 }
 
 model GeminiConfig {
@@ -2302,4 +2305,9 @@ model GeminiServiceConfig {
   updatedAt DateTime @updatedAt
 
   @@unique([serviceType, geminiConfigId])
+}
+
+enum RoleSpeaking {
+  A
+  B
 }
