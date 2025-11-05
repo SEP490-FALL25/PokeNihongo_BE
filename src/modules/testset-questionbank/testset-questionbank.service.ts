@@ -465,6 +465,7 @@ export class TestSetQuestionBankService {
                                     questionType: qb.questionType,
                                     audioUrl: qb.audioUrl,
                                     pronunciation: qb.pronunciation,
+                                    role: qb.role,
                                     levelN: qb.levelN,
                                     answers: mappedAnswers
                                 }
