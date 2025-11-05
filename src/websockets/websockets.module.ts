@@ -1,3 +1,4 @@
+import { KaiwaGateway } from '@/websockets/kaiwa.gateway'
 import { Module } from '@nestjs/common'
 import { InitializerGateway } from './initializer.gateway'
 import { MatchingGateway } from './matching.gateway'
@@ -7,10 +8,12 @@ import { WebsocketsService } from './websockets.service'
 @Module({
   providers: [
     WebsocketsService,
+
     SocketServerService,
     InitializerGateway,
-    MatchingGateway
+    MatchingGateway,
+    KaiwaGateway
   ],
-  exports: [WebsocketsService, SocketServerService, MatchingGateway]
+  exports: [WebsocketsService, SocketServerService, MatchingGateway, KaiwaGateway]
 })
-export class WebsocketsModule { }
+export class WebsocketsModule {}

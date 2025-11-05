@@ -60,6 +60,16 @@ export const MATCHING_EVENTS = {
   // Add more events as needed
 } as const
 
+export const KAIWA_EVENTS = {
+  // Server -> Client events
+  KAIWA_EVENT: 'kaiwa-event',
+  // Client -> Server events
+  USER_AUDIO_CHUNK: 'user-audio-chunk',
+  // Add more events as needed
+  USER_AUDIO_RESPONSE: 'user-audio-response',
+  JOIN: 'join'
+} as const
+
 // ========== SOCKET ROOMS ==========
 export const SOCKET_ROOM = {
   /**
@@ -67,6 +77,8 @@ export const SOCKET_ROOM = {
    * Pattern: matching_{userId}
    */
   getMatchingRoomByUserId: (userId: number): string => `searching_${userId}`,
+
+  getKaiwaRoomByUserId: (userId: number): string => `kaiwa_${userId}`,
 
   /**
    * Get match room name - shared by both users in the match (used for Pokemon selection)

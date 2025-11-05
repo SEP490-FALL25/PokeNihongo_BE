@@ -46,6 +46,7 @@ import { GachaItemRateModule } from './modules/gacha-item-rate/gacha-item-rate.m
 import { GachaItemModule } from './modules/gacha-item/gacha-item.module'
 import { GachaPurchaseModule } from './modules/gacha-purchase/gacha-purchase.module'
 import { GachaRollHistoryModule } from './modules/gacha-roll-history/gacha-roll-history.module'
+import { KaiwaModule } from './modules/kaiwa/kaiwa.module'
 import { LeaderboardSeasonModule } from './modules/leaderboard-season/leaderboard-season.module'
 import { MatchParticipantModule } from './modules/match-participant/match-participant.module'
 import { MatchQueueModule } from './modules/match-queue/match-queue.module'
@@ -58,7 +59,6 @@ import { ShopBannerModule } from './modules/shop-banner/shop-banner.module'
 import { ShopItemModule } from './modules/shop-item/shop-item.module'
 import { ShopPurchaseModule } from './modules/shop-purchase/shop-purchase.module'
 import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module'
-import { SpeakingModule } from './modules/speaking/speaking.module'
 import { SrsReviewModule } from './modules/srs-review/srs-review.module'
 import { TestModule } from './modules/test/test.module'
 import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module'
@@ -80,7 +80,6 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
-import { KaiwaModule } from './modules/kaiwa/kaiwa.module'
 
 @Module({
   imports: [
@@ -137,7 +136,6 @@ import { KaiwaModule } from './modules/kaiwa/kaiwa.module'
     TestSetModule,
     TestModule,
     TestSetQuestionBankModule,
-    SpeakingModule,
     WalletModule,
     WalletTransactionModule,
     ShopBannerModule,

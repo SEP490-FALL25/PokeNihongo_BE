@@ -77,7 +77,7 @@ export class WebsocketAdapter extends IoAdapter {
       })()
     }
 
-    ;['/', '/matching'].forEach((namespace) => {
+    ;['/', '/matching', '/kaiwa'].forEach((namespace) => {
       server.of(namespace).use(authMiddleware)
     })
     return server
