@@ -2,8 +2,8 @@ import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFil
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger'
 import { FileInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express'
 import { GeminiService } from './gemini.service'
-import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto, ChatWithGeminiDto, ChatWithGeminiMultipartDto, RecommendationsMultipartDto, ListSavedRecommendationsQueryDto, UpdateRecommendationStatusDto } from './dto/gemini.dto'
-import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
+import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto, ChatWithGeminiDto, ChatWithGeminiMultipartDto, RecommendationsMultipartDto, ListSavedRecommendationsQueryDto, UpdateRecommendationStatusDto, TestNativeAudioDialogDto } from './dto/gemini.dto'
+import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse, TestNativeAudioDialogResponse } from './dto/gemini.response.dto'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 
 @ApiTags('Gemini')
@@ -236,5 +236,36 @@ export class GeminiController {
     ) {
         const data = await this.geminiService.updateRecommendationStatus(userId, Number(id), body.status)
         return { statusCode: 200, data, message: 'UPDATE_SUCCESS' }
+    }
+
+    @Post('test-native-audio-dialog')
+    @UseInterceptors(AnyFilesInterceptor())
+    @ApiConsumes('multipart/form-data')
+    @ApiOperation({
+        summary: 'Test model gemini-2.5-flash-native-audio-dialog',
+        description: 'Hàm cơ bản để test model native audio dialog. Có thể nhận audio URL hoặc text message.'
+    })
+    @ApiBody({ type: TestNativeAudioDialogDto })
+    @ApiResponse({
+        status: 200,
+        description: 'Test native audio dialog thành công',
+        type: Object
+    })
+    async testNativeAudioDialog(
+        @ActiveUser('userId') userId: number,
+        @Body() body: TestNativeAudioDialogDto
+    ): Promise<{ statusCode: number; data: TestNativeAudioDialogResponse; message: string }> {
+        // Validate input
+        if (!body || (!body.message && !body.audioUrl)) {
+            throw new BadRequestException('Phải có message hoặc audioUrl')
+        }
+
+        const result = await this.geminiService.testNativeAudioDialog(userId, body)
+
+        return {
+            statusCode: 200,
+            data: result,
+            message: 'Test native audio dialog thành công'
+        }
     }
 }
