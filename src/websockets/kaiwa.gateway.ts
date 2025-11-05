@@ -73,6 +73,7 @@ export class KaiwaGateway {
     }
   }
 
+  // Tina sẽ emit sự kiện để join room kaiwa_{userId}
   @SubscribeMessage(KAIWA_EVENTS.JOIN)
   handleJoinSearchingRoom(@ConnectedSocket() client: Socket): void {
     const userId = client.data?.userId
