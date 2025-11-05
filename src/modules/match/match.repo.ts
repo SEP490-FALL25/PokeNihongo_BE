@@ -1,7 +1,7 @@
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 
-import { MatchStatusType } from '@/common/constants/match.constant'
+import { MatchStatus, MatchStatusType } from '@/common/constants/match.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
@@ -242,6 +242,51 @@ export class MatchRepo {
             userId
           }
         }
+      }
+    })
+  }
+
+  countMatchesByUserId(userId: number): Promise<number> {
+    return this.prismaService.match.count({
+      where: {
+        participants: {
+          some: {
+            userId
+          }
+        },
+        status: {
+          not: MatchStatus.CANCELLED
+        },
+        deletedAt: null
+      }
+    })
+  }
+
+  countWinsByUserId(userId: number): Promise<number> {
+    return this.prismaService.match.count({
+      where: {
+        winnerId: userId,
+        deletedAt: null
+      }
+    })
+  }
+
+  getMatchesByUser(userId: number): Promise<MatchType[]> {
+    return this.prismaService.match.findMany({
+      where: {
+        participants: {
+          some: { userId }
+        },
+        status: {
+          not: 'CANCELLED'
+        },
+        deletedAt: null
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      include: {
+        participants: true
       }
     })
   }

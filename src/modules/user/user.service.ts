@@ -13,6 +13,8 @@ import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { UserStatus } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
+import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
+import { MatchRepo } from '../match/match.repo'
 import { UserPokemonNotFoundException } from '../user-pokemon/dto/user-pokemon.error'
 import { WalletService } from '../wallet/wallet.service'
 import { EmailAlreadyExistsException, UserNotFoundException } from './dto/user.error'
@@ -31,7 +33,9 @@ export class UserService {
     private userPokemonRepo: UserPokemonRepo,
     private i18nService: I18nService,
     private levelRepo: LevelRepo,
-    private walletSer: WalletService
+    private walletSer: WalletService,
+    private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
+    private readonly matchRepo: MatchRepo
   ) {}
 
   /**
@@ -425,5 +429,48 @@ export class UserService {
       }
       throw error
     }
+  }
+
+  async getInfoBattleWithUser(userId: number, lang: string) {
+    // lay ra mua hien tai cua user
+    const currentSeason = await this.leaderboardSeasonRepo.findActiveSeason()
+
+    const userInfo = await this.userRepo.findById(userId)
+
+    // lay ra tong tran ma user da tham gia
+    const totalMatches = await this.matchRepo.countMatchesByUserId(userId)
+
+    // lay ra tong tran user win \
+    const totalWins = await this.matchRepo.countWinsByUserId(userId)
+
+    //lay ra chuoi thang hien tai0totalWins;
+    let currentWinStreak = await this.getCurrentWinStreak(userId)
+
+    return {
+      message: this.i18nService.translate(UserMessage.GET_DETAIL_SUCCESS, lang),
+      statusCode: HttpStatus.OK,
+      data: {
+        leaderboardSeason: currentSeason,
+        rank: {},
+        totalMatches,
+        rateWin: totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0,
+        currentWinStreak
+      }
+    }
+  }
+  async getCurrentWinStreak(userId: number) {
+    const matches = await this.matchRepo.getMatchesByUser(userId)
+
+    let streak = 0
+
+    for (const match of matches) {
+      if (match.winnerId === userId) {
+        streak++
+      } else {
+        return streak
+      }
+    }
+
+    return streak
   }
 }
