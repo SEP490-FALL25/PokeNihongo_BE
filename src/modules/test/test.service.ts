@@ -546,6 +546,23 @@ export class TestService {
                         `TestSet không hợp lệ: ${invalidIds.join(', ')}`
                     )
                 }
+
+                // Với SPEAKING_TEST: chỉ được có tối đa 1 TestSet SPEAKING
+                if (test.testType === 'SPEAKING_TEST') {
+                    const existingSpeakingCount = await (this.prisma as any).testTestSet.count({
+                        where: {
+                            testId,
+                            testSet: { testType: 'SPEAKING' }
+                        }
+                    })
+                    const incomingSpeakingCount = testSets.filter(ts => ts.testType === 'SPEAKING').length
+                    if (existingSpeakingCount + incomingSpeakingCount > 1) {
+                        throw new BadRequestException(
+                            `Test SPEAKING_TEST chỉ được có tối đa 1 TestSet SPEAKING. ` +
+                            `Hiện có ${existingSpeakingCount}, đang cố thêm ${incomingSpeakingCount}.`
+                        )
+                    }
+                }
             }
 
             // Tạo các bản ghi trong bảng TestTestSet (nhiều-nhiều)
