@@ -123,8 +123,7 @@ model User {
   userExerciseAttempts UserExerciseAttempt[]
   userTests            UserTest[]            @relation("UserTests")
   userTestAttempts     UserTestAttempt[]     @relation("UserTestAttempts")
-  userSpeakingAttempts UserSpeakingAttempt[]
-  userAIConversations  UserAIConversation[]
+  kaiwaAiMessages      Kaiwa_ai[]
   userProgresses       UserProgress[]
   attendances          Attendance[]
   Wallet               Wallet[]
@@ -700,13 +699,13 @@ model QuestionBank {
   audioUrl     String?      @db.VarChar(1000) // URL file âm thanh
   questionKey  String?      @db.VarChar(200) // Key để dịch câu hỏi
 
-  role          RoleSpeaking?
+  role RoleSpeaking?
 
-  pronunciation String?       @db.VarChar(1000) // Phiên âm (romaji)
-  levelN        Int?          @default(1) // Độ khó (1-5)
+  pronunciation String? @db.VarChar(1000) // Phiên âm (romaji)
+  levelN        Int?    @default(1) // Độ khó (1-5)
   // Audit fields
-  createdById Int?
-  createdBy   User? @relation("QuestionBankCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdById   Int?
+  createdBy     User?   @relation("QuestionBankCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   createdAt DateTime @default(now()) @db.Timestamp(3)
   updatedAt DateTime @updatedAt @db.Timestamp(3)
@@ -718,10 +717,6 @@ model QuestionBank {
 
   // Quan hệ với UserTestAnswerLog
   userTestAnswerLogs UserTestAnswerLog[] @relation("QuestionBankUserTestAnswerLogs")
-
-  // Quan hệ với UserSpeakingAttempt
-  userSpeakingAttempts UserSpeakingAttempt[]
-
   // Quan hệ với TestSetQuestionBank (bảng nối)
   testSetQuestionBanks TestSetQuestionBank[]
 
@@ -970,37 +965,6 @@ model UserTestAnswerLog {
   @@index([questionBankId])
   @@index([answerId])
   @@index([turnNumber])
-}
-
-// Model UserSpeakingAttempt (Lịch sử đánh giá phát âm của user)
-model UserSpeakingAttempt {
-  id             Int          @id @default(autoincrement())
-  userId         Int
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  questionBankId Int
-  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  // Audio từ user
-  userAudioUrl      String  @db.VarChar(1000) // URL file âm thanh user gửi
-  userTranscription String? @db.VarChar(1000) // Văn bản được chuyển đổi từ audio
-  confidence        Float? // Độ tin cậy của Google API (0-1)
-
-  // Kết quả chấm điểm
-  accuracy      Float? // Độ chính xác (0-100)
-  pronunciation Float? // Điểm phát âm (0-100)
-  fluency       Float? // Điểm độ trôi chảy (0-100)
-  overallScore  Float? // Điểm tổng (0-100)
-
-  // Metadata
-  processingTime    Int? // Thời gian xử lý (ms)
-  googleApiResponse Json? // Response từ Google API
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@index([userId])
-  @@index([questionBankId])
-  @@index([overallScore])
-  @@index([createdAt])
 }
 
 model Grammar {
@@ -2201,16 +2165,26 @@ model GeminiConfig {
   @@index([geminiConfigModelId])
 }
 
-// Model UserAIConversation (Lịch sử hội thoại AI Kaiwa)
-model UserAIConversation {
+// Model Kaiwa_ai (Lưu lịch sử hội thoại Kaiwa với AI, dạng chat + audio)
+model Kaiwa_ai {
   id     Int  @id @default(autoincrement())
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  conversationId String  @db.VarChar(100) // ID để group các messages trong cùng 1 conversation
-  role           String  @db.VarChar(20) // USER hoặc AI
-  message        String  @db.Text // Nội dung tin nhắn
-  audioUrl       String? @db.VarChar(1000) // URL file audio (nếu có, cho AI response)
+  // Group các messages thuộc cùng một cuộc hội thoại
+  conversationId String @db.VarChar(100)
+
+  // USER hoặc AI
+  role String @db.VarChar(20)
+
+  // URL file audio (từ user hoặc AI)
+  audioUrl String? @db.VarChar(1000)
+
+  // Transcript văn bản (ví dụ: từ audio input/output)
+  transcript String? @db.VarChar(2000)
+
+  // Lưu model AI sử dụng (ví dụ: gemini-2.5-flash-native-audio-dialog)
+  model String? @db.VarChar(100)
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())

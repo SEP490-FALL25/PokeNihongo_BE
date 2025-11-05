@@ -142,37 +142,6 @@ export class GeminiController {
         return { statusCode: 200, data: ui, message: 'GET_SUCCESS' }
     }
 
-    @Post('kaiwa')
-    @UseInterceptors(FileInterceptor('audio'))
-    @ApiOperation({
-        summary: 'AI Kaiwa - Hội thoại với AI bằng tiếng Nhật với Speech-to-Text và Pronunciation Assessment',
-        description: 'Hỗ trợ cả text message và audio file. Nếu có audio, sẽ tự động convert sang text. Có thể đánh giá phát âm nếu có reference text.'
-    })
-    @ApiBody({ type: AIKaiwaDto })
-    @ApiResponse({
-        status: 200,
-        description: 'Hội thoại AI thành công',
-        type: Object
-    })
-    async aiKaiwa(
-        @ActiveUser('userId') userId: number,
-        @Body() body: AIKaiwaDto,
-        @UploadedFile() audioFile?: Express.Multer.File
-    ): Promise<{ statusCode: number; data: AIKaiwaResponse; message: string }> {
-        // Nếu có upload audio file, cần upload lên cloud trước và lấy URL
-        // Tạm thời giữ nguyên logic hiện tại, user sẽ upload audio lên trước và gửi URL
-        // Hoặc có thể thêm logic upload file ở đây nếu cần
-
-        const result = await this.geminiService.aiKaiwa(userId, body)
-
-        return {
-            statusCode: 200,
-            data: result,
-            message: 'Hội thoại AI thành công'
-        }
-    }
-
-
     //chat with gemini
     @Post('chat')
     @UseInterceptors(AnyFilesInterceptor()) // Cần interceptor để parse multipart/form-data

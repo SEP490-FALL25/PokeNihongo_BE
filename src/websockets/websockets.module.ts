@@ -13,4 +13,4 @@ import { WebsocketsService } from './websockets.service'
   ],
   exports: [WebsocketsService, SocketServerService, MatchingGateway]
 })
-export class WebsocketsModule {}
+export class WebsocketsModule { }

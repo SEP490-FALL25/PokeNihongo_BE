@@ -1,0 +1,5 @@
+# Ignore test files in production
+test-client.example.js
+*.test.ts
+*.spec.ts
+
