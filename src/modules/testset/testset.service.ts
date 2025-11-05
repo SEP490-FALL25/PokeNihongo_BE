@@ -9,6 +9,7 @@ import { TranslationService } from '../translation/translation.service'
 import { LanguagesService } from '../languages/languages.service'
 import { QuestionBankService } from '../question-bank/question-bank.service'
 import { CreateQuestionBankWithMeaningsBodyType } from '../question-bank/entities/question-bank.entities'
+import { QuestionType } from '@prisma/client'
 
 @Injectable()
 export class TestSetService {
@@ -421,7 +422,7 @@ export class TestSetService {
         }
     }
 
-    private validateTestSetWithMeaningsData(data: CreateTestSetWithMeaningsBodyType | UpdateTestSetWithMeaningsBodyType, isUpdate: boolean = false): void {
+    private validateTestSetWithMeaningsData(data: CreateTestSetWithMeaningsBodyType | UpdateTestSetWithMeaningsBodyType | UpsertTestSetWithQuestionBanksBodyType, isUpdate: boolean = false): void {
         // Validation cho meanings
         if (data.meanings) {
             if (data.meanings.length === 0) {
@@ -603,16 +604,16 @@ export class TestSetService {
         try {
             // Validation
             if (isUpdate) {
-                this.validateTestSetData(data, true)
+                this.validateTestSetWithMeaningsData(data, true)
             } else {
                 // Khi tạo mới, validate bắt buộc
                 if (!data.testType) {
                     throw new BadRequestException('testType là bắt buộc khi tạo mới')
                 }
-                if (!data.translations || data.translations.length === 0) {
-                    throw new BadRequestException('translations là bắt buộc khi tạo mới')
+                if (!data.meanings || data.meanings.length === 0) {
+                    throw new BadRequestException('meanings là bắt buộc khi tạo mới')
                 }
-                this.validateTestSetData(data, false)
+                this.validateTestSetWithMeaningsData(data, false)
 
                 // Khi tạo mới, phải có ít nhất questionBanks
                 if (!data.questionBanks || data.questionBanks.length === 0) {
@@ -651,16 +652,24 @@ export class TestSetService {
                         const questionBankId = testSetQuestionBankMap.get(questionBankData.id)
                         if (questionBankId) {
                             questionBankMap.set(questionBankData.id, questionBankId)
-                            
+
                             // Nếu có meanings, sẽ upsert translations trong transaction
                             // Lưu vào questionBankMap để xử lý sau
                         }
                     } else {
                         // Không có id = tạo questionBank mới
+                        // Xử lý audioUrl: chuyển empty string thành null/undefined để logic text-to-speech trong createWithMeanings hoạt động
+                        let audioUrl = questionBankData.audioUrl
+                        if (audioUrl && typeof audioUrl === 'string' && audioUrl.trim().length === 0) {
+                            audioUrl = null
+                        } else if (!audioUrl) {
+                            audioUrl = null
+                        }
+
                         const createQuestionBankData: CreateQuestionBankWithMeaningsBodyType = {
                             questionJp: questionBankData.questionJp!,
                             questionType: questionBankData.questionType,
-                            audioUrl: questionBankData.audioUrl || null,
+                            audioUrl: audioUrl,
                             pronunciation: questionBankData.pronunciation || null,
                             role: questionBankData.role || null,
                             levelN: questionBankData.levelN || null,
@@ -668,7 +677,12 @@ export class TestSetService {
                             questionKey: null
                         }
 
-                        const questionBankResult = await this.questionBankService.createWithMeanings(createQuestionBankData, userId)
+                        // Logic text-to-speech đã được xử lý trong questionBankService.createWithMeanings()
+                        // Nếu questionType là LISTENING hoặc SPEAKING và audioUrl null/undefined/empty, sẽ tự động tạo TTS
+                        // Chỉ skip duplicate check cho SPEAKING (cho phép tạo questionBank trùng questionJp)
+                        // Các questionType khác vẫn validate trùng
+                        const skipDuplicateCheck = questionBankData.questionType === QuestionType.SPEAKING
+                        const questionBankResult = await this.questionBankService.createWithMeanings(createQuestionBankData, userId, skipDuplicateCheck)
 
                         if (questionBankResult.data && typeof questionBankResult.data === 'object' && 'id' in questionBankResult.data) {
                             newQuestionBankIds.push((questionBankResult.data as any).id)
@@ -727,26 +741,32 @@ export class TestSetService {
                 const nameKey = `testset.${testSetId}.name`
                 const descriptionKey = `testset.${testSetId}.description`
 
-                // Cập nhật translations
-                if (data.translations && data.translations.length > 0) {
-                    for (const translation of data.translations) {
-                        const language = await this.languagesService.findByCode({ code: translation.language_code })
-                        if (language?.data) {
-                            const key = translation.field === 'name' ? nameKey : descriptionKey
-                            await tx.translation.upsert({
-                                where: {
-                                    languageId_key: {
-                                        key: key,
-                                        languageId: language.data.id
+                // Cập nhật meanings nếu có
+                if (data.meanings && data.meanings.length > 0) {
+                    for (let i = 0; i < data.meanings.length; i++) {
+                        const meaning = data.meanings[i]
+                        const baseKey = meaning.field === 'name' ? nameKey : descriptionKey
+                        const finalKey = `${baseKey}.meaning.${i + 1}`
+
+                        // Tạo translations cho từng ngôn ngữ
+                        for (const [languageCode, translation] of Object.entries(meaning.translations)) {
+                            const language = await this.languagesService.findByCode({ code: languageCode })
+                            if (language?.data) {
+                                await tx.translation.upsert({
+                                    where: {
+                                        languageId_key: {
+                                            languageId: language.data.id,
+                                            key: finalKey
+                                        }
+                                    },
+                                    update: { value: translation },
+                                    create: {
+                                        languageId: language.data.id,
+                                        key: finalKey,
+                                        value: translation
                                     }
-                                },
-                                update: { value: translation.value },
-                                create: {
-                                    key: key,
-                                    languageId: language.data.id,
-                                    value: translation.value
-                                }
-                            })
+                                })
+                            }
                         }
                     }
                 }
@@ -791,8 +811,8 @@ export class TestSetService {
                                 }
 
                                 // Update questionBank info nếu có
-                                if (questionBankData.questionJp || questionBankData.pronunciation || 
-                                    questionBankData.audioUrl !== undefined || questionBankData.role !== undefined || 
+                                if (questionBankData.questionJp || questionBankData.pronunciation ||
+                                    questionBankData.audioUrl !== undefined || questionBankData.role !== undefined ||
                                     questionBankData.levelN !== undefined) {
                                     await tx.questionBank.update({
                                         where: { id: questionBankId },
@@ -810,7 +830,7 @@ export class TestSetService {
                                 if (questionBankData.meanings && questionBankData.meanings.length > 0) {
                                     // Lấy questionKey của questionBank này (đảm bảo chỉ update translations của questionBank này)
                                     const questionKey = questionBank.questionKey || `question.${questionBank.questionType}.${questionBankId}`
-                                    
+
                                     // Lấy tất cả meaningKeys hiện có của questionBank này (tự động, không cần FE truyền)
                                     const existingMeaningKeys = await tx.translation.findMany({
                                         where: {
@@ -820,13 +840,13 @@ export class TestSetService {
                                         distinct: ['key'],
                                         orderBy: { key: 'asc' }
                                     })
-                                    
+
                                     // Tạo map: meaningKey -> index (để match với thứ tự trong request)
                                     const existingKeysArray = existingMeaningKeys.map(t => t.key).sort()
-                                    
+
                                     for (let i = 0; i < questionBankData.meanings.length; i++) {
                                         const meaning = questionBankData.meanings[i]
-                                        
+
                                         // Tự động lấy meaningKey: ưu tiên dùng meaningKey đã có của questionBank này theo thứ tự
                                         // Nếu không đủ → tạo mới
                                         let meaningKey: string
@@ -841,7 +861,7 @@ export class TestSetService {
                                         // Upsert translations cho từng ngôn ngữ
                                         for (const [languageCode, translationValue] of Object.entries(meaning.translations)) {
                                             const language = await this.languagesService.findByCode({ code: languageCode })
-                                            
+
                                             if (language?.data) {
                                                 // Upsert: nếu đã có translation với cùng languageId và key (của questionBank này) → update
                                                 // Nếu chưa có → create
@@ -973,11 +993,12 @@ export class TestSetService {
             const nameKey = `testset.${id}.name`
             const descriptionKey = `testset.${id}.description`
 
+            // Lấy translations từ meaning keys (format: testset.{id}.name.meaning.1, testset.{id}.description.meaning.1, ...)
             const testSetTranslations = await this.prisma.translation.findMany({
                 where: {
                     OR: [
-                        { key: nameKey },
-                        { key: descriptionKey }
+                        { key: { startsWith: nameKey + '.meaning.' } },
+                        { key: { startsWith: descriptionKey + '.meaning.' } }
                     ]
                 },
                 include: {
@@ -994,12 +1015,28 @@ export class TestSetService {
                     language: trans.language.code,
                     value: trans.value
                 }
-                if (trans.key === nameKey) {
+                if (trans.key.startsWith(nameKey + '.meaning.')) {
                     nameTranslations.push(translation)
-                } else if (trans.key === descriptionKey) {
+                } else if (trans.key.startsWith(descriptionKey + '.meaning.')) {
                     descriptionTranslations.push(translation)
                 }
             })
+
+            // Format name theo yêu cầu: [{ vi: "...", en: "..." }]
+            const nameFormatted = nameTranslations.length > 0
+                ? [nameTranslations.reduce((acc, trans) => {
+                    acc[trans.language] = trans.value
+                    return acc
+                }, {} as Record<string, string>)]
+                : testSet.name
+
+            // Format description theo yêu cầu: [{ vi: "...", en: "..." }]
+            const descriptionFormatted = descriptionTranslations.length > 0
+                ? [descriptionTranslations.reduce((acc, trans) => {
+                    acc[trans.language] = trans.value
+                    return acc
+                }, {} as Record<string, string>)]
+                : testSet.description
 
             // Lấy full translations cho mỗi questionBank
             const questionBanksWithTranslations = await Promise.all(
@@ -1008,13 +1045,10 @@ export class TestSetService {
                     let meanings: Array<{ language: string; value: string }> = []
 
                     if (questionBank.questionKey) {
-                        // Lấy tất cả translations cho questionBank
+                        // Chỉ lấy translations từ meaning keys (không lấy questionKey chính)
                         const questionTranslations = await this.prisma.translation.findMany({
                             where: {
-                                OR: [
-                                    { key: questionBank.questionKey },
-                                    { key: { startsWith: questionBank.questionKey + '.meaning.' } }
-                                ]
+                                key: { startsWith: questionBank.questionKey + '.meaning.' }
                             },
                             include: {
                                 language: true
@@ -1026,10 +1060,7 @@ export class TestSetService {
                             const newKey = questionBank.questionKey.replace('.question', '').replace(/^(\w+)\.(\d+)$/, 'question.$1.$2')
                             const newTranslations = await this.prisma.translation.findMany({
                                 where: {
-                                    OR: [
-                                        { key: newKey },
-                                        { key: { startsWith: newKey + '.meaning.' } }
-                                    ]
+                                    key: { startsWith: newKey + '.meaning.' }
                                 },
                                 include: {
                                     language: true
@@ -1047,6 +1078,14 @@ export class TestSetService {
                         }
                     }
 
+                    // Format meanings thành object: { vi: "...", en: "...", ja: "..." }
+                    const meaningsFormatted = meanings.length > 0
+                        ? meanings.reduce((acc, meaning) => {
+                            acc[meaning.language] = meaning.value
+                            return acc
+                        }, {} as Record<string, string>)
+                        : {}
+
                     return {
                         id: testSetQuestionBank.id,
                         questionOrder: testSetQuestionBank.questionOrder,
@@ -1059,7 +1098,7 @@ export class TestSetService {
                             role: questionBank.role,
                             levelN: questionBank.levelN,
                             questionKey: questionBank.questionKey,
-                            meanings: meanings
+                            meanings: meaningsFormatted
                         }
                     }
                 })
@@ -1068,8 +1107,8 @@ export class TestSetService {
             // Format response
             const result = {
                 id: testSet.id,
-                name: nameTranslations.length > 0 ? nameTranslations : testSet.name,
-                description: descriptionTranslations.length > 0 ? descriptionTranslations : testSet.description,
+                name: nameFormatted,
+                description: descriptionFormatted,
                 content: testSet.content,
                 audioUrl: testSet.audioUrl,
                 price: testSet.price ? Number(testSet.price) : null,
