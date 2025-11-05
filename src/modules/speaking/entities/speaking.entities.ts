@@ -10,7 +10,7 @@ export const UserSpeakingAttemptSchema = z.object({
     id: z.number(),
     userId: z.number(),
     questionBankId: z.number(),
-    userAudioUrl: z.string().url(),
+    userAudioUrl: z.string().url().nullable().optional(),
     userTranscription: z.string().nullable().optional(),
     confidence: z.number().min(0).max(1).nullable().optional(),
     accuracy: z.number().min(0).max(100).nullable().optional(),

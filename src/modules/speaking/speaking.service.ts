@@ -20,7 +20,6 @@ import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { SpeechToTextService } from '@/3rdService/speech/speech-to-text.service'
 import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
-import { UploadService } from '@/3rdService/upload/upload.service'
 
 @Injectable()
 export class SpeakingService {
@@ -31,7 +30,6 @@ export class SpeakingService {
         private readonly prisma: PrismaService,
         private readonly speechToTextService: SpeechToTextService,
         private readonly textToSpeechService: TextToSpeechService,
-        private readonly uploadService: UploadService,
     ) { }
 
     async createUserSpeakingAttempt(data: CreateUserSpeakingAttemptType, userId: number): Promise<MessageResDTO> {
@@ -165,19 +163,17 @@ export class SpeakingService {
                 throw QuestionBankNotFoundException
             }
 
-            // Xử lý file audio: upload file nếu có, hoặc dùng URL nếu không có file
-            let userAudioUrl: string
+            // Xử lý file audio: lấy buffer trực tiếp, không upload lên storage
+            let audioBuffer: Buffer
 
             if (audioFile) {
-                // Upload file audio lên storage
-                this.logger.log(`Uploading audio file: ${audioFile.originalname}`)
-                const uploadResult = await this.uploadService.uploadFile(audioFile, 'speaking/audio')
-                userAudioUrl = uploadResult.url
-                this.logger.log(`Audio uploaded successfully: ${userAudioUrl}`)
+                // Sử dụng buffer trực tiếp từ file upload
+                this.logger.log(`Using audio file buffer directly: ${audioFile.originalname}`)
+                audioBuffer = audioFile.buffer
             } else if (data.userAudioUrl) {
-                // Sử dụng URL đã cung cấp
-                userAudioUrl = data.userAudioUrl
-                this.logger.log(`Using provided audio URL: ${userAudioUrl}`)
+                // Download audio từ URL để lấy buffer
+                this.logger.log(`Downloading audio from URL: ${data.userAudioUrl}`)
+                audioBuffer = await this.downloadAudioFile(data.userAudioUrl)
             } else {
                 // Không có file và không có URL
                 throw new HttpException(SPEAKING_MESSAGE.AUDIO_URL_REQUIRED, HttpStatus.BAD_REQUEST)
@@ -186,15 +182,15 @@ export class SpeakingService {
             // Use Google Speech-to-Text API for evaluation
             const startTime = Date.now()
 
-            // Call Google Speech API for evaluation
-            const evaluation = await this.evaluateSpeechWithGoogleAPI(userAudioUrl, data.languageCode)
+            // Call Google Speech API for evaluation (gửi buffer trực tiếp, không lưu file)
+            const evaluation = await this.evaluateSpeechWithGoogleAPI(audioBuffer, data.languageCode)
 
             const processingTime = Date.now() - startTime
 
-            // Tạo UserSpeakingAttempt
+            // Tạo UserSpeakingAttempt (không lưu audioUrl vì không upload file)
             const userSpeakingAttempt = await this.speakingRepo.create({
                 questionBankId: questionBankId,
-                userAudioUrl: userAudioUrl,
+                userAudioUrl: '', // Không lưu audio; để trống cho phù hợp Prisma schema (string)
                 userTranscription: evaluation.transcription,
                 confidence: evaluation.confidence,
                 accuracy: evaluation.accuracy,
@@ -231,12 +227,9 @@ export class SpeakingService {
         }
     }
 
-    private async evaluateSpeechWithGoogleAPI(audioUrl: string, languageCode: string = 'ja-JP'): Promise<any> {
+    private async evaluateSpeechWithGoogleAPI(audioBuffer: Buffer, languageCode: string = 'ja-JP'): Promise<any> {
         try {
-            // Download audio file from URL
-            const audioBuffer = await this.downloadAudioFile(audioUrl)
-
-            // Convert audio to text using Google Speech-to-Text
+            // Convert audio to text using Google Speech-to-Text (gửi buffer trực tiếp)
             const speechResult = await this.speechToTextService.convertAudioToText(audioBuffer, {
                 languageCode,
                 enableAutomaticPunctuation: true,

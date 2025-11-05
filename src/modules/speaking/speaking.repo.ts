@@ -7,10 +7,14 @@ export class SpeakingRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     async create(data: CreateUserSpeakingAttemptType & { userId: number }): Promise<UserSpeakingAttemptType> {
+        // Prisma schema expects userAudioUrl as string (not null). Use empty string when absent.
+        const { userId, userAudioUrl, questionBankId, ...rest } = data
         return await this.prisma.userSpeakingAttempt.create({
             data: {
-                ...data,
-                userId: data.userId,
+                userId,
+                questionBankId,
+                userAudioUrl: userAudioUrl ?? '',
+                ...rest,
             },
         })
     }
@@ -104,9 +108,14 @@ export class SpeakingRepository {
     }
 
     async update(id: number, data: UpdateUserSpeakingAttemptType): Promise<UserSpeakingAttemptType> {
+        // Omit questionBankId (not updatable) and normalize userAudioUrl to string if provided
+        const { questionBankId: _omit, userAudioUrl, ...rest } = data
         return await this.prisma.userSpeakingAttempt.update({
             where: { id },
-            data,
+            data: {
+                ...(userAudioUrl !== undefined ? { userAudioUrl: userAudioUrl ?? '' } : {}),
+                ...rest,
+            },
         })
     }
 
