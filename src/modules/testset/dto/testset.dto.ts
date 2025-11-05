@@ -1,3 +1,4 @@
+import { QuestionType } from '@/common/enum/enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { RoleSpeaking } from '@prisma/client'
 import { TestSetStatus, TestSetType } from '@prisma/client'
@@ -107,8 +108,17 @@ export class QuestionBankSwaggerDTO {
     @ApiPropertyOptional({ example: 3, description: 'Cấp độ JLPT (1-5)' })
     levelN?: number
 
-    @ApiProperty({ example: 1, description: 'Thứ tự câu hỏi trong bộ đề' })
-    questionOrder: number
+    @ApiPropertyOptional({
+        description: 'Meanings của questionBank với format: { vi: "...", en: "...", ja: "..." }',
+        type: 'object',
+        additionalProperties: { type: 'string' },
+        example: {
+            vi: 'Trường học',
+            en: 'School',
+            ja: '学校'
+        }
+    })
+    meanings?: Record<string, string>
 }
 
 export class TestSetWithQuestionsSwaggerDTO extends TestSetSwaggerDTO {
@@ -511,6 +521,104 @@ export class TestSetListResponseSwaggerDTO {
     message: string
 }
 
+export class TestSetWithQuestionsFullSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID của bộ đề thi' })
+    id: number
+
+    @ApiProperty({
+        description: 'Tên bộ đề thi với format: [{ vi: "...", en: "..." }]',
+        type: 'array',
+        items: {
+            type: 'object',
+            additionalProperties: { type: 'string' }
+        },
+        example: [
+            {
+                vi: 'Đề thi từ vựng N3 - Phần 1',
+                en: 'N3 Vocabulary Test - Part 1'
+            }
+        ]
+    })
+    name: Array<Record<string, string>>
+
+    @ApiPropertyOptional({
+        description: 'Mô tả bộ đề với format: [{ vi: "...", en: "..." }]',
+        type: 'array',
+        items: {
+            type: 'object',
+            additionalProperties: { type: 'string' }
+        },
+        example: [
+            {
+                vi: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản',
+                en: 'N3 vocabulary test with 50 basic vocabulary questions'
+            }
+        ]
+    })
+    description?: Array<Record<string, string>>
+
+    @ApiPropertyOptional({
+        example: '２月１４日は、日本ではバレンタインデーです。キリスト教の特別な日ですが、日本では、女の人が好きな人にチョコレートなどのプレゼントをする日になりました。世界にも同じような日があります。ブラジルでは、６月１２日が「恋人の日」と呼ばれる日です。その日は、男の人も女の人もプレゼントを用意して、恋人におくります。 ブラジルでは、日本のようにチョコレートではなく、写真立てに写真を入れて、プレゼントするそうです。',
+        description: 'Nội dung bài đọc. Bắt buộc phải có và phải là tiếng Nhật (Hiragana, Katakana, Kanji) khi testType là READING'
+    })
+    content?: string
+
+    @ApiPropertyOptional({ example: 'https://storage.googleapis.com/pokenihongo-audio/testset-n3-vocab-instruction.mp3', description: 'URL file âm thanh hướng dẫn làm bài' })
+    audioUrl?: string
+
+    @ApiPropertyOptional({ example: 50000, description: 'Giá bộ đề thi (VND)' })
+    price?: number
+
+    @ApiPropertyOptional({ example: 3, description: 'Cấp độ JLPT (1-5)' })
+    levelN?: number
+
+    @ApiProperty({ enum: TestSetType, example: TestSetType.VOCABULARY, description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, PLACEMENT_TEST_DONE)' })
+    testType: TestSetType
+
+    @ApiProperty({ enum: TestSetStatus, example: TestSetStatus.ACTIVE, description: 'Trạng thái bộ đề thi' })
+    status: TestSetStatus
+
+    @ApiPropertyOptional({ example: 1, description: 'ID người tạo bộ đề thi' })
+    creatorId?: number
+
+    @ApiProperty({ example: '2024-10-24T14:00:00.000Z', description: 'Thời gian tạo bộ đề thi' })
+    createdAt: Date
+
+    @ApiProperty({ example: '2024-10-24T14:30:00.000Z', description: 'Thời gian cập nhật bộ đề thi' })
+    updatedAt: Date
+
+    @ApiProperty({
+        type: [Object],
+        description: 'Danh sách câu hỏi trong bộ đề thi',
+        example: [
+            {
+                id: 1,
+                questionOrder: 1,
+                questionBank: {
+                    id: 101,
+                    questionJp: '学校',
+                    questionType: 'VOCABULARY',
+                    audioUrl: 'https://storage.googleapis.com/pokenihongo-audio/question-101-gakkou.mp3',
+                    pronunciation: 'gakkou',
+                    levelN: 3,
+                    meanings: {
+                        vi: 'Trường học',
+                        en: 'School',
+                        ja: '学校'
+                    }
+                }
+            }
+        ]
+    })
+    testSetQuestionBanks: Array<{
+        id: number
+        questionOrder: number
+        questionBank: QuestionBankSwaggerDTO & {
+            meanings?: Record<string, string>
+        }
+    }>
+}
+
 export class TestSetWithQuestionsResponseSwaggerDTO {
     @ApiProperty({ example: 200, description: 'Mã trạng thái HTTP' })
     statusCode: number
@@ -519,6 +627,17 @@ export class TestSetWithQuestionsResponseSwaggerDTO {
     data: TestSetWithQuestionsSwaggerDTO
 
     @ApiProperty({ example: 'Lấy thông tin bộ đề thi với câu hỏi thành công', description: 'Thông báo kết quả' })
+    message: string
+}
+
+export class TestSetWithQuestionsFullResponseSwaggerDTO {
+    @ApiProperty({ example: 200, description: 'Mã trạng thái HTTP' })
+    statusCode: number
+
+    @ApiProperty({ type: TestSetWithQuestionsFullSwaggerDTO, description: 'Dữ liệu bộ đề thi với danh sách câu hỏi và full translations' })
+    data: TestSetWithQuestionsFullSwaggerDTO
+
+    @ApiProperty({ example: 'Lấy thông tin bộ đề thi với questionBanks và full translations thành công', description: 'Thông báo kết quả' })
     message: string
 }
 
@@ -588,45 +707,59 @@ export class UpsertTestSetWithQuestionBanksSwaggerDTO {
     })
     id?: number
 
-    @ApiPropertyOptional({
-        example: '２月１４日は、日本ではバレンタインデーです。キリスト教の特別な日ですが、日本では、女の人が好きな人にチョコレートなどのプレゼントをする日になりました。世界にも同じような日があります。ブラジルでは、６月１２日が「恋人の日」と呼ばれる日です。その日は、男の人も女の人もプレゼントを用意して、恋人におくります。 ブラジルでは、日本のようにチョコレートではなく、写真立てに写真を入れて、プレゼントするそうです。',
-        description: 'Bài đọc bằng tiếng nhật'
-    })
-    content?: string | null
-
-    @ApiPropertyOptional({
+    @ApiProperty({
         example: [
-            { field: 'name', language_code: 'vi', value: 'Đề thi từ vựng N3 - Phần 1' },
-            { field: 'name', language_code: 'en', value: 'N3 Vocabulary Test - Part 1' },
-            { field: 'description', language_code: 'vi', value: 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản' },
-            { field: 'description', language_code: 'en', value: 'N3 vocabulary test with 50 basic vocabulary questions' }
+            {
+                field: 'name',
+                translations: {
+                    'vi': 'Đề thi từ vựng N3 - Phần 1',
+                    'en': 'N3 Vocabulary Test - Part 1',
+                    'ja': 'N3語彙テスト - パート1'
+                }
+            },
+            {
+                field: 'description',
+                translations: {
+                    'vi': 'Bộ đề thi từ vựng N3 bao gồm 50 câu hỏi về từ vựng cơ bản trong tiếng Nhật',
+                    'en': 'N3 vocabulary test with 50 basic vocabulary questions in Japanese',
+                    'ja': 'N3語彙テスト50問の基本語彙問題を含む'
+                }
+            }
         ],
-        description: 'Translations cho name và description (bắt buộc khi tạo mới, optional khi update)'
+        description: 'Meanings với field (name/description) và translations cho từng ngôn ngữ. meaningKey sẽ được tự động tạo'
     })
-    translations?: Array<{ field: 'name' | 'description'; language_code: string; value: string }>
+    meanings: Array<{
+        field: 'name' | 'description'
+        meaningKey?: string | null
+        translations: {
+            vi: string
+            en: string
+            ja?: string
+        }
+    }>
 
     @ApiPropertyOptional({
-        example: 'https://storage.googleapis.com/pokenihongo-audio/testset-n3-vocab-instruction.mp3',
+        example: null,
         description: 'URL file âm thanh hướng dẫn làm bài'
     })
     audioUrl?: string | null
 
     @ApiPropertyOptional({
-        example: 50000,
+        example: null,
         description: 'Giá bộ đề thi (VND)'
     })
     price?: number | null
 
     @ApiPropertyOptional({
-        example: 3,
-        description: 'Cấp độ JLPT (1-5)'
+        example: 5,
+        description: 'Cấp độ JLPT (0-5)'
     })
     levelN?: number | null
 
     @ApiPropertyOptional({
         enum: TestSetType,
-        example: TestSetType.VOCABULARY,
-        description: 'Loại đề thi (VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, GENERAL, PLACEMENT_TEST_DONE). Bắt buộc khi tạo mới'
+        example: TestSetType.SPEAKING,
+        description: 'SPEAKING Bắt buộc khi tạo mới'
     })
     testType?: TestSetType
 
@@ -642,8 +775,8 @@ export class UpsertTestSetWithQuestionBanksSwaggerDTO {
             {
                 id: 1,  // ID của TestSetQuestionBank (nếu có = update order, nếu không = tạo mới)
                 questionJp: '学',
-                questionType: 'VOCABULARY',
-                audioUrl: 'https://storage.googleapis.com/pokenihongo-audio/question-101-gakkou.mp3',
+                questionType: QuestionType.SPEAKING,
+                audioUrl: null,
                 role: RoleSpeaking.A,
                 pronunciation: 'gakkou',
                 levelN: 3,
@@ -660,7 +793,8 @@ export class UpsertTestSetWithQuestionBanksSwaggerDTO {
             {
                 id: 2,  // Có id = update order dựa vào vị trí trong mảng (order = 2)
                 questionJp: '先生',
-                questionType: 'VOCABULARY',
+                questionType: QuestionType.SPEAKING,
+                audioUrl: null,
                 role: RoleSpeaking.B,
                 pronunciation: 'sensei',
                 levelN: 3,

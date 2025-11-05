@@ -157,10 +157,14 @@ export const UpsertTestSetWithQuestionBanksBodySchema = z.object({
     levelN: z.number().nullable().optional(),
     testType: z.nativeEnum(PrismaTestSetType).optional(),
     status: z.nativeEnum(TestSetStatus).optional(),
-    translations: z.array(z.object({
+    meanings: z.array(z.object({
         field: z.enum(['name', 'description']),
-        language_code: z.string(),
-        value: z.string()
+        meaningKey: z.string().optional(),
+        translations: z.object({
+            vi: z.string().optional(),
+            en: z.string().optional(),
+            ja: z.string().optional()
+        })
     })).optional(),
     questionBanks: z.array(UpsertQuestionBankSchema).optional() // Mảng questionBank, order tự động = index + 1
 }).strict().refine((data) => {
