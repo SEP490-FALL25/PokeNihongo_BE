@@ -14,7 +14,6 @@ export class UserAIConversationRepository {
         role?: 'USER' | 'AI'
     }) {
         const { currentPage, pageSize, userId, conversationId, role } = params
-        const skip = (currentPage - 1) * pageSize
 
         const where: any = {
             deletedAt: null
@@ -32,13 +31,20 @@ export class UserAIConversationRepository {
             where.role = role
         }
 
+        // Chỉ thêm skip và take nếu pageSize được cung cấp và hợp lệ
+        const findManyOptions: any = {
+            where,
+            orderBy: { createdAt: 'asc' }
+        }
+
+        if (pageSize && pageSize > 0) {
+            const skip = (currentPage - 1) * pageSize
+            findManyOptions.skip = skip
+            findManyOptions.take = pageSize
+        }
+
         const [items, total] = await Promise.all([
-            this.prismaService.userAIConversation.findMany({
-                where,
-                skip,
-                take: pageSize,
-                orderBy: { createdAt: 'asc' }
-            }),
+            this.prismaService.userAIConversation.findMany(findManyOptions),
             this.prismaService.userAIConversation.count({ where })
         ])
 

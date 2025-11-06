@@ -9,7 +9,7 @@ import {
     UpdateAIConversationRoomBodySchema
 } from './entities/ai-conversation-room.entities'
 
-@ApiTags('AI Conversation Room')
+@ApiTags('User AI Conversation Room')
 @ApiBearerAuth()
 @Controller('ai-conversation-room')
 export class AIConversationRoomController {

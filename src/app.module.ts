@@ -163,7 +163,9 @@ import { UserSeasonHistoryModule } from './modules/user-season-history/user-seas
     MatchRoundParticipantModule,
     DebuffRoundModule,
     SrsReviewModule,
-    UserSeasonHistoryModule
+    UserSeasonHistoryModule,
+    UserAIConversationModule,
+    AIConversationRoomModule,
   ],
 
   controllers: [],
