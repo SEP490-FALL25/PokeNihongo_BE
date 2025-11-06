@@ -43,16 +43,16 @@ export class LeaderboardSeasonController {
     return this.leaderboardSeasonService.list(query, lang, roleName)
   }
 
-  @Get('rank-list/:leaderboardSeasonId')
+  @Get('rank-list')
   // @ZodSerializerDto(PaginationResponseSchema)
   getListRankByLeaderboard(
-    @Param() params: GetLeaderboardSeasonParamsDTO,
     @I18nLang() lang: string,
     @ActiveUser('userId') userId: number,
-    @Query('rankName') rankName?: string
+    @Query('rankName') rankName?: string,
+    @Query('leaderboardSeasonId') leaderboardSeasonId?: number
   ) {
     return this.leaderboardSeasonService.getListRankByLeaderboard({
-      id: params.leaderboardSeasonId,
+      id: leaderboardSeasonId,
       lang,
       userId,
       rankName

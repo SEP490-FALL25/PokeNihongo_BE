@@ -13,6 +13,8 @@ import {
   RegisterResSchema,
   ResetPasswordBodySchema,
   SendOTPBodySchema,
+  UpdateLevelJLPTBodySchema,
+  UpdateLevelJLPTResSchema,
   UpdateMeBodySchema,
   VerifyEmailBodySchema,
   verifyForgotPasswordBodySchema,
@@ -61,3 +63,7 @@ export class VerifyOTPBodyDTO extends createZodDto(VerifyOTPBodySchema) {}
 export class VerifyOTPResDTO extends createZodDto(VerifyOTPResSchema) {}
 
 export class GetAccountProfileResDTO extends createZodDto(GetAccountProfileResSchema) {}
+
+export class UpdateLevelJLPTBodyDTO extends createZodDto(UpdateLevelJLPTBodySchema) {}
+
+export class UpdateLevelJLPTResDTO extends createZodDto(UpdateLevelJLPTResSchema) {}

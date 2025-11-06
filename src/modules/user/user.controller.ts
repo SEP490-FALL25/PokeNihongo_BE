@@ -4,6 +4,7 @@ import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
+import { UpdateLevelJLPTBodyDTO, UpdateLevelJLPTResDTO } from '../auth/dto/auth.zod-dto'
 import {
   CreateUserBodyDTO,
   CreateUserResDTO,
@@ -56,6 +57,22 @@ export class UserController {
       {
         data: body,
         createdById: userId
+      },
+      lang
+    )
+  }
+
+  @Put('levelJLPT')
+  @ZodSerializerDto(UpdateLevelJLPTResDTO)
+  updateLevelJLPT(
+    @Body() body: UpdateLevelJLPTBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userService.updateLevelJLPT(
+      {
+        userId,
+        data: body
       },
       lang
     )
