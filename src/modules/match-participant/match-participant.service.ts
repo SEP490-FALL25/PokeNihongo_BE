@@ -129,6 +129,15 @@ export class MatchParticipantService {
         updatedById: userId
       })
 
+      // User đã đưa ra quyết định thủ công -> xóa Bull job timeout tương ứng (nếu còn)
+      await this.removeBullJobForParticipant(
+        existingParticipant.id,
+        existingParticipant.userId
+      )
+      this.logger.debug(
+        `[MatchParticipant] Removed acceptance timeout job after manual update for participant ${existingParticipant.id}`
+      )
+
       // Nếu user đã quyết định (accept hoặc reject, hasAccepted !== null)
       if (data.hasAccepted !== null && data.hasAccepted !== undefined) {
         // Kiểm tra xem cả 2 participants đã quyết định chưa
