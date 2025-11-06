@@ -19,6 +19,7 @@ import {
   InvalidUserAccessPokemonException,
   NicknameAlreadyExistsException,
   UserHasPokemonException,
+  UserNotInRoundException,
   UserPokemonNotFoundException
 } from './dto/user-pokemon.error'
 import {
@@ -715,6 +716,11 @@ export class UserPokemonService {
     }
     // 3. dựa vào userId tìm ra match
     const matches = await this.matchRepo.getMatchWithRoundsByUserId(userId)
+
+    // neu ko co tuc la user dang ko co torng tran nao
+    if (!matches) {
+      throw new UserNotInRoundException()
+    }
     const roundUserPokemonIds =
       matches?.rounds
         .flatMap((round) => round.participants.map((p) => p.selectedUserPokemonId))

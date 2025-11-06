@@ -46,7 +46,8 @@ export const enMessages = {
     NOT_FOUND_RECORD: 'Record not found',
     PASSWORD_MUST_BE_MATCH: 'Password must match',
     MISSING_TOKEN: 'Missing authentication token',
-    INVALID_TOKEN: 'Invalid authentication token'
+    INVALID_TOKEN: 'Invalid authentication token',
+    UPDATE_LEVEL_JLPT_SUCCESS: 'JLPT level updated successfully'
   },
   reward: {
     CREATE_SUCCESS: 'Reward created successfully',
@@ -174,7 +175,8 @@ export const enMessages = {
     EVOLVE_SUCCESS: 'Pokemon evolved successfully',
     ADD_EXP_SUCCESS: 'EXP added to Pokemon successfully',
     LEVEL_UP_SUCCESS: 'Pokemon leveled up successfully',
-    GET_STATS_SUCCESS: 'User Pokemon stats retrieved successfully'
+    GET_STATS_SUCCESS: 'User Pokemon stats retrieved successfully',
+    USER_NOT_IN_ROUND: 'User is not participating in any round'
   },
   user: {
     GET_LIST_SUCCESS: 'User list retrieved successfully',

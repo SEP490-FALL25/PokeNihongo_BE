@@ -42,7 +42,8 @@ export const AuthMessage = {
   NOT_FOUND_RECORD: 'auth.NOT_FOUND_RECORD',
   PASSWORD_MUST_BE_MATCH: 'auth.PASSWORD_MUST_BE_MATCH',
   MISSING_TOKEN: 'auth.MISSING_TOKEN',
-  INVALID_TOKEN: 'auth.INVALID_TOKEN'
+  INVALID_TOKEN: 'auth.INVALID_TOKEN',
+  UPDATE_LEVEL_JLPT_SUCCESS: 'auth.UPDATE_LEVEL_JLPT_SUCCESS'
 } as const
 
 export const RewardMessage = {
@@ -175,7 +176,8 @@ export const UserPokemonMessage = {
   SET_MAIN_POKEMON_SUCCESS: 'user_pokemon.SET_MAIN_POKEMON_SUCCESS',
   EVOLVE_SUCCESS: 'user_pokemon.EVOLVE_SUCCESS',
   ADD_EXP_SUCCESS: 'user_pokemon.ADD_EXP_SUCCESS',
-  LEVEL_UP_SUCCESS: 'user_pokemon.LEVEL_UP_SUCCESS'
+  LEVEL_UP_SUCCESS: 'user_pokemon.LEVEL_UP_SUCCESS',
+  USER_NOT_IN_ROUND: 'user_pokemon.USER_NOT_IN_ROUND'
 } as const
 
 export const UserMessage = {

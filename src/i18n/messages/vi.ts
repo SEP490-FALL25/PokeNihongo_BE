@@ -45,7 +45,8 @@ export const viMessages = {
     NOT_FOUND_RECORD: 'Không tìm thấy bản ghi',
     PASSWORD_MUST_BE_MATCH: 'Mật khẩu phải khớp với nhau',
     MISSING_TOKEN: 'Thiếu token xác thực',
-    INVALID_TOKEN: 'Token xác thực không hợp lệ'
+    INVALID_TOKEN: 'Token xác thực không hợp lệ',
+    UPDATE_LEVEL_JLPT_SUCCESS: 'Cập nhật cấp độ JLPT thành công'
   },
   reward: {
     CREATE_SUCCESS: 'Tạo phần thưởng thành công',
@@ -171,7 +172,8 @@ export const viMessages = {
     EVOLVE_SUCCESS: 'Tiến hóa Pokemon thành công',
     ADD_EXP_SUCCESS: 'Thêm EXP cho Pokemon thành công',
     LEVEL_UP_SUCCESS: 'Pokemon đã lên cấp!',
-    GET_STATS_SUCCESS: 'Lấy thống kê User Pokemon thành công'
+    GET_STATS_SUCCESS: 'Lấy thống kê User Pokemon thành công',
+    USER_NOT_IN_ROUND: 'Người dùng không tham gia vào vòng đấu nào'
   },
   user: {
     GET_LIST_SUCCESS: 'Lấy danh sách người dùng thành công',

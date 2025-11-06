@@ -69,6 +69,8 @@ export const LoginResSchema = z
         name: true,
         email: true,
         status: true,
+        levelJLPT: true,
+        eloscore: true,
         phoneNumber: true,
         exp: true,
         roleId: true,
@@ -193,6 +195,20 @@ export const ChangePasswordBodySchema = z
     }
   })
 
+export const UpdateLevelJLPTBodySchema = z
+  .object({
+    levelJLPT: z.number().min(3).max(5)
+  })
+  .strict()
+
+export const UpdateLevelJLPTResSchema = z
+  .object({
+    data: UserSchema.omit({ password: true }),
+    message: z.string(),
+    statusCode: z.number()
+  })
+  .strict()
+
 export const UpdateMeBodySchema = z
   .object({
     name: z.string().trim().min(2).max(256).optional(),
@@ -223,7 +239,8 @@ export const GetAccountProfileResSchema = z
           nextLevel: LevelSchema.omit({ nextLevelId: true, rewardId: true }).nullable()
         })
         .nullable(),
-      pokemonCount: z.number()
+      pokemonCount: z.number(),
+      rankName: z.string()
     }),
     message: z.string()
   })

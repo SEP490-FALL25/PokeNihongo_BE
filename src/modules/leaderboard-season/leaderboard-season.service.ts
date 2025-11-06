@@ -13,6 +13,7 @@ import {
   todayUTCWith0000
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { PrismaService } from '@/shared/services/prisma.service'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
@@ -32,7 +33,8 @@ export class LeaderboardSeasonService {
     private leaderboardSeasonRepo: LeaderboardSeasonRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
-    private readonly translationRepo: TranslationRepository
+    private readonly translationRepo: TranslationRepository,
+    private readonly prismaService: PrismaService
   ) {}
 
   private async convertTranslationsToLangCodes(
@@ -418,6 +420,114 @@ export class LeaderboardSeasonService {
         throw new NotFoundRecordException()
       }
       throw error
+    }
+  }
+
+  async getListRankByLeaderboard({
+    id,
+    lang = 'vi',
+    userId,
+    rankName
+  }: {
+    id: number | undefined
+    lang?: string
+    userId: number
+    rankName: string | undefined
+  }) {
+    // Determine season: use provided id, else active season, else fallback to most recent
+    let season: any = null
+    if (id) {
+      season = await this.leaderboardSeasonRepo.findById(id)
+    } else {
+      season = await this.leaderboardSeasonRepo.findActiveSeason()
+      if (!season) {
+        // fallback to most recent by endDate
+        season = await this.prismaService.leaderboardSeason.findFirst({
+          where: { deletedAt: null },
+          orderBy: { endDate: 'desc' }
+        })
+      }
+    }
+
+    if (!season) {
+      throw new NotFoundRecordException()
+    }
+
+    const seasonId = season.id
+
+    // Define rank thresholds (keep in sync with convertEloToRank)
+    const rankThresholds = [
+      { rank: 'N5', minElo: 0, maxElo: 1000 },
+      { rank: 'N4', minElo: 1001, maxElo: 2000 },
+      { rank: 'N3', minElo: 2001, maxElo: 3000 }
+    ]
+
+    let eloFilter: any = undefined
+    if (rankName) {
+      const found = rankThresholds.find((r) => r.rank === rankName)
+      if (found) {
+        eloFilter = { gte: found.minElo, lte: found.maxElo }
+      } else {
+        // unknown rankName -> return empty
+        return {
+          statusCode: HttpStatus.OK,
+          data: { top: [], me: null },
+          message: this.i18nService.translate(
+            LeaderboardSeasonMessage.GET_LIST_SUCCESS,
+            lang
+          )
+        }
+      }
+    }
+
+    // Build where for top list
+    const whereTop: any = { seasonId, deletedAt: null }
+    if (eloFilter) whereTop.finalElo = eloFilter
+
+    // Query top 20
+    const top = await this.prismaService.userSeasonHistory.findMany({
+      where: whereTop,
+      orderBy: { finalElo: 'desc' },
+      take: 20,
+      include: {
+        user: { select: { id: true, name: true, avatar: true } }
+      }
+    })
+
+    const topMapped = top.map((h: any, idx: number) => ({
+      position: idx + 1,
+      userId: h.userId,
+      name: h.user?.name ?? null,
+      avatar: h.user?.avatar ?? null,
+      finalElo: h.finalElo,
+      finalRank: h.finalRank
+    }))
+
+    // Compute 'me' record (overall position within season)
+    const myHist = await this.prismaService.userSeasonHistory.findFirst({
+      where: { seasonId, userId, deletedAt: null },
+      include: { user: { select: { id: true, name: true, avatar: true } } }
+    })
+
+    let me: any = null
+    if (myHist) {
+      const higherCount = await this.prismaService.userSeasonHistory.count({
+        where: { seasonId, deletedAt: null, finalElo: { gt: myHist.finalElo } }
+      })
+      me = {
+        position: higherCount + 1,
+        userId: myHist.userId,
+        name: myHist.user?.name ?? null,
+        avatar: myHist.user?.avatar ?? null,
+        finalElo: myHist.finalElo,
+        finalRank: myHist.finalRank
+      }
+    }
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: { top: topMapped, me },
+      message: this.i18nService.translate(LeaderboardSeasonMessage.GET_LIST_SUCCESS, lang)
     }
   }
 }

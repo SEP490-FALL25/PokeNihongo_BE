@@ -46,7 +46,8 @@ export const jaMessages = {
     NOT_FOUND_RECORD: 'レコードが見つかりません',
     PASSWORD_MUST_BE_MATCH: 'パスワードは一致している必要があります',
     MISSING_TOKEN: '認証トークンが見つかりません',
-    INVALID_TOKEN: '無効な認証トークンです'
+    INVALID_TOKEN: '無効な認証トークンです',
+    UPDATE_LEVEL_JLPT_SUCCESS: 'JLPTレベルの更新が完了しました'
   },
   reward: {
     CREATE_SUCCESS: '報酬の作成が完了しました',
@@ -164,7 +165,8 @@ export const jaMessages = {
     EVOLVE_SUCCESS: 'ポケモンの進化が完了しました',
     ADD_EXP_SUCCESS: 'ポケモンへのEXP追加が完了しました',
     LEVEL_UP_SUCCESS: 'ポケモンがレベルアップしました！',
-    GET_STATS_SUCCESS: 'ユーザーポケモンの統計情報が取得されました'
+    GET_STATS_SUCCESS: 'ユーザーポケモンの統計情報が取得されました',
+    USER_NOT_IN_ROUND: 'ユーザーはどのラウンドにも参加していません'
   },
   user: {
     GET_LIST_SUCCESS: 'ユーザーリストの取得に成功しました',
