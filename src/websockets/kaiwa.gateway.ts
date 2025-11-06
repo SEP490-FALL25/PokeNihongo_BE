@@ -223,16 +223,18 @@ export class KaiwaGateway {
                 this.logger.debug(`[Kaiwa] Gemini raw response: "${text}"`)
                 this.logger.debug(`[Kaiwa] Gemini response length: ${text?.length || 0}`)
 
+                // Fallback nếu Gemini trả về rỗng/không hợp lệ
+                const fallbackReply = 'すみません、もう一度お願いします。'
                 if (!text || text.trim() === '') {
-                    this.logger.error(`[Kaiwa] Gemini returned empty or whitespace-only response`)
-                    throw new Error('Gemini returned empty response')
+                    this.logger.warn(`[Kaiwa] Gemini returned empty or whitespace-only response. Using fallback reply.`)
+                    return fallbackReply
                 }
 
                 // Kiểm tra nếu response chỉ là "..." hoặc quá ngắn
                 const trimmedText = text.trim()
                 if (trimmedText === '...' || trimmedText.length < 2) {
-                    this.logger.error(`[Kaiwa] Gemini returned invalid response: "${trimmedText}"`)
-                    throw new Error(`Gemini returned invalid response: "${trimmedText}"`)
+                    this.logger.warn(`[Kaiwa] Gemini returned invalid response: "${trimmedText}". Using fallback reply.`)
+                    return fallbackReply
                 }
 
                 return trimmedText

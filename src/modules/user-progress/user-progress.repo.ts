@@ -47,7 +47,7 @@ export class UserProgressRepository {
                 where,
                 skip,
                 take: pageSize,
-                orderBy: { updatedAt: 'desc' },
+                orderBy: { lesson: { lessonOrder: 'asc' } },
                 include: {
                     lesson: {
                         select: {
@@ -256,6 +256,79 @@ export class UserProgressRepository {
                 id: 'asc'
             }
         })
+    }
+
+    /**
+     * Lấy lesson liền trước theo thứ tự business (lessonOrder) trong cùng LessonCategory
+     */
+    async getPreviousLessonId(lessonId: number): Promise<number | null> {
+        // Lấy thông tin lesson hiện tại
+        const current = await this.prismaService.lesson.findUnique({
+            where: { id: lessonId },
+            select: { lessonCategoryId: true, lessonOrder: true }
+        })
+
+        if (!current) return null
+
+        const prev = await this.prismaService.lesson.findFirst({
+            where: {
+                lessonCategoryId: current.lessonCategoryId,
+                lessonOrder: { lt: current.lessonOrder },
+                isPublished: true
+            },
+            orderBy: { lessonOrder: 'desc' },
+            select: { id: true }
+        })
+
+        return prev?.id ?? null
+    }
+
+    /**
+     * Lấy lesson liền sau theo thứ tự business (lessonOrder) trong cùng LessonCategory
+     */
+    async getNextLessonId(lessonId: number): Promise<number | null> {
+        const current = await this.prismaService.lesson.findUnique({
+            where: { id: lessonId },
+            select: { lessonCategoryId: true, lessonOrder: true }
+        })
+
+        if (!current) return null
+
+        const next = await this.prismaService.lesson.findFirst({
+            where: {
+                lessonCategoryId: current.lessonCategoryId,
+                lessonOrder: { gt: current.lessonOrder },
+                isPublished: true
+            },
+            orderBy: { lessonOrder: 'asc' },
+            select: { id: true }
+        })
+
+        return next?.id ?? null
+    }
+
+    /**
+     * Lấy danh sách lessonId theo level JLPT (1..5), đã publish, order theo lessonOrder asc
+     */
+    async getLessonIdsByLevelJlpt(levelJlpt: number): Promise<number[]> {
+        const lessons = await this.prismaService.lesson.findMany({
+            where: { levelJlpt: levelJlpt, isPublished: true },
+            select: { id: true },
+            orderBy: { lessonOrder: 'asc' }
+        })
+        return lessons.map(l => l.id)
+    }
+
+    /**
+     * Lấy bài đầu tiên (theo lessonOrder asc) của 1 level JLPT
+     */
+    async getFirstLessonIdByLevelJlpt(levelJlpt: number): Promise<number | null> {
+        const first = await this.prismaService.lesson.findFirst({
+            where: { levelJlpt: levelJlpt, isPublished: true },
+            select: { id: true },
+            orderBy: { lessonOrder: 'asc' }
+        })
+        return first?.id ?? null
     }
 
     /**

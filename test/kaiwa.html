@@ -658,6 +658,16 @@
             offset += chunk.length;
           });
 
+          // Validate minimum duration (~1s at 16kHz) before sending
+          const minSamples = 16000; // 1 second of audio at 16kHz
+          if (combinedBuffer.length < minSamples) {
+            removeProcessingMessage();
+            addProcessingMessage('Bản ghi quá ngắn. Hãy nói dài hơn (≥1 giây) rồi thử lại.');
+            // Clear chunks and do not send
+            audioChunks = [];
+            return;
+          }
+
           // Send complete audio buffer to server
           removeProcessingMessage();
           addProcessingMessage('Đang gửi audio...');
