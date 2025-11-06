@@ -5,6 +5,7 @@ import { RoundQuestionService } from './round-question.service'
 
 @Module({
   controllers: [RoundQuestionController],
-  providers: [RoundQuestionService, RoundQuestionRepo]
+  providers: [RoundQuestionService, RoundQuestionRepo],
+  exports: [RoundQuestionService, RoundQuestionRepo]
 })
 export class RoundQuestionModule {}

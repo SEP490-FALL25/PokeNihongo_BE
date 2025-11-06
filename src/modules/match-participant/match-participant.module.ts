@@ -11,8 +11,7 @@ import { MatchParticipantService } from './match-participant.service'
 
 @Module({
   imports: [
-    BullQueueModule.registerQueue(BullQueue.MATCH_PARTICIPANT_TIMEOUT),
-    BullQueueModule.registerQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT),
+    // Removed duplicate MATCH_ROUND_PARTICIPANT_TIMEOUT registration to avoid multiple queue instances
     WebsocketsModule,
     MatchModule,
     forwardRef(() => MatchRoundModule),

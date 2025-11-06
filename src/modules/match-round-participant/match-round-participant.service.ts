@@ -20,8 +20,12 @@ import { Queue } from 'bull'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { MatchingGateway } from 'src/websockets/matching.gateway'
 import { MatchRoundRepo } from '../match-round/match-round.repo'
+import { RoundQuestionRepo } from '../round-question/round-question.repo'
+import { convertEloToRank } from '@/shared/helpers'
 import { MatchRepo } from '../match/match.repo'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
+import { QuestionBankRepository } from '../question-bank/question-bank.repo'
+import { PokemonRepo } from '../pokemon/pokemon.repo'
 import { MatchRoundParticipantNotFoundException } from './dto/match-round-participant.error'
 import {
   ChoosePokemonMatchRoundParticipantBodyType,
@@ -41,9 +45,12 @@ export class MatchRoundParticipantService {
     private readonly matchRepo: MatchRepo,
     private readonly matchRoundRepo: MatchRoundRepo,
     private readonly userPokemonRepo: UserPokemonRepo,
+    private readonly questionBankRepo: QuestionBankRepository,
+    private readonly pokemonRepo: PokemonRepo,
     private readonly i18nService: I18nService,
     private readonly prismaService: PrismaService,
-    private readonly matchingGateway: MatchingGateway,
+  private readonly matchingGateway: MatchingGateway,
+  private readonly roundQuestionRepo: RoundQuestionRepo,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
     private readonly matchRoundParticipantTimeoutQueue: Queue
   ) {}
@@ -327,6 +334,29 @@ export class MatchRoundParticipantService {
 
       const nextParticipant = allParticipants[currentIndex + 1]
 
+      // Kiểm tra đã chọn xong toàn bộ chưa (dùng sau khi cập nhật selectedUserPokemonId ở trên)
+      const allSelectedNow = allParticipants.every(
+        (p) => p.selectedUserPokemonId !== null
+      )
+      if (allSelectedNow) {
+        this.logger.log(
+          `[MatchRoundParticipant] All participants selected in round ${matchRoundId}. Generating questions + debuff logic.`
+        )
+        await this.handleQuestionsAndDebuffForCompletedSelection(
+          existMatchRound,
+          allParticipants.map((p) => p.id)
+        )
+        // Return early to prevent duplicate moveToNextRound call
+        return {
+          statusCode: 200,
+          data: matchRoundParticipant,
+          message: this.i18nService.translate(
+            MatchRoundParticipantMessage.UPDATE_SUCCESS,
+            lang
+          )
+        }
+      }
+
       if (nextParticipant) {
         // Set time cho participant tiếp theo
         await this.matchRoundParticipantRepo.update({
@@ -346,38 +376,12 @@ export class MatchRoundParticipantService {
             delay: TIME_CHOOSE_POKEMON_MS
           }
         )
-      } else {
-        // Đây là participant cuối cùng trong round
-        // Kiểm tra xem tất cả participants đã chọn Pokemon chưa
-        const allSelected = allParticipants.every((p) => p.selectedUserPokemonId !== null)
-
-        if (allSelected) {
-          // Cập nhật MatchRound status -> PENDING
-          await this.prismaService.matchRound.update({
-            where: { id: matchRoundId },
-            data: {
-              status: RoundStatus.PENDING
-            }
-          })
-
-          // Cập nhật tất cả MatchRoundParticipant status -> PENDING
-          await this.prismaService.matchRoundParticipant.updateMany({
-            where: {
-              matchRoundId: matchRoundId
-            },
-            data: {
-              status: RoundStatus.PENDING
-            }
-          })
-
-          this.logger.log(
-            `Round ${matchRoundId} completed - Updated status to PENDING for round and all participants`
-          )
-
-          // Tìm round tiếp theo và set endTime cho người đầu tiên
-          await this.moveToNextRound(existMatchRound)
-        }
+        this.logger.log(
+          `[MatchRoundParticipant] Set endTime and Bull job for next participant ${nextParticipant.id}`
+        )
       }
+      // If no nextParticipant, either allSelectedNow is already handled above (early return),
+      // or we're waiting for timeout processor to handle remaining participants
 
       return {
         statusCode: 200,
@@ -505,6 +509,286 @@ export class MatchRoundParticipantService {
       this.logger.error(
         `Error moving to next round for match ${currentMatchRound.matchId}`,
         error
+      )
+    }
+  }
+
+  /**
+   * Khi cả round đã chọn xong Pokemon: tạo 10 câu hỏi giống nhau cho cả 2 participants, áp dụng debuff, rồi auto start Round ONE nếu tất cả rounds PENDING.
+   */
+  private async handleQuestionsAndDebuffForCompletedSelection(
+    matchRoundWithParticipants: any,
+    matchRoundParticipantIds: number[]
+  ) {
+    try {
+      const matchId = matchRoundWithParticipants.match.id
+      const roundId = matchRoundWithParticipants.id
+      const participants = matchRoundWithParticipants.match.participants
+
+      // Lấy user ELO cho mỗi participant qua bảng user
+      const users = await this.prismaService.user.findMany({
+        where: { id: { in: participants.map((p) => p.userId) } },
+        select: { id: true, eloscore: true }
+      })
+      const eloMap = new Map(users.map((u) => [u.id, u.eloscore || 0]))
+
+      const participantElos = participants.map((p) => eloMap.get(p.userId) || 0)
+      const avgElo = participantElos.reduce((a, b) => a + b, 0) / participantElos.length
+
+      // Determine ranks
+      const ranks = participants.map((p) => ({
+        participantId: p.id,
+        userId: p.userId,
+        rank: convertEloToRank(eloMap.get(p.userId) || 0)
+      }))
+  const distinctRanks: string[] = Array.from(new Set(ranks.map((r) => r.rank))) as string[]
+
+      // Helper: map rank to levelN field (assume same naming)
+      const sortedRanks = distinctRanks.filter((r) => r && r !== 'Unranked').sort() as string[]
+      const baseRank: string | undefined = sortedRanks[0]
+      let higherRank: string | null = null
+      if (sortedRanks.length > 1) {
+        higherRank = sortedRanks[1] || null
+      }
+
+      // Lấy 10 câu hỏi: nếu cùng rank -> toàn bộ lấy theo rank đó
+      // Nếu khác rank -> tính phần trăm cho rank cao hơn dựa vào avgElo vượt ngưỡng rank thấp
+      let higherPercent = 0
+      if (higherRank) {
+        // Lấy maxElo của rank thấp hơn từ convertEloToRank thresholds (hardcode tạm)
+        const rankThresholds = [
+          { rank: 'N5', maxElo: 1000 },
+          { rank: 'N4', maxElo: 2000 },
+          { rank: 'N3', maxElo: 3000 }
+        ]
+        const lowMax = rankThresholds.find((t) => t.rank === baseRank)?.maxElo || 0
+        const diff = Math.max(0, avgElo - lowMax)
+        const rawPercent = Math.floor(diff / 10) // 277 -> 27
+        higherPercent = Math.min(50, Math.max(10, Math.floor(rawPercent / 10) * 10)) // tens rounding (27 -> 20)
+      }
+
+      const totalQuestions = 10
+      const higherCount = higherRank ? Math.round((totalQuestions * higherPercent) / 100) : 0
+      const baseCount = totalQuestions - higherCount
+
+      // Helper: map rank to levelN field
+      const rankToLevel = (rank?: string | null): number | undefined => {
+        if (!rank) return undefined
+        if (rank.startsWith('N')) {
+          const n = parseInt(rank.substring(1), 10)
+          return isNaN(n) ? undefined : n
+        }
+        return undefined
+      }
+
+      // Use QuestionBankRepository to fetch random questions
+      const baseLevelN = rankToLevel(baseRank)
+      const finalBase = baseLevelN 
+        ? await this.questionBankRepo.getRandomQuestions(baseCount, baseLevelN)
+        : []
+      
+      let finalHigher: any[] = []
+      if (higherCount > 0 && higherRank) {
+        const higherLevelN = rankToLevel(higherRank)
+        if (higherLevelN) {
+          finalHigher = await this.questionBankRepo.getRandomQuestions(higherCount, higherLevelN)
+        }
+      }
+
+      const combined = [...finalBase, ...finalHigher].sort(() => Math.random() - 0.5)
+
+      // Bulk create for each participant with identical order & points
+      for (const participantId of matchRoundParticipantIds) {
+        let orderNumber = 1
+        for (const q of combined) {
+          await this.prismaService.roundQuestion.create({
+            data: {
+              matchRoundParticipantId: participantId,
+              questionBankId: q.id,
+              timeLimitMs: 60000,
+              basePoints: 100,
+              orderNumber: orderNumber
+            }
+          })
+          orderNumber++
+        }
+      }
+
+      // Debuff logic: xác định pokemon bị debuff -> participant chứa pokemon đó
+      const selectedPokemons = await this.prismaService.matchRoundParticipant.findMany({
+        where: { matchRoundId: roundId, deletedAt: null },
+        select: { id: true, selectedUserPokemon: { select: { pokemonId: true } } }
+      })
+      if (selectedPokemons.length === 2) {
+        const [p1, p2] = selectedPokemons
+        if (p1.selectedUserPokemon?.pokemonId && p2.selectedUserPokemon?.pokemonId) {
+          try {
+            const debuffResult = await this.prismaService.debuffRound.findMany({
+              where: { deletedAt: null },
+              take: 50
+            })
+            const debuffRow = debuffResult.length
+              ? debuffResult[Math.floor(Math.random() * debuffResult.length)]
+              : null
+
+            // Use PokemonRepo to calculate debuffed pokemon accurately
+            let debuffedParticipantId: number | null = null
+            try {
+              const debuffCalc = await this.pokemonRepo.calculateDebuffedPokemon(
+                p1.selectedUserPokemon.pokemonId,
+                p2.selectedUserPokemon.pokemonId
+              )
+              const debuffedPokemonId = debuffCalc.debuffedPokemonId
+              // Find which participant has the debuffed pokemon
+              if (p1.selectedUserPokemon.pokemonId === debuffedPokemonId) {
+                debuffedParticipantId = p1.id
+              } else if (p2.selectedUserPokemon.pokemonId === debuffedPokemonId) {
+                debuffedParticipantId = p2.id
+              }
+            } catch (calcError) {
+              this.logger.warn(`Failed to calculate debuff pokemon: ${calcError.message}`)
+              // Fallback to simple heuristic
+              if (p1.selectedUserPokemon.pokemonId < p2.selectedUserPokemon.pokemonId) {
+                debuffedParticipantId = p1.id
+              } else {
+                debuffedParticipantId = p2.id
+              }
+            }
+
+            if (debuffRow && debuffedParticipantId) {
+              const questionsOfDebuffed = await this.prismaService.roundQuestion.findMany({
+                where: { matchRoundParticipantId: debuffedParticipantId },
+                orderBy: { orderNumber: 'asc' }
+              })
+              if (questionsOfDebuffed.length > 0) {
+                if (debuffRow.typeDebuff === 'ADD_QUESTION') {
+                  // Thêm valueDebuff câu hỏi rank cao hơn 1 bậc nếu có
+                  const extraRank = higherRank || baseRank
+                  const extraLevelN = rankToLevel(extraRank)
+                  if (extraLevelN) {
+                    const extraPool = await this.questionBankRepo.getRandomQuestions(
+                      debuffRow.valueDebuff || 1,
+                      extraLevelN
+                    )
+                    let nextOrder = questionsOfDebuffed.length + 1
+                    for (const extra of extraPool) {
+                      await this.prismaService.roundQuestion.create({
+                        data: {
+                          matchRoundParticipantId: debuffedParticipantId,
+                          questionBankId: extra.id,
+                          timeLimitMs: 60000,
+                          basePoints: 100,
+                          orderNumber: nextOrder++,
+                          debuffId: debuffRow.id
+                        }
+                      })
+                    }
+                  }
+                } else if (debuffRow.typeDebuff === 'DECREASE_POINT') {
+                  const target = questionsOfDebuffed[
+                    Math.floor(Math.random() * questionsOfDebuffed.length)
+                  ]
+                  await this.prismaService.roundQuestion.update({
+                    where: { id: target.id },
+                    data: {
+                      debuffId: debuffRow.id,
+                      basePoints: Math.max(10, target.basePoints - (debuffRow.valueDebuff || 0))
+                    }
+                  })
+                } else if (debuffRow.typeDebuff === 'DISCOMFORT_VISION') {
+                  const target = questionsOfDebuffed[
+                    Math.floor(Math.random() * questionsOfDebuffed.length)
+                  ]
+                  await this.prismaService.roundQuestion.update({
+                    where: { id: target.id },
+                    data: {
+                      debuffId: debuffRow.id // Không đổi timeLimitMs
+                    }
+                  })
+                }
+              }
+            }
+          } catch (debuffError) {
+            this.logger.warn(
+              `[MatchRoundParticipant] Debuff application failed: ${debuffError.message}`
+            )
+          }
+        }
+      }
+
+      // Cập nhật status round participant về PENDING nếu chưa
+      await this.prismaService.matchRoundParticipant.updateMany({
+        where: { matchRoundId: roundId, deletedAt: null },
+        data: { status: RoundStatus.PENDING }
+      })
+      await this.prismaService.matchRound.update({
+        where: { id: roundId },
+        data: { status: RoundStatus.PENDING }
+      })
+
+      this.logger.log(
+        `[MatchRoundParticipant] Round ${roundId} completed - Updated status to PENDING for round and all participants`
+      )
+
+      // Kiểm tra nếu tất cả rounds của match đều PENDING -> start Round ONE
+      const allRounds = await this.prismaService.matchRound.findMany({
+        where: { matchId, deletedAt: null },
+        include: { participants: true }
+      })
+      const allPending = allRounds.every((r) => r.status === RoundStatus.PENDING)
+      
+      this.logger.log(
+        `[MatchRoundParticipant] AllPending check: ${allPending}, Total rounds: ${allRounds.length}, Statuses: ${allRounds.map(r => `${r.roundNumber}=${r.status}`).join(', ')}`
+      )
+
+      if (allPending) {
+        const roundOne = allRounds.find((r) => r.roundNumber === MatchRoundNumber.ONE)
+        if (roundOne) {
+          await this.prismaService.matchRound.update({
+            where: { id: roundOne.id },
+            data: {
+              status: RoundStatus.IN_PROGRESS,
+              endTimeRound: addTimeUTC(new Date(), 10 * 60 * 1000) // +10 minutes
+            }
+          })
+          await this.prismaService.matchRoundParticipant.updateMany({
+            where: { matchRoundId: roundOne.id },
+            data: {
+              status: MatchRoundParticipantStatus.IN_PROGRESS,
+              totalTimeMs: (60 * 1000) // +60s initial allocation
+            }
+          })
+          // Gửi socket nếu có method (guard in case not implemented yet)
+          if ((this.matchingGateway as any).notifyRoundStarted) {
+            ;(this.matchingGateway as any).notifyRoundStarted(matchId, roundOne.id)
+          }
+          this.logger.log(
+            `[MatchRoundParticipant] Round ONE started automatically for match ${matchId}`
+          )
+        }
+      } else {
+        // Not all rounds are PENDING yet, need to move to next round for Pokemon selection
+        this.logger.log(
+          `[MatchRoundParticipant] Not all rounds PENDING yet, moving to next round after ${roundId}`
+        )
+        const currentRound = await this.prismaService.matchRound.findUnique({
+          where: { id: roundId },
+          include: { match: true }
+        })
+        if (currentRound) {
+          this.logger.log(
+            `[MatchRoundParticipant] Calling moveToNextRound for round ${currentRound.roundNumber} of match ${matchId}`
+          )
+          await this.moveToNextRound(currentRound)
+        } else {
+          this.logger.warn(
+            `[MatchRoundParticipant] Could not fetch currentRound ${roundId} to move to next`
+          )
+        }
+      }
+    } catch (err) {
+      this.logger.error(
+        `[MatchRoundParticipant] Error in handleQuestionsAndDebuffForCompletedSelection: ${err.message}`
       )
     }
   }

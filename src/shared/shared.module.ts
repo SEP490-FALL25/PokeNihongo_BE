@@ -8,6 +8,8 @@ import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { HashingService } from '@/shared/services/hashing.service'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { TokenService } from '@/shared/services/token.service'
+import { QuestionBankRepository } from '@/modules/question-bank/question-bank.repo'
+import { PokemonRepo } from '@/modules/pokemon/pokemon.repo'
 import { Global, Module } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { JwtModule } from '@nestjs/jwt'
@@ -22,7 +24,9 @@ const sharedServices = [
   TokenService,
   // EmailService,
   SharedUserRepository,
-  SharedRoleRepository
+  SharedRoleRepository,
+  QuestionBankRepository,
+  PokemonRepo
 ]
 @Global()
 @Module({

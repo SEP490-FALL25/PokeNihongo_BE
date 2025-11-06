@@ -350,9 +350,6 @@ export class MatchingGateway {
       data
     }
 
-    console.log('notifyPokemonSelected payload: ', JSON.stringify(payload, null, 2))
-    console.log('match-room: ', room)
-
     this.server.to(room).emit(MATCHING_EVENTS.SELECT_POKEMON, payload)
 
     this.logger.log(
