@@ -562,5 +562,17 @@ export const enMessages = {
     ALREADY_EXISTS: 'User season history already exists',
 
     INVALID_DATA: 'Invalid user season history data'
+  },
+  round_question: {
+    CREATE_SUCCESS: 'Round question created successfully',
+
+    UPDATE_SUCCESS: 'Round question updated successfully',
+    DELETE_SUCCESS: 'Round question deleted successfully',
+
+    GET_SUCCESS: 'Round question retrieved successfully',
+    GET_LIST_SUCCESS: 'Round question list retrieved successfully',
+    NOT_FOUND: 'Round question not found',
+    ALREADY_EXISTS: 'Round question already exists',
+    INVALID_DATA: 'Invalid round question data'
   }
 }

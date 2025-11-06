@@ -557,5 +557,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy lịch sử mùa giải người dùng',
     ALREADY_EXISTS: 'Lịch sử mùa giải người dùng đã tồn tại',
     INVALID_DATA: 'Dữ liệu lịch sử mùa giải người dùng không hợp lệ'
+  },
+  round_question: {
+    CREATE_SUCCESS: 'Tạo câu hỏi vòng đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật câu hỏi vòng đấu thành công',
+    DELETE_SUCCESS: 'Xóa câu hỏi vòng đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin câu hỏi vòng đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách câu hỏi vòng đấu thành công',
+    NOT_FOUND: 'Không tìm thấy câu hỏi vòng đấu',
+    ALREADY_EXISTS: 'Câu hỏi vòng đấu đã tồn tại',
+    INVALID_DATA: 'Dữ liệu câu hỏi vòng đấu không hợp lệ'
   }
 }

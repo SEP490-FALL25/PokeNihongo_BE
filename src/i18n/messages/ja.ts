@@ -541,5 +541,15 @@ export const jaMessages = {
     NOT_FOUND: 'ユーザーシーズン履歴が見つかりません',
     ALREADY_EXISTS: 'ユーザーシーズン履歴は既に存在します',
     INVALID_DATA: '無効なユーザーシーズン履歴データです'
+  },
+  round_question: {
+    CREATE_SUCCESS: 'ラウンド質問の作成に成功しました',
+    UPDATE_SUCCESS: 'ラウンド質問の更新に成功しました',
+    DELETE_SUCCESS: 'ラウンド質問の削除に成功しました',
+    GET_SUCCESS: 'ラウンド質問情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ラウンド質問リストの取得に成功しました',
+    NOT_FOUND: 'ラウンド質問が見つかりません',
+    ALREADY_EXISTS: 'ラウンド質問は既に存在します',
+    INVALID_DATA: '無効なラウンド質問データです'
   }
 }

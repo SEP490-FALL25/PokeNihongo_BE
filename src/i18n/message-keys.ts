@@ -598,3 +598,15 @@ export const UserSeasonHistoryMessage = {
   ALREADY_EXISTS: 'user_season_history.ALREADY_EXISTS',
   INVALID_DATA: 'user_season_history.INVALID_DATA'
 } as const
+
+export const RoundQuestionMessage = {
+  CREATE_SUCCESS: 'round_question.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'round_question.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'round_question.DELETE_SUCCESS',
+  GET_SUCCESS: 'round_question.GET_SUCCESS',
+
+  GET_LIST_SUCCESS: 'round_question.GET_LIST_SUCCESS',
+  NOT_FOUND: 'round_question.NOT_FOUND',
+  ALREADY_EXISTS: 'round_question.ALREADY_EXISTS',
+  INVALID_DATA: 'round_question.INVALID_DATA'
+} as const
