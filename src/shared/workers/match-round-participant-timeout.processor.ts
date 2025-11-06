@@ -4,11 +4,11 @@ import {
   MatchRoundParticipantStatus,
   RoundStatus
 } from '@/common/constants/match.constant'
+import { PokemonRepo } from '@/modules/pokemon/pokemon.repo'
+import { QuestionBankRepository } from '@/modules/question-bank/question-bank.repo'
 import { addTimeUTC, convertEloToRank } from '@/shared/helpers'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MatchingGateway } from '@/websockets/matching.gateway'
-import { QuestionBankRepository } from '@/modules/question-bank/question-bank.repo'
-import { PokemonRepo } from '@/modules/pokemon/pokemon.repo'
 import {
   InjectQueue,
   OnQueueActive,
@@ -46,7 +46,10 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         await this.matchRoundParticipantTimeoutQueue.resume(true)
         this.logger.log('[RoundParticipant Timeout] Queue resumed (global=true)')
       } catch (e) {
-        this.logger.warn('[RoundParticipant Timeout] Queue resume skipped/failed', e as any)
+        this.logger.warn(
+          '[RoundParticipant Timeout] Queue resume skipped/failed',
+          e as any
+        )
       }
       const counts = await this.matchRoundParticipantTimeoutQueue.getJobCounts()
       this.logger.log(
@@ -55,7 +58,9 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
           .join(', ')}`
       )
       // Probe any waiting jobs to log their names
-      const waitingJobs = await this.matchRoundParticipantTimeoutQueue.getJobs(['waiting'])
+      const waitingJobs = await this.matchRoundParticipantTimeoutQueue.getJobs([
+        'waiting'
+      ])
       if (waitingJobs.length) {
         this.logger.warn(
           `[RoundParticipant Timeout] Found ${waitingJobs.length} waiting jobs on init: ${waitingJobs
@@ -73,7 +78,10 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         )
       }, 5000)
     } catch (e) {
-      this.logger.error('[RoundParticipant Timeout] Error during onModuleInit diagnostics', e)
+      this.logger.error(
+        '[RoundParticipant Timeout] Error during onModuleInit diagnostics',
+        e
+      )
     }
   }
 
@@ -575,8 +583,12 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
       const avgElo = users.reduce((sum, u) => sum + (u.eloscore || 0), 0) / users.length
 
       // Determine ranks present
-      const ranks = matchParticipants.map((mp) => convertEloToRank(eloMap.get(mp.userId) || 0))
-      const distinctRanks = Array.from(new Set(ranks)).filter((r) => r && r !== 'Unranked') as string[]
+      const ranks = matchParticipants.map((mp) =>
+        convertEloToRank(eloMap.get(mp.userId) || 0)
+      )
+      const distinctRanks = Array.from(new Set(ranks)).filter(
+        (r) => r && r !== 'Unranked'
+      ) as string[]
       const sortedRanks = distinctRanks.sort()
       const baseRank: string | undefined = sortedRanks[0]
       const higherRank: string | null = sortedRanks.length > 1 ? sortedRanks[1] : null
@@ -596,7 +608,9 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
       }
 
       const totalQuestions = 10
-      const higherCount = higherRank ? Math.round((totalQuestions * higherPercent) / 100) : 0
+      const higherCount = higherRank
+        ? Math.round((totalQuestions * higherPercent) / 100)
+        : 0
       const baseCount = totalQuestions - higherCount
 
       const rankToLevel = (rank?: string | null): number | undefined => {
@@ -611,14 +625,20 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
       // Use QuestionBankRepository to fetch random questions
       const baseLevelN = rankToLevel(baseRank)
       const finalBase = baseLevelN
-        ? await this.questionBankRepo.getRandomQuestions(Math.max(0, baseCount), baseLevelN)
+        ? await this.questionBankRepo.getRandomQuestions(
+            Math.max(0, baseCount),
+            baseLevelN
+          )
         : []
-      
+
       let finalHigher: any[] = []
       if (higherCount > 0 && higherRank) {
         const higherLevelN = rankToLevel(higherRank)
         if (higherLevelN) {
-          finalHigher = await this.questionBankRepo.getRandomQuestions(higherCount, higherLevelN)
+          finalHigher = await this.questionBankRepo.getRandomQuestions(
+            higherCount,
+            higherLevelN
+          )
         }
       }
 
@@ -650,11 +670,11 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         const debuffRow = debuffs.length
           ? debuffs[Math.floor(Math.random() * debuffs.length)]
           : null
-        
+
         if (debuffRow && participants.length === 2) {
           const [p1, p2] = participants
           let debuffedParticipantId: number | null = null
-          
+
           // Calculate which Pokemon is debuffed
           if (p1.selectedUserPokemon?.pokemonId && p2.selectedUserPokemon?.pokemonId) {
             try {
@@ -663,28 +683,30 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
                 p2.selectedUserPokemon.pokemonId
               )
               const debuffedPokemonId = debuffCalc.debuffedPokemonId
-              
+
               if (p1.selectedUserPokemon.pokemonId === debuffedPokemonId) {
                 debuffedParticipantId = p1.id
               } else if (p2.selectedUserPokemon.pokemonId === debuffedPokemonId) {
                 debuffedParticipantId = p2.id
               }
             } catch (calcError) {
-              this.logger.warn(`[Round Timeout] Failed to calculate debuff: ${calcError?.message}`)
+              this.logger.warn(
+                `[Round Timeout] Failed to calculate debuff: ${calcError?.message}`
+              )
               // Fallback to first participant
               debuffedParticipantId = participants[0].id
             }
           }
-          
+
           if (!debuffedParticipantId) {
             debuffedParticipantId = participants[0].id
           }
-          
+
           const questionsOfDebuffed = await this.prismaService.roundQuestion.findMany({
             where: { matchRoundParticipantId: debuffedParticipantId },
             orderBy: { orderNumber: 'asc' }
           })
-          
+
           if (questionsOfDebuffed.length > 0) {
             if (debuffRow.typeDebuff === 'ADD_QUESTION') {
               const extraRank = higherRank || baseRank
@@ -709,16 +731,25 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
                 }
               }
             } else if (debuffRow.typeDebuff === 'DECREASE_POINT') {
-              const target = questionsOfDebuffed[Math.floor(Math.random() * questionsOfDebuffed.length)]
+              const target =
+                questionsOfDebuffed[
+                  Math.floor(Math.random() * questionsOfDebuffed.length)
+                ]
               await this.prismaService.roundQuestion.update({
                 where: { id: target.id },
                 data: {
                   debuffId: debuffRow.id,
-                  basePoints: Math.max(10, target.basePoints - (debuffRow.valueDebuff || 0))
+                  basePoints: Math.max(
+                    10,
+                    target.basePoints - (debuffRow.valueDebuff || 0)
+                  )
                 }
               })
             } else if (debuffRow.typeDebuff === 'DISCOMFORT_VISION') {
-              const target = questionsOfDebuffed[Math.floor(Math.random() * questionsOfDebuffed.length)]
+              const target =
+                questionsOfDebuffed[
+                  Math.floor(Math.random() * questionsOfDebuffed.length)
+                ]
               await this.prismaService.roundQuestion.update({
                 where: { id: target.id },
                 data: { debuffId: debuffRow.id }

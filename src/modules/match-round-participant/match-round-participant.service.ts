@@ -9,6 +9,7 @@ import { MatchRoundParticipantMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   addTimeUTC,
+  convertEloToRank,
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError,
   isUniqueConstraintPrismaError
@@ -20,12 +21,11 @@ import { Queue } from 'bull'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { MatchingGateway } from 'src/websockets/matching.gateway'
 import { MatchRoundRepo } from '../match-round/match-round.repo'
-import { RoundQuestionRepo } from '../round-question/round-question.repo'
-import { convertEloToRank } from '@/shared/helpers'
 import { MatchRepo } from '../match/match.repo'
-import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
-import { QuestionBankRepository } from '../question-bank/question-bank.repo'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
+import { QuestionBankRepository } from '../question-bank/question-bank.repo'
+import { RoundQuestionRepo } from '../round-question/round-question.repo'
+import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import { MatchRoundParticipantNotFoundException } from './dto/match-round-participant.error'
 import {
   ChoosePokemonMatchRoundParticipantBodyType,
@@ -49,8 +49,8 @@ export class MatchRoundParticipantService {
     private readonly pokemonRepo: PokemonRepo,
     private readonly i18nService: I18nService,
     private readonly prismaService: PrismaService,
-  private readonly matchingGateway: MatchingGateway,
-  private readonly roundQuestionRepo: RoundQuestionRepo,
+    private readonly matchingGateway: MatchingGateway,
+    private readonly roundQuestionRepo: RoundQuestionRepo,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
     private readonly matchRoundParticipantTimeoutQueue: Queue
   ) {}
@@ -541,10 +541,14 @@ export class MatchRoundParticipantService {
         userId: p.userId,
         rank: convertEloToRank(eloMap.get(p.userId) || 0)
       }))
-  const distinctRanks: string[] = Array.from(new Set(ranks.map((r) => r.rank))) as string[]
+      const distinctRanks: string[] = Array.from(
+        new Set(ranks.map((r) => r.rank))
+      ) as string[]
 
       // Helper: map rank to levelN field (assume same naming)
-      const sortedRanks = distinctRanks.filter((r) => r && r !== 'Unranked').sort() as string[]
+      const sortedRanks = distinctRanks
+        .filter((r) => r && r !== 'Unranked')
+        .sort() as string[]
       const baseRank: string | undefined = sortedRanks[0]
       let higherRank: string | null = null
       if (sortedRanks.length > 1) {
@@ -568,7 +572,9 @@ export class MatchRoundParticipantService {
       }
 
       const totalQuestions = 10
-      const higherCount = higherRank ? Math.round((totalQuestions * higherPercent) / 100) : 0
+      const higherCount = higherRank
+        ? Math.round((totalQuestions * higherPercent) / 100)
+        : 0
       const baseCount = totalQuestions - higherCount
 
       // Helper: map rank to levelN field
@@ -583,15 +589,18 @@ export class MatchRoundParticipantService {
 
       // Use QuestionBankRepository to fetch random questions
       const baseLevelN = rankToLevel(baseRank)
-      const finalBase = baseLevelN 
+      const finalBase = baseLevelN
         ? await this.questionBankRepo.getRandomQuestions(baseCount, baseLevelN)
         : []
-      
+
       let finalHigher: any[] = []
       if (higherCount > 0 && higherRank) {
         const higherLevelN = rankToLevel(higherRank)
         if (higherLevelN) {
-          finalHigher = await this.questionBankRepo.getRandomQuestions(higherCount, higherLevelN)
+          finalHigher = await this.questionBankRepo.getRandomQuestions(
+            higherCount,
+            higherLevelN
+          )
         }
       }
 
@@ -656,10 +665,12 @@ export class MatchRoundParticipantService {
             }
 
             if (debuffRow && debuffedParticipantId) {
-              const questionsOfDebuffed = await this.prismaService.roundQuestion.findMany({
-                where: { matchRoundParticipantId: debuffedParticipantId },
-                orderBy: { orderNumber: 'asc' }
-              })
+              const questionsOfDebuffed = await this.prismaService.roundQuestion.findMany(
+                {
+                  where: { matchRoundParticipantId: debuffedParticipantId },
+                  orderBy: { orderNumber: 'asc' }
+                }
+              )
               if (questionsOfDebuffed.length > 0) {
                 if (debuffRow.typeDebuff === 'ADD_QUESTION') {
                   // Thêm valueDebuff câu hỏi rank cao hơn 1 bậc nếu có
@@ -685,20 +696,25 @@ export class MatchRoundParticipantService {
                     }
                   }
                 } else if (debuffRow.typeDebuff === 'DECREASE_POINT') {
-                  const target = questionsOfDebuffed[
-                    Math.floor(Math.random() * questionsOfDebuffed.length)
-                  ]
+                  const target =
+                    questionsOfDebuffed[
+                      Math.floor(Math.random() * questionsOfDebuffed.length)
+                    ]
                   await this.prismaService.roundQuestion.update({
                     where: { id: target.id },
                     data: {
                       debuffId: debuffRow.id,
-                      basePoints: Math.max(10, target.basePoints - (debuffRow.valueDebuff || 0))
+                      basePoints: Math.max(
+                        10,
+                        target.basePoints - (debuffRow.valueDebuff || 0)
+                      )
                     }
                   })
                 } else if (debuffRow.typeDebuff === 'DISCOMFORT_VISION') {
-                  const target = questionsOfDebuffed[
-                    Math.floor(Math.random() * questionsOfDebuffed.length)
-                  ]
+                  const target =
+                    questionsOfDebuffed[
+                      Math.floor(Math.random() * questionsOfDebuffed.length)
+                    ]
                   await this.prismaService.roundQuestion.update({
                     where: { id: target.id },
                     data: {
@@ -736,9 +752,9 @@ export class MatchRoundParticipantService {
         include: { participants: true }
       })
       const allPending = allRounds.every((r) => r.status === RoundStatus.PENDING)
-      
+
       this.logger.log(
-        `[MatchRoundParticipant] AllPending check: ${allPending}, Total rounds: ${allRounds.length}, Statuses: ${allRounds.map(r => `${r.roundNumber}=${r.status}`).join(', ')}`
+        `[MatchRoundParticipant] AllPending check: ${allPending}, Total rounds: ${allRounds.length}, Statuses: ${allRounds.map((r) => `${r.roundNumber}=${r.status}`).join(', ')}`
       )
 
       if (allPending) {
@@ -755,7 +771,7 @@ export class MatchRoundParticipantService {
             where: { matchRoundId: roundOne.id },
             data: {
               status: MatchRoundParticipantStatus.IN_PROGRESS,
-              totalTimeMs: (60 * 1000) // +60s initial allocation
+              totalTimeMs: 60 * 1000 // +60s initial allocation
             }
           })
           // Gửi socket nếu có method (guard in case not implemented yet)

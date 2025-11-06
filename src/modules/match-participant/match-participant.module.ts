@@ -1,5 +1,3 @@
-import { BullQueueModule } from '@/3rdService/bull/bull-queue.module'
-import { BullQueue } from '@/common/constants/bull-action.constant'
 import { WebsocketsModule } from '@/websockets/websockets.module'
 import { forwardRef, Module } from '@nestjs/common'
 import { MatchRoundParticipantModule } from '../match-round-participant/match-round-participant.module'
