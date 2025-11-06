@@ -585,3 +585,14 @@ export const DebuffRoundMessage = {
   ALREADY_EXISTS: 'debuff_round.ALREADY_EXISTS',
   INVALID_DATA: 'debuff_round.INVALID_DATA'
 } as const
+
+export const UserSeasonHistoryMessage = {
+  CREATE_SUCCESS: 'user_season_history.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'user_season_history.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'user_season_history.DELETE_SUCCESS',
+  GET_SUCCESS: 'user_season_history.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'user_season_history.GET_LIST_SUCCESS',
+  NOT_FOUND: 'user_season_history.NOT_FOUND',
+  ALREADY_EXISTS: 'user_season_history.ALREADY_EXISTS',
+  INVALID_DATA: 'user_season_history.INVALID_DATA'
+} as const

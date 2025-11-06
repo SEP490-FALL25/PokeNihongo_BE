@@ -548,5 +548,17 @@ export const enMessages = {
     NOT_FOUND: 'Debuff round not found',
     ALREADY_EXISTS: 'Debuff round already exists',
     INVALID_DATA: 'Invalid debuff round data'
+  },
+  user_season_history: {
+    CREATE_SUCCESS: 'User season history created successfully',
+
+    UPDATE_SUCCESS: 'User season history updated successfully',
+    DELETE_SUCCESS: 'User season history deleted successfully',
+    GET_SUCCESS: 'User season history retrieved successfully',
+    GET_LIST_SUCCESS: 'User season history list retrieved successfully',
+    NOT_FOUND: 'User season history not found',
+    ALREADY_EXISTS: 'User season history already exists',
+
+    INVALID_DATA: 'Invalid user season history data'
   }
 }

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Matching Test</title>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <style>
+      #status-circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: gray;
+        display: inline-block;
+        margin-left: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>
+      Player2 Client
+      <span>Connection status:</span>
+      <span id="status-circle"></span>
+    </h1>
+
+    <button id="callStaffBtn">Call Staff</button>
+    <span id="countdown" style="margin-left: 10px; font-weight: bold"></span>
+    <input type="file" id="audioFileInput" accept="audio/*" style="display: none" />
+
+    <div id="calls"></div>
+
+    <script>
+      const statusCircle = document.getElementById('status-circle')
+      const countdownElement = document.getElementById('countdown')
+      const callStaffBtn = document.getElementById('callStaffBtn')
+
+      let countdownInterval = null
+
+      /** ✅ START COUNTDOWN */
+      function startCountdown(endTime) {
+        if (countdownInterval) clearInterval(countdownInterval)
+
+        function update() {
+          const now = Date.now()
+          const diff = new Date(endTime).getTime() - now
+
+          if (diff <= 0) {
+            countdownElement.textContent = 'Time over!'
+            countdownElement.style.color = 'red'
+            clearInterval(countdownInterval)
+            return
+          }
+
+          const minutes = Math.floor(diff / 1000 / 60)
+          const seconds = Math.floor((diff / 1000) % 60)
+
+          countdownElement.textContent =
+            minutes + ':' + seconds.toString().padStart(2, '0')
+          countdownElement.style.color = 'blue'
+        }
+
+        update()
+        countdownInterval = setInterval(update, 1000)
+      }
+
+      /** ✅ ACCESS TOKEN */
+      const accessToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjksImRldmljZUlkIjozNywicm9sZUlkIjoxLCJyb2xlTmFtZSI6IkFETUlOIiwidXVpZCI6IjE4MjA1ZmRkLTFhNjItNGNjMy05MzVjLTcyNTAzZDgwMzIwYyIsImlhdCI6MTc2MjE4OTEyNCwiZXhwIjoxNzcwODI5MTI0fQ.HNq4iE1etpLc8ovP6s6Ke2eLRMmcd686Lacwf9OBnLM'
+
+      /** ✅ CONNECT SOCKET */
+      const socket = io('http://localhost:4000/kaiwa', {
+        transports: ['websocket'],
+        auth: {
+          authorization: `Bearer ${accessToken}`
+        }
+      })
+
+      socket.on('connect', () => {
+        console.log('Connected:', socket.id)
+        socket.emit('join')
+        statusCircle.style.backgroundColor = 'green'
+      })
+
+      socket.on('disconnect', (reason) => {
+        console.log('Disconnected:', reason)
+        statusCircle.style.backgroundColor = 'gray'
+      })
+
+      socket.on('connect_error', (err) => {
+        console.log('❌ Connect error:', err.message)
+      })
+
+      /** ✅ UI LOGGER */
+      function appendUpdate(data) {
+        const callsDiv = document.getElementById('calls')
+        const p = document.createElement('p')
+        p.textContent = 'Update: ' + JSON.stringify(data)
+        callsDiv.appendChild(p)
+      }
+
+      /** ✅ MATCHING EVENTS */
+      socket.on('matching-event', (payload) => {
+        console.log('🔥 MATCHING EVENT RECEIVED:', payload)
+
+        if (payload.type === 'MATCH_FOUND') {
+          const match = payload.match
+          if (match.endTime) startCountdown(match.endTime)
+        }
+
+        if (payload.type === 'MATCH_STATUS_UPDATE') {
+          if (payload.status === 'IN_PROGRESS') {
+            socket.emit('join-matching-room', { matchId: payload.matchId })
+          }
+        }
+
+        appendUpdate(payload)
+      })
+
+      socket.on('select-pokemon', (payload) => {
+        appendUpdate(payload)
+      })
+
+      /** ✅ SERVER RESPONSE FROM GEMINI */
+      socket.on('user-audio-response', (msg) => {
+        console.log('🎤 Gemini response:', msg)
+        appendUpdate(msg)
+      })
+
+      /** ✅ CLICK CALL STAFF → EMIT AUDIO CHUNK */
+      const fileInput = document.getElementById('audioFileInput')
+
+      callStaffBtn.addEventListener('click', () => {
+        fileInput.click() // ✅ mở chọn file
+      })
+
+      fileInput.addEventListener('change', async () => {
+        const file = fileInput.files[0]
+        if (!file) return
+
+        console.log('📂 File selected:', file.name)
+
+        const arrayBuffer = await file.arrayBuffer()
+        const buffer = new Uint8Array(arrayBuffer) // ✅ Convert để emit
+
+        console.log('📤 Sending audio chunk, size:', buffer.length)
+
+        socket.emit('user-audio-chunk', {
+          conversationId: '12345',
+          audio: buffer
+        })
+      })
+
+      /** ✅ CONFIRM MESSAGE */
+      socket.on('call-staff-success', (msg) => {
+        console.log('✅ Server confirmed:', msg)
+        appendUpdate(msg)
+      })
+    </script>
+  </body>
+</html>

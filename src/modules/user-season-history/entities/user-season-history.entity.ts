@@ -1,0 +1,80 @@
+import { checkIdSchema } from '@/common/utils/id.validation'
+import { ENTITY_MESSAGE } from '@/i18n/message-keys'
+import { extendZodWithOpenApi } from '@anatine/zod-openapi'
+import { patchNestJsSwagger } from 'nestjs-zod'
+import { z } from 'zod'
+
+extendZodWithOpenApi(z)
+patchNestJsSwagger()
+
+// Base UserSeasonHistory Schema
+export const UserSeasonHistorySchema = z.object({
+  id: z.number(),
+  userId: z.number(),
+  seasonId: z.number(),
+  finalElo: z.number(),
+  finalRank: z.string(),
+  deletedAt: z.date().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
+
+// Create Schema
+export const CreateUserSeasonHistoryBodySchema = UserSeasonHistorySchema.pick({
+  seasonId: true,
+  finalElo: true
+})
+  .extend({
+    userId: z.number().optional(),
+    finalRank: z.string().default('')
+  })
+  .strict()
+
+export const CreateUserSeasonHistoryResSchema = z.object({
+  statusCode: z.number(),
+  data: UserSeasonHistorySchema,
+  message: z.string()
+})
+
+// Update Schema
+export const UpdateUserSeasonHistoryBodySchema =
+  CreateUserSeasonHistoryBodySchema.partial().strict()
+
+export const UpdateUserSeasonHistoryResSchema = CreateUserSeasonHistoryResSchema
+
+export const UpdateWithListItemResSchema = z.object({
+  statusCode: z.number(),
+  data: z.array(UserSeasonHistorySchema),
+  message: z.string()
+})
+
+// Query Schema
+export const GetUserSeasonHistoryParamsSchema = z.object({
+  userSeasonHistoryId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
+})
+
+export const GetUserSeasonHistoryDetailSchema = UserSeasonHistorySchema
+
+export const GetUserSeasonHistoryDetailResSchema = z.object({
+  statusCode: z.number(),
+  data: GetUserSeasonHistoryDetailSchema,
+  message: z.string()
+})
+
+// Type exports
+export type UserSeasonHistoryType = z.infer<typeof UserSeasonHistorySchema>
+export type CreateUserSeasonHistoryBodyType = z.infer<
+  typeof CreateUserSeasonHistoryBodySchema
+>
+export type UpdateUserSeasonHistoryBodyType = z.infer<
+  typeof UpdateUserSeasonHistoryBodySchema
+>
+export type GetUserSeasonHistoryParamsType = z.infer<
+  typeof GetUserSeasonHistoryParamsSchema
+>
+
+// Field for query
+export type UserSeasonHistoryFieldType = keyof z.infer<typeof UserSeasonHistorySchema>
+export const USER_SEASON_HISTORY_FIELDS = Object.keys(
+  UserSeasonHistorySchema.shape
+) as UserSeasonHistoryFieldType[]

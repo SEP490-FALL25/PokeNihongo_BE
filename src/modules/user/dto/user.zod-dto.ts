@@ -4,6 +4,7 @@ import {
   CreateUserResSchema,
   GetUserDetailResSchema,
   GetUserParamsSchema,
+  GetUserStatsSeasonResSchema,
   SetMainPokemonBodySchema,
   UpdateUserBodySchema,
   UpdateUserResSchema
@@ -22,3 +23,5 @@ export class GetUserParamsDTO extends createZodDto(GetUserParamsSchema) {}
 export class GetUserDetailResDTO extends createZodDto(GetUserDetailResSchema) {}
 
 export class SetMainPokemonBodyDTO extends createZodDto(SetMainPokemonBodySchema) {}
+
+export class GetStatsUserSeasonResDTO extends createZodDto(GetUserStatsSeasonResSchema) {}
