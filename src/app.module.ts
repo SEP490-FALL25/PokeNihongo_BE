@@ -82,6 +82,7 @@ import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
 import { UserSeasonHistoryModule } from './modules/user-season-history/user-season-history.module';
 import { RoundQuestionModule } from './modules/round-question/round-question.module';
+import { RoundQuestionAnswerlogModule } from './modules/round-question-answerlog/round-question-answerlog.module';
 
 @Module({
   imports: [
@@ -161,7 +162,8 @@ import { RoundQuestionModule } from './modules/round-question/round-question.mod
     DebuffRoundModule,
     SrsReviewModule,
     UserSeasonHistoryModule,
-    RoundQuestionModule
+    RoundQuestionModule,
+    RoundQuestionAnswerlogModule
   ],
 
   controllers: [],

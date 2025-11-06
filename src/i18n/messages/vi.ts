@@ -567,5 +567,14 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy câu hỏi vòng đấu',
     ALREADY_EXISTS: 'Câu hỏi vòng đấu đã tồn tại',
     INVALID_DATA: 'Dữ liệu câu hỏi vòng đấu không hợp lệ'
+  },
+  round_questions_answer_log: {
+    CREATE_SUCCESS: 'Tạo nhật ký câu trả lời câu hỏi vòng đấu thành công',
+    UPDATE_SUCCESS: 'Cập nhật nhật ký câu trả lời câu hỏi vòng đấu thành công',
+    GET_SUCCESS: 'Lấy thông tin nhật ký câu trả lời câu hỏi vòng đấu thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách nhật ký câu trả lời câu hỏi vòng đấu thành công',
+    NOT_FOUND: 'Không tìm thấy nhật ký câu trả lời câu hỏi vòng đấu',
+    ALREADY_EXISTS: 'Nhật ký câu trả lời câu hỏi vòng đấu đã tồn tại',
+    INVALID_DATA: 'Dữ liệu nhật ký câu trả lời câu hỏi vòng đấu không hợp lệ'
   }
 }

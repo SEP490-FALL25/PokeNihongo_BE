@@ -551,5 +551,15 @@ export const jaMessages = {
     NOT_FOUND: 'ラウンド質問が見つかりません',
     ALREADY_EXISTS: 'ラウンド質問は既に存在します',
     INVALID_DATA: '無効なラウンド質問データです'
+  },
+  round_questions_answer_log: {
+    CREATE_SUCCESS: 'ラウンド質問回答ログの作成に成功しました',
+    UPDATE_SUCCESS: 'ラウンド質問回答ログの更新に成功しました',
+    DELETE_SUCCESS: 'ラウンド質問回答ログの削除に成功しました',
+    GET_SUCCESS: 'ラウンド質問回答ログ情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ラウンド質問回答ログリストの取得に成功しました',
+    NOT_FOUND: 'ラウンド質問回答ログが見つかりません',
+    ALREADY_EXISTS: 'ラウンド質問回答ログは既に存在します',
+    INVALID_DATA: '無効なラウンド質問回答ログデータです'
   }
 }
