@@ -546,6 +546,23 @@ export class TestService {
                         `TestSet không hợp lệ: ${invalidIds.join(', ')}`
                     )
                 }
+
+                // Với SPEAKING_TEST: chỉ được có tối đa 1 TestSet SPEAKING
+                if (test.testType === 'SPEAKING_TEST') {
+                    const existingSpeakingCount = await (this.prisma as any).testTestSet.count({
+                        where: {
+                            testId,
+                            testSet: { testType: 'SPEAKING' }
+                        }
+                    })
+                    const incomingSpeakingCount = testSets.filter(ts => ts.testType === 'SPEAKING').length
+                    if (existingSpeakingCount + incomingSpeakingCount > 1) {
+                        throw new BadRequestException(
+                            `Test SPEAKING_TEST chỉ được có tối đa 1 TestSet SPEAKING. ` +
+                            `Hiện có ${existingSpeakingCount}, đang cố thêm ${incomingSpeakingCount}.`
+                        )
+                    }
+                }
             }
 
             // Tạo các bản ghi trong bảng TestTestSet (nhiều-nhiều)
@@ -878,6 +895,102 @@ export class TestService {
                 throw error
             }
             throw new BadRequestException('Không thể lấy thông tin bài test')
+        }
+    }
+
+    async findSpeakingTest(testId: number, language: string = 'vi'): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Finding speaking test by ID: ${testId}, language: ${language}`)
+
+            // Base test info
+            const test = await this.testRepo.findById(testId, language)
+            if (!test) {
+                throw TestNotFoundException
+            }
+
+            // Get TestSets for this Test
+            const testTestSets = await (this.prisma as any).testTestSet.findMany({
+                where: { testId },
+                include: { testSet: true },
+                orderBy: { createdAt: 'asc' }
+            })
+
+            // Keep only SPEAKING test sets
+            const speakingTestSets = testTestSets.filter((tts: any) => tts.testSet?.testType === 'SPEAKING')
+
+            const testSetsWithQuestions = await Promise.all(
+                speakingTestSets.map(async (tts: any) => {
+                    const ts = tts.testSet
+
+                    // Resolve translations to simple strings for name/description/content
+                    const testSetNameKey = `testset.${ts.id}.name`
+                    const testSetDescriptionKey = `testset.${ts.id}.description`
+                    const testSetContentKey = `testset.${ts.id}.content`
+
+                    let nameValue: any = ts.name
+                    let descriptionValue: any = ts.description
+
+                    if (language) {
+                        const languageRecord = await this.prisma.languages.findFirst({ where: { code: language } })
+                        const languageId = languageRecord?.id
+                        if (languageId) {
+                            const translations = await this.prisma.translation.findMany({
+                                where: {
+                                    languageId,
+                                    OR: [
+                                        { key: { startsWith: testSetNameKey + '.meaning.' } },
+                                        { key: { startsWith: testSetDescriptionKey + '.meaning.' } },
+                                        { key: { startsWith: testSetContentKey + '.meaning.' } }
+                                    ]
+                                }
+                            })
+                            const nameT = translations.find(t => t.key.startsWith(testSetNameKey + '.meaning.'))
+                            const descT = translations.find(t => t.key.startsWith(testSetDescriptionKey + '.meaning.'))
+                            nameValue = nameT?.value || ts.name
+                            descriptionValue = descT?.value || ts.description
+                        }
+                    }
+
+                    // Get questions with answers (already ordered by questionOrder and localized)
+                    const questionsRes = await this.testSetQuestionBankService.findFullWithAnswerByTestSetId(ts.id, language)
+                    const questions = questionsRes.data || []
+
+                    return {
+                        id: ts.id,
+                        name: nameValue,
+                        description: descriptionValue,
+                        content: ts.content ?? null,
+                        audioUrl: ts.audioUrl ?? null,
+                        testType: ts.testType,
+                        status: ts.status,
+                        levelN: ts.levelN,
+                        price: ts.price ? Number(ts.price) : null,
+                        questions
+                    }
+                })
+            )
+
+            return {
+                statusCode: 200,
+                data: {
+                    id: test.id,
+                    name: (test as any).name, // already localized by repo.findById
+                    description: (test as any).description,
+                    price: (test as any).price ?? 0,
+                    levelN: (test as any).levelN,
+                    limit: (test as any).limit,
+                    testType: (test as any).testType,
+                    status: (test as any).status,
+                    testSets: testSetsWithQuestions
+                },
+                message: TEST_MESSAGE.GET_SUCCESS,
+            }
+        } catch (error) {
+            this.logger.error('Error finding speaking test by ID:', error)
+            if (error instanceof TestNotFoundException) {
+                throw error
+            }
+            throw new BadRequestException('Không thể lấy thông tin bài test Speaking')
         }
     }
 

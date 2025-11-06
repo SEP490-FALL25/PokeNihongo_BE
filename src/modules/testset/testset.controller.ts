@@ -16,6 +16,7 @@ import {
     TestSetResponseSwaggerDTO,
     TestSetListResponseSwaggerDTO,
     TestSetWithQuestionsResponseSwaggerDTO,
+    TestSetWithQuestionsFullResponseSwaggerDTO,
     GetTestSetListQuerySwaggerDTO,
     CreateTestSetSwaggerDTO,
     UpdateTestSetSwaggerDTO,
@@ -136,7 +137,7 @@ export class TestSetController {
     @ApiResponse({
         status: 200,
         description: 'Lấy thông tin bộ đề với questionBanks và full translations thành công',
-        type: TestSetWithQuestionsResponseSwaggerDTO
+        type: TestSetWithQuestionsFullResponseSwaggerDTO
     })
     findOneWithQuestionBanksFull(@Param('id') id: string) {
         return this.testSetService.findOneWithQuestionBanksFull(Number(id))

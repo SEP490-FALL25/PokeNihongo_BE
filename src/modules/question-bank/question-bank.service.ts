@@ -50,21 +50,24 @@ export class QuestionBankService {
         private readonly prismaService: PrismaService
     ) { }
 
-    async createWithMeanings(body: CreateQuestionBankWithMeaningsBodyType, userId: number): Promise<MessageResDTO> {
+    async createWithMeanings(body: CreateQuestionBankWithMeaningsBodyType, userId: number, skipDuplicateCheck: boolean = false): Promise<MessageResDTO> {
         try {
             this.logger.log(`Creating question bank with meanings: ${JSON.stringify(body)}`)
 
             // Validate special rules based on questionType
             this.validateQuestionBankData(body)
 
-            // Kiểm tra questionJp đã tồn tại chưa
-            const questionJpExists = await this.questionBankRepository.checkQuestionJpExists(body.questionJp)
-            if (questionJpExists) {
-                throw new ConflictException(QUESTION_BANK_MESSAGE.ALREADY_EXISTS)
+            // Kiểm tra questionJp đã tồn tại chưa (chỉ khi không skip)
+            if (!skipDuplicateCheck) {
+                const questionJpExists = await this.questionBankRepository.checkQuestionJpExists(body.questionJp)
+                if (questionJpExists) {
+                    throw new ConflictException(QUESTION_BANK_MESSAGE.ALREADY_EXISTS)
+                }
             }
 
-            // Xử lý audioUrl - chỉ khi questionType là LISTENING thì mới tự tạo text-to-speech
-            if (body.questionType === QuestionType.LISTENING && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
+            // Xử lý audioUrl - tự tạo text-to-speech cho LISTENING và SPEAKING nếu không có audioUrl
+            if ((body.questionType === QuestionType.LISTENING || body.questionType === QuestionType.SPEAKING)
+                && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
                 body.audioUrl = await this.textToSpeechService.generateAudioFromText(body.questionJp, 'question-bank', 'question_bank')
             }
 
@@ -176,8 +179,8 @@ export class QuestionBankService {
                 this.validateQuestionBankData(body as unknown as CreateQuestionBankWithMeaningsBodyType)
             }
 
-            // LISTENING: xử lý TTS
-            if ((body as any).questionType === QuestionType.LISTENING) {
+            // LISTENING và SPEAKING: xử lý TTS
+            if ((body as any).questionType === QuestionType.LISTENING || (body as any).questionType === QuestionType.SPEAKING) {
                 // Nếu không gửi audioUrl nhưng có questionJp, tự động tạo TTS
                 if ((body.audioUrl === undefined || body.audioUrl === null) && (body as any).questionJp) {
                     body.audioUrl = await this.textToSpeechService.generateAudioFromText((body as any).questionJp, 'question-bank', 'question_bank')
@@ -242,8 +245,9 @@ export class QuestionBankService {
                 }
             }
 
-            // Xử lý audioUrl - chỉ khi questionType là LISTENING thì mới tự tạo text-to-speech
-            if (body.questionType === QuestionType.LISTENING && body.questionJp && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
+            // Xử lý audioUrl - tự tạo text-to-speech cho LISTENING và SPEAKING nếu không có audioUrl
+            if ((body.questionType === QuestionType.LISTENING || body.questionType === QuestionType.SPEAKING)
+                && body.questionJp && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
                 body.audioUrl = await this.textToSpeechService.generateAudioFromText(body.questionJp, 'question-bank', 'question_bank')
             }
 
@@ -467,8 +471,9 @@ export class QuestionBankService {
                 throw new ConflictException(QUESTION_BANK_MESSAGE.ALREADY_EXISTS)
             }
 
-            // Xử lý audioUrl - chỉ khi questionType là LISTENING thì mới tự tạo text-to-speech
-            if (body.questionType === QuestionType.LISTENING && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
+            // Xử lý audioUrl - tự tạo text-to-speech cho LISTENING và SPEAKING nếu không có audioUrl
+            if ((body.questionType === QuestionType.LISTENING || body.questionType === QuestionType.SPEAKING)
+                && (!body.audioUrl || body.audioUrl.trim().length === 0)) {
                 body.audioUrl = await this.textToSpeechService.generateAudioFromText(body.questionJp, 'question-bank', 'question_bank')
             }
 
