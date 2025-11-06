@@ -546,5 +546,14 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy debuff vòng đấu',
     ALREADY_EXISTS: 'Debuff vòng đấu đã tồn tại',
     INVALID_DATA: 'Dữ liệu debuff vòng đấu không hợp lệ'
+  },
+  user_season_history: {
+    CREATE_SUCCESS: 'Tạo lịch sử mùa giải người dùng thành công',
+    UPDATE_SUCCESS: 'Cập nhật lịch sử mùa giải người dùng thành công',
+    GET_SUCCESS: 'Lấy thông tin lịch sử mùa giải người dùng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách lịch sử mùa giải người dùng thành công',
+    NOT_FOUND: 'Không tìm thấy lịch sử mùa giải người dùng',
+    ALREADY_EXISTS: 'Lịch sử mùa giải người dùng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu lịch sử mùa giải người dùng không hợp lệ'
   }
 }

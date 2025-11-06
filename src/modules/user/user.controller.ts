@@ -7,6 +7,7 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateUserBodyDTO,
   CreateUserResDTO,
+  GetStatsUserSeasonResDTO,
   GetUserDetailResDTO,
   GetUserParamsDTO,
   SetMainPokemonBodyDTO,
@@ -14,16 +15,21 @@ import {
   UpdateUserResDTO
 } from './dto/user.zod-dto'
 import { UserService } from './user.service'
-import { ApiQuery } from '@nestjs/swagger'
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(private readonly userService: UserService) {}
 
   @Get()
   @ZodSerializerDto(PaginationResponseDTO)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.userService.list(query, lang)
+  }
+
+  @Get('stats/season')
+  @ZodSerializerDto(GetStatsUserSeasonResDTO)
+  getInfoBattleWithUser(@I18nLang() lang: string, @ActiveUser('userId') userId: number) {
+    return this.userService.getInfoBattleWithUser(userId, lang)
   }
 
   @Get(':userId')

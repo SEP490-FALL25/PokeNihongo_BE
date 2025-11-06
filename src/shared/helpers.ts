@@ -142,3 +142,18 @@ export function addTimeUTC(date, msToAdd) {
   )
   return new Date(utc)
 }
+
+export function convertEloToRank(elo: number): string {
+  const rankThresholds = [
+    { rank: 'N5', minElo: 0, maxElo: 1000 },
+    { rank: 'N4', minElo: 1001, maxElo: 2000 },
+    { rank: 'N3', minElo: 2001, maxElo: 3000 }
+  ]
+
+  for (const threshold of rankThresholds) {
+    if (elo >= threshold.minElo && elo <= threshold.maxElo) {
+      return threshold.rank
+    }
+  }
+  return 'Unranked'
+}
