@@ -5,6 +5,7 @@ import { LevelRepo } from '@/modules/level/level.repo'
 import { UserPokemonRepo } from '@/modules/user-pokemon/user-pokemon.repo'
 import { NotFoundRecordException } from '@/shared/error'
 import {
+  convertEloToRank,
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError,
   isUniqueConstraintPrismaError
@@ -13,9 +14,11 @@ import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { UserStatus } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
+import { LanguagesRepository } from '../languages/languages.repo'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import { MatchRepo } from '../match/match.repo'
 import { UserPokemonNotFoundException } from '../user-pokemon/dto/user-pokemon.error'
+import { UserSeasonHistoryRepo } from '../user-season-history/user-season-history.repo'
 import { WalletService } from '../wallet/wallet.service'
 import { EmailAlreadyExistsException, UserNotFoundException } from './dto/user.error'
 import {
@@ -35,7 +38,9 @@ export class UserService {
     private levelRepo: LevelRepo,
     private walletSer: WalletService,
     private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
-    private readonly matchRepo: MatchRepo
+    private readonly matchRepo: MatchRepo,
+    private readonly userSeaHistoryRepo: UserSeasonHistoryRepo,
+    private readonly langRepo: LanguagesRepository
   ) {}
 
   /**
@@ -432,27 +437,46 @@ export class UserService {
   }
 
   async getInfoBattleWithUser(userId: number, lang: string) {
+    const langId = await this.langRepo.getIdByCode(lang)
+    if (!langId) {
+      throw new NotFoundRecordException()
+    }
     // lay ra mua hien tai cua user
-    const currentSeason = await this.leaderboardSeasonRepo.findActiveSeason()
 
-    const userInfo = await this.userRepo.findById(userId)
+    const [currentSeason, totalMatches, totalWins, currentWinStreak, userInfo] =
+      await Promise.all([
+        this.leaderboardSeasonRepo.findActiveSeasonWithLangIdAndUser(userId, langId),
+        this.matchRepo.countMatchesByUserId(userId),
+        this.matchRepo.countWinsByUserId(userId),
+        this.getCurrentWinStreak(userId),
+        this.userRepo.findById(userId)
+      ])
 
-    // lay ra tong tran ma user da tham gia
-    const totalMatches = await this.matchRepo.countMatchesByUserId(userId)
+    // Find current translation by langId
+    const currentTranslation = ((currentSeason as any).nameTranslations || []).find(
+      (t: any) => t.languageId === langId
+    )
 
-    // lay ra tong tran user win \
-    const totalWins = await this.matchRepo.countWinsByUserId(userId)
-
-    //lay ra chuoi thang hien tai0totalWins;
-    let currentWinStreak = await this.getCurrentWinStreak(userId)
+    const seasonInfo = currentSeason
+      ? {
+          id: currentSeason.id,
+          name: currentTranslation?.value ?? null,
+          startDate: currentSeason.startDate,
+          endDate: currentSeason.endDate
+        }
+      : null
 
     return {
       message: this.i18nService.translate(UserMessage.GET_DETAIL_SUCCESS, lang),
       statusCode: HttpStatus.OK,
       data: {
-        leaderboardSeason: currentSeason,
-        rank: {},
+        leaderboardSeason: seasonInfo,
+        rank: {
+          rankName: convertEloToRank((userInfo as any).elo || 0),
+          eloscore: (userInfo as any).eloscore
+        },
         totalMatches,
+        totalWins,
         rateWin: totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0,
         currentWinStreak
       }

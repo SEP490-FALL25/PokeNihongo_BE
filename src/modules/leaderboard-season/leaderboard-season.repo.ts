@@ -5,6 +5,7 @@ import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
+import { UserSeasonHistoryType } from '../user-season-history/entities/user-season-history.entity'
 import {
   CreateLeaderboardSeasonBodyType,
   LEADERBOARD_SEASON_FIELDS,
@@ -253,6 +254,33 @@ export class LeaderboardSeasonRepo {
       where: {
         isActive: true,
         deletedAt: null
+      }
+    })
+  }
+
+  findActiveSeasonWithLangIdAndUser(
+    userId: number,
+    langId: number
+  ): Promise<
+    | (LeaderboardSeasonType & {
+        nameTranslations
+        userHistories: UserSeasonHistoryType[]
+      })
+    | null
+  > {
+    return this.prismaService.leaderboardSeason.findFirst({
+      where: {
+        isActive: true,
+        deletedAt: null
+      },
+      include: {
+        nameTranslations: {
+          where: { languageId: langId },
+          select: { value: true, languageId: true }
+        },
+        userHistories: {
+          where: { userId, deletedAt: null }
+        }
       }
     })
   }

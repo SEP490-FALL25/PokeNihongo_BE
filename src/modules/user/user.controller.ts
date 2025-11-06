@@ -7,6 +7,7 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateUserBodyDTO,
   CreateUserResDTO,
+  GetStatsUserSeasonResDTO,
   GetUserDetailResDTO,
   GetUserParamsDTO,
   SetMainPokemonBodyDTO,
@@ -25,8 +26,8 @@ export class UserController {
     return this.userService.list(query, lang)
   }
 
-  @Get('user/battle')
-  @ZodSerializerDto(GetUserDetailResDTO)
+  @Get('stats/season')
+  @ZodSerializerDto(GetStatsUserSeasonResDTO)
   getInfoBattleWithUser(@I18nLang() lang: string, @ActiveUser('userId') userId: number) {
     return this.userService.getInfoBattleWithUser(userId, lang)
   }

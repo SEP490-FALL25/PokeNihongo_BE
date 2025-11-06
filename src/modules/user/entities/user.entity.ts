@@ -1,5 +1,6 @@
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ValidationMessage } from '@/i18n/message-keys'
+import { LeaderboardSeasonSchema } from '@/modules/leaderboard-season/entities/leaderboard-season.entity'
 import { LevelSchema } from '@/modules/level/entities/level.entity'
 import { RoleSchema } from '@/shared/models/shared-role.model'
 import { UserSchema } from '@/shared/models/shared-user.model'
@@ -47,6 +48,37 @@ export const GetUserParamsSchema = z
     userId: checkIdSchema(ValidationMessage.INVALID_USER_ID)
   })
   .strict()
+
+export const GetStatsUserSeasonSchema = z
+  .object({
+    leaderboardSeason: LeaderboardSeasonSchema.pick({
+      id: true,
+
+      startDate: true,
+      endDate: true
+    })
+      .extend({
+        name: z.string().nullable()
+      })
+      .nullable(),
+    rank: z.object({
+      rankName: z.string(),
+      eloscore: z.number()
+    }),
+    totalMatches: z.number(),
+    totalWins: z.number(),
+
+    rateWin: z.number(),
+    currentWinStreak: z.number()
+  })
+
+  .strict()
+
+export const GetUserStatsSeasonResSchema = z.object({
+  statusCode: z.number(),
+  data: GetStatsUserSeasonSchema,
+  message: z.string()
+})
 
 export const UserWithoutPasswordSchema = z.object({
   ...UserSchema.omit({ password: true }).shape, // Không trả về password
