@@ -7,6 +7,7 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateUserBodyDTO,
   CreateUserResDTO,
+  GetListMatchHisByUserResDTO,
   GetStatsUserSeasonResDTO,
   GetUserDetailResDTO,
   GetUserParamsDTO,
@@ -30,6 +31,12 @@ export class UserController {
   @ZodSerializerDto(GetStatsUserSeasonResDTO)
   getInfoBattleWithUser(@I18nLang() lang: string, @ActiveUser('userId') userId: number) {
     return this.userService.getInfoBattleWithUser(userId, lang)
+  }
+
+  @Get('matching/history')
+  @ZodSerializerDto(GetListMatchHisByUserResDTO)
+  getMatchingHisByUserId(@I18nLang() lang: string, @ActiveUser('userId') userId: number) {
+    return this.userService.getMatchingHisByUserId(userId, lang)
   }
 
   @Get(':userId')

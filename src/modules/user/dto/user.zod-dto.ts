@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod'
 import {
   CreateUserBodySchema,
   CreateUserResSchema,
+  GetListMatchHisByUserResSchema,
   GetUserDetailResSchema,
   GetUserParamsSchema,
   GetUserStatsSeasonResSchema,
@@ -25,3 +26,7 @@ export class GetUserDetailResDTO extends createZodDto(GetUserDetailResSchema) {}
 export class SetMainPokemonBodyDTO extends createZodDto(SetMainPokemonBodySchema) {}
 
 export class GetStatsUserSeasonResDTO extends createZodDto(GetUserStatsSeasonResSchema) {}
+
+export class GetListMatchHisByUserResDTO extends createZodDto(
+  GetListMatchHisByUserResSchema
+) {}
