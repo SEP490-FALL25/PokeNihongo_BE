@@ -762,7 +762,7 @@ export class PokemonRepo {
    * - Type effectiveness (hệ)
    * - Rarity (độ hiếm)
    * - Evolution level (cấp tiến hóa: conditionLevel = 14 là 1, 30 là 2, 45 là 3)
-   * 
+   *
    * @param pokemon1Id - ID của Pokemon 1
    * @param pokemon2Id - ID của Pokemon 2
    * @returns Object chứa pokemonId bị debuff và lý do
@@ -845,14 +845,14 @@ export class PokemonRepo {
 
     // Xác định Pokemon bị debuff (điểm thấp hơn)
     let debuffedPokemonId = totalScore1 < totalScore2 ? pokemon1Id : pokemon2Id
-    
+
     // LEGENDARY không bao giờ bị debuff
     const debuffedPokemon = debuffedPokemonId === pokemon1Id ? pokemon1 : pokemon2
     if (debuffedPokemon.rarity === 'LEGENDARY') {
       // Nếu Pokemon bị debuff là LEGENDARY, chuyển debuff sang Pokemon còn lại
       debuffedPokemonId = debuffedPokemonId === pokemon1Id ? pokemon2Id : pokemon1Id
     }
-    
+
     const reason = this.generateDebuffReason(
       totalScore1,
       totalScore2,

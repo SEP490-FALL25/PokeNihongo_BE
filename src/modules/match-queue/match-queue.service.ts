@@ -27,7 +27,7 @@ import { MatchQueueRepo } from './match-queue.repo'
 import { MatchmakingQueueManager } from './matchmaking-queue-manager'
 
 const TIME_KICK_USER_MS = 10000 // 10s
-const TIME_OUT_USER_MS = 25000 // 25s
+const TIME_OUT_USER_MS = 35000 // 25s
 
 @Injectable()
 export class MatchQueueService implements OnModuleInit {

@@ -379,6 +379,9 @@ export class MatchParticipantService {
           this.logger.log(
             `[MatchParticipant] Set endTime and Bull job for first participant of Round ONE (id: ${firstParticipant.id})`
           )
+          this.logger.log(
+            `[MatchParticipant] Enqueued CHECK_POKEMON_SELECTION_TIMEOUT for participant ${firstParticipant.id} delay=30000ms`
+          )
         }
       }
 
