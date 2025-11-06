@@ -16,6 +16,8 @@ export interface SpeechToTextOptions {
     enableAutomaticPunctuation?: boolean
     enableWordTimeOffsets?: boolean
     model?: 'default' | 'latest_long' | 'latest_short' | 'phone_call' | 'video' | 'command_and_search'
+    // Optional phrase biasing; if omitted, no hints are applied
+    speechContexts?: Array<{ phrases: string[]; boost?: number }>
 }
 
 @Injectable()
@@ -69,13 +71,19 @@ export class SpeechToTextService {
             }
 
             // Default configuration
-            const config = {
+            const config: any = {
                 encoding,
                 sampleRateHertz: sampleRate,
                 languageCode,
                 enableAutomaticPunctuation: options.enableAutomaticPunctuation ?? SPEECH_CONFIG.DEFAULT_ENABLE_PUNCTUATION,
                 enableWordTimeOffsets: options.enableWordTimeOffsets ?? SPEECH_CONFIG.DEFAULT_ENABLE_WORD_TIME_OFFSETS,
-                model
+                // Prefer the latest_short model for short utterances typical in kaiwa
+                model: options.model || 'latest_short'
+            }
+
+            // Only apply caller-provided speechContexts (optional)
+            if (options.speechContexts && options.speechContexts.length > 0) {
+                config.speechContexts = options.speechContexts
             }
 
             const audio = {

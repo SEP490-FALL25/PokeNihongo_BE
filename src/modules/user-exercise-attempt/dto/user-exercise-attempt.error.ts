@@ -46,6 +46,17 @@ export const LessonBlockedException = new HttpException(
     HttpStatus.BAD_REQUEST
 )
 
+// Dynamic prerequisite error with lesson ids
+export const LessonPrerequisiteNotMetException = (previousLessonId: number, lessonId: number) =>
+    new HttpException(
+        {
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: `Bạn cần bắt đầu bài ${previousLessonId} trước khi vào bài ${lessonId}.`,
+            error: 'LESSON_PREREQUISITE_NOT_MET'
+        },
+        HttpStatus.BAD_REQUEST
+    )
+
 export const ExerciseAlreadyCompletedException = new HttpException(
     {
         statusCode: HttpStatus.CONFLICT,
@@ -72,3 +83,5 @@ export const ForbiddenReviewAccessException = new HttpException(
     },
     HttpStatus.FORBIDDEN
 )
+
+

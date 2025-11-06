@@ -28,6 +28,7 @@ import {
   UpdateUserBodyType
 } from './entities/user.entity'
 import { UserRepo } from './user.repo'
+import { UserProgressService } from '../user-progress/user-progress.service'
 
 @Injectable()
 export class UserService {
@@ -42,8 +43,9 @@ export class UserService {
     private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
     private readonly matchRepo: MatchRepo,
     private readonly userSeaHistoryRepo: UserSeasonHistoryRepo,
-    private readonly langRepo: LanguagesRepository
-  ) {}
+    private readonly langRepo: LanguagesRepository,
+    private readonly userProgressService: UserProgressService
+  ) { }
 
   /**
    * Generate random password with 8 characters
@@ -306,7 +308,7 @@ export class UserService {
           // Reload user with level
           const updatedUser = await this.userRepo.findById(userId)
           if (updatedUser) {
-            ;(user as any).level = (updatedUser as any).level
+            ; (user as any).level = (updatedUser as any).level
             user.levelId = updatedUser.levelId
           }
         }
@@ -461,11 +463,11 @@ export class UserService {
 
     const seasonInfo = currentSeason
       ? {
-          id: currentSeason.id,
-          name: currentTranslation?.value ?? null,
-          startDate: currentSeason.startDate,
-          endDate: currentSeason.endDate
-        }
+        id: currentSeason.id,
+        name: currentTranslation?.value ?? null,
+        startDate: currentSeason.startDate,
+        endDate: currentSeason.endDate
+      }
       : null
 
     return {
@@ -484,6 +486,7 @@ export class UserService {
       }
     }
   }
+
   async getCurrentWinStreak(userId: number) {
     const matches = await this.matchRepo.getMatchesByUser(userId)
 
@@ -551,6 +554,10 @@ export class UserService {
         updatedById: userId
       }
     )
+
+    //Update user progress level JLPT
+    await this.userProgressService.updateUserProgressLevelJlpt(userId, data.levelJLPT)
+
     return {
       statusCode: 200,
       data: updatedUser,
