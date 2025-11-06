@@ -32,7 +32,11 @@ import {
   InvalidOldPasswordException,
   NotFoundRecordException
 } from '@/shared/error'
-import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
+import {
+  convertEloToRank,
+  isNotFoundPrismaError,
+  isUniqueConstraintPrismaError
+} from '@/shared/helpers'
 import { SharedRoleRepository } from '@/shared/repositories/shared-role.repo'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { HashingService } from '@/shared/services/hashing.service'
@@ -456,10 +460,13 @@ export class AuthService {
       throw new EmailNotFoundException()
     }
 
+    const rankName = convertEloToRank(user.eloscore || 0)
+
     return {
       statusCode: 200,
       data: {
         ...user,
+        rankName,
         pokemonCount: user._count.userPokemons
       },
       message: this.i18nService.translate(AuthMessage.GET_PROFILE_SUCCESS, lang)
