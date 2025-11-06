@@ -7,7 +7,15 @@ import {
 import { addTimeUTC } from '@/shared/helpers'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MatchingGateway } from '@/websockets/matching.gateway'
-import { InjectQueue, Process, Processor } from '@nestjs/bull'
+import {
+  InjectQueue,
+  OnQueueActive,
+  OnQueueCompleted,
+  OnQueueFailed,
+  OnQueueWaiting,
+  Process,
+  Processor
+} from '@nestjs/bull'
 import { Inject, Logger, OnModuleInit } from '@nestjs/common'
 import { Job, Queue } from 'bull'
 
@@ -26,6 +34,33 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
   onModuleInit() {
     this.logger.log(
       'MatchRoundParticipantTimeoutProcessor initialized with MatchingGateway'
+    )
+  }
+
+  // Queue lifecycle diagnostics to trace job progression
+  @OnQueueWaiting()
+  onWaiting(jobId: number) {
+    this.logger.debug(`[RoundParticipant Timeout] (jobId=${jobId}) waiting in queue`)
+  }
+
+  @OnQueueActive()
+  onActive(job: Job) {
+    this.logger.debug(
+      `[RoundParticipant Timeout] (jobId=${job.id}) active for mrp=${job.data?.matchRoundParticipantId}`
+    )
+  }
+
+  @OnQueueCompleted()
+  onCompleted(job: Job) {
+    this.logger.debug(
+      `[RoundParticipant Timeout] (jobId=${job.id}) completed for mrp=${job.data?.matchRoundParticipantId}`
+    )
+  }
+
+  @OnQueueFailed()
+  onFailed(job: Job, err: any) {
+    this.logger.warn(
+      `[RoundParticipant Timeout] (jobId=${job?.id}) failed for mrp=${job?.data?.matchRoundParticipantId}: ${err?.message}`
     )
   }
 
