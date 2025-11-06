@@ -65,7 +65,14 @@ export const KAIWA_EVENTS = {
   // Server -> Client events
   USER_AUDIO_CHUNK: 'user-audio-chunk',
   TRANSCRIPTION: 'transcription',
+  PROCESSING: 'processing',
+  TEXT_RESPONSE: 'text-response',
+  TEXT_RESPONSE_UPDATE: 'text-response-update',
+  AUDIO_RESPONSE: 'audio-response',
+  HISTORY: 'history',
+  JOINED: 'joined',
   LEFT: 'left',
+  ERROR: 'error',
   ROOM_UPDATED: 'room-updated', // Emit khi room được tạo/cập nhật
   // Client -> Server events
   JOIN_KAIWA_ROOM: 'join-kaiwa-room',

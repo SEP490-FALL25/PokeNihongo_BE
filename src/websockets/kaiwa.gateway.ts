@@ -1,4 +1,3 @@
-// import { KAIWA_EVENTS, SOCKET_ROOM } from '@/common/constants/socket.constant'
 import { BullQueue } from '@/common/constants/bull-action.constant'
 import { InjectQueue } from '@nestjs/bull'
 import { Injectable, Logger } from '@nestjs/common'
@@ -17,6 +16,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import { SpeechToTextService } from '@/3rdService/speech/speech-to-text.service'
 import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
 import { KAIWA_EVENTS, SOCKET_ROOM } from '@/common/constants/socket.constant'
+import { Error as ErrorMessage } from '@/common/constants/message'
 import { UserAIConversationService } from '@/modules/user-ai-conversation/user-ai-conversation.service'
 import { AIConversationRoomService } from '@/modules/ai-conversation-room/ai-conversation-room.service'
 import { I18nService } from '@/i18n/i18n.service'
@@ -377,7 +377,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
 
             if (!userId) {
                 this.logger.warn(`[Kaiwa] [${requestId}] No userId found for client ${client.id}`)
-                client.emit('error', { message: 'Missing userId' })
+                client.emit(KAIWA_EVENTS.ERROR, { message: ErrorMessage.MISSING_USER_ID })
                 return
             }
 
@@ -393,11 +393,11 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             }
             client.data.processingAudio = true
 
-            // Kiểm tra Gemini API
+            // Kiểm tra Gemini API không 
             if (!this.genAI) {
-                client.emit('error', {
-                    message: 'Gemini API not initialized',
-                    suggestion: 'Please set GEMINI_API_KEY in .env file'
+                client.emit(KAIWA_EVENTS.ERROR, {
+                    message: ErrorMessage.GEMINI_API_NOT_INITIALIZED,
+                    suggestion: ErrorMessage.GEMINI_API_KEY_NOT_SET
                 })
                 return
             }
@@ -427,7 +427,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             this.logger.log(`[Kaiwa] [${requestId}] Received audio chunk: ${audioBuffer.length} bytes from user ${userId}, conversationId: ${client.data.conversationId}`)
 
             // Emit processing status
-            client.emit('processing', {
+            client.emit(KAIWA_EVENTS.PROCESSING, {
                 conversationId: client.data.conversationId,
                 status: 'speech-to-text',
                 message: 'Đang chuyển đổi âm thanh thành văn bản...'
@@ -445,7 +445,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                 })
 
                 const timeoutPromise = new Promise<never>((_, reject) => {
-                    setTimeout(() => reject(new Error('Speech-to-Text timeout sau 10 giây')), 10000)
+                    setTimeout(() => reject(new Error('Speech-to-Text timeout sau 20 giây')), 20000)
                 })
 
                 const speechResult = await Promise.race([speechPromise, timeoutPromise])
@@ -454,23 +454,23 @@ export class KaiwaGateway implements OnGatewayDisconnect {
 
                 if (!transcription || transcription.trim() === '') {
                     this.logger.warn(`[Kaiwa] Speech-to-Text returned empty transcript`)
-                    client.emit('error', {
-                        message: 'Không thể nhận diện giọng nói. Vui lòng thử lại.',
-                        suggestion: 'Hãy nói rõ ràng hơn hoặc kiểm tra microphone'
+                    client.emit(KAIWA_EVENTS.ERROR, {
+                        message: ErrorMessage.SPEECH_RECOGNITION_FAILED,
+                        suggestion: ErrorMessage.SPEECH_RECOGNITION_SUGGESTION
                     })
                     return
                 }
             } catch (speechError) {
                 this.logger.error(`[Kaiwa] Speech-to-Text error: ${speechError.message}`, speechError.stack)
-                client.emit('error', {
-                    message: `Lỗi chuyển đổi âm thanh: ${speechError.message}`,
-                    suggestion: 'Vui lòng kiểm tra microphone và thử lại'
+                client.emit(KAIWA_EVENTS.ERROR, {
+                    message: `${ErrorMessage.SPEECH_CONVERSION_ERROR}: ${speechError.message}`,
+                    suggestion: ErrorMessage.CHECK_MICROPHONE_SUGGESTION
                 })
                 return
             }
 
             // Emit transcription ngay lập tức
-            client.emit('transcription', {
+            client.emit(KAIWA_EVENTS.TRANSCRIPTION, {
                 conversationId: client.data.conversationId,
                 text: transcription,
                 timestamp: Date.now()
@@ -523,8 +523,14 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             })
             fullPrompt += `Người học: ${transcription}\nBạn:`
 
+            // Log prompt để debug
+            this.logger.debug(`[Kaiwa] [${requestId}] Full prompt length: ${fullPrompt.length}`)
+            this.logger.debug(`[Kaiwa] [${requestId}] Prompt preview: ${fullPrompt.substring(0, 200)}...`)
+            this.logger.debug(`[Kaiwa] [${requestId}] Conversation history length: ${conversationHistory.length}`)
+            this.logger.debug(`[Kaiwa] [${requestId}] Transcription: "${transcription}"`)
+
             // Emit processing status
-            client.emit('processing', {
+            client.emit(KAIWA_EVENTS.PROCESSING, {
                 conversationId: client.data.conversationId,
                 status: 'gemini-processing',
                 message: 'Đang xử lý với AI...'
@@ -541,16 +547,82 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                         temperature: 0.7,
                         topP: 0.95,
                         topK: 40,
-                        maxOutputTokens: 1024
-                    }
+                        maxOutputTokens: 2048 // Tăng từ 1024 lên 2048 để tránh bị cắt
+                    },
+                    safetySettings: [
+                        {
+                            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                            threshold: HarmBlockThreshold.BLOCK_NONE
+                        },
+                        {
+                            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                            threshold: HarmBlockThreshold.BLOCK_NONE
+                        },
+                        {
+                            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                            threshold: HarmBlockThreshold.BLOCK_NONE
+                        },
+                        {
+                            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                            threshold: HarmBlockThreshold.BLOCK_NONE
+                        }
+                    ]
                 })
                 const result = await model.generateContent(fullPrompt)
                 const response = await result.response
-                const text = response.text()
+
+                // Kiểm tra xem có bị block bởi safety filter không
+                let candidate: any = null
+                if (response.candidates && response.candidates.length > 0) {
+                    candidate = response.candidates[0]
+                    if (candidate.finishReason === 'SAFETY') {
+                        this.logger.warn(`[Kaiwa] Gemini response blocked by safety filter. Finish reason: ${candidate.finishReason}`)
+                        throw new Error('Response blocked by safety filter')
+                    }
+                    if (candidate.finishReason === 'MAX_TOKENS') {
+                        this.logger.warn(`[Kaiwa] Gemini response truncated due to MAX_TOKENS - will try to extract text from candidates`)
+                    }
+                } else {
+                    this.logger.warn(`[Kaiwa] Gemini response has no candidates`)
+                }
+
+                let text: string = ''
+                try {
+                    text = response.text()
+                } catch (textError) {
+                    this.logger.warn(`[Kaiwa] Error calling response.text(): ${textError.message} - will try to extract from candidates`)
+                }
+
+                // Nếu text vẫn empty hoặc khi MAX_TOKENS, thử lấy text từ candidates trực tiếp
+                if ((!text || text.trim() === '') && candidate) {
+                    if (candidate.content && candidate.content.parts) {
+                        text = candidate.content.parts
+                            .map((part: any) => {
+                                // Kiểm tra xem part có text không
+                                if (part.text) {
+                                    return part.text
+                                }
+                                // Hoặc có thể là object với text property
+                                if (typeof part === 'object' && part.text) {
+                                    return part.text
+                                }
+                                return ''
+                            })
+                            .filter((t: string) => t && t.trim().length > 0)
+                            .join('')
+
+                        if (text && text.trim().length > 0) {
+                            this.logger.log(`[Kaiwa] Successfully extracted text from candidates (${text.length} chars)`)
+                        }
+                    }
+                }
 
                 // Log full response để debug
                 this.logger.debug(`[Kaiwa] Gemini raw response: "${text}"`)
                 this.logger.debug(`[Kaiwa] Gemini response length: ${text?.length || 0}`)
+                if (response.candidates && response.candidates.length > 0) {
+                    this.logger.debug(`[Kaiwa] Gemini finish reason: ${response.candidates[0].finishReason}`)
+                }
 
                 // Fallback nếu Gemini trả về rỗng/không hợp lệ
                 const fallbackReply = 'すみません、もう一度お願いします。'
@@ -604,15 +676,15 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             } catch (geminiError) {
                 this.logger.error(`[Kaiwa] [${requestId}] Gemini API error: ${geminiError.message}`, geminiError.stack)
                 client.data.processingAudio = false
-                client.emit('error', {
-                    message: `Lỗi AI: ${geminiError.message}`,
-                    suggestion: 'Vui lòng kiểm tra GEMINI_API_KEY và thử lại'
+                client.emit(KAIWA_EVENTS.ERROR, {
+                    message: `${ErrorMessage.AI_ERROR}: ${geminiError.message}`,
+                    suggestion: ErrorMessage.CHECK_GEMINI_API_KEY_SUGGESTION
                 })
                 return
             }
 
             // Emit text response ngay lập tức (chỉ có Japanese)
-            client.emit('text-response', {
+            client.emit(KAIWA_EVENTS.TEXT_RESPONSE, {
                 conversationId: client.data.conversationId,
                 text: geminiResponse,
                 translation: '',
@@ -736,7 +808,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                         const translation = translateResponse.text().trim()
 
                         this.logger.log(`[Kaiwa] [${requestId}] Vietnamese translation: "${translation.substring(0, 100)}..."`)
-                        client.emit('text-response-update', {
+                        client.emit(KAIWA_EVENTS.TEXT_RESPONSE_UPDATE, {
                             conversationId: client.data.conversationId,
                             translation: translation
                         })
@@ -763,9 +835,9 @@ export class KaiwaGateway implements OnGatewayDisconnect {
 
                         if (!result || !result.audioContent || result.audioContent.length === 0) {
                             this.logger.error(`[Kaiwa] [${requestId}] TTS returned empty audio content`)
-                            client.emit('error', {
-                                message: 'Không thể tạo audio response',
-                                suggestion: 'Text response đã được gửi, nhưng audio không khả dụng'
+                            client.emit(KAIWA_EVENTS.ERROR, {
+                                message: ErrorMessage.AUDIO_RESPONSE_FAILED,
+                                suggestion: ErrorMessage.AUDIO_NOT_AVAILABLE_SUGGESTION
                             })
                             client.data.processingAudio = false
                             return
@@ -773,7 +845,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
 
                         const audioBase64 = result.audioContent.toString('base64')
                         this.logger.log(`[Kaiwa] [${requestId}] Text-to-Speech completed: ${result.audioContent.length} bytes`)
-                        client.emit('audio-response', {
+                        client.emit(KAIWA_EVENTS.AUDIO_RESPONSE, {
                             conversationId: client.data.conversationId,
                             audio: audioBase64,
                             audioFormat: 'ogg', // Đổi từ mp3 sang ogg (OGG_OPUS)
@@ -791,9 +863,9 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                     } catch (ttsError) {
                         this.logger.error(`[Kaiwa] [${requestId}] Text-to-Speech error: ${ttsError.message}`, ttsError.stack)
                         client.data.processingAudio = false
-                        client.emit('error', {
-                            message: 'Không thể tạo audio response',
-                            suggestion: 'Text response đã được gửi, nhưng audio không khả dụng'
+                        client.emit(KAIWA_EVENTS.ERROR, {
+                            message: ErrorMessage.AUDIO_RESPONSE_FAILED,
+                            suggestion: ErrorMessage.AUDIO_NOT_AVAILABLE_SUGGESTION
                         })
                     }
                 })().catch(err => {
@@ -809,7 +881,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             if (client.data) {
                 client.data.processingAudio = false
             }
-            client.emit('error', { message: `Failed to process audio: ${error.message}` })
+            client.emit(KAIWA_EVENTS.ERROR, { message: `${ErrorMessage.PROCESS_AUDIO_FAILED}: ${error.message}` })
         }
     }
 
@@ -827,7 +899,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             this.logger.warn(
                 `[KaiwaGateway] Client ${client.id} missing userId in socket.data; unauthorized`
             )
-            client.emit('error', { message: 'Missing userId' })
+            client.emit(KAIWA_EVENTS.ERROR, { message: ErrorMessage.MISSING_USER_ID })
             return
         }
 
@@ -859,7 +931,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                         client.data.conversationHistory = history
 
                         // Emit history về FE để render ngay
-                        client.emit('history', {
+                        client.emit(KAIWA_EVENTS.HISTORY, {
                             conversationId: incomingConvId,
                             messages: messages.map(m => ({
                                 role: m.role,
@@ -954,7 +1026,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             })
 
         // Emit joined event
-        client.emit('joined', {
+        client.emit(KAIWA_EVENTS.JOINED, {
             conversationId: conversationId,
             roomName,
             userId
@@ -965,12 +1037,12 @@ export class KaiwaGateway implements OnGatewayDisconnect {
     /**
      * Leave kaiwa room: rời phòng, dọn state và gửi ACK
      */
-    @SubscribeMessage('LEAVE_KAIWA_ROOM')
+    @SubscribeMessage(KAIWA_EVENTS.LEAVE_KAIWA_ROOM)
     handleLeaveSearchingRoom(@ConnectedSocket() client: Socket): void {
         try {
             const userId = client.data?.userId
             if (!userId) {
-                client.emit('error', { message: 'Missing userId' })
+                client.emit(KAIWA_EVENTS.ERROR, { message: ErrorMessage.MISSING_USER_ID })
                 return
             }
 
@@ -987,14 +1059,14 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             this.logger.log(`[Kaiwa] User ${userId} left room ${roomName} and state was cleared`)
 
             // ACK back to client
-            client.emit('left', {
+            client.emit(KAIWA_EVENTS.LEFT, {
                 roomName,
                 userId,
                 timestamp: Date.now()
             })
         } catch (error) {
             this.logger.error(`[Kaiwa] Error handling leave: ${error.message}`)
-            client.emit('error', { message: 'Failed to leave room' })
+            client.emit(KAIWA_EVENTS.ERROR, { message: ErrorMessage.LEAVE_ROOM_FAILED })
         }
     }
 
