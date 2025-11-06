@@ -48,3 +48,10 @@ export interface ChatWithGeminiResponse {
     message: string // Response từ AI (text)
     modelUsed: string // Tên model đã sử dụng
 }
+
+export interface TestNativeAudioDialogResponse {
+    conversationId: string
+    message?: string // Response text từ AI (nếu có)
+    audioResponse?: Buffer | string // Audio response từ AI (nếu có)
+    rawResponse?: any // Raw response từ API để debug
+}

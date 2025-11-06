@@ -8,11 +8,24 @@ export interface SpeechConfig {
 }
 
 export const createSpeechClient = (configService: ConfigService): SpeechClient => {
-    const credentials = configService.get<string>('GOOGLE_CLOUD_CREDENTIALS')
+    // Try Service Account credentials from .env first (same format as TextToSpeechService)
+    const clientEmail = configService.get<string>('GOOGLE_CLOUD_CLIENT_EMAIL')
+    const privateKey = configService.get<string>('GOOGLE_CLOUD_PRIVATE_KEY')
     const projectId = configService.get<string>('GOOGLE_CLOUD_PROJECT_ID')
-    const credentialsPath = configService.get<string>('GOOGLE_APPLICATION_CREDENTIALS')
-    const useDefaultCredentials = configService.get<boolean>('GOOGLE_USE_DEFAULT_CREDENTIALS', true)
 
+    if (clientEmail && privateKey && projectId) {
+        return new SpeechClient({
+            credentials: {
+                client_email: clientEmail,
+                private_key: privateKey.replace(/\\n/g, '\n'),
+                project_id: projectId
+            },
+            projectId: projectId
+        })
+    }
+
+    // Fallback to JSON credentials
+    const credentials = configService.get<string>('GOOGLE_CLOUD_CREDENTIALS')
     if (credentials) {
         try {
             const credentialsObj = JSON.parse(credentials)
@@ -23,12 +36,24 @@ export const createSpeechClient = (configService: ConfigService): SpeechClient =
         } catch (error) {
             throw new Error('Invalid Google Cloud credentials format')
         }
-    } else if (useDefaultCredentials) {
-        // Use default credentials (service account key file or metadata server)
-        return new SpeechClient()
-    } else {
-        throw new Error('Google Cloud credentials not configured')
     }
+
+    // Fallback to credentials file path
+    const credentialsPath = configService.get<string>('GOOGLE_APPLICATION_CREDENTIALS')
+    if (credentialsPath) {
+        return new SpeechClient({
+            keyFilename: credentialsPath,
+            projectId: projectId
+        })
+    }
+
+    // Last resort: use default credentials (will fail if not available)
+    const useDefaultCredentials = configService.get<boolean>('GOOGLE_USE_DEFAULT_CREDENTIALS', false)
+    if (useDefaultCredentials) {
+        return new SpeechClient()
+    }
+
+    throw new Error('Google Cloud credentials not configured. Please set GOOGLE_CLOUD_CLIENT_EMAIL, GOOGLE_CLOUD_PRIVATE_KEY, and GOOGLE_CLOUD_PROJECT_ID in .env')
 }
 
 export const SPEECH_CONFIG = {

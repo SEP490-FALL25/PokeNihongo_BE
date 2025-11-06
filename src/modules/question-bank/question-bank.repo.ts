@@ -136,7 +136,6 @@ export class QuestionBankRepository {
             include: {
                 answers: true,
                 userAnswerLogs: true,
-                userSpeakingAttempts: true,
                 testSetQuestionBanks: {
                     include: {
                         testSet: {
