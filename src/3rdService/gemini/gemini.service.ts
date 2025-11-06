@@ -9,8 +9,8 @@ import { SpeechToTextService } from '../speech/speech-to-text.service'
 import { UploadService } from '../upload/upload.service'
 import { SpeakingService } from '@/modules/speaking/speaking.service'
 import { DataAccessService } from '@/shared/services/data-access.service'
-import { EvaluateSpeakingDto, AIKaiwaDto, ChatWithGeminiDto } from './dto/gemini.dto'
-import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse } from './dto/gemini.response.dto'
+import { EvaluateSpeakingDto, AIKaiwaDto, ChatWithGeminiDto, TestNativeAudioDialogDto } from './dto/gemini.dto'
+import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse, TestNativeAudioDialogResponse } from './dto/gemini.response.dto'
 import { v4 as uuidv4 } from 'uuid'
 import axios from 'axios'
 import { GEMINI_DEFAULT_CONFIGS } from './config/gemini-default-configs'
@@ -238,24 +238,7 @@ export class GeminiService {
             // Parse response từ Gemini
             const evaluation = this.parseSpeakingEvaluationResponse(text)
 
-            // Lưu kết quả vào UserSpeakingAttempt
-            await this.prisma.userSpeakingAttempt.create({
-                data: {
-                    userId,
-                    questionBankId,
-                    userAudioUrl: data.audioUrl,
-                    userTranscription: data.transcription || data.text,
-                    confidence: null, // Có thể lấy từ Speech-to-Text service
-                    accuracy: evaluation.accuracy,
-                    pronunciation: evaluation.pronunciation,
-                    fluency: evaluation.fluency,
-                    overallScore: evaluation.overallScore,
-                    googleApiResponse: {
-                        feedback: evaluation.feedback,
-                        suggestions: evaluation.suggestions
-                    } as any
-                }
-            })
+            // ĐÃ GỠ: Không còn lưu UserSpeakingAttempt vì model đã bị xoá
 
             this.logger.log(`Speaking evaluation completed for user ${userId}`)
 
@@ -1067,6 +1050,133 @@ export class GeminiService {
             }
 
             throw new BadRequestException('Không thể chat với Gemini: ' + (error instanceof Error ? error.message : String(error)))
+        }
+    }
+
+    /**
+     * Test model gemini-2.5-flash-native-audio-dialog
+     * Hàm cơ bản để test model native audio dialog
+     */
+    async testNativeAudioDialog(
+        userId: number,
+        data: TestNativeAudioDialogDto
+    ): Promise<TestNativeAudioDialogResponse> {
+        try {
+            this.logger.log(`Testing native audio dialog model for user ${userId}`)
+
+            // NOTE: native-audio-dialog không hỗ trợ qua REST generateContent (404)
+            // Dùng model hỗ trợ audio understanding qua REST để test nhanh
+            const modelName = 'gemini-2.5-flash'
+
+            // Validate input: phải có message hoặc audioUrl
+            if (!data.message && !data.audioUrl) {
+                throw new BadRequestException('Phải có message hoặc audioUrl')
+            }
+
+            // Generate hoặc dùng conversationId có sẵn
+            const conversationId = data.conversationId || `audio_dialog_${userId}_${Date.now()}_${uuidv4().substring(0, 8)}`
+
+            // Gọi Gemini API - chọn API key dựa trên model (Flash model)
+            const genAI = this.getGenAIForModel(modelName)
+            const model = genAI.getGenerativeModel({ model: modelName })
+
+            // Chuẩn bị input
+            let inputParts: any[] = []
+
+            if (data.audioUrl) {
+                // Nếu có audioUrl, download audio và convert sang format phù hợp
+                try {
+                    const audioResponse = await axios.get(data.audioUrl, {
+                        responseType: 'arraybuffer'
+                    })
+                    const audioBuffer = Buffer.from(audioResponse.data)
+
+                    // Convert audio buffer thành base64 hoặc format phù hợp với Gemini API
+                    // Model native audio dialog có thể nhận audio trực tiếp
+                    const audioBase64 = audioBuffer.toString('base64')
+
+                    inputParts.push({
+                        inlineData: {
+                            mimeType: 'audio/mpeg', // Hoặc detect từ file
+                            data: audioBase64
+                        }
+                    })
+
+                    this.logger.log(`Added audio input from URL: ${data.audioUrl}`)
+                } catch (audioError) {
+                    this.logger.error('Failed to download/process audio:', audioError)
+                    throw new BadRequestException('Không thể xử lý audio file: ' + (audioError instanceof Error ? audioError.message : String(audioError)))
+                }
+            }
+
+            if (data.message) {
+                // Nếu có message, thêm text input
+                inputParts.push({ text: data.message })
+                this.logger.log(`Added text input: ${data.message}`)
+            }
+
+            // Gọi API với input parts
+            this.logger.log(`Calling ${modelName} with ${inputParts.length} input parts`)
+            const result = await model.generateContent(inputParts)
+            const response = await result.response
+
+            if (!response) {
+                throw new Error('Empty response from Gemini API')
+            }
+
+            // Lấy text response nếu có
+            let message: string | undefined = undefined
+            try {
+                const text = response.text()
+                if (text && text.trim() !== '') {
+                    message = text
+                }
+            } catch (textError) {
+                this.logger.warn('No text response available:', textError)
+            }
+
+            // Lấy audio response nếu có (đa số REST models chỉ trả text; audio out cần Realtime API hoặc TTS)
+            let audioResponse: Buffer | string | undefined = undefined
+            try {
+                // Kiểm tra xem response có audio parts không
+                const candidates = response.candidates?.[0]
+                if (candidates?.content?.parts) {
+                    for (const part of candidates.content.parts) {
+                        if (part.inlineData?.mimeType?.startsWith('audio/')) {
+                            // Nếu có audio response
+                            const audioData = part.inlineData.data
+                            if (audioData) {
+                                audioResponse = Buffer.from(audioData, 'base64')
+                                this.logger.log(`Received audio response from model`)
+                                break
+                            }
+                        }
+                    }
+                }
+            } catch (audioError) {
+                this.logger.warn('No audio response available:', audioError)
+            }
+
+            this.logger.log(`Native audio dialog test completed for user ${userId}, conversationId: ${conversationId}`)
+
+            return {
+                conversationId,
+                message,
+                audioResponse,
+                rawResponse: response // Để debug
+            }
+        } catch (error) {
+            this.logger.error('Error testing native audio dialog:', error)
+            if (error instanceof BadRequestException) {
+                throw error
+            }
+
+            // Kiểm tra nếu là lỗi 403 Forbidden (API key issue)
+            if (error && typeof error === 'object' && 'status' in error && error.status === 403) {
+                throw new BadRequestException('Lỗi xác thực API key. Vui lòng kiểm tra GEMINI_API_KEY hoặc GEMINI_FLASH_API_KEY trong file .env')
+            }
+
+            throw new BadRequestException('Không thể test native audio dialog: ' + (error instanceof Error ? error.message : String(error)))
         }
     }
 

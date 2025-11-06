@@ -30,7 +30,7 @@ export class WebsocketAdapter extends IoAdapter {
     this.ioServer = server
     this.socketServerService.server = server
     const authMiddleware = (socket: Socket, next: (err?: any) => void): void => {
-      ;(async () => {
+      ; (async () => {
         try {
           const { authorization } = socket.handshake.auth
           if (!authorization) throw MissingTokenException
@@ -77,9 +77,9 @@ export class WebsocketAdapter extends IoAdapter {
       })()
     }
 
-    ;['/', '/matching'].forEach((namespace) => {
-      server.of(namespace).use(authMiddleware)
-    })
+      ;['/', '/matching', '/kaiwa'].forEach((namespace) => {
+        server.of(namespace).use(authMiddleware)
+      })
     return server
   }
 }
