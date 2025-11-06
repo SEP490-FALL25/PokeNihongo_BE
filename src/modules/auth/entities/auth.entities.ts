@@ -195,6 +195,20 @@ export const ChangePasswordBodySchema = z
     }
   })
 
+export const UpdateLevelJLPTBodySchema = z
+  .object({
+    levelJLPT: z.number().min(3).max(5)
+  })
+  .strict()
+
+export const UpdateLevelJLPTResSchema = z
+  .object({
+    data: UserSchema.omit({ password: true }),
+    message: z.string(),
+    statusCode: z.number()
+  })
+  .strict()
+
 export const UpdateMeBodySchema = z
   .object({
     name: z.string().trim().min(2).max(256).optional(),

@@ -1,6 +1,6 @@
 import { MailService } from '@/3rdService/mail/mail.service'
 import { I18nService } from '@/i18n/i18n.service'
-import { ENTITY_MESSAGE, UserMessage } from '@/i18n/message-keys'
+import { AuthMessage, ENTITY_MESSAGE, UserMessage } from '@/i18n/message-keys'
 import { LevelRepo } from '@/modules/level/level.repo'
 import { UserPokemonRepo } from '@/modules/user-pokemon/user-pokemon.repo'
 import { NotFoundRecordException } from '@/shared/error'
@@ -11,6 +11,7 @@ import {
   isUniqueConstraintPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { UserStatus } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
@@ -37,6 +38,7 @@ export class UserService {
     private i18nService: I18nService,
     private levelRepo: LevelRepo,
     private walletSer: WalletService,
+    private readonly sharedUserRepository: SharedUserRepository,
     private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
     private readonly matchRepo: MatchRepo,
     private readonly userSeaHistoryRepo: UserSeasonHistoryRepo,
@@ -529,6 +531,30 @@ export class UserService {
       statusCode: HttpStatus.OK,
       data: convertMatchHisInfo,
       message: this.i18nService.translate(ENTITY_MESSAGE.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  async updateLevelJLPT(
+    { userId, data }: { userId: number; data: { levelJLPT: number } },
+    lang: string = 'vi'
+  ) {
+    const user = await this.sharedUserRepository.findUnique({
+      id: userId
+    })
+    if (!user) {
+      throw new NotFoundRecordException()
+    }
+    const updatedUser = await this.sharedUserRepository.update(
+      { id: userId },
+      {
+        levelJLPT: data.levelJLPT,
+        updatedById: userId
+      }
+    )
+    return {
+      statusCode: 200,
+      data: updatedUser,
+      message: this.i18nService.translate(AuthMessage.UPDATE_LEVEL_JLPT_SUCCESS, lang)
     }
   }
 }
