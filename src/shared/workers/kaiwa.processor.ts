@@ -4,6 +4,7 @@ import { Job } from 'bull'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { SpeechToTextService } from '@/3rdService/speech/speech-to-text.service'
 import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
+import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 
 export interface KaiwaJobData {
     conversationId: string
@@ -21,7 +22,7 @@ export interface KaiwaJobResult {
     error?: string
 }
 
-@Processor('kaiwa-processor')
+@Processor(BullQueue.KAIWA_PROCESSOR)
 export class KaiwaProcessor {
     private readonly logger = new Logger(KaiwaProcessor.name)
     private genAI: GoogleGenerativeAI | null = null
@@ -41,7 +42,7 @@ export class KaiwaProcessor {
         }
     }
 
-    @Process('process-audio')
+    @Process(BullQueue.PROCESS_AUDIO)
     async processAudio(job: Job<KaiwaJobData>): Promise<KaiwaJobResult> {
         const { conversationId, userId, audioBuffer, conversationHistory } = job.data
         this.logger.log(`[KaiwaProcessor] Processing audio for conversation ${conversationId}`)

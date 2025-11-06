@@ -10,7 +10,9 @@ import { SpeechToTextService } from '@/3rdService/speech/speech-to-text.service'
 import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
 import { UploadModule } from '@/3rdService/upload/upload.module'
 import { SpeechModule } from '@/3rdService/speech/speech.module'
-import { KaiwaProcessor } from './workers/kaiwa.processor'
+import { KaiwaProcessor } from '../shared/workers/kaiwa.processor'
+import { UserAIConversationModule } from '@/modules/user-ai-conversation/user-ai-conversation.module'
+import { AIConversationRoomModule } from '@/modules/ai-conversation-room/ai-conversation-room.module'
 
 @Module({
   imports: [
@@ -32,7 +34,9 @@ import { KaiwaProcessor } from './workers/kaiwa.processor'
     }),
     ConfigModule, // Cần để inject ConfigService
     UploadModule, // Cần cho TextToSpeechService
-    SpeechModule // Cần cho SpeechToTextService và TextToSpeechService
+    SpeechModule, // Cần cho SpeechToTextService và TextToSpeechService
+    UserAIConversationModule, // Cần để lưu conversation vào database
+    AIConversationRoomModule // Cần để quản lý phòng hội thoại
   ],
   providers: [
     WebsocketsService,
