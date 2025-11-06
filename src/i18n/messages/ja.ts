@@ -528,5 +528,16 @@ export const jaMessages = {
     NOT_FOUND: 'デバフラウンドが見つかりません',
     ALREADY_EXISTS: 'デバフラウンドは既に存在します',
     INVALID_DATA: '無効なデバフラウンドデータです'
+  },
+  user_season_history: {
+    CREATE_SUCCESS: 'ユーザーシーズン履歴の作成に成功しました',
+    UPDATE_SUCCESS: 'ユーザーシーズン履歴の更新に成功しました',
+    DELETE_SUCCESS: 'ユーザーシーズン履歴の削除に成功しました',
+
+    GET_SUCCESS: 'ユーザーシーズン履歴情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ユーザーシーズン履歴リストの取得に成功しました',
+    NOT_FOUND: 'ユーザーシーズン履歴が見つかりません',
+    ALREADY_EXISTS: 'ユーザーシーズン履歴は既に存在します',
+    INVALID_DATA: '無効なユーザーシーズン履歴データです'
   }
 }

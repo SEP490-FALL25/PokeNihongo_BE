@@ -700,13 +700,13 @@ model QuestionBank {
   audioUrl     String?      @db.VarChar(1000) // URL file âm thanh
   questionKey  String?      @db.VarChar(200) // Key để dịch câu hỏi
 
-  role          RoleSpeaking?
+  role RoleSpeaking?
 
-  pronunciation String?       @db.VarChar(1000) // Phiên âm (romaji)
-  levelN        Int?          @default(1) // Độ khó (1-5)
+  pronunciation String? @db.VarChar(1000) // Phiên âm (romaji)
+  levelN        Int?    @default(1) // Độ khó (1-5)
   // Audit fields
-  createdById Int?
-  createdBy   User? @relation("QuestionBankCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdById   Int?
+  createdBy     User?   @relation("QuestionBankCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   createdAt DateTime @default(now()) @db.Timestamp(3)
   updatedAt DateTime @updatedAt @db.Timestamp(3)
@@ -1736,7 +1736,6 @@ model LeaderboardSeason {
   endDate   DateTime
   isActive  Boolean  @default(true) // Mùa giải đang diễn ra
 
-  ranks   Rank[] // Các bậc rank trong mùa này
   matches Match[] // Các trận đấu trong mùa này
 
   // --- THÊM MỚI ---
@@ -1759,25 +1758,6 @@ model LeaderboardSeason {
   deletedAt DateTime?
 
   @@index([isActive])
-}
-
-model Rank {
-  id Int @id @default(autoincrement())
-
-  seasonId Int
-  season   LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-
-  name    String // "N5", "N4", "N3"
-  minElo  Int // 0, 1001, 2001
-  maxElo  Int? // 1000, 2000, 3000 (hoặc null cho rank cao nhất)
-  iconUrl String?
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  @@unique([seasonId, name])
-  @@index([seasonId, minElo])
 }
 
 model UserSeasonHistory {
