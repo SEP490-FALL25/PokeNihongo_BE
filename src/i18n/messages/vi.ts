@@ -45,7 +45,8 @@ export const viMessages = {
     NOT_FOUND_RECORD: 'Không tìm thấy bản ghi',
     PASSWORD_MUST_BE_MATCH: 'Mật khẩu phải khớp với nhau',
     MISSING_TOKEN: 'Thiếu token xác thực',
-    INVALID_TOKEN: 'Token xác thực không hợp lệ'
+    INVALID_TOKEN: 'Token xác thực không hợp lệ',
+    UPDATE_LEVEL_JLPT_SUCCESS: 'Cập nhật cấp độ JLPT thành công'
   },
   reward: {
     CREATE_SUCCESS: 'Tạo phần thưởng thành công',

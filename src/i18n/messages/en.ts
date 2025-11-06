@@ -46,7 +46,8 @@ export const enMessages = {
     NOT_FOUND_RECORD: 'Record not found',
     PASSWORD_MUST_BE_MATCH: 'Password must match',
     MISSING_TOKEN: 'Missing authentication token',
-    INVALID_TOKEN: 'Invalid authentication token'
+    INVALID_TOKEN: 'Invalid authentication token',
+    UPDATE_LEVEL_JLPT_SUCCESS: 'JLPT level updated successfully'
   },
   reward: {
     CREATE_SUCCESS: 'Reward created successfully',

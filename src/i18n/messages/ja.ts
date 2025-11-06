@@ -46,7 +46,8 @@ export const jaMessages = {
     NOT_FOUND_RECORD: 'レコードが見つかりません',
     PASSWORD_MUST_BE_MATCH: 'パスワードは一致している必要があります',
     MISSING_TOKEN: '認証トークンが見つかりません',
-    INVALID_TOKEN: '無効な認証トークンです'
+    INVALID_TOKEN: '無効な認証トークンです',
+    UPDATE_LEVEL_JLPT_SUCCESS: 'JLPTレベルの更新が完了しました'
   },
   reward: {
     CREATE_SUCCESS: '報酬の作成が完了しました',
