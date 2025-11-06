@@ -20,6 +20,7 @@ model User {
   freeCoins    Int        @default(0)
   exp          Int        @default(0)
   eloscore     Int        @default(0)
+  levelJLPT    Int? // Cấp độ JLPT của user (3, 4, 5)
   roleId       Int
   role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   levelId      Int?
@@ -124,19 +125,19 @@ model User {
   userTests            UserTest[]            @relation("UserTests")
   userTestAttempts     UserTestAttempt[]     @relation("UserTestAttempts")
 
-  userAIConversations  UserAIConversation[]
-  userProgresses       UserProgress[]
-  attendances          Attendance[]
-  Wallet               Wallet[]
-  WalletTransaction    WalletTransaction[]
-  shopPurchases        ShopPurchase[]
-  gachaPurchases       GachaPurchase[]
-  gachaRollHistories   GachaRollHistory[]
-  userGachaPity        UserGachaPity[]
-  matchmakingQueue     MatchQueue?
-  matchWins            Match[]               @relation("WonMatches")
-  matchParticipants    MatchParticipant[]
-  userSeasonHistories  UserSeasonHistory[]
+  userAIConversations UserAIConversation[]
+  userProgresses      UserProgress[]
+  attendances         Attendance[]
+  Wallet              Wallet[]
+  WalletTransaction   WalletTransaction[]
+  shopPurchases       ShopPurchase[]
+  gachaPurchases      GachaPurchase[]
+  gachaRollHistories  GachaRollHistory[]
+  userGachaPity       UserGachaPity[]
+  matchmakingQueue    MatchQueue?
+  matchWins           Match[]              @relation("WonMatches")
+  matchParticipants   MatchParticipant[]
+  userSeasonHistories UserSeasonHistory[]
 
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -718,8 +719,6 @@ model QuestionBank {
 
   // Quan hệ với UserTestAnswerLog
   userTestAnswerLogs UserTestAnswerLog[] @relation("QuestionBankUserTestAnswerLogs")
-
-
 
   // Quan hệ với TestSetQuestionBank (bảng nối)
   testSetQuestionBanks TestSetQuestionBank[]

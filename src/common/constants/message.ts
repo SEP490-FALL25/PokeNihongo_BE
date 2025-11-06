@@ -42,10 +42,14 @@ export const TEST_SET_MESSAGE = {
   PRICE_INVALID: 'Giá bộ đề không hợp lệ',
   LEVEL_INVALID: 'Cấp độ JLPT không hợp lệ (1-5)',
   PERMISSION_DENIED: 'Bạn không có quyền thực hiện hành động này',
-  CANNOT_CHANGE_TEST_TYPE_GENERAL_MULTIPLE: 'Không thể thay đổi testType từ GENERAL sang loại khác khi testSet đang chứa nhiều loại câu hỏi khác nhau',
-  CANNOT_CHANGE_TEST_TYPE_SPECIFIC: 'Không thể thay đổi testType. Chỉ có thể thay đổi thành cùng type hoặc GENERAL',
-  CANNOT_CHANGE_TEST_TYPE_GENERAL_SINGLE: 'Không thể thay đổi testType từ GENERAL sang type khác. TestSet hiện đang chứa câu hỏi loại',
-  CANNOT_CHANGE_LEVELN_HAS_QUESTIONS: 'Không thể thay đổi levelN khi testSet đã có câu hỏi, trừ khi testType là GENERAL'
+  CANNOT_CHANGE_TEST_TYPE_GENERAL_MULTIPLE:
+    'Không thể thay đổi testType từ GENERAL sang loại khác khi testSet đang chứa nhiều loại câu hỏi khác nhau',
+  CANNOT_CHANGE_TEST_TYPE_SPECIFIC:
+    'Không thể thay đổi testType. Chỉ có thể thay đổi thành cùng type hoặc GENERAL',
+  CANNOT_CHANGE_TEST_TYPE_GENERAL_SINGLE:
+    'Không thể thay đổi testType từ GENERAL sang type khác. TestSet hiện đang chứa câu hỏi loại',
+  CANNOT_CHANGE_LEVELN_HAS_QUESTIONS:
+    'Không thể thay đổi levelN khi testSet đã có câu hỏi, trừ khi testType là GENERAL'
 }
 
 export const TEST_MESSAGE = {
@@ -97,8 +101,10 @@ export const TEST_SET_QUESTIONBANK_MESSAGE = {
   NOT_FOUND: 'Không tìm thấy TestSetQuestionBank',
   ALREADY_EXISTS: 'TestSetQuestionBank đã tồn tại',
   INVALID_DATA: 'Dữ liệu TestSetQuestionBank không hợp lệ',
-  TYPE_INCOMPATIBLE: 'Loại TestSet và QuestionBank không tương thích. Chỉ có thể liên kết khi TestSet có loại GENERAL hoặc khớp với loại QuestionBank',
-  INVALID_TYPE_DATA: 'Dữ liệu không hợp lệ: TestSet loại "{testsetType}" hoặc QuestionBank loại "{questionType}" không tồn tại',
+  TYPE_INCOMPATIBLE:
+    'Loại TestSet và QuestionBank không tương thích. Chỉ có thể liên kết khi TestSet có loại GENERAL hoặc khớp với loại QuestionBank',
+  INVALID_TYPE_DATA:
+    'Dữ liệu không hợp lệ: TestSet loại "{testsetType}" hoặc QuestionBank loại "{questionType}" không tồn tại',
   UPDATE_QUESTION_ORDER_SUCCESS: 'Cập nhật thứ tự câu hỏi thành công',
   DELETE_BY_TESTSET_SUCCESS: 'Xóa TestSetQuestionBank theo TestSet thành công',
   DELETE_BY_QUESTIONBANK_SUCCESS: 'Xóa TestSetQuestionBank theo QuestionBank thành công'
@@ -379,7 +385,8 @@ export const USER_EXERCISE_ATTEMPT_MESSAGE = {
   ALREADY_EXISTS: 'Lần thử bài tập đã tồn tại',
   INVALID_DATA: 'Dữ liệu lần thử bài tập không hợp lệ',
   EXERCISE_NOT_FOUND: 'Không tìm thấy bài tập',
-  LESSON_BLOCKED: 'Bạn đang học lesson khác. Chỉ có thể làm bài tập trong lesson hiện tại',
+  LESSON_BLOCKED:
+    'Bạn đang học lesson khác. Chỉ có thể làm bài tập trong lesson hiện tại',
   EXERCISE_COMPLETED: 'Bài tập đã hoàn thành',
   EXERCISE_ABANDONED: 'Bài tập đã bị bỏ dở',
   CHECK_COMPLETION_SUCCESS: 'Kiểm tra trạng thái hoàn thành thành công',

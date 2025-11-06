@@ -38,22 +38,24 @@ export const GetMatchRoundDetailForUserResSchema = z.object({
   match: MatchSchema.pick({
     id: true,
     status: true
-  }).extend({
-    participants: z.array(
-      MatchParticipantSchema.pick({
-        id: true,
-        userId: true
-      }).extend({
-        user: UserSchema.pick({
+  })
+    .extend({
+      participants: z.array(
+        MatchParticipantSchema.pick({
           id: true,
-          name: true,
-          email: true,
-          eloscore: true,
-          avatar: true
+          userId: true
+        }).extend({
+          user: UserSchema.pick({
+            id: true,
+            name: true,
+            email: true,
+            eloscore: true,
+            avatar: true
+          })
         })
-      })
-    )
-  }),
+      )
+    })
+    .nullable(),
   rounds: z.array(
     MatchRoundSchema.pick({
       id: true,

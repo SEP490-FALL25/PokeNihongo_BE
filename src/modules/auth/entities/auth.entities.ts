@@ -69,6 +69,8 @@ export const LoginResSchema = z
         name: true,
         email: true,
         status: true,
+        levelJLPT: true,
+        eloscore: true,
         phoneNumber: true,
         exp: true,
         roleId: true,
@@ -223,7 +225,8 @@ export const GetAccountProfileResSchema = z
           nextLevel: LevelSchema.omit({ nextLevelId: true, rewardId: true }).nullable()
         })
         .nullable(),
-      pokemonCount: z.number()
+      pokemonCount: z.number(),
+      rankName: z.string()
     }),
     message: z.string()
   })

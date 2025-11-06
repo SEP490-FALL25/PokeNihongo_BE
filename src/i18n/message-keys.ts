@@ -175,7 +175,8 @@ export const UserPokemonMessage = {
   SET_MAIN_POKEMON_SUCCESS: 'user_pokemon.SET_MAIN_POKEMON_SUCCESS',
   EVOLVE_SUCCESS: 'user_pokemon.EVOLVE_SUCCESS',
   ADD_EXP_SUCCESS: 'user_pokemon.ADD_EXP_SUCCESS',
-  LEVEL_UP_SUCCESS: 'user_pokemon.LEVEL_UP_SUCCESS'
+  LEVEL_UP_SUCCESS: 'user_pokemon.LEVEL_UP_SUCCESS',
+  USER_NOT_IN_ROUND: 'user_pokemon.USER_NOT_IN_ROUND'
 } as const
 
 export const UserMessage = {
