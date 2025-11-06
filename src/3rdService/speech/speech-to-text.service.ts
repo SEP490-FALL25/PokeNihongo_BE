@@ -21,7 +21,7 @@ export interface SpeechToTextOptions {
 @Injectable()
 export class SpeechToTextService {
     private readonly logger = new Logger(SpeechToTextService.name)
-    private speechClient: SpeechClient
+    private speechClient: SpeechClient | null
 
     constructor(private readonly configService: ConfigService) {
         try {
@@ -29,7 +29,9 @@ export class SpeechToTextService {
             this.logger.log('Google Cloud Speech-to-Text client initialized successfully')
         } catch (error) {
             this.logger.error('Failed to initialize Google Cloud Speech client:', error)
-            throw error
+            this.logger.warn('Speech-to-Text service will not be available. Please check GOOGLE_CLOUD_CLIENT_EMAIL, GOOGLE_CLOUD_PRIVATE_KEY, and GOOGLE_CLOUD_PROJECT_ID in .env')
+            // Don't throw error - allow service to be created but mark client as null
+            this.speechClient = null
         }
     }
 
@@ -40,6 +42,10 @@ export class SpeechToTextService {
         audioBuffer: Buffer,
         options: SpeechToTextOptions = {}
     ): Promise<SpeechToTextResult> {
+        if (!this.speechClient) {
+            throw new Error('Speech-to-Text client not initialized. Please check Google Cloud credentials in .env')
+        }
+
         try {
             const startTime = Date.now()
 
@@ -118,7 +124,16 @@ export class SpeechToTextService {
         audioStream: NodeJS.ReadableStream,
         options: SpeechToTextOptions = {}
     ): Promise<SpeechToTextResult> {
+        if (!this.speechClient) {
+            throw new Error('Speech-to-Text client not initialized. Please check Google Cloud credentials in .env')
+        }
+
         return new Promise((resolve, reject) => {
+            if (!this.speechClient) {
+                reject(new Error('Speech-to-Text client not initialized. Please check Google Cloud credentials in .env'))
+                return
+            }
+
             try {
                 const config = {
                     encoding: options.encoding || 'LINEAR16',

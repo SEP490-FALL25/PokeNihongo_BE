@@ -27,7 +27,6 @@ export const QuestionBankWithCountSchema = QuestionBankSchema.extend({
     _count: z.object({
         answers: z.number(),
         userAnswerLogs: z.number(),
-        userSpeakingAttempts: z.number(),
         testSetQuestionBanks: z.number()
     }),
     meaning: z.string().nullable().optional()

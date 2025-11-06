@@ -230,3 +230,33 @@ export class UpdateRecommendationStatusDto {
   @IsString()
   status: 'DONE' | 'DISMISSED'
 }
+
+// DTO cho test native audio dialog model
+export class TestNativeAudioDialogDto {
+  @ApiProperty({
+    example: 'https://example.com/audio/user-audio.mp3',
+    description: 'URL audio file của user (hoặc có thể gửi audio buffer trực tiếp)',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  audioUrl?: string
+
+  @ApiProperty({
+    example: 'こんにちは',
+    description: 'Text message (nếu không có audio)',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  message?: string
+
+  @ApiProperty({
+    example: 'conv_123456789',
+    description: 'ID của conversation (nếu là conversation mới thì không cần)',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  conversationId?: string
+}

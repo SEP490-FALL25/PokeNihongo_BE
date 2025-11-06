@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kaiwa - Đàm Thoại Tiếng Nhật với AI</title>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #f5f5f5;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* Header */
+      .header {
+        background: white;
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 10;
+      }
+
+      .header-left {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .header-center {
+        flex: 1;
+        text-align: center;
+        color: #666;
+        font-size: 14px;
+      }
+
+      .header-right {
+        display: flex;
+        gap: 12px;
+      }
+
+      .header-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+      }
+
+      .header-icon:hover {
+        background: #e0e0e0;
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+      }
+
+      /* Chat Area */
+      .chat-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #fafafa;
+      }
+
+      .chat-message {
+        display: flex;
+        margin-bottom: 20px;
+        gap: 12px;
+      }
+
+      .chat-message.user {
+        flex-direction: row-reverse;
+      }
+
+      .chat-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .chat-message.ai .chat-avatar {
+        background: #007bff;
+        color: white;
+      }
+
+      .chat-message.user .chat-avatar {
+        background: #007bff;
+        color: white;
+      }
+
+      .chat-bubble {
+        max-width: 70%;
+        padding: 12px 16px;
+        border-radius: 16px;
+        position: relative;
+      }
+
+      .chat-message.ai .chat-bubble {
+        background: white;
+        border: 1px solid #e0e0e0;
+      }
+
+      .chat-message.user .chat-bubble {
+        background: #007bff;
+        color: white;
+      }
+
+      .chat-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+
+      .chat-line:last-child {
+        margin-bottom: 0;
+      }
+
+      .chat-line-japanese {
+        font-size: 16px;
+        color: #333;
+      }
+
+      .chat-message.user .chat-line-japanese {
+        color: white;
+      }
+
+      .chat-line-vietnamese {
+        font-size: 14px;
+        color: #666;
+        font-style: italic;
+      }
+
+      .chat-message.user .chat-line-vietnamese {
+        color: rgba(255,255,255,0.9);
+      }
+
+      .chat-icon {
+        width: 16px;
+        height: 16px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .status-indicator {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 8px;
+      }
+
+      .status-indicator.idle { background: #e0e0e0; color: #666; }
+      .status-indicator.recording { background: #dc3545; color: white; }
+      .status-indicator.processing { background: #ffc107; color: #333; }
+
+      /* Bottom Panels */
+      .bottom-panels {
+        display: flex;
+        gap: 12px;
+        padding: 16px;
+        background: white;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      .panel {
+        flex: 1;
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .panel-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 12px;
+      }
+
+      .panel-content {
+        font-size: 13px;
+        color: #666;
+        line-height: 1.6;
+      }
+
+      .panel-link {
+        color: #007bff;
+        text-decoration: none;
+        font-size: 12px;
+        margin-top: 8px;
+        display: inline-block;
+      }
+
+      .panel-link:hover {
+        text-decoration: underline;
+      }
+
+      /* Microphone Button */
+      .mic-container {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100;
+      }
+
+      .mic-button {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #007bff;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .mic-button:hover:not(:disabled) {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(0,123,255,0.4);
+      }
+
+      .mic-button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .mic-button.recording {
+        background: #dc3545;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.05); }
+      }
+
+      /* Join Button */
+      .join-container {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 200;
+        text-align: center;
+      }
+
+      .join-button {
+        padding: 12px 24px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+      }
+
+      .join-button:hover:not(:disabled) {
+        background: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,123,255,0.4);
+      }
+
+      .join-button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        color: #999;
+        padding: 40px 20px;
+        font-size: 14px;
+      }
+
+      /* Processing Message */
+      .processing-message {
+        text-align: center;
+        padding: 12px;
+        color: #666;
+        font-style: italic;
+        font-size: 13px;
+      }
+
+      /* Typing Effect */
+      .typing-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 16px;
+        background: #007bff;
+        animation: blink 1s infinite;
+        margin-left: 2px;
+        vertical-align: middle;
+      }
+
+      .chat-message.user .typing-indicator {
+        background: white;
+      }
+
+      @keyframes blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0; }
+      }
+
+      .typing-text {
+        display: inline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">Hội thoại / Chat</div>
+      <div class="header-center" id="welcomeMessage">Rất vui được gặp bạn!</div>
+      <div class="header-right">
+        <div class="header-icon">⚙️</div>
+        <div class="header-icon">💡</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Chat Area -->
+      <div class="chat-area" id="chatArea">
+        <div class="empty-state">
+          Nhấn "Join Room" để bắt đầu cuộc hội thoại!
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Panels -->
+    <div class="bottom-panels">
+      <div class="panel">
+        <div class="panel-title">Mẫu câu</div>
+        <div class="panel-content" id="sentencePatterns">
+          <div>こんにちは。</div>
+          <a href="#" class="panel-link">Xem thêm</a>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Trình tự hội thoại</div>
+        <div class="panel-content" id="dialogueSequence">
+          Bắt đầu cuộc hội thoại với AI để luyện tập tiếng Nhật.
+          <a href="#" class="panel-link">Xem thêm</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Join Button -->
+    <div class="join-container" id="joinContainer">
+      <button class="join-button" id="joinBtn">Join Room</button>
+    </div>
+
+    <!-- Microphone Button -->
+    <div class="mic-container hidden" id="micContainer">
+      <button class="mic-button" id="micButton" disabled>🎤</button>
+      <div style="text-align: center; margin-top: 8px;">
+        <span class="status-indicator idle" id="statusIndicator">Idle</span>
+      </div>
+    </div>
+
+    <script>
+      const chatArea = document.getElementById("chatArea");
+      const joinContainer = document.getElementById("joinContainer");
+      const joinBtn = document.getElementById("joinBtn");
+      const micContainer = document.getElementById("micContainer");
+      const micButton = document.getElementById("micButton");
+      const statusIndicator = document.getElementById("statusIndicator");
+      const welcomeMessage = document.getElementById("welcomeMessage");
+      const sentencePatterns = document.getElementById("sentencePatterns");
+      const dialogueSequence = document.getElementById("dialogueSequence");
+
+      let conversationId = null;
+      let mediaRecorder = null;
+      let isRecording = false;
+      let audioContext = null;
+      let audioChunks = []; // Collect audio chunks while recording
+
+      /** ✅ ACCESS TOKEN */
+      const accessToken =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImRldmljZUlkIjo0OCwicm9sZUlkIjoxLCJyb2xlTmFtZSI6IkFETUlOIiwidXVpZCI6ImRmOTI0NWM5LTgwZWYtNDNiNS05ZDA5LTlmNzU1MzA4YzE1ZSIsImlhdCI6MTc2MjM2MzE3MSwiZXhwIjoxNzkzODk5MTcxfQ.ztkMwsbzITPZotM6RyceHq6euz_fmWzASEKOGb2YmrQ";
+
+      /** ✅ TYPE TEXT WITH ANIMATION */
+      function typeText(element, text, speed = 30, callback = null) {
+        let index = 0;
+        element.textContent = '';
+        
+        function type() {
+          if (index < text.length) {
+            element.textContent += text.charAt(index);
+            index++;
+            setTimeout(type, speed);
+          } else {
+            if (callback) callback();
+          }
+        }
+        
+        type();
+      }
+
+      /** ✅ ADD MESSAGE TO CHAT */
+      function addChatMessage(japaneseText, vietnameseText, isUser = false, showTyping = false) {
+        // Remove empty state
+        const emptyState = chatArea.querySelector('.empty-state');
+        if (emptyState) {
+          emptyState.remove();
+        }
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${isUser ? 'user' : 'ai'}`;
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'chat-avatar';
+        avatar.textContent = isUser ? 'A' : 'B';
+        
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble';
+        
+        // Japanese line
+        const japaneseLine = document.createElement('div');
+        japaneseLine.className = 'chat-line';
+        const japaneseTextEl = document.createElement('span');
+        japaneseTextEl.className = 'chat-line-japanese typing-text';
+        
+        // Append text element first
+        japaneseLine.appendChild(japaneseTextEl);
+        
+        if (showTyping && japaneseText) {
+          // Hiển thị typing effect
+          typeText(japaneseTextEl, japaneseText, 30, () => {
+            // Sau khi type xong, thêm audio icon
+            const audioIcon = document.createElement('span');
+            audioIcon.className = 'chat-icon';
+            audioIcon.textContent = '🔊';
+            audioIcon.style.marginLeft = '8px';
+            audioIcon.title = isUser ? 'Phát audio của bạn' : 'Phát audio của AI';
+            japaneseLine.appendChild(audioIcon);
+          });
+          
+          // Thêm typing indicator
+          const typingIndicator = document.createElement('span');
+          typingIndicator.className = 'typing-indicator';
+          typingIndicator.id = 'typing-indicator-jp';
+          japaneseLine.appendChild(typingIndicator);
+          
+          // Remove typing indicator khi type xong
+          setTimeout(() => {
+            const indicator = document.getElementById('typing-indicator-jp');
+            if (indicator) indicator.remove();
+          }, japaneseText.length * 30);
+        } else {
+          // Hiển thị text ngay lập tức (không typing effect)
+          japaneseTextEl.textContent = japaneseText;
+          const audioIcon = document.createElement('span');
+          audioIcon.className = 'chat-icon';
+          audioIcon.textContent = '🔊';
+          audioIcon.style.marginLeft = '8px';
+          audioIcon.title = isUser ? 'Phát audio của bạn' : 'Phát audio của AI';
+          japaneseLine.appendChild(audioIcon);
+        }
+        
+        bubble.appendChild(japaneseLine);
+        
+        // Vietnamese translation line
+        if (vietnameseText) {
+          const vietnameseLine = document.createElement('div');
+          vietnameseLine.className = 'chat-line';
+          const vietnameseTextEl = document.createElement('span');
+          vietnameseTextEl.className = 'chat-line-vietnamese typing-text';
+          
+          if (showTyping) {
+            // Delay typing Vietnamese để chạy sau Japanese
+            setTimeout(() => {
+              typeText(vietnameseTextEl, vietnameseText, 25);
+              
+              // Thêm typing indicator
+              const typingIndicator = document.createElement('span');
+              typingIndicator.className = 'typing-indicator';
+              typingIndicator.id = 'typing-indicator-vi';
+              vietnameseLine.appendChild(typingIndicator);
+              
+              // Remove typing indicator khi type xong
+              setTimeout(() => {
+                const indicator = document.getElementById('typing-indicator-vi');
+                if (indicator) indicator.remove();
+              }, vietnameseText.length * 25);
+            }, japaneseText.length * 30 + 100);
+          } else {
+            vietnameseTextEl.textContent = vietnameseText;
+          }
+          
+          vietnameseLine.appendChild(vietnameseTextEl);
+          bubble.appendChild(vietnameseLine);
+        }
+        
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(bubble);
+        chatArea.appendChild(messageDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
+
+      /** ✅ ADD PROCESSING MESSAGE */
+      function addProcessingMessage(text) {
+        const processingDiv = document.createElement('div');
+        processingDiv.className = 'processing-message';
+        processingDiv.textContent = text;
+        processingDiv.id = 'processingMessage';
+        chatArea.appendChild(processingDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
+
+      function removeProcessingMessage() {
+        const processing = document.getElementById('processingMessage');
+        if (processing) {
+          processing.remove();
+        }
+      }
+
+      /** ✅ PLAY AUDIO FROM BASE64 */
+      function playAudioFromBase64(base64Audio, format = 'mp3') {
+        try {
+          const audio = new Audio(`data:audio/${format};base64,${base64Audio}`);
+          audio.play().catch(err => {
+            console.error('Error playing audio:', err);
+          });
+        } catch (error) {
+          console.error('Error creating audio:', error);
+        }
+      }
+
+      /** ✅ START RECORDING */
+      async function startRecording() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+              sampleRate: 16000,
+              channelCount: 1,
+              echoCancellation: true,
+              noiseSuppression: true
+            } 
+          });
+
+          audioContext = new (window.AudioContext || window.webkitAudioContext)({
+            sampleRate: 16000
+          });
+
+          const source = audioContext.createMediaStreamSource(stream);
+          const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+          // Reset audio chunks array
+          audioChunks = [];
+
+          processor.onaudioprocess = (e) => {
+            if (!isRecording) return;
+
+            const inputData = e.inputBuffer.getChannelData(0);
+            const int16Data = new Int16Array(inputData.length);
+            for (let i = 0; i < inputData.length; i++) {
+              const s = Math.max(-1, Math.min(1, inputData[i]));
+              int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+
+            // Collect audio chunks instead of sending immediately
+            audioChunks.push(int16Data);
+          };
+
+          source.connect(processor);
+          processor.connect(audioContext.destination);
+
+          mediaRecorder = { stream, processor, source };
+          isRecording = true;
+          micButton.classList.add('recording');
+          statusIndicator.textContent = 'Recording';
+          statusIndicator.className = 'status-indicator recording';
+          addProcessingMessage('Đang ghi âm... Nhấn lại để dừng và gửi.');
+        } catch (error) {
+          console.error('Error starting recording:', error);
+          alert('Không thể truy cập microphone. Vui lòng kiểm tra quyền truy cập.');
+        }
+      }
+
+      /** ✅ STOP RECORDING */
+      function stopRecording() {
+        if (mediaRecorder) {
+          if (mediaRecorder.stream) {
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+          }
+          if (mediaRecorder.processor) {
+            mediaRecorder.processor.disconnect();
+          }
+          if (mediaRecorder.source) {
+            mediaRecorder.source.disconnect();
+          }
+          if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+          }
+          mediaRecorder = null;
+        }
+        isRecording = false;
+        micButton.classList.remove('recording');
+        statusIndicator.textContent = 'Idle';
+        statusIndicator.className = 'status-indicator idle';
+
+        // Combine all audio chunks and send to server
+        if (audioChunks.length > 0) {
+          // Calculate total length
+          let totalLength = 0;
+          audioChunks.forEach(chunk => {
+            totalLength += chunk.length;
+          });
+
+          // Combine all chunks into one buffer
+          const combinedBuffer = new Int16Array(totalLength);
+          let offset = 0;
+          audioChunks.forEach(chunk => {
+            combinedBuffer.set(chunk, offset);
+            offset += chunk.length;
+          });
+
+          // Send complete audio buffer to server
+          removeProcessingMessage();
+          addProcessingMessage('Đang gửi audio...');
+          socket.emit('user-audio-chunk', combinedBuffer.buffer);
+          
+          // Clear chunks
+          audioChunks = [];
+        } else {
+          removeProcessingMessage();
+        }
+      }
+
+      /** ✅ CONNECT SOCKET */
+      const socket = io("http://localhost:8080/kaiwa", {
+        transports: ["websocket"],
+        auth: {
+          authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      socket.on("connect", () => {
+        console.log("✅ Connected to server");
+        joinBtn.disabled = false;
+      });
+
+      socket.on("disconnect", (reason) => {
+        console.log("❌ Disconnected:", reason);
+        joinBtn.disabled = false;
+        micButton.disabled = true;
+        stopRecording();
+      });
+
+      socket.on("connect_error", (err) => {
+        console.error("❌ Connect error:", err);
+      });
+
+      /** ✅ JOIN EVENT */
+      socket.on("joined", (data) => {
+        console.log("✅ Joined room:", data);
+        conversationId = data.conversationId;
+        joinContainer.classList.add('hidden');
+        micContainer.classList.remove('hidden');
+        micButton.disabled = false;
+        welcomeMessage.textContent = `Cuộc hội thoại: ${data.conversationId}`;
+      });
+
+      /** ✅ PROCESSING STATUS */
+      socket.on("processing", (data) => {
+        removeProcessingMessage();
+        const statusText = data.status === 'speech-to-text' ? 'Đang nhận diện giọng nói...' :
+                          data.status === 'gemini-processing' ? 'Đang xử lý với AI...' :
+                          data.status === 'text-to-speech' ? 'Đang tạo giọng nói...' : 'Đang xử lý...';
+        statusIndicator.textContent = statusText;
+        statusIndicator.className = 'status-indicator processing';
+        addProcessingMessage(data.message || statusText);
+      });
+
+      /** ✅ TRANSCRIPTION */
+      socket.on("transcription", (data) => {
+        console.log("📝 Transcription:", data.text);
+        removeProcessingMessage();
+        // Hiển thị user message với transcription tiếng Nhật
+        addChatMessage(data.text, '', true); // true = user message
+      });
+
+      /** ✅ TEXT RESPONSE */
+      socket.on("text-response", (data) => {
+        console.log("💬 AI Response:", data.text);
+        removeProcessingMessage();
+        // Add AI response với typing effect (chỉ khi có text)
+        if (data.text) {
+          addChatMessage(data.text, data.translation || '', false, true); // true = show typing effect
+        }
+      });
+
+      /** ✅ TEXT RESPONSE UPDATE (khi có translation) */
+      socket.on("text-response-update", (data) => {
+        console.log("🌐 Vietnamese Translation:", data.translation);
+        // Update translation trong message cuối cùng (AI message)
+        const messages = chatArea.querySelectorAll('.chat-message.ai');
+        if (messages.length > 0) {
+          const lastMessage = messages[messages.length - 1];
+          const bubble = lastMessage.querySelector('.chat-bubble');
+          if (bubble && data.translation) {
+            // Kiểm tra xem đã có Vietnamese line chưa
+            let vietnameseLine = bubble.querySelector('.chat-line-vietnamese')?.parentElement;
+            if (!vietnameseLine) {
+              // Tạo Vietnamese line mới với typing effect
+              vietnameseLine = document.createElement('div');
+              vietnameseLine.className = 'chat-line';
+              const vietnameseTextEl = document.createElement('span');
+              vietnameseTextEl.className = 'chat-line-vietnamese typing-text';
+              
+              // Hiển thị với typing effect
+              typeText(vietnameseTextEl, data.translation, 25);
+              
+              // Thêm typing indicator
+              const typingIndicator = document.createElement('span');
+              typingIndicator.className = 'typing-indicator';
+              typingIndicator.id = 'typing-indicator-vi-update';
+              
+              vietnameseLine.appendChild(vietnameseTextEl);
+              vietnameseLine.appendChild(typingIndicator);
+              bubble.appendChild(vietnameseLine);
+              
+              // Remove typing indicator khi type xong
+              setTimeout(() => {
+                const indicator = document.getElementById('typing-indicator-vi-update');
+                if (indicator) indicator.remove();
+              }, data.translation.length * 25);
+            } else {
+              // Update existing Vietnamese line với typing effect
+              const vietnameseTextEl = vietnameseLine.querySelector('.chat-line-vietnamese');
+              if (vietnameseTextEl) {
+                vietnameseTextEl.textContent = '';
+                typeText(vietnameseTextEl, data.translation, 25);
+                
+                // Thêm typing indicator nếu chưa có
+                let indicator = document.getElementById('typing-indicator-vi-update');
+                if (!indicator) {
+                  indicator = document.createElement('span');
+                  indicator.className = 'typing-indicator';
+                  indicator.id = 'typing-indicator-vi-update';
+                  vietnameseLine.appendChild(indicator);
+                }
+                
+                // Remove typing indicator khi type xong
+                setTimeout(() => {
+                  const ind = document.getElementById('typing-indicator-vi-update');
+                  if (ind) ind.remove();
+                }, data.translation.length * 25);
+              }
+            }
+          }
+        }
+      });
+
+      /** ✅ AUDIO RESPONSE */
+      socket.on("audio-response", (data) => {
+        console.log("🔊 Audio response received");
+        playAudioFromBase64(data.audio, data.audioFormat || 'mp3');
+        statusIndicator.textContent = 'Idle';
+        statusIndicator.className = 'status-indicator idle';
+        removeProcessingMessage();
+      });
+
+      socket.on("error", (error) => {
+        console.error("❌ Error:", error);
+        removeProcessingMessage();
+        statusIndicator.textContent = 'Idle';
+        statusIndicator.className = 'status-indicator idle';
+        alert(error.message || 'Có lỗi xảy ra');
+      });
+
+      /** ✅ BUTTON HANDLERS */
+      joinBtn.addEventListener("click", () => {
+        socket.emit("join");
+        joinBtn.disabled = true;
+      });
+
+      micButton.addEventListener("click", async () => {
+        if (!isRecording) {
+          await startRecording();
+        } else {
+          stopRecording();
+        }
+      });
+
+      // Update dialogue sequence on conversation start
+      socket.on("joined", () => {
+        dialogueSequence.textContent = "Bạn đang luyện tập hội thoại tiếng Nhật với AI. Hãy nói bằng tiếng Nhật để bắt đầu!";
+      });
+    </script>
+  </body>
+</html>
