@@ -171,7 +171,8 @@ export const viMessages = {
     EVOLVE_SUCCESS: 'Tiến hóa Pokemon thành công',
     ADD_EXP_SUCCESS: 'Thêm EXP cho Pokemon thành công',
     LEVEL_UP_SUCCESS: 'Pokemon đã lên cấp!',
-    GET_STATS_SUCCESS: 'Lấy thống kê User Pokemon thành công'
+    GET_STATS_SUCCESS: 'Lấy thống kê User Pokemon thành công',
+    USER_NOT_IN_ROUND: 'Người dùng không tham gia vào vòng đấu nào'
   },
   user: {
     GET_LIST_SUCCESS: 'Lấy danh sách người dùng thành công',

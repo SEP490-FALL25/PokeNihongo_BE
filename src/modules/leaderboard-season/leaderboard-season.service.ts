@@ -420,4 +420,16 @@ export class LeaderboardSeasonService {
       throw error
     }
   }
+
+  async getListRankByLeaderboard({
+    id,
+    lang = 'vi',
+    userId,
+    rankName
+  }: {
+    id: number
+    lang?: string
+    userId: number
+    rankName: string | undefined
+  }) {}
 }

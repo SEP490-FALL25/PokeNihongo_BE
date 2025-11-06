@@ -64,3 +64,12 @@ export class UserHasPokemonException extends ConflictException {
     })
   }
 }
+
+export class UserNotInRoundException extends BadRequestException {
+  constructor() {
+    super({
+      message: UserPokemonMessage.USER_NOT_IN_ROUND,
+      errorKey: UserPokemonMessage.USER_NOT_IN_ROUND
+    })
+  }
+}
