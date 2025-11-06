@@ -80,6 +80,25 @@ export const GetUserStatsSeasonResSchema = z.object({
   message: z.string()
 })
 
+export const GetListMatchHisByUserSchema = z
+  .object({
+    isWin: z.boolean(),
+    leaderboardSeasonName: z.string(),
+    eloGain: z.number(),
+    opponent: z.object({
+      id: z.number(),
+      name: z.string(),
+      avatar: z.string().url().nullable()
+    })
+  })
+  .strict()
+
+export const GetListMatchHisByUserResSchema = z.object({
+  statusCode: z.number(),
+  data: z.array(GetListMatchHisByUserSchema),
+  message: z.string()
+})
+
 export const UserWithoutPasswordSchema = z.object({
   ...UserSchema.omit({ password: true }).shape, // Không trả về password
   role: RoleSchema.omit({

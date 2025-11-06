@@ -271,7 +271,7 @@ export class MatchRepo {
     })
   }
 
-  getMatchesByUser(userId: number): Promise<MatchType[]> {
+  getMatchesByUser(userId: number, langId?: number): Promise<MatchType[]> {
     return this.prismaService.match.findMany({
       where: {
         participants: {
@@ -286,7 +286,50 @@ export class MatchRepo {
         createdAt: 'desc'
       },
       include: {
-        participants: true
+        participants: true,
+        leaderboardSeason: {
+          include: {
+            nameTranslations: {
+              where: { languageId: langId },
+              select: { value: true, languageId: true }
+            }
+          }
+        }
+      }
+    })
+  }
+  getMatchesHistoryByUser(userId: number, langId?: number): Promise<MatchType[]> {
+    return this.prismaService.match.findMany({
+      where: {
+        participants: {
+          some: { userId }
+        },
+        status: 'COMPLETED',
+        deletedAt: null
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true
+              }
+            }
+          }
+        },
+        leaderboardSeason: {
+          include: {
+            nameTranslations: {
+              where: { languageId: langId },
+              select: { value: true, languageId: true }
+            }
+          }
+        }
       }
     })
   }

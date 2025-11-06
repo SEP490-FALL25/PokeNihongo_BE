@@ -1,6 +1,6 @@
 import { MailService } from '@/3rdService/mail/mail.service'
 import { I18nService } from '@/i18n/i18n.service'
-import { UserMessage } from '@/i18n/message-keys'
+import { ENTITY_MESSAGE, UserMessage } from '@/i18n/message-keys'
 import { LevelRepo } from '@/modules/level/level.repo'
 import { UserPokemonRepo } from '@/modules/user-pokemon/user-pokemon.repo'
 import { NotFoundRecordException } from '@/shared/error'
@@ -496,5 +496,39 @@ export class UserService {
     }
 
     return streak
+  }
+
+  async getMatchingHisByUserId(userId: number, lang: string) {
+    const langId = await this.langRepo.getIdByCode(lang)
+
+    if (!langId) {
+      throw new NotFoundRecordException()
+    }
+    const matchHis = await this.matchRepo.getMatchesHistoryByUser(userId, langId)
+
+    const convertMatchHisInfo = matchHis.map((match) => {
+      const currentTranslation =
+        ((match as any).leaderboardSeason?.nameTranslations || []).find(
+          (t: any) => t.languageId === langId
+        ).value || ''
+
+      const opponent = (match as any).participants.find(
+        (p: any) => p.userId !== userId
+      ).user
+      const isWin = match.winnerId === userId
+      const eloGain = isWin ? (match as any).eloGained : (match as any).eloLost
+      return {
+        isWin,
+        leaderboardSeasonName: currentTranslation,
+        eloGain,
+        opponent
+      }
+    })
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: convertMatchHisInfo,
+      message: this.i18nService.translate(ENTITY_MESSAGE.GET_LIST_SUCCESS, lang)
+    }
   }
 }
