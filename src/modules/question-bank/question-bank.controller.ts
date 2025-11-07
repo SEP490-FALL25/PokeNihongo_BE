@@ -6,6 +6,7 @@ import {
     CreateQuestionBankWithAnswersBodyDTO,
     GetQuestionBankByIdParamsDTO,
     GetQuestionBankListQueryDTO,
+    GetQuestionBanksByIdsQueryDTO,
     UpdateQuestionBankBodyDTO,
     QuestionBankListResDTO,
     QuestionBankResDTO,
@@ -15,6 +16,7 @@ import {
     QuestionBankResponseSwaggerDTO,
     QuestionBankListResponseSwaggerDTO,
     GetQuestionBankListQuerySwaggerDTO,
+    GetQuestionBanksByIdsQuerySwaggerDTO,
     CreateQuestionBankWithMeaningsSwaggerDTO,
     UpdateQuestionBankWithMeaningsSwaggerDTO,
     CreateQuestionBankWithAnswersSwaggerDTO,
@@ -48,28 +50,28 @@ export class QuestionBankController {
 
 
 
-//     @Post('with-meanings')
-//     @ApiBearerAuth()
-//     @ApiOperation({
-//         summary: 'Tạo câu hỏi mới với nghĩa và bản dịch',
-//         description: `Tạo câu hỏi mới với nghĩa và bản dịch. 
-        
-// **Quy tắc đặc biệt:**
-// - **audioUrl**: Optional - chỉ khi questionType là LISTENING và không truyền thì hệ thống sẽ tự động gen text-to-speech từ questionJp
-// - **SPEAKING**: Bắt buộc phải có pronunciation (cách phát âm romaji)
-// - **Các loại khác**: audioUrl và pronunciation là tùy chọn
+    //     @Post('with-meanings')
+    //     @ApiBearerAuth()
+    //     @ApiOperation({
+    //         summary: 'Tạo câu hỏi mới với nghĩa và bản dịch',
+    //         description: `Tạo câu hỏi mới với nghĩa và bản dịch. 
 
-// **Loại câu hỏi hỗ trợ:** VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, MATCHING` })
-//     @ApiBody({ type: CreateQuestionBankWithMeaningsSwaggerDTO })
-//     @ApiResponse({
-//         status: 201,
-//         description: 'Tạo câu hỏi với nghĩa thành công',
-//         type: QuestionBankResponseSwaggerDTO
-//     })
-//     @ZodSerializerDto(QuestionBankResDTO)
-//     createWithMeanings(@Body() body: CreateQuestionBankWithMeaningsBodyDTO, @ActiveUser('userId') userId: number) {
-//         return this.questionBankService.createWithMeanings(body, userId)
-//     }
+    // **Quy tắc đặc biệt:**
+    // - **audioUrl**: Optional - chỉ khi questionType là LISTENING và không truyền thì hệ thống sẽ tự động gen text-to-speech từ questionJp
+    // - **SPEAKING**: Bắt buộc phải có pronunciation (cách phát âm romaji)
+    // - **Các loại khác**: audioUrl và pronunciation là tùy chọn
+
+    // **Loại câu hỏi hỗ trợ:** VOCABULARY, GRAMMAR, KANJI, LISTENING, READING, SPEAKING, MATCHING` })
+    //     @ApiBody({ type: CreateQuestionBankWithMeaningsSwaggerDTO })
+    //     @ApiResponse({
+    //         status: 201,
+    //         description: 'Tạo câu hỏi với nghĩa thành công',
+    //         type: QuestionBankResponseSwaggerDTO
+    //     })
+    //     @ZodSerializerDto(QuestionBankResDTO)
+    //     createWithMeanings(@Body() body: CreateQuestionBankWithMeaningsBodyDTO, @ActiveUser('userId') userId: number) {
+    //         return this.questionBankService.createWithMeanings(body, userId)
+    //     }
 
     @Post('with-answers')
     @ApiBearerAuth()
@@ -115,6 +117,20 @@ export class QuestionBankController {
         return this.questionBankService.findAll(query, lang)
     }
 
+    @Get('by-ids')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy thông tin nhiều câu hỏi theo mảng IDs với translation' })
+    @ApiQuery({ type: GetQuestionBanksByIdsQuerySwaggerDTO })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy thông tin câu hỏi thành công',
+        type: QuestionBankListResponseSwaggerDTO
+    })
+    // @ZodSerializerDto(QuestionBankListResDTO)
+    findByIds(@Query() query: GetQuestionBanksByIdsQueryDTO, @I18nLang() lang: string) {
+        return this.questionBankService.findByIds(query.questionIds, lang)
+    }
+
     @Get(':id')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Lấy thông tin câu hỏi theo ID' })
@@ -127,6 +143,7 @@ export class QuestionBankController {
     findOne(@Param('id') id: string) {
         return this.questionBankService.findOne(Number(id))
     }
+
 
     @Put(':id')
     @ApiBearerAuth()

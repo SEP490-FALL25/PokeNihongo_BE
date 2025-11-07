@@ -167,6 +167,24 @@ export class QuestionBankService {
         }
     }
 
+    async findByIds(ids: number[], lang: string = 'vi'): Promise<MessageResDTO> {
+        const questionBanks = await this.questionBankRepository.findByIds(ids, lang)
+
+        return {
+            statusCode: 200,
+            data: {
+                results: questionBanks,
+                pagination: {
+                    current: 1,
+                    pageSize: questionBanks.length,
+                    totalPage: 1,
+                    totalItem: questionBanks.length
+                }
+            },
+            message: QUESTION_BANK_MESSAGE.GET_LIST_SUCCESS
+        }
+    }
+
     async update(id: number, body: UpdateQuestionBankBodyType): Promise<MessageResDTO> {
         try {
             // Xử lý audioUrl rỗng trước khi validate - chuyển thành null để lưu vào DB

@@ -65,6 +65,27 @@ export const MATCHING_EVENTS = {
   // Add more events as needed
 } as const
 
+
+export const KAIWA_EVENTS = {
+  // Server -> Client events
+  USER_AUDIO_CHUNK: 'user-audio-chunk',
+  TRANSCRIPTION: 'transcription',
+  PROCESSING: 'processing',
+  TEXT_RESPONSE: 'text-response',
+  TEXT_RESPONSE_UPDATE: 'text-response-update',
+  AUDIO_RESPONSE: 'audio-response',
+  HISTORY: 'history',
+  JOINED: 'joined',
+  LEFT: 'left',
+  ERROR: 'error',
+  ROOM_UPDATED: 'room-updated', // Emit khi room được tạo/cập nhật
+  MESSAGE_AUDIO_UPDATED: 'message-audio-updated', // Emit khi audioUrl được update cho message
+  // Client -> Server events
+  JOIN_KAIWA_ROOM: 'join-kaiwa-room',
+  LEAVE_KAIWA_ROOM: 'leave-kaiwa-room',
+  // Add more events as needed
+} as const
+
 // ========== SOCKET ROOMS ==========
 export const SOCKET_ROOM = {
   /**
@@ -90,7 +111,13 @@ export const SOCKET_ROOM = {
    * Get user room name (legacy pattern)
    * Pattern: user:{userId}
    */
-  getUserRoom: (userId: number): string => `user:${userId}`
+  getUserRoom: (userId: number): string => `user:${userId}`,
+
+  /**
+   * Get kaiwa room name
+   * Pattern: kaiwa_{conversationId}
+   */
+  getKaiwaRoom: (conversationId: string): string => `kaiwa_${conversationId}`,
 } as const
 
 export const SOCKET_EVENT = {}

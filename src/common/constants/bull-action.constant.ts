@@ -15,6 +15,8 @@ export const BullAction = {
 export const BullQueue = {
   MATCH_PARTICIPANT_TIMEOUT: 'match-participant-timeout',
   MATCH_ROUND_PARTICIPANT_TIMEOUT: 'match-round-participant-timeout',
-  ROUND_QUESTION_TIMEOUT: 'round-question-timeout',
-  USER_DELETION: 'user-deletion'
+  USER_DELETION: 'user-deletion',
+  KAIWA_PROCESSOR: 'kaiwa-processor',
+  PROCESS_AUDIO: 'process-audio',
+  ROUND_QUESTION_TIMEOUT: 'round-question-timeout'
 } as const

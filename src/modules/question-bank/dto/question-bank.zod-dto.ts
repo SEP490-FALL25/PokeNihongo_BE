@@ -7,6 +7,7 @@ import {
     UpdateQuestionBankBodySchema,
     GetQuestionBankByIdParamsSchema,
     GetQuestionBankListQuerySchema,
+    GetQuestionBanksByIdsQuerySchema,
     QuestionBankResSchema,
     QuestionBankListResSchema,
     BulkDeleteQuestionBankBodySchema
@@ -19,6 +20,7 @@ export class CreateQuestionBankWithAnswersBodyDTO extends createZodDto(CreateQue
 export class UpdateQuestionBankBodyDTO extends createZodDto(UpdateQuestionBankBodySchema) { }
 export class GetQuestionBankByIdParamsDTO extends createZodDto(GetQuestionBankByIdParamsSchema) { }
 export class GetQuestionBankListQueryDTO extends createZodDto(GetQuestionBankListQuerySchema) { }
+export class GetQuestionBanksByIdsQueryDTO extends createZodDto(GetQuestionBanksByIdsQuerySchema) { }
 export class QuestionBankResDTO extends createZodDto(QuestionBankResSchema) { }
 export class QuestionBankListResDTO extends createZodDto(QuestionBankListResSchema) { }
 export class BulkDeleteQuestionBankBodyDTO extends createZodDto(BulkDeleteQuestionBankBodySchema) { }
