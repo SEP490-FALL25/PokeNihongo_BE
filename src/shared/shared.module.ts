@@ -39,6 +39,7 @@ const sharedServices = [
     BullQueueModule.registerQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT),
     BullQueueModule.registerQueue(BullQueue.ROUND_QUESTION_TIMEOUT),
     WebsocketsModule
+
     // Không import GeminiModule ở đây để tránh circular dependency
     // GeminiModule sẽ được import trong AppModule và export GeminiService
   ],
