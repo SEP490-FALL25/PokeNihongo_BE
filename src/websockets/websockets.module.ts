@@ -8,7 +8,15 @@ import { KaiwaGateway } from './kaiwa.gateway'
 import { MatchingGateway } from './matching.gateway'
 import { SocketServerService } from './socket-server.service'
 import { WebsocketsService } from './websockets.service'
-import { KaiwaProcessor } from './workers/kaiwa.processor'
+import { KaiwaGateway } from './kaiwa.gateway'
+import { SpeechToTextService } from '@/3rdService/speech/speech-to-text.service'
+import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
+import { UploadModule } from '@/3rdService/upload/upload.module'
+import { SpeechModule } from '@/3rdService/speech/speech.module'
+import { KaiwaProcessor } from '../shared/workers/kaiwa.processor'
+import { UserAIConversationModule } from '@/modules/user-ai-conversation/user-ai-conversation.module'
+import { AIConversationRoomModule } from '@/modules/ai-conversation-room/ai-conversation-room.module'
+
 
 // @Global()
 @Module({
@@ -31,8 +39,11 @@ import { KaiwaProcessor } from './workers/kaiwa.processor'
     }),
     ConfigModule, // Cần để inject ConfigService
     UploadModule, // Cần cho TextToSpeechService
-    SpeechModule // Cần cho SpeechToTextService và TextToSpeechService
+    SpeechModule, // Cần cho SpeechToTextService và TextToSpeechService
+    UserAIConversationModule, // Cần để lưu conversation vào database
+    AIConversationRoomModule, // Cần để quản lý phòng hội thoại
     // MatchRoundModule
+
   ],
   providers: [
     WebsocketsService,

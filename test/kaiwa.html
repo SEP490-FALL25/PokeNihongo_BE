@@ -71,6 +71,143 @@
         flex: 1;
         display: flex;
         overflow: hidden;
+        position: relative;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 280px;
+        background: white;
+        border-right: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: width 0.3s ease, transform 0.3s ease;
+      }
+
+      .sidebar.collapsed {
+        width: 0;
+        transform: translateX(-100%);
+        border-right: none;
+      }
+
+      .sidebar-header {
+        padding: 16px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .new-conversation-btn {
+        width: 100%;
+        padding: 12px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: center;
+      }
+
+      .new-conversation-btn:hover:not(:disabled) {
+        background: #0056b3;
+      }
+
+      .new-conversation-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: #6c757d;
+      }
+
+      .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+      }
+
+      .room-item {
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-bottom: 4px;
+        transition: background 0.2s;
+      }
+
+      .room-item:hover {
+        background: #f0f0f0;
+      }
+
+      .room-item.active {
+        background: #e3f2fd;
+        border-left: 3px solid #007bff;
+      }
+
+      .room-title {
+        font-weight: 600;
+        font-size: 14px;
+        color: #333;
+        margin-bottom: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .room-last-message {
+        font-size: 12px;
+        color: #666;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .room-time {
+        font-size: 11px;
+        color: #999;
+        margin-top: 4px;
+      }
+
+      /* Toggle Sidebar Button */
+      .sidebar-toggle {
+        position: absolute;
+        left: 280px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 48px;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-left: none;
+        border-radius: 0 8px 8px 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+      }
+
+      .sidebar-toggle:hover {
+        background: #f5f5f5;
+      }
+
+      .sidebar.collapsed ~ .sidebar-toggle {
+        left: 0;
+        border-left: 1px solid #e0e0e0;
+        border-radius: 0 8px 8px 0;
+      }
+
+      .sidebar-toggle-icon {
+        font-size: 16px;
+        color: #666;
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar.collapsed ~ .sidebar-toggle .sidebar-toggle-icon {
+        transform: rotate(180deg);
       }
 
       /* Chat Area */
@@ -360,10 +497,30 @@
 
     <!-- Main Content -->
     <div class="main-content">
+      <!-- Sidebar -->
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <button class="new-conversation-btn" id="newConversationBtn">
+            <span>✏️</span>
+            <span>Cuộc trò chuyện mới</span>
+          </button>
+        </div>
+        <div class="sidebar-content" id="roomsList">
+          <div style="padding: 20px; text-align: center; color: #999; font-size: 14px;">
+            Đang tải danh sách cuộc trò chuyện...
+          </div>
+        </div>
+      </div>
+      
+      <!-- Toggle Sidebar Button -->
+      <button class="sidebar-toggle" id="sidebarToggle" title="Đóng/Mở sidebar">
+        <span class="sidebar-toggle-icon">‹</span>
+      </button>
+
       <!-- Chat Area -->
       <div class="chat-area" id="chatArea">
         <div class="empty-state">
-          Nhấn "Join Room" để bắt đầu cuộc hội thoại!
+          Chọn một cuộc trò chuyện hoặc tạo mới để bắt đầu!
         </div>
       </div>
     </div>
@@ -386,10 +543,6 @@
       </div>
     </div>
 
-    <!-- Join Button -->
-    <div class="join-container" id="joinContainer">
-      <button class="join-button" id="joinBtn">Join Room</button>
-    </div>
 
     <!-- Microphone Button -->
     <div class="mic-container hidden" id="micContainer">
@@ -401,10 +554,12 @@
 
     <script>
       const chatArea = document.getElementById("chatArea");
-      const joinContainer = document.getElementById("joinContainer");
-      const joinBtn = document.getElementById("joinBtn");
       const micContainer = document.getElementById("micContainer");
+      const roomsList = document.getElementById("roomsList");
+      const newConversationBtn = document.getElementById("newConversationBtn");
       const micButton = document.getElementById("micButton");
+      const sidebar = document.getElementById("sidebar");
+      const sidebarToggle = document.getElementById("sidebarToggle");
       const statusIndicator = document.getElementById("statusIndicator");
       const welcomeMessage = document.getElementById("welcomeMessage");
       const sentencePatterns = document.getElementById("sentencePatterns");
@@ -415,10 +570,120 @@
       let isRecording = false;
       let audioContext = null;
       let audioChunks = []; // Collect audio chunks while recording
+      let isCreatingConversation = false; // Flag để tránh tạo nhiều lần
 
       /** ✅ ACCESS TOKEN */
       const accessToken =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImRldmljZUlkIjo0OCwicm9sZUlkIjoxLCJyb2xlTmFtZSI6IkFETUlOIiwidXVpZCI6ImRmOTI0NWM5LTgwZWYtNDNiNS05ZDA5LTlmNzU1MzA4YzE1ZSIsImlhdCI6MTc2MjM2MzE3MSwiZXhwIjoxNzkzODk5MTcxfQ.ztkMwsbzITPZotM6RyceHq6euz_fmWzASEKOGb2YmrQ";
+
+      const API_BASE_URL = "http://localhost:8080";
+
+      /** ✅ LOAD ROOMS LIST */
+      async function loadRooms() {
+        try {
+          const response = await fetch(`${API_BASE_URL}/ai-conversation-room?currentPage=1&pageSize=50`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Error:', response.status, errorText);
+            roomsList.innerHTML = `<div style="padding: 20px; text-align: center; color: #dc3545; font-size: 14px;">Lỗi ${response.status}: ${errorText.substring(0, 100)}</div>`;
+            return;
+          }
+          
+          const data = await response.json();
+          console.log('Rooms API Response:', data);
+          
+          if (data.data && data.data.results) {
+            renderRooms(data.data.results);
+          } else if (data.statusCode === 200 && data.data && Array.isArray(data.data.results)) {
+            // Handle case where results is empty array
+            if (data.data.results.length === 0) {
+              roomsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999; font-size: 14px;">Chưa có cuộc trò chuyện nào</div>';
+            } else {
+              renderRooms(data.data.results);
+            }
+          } else {
+            console.warn('Unexpected response format:', data);
+            roomsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999; font-size: 14px;">Chưa có cuộc trò chuyện nào</div>';
+          }
+        } catch (error) {
+          console.error('Error loading rooms:', error);
+          roomsList.innerHTML = `<div style="padding: 20px; text-align: center; color: #dc3545; font-size: 14px;">Lỗi khi tải danh sách: ${error.message}</div>`;
+        }
+      }
+
+      /** ✅ RENDER ROOMS */
+      function renderRooms(rooms) {
+        if (rooms.length === 0) {
+          roomsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999; font-size: 14px;">Chưa có cuộc trò chuyện nào</div>';
+          return;
+        }
+
+        roomsList.innerHTML = rooms.map(room => {
+          const time = room.lastMessageAt ? new Date(room.lastMessageAt).toLocaleString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : '';
+          const title = room.title || 'Cuộc trò chuyện mới';
+          const lastMessage = room.lastMessage || 'Chưa có tin nhắn';
+          const isActive = room.conversationId === conversationId;
+
+          return `
+            <div class="room-item ${isActive ? 'active' : ''}" data-conversation-id="${room.conversationId}">
+              <div class="room-title">${title}</div>
+              <div class="room-last-message">${lastMessage}</div>
+              ${time ? `<div class="room-time">${time}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        // Add click handlers
+        roomsList.querySelectorAll('.room-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const convId = item.getAttribute('data-conversation-id');
+            if (convId && convId !== conversationId) {
+              joinRoom(convId);
+            }
+          });
+        });
+      }
+
+      /** ✅ JOIN ROOM */
+      function joinRoom(convId) {
+        conversationId = convId;
+        socket.emit("join-kaiwa-room", { conversationId: convId });
+        micContainer.classList.remove('hidden');
+        micButton.disabled = false;
+        loadRooms(); // Refresh để highlight room active
+      }
+
+      /** ✅ CREATE NEW CONVERSATION */
+      function createNewConversation() {
+        // Tránh tạo nhiều lần nếu đang trong quá trình tạo
+        if (isCreatingConversation) {
+          console.log('Đang tạo cuộc trò chuyện mới, vui lòng đợi...');
+          return;
+        }
+
+        isCreatingConversation = true;
+        conversationId = null;
+        chatArea.innerHTML = '<div class="empty-state">Đang tạo cuộc trò chuyện mới...</div>';
+        welcomeMessage.textContent = 'Đang tạo cuộc trò chuyện mới...';
+        
+        // Disable button để tránh click nhiều lần
+        newConversationBtn.disabled = true;
+        
+        socket.emit("join-kaiwa-room", {}); // Explicitly send empty object to ensure no conversationId
+        micContainer.classList.remove('hidden');
+        micButton.disabled = false;
+      }
 
       /** ✅ TYPE TEXT WITH ANIMATION */
       function typeText(element, text, speed = 30, callback = null) {
@@ -439,7 +704,7 @@
       }
 
       /** ✅ ADD MESSAGE TO CHAT */
-      function addChatMessage(japaneseText, vietnameseText, isUser = false, showTyping = false) {
+      function addChatMessage(japaneseText, vietnameseText, isUser = false, showTyping = false, audioUrl = null) {
         // Remove empty state
         const emptyState = chatArea.querySelector('.empty-state');
         if (emptyState) {
@@ -474,6 +739,17 @@
             audioIcon.textContent = '🔊';
             audioIcon.style.marginLeft = '8px';
             audioIcon.title = isUser ? 'Phát audio của bạn' : 'Phát audio của AI';
+            audioIcon.style.cursor = audioUrl ? 'pointer' : 'not-allowed';
+            audioIcon.style.opacity = audioUrl ? '1' : '0.5';
+            // Lưu audioUrl vào data attribute để có thể update sau
+            if (audioUrl) {
+              audioIcon.setAttribute('data-audio-url', audioUrl);
+              audioIcon.addEventListener('click', () => {
+                playAudioFromUrl(audioUrl);
+              });
+            } else {
+              audioIcon.setAttribute('data-audio-url', '');
+            }
             japaneseLine.appendChild(audioIcon);
           });
           
@@ -496,6 +772,17 @@
           audioIcon.textContent = '🔊';
           audioIcon.style.marginLeft = '8px';
           audioIcon.title = isUser ? 'Phát audio của bạn' : 'Phát audio của AI';
+          audioIcon.style.cursor = audioUrl ? 'pointer' : 'not-allowed';
+          audioIcon.style.opacity = audioUrl ? '1' : '0.5';
+          // Lưu audioUrl vào data attribute để có thể update sau
+          if (audioUrl) {
+            audioIcon.setAttribute('data-audio-url', audioUrl);
+            audioIcon.addEventListener('click', () => {
+              playAudioFromUrl(audioUrl);
+            });
+          } else {
+            audioIcon.setAttribute('data-audio-url', '');
+          }
           japaneseLine.appendChild(audioIcon);
         }
         
@@ -557,14 +844,34 @@
       }
 
       /** ✅ PLAY AUDIO FROM BASE64 */
-      function playAudioFromBase64(base64Audio, format = 'mp3') {
+      function playAudioFromBase64(base64Audio, format = 'ogg') {
         try {
-          const audio = new Audio(`data:audio/${format};base64,${base64Audio}`);
+          // OGG_OPUS sử dụng MIME type 'audio/ogg' hoặc 'audio/opus'
+          const mimeType = format === 'ogg' || format === 'opus' ? 'audio/ogg; codecs=opus' : `audio/${format}`;
+          const audio = new Audio(`data:${mimeType};base64,${base64Audio}`);
           audio.play().catch(err => {
             console.error('Error playing audio:', err);
           });
         } catch (error) {
           console.error('Error creating audio:', error);
+        }
+      }
+
+      /** ✅ PLAY AUDIO FROM URL */
+      function playAudioFromUrl(audioUrl) {
+        if (!audioUrl) {
+          console.warn('No audio URL provided');
+          return;
+        }
+        try {
+          const audio = new Audio(audioUrl);
+          audio.play().catch(err => {
+            console.error('Error playing audio from URL:', err);
+            alert('Không thể phát audio. Vui lòng thử lại.');
+          });
+        } catch (error) {
+          console.error('Error creating audio from URL:', error);
+          alert('Lỗi khi phát audio. Vui lòng thử lại.');
         }
       }
 
@@ -690,12 +997,11 @@
 
       socket.on("connect", () => {
         console.log("✅ Connected to server");
-        joinBtn.disabled = false;
+        loadRooms(); // Load rooms khi connect
       });
 
       socket.on("disconnect", (reason) => {
         console.log("❌ Disconnected:", reason);
-        joinBtn.disabled = false;
         micButton.disabled = true;
         stopRecording();
       });
@@ -708,10 +1014,43 @@
       socket.on("joined", (data) => {
         console.log("✅ Joined room:", data);
         conversationId = data.conversationId;
-        joinContainer.classList.add('hidden');
         micContainer.classList.remove('hidden');
         micButton.disabled = false;
         welcomeMessage.textContent = `Cuộc hội thoại: ${data.conversationId}`;
+        
+        // Reset flag và enable button
+        isCreatingConversation = false;
+        newConversationBtn.disabled = false;
+        
+        // Clear empty state nếu đang hiển thị "Đang tạo cuộc trò chuyện mới..."
+        const emptyState = chatArea.querySelector('.empty-state');
+        if (emptyState && emptyState.textContent.includes('Đang tạo')) {
+          chatArea.innerHTML = ''; // Clear để sẵn sàng cho message mới
+        }
+        // Update dialogue sequence on conversation start
+        dialogueSequence.textContent = "Bạn đang luyện tập hội thoại tiếng Nhật với AI. Hãy nói bằng tiếng Nhật để bắt đầu!";
+        loadRooms(); // Refresh rooms để highlight active
+      });
+
+      /** ✅ HISTORY EVENT */
+      socket.on("history", (data) => {
+        console.log("📜 History loaded:", data);
+        // Clear chat area
+        chatArea.innerHTML = '';
+        // Render messages
+        if (data.messages && data.messages.length > 0) {
+          data.messages.forEach(msg => {
+            const isUser = msg.role === 'USER';
+            addChatMessage(msg.message, '', isUser, false, msg.audioUrl || null);
+          });
+        }
+      });
+
+      /** ✅ ROOM UPDATED EVENT - Tự động refresh danh sách rooms */
+      socket.on("room-updated", (data) => {
+        console.log("🔄 Room updated:", data);
+        // Refresh danh sách rooms khi có room mới hoặc được update
+        loadRooms();
       });
 
       /** ✅ PROCESSING STATUS */
@@ -730,7 +1069,8 @@
         console.log("📝 Transcription:", data.text);
         removeProcessingMessage();
         // Hiển thị user message với transcription tiếng Nhật
-        addChatMessage(data.text, '', true); // true = user message
+        // audioUrl sẽ được update sau khi upload xong, tạm thời để null
+        addChatMessage(data.text, '', true, false, null); // true = user message
       });
 
       /** ✅ TEXT RESPONSE */
@@ -738,8 +1078,9 @@
         console.log("💬 AI Response:", data.text);
         removeProcessingMessage();
         // Add AI response với typing effect (chỉ khi có text)
+        // audioUrl sẽ được update sau khi upload xong, tạm thời để null
         if (data.text) {
-          addChatMessage(data.text, data.translation || '', false, true); // true = show typing effect
+          addChatMessage(data.text, data.translation || '', false, true, null); // false = AI, true = show typing, null = audioUrl sẽ update sau
         }
       });
 
@@ -814,19 +1155,151 @@
         removeProcessingMessage();
       });
 
+      /** ✅ MESSAGE AUDIO UPDATED - Update audioUrl cho message đã hiển thị */
+      socket.on("message-audio-updated", (data) => {
+        console.log("🔊 Message audio updated:", data);
+        
+        // Hàm helper để update icon (định nghĩa trước để có thể dùng trong updateAudioIcon)
+        const updateIcon = (icon) => {
+          if (!icon || !data.audioUrl) return;
+          
+          // Update styling
+          icon.style.cursor = 'pointer';
+          icon.style.opacity = '1';
+          icon.title = data.role === 'USER' ? 'Phát audio của bạn' : 'Phát audio của AI';
+          
+          // Update data attribute
+          icon.setAttribute('data-audio-url', data.audioUrl);
+          
+          // Remove old click listeners bằng cách clone node
+          const newIcon = icon.cloneNode(true);
+          icon.parentNode.replaceChild(newIcon, icon);
+          
+          // Add click handler mới
+          newIcon.addEventListener('click', () => {
+            const url = newIcon.getAttribute('data-audio-url');
+            console.log(`🔊 Playing audio from URL: ${url}`);
+            if (url) {
+              playAudioFromUrl(url);
+            } else {
+              console.warn('⚠️ Audio URL is empty');
+            }
+          });
+          
+          console.log(`✅ Updated audio icon for ${data.role} message (ID: ${data.messageId}) with URL: ${data.audioUrl}`);
+        };
+        
+        // Hàm helper để update audio icon
+        const updateAudioIcon = (targetMessage) => {
+          if (!targetMessage) return false;
+          
+          // Tìm audio icon trong message (có thể chưa có nếu typing effect chưa xong)
+          let audioIcon = targetMessage.querySelector('.chat-icon');
+          
+          // Nếu chưa có icon, đợi một chút rồi thử lại (typing effect có thể đang chạy)
+          if (!audioIcon) {
+            console.log(`⏳ Audio icon not found yet, waiting for typing effect to complete...`);
+            setTimeout(() => {
+              audioIcon = targetMessage.querySelector('.chat-icon');
+              if (audioIcon && data.audioUrl) {
+                updateIcon(audioIcon);
+              } else if (!audioIcon) {
+                // Nếu vẫn chưa có, tạo icon mới
+                console.log(`🔨 Creating audio icon for ${data.role} message`);
+                const japaneseLine = targetMessage.querySelector('.chat-line');
+                if (japaneseLine) {
+                  const newIcon = document.createElement('span');
+                  newIcon.className = 'chat-icon';
+                  newIcon.textContent = '🔊';
+                  newIcon.style.marginLeft = '8px';
+                  newIcon.title = data.role === 'USER' ? 'Phát audio của bạn' : 'Phát audio của AI';
+                  japaneseLine.appendChild(newIcon);
+                  updateIcon(newIcon);
+                }
+              }
+            }, 500); // Đợi 500ms cho typing effect
+            return false;
+          }
+          
+          if (audioIcon && data.audioUrl) {
+            updateIcon(audioIcon);
+            return true;
+          }
+          return false;
+        };
+        
+        // Tìm message bubble gần nhất với role tương ứng và update audio icon
+        const messages = chatArea.querySelectorAll('.chat-message');
+        if (messages.length > 0) {
+          // Tìm message cuối cùng có role tương ứng
+          let targetMessage = null;
+          for (let i = messages.length - 1; i >= 0; i--) {
+            const msg = messages[i];
+            const isUser = msg.classList.contains('user');
+            if ((data.role === 'USER' && isUser) || (data.role === 'AI' && !isUser)) {
+              targetMessage = msg;
+              break;
+            }
+          }
+          
+          if (targetMessage) {
+            const updated = updateAudioIcon(targetMessage);
+            if (!updated && data.audioUrl) {
+              // Nếu không update được ngay, thử lại sau 1 giây
+              setTimeout(() => {
+                updateAudioIcon(targetMessage);
+              }, 1000);
+            }
+          } else {
+            console.warn(`⚠️ Target message not found for role: ${data.role}`);
+          }
+        } else {
+          console.warn(`⚠️ No messages found in chat area`);
+        }
+      });
+
       socket.on("error", (error) => {
         console.error("❌ Error:", error);
         removeProcessingMessage();
         statusIndicator.textContent = 'Idle';
         statusIndicator.className = 'status-indicator idle';
+        
+        // Reset flag và enable button khi có lỗi
+        isCreatingConversation = false;
+        newConversationBtn.disabled = false;
+        
         alert(error.message || 'Có lỗi xảy ra');
       });
 
       /** ✅ BUTTON HANDLERS */
-      joinBtn.addEventListener("click", () => {
-        socket.emit("join");
-        joinBtn.disabled = true;
+      // Thêm debounce để tránh click nhiều lần
+      let createConversationTimeout = null;
+      newConversationBtn.addEventListener("click", () => {
+        // Clear timeout trước đó nếu có
+        if (createConversationTimeout) {
+          clearTimeout(createConversationTimeout);
+        }
+        
+        // Debounce: chỉ thực hiện sau 300ms, nếu không có click nào khác
+        createConversationTimeout = setTimeout(() => {
+          createNewConversation();
+          createConversationTimeout = null;
+        }, 300);
       });
+
+      /** ✅ TOGGLE SIDEBAR */
+      sidebarToggle.addEventListener("click", () => {
+        sidebar.classList.toggle("collapsed");
+        // Lưu trạng thái vào localStorage
+        const isCollapsed = sidebar.classList.contains("collapsed");
+        localStorage.setItem("sidebarCollapsed", isCollapsed);
+      });
+
+      // Load trạng thái sidebar từ localStorage khi page load
+      const savedSidebarState = localStorage.getItem("sidebarCollapsed");
+      if (savedSidebarState === "true") {
+        sidebar.classList.add("collapsed");
+      }
 
       micButton.addEventListener("click", async () => {
         if (!isRecording) {
@@ -834,11 +1307,6 @@
         } else {
           stopRecording();
         }
-      });
-
-      // Update dialogue sequence on conversation start
-      socket.on("joined", () => {
-        dialogueSequence.textContent = "Bạn đang luyện tập hội thoại tiếng Nhật với AI. Hãy nói bằng tiếng Nhật để bắt đầu!";
       });
     </script>
   </body>
