@@ -1,5 +1,5 @@
 import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
-import { addTimeUTC } from '@/shared/helpers'
+import { addTimeUTC, calculateEloGain, calculateEloLoss } from '@/shared/helpers'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MatchingGateway } from '@/websockets/matching.gateway'
 import {
@@ -769,16 +769,81 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         `[RoundQuestion Timeout] Match ${matchId} completed with winner userId ${completedMatch.winnerId} (participant ${matchWinnerId}, ${maxWins} round wins)`
       )
 
-      // Send match completion notification to both users
-      const userId1 = completedMatch.participants[0]?.userId
-      const userId2 = completedMatch.participants[1]?.userId
+      // Calculate and persist ELO changes, then notify users
+      try {
+        const participants = completedMatch.participants || []
+        const winnerUserId = completedMatch.winnerId
+        const loserUserId = participants.find((p) => p.userId !== winnerUserId)?.userId
 
-      if (userId1 && userId2) {
-        this.matchingGateway.notifyMatchCompleted(
-          matchId,
-          userId1,
-          userId2,
-          completedMatch
+        let eloGained = 0
+        let eloLost = 0
+
+        if (winnerUserId && loserUserId) {
+          const winnerUser = participants.find((p) => p.userId === winnerUserId)?.user
+          const loserUser = participants.find((p) => p.userId === loserUserId)?.user
+
+          const winnerElo = (winnerUser && winnerUser.eloscore) || 0
+          const loserElo = (loserUser && loserUser.eloscore) || 0
+
+          // Compute elo changes
+          eloGained = calculateEloGain(winnerElo, loserElo)
+          eloLost = calculateEloLoss(loserElo, winnerElo)
+
+          // Persist changes in a transaction: update match (elo fields) and both users' eloscore
+          const newLoserElo = Math.max(0, loserElo - eloLost)
+
+          await this.prismaService.$transaction([
+            this.prismaService.match.update({
+              where: { id: matchId },
+              data: { eloGained, eloLost }
+            }),
+            this.prismaService.user.update({
+              where: { id: winnerUserId },
+              data: { eloscore: { increment: eloGained } as any }
+            }),
+            this.prismaService.user.update({
+              where: { id: loserUserId },
+              data: { eloscore: newLoserElo }
+            })
+          ])
+        }
+
+        const userId1 = completedMatch.participants[0]?.userId
+        const userId2 = completedMatch.participants[1]?.userId
+
+        if (userId1 && userId2) {
+          // Re-fetch match with elo fields included for notification
+          const updatedMatch = await this.prismaService.match.findUnique({
+            where: { id: matchId },
+            include: {
+              winner: true,
+              participants: { include: { user: true } },
+              rounds: {
+                include: {
+                  roundWinner: { include: { user: true } },
+                  participants: {
+                    include: {
+                      matchParticipant: { include: { user: true } },
+                      selectedUserPokemon: { include: { pokemon: true } }
+                    }
+                  }
+                },
+                orderBy: { roundNumber: 'asc' }
+              }
+            }
+          })
+
+          this.matchingGateway.notifyMatchCompleted(
+            matchId,
+            userId1,
+            userId2,
+            updatedMatch || completedMatch
+          )
+        }
+      } catch (e) {
+        this.logger.error(
+          `[RoundQuestion Timeout] Error persisting ELO for match ${matchId}`,
+          e
         )
       }
     } catch (error) {
