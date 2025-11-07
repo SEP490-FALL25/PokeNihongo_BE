@@ -8,6 +8,9 @@ export const BullAction = {
   // Round question actions
   CHECK_QUESTION_TIMEOUT: 'check-question-timeout',
 
+  // Round start actions
+  START_ROUND: 'start-round',
+
   // User actions
   DELETE_INACTIVE_USER: 'delete-inactive-user'
 } as const

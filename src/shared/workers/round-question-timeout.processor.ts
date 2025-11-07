@@ -22,7 +22,9 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     private readonly prismaService: PrismaService,
     private readonly matchingGateway: MatchingGateway,
     @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
-    private readonly roundQuestionTimeoutQueue: Queue
+    private readonly roundQuestionTimeoutQueue: Queue,
+    @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
+    private readonly matchRoundParticipantTimeoutQueue: Queue
   ) {}
 
   async onModuleInit() {
@@ -76,6 +78,48 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     )
   }
 
+  /**
+   * Calculate points earned based on answer speed and debuffs
+   * @param isCorrect - Whether answer is correct
+   * @param basePoints - Base points for the question
+   * @param timeAnswerMs - Time taken to answer in milliseconds
+   * @param timeLimitMs - Time limit for the question
+   * @param debuff - Debuff applied to the question (if any)
+   * @returns Points earned (0 for incorrect, 50%-100% of base for correct based on speed)
+   */
+  private calculatePointsEarned(
+    isCorrect: boolean,
+    basePoints: number,
+    timeAnswerMs: number,
+    timeLimitMs: number,
+    debuff?: { typeDebuff: string; valueDebuff: number } | null
+  ): number {
+    if (!isCorrect) {
+      return 0
+    }
+
+    // Calculate speed ratio: faster answer = lower ratio (0.0 = instant, 1.0 = timeout)
+    const speedRatio = Math.min(timeAnswerMs / timeLimitMs, 1.0)
+
+    // Calculate speed bonus: faster = higher bonus (0.0 to 0.5)
+    const speedBonus = (1 - speedRatio) * 0.5
+
+    // Base multiplier: 0.5 (minimum) to 1.0 (maximum)
+    const baseMultiplier = 0.5 + speedBonus
+
+    // Calculate points before debuff
+    let points = basePoints * baseMultiplier
+
+    // Apply DECREASE_POINT debuff if present
+    if (debuff && debuff.typeDebuff === 'DECREASE_POINT') {
+      points -= debuff.valueDebuff
+      // Ensure minimum 10% of base points
+      points = Math.max(points, basePoints * 0.1)
+    }
+
+    return Math.round(points)
+  }
+
   @Process(BullAction.CHECK_QUESTION_TIMEOUT)
   async handleQuestionTimeout(
     job: Job<{ roundQuestionId: number; matchRoundParticipantId: number }>
@@ -87,7 +131,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     )
 
     try {
-      // Fetch the round question
+      // Fetch the round question with debuff
       const roundQuestion = await this.prismaService.roundQuestion.findUnique({
         where: { id: roundQuestionId },
         include: {
@@ -95,7 +139,8 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             include: {
               answers: true
             }
-          }
+          },
+          debuff: true
         }
       })
 
@@ -119,7 +164,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           `[RoundQuestion Timeout] RoundQuestion ${roundQuestionId} already answered, skipping auto-select`
         )
       } else {
-        // Auto-select random answer
+        // Auto-select random answer (timeout scenario)
         const answers = roundQuestion.questionBank.answers
         if (answers.length === 0) {
           this.logger.warn(
@@ -127,6 +172,15 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           )
         } else {
           const randomAnswer = answers[Math.floor(Math.random() * answers.length)]
+
+          // Calculate points: timeout = full time, so 50% of base if correct (or 0 if wrong)
+          const pointsEarned = this.calculatePointsEarned(
+            randomAnswer.isCorrect,
+            roundQuestion.basePoints,
+            roundQuestion.timeLimitMs, // Timeout = full time
+            roundQuestion.timeLimitMs,
+            roundQuestion.debuff
+          )
 
           if (existingAnswerLog) {
             // Update existing log
@@ -136,11 +190,11 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
                 answerId: randomAnswer.id,
                 timeAnswerMs: roundQuestion.timeLimitMs,
                 isCorrect: randomAnswer.isCorrect,
-                pointsEarned: 0 // Timeout = 0 points
+                pointsEarned
               }
             })
             this.logger.log(
-              `[RoundQuestion Timeout] Updated answerlog ${existingAnswerLog.id} with random answer ${randomAnswer.id} (timeout)`
+              `[RoundQuestion Timeout] Updated answerlog ${existingAnswerLog.id} with random answer ${randomAnswer.id} (timeout), pointsEarned=${pointsEarned}`
             )
           } else {
             // Create new log
@@ -150,11 +204,11 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
                 answerId: randomAnswer.id,
                 timeAnswerMs: roundQuestion.timeLimitMs,
                 isCorrect: randomAnswer.isCorrect,
-                pointsEarned: 0 // Timeout = 0 points
+                pointsEarned
               }
             })
             this.logger.log(
-              `[RoundQuestion Timeout] Created answerlog with random answer ${randomAnswer.id} (timeout)`
+              `[RoundQuestion Timeout] Created answerlog with random answer ${randomAnswer.id} (timeout), pointsEarned=${pointsEarned}`
             )
           }
         }
@@ -352,18 +406,47 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     matchId: number
   ): Promise<void> {
     try {
-      // Fetch all participants of this round
-      const allParticipants = await this.prismaService.matchRoundParticipant.findMany({
-        where: { matchRoundId, deletedAt: null },
+      // Fetch all participants of this round with round data
+      const matchRound = await this.prismaService.matchRound.findUnique({
+        where: { id: matchRoundId },
         include: {
-          matchParticipant: true
+          participants: {
+            include: {
+              matchParticipant: {
+                include: {
+                  user: true
+                }
+              }
+            }
+          }
         }
       })
+
+      if (!matchRound) {
+        this.logger.warn(`[RoundQuestion Timeout] MatchRound ${matchRoundId} not found`)
+        return
+      }
+
+      const allParticipants = matchRound.participants
 
       // Check if both participants completed
       const allCompleted = allParticipants.every((p) => p.status === 'COMPLETED')
 
       if (!allCompleted) {
+        // Find who completed
+        const completedParticipant = allParticipants.find((p) => p.status === 'COMPLETED')
+        if (completedParticipant) {
+          const completedUserId = completedParticipant.matchParticipant.userId
+          this.matchingGateway.notifyWaitingForOpponent(
+            matchId,
+            completedUserId,
+            matchRound.roundNumber
+          )
+          this.logger.log(
+            `[RoundQuestion Timeout] User ${completedUserId} completed round ${matchRound.roundNumber}, waiting for opponent`
+          )
+        }
+
         this.logger.log(
           `[RoundQuestion Timeout] Not all participants completed for round ${matchRoundId}, waiting...`
         )
@@ -453,7 +536,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
   }
 
   /**
-   * Schedule next round: set IN_PROGRESS and schedule first question for both participants
+   * Schedule next round: send countdown and enqueue START_ROUND job with 5s delay
    */
   private async scheduleNextRound(
     matchId: number,
@@ -470,9 +553,10 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
 
       if (!nextRoundNumber) {
         this.logger.log(
-          `[RoundQuestion Timeout] No next round after ${currentRoundNumber}, match ${matchId} completed`
+          `[RoundQuestion Timeout] No next round after ${currentRoundNumber}, calculating match winner for match ${matchId}`
         )
-        // TODO: Handle match completion (calculate final winner, update match status)
+        // Calculate match winner and complete match
+        await this.completeMatch(matchId)
         return
       }
 
@@ -480,7 +564,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         `[RoundQuestion Timeout] Scheduling next round ${nextRoundNumber} for match ${matchId}`
       )
 
-      // Find next round
+      // Find next round with participants
       const nextRound = await this.prismaService.matchRound.findFirst({
         where: {
           matchId,
@@ -489,6 +573,13 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         },
         include: {
           participants: {
+            include: {
+              matchParticipant: {
+                include: {
+                  user: true
+                }
+              }
+            },
             orderBy: { orderSelected: 'asc' }
           }
         }
@@ -501,63 +592,198 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         return
       }
 
-      // Update round status to IN_PROGRESS
-      await this.prismaService.matchRound.update({
-        where: { id: nextRound.id },
-        data: {
-          status: 'IN_PROGRESS',
-          endTimeRound: addTimeUTC(new Date(), 10 * 60 * 1000) // 10 minutes
+      // Get user IDs for socket notification
+      const userId1 = nextRound.participants[0]?.matchParticipant.userId
+      const userId2 = nextRound.participants[1]?.matchParticipant.userId
+
+      if (!userId1 || !userId2) {
+        this.logger.warn(
+          `[RoundQuestion Timeout] Missing participants for next round ${nextRoundNumber}`
+        )
+        return
+      }
+
+      // Send countdown notification (5 seconds)
+      this.matchingGateway.notifyRoundStarting(
+        matchId,
+        userId1,
+        userId2,
+        nextRoundNumber,
+        5
+      )
+
+      // Enqueue START_ROUND job with 5-second delay
+      await this.matchRoundParticipantTimeoutQueue.add(
+        BullAction.START_ROUND,
+        {
+          matchRoundId: nextRound.id,
+          matchId
+        },
+        {
+          delay: 5000
         }
+      )
+
+      this.logger.log(
+        `[RoundQuestion Timeout] Scheduled Round ${nextRoundNumber} to start in 5 seconds for match ${matchId}`
+      )
+    } catch (error) {
+      this.logger.error(
+        `[RoundQuestion Timeout] Error scheduling next round after ${currentRoundNumber}`,
+        error
+      )
+    }
+  }
+
+  /**
+   * Complete match: calculate overall winner, update Match status, and notify users
+   */
+  private async completeMatch(matchId: number): Promise<void> {
+    try {
+      this.logger.log(`[RoundQuestion Timeout] Completing match ${matchId}`)
+
+      // Fetch all 3 rounds with winners
+      const allRounds = await this.prismaService.matchRound.findMany({
+        where: { matchId, deletedAt: null },
+        include: {
+          roundWinner: {
+            include: {
+              user: true
+            }
+          },
+          participants: {
+            include: {
+              matchParticipant: {
+                include: {
+                  user: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: { roundNumber: 'asc' }
       })
 
-      // Update all participants to IN_PROGRESS
-      await this.prismaService.matchRoundParticipant.updateMany({
-        where: { matchRoundId: nextRound.id },
-        data: { status: 'IN_PROGRESS' }
+      if (allRounds.length !== 3) {
+        this.logger.warn(
+          `[RoundQuestion Timeout] Expected 3 rounds for match ${matchId}, found ${allRounds.length}`
+        )
+        return
+      }
+
+      // Count round wins per participant
+      const roundWinCounts = new Map<number, number>()
+      for (const round of allRounds) {
+        if (round.roundWinnerId) {
+          const currentCount = roundWinCounts.get(round.roundWinnerId) || 0
+          roundWinCounts.set(round.roundWinnerId, currentCount + 1)
+        }
+      }
+
+      // Determine match winner: participant with most round wins
+      let matchWinnerId: number | null = null
+      let maxWins = 0
+
+      for (const [participantId, wins] of roundWinCounts.entries()) {
+        if (wins > maxWins) {
+          maxWins = wins
+          matchWinnerId = participantId
+        }
+      }
+
+      // If tied (shouldn't happen with 3 rounds), use total points as tiebreaker
+      if (maxWins === 0 || !matchWinnerId) {
+        this.logger.warn(
+          `[RoundQuestion Timeout] No clear winner found by round wins, using total points tiebreaker`
+        )
+
+        const participantTotals = new Map<number, number>()
+        for (const round of allRounds) {
+          for (const participant of round.participants) {
+            const currentTotal =
+              participantTotals.get(participant.matchParticipantId) || 0
+            participantTotals.set(
+              participant.matchParticipantId,
+              currentTotal + (participant.points || 0)
+            )
+          }
+        }
+
+        let maxPoints = 0
+        for (const [participantId, totalPoints] of participantTotals.entries()) {
+          if (totalPoints > maxPoints) {
+            maxPoints = totalPoints
+            matchWinnerId = participantId
+          }
+        }
+      }
+
+      // Get winner's userId for final data
+      const winnerParticipant = await this.prismaService.matchParticipant.findUnique({
+        where: { id: matchWinnerId! },
+        include: { user: true }
+      })
+
+      // Update Match with winner and COMPLETED status
+      const completedMatch = await this.prismaService.match.update({
+        where: { id: matchId },
+        data: {
+          status: 'COMPLETED',
+          winnerId: winnerParticipant?.userId || null
+        },
+        include: {
+          winner: true,
+          participants: {
+            include: {
+              user: true
+            }
+          },
+          rounds: {
+            include: {
+              roundWinner: {
+                include: {
+                  user: true
+                }
+              },
+              participants: {
+                include: {
+                  matchParticipant: {
+                    include: {
+                      user: true
+                    }
+                  },
+                  selectedUserPokemon: {
+                    include: {
+                      pokemon: true
+                    }
+                  }
+                }
+              }
+            },
+            orderBy: { roundNumber: 'asc' }
+          }
+        }
       })
 
       this.logger.log(
-        `[RoundQuestion Timeout] Round ${nextRoundNumber} started for match ${matchId}`
+        `[RoundQuestion Timeout] Match ${matchId} completed with winner userId ${completedMatch.winnerId} (participant ${matchWinnerId}, ${maxWins} round wins)`
       )
 
-      // Schedule first question timeout for each participant
-      for (const participant of nextRound.participants) {
-        const firstQuestion = await this.prismaService.roundQuestion.findFirst({
-          where: { matchRoundParticipantId: participant.id },
-          orderBy: { orderNumber: 'asc' }
-        })
+      // Send match completion notification to both users
+      const userId1 = completedMatch.participants[0]?.userId
+      const userId2 = completedMatch.participants[1]?.userId
 
-        if (!firstQuestion) {
-          this.logger.warn(
-            `[RoundQuestion Timeout] No questions found for participant ${participant.id} in round ${nextRoundNumber}`
-          )
-          continue
-        }
-
-        const endTimeQuestion = addTimeUTC(new Date(), firstQuestion.timeLimitMs)
-        await this.prismaService.roundQuestion.update({
-          where: { id: firstQuestion.id },
-          data: { endTimeQuestion }
-        })
-
-        await this.roundQuestionTimeoutQueue.add(
-          BullAction.CHECK_QUESTION_TIMEOUT,
-          {
-            roundQuestionId: firstQuestion.id,
-            matchRoundParticipantId: participant.id
-          },
-          {
-            delay: firstQuestion.timeLimitMs
-          }
-        )
-
-        this.logger.log(
-          `[RoundQuestion Timeout] Scheduled first question ${firstQuestion.id} for participant ${participant.id} in round ${nextRoundNumber}`
+      if (userId1 && userId2) {
+        this.matchingGateway.notifyMatchCompleted(
+          matchId,
+          userId1,
+          userId2,
+          completedMatch
         )
       }
     } catch (error) {
       this.logger.error(
-        `[RoundQuestion Timeout] Error scheduling next round after ${currentRoundNumber}`,
+        `[RoundQuestion Timeout] Error completing match ${matchId}`,
         error
       )
     }
