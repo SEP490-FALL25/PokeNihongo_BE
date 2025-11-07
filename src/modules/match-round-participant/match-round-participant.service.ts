@@ -34,7 +34,8 @@ import {
 } from './entities/match-round-participant.entity'
 import { MatchRoundParticipantRepo } from './match-round-participant.repo'
 
-const TIME_CHOOSE_POKEMON_MS = 30000 // 30 seconds
+const TIME_CHOOSE_POKEMON_MS = 5000 // 5 seconds
+const TIME_LIMIT_ANSWER_QUESTION_MS = 5000 // 5 seconds
 
 @Injectable()
 export class MatchRoundParticipantService {
@@ -614,7 +615,7 @@ export class MatchRoundParticipantService {
             data: {
               matchRoundParticipantId: participantId,
               questionBankId: q.id,
-              timeLimitMs: 60000,
+              timeLimitMs: TIME_LIMIT_ANSWER_QUESTION_MS,
               basePoints: 100,
               orderNumber: orderNumber
             }

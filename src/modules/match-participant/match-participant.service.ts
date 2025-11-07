@@ -27,6 +27,7 @@ import {
 } from './entities/match-participant.entity'
 import { MatchParticipantRepo } from './match-participant.repo'
 
+const TIME_CHOOSE_POKEMON_MS = 5000
 @Injectable()
 export class MatchParticipantService {
   private readonly logger = new Logger(MatchParticipantService.name)
@@ -370,7 +371,7 @@ export class MatchParticipantService {
           await this.matchRoundParticipantRepo.update({
             id: firstParticipant.id,
             data: {
-              endTimeSelected: addTimeUTC(new Date(), 30000) // 30 seconds
+              endTimeSelected: addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
             }
           })
 
@@ -381,7 +382,7 @@ export class MatchParticipantService {
               matchRoundParticipantId: firstParticipant.id
             },
             {
-              delay: 30000 // 30 seconds
+              delay: TIME_CHOOSE_POKEMON_MS
             }
           )
 

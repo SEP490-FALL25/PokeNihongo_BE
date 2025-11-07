@@ -494,4 +494,180 @@ export class MatchingGateway {
       `[MatchingGateway] Notified user ${opponentUserId} in match ${matchId} that opponent completed`
     )
   }
+
+  /**
+   * Notify user that they completed but waiting for opponent
+   * @param matchId - Match ID
+   * @param userId - User who completed first
+   * @param roundNumber - Current round number
+   */
+  notifyWaitingForOpponent(matchId: number, userId: number, roundNumber: string): void {
+    const userMatchRoom = `match_${matchId}_user_${userId}`
+
+    this.server.to(userMatchRoom).emit(MATCHING_EVENTS.WAITING_FOR_OPPONENT, {
+      type: 'WAITING_FOR_OPPONENT',
+      matchId,
+      roundNumber,
+      message: `You completed Round ${roundNumber}. Waiting for opponent to finish...`
+    })
+
+    this.logger.log(
+      `[MatchingGateway] Notified user ${userId} in match ${matchId} to wait for opponent in round ${roundNumber}`
+    )
+  }
+
+  /**
+   * Notify user about their answer result and next question
+   * @param matchId - Match ID
+   * @param userId - User who answered
+   * @param answerResult - Answer result data (answerId, isCorrect, pointsEarned, timeAnswerMs)
+   * @param nextQuestion - Next question data or null if last question
+   */
+  notifyQuestionAnswered(
+    matchId: number,
+    userId: number,
+    answerResult: {
+      roundQuestionId: number
+      answerId: number
+      isCorrect: boolean
+      pointsEarned: number
+      timeAnswerMs: number
+    },
+    nextQuestion: any | null
+  ): void {
+    const userMatchRoom = `match_${matchId}_user_${userId}`
+
+    this.server.to(userMatchRoom).emit(MATCHING_EVENTS.QUESTION_ANSWERED, {
+      type: 'QUESTION_ANSWERED',
+      matchId,
+      answerResult,
+      nextQuestion
+    })
+
+    this.logger.log(
+      `[MatchingGateway] Notified user ${userId} in match ${matchId} about answer result (roundQuestionId=${answerResult.roundQuestionId}, nextQuestion=${nextQuestion ? nextQuestion.id : 'null'})`
+    )
+  }
+
+  /**
+   * Notify both users about round completion result
+   * @param matchId - Match ID
+   * @param userId1 - First user ID
+   * @param userId2 - Second user ID
+   * @param roundData - Complete round data with participants and winner info
+   */
+  notifyRoundCompleted(
+    matchId: number,
+    userId1: number,
+    userId2: number,
+    roundData: any
+  ): void {
+    const userMatchRoom1 = `match_${matchId}_user_${userId1}`
+    const userMatchRoom2 = `match_${matchId}_user_${userId2}`
+
+    const payload = {
+      type: 'ROUND_COMPLETED',
+      matchId,
+      round: roundData
+    }
+
+    this.server.to(userMatchRoom1).emit(MATCHING_EVENTS.ROUND_COMPLETED, payload)
+    this.server.to(userMatchRoom2).emit(MATCHING_EVENTS.ROUND_COMPLETED, payload)
+
+    this.logger.log(
+      `[MatchingGateway] Notified users ${userId1} and ${userId2} in match ${matchId} about round ${roundData.roundNumber} completion (winner: ${roundData.roundWinnerId})`
+    )
+  }
+
+  /**
+   * Notify both users that round is starting in X seconds
+   * @param matchId - Match ID
+   * @param userId1 - First user ID
+   * @param userId2 - Second user ID
+   * @param roundNumber - Round number that will start
+   * @param delaySeconds - Seconds until round starts
+   */
+  notifyRoundStarting(
+    matchId: number,
+    userId1: number,
+    userId2: number,
+    roundNumber: string,
+    delaySeconds: number
+  ): void {
+    const userMatchRoom1 = `match_${matchId}_user_${userId1}`
+    const userMatchRoom2 = `match_${matchId}_user_${userId2}`
+
+    const payload = {
+      type: 'ROUND_STARTING',
+      matchId,
+      roundNumber,
+      delaySeconds,
+      message: `Round ${roundNumber} will start in ${delaySeconds} seconds`
+    }
+
+    this.server.to(userMatchRoom1).emit(MATCHING_EVENTS.ROUND_STARTING, payload)
+    this.server.to(userMatchRoom2).emit(MATCHING_EVENTS.ROUND_STARTING, payload)
+
+    this.logger.log(
+      `[MatchingGateway] Notified users ${userId1} and ${userId2} that round ${roundNumber} starting in ${delaySeconds}s`
+    )
+  }
+
+  /**
+   * Notify user about round start with their first question
+   * @param matchId - Match ID
+   * @param userId - User ID
+   * @param roundData - Round data with participants
+   * @param firstQuestion - User's first question
+   */
+  notifyRoundStarted(
+    matchId: number,
+    userId: number,
+    roundData: any,
+    firstQuestion: any
+  ): void {
+    const userMatchRoom = `match_${matchId}_user_${userId}`
+
+    this.server.to(userMatchRoom).emit(MATCHING_EVENTS.ROUND_STARTED, {
+      type: 'ROUND_STARTED',
+      matchId,
+      round: roundData,
+      firstQuestion
+    })
+
+    this.logger.log(
+      `[MatchingGateway] Notified user ${userId} that round ${roundData.roundNumber} started with first question ${firstQuestion?.id}`
+    )
+  }
+
+  /**
+   * Notify both users about match completion with final results
+   * @param matchId - Match ID
+   * @param userId1 - First user ID
+   * @param userId2 - Second user ID
+   * @param matchData - Complete match data with rounds and winner
+   */
+  notifyMatchCompleted(
+    matchId: number,
+    userId1: number,
+    userId2: number,
+    matchData: any
+  ): void {
+    const userMatchRoom1 = `match_${matchId}_user_${userId1}`
+    const userMatchRoom2 = `match_${matchId}_user_${userId2}`
+
+    const payload = {
+      type: 'MATCH_COMPLETED',
+      matchId,
+      match: matchData,
+      message: `Match completed! Winner: ${matchData.winner?.name || 'Unknown'}`
+    }
+
+    this.server.to(userMatchRoom1).emit(MATCHING_EVENTS.MATCH_COMPLETED, payload)
+    this.server.to(userMatchRoom2).emit(MATCHING_EVENTS.MATCH_COMPLETED, payload)
+
+    this.logger.log(
+      `[MatchingGateway] Notified users ${userId1} and ${userId2} that match ${matchId} completed with winner ${matchData.winnerId}`
+    )
+  }
 }
