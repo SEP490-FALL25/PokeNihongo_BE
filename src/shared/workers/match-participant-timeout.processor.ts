@@ -1,9 +1,17 @@
 import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { MatchStatus, MatchStatusType } from '@/common/constants/match.constant'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { Process, Processor } from '@nestjs/bull'
+import {
+  InjectQueue,
+  OnQueueActive,
+  OnQueueCompleted,
+  OnQueueFailed,
+  OnQueueWaiting,
+  Process,
+  Processor
+} from '@nestjs/bull'
 import { Logger } from '@nestjs/common'
-import { Job } from 'bull'
+import { Job, Queue } from 'bull'
 import { MatchingGateway } from 'src/websockets/matching.gateway'
 
 interface MatchParticipantTimeoutJobData {
@@ -18,8 +26,37 @@ export class MatchParticipantTimeoutProcessor {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly matchingGateway: MatchingGateway
+    private readonly matchingGateway: MatchingGateway,
+    @InjectQueue(BullQueue.MATCH_PARTICIPANT_TIMEOUT)
+    private readonly matchParticipantTimeoutQueue: Queue
   ) {}
+
+  // Queue lifecycle diagnostics
+  @OnQueueActive()
+  onActive(job: Job) {
+    this.logger.debug(
+      `[MatchParticipant Timeout] (jobId=${job.id}) active for participant=${job.data?.matchParticipantId}`
+    )
+  }
+
+  @OnQueueCompleted()
+  onCompleted(job: Job) {
+    this.logger.debug(
+      `[MatchParticipant Timeout] (jobId=${job.id}) completed for participant=${job.data?.matchParticipantId}`
+    )
+  }
+
+  @OnQueueFailed()
+  onFailed(job: Job, err: any) {
+    this.logger.warn(
+      `[MatchParticipant Timeout] (jobId=${job?.id}) failed for participant=${job?.data?.matchParticipantId}: ${err?.message}`
+    )
+  }
+
+  @OnQueueWaiting()
+  onWaiting(jobId: number) {
+    this.logger.debug(`[MatchParticipant Timeout] (jobId=${jobId}) waiting`)
+  }
 
   /**
    * Xử lý timeout cho MatchParticipant acceptance
@@ -32,7 +69,7 @@ export class MatchParticipantTimeoutProcessor {
 
     try {
       this.logger.log(
-        `[MatchParticipant Timeout] Processing timeout for participant ${matchParticipantId}, user ${userId}, match ${matchId}`
+        `[MatchParticipant Timeout] (jobId=${job.id}) start for participant=${matchParticipantId}, user=${userId}, match=${matchId}, delayMs=${job.opts.delay}`
       )
 
       await this.prisma.$transaction(async (tx) => {
@@ -65,14 +102,57 @@ export class MatchParticipantTimeoutProcessor {
           where: { matchId, deletedAt: null }
         })
 
+        this.logger.debug(
+          `[MatchParticipant Timeout] (jobId=${job.id}) Snapshot participants: ${allParticipants
+            .map((p) => `id=${p.id},user=${p.userId},accepted=${p.hasAccepted}`)
+            .join(' | ')}`
+        )
+
         // 4. Check nếu tất cả participants đều có hasAccepted !== null
-        const allAnswered = allParticipants.every((p) => p.hasAccepted !== null)
+        let allAnswered = allParticipants.every((p) => p.hasAccepted !== null)
 
         if (!allAnswered) {
-          this.logger.debug(
-            `[MatchParticipant Timeout] Not all participants answered yet for match ${matchId}`
-          )
-          return
+          // If the peer's acceptance job is missing, auto-resolve to prevent limbo
+          const pending = allParticipants.filter((p) => p.hasAccepted === null)
+          if (pending.length === 1) {
+            const missingP = pending[0]
+            // Check if a job exists for this participant in the queue
+            const jobs = await this.matchParticipantTimeoutQueue.getJobs([
+              'waiting',
+              'delayed',
+              'active'
+            ])
+            const exists = jobs.some((j) => j.data?.matchParticipantId === missingP.id)
+
+            if (!exists) {
+              await tx.matchParticipant.update({
+                where: { id: missingP.id },
+                data: { hasAccepted: false }
+              })
+              this.logger.warn(
+                `[MatchParticipant Timeout] (jobId=${job.id}) Peer job missing; auto-set hasAccepted=false for participant ${missingP.id}`
+              )
+
+              // Refresh state
+              const refreshed = await tx.matchParticipant.findMany({
+                where: { matchId, deletedAt: null }
+              })
+              allAnswered = refreshed.every((p) => p.hasAccepted !== null)
+
+              this.logger.debug(
+                `[MatchParticipant Timeout] (jobId=${job.id}) Snapshot after auto-resolve: ${refreshed
+                  .map((p) => `id=${p.id},user=${p.userId},accepted=${p.hasAccepted}`)
+                  .join(' | ')}`
+              )
+            }
+          }
+
+          if (!allAnswered) {
+            this.logger.debug(
+              `[MatchParticipant Timeout] (jobId=${job.id}) Not all participants answered yet for match ${matchId}`
+            )
+            return
+          }
         }
 
         // 5. Determine match status based on acceptance
@@ -101,7 +181,7 @@ export class MatchParticipantTimeoutProcessor {
           })
 
           this.logger.log(
-            `[MatchParticipant Timeout] Updated match ${matchId} status to ${newStatus}`
+            `[MatchParticipant Timeout] (jobId=${job.id}) Updated match ${matchId} status to ${newStatus}`
           )
 
           // 7. Send WebSocket notification to all participants

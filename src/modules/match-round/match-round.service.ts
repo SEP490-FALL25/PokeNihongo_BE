@@ -263,7 +263,7 @@ export class MatchRoundService {
           (p) => p.endTimeSelected !== null
         )
         if (firstParticipant) {
-          await this.matchRoundParticipantTimeoutQueue.add(
+          const job = await this.matchRoundParticipantTimeoutQueue.add(
             BullAction.CHECK_POKEMON_SELECTION_TIMEOUT,
             {
               matchRoundParticipantId: firstParticipant.id
@@ -271,6 +271,10 @@ export class MatchRoundService {
             {
               delay: 30000 // 30 seconds
             }
+          )
+
+          console.log(
+            `[MatchRoundService] Enqueued initial CHECK_POKEMON_SELECTION_TIMEOUT job ${job.id} for participant ${firstParticipant.id}`
           )
         }
 

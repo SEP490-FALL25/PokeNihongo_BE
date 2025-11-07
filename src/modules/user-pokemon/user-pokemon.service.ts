@@ -706,6 +706,7 @@ export class UserPokemonService {
     const userPokemons = await this.userPokemonRepo.getUserPokemons(userId)
     // Tạo set các pokemonId mà user sở hữu
     const userPokemonIds = new Set(userPokemons.map((up) => up.pokemonId))
+
     const userUpIdSet = new Set(userPokemons.map((up) => up.id))
     const upIdToPokemon = new Map<number, { pokemonId: number; rarity: string }>()
     for (const up of userPokemons) {

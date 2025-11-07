@@ -27,6 +27,7 @@ import { MatchQueueRepo } from './match-queue.repo'
 import { MatchmakingQueueManager } from './matchmaking-queue-manager'
 
 const TIME_KICK_USER_MS = 10000 // 10s
+// Acceptance timeout (was 35000ms mislabeled). Use 25000ms = 25s
 const TIME_OUT_USER_MS = 25000 // 25s
 
 @Injectable()
@@ -187,29 +188,34 @@ export class MatchQueueService implements OnModuleInit {
         participant2Data = participant2
 
         // 3. Schedule Bull jobs cho timeout (25s)
-        await Promise.all([
-          this.matchParticipantTimeoutQueue.add(
-            BullAction.CHECK_ACCEPTANCE_TIMEOUT,
-            {
-              matchParticipantId: participant1.id,
-              matchId: match.id,
-              userId: userId1
-            },
-            { delay: TIME_OUT_USER_MS } // 25 seconds
-          ),
-          this.matchParticipantTimeoutQueue.add(
-            BullAction.CHECK_ACCEPTANCE_TIMEOUT,
-            {
-              matchParticipantId: participant2.id,
-              matchId: match.id,
-              userId: userId2
-            },
-            { delay: TIME_OUT_USER_MS } // 25 seconds
-          )
+        const job1 = await this.matchParticipantTimeoutQueue.add(
+          BullAction.CHECK_ACCEPTANCE_TIMEOUT,
+          {
+            matchParticipantId: participant1.id,
+            matchId: match.id,
+            userId: userId1
+          },
+          { delay: TIME_OUT_USER_MS }
+        )
+        const job2 = await this.matchParticipantTimeoutQueue.add(
+          BullAction.CHECK_ACCEPTANCE_TIMEOUT,
+          {
+            matchParticipantId: participant2.id,
+            matchId: match.id,
+            userId: userId2
+          },
+          { delay: TIME_OUT_USER_MS }
+        )
+
+        const [state1, state2] = await Promise.all([
+          // @ts-ignore
+          job1.getState?.(),
+          // @ts-ignore
+          job2.getState?.()
         ])
 
         this.logger.log(
-          `[MatchmakingRun] Scheduled timeout jobs for participants ${participant1.id} and ${participant2.id}`
+          `[MatchmakingRun] Scheduled timeout jobs: p1=${participant1.id}/job=${job1.id}/state=${state1}, p2=${participant2.id}/job=${job2.id}/state=${state2}, delay=${TIME_OUT_USER_MS}ms`
         )
 
         // 4. Xóa 2 users khỏi MatchQueue (DB)
