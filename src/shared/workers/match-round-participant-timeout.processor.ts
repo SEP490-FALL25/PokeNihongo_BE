@@ -22,7 +22,7 @@ import { Inject, Logger, OnModuleInit } from '@nestjs/common'
 import { Job, Queue } from 'bull'
 
 const TIME_CHOOSE_POKEMON_MS = 5000
-const TIME_LIMIT_ANSWER_QUESTION_MS = 5000
+const TIME_LIMIT_ANSWER_QUESTION_MS = 60000
 
 @Processor(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
 export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
@@ -957,8 +957,22 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
           }
         )
 
-        // Send socket to user with round data, participant info, and first question
+        // Send socket to user with round data, participant info, and first question (formatted via QuestionBankService)
         const userId = participant.matchParticipant.userId
+        let firstQuestionForNotify: any | null = null
+        try {
+          const qbList = await this.questionBankRepo.findByIds(
+            [firstQuestion.questionBankId],
+            'vi'
+          )
+          firstQuestionForNotify = qbList?.[0] || null
+        } catch (err) {
+          this.logger.warn(
+            `[Round Timeout] Failed to fetch formatted questionBank for firstQuestion ${firstQuestion.id}: ${err?.message}`
+          )
+          firstQuestionForNotify = null
+        }
+
         this.matchingGateway.notifyRoundStarted(
           matchId,
           userId,
@@ -972,7 +986,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
               selectedUserPokemon: participant.selectedUserPokemon
             }
           },
-          firstQuestion
+          firstQuestionForNotify
         )
 
         this.logger.log(

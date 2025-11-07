@@ -1,5 +1,6 @@
 import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
-import { addTimeUTC } from '@/shared/helpers'
+import { QuestionBankRepository } from '@/modules/question-bank/question-bank.repo'
+import { addTimeUTC, calculateEloGain, calculateEloLoss } from '@/shared/helpers'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MatchingGateway } from '@/websockets/matching.gateway'
 import {
@@ -21,6 +22,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly matchingGateway: MatchingGateway,
+    private readonly questionBankRepo: QuestionBankRepository,
     @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
     private readonly roundQuestionTimeoutQueue: Queue,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
@@ -266,7 +268,24 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
       const currentUserId = matchRoundParticipant.matchParticipant.userId
       const matchId = matchRoundParticipant.matchRound.match.id
 
-      // Send socket notification with answer result and next question
+      // Prepare formatted nextQuestion via QuestionBankService so socket uses consistent shape
+      let nextQuestionForNotify: any | null = null
+      if (nextQuestion) {
+        try {
+          const qbList = await this.questionBankRepo.findByIds(
+            [nextQuestion.questionBankId],
+            'vi'
+          )
+          nextQuestionForNotify = qbList?.[0] || null
+        } catch (err) {
+          this.logger.warn(
+            `[RoundQuestion Timeout] Failed to fetch formatted questionBank for nextQuestion ${nextQuestion.id}: ${err?.message}`
+          )
+          nextQuestionForNotify = null
+        }
+      }
+
+      // Send socket notification with answer result and next question (formatted)
       if (finalAnswerLog) {
         this.matchingGateway.notifyQuestionAnswered(
           matchId,
@@ -278,7 +297,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             pointsEarned: finalAnswerLog.pointsEarned || 0,
             timeAnswerMs: finalAnswerLog.timeAnswerMs
           },
-          nextQuestion // null if no next question (last question)
+          nextQuestionForNotify // null if no next question (last question)
         )
       }
 
@@ -498,19 +517,42 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             include: {
               matchParticipant: {
                 include: {
-                  user: true
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      avatar: true
+                    }
+                  }
                 }
               },
               selectedUserPokemon: {
                 include: {
-                  pokemon: true
+                  pokemon: {
+                    select: {
+                      id: true,
+                      pokedex_number: true,
+                      nameJp: true,
+                      nameTranslations: true,
+                      rarity: true,
+                      imageUrl: true
+                    }
+                  }
                 }
               }
             }
           },
           roundWinner: {
             include: {
-              user: true
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatar: true
+                }
+              }
             }
           }
         }
@@ -735,26 +777,59 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           winner: true,
           participants: {
             include: {
-              user: true
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatar: true,
+                  eloscore: true
+                }
+              }
             }
           },
           rounds: {
             include: {
               roundWinner: {
                 include: {
-                  user: true
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      avatar: true,
+                      eloscore: true
+                    }
+                  }
                 }
               },
               participants: {
                 include: {
                   matchParticipant: {
                     include: {
-                      user: true
+                      user: {
+                        select: {
+                          id: true,
+                          name: true,
+                          email: true,
+                          avatar: true,
+                          eloscore: true
+                        }
+                      }
                     }
                   },
                   selectedUserPokemon: {
                     include: {
-                      pokemon: true
+                      pokemon: {
+                        select: {
+                          id: true,
+                          pokedex_number: true,
+                          nameJp: true,
+                          nameTranslations: true,
+                          rarity: true,
+                          imageUrl: true
+                        }
+                      }
                     }
                   }
                 }
@@ -769,16 +844,138 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         `[RoundQuestion Timeout] Match ${matchId} completed with winner userId ${completedMatch.winnerId} (participant ${matchWinnerId}, ${maxWins} round wins)`
       )
 
-      // Send match completion notification to both users
-      const userId1 = completedMatch.participants[0]?.userId
-      const userId2 = completedMatch.participants[1]?.userId
+      // Calculate and persist ELO changes, then notify users
+      try {
+        const participants = completedMatch.participants || []
+        const winnerUserId = completedMatch.winnerId
+        const loserUserId = participants.find((p) => p.userId !== winnerUserId)?.userId
 
-      if (userId1 && userId2) {
-        this.matchingGateway.notifyMatchCompleted(
-          matchId,
-          userId1,
-          userId2,
-          completedMatch
+        let eloGained = 0
+        let eloLost = 0
+
+        if (winnerUserId && loserUserId) {
+          const winnerUser = participants.find((p) => p.userId === winnerUserId)?.user
+          const loserUser = participants.find((p) => p.userId === loserUserId)?.user
+
+          const winnerElo = (winnerUser && winnerUser.eloscore) || 0
+          const loserElo = (loserUser && loserUser.eloscore) || 0
+
+          // Compute elo changes
+          eloGained = calculateEloGain(winnerElo, loserElo)
+          eloLost = calculateEloLoss(loserElo, winnerElo)
+
+          // Persist changes in a transaction: update match (elo fields) and both users' eloscore
+          const newLoserElo = Math.max(0, loserElo - eloLost)
+
+          await this.prismaService.$transaction([
+            this.prismaService.match.update({
+              where: { id: matchId },
+              data: { eloGained, eloLost }
+            }),
+            this.prismaService.user.update({
+              where: { id: winnerUserId },
+              data: { eloscore: { increment: eloGained } as any }
+            }),
+            this.prismaService.user.update({
+              where: { id: loserUserId },
+              data: { eloscore: newLoserElo }
+            })
+          ])
+        }
+
+        const userId1 = completedMatch.participants[0]?.userId
+        const userId2 = completedMatch.participants[1]?.userId
+
+        if (userId1 && userId2) {
+          // Re-fetch match with elo fields included for notification
+          const updatedMatch = await this.prismaService.match.findUnique({
+            where: { id: matchId },
+            include: {
+              winner: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatar: true,
+                  eloscore: true
+                }
+              },
+              participants: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      avatar: true,
+                      eloscore: true
+                    }
+                  }
+                }
+              },
+              rounds: {
+                include: {
+                  roundWinner: {
+                    include: {
+                      user: {
+                        select: {
+                          id: true,
+                          name: true,
+                          email: true,
+                          avatar: true,
+                          eloscore: true
+                        }
+                      }
+                    }
+                  },
+                  participants: {
+                    include: {
+                      matchParticipant: {
+                        include: {
+                          user: {
+                            select: {
+                              id: true,
+                              name: true,
+                              email: true,
+                              avatar: true,
+                              eloscore: true
+                            }
+                          }
+                        }
+                      },
+                      selectedUserPokemon: {
+                        include: {
+                          pokemon: {
+                            select: {
+                              id: true,
+                              pokedex_number: true,
+                              nameJp: true,
+                              nameTranslations: true,
+                              rarity: true,
+                              imageUrl: true
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                orderBy: { roundNumber: 'asc' }
+              }
+            }
+          })
+
+          this.matchingGateway.notifyMatchCompleted(
+            matchId,
+            userId1,
+            userId2,
+            updatedMatch || completedMatch
+          )
+        }
+      } catch (e) {
+        this.logger.error(
+          `[RoundQuestion Timeout] Error persisting ELO for match ${matchId}`,
+          e
         )
       }
     } catch (error) {

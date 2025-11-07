@@ -157,3 +157,91 @@ export function convertEloToRank(elo: number): string {
   }
   return 'Unranked'
 }
+
+// ===================== ELO / Match scoring helpers =====================
+
+type RankInfo = {
+  rank: string
+  rankStart: number
+  rankRange: number
+  baseWin: number
+  baseLoss: number
+}
+
+const RANKS: RankInfo[] = [
+  { rank: 'N5', rankStart: 0, rankRange: 1000, baseWin: 50, baseLoss: 10 },
+  { rank: 'N4', rankStart: 1001, rankRange: 1000, baseWin: 40, baseLoss: 15 },
+  { rank: 'N3', rankStart: 2001, rankRange: 1000, baseWin: 30, baseLoss: 20 }
+]
+
+export function getRankInfoForElo(elo: number): RankInfo {
+  for (const r of RANKS) {
+    if (elo >= r.rankStart && elo <= r.rankStart + r.rankRange) return r
+  }
+  // default to lowest rank
+  return RANKS[0]
+}
+
+export function calculateMdiff(
+  pointsA: number,
+  pointsB: number,
+  scalingFactor = 500
+): number {
+  // M_diff = 2 / (1 + e^{(PointDifference / ScalingFactor)})
+  const pointDiff = pointsA - pointsB
+  const exp = Math.exp(pointDiff / scalingFactor)
+  const m = 2 / (1 + exp)
+  return m
+}
+
+export function calculateIRM(elo: number, gravityFactor = 0.5): number {
+  // IRM = 1 - (GravityFactor * PercentComplete)
+  const rank = getRankInfoForElo(elo)
+  const percentComplete = Math.max(
+    0,
+    Math.min(1, (elo - rank.rankStart) / rank.rankRange)
+  )
+  const irm = 1 - gravityFactor * percentComplete
+  return Math.min(1, Math.max(0, irm))
+}
+
+/**
+ * Calculate elo gain for the winner and elo lost for the loser according to the specified rules.
+ * Returns rounded integer values.
+ */
+export function calculateEloGain(
+  winnerElo: number,
+  loserElo: number,
+  opts?: { scaling?: number; gravity?: number }
+): number {
+  const scaling = opts?.scaling ?? 500
+  const gravity = opts?.gravity ?? 0.5
+
+  const winnerRank = getRankInfoForElo(winnerElo)
+  const baseWin = winnerRank.baseWin
+
+  const mDiff = calculateMdiff(winnerElo, loserElo, scaling)
+  const irm = calculateIRM(winnerElo, gravity)
+
+  const raw = baseWin * mDiff * irm
+  const value = Math.max(0, Math.round(raw))
+  return value
+}
+
+export function calculateEloLoss(
+  loserElo: number,
+  winnerElo: number,
+  opts?: { scaling?: number }
+): number {
+  const scaling = opts?.scaling ?? 500
+
+  const loserRank = getRankInfoForElo(loserElo)
+  const baseLoss = loserRank.baseLoss
+
+  const mDiff = calculateMdiff(loserElo, winnerElo, scaling)
+  const lossMod = 2 - mDiff
+
+  const raw = baseLoss * lossMod
+  const value = Math.max(0, Math.round(raw))
+  return value
+}

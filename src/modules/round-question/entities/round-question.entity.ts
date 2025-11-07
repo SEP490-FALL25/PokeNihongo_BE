@@ -42,6 +42,19 @@ export const UpdateRoundQuestionBodySchema =
 
 export const UpdateRoundQuestionResSchema = CreateRoundQuestionResSchema
 
+export const AnswerQuestionBodySchema = z
+  .object({
+    answerId: z.number(),
+    timeAnswerMs: z.number()
+  })
+  .strict()
+
+export const AnswerQuestionResSchema = z.object({
+  statusCode: z.number(),
+  data: RoundQuestionSchema,
+  message: z.string()
+})
+
 export const UpdateWithListItemResSchema = z.object({
   statusCode: z.number(),
   data: z.array(RoundQuestionSchema),
@@ -72,3 +85,5 @@ export type RoundQuestionFieldType = keyof z.infer<typeof RoundQuestionSchema>
 export const USER_SEASON_HISTORY_FIELDS = Object.keys(
   RoundQuestionSchema.shape
 ) as RoundQuestionFieldType[]
+
+export type AnswerQuestionBodyType = z.infer<typeof AnswerQuestionBodySchema>
