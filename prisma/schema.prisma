@@ -1720,9 +1720,10 @@ model RoundQuestion {
   debuffId Int?
   debuff   DebuffRound? @relation(fields: [debuffId], references: [id], onDelete: SetNull)
 
-  timeLimitMs Int @default(60000) // Thời gian làm câu hỏi này (ms)
-  basePoints  Int @default(100) // Điểm của câu hỏi này
-  orderNumber Int // Thứ tự câu hỏi trong danh sách (1-10 hoặc 1-11)
+  timeLimitMs     Int       @default(60000) // Thời gian làm câu hỏi này (ms)
+  endTimeQuestion DateTime? // Thời gian kết thúc câu hỏi này
+  basePoints      Int       @default(100) // Điểm của câu hỏi này
+  orderNumber     Int // Thứ tự câu hỏi trong danh sách (1-10 hoặc 1-11)
 
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt

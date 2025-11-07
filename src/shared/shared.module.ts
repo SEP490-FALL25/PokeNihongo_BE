@@ -16,6 +16,7 @@ import { JwtModule } from '@nestjs/jwt'
 import { WebsocketsModule } from 'src/websockets/websockets.module'
 import { MatchParticipantTimeoutProcessor } from './workers/match-participant-timeout.processor'
 import { MatchRoundParticipantTimeoutProcessor } from './workers/match-round-participant-timeout.processor'
+import { RoundQuestionTimeoutProcessor } from './workers/round-question-timeout.processor'
 import { SharedUserDeletionProcessor } from './workers/user-deletion.processor'
 
 const sharedServices = [
@@ -36,6 +37,7 @@ const sharedServices = [
     BullQueueModule.registerQueue(BullQueue.USER_DELETION),
     BullQueueModule.registerQueue(BullQueue.MATCH_PARTICIPANT_TIMEOUT),
     BullQueueModule.registerQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT),
+    BullQueueModule.registerQueue(BullQueue.ROUND_QUESTION_TIMEOUT),
     WebsocketsModule
     // Không import GeminiModule ở đây để tránh circular dependency
     // GeminiModule sẽ được import trong AppModule và export GeminiService
@@ -48,6 +50,7 @@ const sharedServices = [
     SharedUserDeletionProcessor,
     MatchParticipantTimeoutProcessor,
     MatchRoundParticipantTimeoutProcessor,
+    RoundQuestionTimeoutProcessor,
     {
       provide: APP_GUARD,
       useClass: AuthenticationGuard

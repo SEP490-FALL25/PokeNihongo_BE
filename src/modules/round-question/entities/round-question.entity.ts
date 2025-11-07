@@ -13,6 +13,7 @@ export const RoundQuestionSchema = z.object({
   matchRoundParticipantId: z.number(),
   questionBankId: z.number(),
   timeLimitMs: z.number().default(60000),
+  endTimeQuestion: z.date().nullable(),
   basePoints: z.number().default(100),
   orderNumber: z.number(),
   deletedAt: z.date().nullable(),

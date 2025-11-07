@@ -31,6 +31,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
     private readonly pokemonRepo: PokemonRepo,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
     private readonly matchRoundParticipantTimeoutQueue: Queue,
+    @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
+    private readonly roundQuestionTimeoutQueue: Queue,
     @Inject(MatchingGateway)
     private readonly matchingGateway: MatchingGateway
   ) {}
@@ -780,6 +782,58 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             where: { matchRoundId: roundOne.id },
             data: { status: 'IN_PROGRESS', totalTimeMs: 60 * 1000 }
           })
+
+          // Schedule timeout jobs cho câu hỏi đầu tiên của từng participant thuộc ROUND ONE
+          // Lý do sửa: participants hiện tại chỉ là participants của round vừa hoàn thành (có thể là round TWO hoặc THREE)
+          // nên filter theo roundNumber === 'ONE' có thể trả về rỗng nếu round ONE đã hoàn tất chọn từ trước.
+          const roundOneParticipants =
+            await this.prismaService.matchRoundParticipant.findMany({
+              where: { matchRoundId: roundOne.id, deletedAt: null },
+              include: { matchRound: true },
+              orderBy: { orderSelected: 'asc' }
+            })
+
+          if (!roundOneParticipants.length) {
+            this.logger.warn(
+              `[Round Timeout] Không tìm thấy participants của ROUND ONE để schedule câu hỏi đầu tiên`
+            )
+          }
+
+          for (const participant of roundOneParticipants) {
+            const firstQuestion = await this.prismaService.roundQuestion.findFirst({
+              where: { matchRoundParticipantId: participant.id },
+              orderBy: { orderNumber: 'asc' }
+            })
+
+            if (!firstQuestion) {
+              this.logger.warn(
+                `[Round Timeout] Participant ${participant.id} (ROUND ONE) chưa có roundQuestion nào để schedule timeout`
+              )
+              continue
+            }
+
+            const endTimeQuestion = addTimeUTC(new Date(), firstQuestion.timeLimitMs)
+            await this.prismaService.roundQuestion.update({
+              where: { id: firstQuestion.id },
+              data: { endTimeQuestion }
+            })
+
+            await this.roundQuestionTimeoutQueue.add(
+              BullAction.CHECK_QUESTION_TIMEOUT,
+              {
+                roundQuestionId: firstQuestion.id,
+                matchRoundParticipantId: participant.id
+              },
+              {
+                delay: firstQuestion.timeLimitMs
+              }
+            )
+
+            this.logger.log(
+              `[Round Timeout] Đã set endTimeQuestion và enqueue timeout job cho câu hỏi đầu tiên ${firstQuestion.id} (participant ${participant.id}, ROUND ONE)`
+            )
+          }
+
           if ((this.matchingGateway as any).notifyRoundStarted) {
             ;(this.matchingGateway as any).notifyRoundStarted(matchId, roundOne.id)
           }

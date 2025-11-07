@@ -44,6 +44,7 @@ export class MatchingGateway {
   constructor(
     private readonly sharedUserRepo: SharedUserRepository,
     private readonly tokenService: TokenService
+    // private readonly matchRoundService: MatchRoundService
   ) {}
 
   /**
@@ -384,6 +385,33 @@ export class MatchingGateway {
   }
 
   /**
+   * Join user-specific match room
+   * Allows targeting individual users within a match for notifications
+   * Pattern: match_{matchId}_user_{userId}
+   */
+  @SubscribeMessage(MATCHING_EVENTS.JOIN_USER_MATCH_ROOM)
+  handleJoinUserMatchRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { matchId: number }
+  ): void {
+    const userId = client.data.userId
+
+    if (!userId || !payload.matchId) {
+      this.logger.warn(
+        `[MatchingGateway] Invalid join-user-match-room request from socket ${client.id}`
+      )
+      return
+    }
+
+    const userMatchRoom = `match_${payload.matchId}_user_${userId}`
+    client.join(userMatchRoom)
+
+    this.logger.log(
+      `[MatchingGateway] User ${userId} joined user-specific match room: ${userMatchRoom}`
+    )
+  }
+
+  /**
    * Leave match room
    * User leaves the shared room when they're done with the match
    */
@@ -405,5 +433,65 @@ export class MatchingGateway {
     client.leave(room)
 
     this.logger.log(`[MatchingGateway] User ${userId} left shared match room: ${room}`)
+  }
+
+  @SubscribeMessage(MATCHING_EVENTS.ROUND_POKES_SELECTED)
+  handleGetInfoPokesRounds(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { matchId: number }
+  ): void {
+    const userId = client.data.userId
+
+    if (!userId || !payload.matchId) {
+      this.logger.warn(
+        `[MatchingGateway] Invalid join-match-room request from socket ${client.id}`
+      )
+      return
+    }
+
+    // Both users join the same room using matchId with pattern: matching_{matchId}
+    const room = SOCKET_ROOM.getMatchRoom(payload.matchId)
+    client.join(room)
+
+    this.logger.log(`[MatchingGateway] User ${userId} joined shared match room: ${room}`)
+  }
+
+  /**
+   * Notify user that they completed all questions in the round
+   * @param matchId - Match ID
+   * @param userId - User who completed
+   * @param participantData - MatchRoundParticipant data
+   */
+  notifyQuestionCompleted(matchId: number, userId: number, participantData: any): void {
+    const userMatchRoom = `match_${matchId}_user_${userId}`
+
+    this.server.to(userMatchRoom).emit(MATCHING_EVENTS.QUESTION_COMPLETED, {
+      type: 'QUESTION_COMPLETED',
+      matchId,
+      participant: participantData
+    })
+
+    this.logger.log(
+      `[MatchingGateway] Notified user ${userId} in match ${matchId} about question completion`
+    )
+  }
+
+  /**
+   * Notify opponent that the other user completed all questions
+   * @param matchId - Match ID
+   * @param opponentUserId - Opponent's user ID
+   */
+  notifyOpponentCompleted(matchId: number, opponentUserId: number): void {
+    const userMatchRoom = `match_${matchId}_user_${opponentUserId}`
+
+    this.server.to(userMatchRoom).emit(MATCHING_EVENTS.OPPONENT_COMPLETED, {
+      type: 'OPPONENT_COMPLETED',
+      matchId,
+      message: 'Your opponent has completed all questions'
+    })
+
+    this.logger.log(
+      `[MatchingGateway] Notified user ${opponentUserId} in match ${matchId} that opponent completed`
+    )
   }
 }

@@ -687,7 +687,7 @@ export class MatchRoundParticipantService {
                         data: {
                           matchRoundParticipantId: debuffedParticipantId,
                           questionBankId: extra.id,
-                          timeLimitMs: 60000,
+                          timeLimitMs: 30000,
                           basePoints: 100,
                           orderNumber: nextOrder++,
                           debuffId: debuffRow.id

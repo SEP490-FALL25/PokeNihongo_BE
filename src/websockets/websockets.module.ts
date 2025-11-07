@@ -1,17 +1,16 @@
 import { BullQueueModule } from '@/3rdService/bull/bull-queue.module'
-import { ConfigModule } from '@nestjs/config'
+import { SpeechModule } from '@/3rdService/speech/speech.module'
+import { UploadModule } from '@/3rdService/upload/upload.module'
 import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
 import { InitializerGateway } from './initializer.gateway'
+import { KaiwaGateway } from './kaiwa.gateway'
 import { MatchingGateway } from './matching.gateway'
 import { SocketServerService } from './socket-server.service'
 import { WebsocketsService } from './websockets.service'
-import { KaiwaGateway } from './kaiwa.gateway'
-import { SpeechToTextService } from '@/3rdService/speech/speech-to-text.service'
-import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
-import { UploadModule } from '@/3rdService/upload/upload.module'
-import { SpeechModule } from '@/3rdService/speech/speech.module'
 import { KaiwaProcessor } from './workers/kaiwa.processor'
 
+// @Global()
 @Module({
   imports: [
     BullQueueModule.registerQueue('kaiwa-processor', {
@@ -33,6 +32,7 @@ import { KaiwaProcessor } from './workers/kaiwa.processor'
     ConfigModule, // Cần để inject ConfigService
     UploadModule, // Cần cho TextToSpeechService
     SpeechModule // Cần cho SpeechToTextService và TextToSpeechService
+    // MatchRoundModule
   ],
   providers: [
     WebsocketsService,
@@ -44,4 +44,4 @@ import { KaiwaProcessor } from './workers/kaiwa.processor'
   ],
   exports: [WebsocketsService, SocketServerService, MatchingGateway, KaiwaGateway]
 })
-export class WebsocketsModule { }
+export class WebsocketsModule {}
