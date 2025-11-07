@@ -70,6 +70,7 @@ export class UserProgressService {
         }
     }
 
+    //KUMO
     async getMy(userId: number, query: GetUserProgressListQueryType) {
         const { currentPage, pageSize, lessonId, lessonCategoryId, status, progressPercentage } = query
 
@@ -426,9 +427,19 @@ export class UserProgressService {
                     completedAt: progressPercentage === 100 ? new Date() : null
                 }
             )
-
             this.logger.log(`Updated UserProgress for user ${userId}, lesson ${lessonId}: ${progressPercentage}% (${finalStatus})`)
 
+
+            //Nếu đã completed thì cập nhập user progress cho lesson tiếp theo
+            if (finalStatus === 'COMPLETED') {
+                const nextLessonId = await this.getNextLessonId(lessonId)
+                this.logger.log(`Next lesson id: ${nextLessonId}`)
+                if (nextLessonId) {
+                    await this.updateProgressByLesson(userId, nextLessonId, 0, 'IN_PROGRESS')
+                    this.logger.log(`Updated UserProgress for user ${userId}, lesson ${nextLessonId}: 0% (IN_PROGRESS)`)
+                }
+            }
+            this.logger.log(`Completed lesson ${lessonId} for user ${userId}`)
         } catch (error) {
             this.logger.error('Error updating progress by lesson:', error)
             throw error
@@ -474,5 +485,57 @@ export class UserProgressService {
             this.logger.error('Error getting user progress by lesson:', error)
             throw error
         }
+    }
+
+    /**
+     * Lấy lesson trước đó theo lessonOrder trong cùng category
+     */
+    async getPreviousLessonId(lessonId: number): Promise<number | null> {
+        return this.userProgressRepository.getPreviousLessonId(lessonId)
+    }
+
+    async getNextLessonId(lessonId: number): Promise<number | null> {
+        return this.userProgressRepository.getNextLessonId(lessonId)
+    }
+
+    /**
+     * Mở UserProgress theo level JLPT
+     * - N5 (5): mở bài đầu tiên của N5 -> IN_PROGRESS
+     * - N4 (4): mở TẤT CẢ bài N5 -> IN_PROGRESS và bài đầu tiên N4 -> IN_PROGRESS
+     * - Tương tự cho N3 (3), N2 (2), N1 (1)
+     * Lưu ý: levelJlpt trong schema là số 1..5 (1=N1, 5=N5)
+     */
+    async updateUserProgressLevelJlpt(userId: number, levelN: number) {
+        this.logger.log(`updateUserProgressLevelJlpt for user ${userId}, level N${levelN}`)
+
+        if (![1, 2, 3, 4, 5].includes(levelN)) {
+            throw new Error('Invalid JLPT level. Must be 1..5')
+        }
+
+        // 1) Nếu level > 5 hoặc < 1 đã chặn ở trên. Với levelN, cần mở tất cả level lớn hơn (N5..N{levelN+1})
+        for (let lv = 5; lv > levelN; lv--) {
+            const lessonIds = await this.userProgressRepository.getLessonIdsByLevelJlpt(lv)
+            if (lessonIds.length === 0) continue
+            this.logger.log(`Opening ${lessonIds.length} lessons for level N${lv} to IN_PROGRESS`)
+            for (const lessonId of lessonIds) {
+                await this.userProgressRepository.upsert(userId, lessonId, {
+                    status: 'IN_PROGRESS',
+                    progressPercentage: 0
+                })
+            }
+        }
+
+        // 2) Mở bài đầu tiên của levelN
+        const firstLessonId = await this.userProgressRepository.getFirstLessonIdByLevelJlpt(levelN)
+        if (firstLessonId) {
+            await this.userProgressRepository.upsert(userId, firstLessonId, {
+                status: 'IN_PROGRESS',
+                progressPercentage: 0
+            })
+            this.logger.log(`Opened first lesson ${firstLessonId} for level N${levelN} -> IN_PROGRESS`)
+        } else {
+            this.logger.warn(`No published lessons found for level N${levelN}`)
+        }
+        this.logger.log(`updateUserProgressLevelJlpt for user ${userId}, level N${levelN} completed`)
     }
 }

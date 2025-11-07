@@ -10,7 +10,8 @@ import {
     UserExerciseAttemptNotFoundException,
     ExerciseNotFoundException,
     LessonBlockedException,
-    ForbiddenReviewAccessException
+    ForbiddenReviewAccessException,
+    LessonPrerequisiteNotMetException
 } from '@/modules/user-exercise-attempt/dto/user-exercise-attempt.error'
 import { EXERCISES_MESSAGE, USER_EXERCISE_ATTEMPT_MESSAGE } from '@/common/constants/message'
 import { UserExerciseAttemptRepository } from '@/modules/user-exercise-attempt/user-exercise-attempt.repo'
@@ -235,7 +236,6 @@ export class UserExerciseAttemptService {
     }
 
     async supmitExerciseCompletion(userExerciseAttemptId: number, userId: number, timeSeconds?: number) {
-
         // 3,14159 PILU
         try {
             this.logger.log(`Checking completion for user exercise attempt: ${userExerciseAttemptId}`)
@@ -468,6 +468,21 @@ export class UserExerciseAttemptService {
         try {
             this.logger.log(`Getting latest exercise attempts for user ${userId} in lesson ${lessonId}`)
 
+            //check xem user progress có status NOT_STARTED không để chặn nhảy cóc
+            const checkUserProgress = await this.userProgressService.findByUserAndLesson(userId, lessonId)
+            if (checkUserProgress.data.status === 'NOT_STARTED') {
+                const previousLessonId = await this.userProgressService.getPreviousLessonId(lessonId)
+                this.logger.log(`Previous lesson id: ${previousLessonId} for user ${userId}`)
+                if (previousLessonId) {
+                    const prevProgress = await this.userProgressService.getUserProgressByLesson(userId, previousLessonId)
+                    // Chặn nhảy cóc: nếu bài ngay trước đó vẫn NOT_STARTED thì không cho vào bài hiện tại
+                    if (prevProgress && prevProgress.status === 'NOT_STARTED') {
+                        this.logger.warn(`Blocked: previous lesson ${previousLessonId} is NOT_STARTED. Cannot open lesson ${lessonId}.`)
+                        throw LessonPrerequisiteNotMetException(previousLessonId, lessonId)
+                    }
+                }
+            }
+
             const result = await this.userExerciseAttemptRepository.findLatestByLessonAndUser(userId, lessonId)
 
             this.logger.log(`Found ${result.length} exercise attempts (including newly created ones)`)
@@ -486,7 +501,19 @@ export class UserExerciseAttemptService {
             }
         } catch (error) {
             this.logger.error('Error getting latest exercise attempts by lesson:', error)
-            throw error
+            // Giữ nguyên HttpException (ví dụ: LessonPrerequisiteNotMetException) để controller trả đúng status/message
+            if (error instanceof HttpException) {
+                throw error
+            }
+            // Fallback: gói về 500 nếu là lỗi không xác định
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Không thể lấy danh sách exercise gần nhất',
+                    error: 'INTERNAL_SERVER_ERROR'
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR
+            )
         }
     }
 

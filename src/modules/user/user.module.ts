@@ -11,6 +11,7 @@ import { WalletModule } from '../wallet/wallet.module'
 import { UserController } from './user.controller'
 import { UserRepo } from './user.repo'
 import { UserService } from './user.service'
+import { UserProgressModule } from '../user-progress/user-progress.module'
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { UserService } from './user.service'
     LeaderboardSeasonModule,
     MatchModule,
     UserSeasonHistoryModule,
-    LanguagesModule
+    LanguagesModule,
+    UserProgressModule
   ],
   controllers: [UserController],
   providers: [UserService, UserRepo, UserPokemonRepo, LevelRepo],
