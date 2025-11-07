@@ -957,8 +957,22 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
           }
         )
 
-        // Send socket to user with round data, participant info, and first question
+        // Send socket to user with round data, participant info, and first question (formatted via QuestionBankService)
         const userId = participant.matchParticipant.userId
+        let firstQuestionForNotify: any | null = null
+        try {
+          const qbList = await this.questionBankRepo.findByIds(
+            [firstQuestion.questionBankId],
+            'vi'
+          )
+          firstQuestionForNotify = qbList?.[0] || null
+        } catch (err) {
+          this.logger.warn(
+            `[Round Timeout] Failed to fetch formatted questionBank for firstQuestion ${firstQuestion.id}: ${err?.message}`
+          )
+          firstQuestionForNotify = null
+        }
+
         this.matchingGateway.notifyRoundStarted(
           matchId,
           userId,
@@ -972,7 +986,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
               selectedUserPokemon: participant.selectedUserPokemon
             }
           },
-          firstQuestion
+          firstQuestionForNotify
         )
 
         this.logger.log(

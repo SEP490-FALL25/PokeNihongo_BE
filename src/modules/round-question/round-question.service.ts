@@ -1,12 +1,21 @@
+import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { RoundQuestionMessage } from '@/i18n/message-keys'
+import { QuestionBankRepository } from '@/modules/question-bank/question-bank.repo'
 import { NotFoundRecordException } from '@/shared/error'
 import {
+  addTimeUTC,
+  calculateEloGain,
+  calculateEloLoss,
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { PrismaService } from '@/shared/services/prisma.service'
+import { MatchingGateway } from '@/websockets/matching.gateway'
+import { InjectQueue } from '@nestjs/bull'
 import { Injectable } from '@nestjs/common'
+import { Queue } from 'bull'
 import { RoundQuestionNotFoundException } from './dto/round-question.error'
 import {
   AnswerQuestionBodyType,
@@ -14,12 +23,6 @@ import {
   UpdateRoundQuestionBodyType
 } from './entities/round-question.entity'
 import { RoundQuestionRepo } from './round-question.repo'
-import { PrismaService } from '@/shared/services/prisma.service'
-import { MatchingGateway } from '@/websockets/matching.gateway'
-import { InjectQueue } from '@nestjs/bull'
-import { Queue } from 'bull'
-import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
-import { addTimeUTC, calculateEloGain, calculateEloLoss } from '@/shared/helpers'
 
 @Injectable()
 export class RoundQuestionService {
@@ -28,6 +31,7 @@ export class RoundQuestionService {
     private readonly i18nService: I18nService,
     private readonly prismaService: PrismaService,
     private readonly matchingGateway: MatchingGateway,
+    private readonly questionBankRepo: QuestionBankRepository,
     @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
     private readonly roundQuestionTimeoutQueue: Queue,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
@@ -140,8 +144,6 @@ export class RoundQuestionService {
     }
   }
 
-  
-
   private calculatePointsEarned(
     isCorrect: boolean,
     basePoints: number,
@@ -181,7 +183,11 @@ export class RoundQuestionService {
       const jobs = await this.roundQuestionTimeoutQueue.getJobs(['delayed', 'waiting'])
       await Promise.all(
         jobs
-          .filter((j) => j.name === BullAction.CHECK_QUESTION_TIMEOUT && j.data?.roundQuestionId === id)
+          .filter(
+            (j) =>
+              j.name === BullAction.CHECK_QUESTION_TIMEOUT &&
+              j.data?.roundQuestionId === id
+          )
           .map((j) => j.remove())
       )
     } catch (e) {
@@ -200,7 +206,9 @@ export class RoundQuestionService {
     if (!roundQuestion) throw new RoundQuestionNotFoundException()
 
     // Check provided answer
-    const providedAnswer = roundQuestion.questionBank.answers.find((a) => a.id === data.answerId)
+    const providedAnswer = roundQuestion.questionBank.answers.find(
+      (a) => a.id === data.answerId
+    )
     const isCorrect = !!providedAnswer && providedAnswer.isCorrect
 
     const pointsEarned = this.calculatePointsEarned(
@@ -240,13 +248,16 @@ export class RoundQuestionService {
     }
 
     // Find participant/match info and determine next question BEFORE notifying
-    const matchRoundParticipant = await this.prismaService.matchRoundParticipant.findUnique({
-      where: { id: roundQuestion.matchRoundParticipantId },
-      include: {
-        matchParticipant: { include: { user: true } },
-        matchRound: { include: { match: { include: { participants: { include: { user: true } } } } } }
-      }
-    })
+    const matchRoundParticipant =
+      await this.prismaService.matchRoundParticipant.findUnique({
+        where: { id: roundQuestion.matchRoundParticipantId },
+        include: {
+          matchParticipant: { include: { user: true } },
+          matchRound: {
+            include: { match: { include: { participants: { include: { user: true } } } } }
+          }
+        }
+      })
 
     // Determine and schedule next question (if any) so we can include it in the socket payload
     let nextQuestion: any | null = null
@@ -263,11 +274,17 @@ export class RoundQuestionService {
 
         if (nextQuestion) {
           const endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
-          await this.prismaService.roundQuestion.update({ where: { id: nextQuestion.id }, data: { endTimeQuestion } })
+          await this.prismaService.roundQuestion.update({
+            where: { id: nextQuestion.id },
+            data: { endTimeQuestion }
+          })
 
           await this.roundQuestionTimeoutQueue.add(
             BullAction.CHECK_QUESTION_TIMEOUT,
-            { roundQuestionId: nextQuestion.id, matchRoundParticipantId: roundQuestion.matchRoundParticipantId },
+            {
+              roundQuestionId: nextQuestion.id,
+              matchRoundParticipantId: roundQuestion.matchRoundParticipantId
+            },
             { delay: nextQuestion.timeLimitMs }
           )
         }
@@ -275,6 +292,24 @@ export class RoundQuestionService {
     } catch (e) {
       console.warn('[RoundQuestion] Failed to schedule next question timeout', e)
       // keep going even if scheduling fails - we'll still notify the answer result
+    }
+
+    // Prepare formatted nextQuestion for notification (use repository to avoid DI cycles)
+    let nextQuestionForNotify: any | null = null
+    if (nextQuestion) {
+      try {
+        const qbList = await this.questionBankRepo.findByIds(
+          [nextQuestion.questionBankId],
+          'vi'
+        )
+        nextQuestionForNotify = qbList?.[0] || null
+      } catch (err) {
+        console.warn(
+          '[RoundQuestion] Failed to fetch formatted questionBank for nextQuestion',
+          err
+        )
+        nextQuestionForNotify = null
+      }
     }
 
     // Notify answered including nextQuestion (null when last question)
@@ -292,13 +327,14 @@ export class RoundQuestionService {
             pointsEarned: finalAnswerLog.pointsEarned || 0,
             timeAnswerMs: finalAnswerLog.timeAnswerMs
           },
-          nextQuestion || null
+          nextQuestionForNotify || null
         )
       }
     }
 
     // If last question, finalize participant and possibly complete round
-  const isLastQuestion = roundQuestion.orderNumber >= (matchRoundParticipant?.questionsTotal || 0)
+    const isLastQuestion =
+      roundQuestion.orderNumber >= (matchRoundParticipant?.questionsTotal || 0)
 
     // If not last question, schedule next question timeout like processor does
     if (!isLastQuestion) {
@@ -316,11 +352,17 @@ export class RoundQuestionService {
 
         if (nextQuestion) {
           const endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
-          await this.prismaService.roundQuestion.update({ where: { id: nextQuestion.id }, data: { endTimeQuestion } })
+          await this.prismaService.roundQuestion.update({
+            where: { id: nextQuestion.id },
+            data: { endTimeQuestion }
+          })
 
           await this.roundQuestionTimeoutQueue.add(
             BullAction.CHECK_QUESTION_TIMEOUT,
-            { roundQuestionId: nextQuestion.id, matchRoundParticipantId: roundQuestion.matchRoundParticipantId },
+            {
+              roundQuestionId: nextQuestion.id,
+              matchRoundParticipantId: roundQuestion.matchRoundParticipantId
+            },
             { delay: nextQuestion.timeLimitMs }
           )
         }
@@ -332,7 +374,11 @@ export class RoundQuestionService {
     if (isLastQuestion) {
       // Calculate totals
       const allAnswerLogs = await this.prismaService.roundQuestionsAnswerLog.findMany({
-        where: { roundQuestion: { matchRoundParticipantId: roundQuestion.matchRoundParticipantId } }
+        where: {
+          roundQuestion: {
+            matchRoundParticipantId: roundQuestion.matchRoundParticipantId
+          }
+        }
       })
 
       const totalTimeMs = allAnswerLogs.reduce((sum, l) => sum + (l.timeAnswerMs || 0), 0)
@@ -345,15 +391,32 @@ export class RoundQuestionService {
       })
 
       // Notify completion and opponent
-      const opponentParticipant = matchRoundParticipant?.matchRound?.match?.participants.find((p) => p.userId !== matchRoundParticipant?.matchParticipant?.userId)
+      const opponentParticipant =
+        matchRoundParticipant?.matchRound?.match?.participants.find(
+          (p) => p.userId !== matchRoundParticipant?.matchParticipant?.userId
+        )
       if (matchRoundParticipant && opponentParticipant) {
-        this.matchingGateway.notifyQuestionCompleted(matchRoundParticipant.matchRound.match.id, matchRoundParticipant.matchParticipant.userId, updatedParticipant)
-        this.matchingGateway.notifyOpponentCompleted(matchRoundParticipant.matchRound.match.id, opponentParticipant.userId)
+        this.matchingGateway.notifyQuestionCompleted(
+          matchRoundParticipant.matchRound.match.id,
+          matchRoundParticipant.matchParticipant.userId,
+          updatedParticipant
+        )
+        this.matchingGateway.notifyOpponentCompleted(
+          matchRoundParticipant.matchRound.match.id,
+          opponentParticipant.userId
+        )
       }
 
       // Check and complete round
-      if (matchRoundParticipant && matchRoundParticipant.matchRound && matchRoundParticipant.matchRound.match) {
-        await this.checkAndCompleteRound(matchRoundParticipant.matchRoundId, matchRoundParticipant.matchRound.match.id)
+      if (
+        matchRoundParticipant &&
+        matchRoundParticipant.matchRound &&
+        matchRoundParticipant.matchRound.match
+      ) {
+        await this.checkAndCompleteRound(
+          matchRoundParticipant.matchRoundId,
+          matchRoundParticipant.matchRound.match.id
+        )
       }
     }
 
@@ -369,7 +432,9 @@ export class RoundQuestionService {
     // fetch round and verify both participants completed
     const matchRound = await this.prismaService.matchRound.findUnique({
       where: { id: matchRoundId },
-      include: { participants: { include: { matchParticipant: { include: { user: true } } } } }
+      include: {
+        participants: { include: { matchParticipant: { include: { user: true } } } }
+      }
     })
     if (!matchRound) return
 
@@ -379,7 +444,11 @@ export class RoundQuestionService {
       const completedParticipant = allParticipants.find((p) => p.status === 'COMPLETED')
       if (completedParticipant) {
         const completedUserId = completedParticipant.matchParticipant.userId
-        this.matchingGateway.notifyWaitingForOpponent(matchId, completedUserId, matchRound.roundNumber)
+        this.matchingGateway.notifyWaitingForOpponent(
+          matchId,
+          completedUserId,
+          matchRound.roundNumber
+        )
       }
       return
     }
@@ -389,7 +458,11 @@ export class RoundQuestionService {
     let winnerId: number
     if ((p1.points || 0) > (p2.points || 0)) winnerId = p1.matchParticipantId
     else if ((p1.points || 0) < (p2.points || 0)) winnerId = p2.matchParticipantId
-    else winnerId = (p1.totalTimeMs || 0) < (p2.totalTimeMs || 0) ? p1.matchParticipantId : p2.matchParticipantId
+    else
+      winnerId =
+        (p1.totalTimeMs || 0) < (p2.totalTimeMs || 0)
+          ? p1.matchParticipantId
+          : p2.matchParticipantId
 
     const updatedRound = await this.prismaService.matchRound.update({
       where: { id: matchRoundId },
@@ -397,11 +470,46 @@ export class RoundQuestionService {
       include: {
         participants: {
           include: {
-            matchParticipant: { include: { user: true } },
-            selectedUserPokemon: { include: { pokemon: true } }
+            matchParticipant: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    avatar: true
+                  }
+                }
+              }
+            },
+            selectedUserPokemon: {
+              include: {
+                pokemon: {
+                  select: {
+                    id: true,
+                    pokedex_number: true,
+                    nameJp: true,
+                    nameTranslations: true,
+                    rarity: true,
+                    imageUrl: true
+                  }
+                }
+              }
+            }
           }
         },
-        roundWinner: { include: { user: true } }
+        roundWinner: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar: true
+              }
+            }
+          }
+        }
       }
     })
 
@@ -413,7 +521,11 @@ export class RoundQuestionService {
   }
 
   private async scheduleNextRound(matchId: number, currentRoundNumber: string) {
-    const roundMap: Record<string, string | null> = { ONE: 'TWO', TWO: 'THREE', THREE: null }
+    const roundMap: Record<string, string | null> = {
+      ONE: 'TWO',
+      TWO: 'THREE',
+      THREE: null
+    }
     const nextRoundNumber = roundMap[currentRoundNumber]
     if (!nextRoundNumber) {
       await this.completeMatch(matchId)
@@ -422,7 +534,12 @@ export class RoundQuestionService {
 
     const nextRound = await this.prismaService.matchRound.findFirst({
       where: { matchId, roundNumber: nextRoundNumber as any, deletedAt: null },
-      include: { participants: { include: { matchParticipant: { include: { user: true } } }, orderBy: { orderSelected: 'asc' } } }
+      include: {
+        participants: {
+          include: { matchParticipant: { include: { user: true } } },
+          orderBy: { orderSelected: 'asc' }
+        }
+      }
     })
     if (!nextRound) return
 
@@ -430,7 +547,13 @@ export class RoundQuestionService {
     const userId2 = nextRound.participants[1]?.matchParticipant.userId
     if (!userId1 || !userId2) return
 
-    this.matchingGateway.notifyRoundStarting(matchId, userId1, userId2, nextRoundNumber, 5)
+    this.matchingGateway.notifyRoundStarting(
+      matchId,
+      userId1,
+      userId2,
+      nextRoundNumber,
+      5
+    )
 
     await this.matchRoundParticipantTimeoutQueue.add(
       BullAction.START_ROUND,
@@ -452,31 +575,95 @@ export class RoundQuestionService {
     if (allRounds.length !== 3) return
 
     const roundWinCounts = new Map<number, number>()
-    for (const round of allRounds) if (round.roundWinnerId) roundWinCounts.set(round.roundWinnerId, (roundWinCounts.get(round.roundWinnerId) || 0) + 1)
+    for (const round of allRounds)
+      if (round.roundWinnerId)
+        roundWinCounts.set(
+          round.roundWinnerId,
+          (roundWinCounts.get(round.roundWinnerId) || 0) + 1
+        )
 
     let matchWinnerId: number | null = null
     let maxWins = 0
-    for (const [participantId, wins] of roundWinCounts.entries()) if (wins > maxWins) { maxWins = wins; matchWinnerId = participantId }
+    for (const [participantId, wins] of roundWinCounts.entries())
+      if (wins > maxWins) {
+        maxWins = wins
+        matchWinnerId = participantId
+      }
 
     if (maxWins === 0 || !matchWinnerId) {
       const participantTotals = new Map<number, number>()
-      for (const round of allRounds) for (const participant of round.participants) participantTotals.set(participant.matchParticipantId, (participantTotals.get(participant.matchParticipantId) || 0) + (participant.points || 0))
+      for (const round of allRounds)
+        for (const participant of round.participants)
+          participantTotals.set(
+            participant.matchParticipantId,
+            (participantTotals.get(participant.matchParticipantId) || 0) +
+              (participant.points || 0)
+          )
       let maxPoints = 0
-      for (const [participantId, totalPoints] of participantTotals.entries()) if (totalPoints > maxPoints) { maxPoints = totalPoints; matchWinnerId = participantId }
+      for (const [participantId, totalPoints] of participantTotals.entries())
+        if (totalPoints > maxPoints) {
+          maxPoints = totalPoints
+          matchWinnerId = participantId
+        }
     }
 
-    const winnerParticipant = await this.prismaService.matchParticipant.findUnique({ where: { id: matchWinnerId! }, include: { user: true } })
+    const winnerParticipant = await this.prismaService.matchParticipant.findUnique({
+      where: { id: matchWinnerId! },
+      include: { user: true }
+    })
 
     const completedMatch = await this.prismaService.match.update({
       where: { id: matchId },
       data: { status: 'COMPLETED', winnerId: winnerParticipant?.userId || null },
       include: {
         winner: true,
-        participants: { include: { user: true } },
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar: true,
+                eloscore: true
+              }
+            }
+          }
+        },
         rounds: {
           include: {
-            roundWinner: { include: { user: true } },
-            participants: { include: { matchParticipant: { include: { user: true } }, selectedUserPokemon: { include: { pokemon: true } } } }
+            roundWinner: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    avatar: true,
+                    eloscore: true
+                  }
+                }
+              }
+            },
+            participants: {
+              include: {
+                matchParticipant: { include: { user: true } },
+                selectedUserPokemon: {
+                  include: {
+                    pokemon: {
+                      select: {
+                        id: true,
+                        pokedex_number: true,
+                        nameJp: true,
+                        nameTranslations: true,
+                        rarity: true,
+                        imageUrl: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           orderBy: { roundNumber: 'asc' }
         }
@@ -508,9 +695,18 @@ export class RoundQuestionService {
         const newLoserElo = Math.max(0, loserElo - eloLost)
 
         await this.prismaService.$transaction([
-          this.prismaService.match.update({ where: { id: matchId }, data: { eloGained, eloLost } }),
-          this.prismaService.user.update({ where: { id: winnerUserId }, data: { eloscore: { increment: eloGained } as any } }),
-          this.prismaService.user.update({ where: { id: loserUserId }, data: { eloscore: newLoserElo } })
+          this.prismaService.match.update({
+            where: { id: matchId },
+            data: { eloGained, eloLost }
+          }),
+          this.prismaService.user.update({
+            where: { id: winnerUserId },
+            data: { eloscore: { increment: eloGained } as any }
+          }),
+          this.prismaService.user.update({
+            where: { id: loserUserId },
+            data: { eloscore: newLoserElo }
+          })
         ])
       }
 
@@ -520,14 +716,60 @@ export class RoundQuestionService {
           where: { id: matchId },
           include: {
             winner: true,
-            participants: { include: { user: true } },
+            participants: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    avatar: true
+                  }
+                }
+              }
+            },
             rounds: {
               include: {
-                roundWinner: { include: { user: true } },
+                roundWinner: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        avatar: true
+                      }
+                    }
+                  }
+                },
                 participants: {
                   include: {
-                    matchParticipant: { include: { user: true } },
-                    selectedUserPokemon: { include: { pokemon: true } }
+                    matchParticipant: {
+                      include: {
+                        user: {
+                          select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            avatar: true
+                          }
+                        }
+                      }
+                    },
+                    selectedUserPokemon: {
+                      include: {
+                        pokemon: {
+                          select: {
+                            id: true,
+                            pokedex_number: true,
+                            nameJp: true,
+                            nameTranslations: true,
+                            rarity: true,
+                            imageUrl: true
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               },
@@ -546,7 +788,13 @@ export class RoundQuestionService {
     } catch (e) {
       // If any error occurs while persisting ELO, log and still notify with existing completedMatch
       try {
-        if (userId1 && userId2) this.matchingGateway.notifyMatchCompleted(matchId, userId1, userId2, completedMatch)
+        if (userId1 && userId2)
+          this.matchingGateway.notifyMatchCompleted(
+            matchId,
+            userId1,
+            userId2,
+            completedMatch
+          )
       } catch (_) {
         // swallow
       }

@@ -6,6 +6,7 @@ import {
 } from '@/common/constants/match.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { MatchRoundParticipantMessage } from '@/i18n/message-keys'
+import { QuestionBankService } from '@/modules/question-bank/question-bank.service'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   addTimeUTC,
@@ -51,6 +52,7 @@ export class MatchRoundParticipantService {
     private readonly i18nService: I18nService,
     private readonly prismaService: PrismaService,
     private readonly matchingGateway: MatchingGateway,
+    private readonly questionBankService: QuestionBankService,
     private readonly roundQuestionRepo: RoundQuestionRepo,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
     private readonly matchRoundParticipantTimeoutQueue: Queue
@@ -775,9 +777,71 @@ export class MatchRoundParticipantService {
               totalTimeMs: 60 * 1000 // +60s initial allocation
             }
           })
-          // Gửi socket nếu có method (guard in case not implemented yet)
-          if ((this.matchingGateway as any).notifyRoundStarted) {
-            ;(this.matchingGateway as any).notifyRoundStarted(matchId, roundOne.id)
+          // Gửi socket to each participant with formatted firstQuestion (use QuestionBankService)
+          const roundParticipants =
+            await this.prismaService.matchRoundParticipant.findMany({
+              where: { matchRoundId: roundOne.id },
+              include: {
+                matchParticipant: { include: { user: true } },
+                matchRound: true,
+                selectedUserPokemon: { include: { pokemon: true } }
+              },
+              orderBy: { orderSelected: 'asc' }
+            })
+
+          for (const participant of roundParticipants) {
+            // find first question for participant
+            const firstQuestion = await this.prismaService.roundQuestion.findFirst({
+              where: { matchRoundParticipantId: participant.id },
+              orderBy: { orderNumber: 'asc' }
+            })
+            if (!firstQuestion) continue
+
+            // Set endTime and enqueue timeout
+            const endTimeQuestion = addTimeUTC(new Date(), firstQuestion.timeLimitMs)
+            await this.prismaService.roundQuestion.update({
+              where: { id: firstQuestion.id },
+              data: { endTimeQuestion }
+            })
+
+            await this.matchRoundParticipantTimeoutQueue.add(
+              BullAction.CHECK_QUESTION_TIMEOUT,
+              {
+                roundQuestionId: firstQuestion.id,
+                matchRoundParticipantId: participant.id
+              },
+              { delay: firstQuestion.timeLimitMs }
+            )
+
+            // Fetch formatted first question from QuestionBankService
+            let firstQuestionForNotify: any | null = null
+            try {
+              const qbRes = await this.questionBankService.findByIds([
+                firstQuestion.questionBankId
+              ])
+              firstQuestionForNotify = qbRes?.data?.results?.[0] || null
+            } catch (err) {
+              this.logger.warn(
+                `[MatchRoundParticipant] Failed to fetch formatted questionBank for firstQuestion ${firstQuestion.id}: ${err?.message}`
+              )
+            }
+
+            const userId = participant.matchParticipant.userId
+            this.matchingGateway.notifyRoundStarted(
+              matchId,
+              userId,
+              {
+                id: roundOne.id,
+                roundNumber: participant.matchRound.roundNumber,
+                status: 'IN_PROGRESS',
+                participant: {
+                  id: participant.id,
+                  status: participant.status,
+                  selectedUserPokemon: participant.selectedUserPokemon
+                }
+              },
+              firstQuestionForNotify
+            )
           }
           this.logger.log(
             `[MatchRoundParticipant] Round ONE started automatically for match ${matchId}`

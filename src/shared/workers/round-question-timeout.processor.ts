@@ -1,4 +1,5 @@
 import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
+import { QuestionBankRepository } from '@/modules/question-bank/question-bank.repo'
 import { addTimeUTC, calculateEloGain, calculateEloLoss } from '@/shared/helpers'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MatchingGateway } from '@/websockets/matching.gateway'
@@ -21,6 +22,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly matchingGateway: MatchingGateway,
+    private readonly questionBankRepo: QuestionBankRepository,
     @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
     private readonly roundQuestionTimeoutQueue: Queue,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
@@ -266,7 +268,24 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
       const currentUserId = matchRoundParticipant.matchParticipant.userId
       const matchId = matchRoundParticipant.matchRound.match.id
 
-      // Send socket notification with answer result and next question
+      // Prepare formatted nextQuestion via QuestionBankService so socket uses consistent shape
+      let nextQuestionForNotify: any | null = null
+      if (nextQuestion) {
+        try {
+          const qbList = await this.questionBankRepo.findByIds(
+            [nextQuestion.questionBankId],
+            'vi'
+          )
+          nextQuestionForNotify = qbList?.[0] || null
+        } catch (err) {
+          this.logger.warn(
+            `[RoundQuestion Timeout] Failed to fetch formatted questionBank for nextQuestion ${nextQuestion.id}: ${err?.message}`
+          )
+          nextQuestionForNotify = null
+        }
+      }
+
+      // Send socket notification with answer result and next question (formatted)
       if (finalAnswerLog) {
         this.matchingGateway.notifyQuestionAnswered(
           matchId,
@@ -278,7 +297,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             pointsEarned: finalAnswerLog.pointsEarned || 0,
             timeAnswerMs: finalAnswerLog.timeAnswerMs
           },
-          nextQuestion // null if no next question (last question)
+          nextQuestionForNotify // null if no next question (last question)
         )
       }
 
@@ -498,19 +517,42 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             include: {
               matchParticipant: {
                 include: {
-                  user: true
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      avatar: true
+                    }
+                  }
                 }
               },
               selectedUserPokemon: {
                 include: {
-                  pokemon: true
+                  pokemon: {
+                    select: {
+                      id: true,
+                      pokedex_number: true,
+                      nameJp: true,
+                      nameTranslations: true,
+                      rarity: true,
+                      imageUrl: true
+                    }
+                  }
                 }
               }
             }
           },
           roundWinner: {
             include: {
-              user: true
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatar: true
+                }
+              }
             }
           }
         }
@@ -735,26 +777,59 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           winner: true,
           participants: {
             include: {
-              user: true
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatar: true,
+                  eloscore: true
+                }
+              }
             }
           },
           rounds: {
             include: {
               roundWinner: {
                 include: {
-                  user: true
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      avatar: true,
+                      eloscore: true
+                    }
+                  }
                 }
               },
               participants: {
                 include: {
                   matchParticipant: {
                     include: {
-                      user: true
+                      user: {
+                        select: {
+                          id: true,
+                          name: true,
+                          email: true,
+                          avatar: true,
+                          eloscore: true
+                        }
+                      }
                     }
                   },
                   selectedUserPokemon: {
                     include: {
-                      pokemon: true
+                      pokemon: {
+                        select: {
+                          id: true,
+                          pokedex_number: true,
+                          nameJp: true,
+                          nameTranslations: true,
+                          rarity: true,
+                          imageUrl: true
+                        }
+                      }
                     }
                   }
                 }
@@ -816,15 +891,72 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           const updatedMatch = await this.prismaService.match.findUnique({
             where: { id: matchId },
             include: {
-              winner: true,
-              participants: { include: { user: true } },
+              winner: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatar: true,
+                  eloscore: true
+                }
+              },
+              participants: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      avatar: true,
+                      eloscore: true
+                    }
+                  }
+                }
+              },
               rounds: {
                 include: {
-                  roundWinner: { include: { user: true } },
+                  roundWinner: {
+                    include: {
+                      user: {
+                        select: {
+                          id: true,
+                          name: true,
+                          email: true,
+                          avatar: true,
+                          eloscore: true
+                        }
+                      }
+                    }
+                  },
                   participants: {
                     include: {
-                      matchParticipant: { include: { user: true } },
-                      selectedUserPokemon: { include: { pokemon: true } }
+                      matchParticipant: {
+                        include: {
+                          user: {
+                            select: {
+                              id: true,
+                              name: true,
+                              email: true,
+                              avatar: true,
+                              eloscore: true
+                            }
+                          }
+                        }
+                      },
+                      selectedUserPokemon: {
+                        include: {
+                          pokemon: {
+                            select: {
+                              id: true,
+                              pokedex_number: true,
+                              nameJp: true,
+                              nameTranslations: true,
+                              rarity: true,
+                              imageUrl: true
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 },
