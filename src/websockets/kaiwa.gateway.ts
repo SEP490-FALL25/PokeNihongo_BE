@@ -20,6 +20,7 @@ import { Error as ErrorMessage } from '@/common/constants/message'
 import { UserAIConversationService } from '@/modules/user-ai-conversation/user-ai-conversation.service'
 import { AIConversationRoomService } from '@/modules/ai-conversation-room/ai-conversation-room.service'
 import { I18nService } from '@/i18n/i18n.service'
+import { UploadService } from '@/3rdService/upload/upload.service'
 
 /**
  * KaiwaGateway - WebSocket Gateway for real-time audio conversation
@@ -42,7 +43,8 @@ export class KaiwaGateway implements OnGatewayDisconnect {
         private readonly textToSpeechService: TextToSpeechService,
         private readonly userAIConversationService: UserAIConversationService,
         private readonly aiConversationRoomService: AIConversationRoomService,
-        private readonly i18nService: I18nService
+        private readonly i18nService: I18nService,
+        private readonly uploadService: UploadService
     ) {
         // Initialize Gemini API với API Key
         this.initializeGeminiAPI()
@@ -65,6 +67,236 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             this.logger.log('[Kaiwa] Gemini API initialized with API Key')
         } catch (error) {
             this.logger.error(`[Kaiwa] Failed to initialize Gemini API: ${error.message}`)
+        }
+    }
+
+    /**
+     * Convert LINEAR16 PCM buffer sang WAV format
+     */
+    private convertLinear16ToWav(pcmBuffer: Buffer, sampleRate: number = 16000): Buffer {
+        const numChannels = 1 // Mono
+        const bitsPerSample = 16
+        const byteRate = sampleRate * numChannels * (bitsPerSample / 8)
+        const blockAlign = numChannels * (bitsPerSample / 8)
+        const dataSize = pcmBuffer.length
+        const fileSize = 36 + dataSize
+
+        // Tạo WAV header
+        const wavHeader = Buffer.alloc(44)
+
+        // RIFF header
+        wavHeader.write('RIFF', 0)
+        wavHeader.writeUInt32LE(fileSize, 4)
+        wavHeader.write('WAVE', 8)
+
+        // fmt chunk
+        wavHeader.write('fmt ', 12)
+        wavHeader.writeUInt32LE(16, 16) // fmt chunk size
+        wavHeader.writeUInt16LE(1, 20) // audio format (1 = PCM)
+        wavHeader.writeUInt16LE(numChannels, 22)
+        wavHeader.writeUInt32LE(sampleRate, 24)
+        wavHeader.writeUInt32LE(byteRate, 28)
+        wavHeader.writeUInt16LE(blockAlign, 32)
+        wavHeader.writeUInt16LE(bitsPerSample, 34)
+
+        // data chunk
+        wavHeader.write('data', 36)
+        wavHeader.writeUInt32LE(dataSize, 40)
+
+        // Combine header + PCM data
+        return Buffer.concat([wavHeader, pcmBuffer])
+    }
+
+    /**
+     * Convert audio Buffer thành Multer file object để upload
+     */
+    private bufferToMulterFile(
+        buffer: Buffer,
+        filename: string,
+        mimetype: string
+    ): Express.Multer.File {
+        return {
+            buffer: buffer,
+            originalname: filename,
+            mimetype: mimetype,
+            fieldname: 'audio',
+            encoding: '7bit',
+            size: buffer.length,
+            destination: '',
+            filename: filename,
+            path: '',
+            stream: null as any
+        }
+    }
+
+    /**
+     * Upload audio buffer và trả về URL
+     */
+    private async uploadAudioBuffer(
+        audioBuffer: Buffer,
+        filename: string,
+        mimetype: string,
+        folder: string = 'kaiwa/audio'
+    ): Promise<string | null> {
+        try {
+            const audioFile = this.bufferToMulterFile(audioBuffer, filename, mimetype)
+            const result = await this.uploadService.uploadFile(audioFile, folder)
+            this.logger.log(`[Kaiwa] Audio uploaded successfully: ${result.url}`)
+            return result.url
+        } catch (error) {
+            this.logger.error(`[Kaiwa] Failed to upload audio: ${error.message}`, error.stack)
+            return null
+        }
+    }
+
+    /**
+     * Prepare audio buffer for upload: detect format và convert nếu cần
+     * @returns { finalBuffer, mimeType, extension }
+     */
+    private prepareAudioForUpload(
+        audioBuffer: Buffer,
+        audioFormat: 'LINEAR16' | 'MP4' | 'M4A' | 'OGG' | 'WEBM',
+        requestId: string
+    ): { finalBuffer: Buffer; mimeType: string; extension: string } {
+        let finalBuffer: Buffer
+        let mimeType: string
+        let extension: string
+
+        if (audioFormat === 'LINEAR16') {
+            // Check xem đã là WAV chưa (có header RIFF)
+            if (audioBuffer.length >= 12 && audioBuffer.toString('ascii', 0, 4) === 'RIFF' && audioBuffer.toString('ascii', 8, 12) === 'WAVE') {
+                // Đã là WAV format, không cần convert
+                finalBuffer = audioBuffer
+                mimeType = 'audio/wav'
+                extension = 'wav'
+                this.logger.log(`[Kaiwa] [${requestId}] Audio already in WAV format, skipping conversion`)
+            } else {
+                // Raw LINEAR16 PCM, convert sang WAV format
+                finalBuffer = this.convertLinear16ToWav(audioBuffer, 16000)
+                mimeType = 'audio/wav'
+                extension = 'wav'
+                this.logger.log(`[Kaiwa] [${requestId}] Converted LINEAR16 PCM to WAV format`)
+            }
+        } else if (audioFormat === 'MP4' || audioFormat === 'M4A') {
+            // MP4/M4A từ mobile - giữ nguyên format
+            finalBuffer = audioBuffer
+            mimeType = 'audio/mp4' // M4A cũng là MP4 container
+            extension = audioFormat === 'MP4' ? 'mp4' : 'm4a'
+        } else if (audioFormat === 'OGG') {
+            // OGG - giữ nguyên
+            finalBuffer = audioBuffer
+            mimeType = 'audio/ogg'
+            extension = 'ogg'
+        } else if (audioFormat === 'WEBM') {
+            // WEBM - giữ nguyên
+            finalBuffer = audioBuffer
+            mimeType = 'audio/webm'
+            extension = 'webm'
+        } else {
+            // Fallback: convert sang WAV
+            this.logger.warn(`[Kaiwa] [${requestId}] Unknown audio format: ${audioFormat}, converting to WAV`)
+            finalBuffer = this.convertLinear16ToWav(audioBuffer, 16000)
+            mimeType = 'audio/wav'
+            extension = 'wav'
+        }
+
+        return { finalBuffer, mimeType, extension }
+    }
+
+    /**
+     * Upload audio và update message với audioUrl (reusable cho cả USER và AI)
+     * @param audioBuffer - Audio buffer cần upload
+     * @param audioFormat - Format của audio
+     * @param messageId - ID của message cần update
+     * @param role - Role của message ('USER' hoặc 'AI')
+     * @param userId - User ID
+     * @param conversationId - Conversation ID
+     * @param requestId - Request ID cho logging
+     * @param client - Socket client để emit event
+     * @param folder - Folder để upload (default: 'kaiwa/audio/user' hoặc 'kaiwa/audio/ai')
+     */
+    private async uploadAndUpdateMessageAudio(
+        audioBuffer: Buffer,
+        audioFormat: 'LINEAR16' | 'MP4' | 'M4A' | 'OGG' | 'WEBM',
+        messageId: number | null,
+        role: 'USER' | 'AI',
+        userId: number,
+        conversationId: string,
+        requestId: string,
+        client: Socket,
+        folder: string = 'kaiwa/audio'
+    ): Promise<void> {
+        if (!messageId) {
+            this.logger.warn(`[Kaiwa] [${requestId}] ⚠️ [Background] ${role} message ID is null, cannot update audioUrl`)
+            return
+        }
+
+        try {
+            // Prepare audio for upload
+            const { finalBuffer, mimeType, extension } = this.prepareAudioForUpload(audioBuffer, audioFormat, requestId)
+
+            // Generate filename
+            const prefix = role === 'USER' ? 'user' : 'ai'
+            const filename = `${prefix}_${userId}_${Date.now()}.${extension}`
+            this.logger.log(`[Kaiwa] [${requestId}] [Background] Uploading ${role} audio: format=${audioFormat}, mimeType=${mimeType}, extension=${extension}, size=${finalBuffer.length} bytes`)
+
+            // Upload audio
+            const audioUrl = await this.uploadAudioBuffer(finalBuffer, filename, mimeType, folder)
+
+            if (audioUrl) {
+                // Update message với audioUrl
+                await this.userAIConversationService.update(messageId, {
+                    audioUrl: audioUrl
+                })
+                this.logger.log(`[Kaiwa] [${requestId}] ✅ [Background] Updated ${role} message (ID: ${messageId}) with audioUrl: ${audioUrl}`)
+
+                // Emit event để FE update audioUrl cho message đã hiển thị
+                this.logger.log(`[Kaiwa] [${requestId}] 📤 Emitting message-audio-updated for ${role} message (ID: ${messageId})`)
+                client.emit(KAIWA_EVENTS.MESSAGE_AUDIO_UPDATED, {
+                    conversationId: conversationId,
+                    messageId: messageId,
+                    audioUrl: audioUrl,
+                    role: role
+                })
+            } else {
+                this.logger.warn(`[Kaiwa] [${requestId}] ⚠️ [Background] Audio upload failed, audioUrl is null`)
+            }
+        } catch (uploadErr) {
+            this.logger.error(`[Kaiwa] [${requestId}] ❌ [Background] Failed to upload ${role} audio: ${uploadErr.message}`, uploadErr.stack)
+        }
+    }
+
+    /**
+     * Get room name cho user
+     */
+    private getRoomName(userId: number): string {
+        return `kaiwa_${userId}`
+    }
+
+    /**
+     * Update room và emit ROOM_UPDATED event (reusable)
+     */
+    private async updateRoomAndEmit(
+        conversationId: string,
+        userId: number,
+        updateData: any,
+        requestId?: string
+    ): Promise<void> {
+        try {
+            const result = await this.aiConversationRoomService.updateByConversationId(conversationId, updateData)
+            const roomName = this.getRoomName(userId)
+            this.server.to(roomName).emit(KAIWA_EVENTS.ROOM_UPDATED, {
+                room: result.data,
+                conversationId
+            })
+            if (requestId) {
+                this.logger.log(`[Kaiwa] [${requestId}] ✅ Room updated successfully, title: "${result.data?.title || 'null'}"`)
+            }
+        } catch (err) {
+            const errorMsg = requestId
+                ? `[Kaiwa] [${requestId}] Failed to update room: ${err.message}`
+                : `[Kaiwa] Failed to update room: ${err.message}`
+            this.logger.warn(errorMsg)
         }
     }
 
@@ -402,20 +634,35 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                 return
             }
 
-            // Xử lý payload - convert sang Buffer
+            // Xử lý payload - convert sang Buffer và detect format
             let audioBuffer: Buffer
+            let audioFormat: 'LINEAR16' | 'MP4' | 'M4A' | 'OGG' | 'WEBM' = 'LINEAR16' // Default cho web browser
+            let mimeType: string = 'audio/wav' // Default
+
             if (Buffer.isBuffer(payload)) {
                 audioBuffer = payload
             } else if (payload instanceof Uint8Array) {
                 audioBuffer = Buffer.from(payload)
-            } else if (payload && typeof payload === 'object' && payload.audio) {
-                // Nếu là object có field audio
-                if (payload.audio instanceof Uint8Array) {
-                    audioBuffer = Buffer.from(payload.audio)
-                } else if (Buffer.isBuffer(payload.audio)) {
-                    audioBuffer = payload.audio
+            } else if (payload && typeof payload === 'object') {
+                // Nếu là object có field audio và có thể có metadata
+                if (payload.audio) {
+                    if (payload.audio instanceof Uint8Array) {
+                        audioBuffer = Buffer.from(payload.audio)
+                    } else if (Buffer.isBuffer(payload.audio)) {
+                        audioBuffer = payload.audio
+                    } else {
+                        throw new Error('Invalid audio format: must be Uint8Array or Buffer')
+                    }
                 } else {
-                    throw new Error('Invalid audio format: must be Uint8Array or Buffer')
+                    throw new Error('Invalid payload: object must have audio field')
+                }
+
+                // Detect format từ metadata (nếu có)
+                if (payload.format) {
+                    audioFormat = payload.format.toUpperCase() as any
+                }
+                if (payload.mimeType) {
+                    mimeType = payload.mimeType
                 }
             } else if (typeof payload === 'string') {
                 // Nếu là base64 string
@@ -424,7 +671,50 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                 throw new Error(`Invalid payload type: expected Buffer, Uint8Array, or object with audio field, got ${typeof payload}`)
             }
 
-            this.logger.log(`[Kaiwa] [${requestId}] Received audio chunk: ${audioBuffer.length} bytes from user ${userId}, conversationId: ${client.data.conversationId}`)
+            // Auto-detect format từ buffer header nếu chưa có metadata
+            // Chỉ detect nếu chưa có format từ metadata
+            if (audioFormat === 'LINEAR16' && audioBuffer.length >= 12) {
+                const header0_4 = audioBuffer.toString('ascii', 0, 4)
+                const header4_8 = audioBuffer.length >= 8 ? audioBuffer.toString('ascii', 4, 8) : ''
+                const header8_12 = audioBuffer.length >= 12 ? audioBuffer.toString('ascii', 8, 12) : ''
+
+                // Check WAV format (RIFF...WAVE)
+                if (header0_4 === 'RIFF' && header8_12 === 'WAVE') {
+                    // WAV file (đã có header, không cần convert)
+                    audioFormat = 'LINEAR16' // Vẫn dùng LINEAR16 nhưng đã là WAV format
+                    mimeType = 'audio/wav'
+                    this.logger.log(`[Kaiwa] [${requestId}] Detected WAV format from header`)
+                }
+                // Check MP4/M4A format (ftyp ở byte 4)
+                else if (header4_8 === 'ftyp' || header4_8.includes('mp4') || header4_8.includes('M4A') || header4_8.includes('isom') || header4_8.includes('qt  ')) {
+                    // MP4/M4A file (header thường ở byte 4)
+                    audioFormat = (header4_8.includes('M4A') || header4_8.includes('M4A ')) ? 'M4A' : 'MP4'
+                    mimeType = 'audio/mp4'
+                    this.logger.log(`[Kaiwa] [${requestId}] Detected ${audioFormat} format from header (${header4_8})`)
+                }
+                // Check OGG format
+                else if (header0_4 === 'OggS') {
+                    // OGG file
+                    audioFormat = 'OGG'
+                    mimeType = 'audio/ogg'
+                    this.logger.log(`[Kaiwa] [${requestId}] Detected OGG format from header`)
+                }
+                // Check WEBM format
+                else if (header0_4 === 'RIFF' && header8_12 === 'WEBM') {
+                    // WEBM file
+                    audioFormat = 'WEBM'
+                    mimeType = 'audio/webm'
+                    this.logger.log(`[Kaiwa] [${requestId}] Detected WEBM format from header`)
+                } else {
+                    // Raw LINEAR16 PCM (không có header) - sẽ convert sang WAV
+                    this.logger.log(`[Kaiwa] [${requestId}] No format header detected (header0_4: "${header0_4}", header4_8: "${header4_8}"), assuming LINEAR16 PCM (will convert to WAV)`)
+                }
+            } else if (audioFormat === 'LINEAR16') {
+                // Buffer quá ngắn, assume là raw PCM
+                this.logger.log(`[Kaiwa] [${requestId}] Buffer too short (${audioBuffer.length} bytes) for format detection, assuming LINEAR16 PCM (will convert to WAV)`)
+            }
+
+            this.logger.log(`[Kaiwa] [${requestId}] Received audio chunk: ${audioBuffer.length} bytes from user ${userId}, conversationId: ${client.data.conversationId}, detected format: ${audioFormat}, mimeType: ${mimeType}`)
 
             // Emit processing status
             client.emit(KAIWA_EVENTS.PROCESSING, {
@@ -433,41 +723,41 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                 message: 'Đang chuyển đổi âm thanh thành văn bản...'
             })
 
-            // Step 1: Speech-to-Text (Audio -> Text) với timeout
-            let transcription: string
-            try {
-                // Thêm timeout để tránh đợi quá lâu (10 giây)
-                const speechPromise = this.speechToTextService.convertAudioToText(audioBuffer, {
-                    languageCode: 'ja-JP',
-                    enableAutomaticPunctuation: true,
-                    sampleRateHertz: 16000,
-                    encoding: 'LINEAR16' //KUMO mốt đổi thành FLAC
-                })
+                // Step 1: Speech-to-Text (Audio -> Text) với timeout
+                let transcription: string
+                try {
+                    // Thêm timeout để tránh đợi quá lâu (10 giây)
+                    const speechPromise = this.speechToTextService.convertAudioToText(audioBuffer, {
+                        languageCode: 'ja-JP',
+                        enableAutomaticPunctuation: true,
+                        sampleRateHertz: 16000,
+                        encoding: 'LINEAR16' //KUMO mốt đổi thành FLAC
+                    })
 
-                const timeoutPromise = new Promise<never>((_, reject) => {
-                    setTimeout(() => reject(new Error('Speech-to-Text timeout sau 20 giây')), 20000)
-                })
+                    const timeoutPromise = new Promise<never>((_, reject) => {
+                        setTimeout(() => reject(new Error('Speech-to-Text timeout sau 20 giây')), 20000)
+                    })
 
-                const speechResult = await Promise.race([speechPromise, timeoutPromise])
-                transcription = speechResult.transcript
-                this.logger.log(`[Kaiwa] [${requestId}] Speech-to-Text: "${transcription}" (confidence: ${speechResult.confidence})`)
+                    const speechResult = await Promise.race([speechPromise, timeoutPromise])
+                    transcription = speechResult.transcript
+                    this.logger.log(`[Kaiwa] [${requestId}] Speech-to-Text: "${transcription}" (confidence: ${speechResult.confidence})`)
 
-                if (!transcription || transcription.trim() === '') {
-                    this.logger.warn(`[Kaiwa] Speech-to-Text returned empty transcript`)
+                    if (!transcription || transcription.trim() === '') {
+                        this.logger.warn(`[Kaiwa] Speech-to-Text returned empty transcript`)
+                        client.emit(KAIWA_EVENTS.ERROR, {
+                            message: ErrorMessage.SPEECH_RECOGNITION_FAILED,
+                            suggestion: ErrorMessage.SPEECH_RECOGNITION_SUGGESTION
+                        })
+                        return
+                    }
+                } catch (speechError) {
+                    this.logger.error(`[Kaiwa] Speech-to-Text error: ${speechError.message}`, speechError.stack)
                     client.emit(KAIWA_EVENTS.ERROR, {
-                        message: ErrorMessage.SPEECH_RECOGNITION_FAILED,
-                        suggestion: ErrorMessage.SPEECH_RECOGNITION_SUGGESTION
+                        message: `${ErrorMessage.SPEECH_CONVERSION_ERROR}: ${speechError.message}`,
+                        suggestion: ErrorMessage.CHECK_MICROPHONE_SUGGESTION
                     })
                     return
                 }
-            } catch (speechError) {
-                this.logger.error(`[Kaiwa] Speech-to-Text error: ${speechError.message}`, speechError.stack)
-                client.emit(KAIWA_EVENTS.ERROR, {
-                    message: `${ErrorMessage.SPEECH_CONVERSION_ERROR}: ${speechError.message}`,
-                    suggestion: ErrorMessage.CHECK_MICROPHONE_SUGGESTION
-                })
-                return
-            }
 
             // Emit transcription ngay lập tức
             client.emit(KAIWA_EVENTS.TRANSCRIPTION, {
@@ -479,34 +769,53 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             // Lấy conversation history trước
             let conversationHistory = client.data.conversationHistory || []
 
-            // Lưu USER message vào database (async, không block)
-            this.userAIConversationService.create({
-                userId,
-                conversationId: client.data.conversationId,
-                role: 'USER',
-                message: transcription
-            }).catch(err => {
-                this.logger.warn(`[Kaiwa] [${requestId}] Failed to save USER message: ${err.message}`)
-            })
+            // Lưu USER message vào database NGAY LẬP TỨC (không đợi upload audio)
+            // Upload audio sẽ chạy trong background và update audioUrl sau
+            // Sử dụng Promise để đảm bảo message được lưu trước khi upload
+            this.userAIConversationService
+                .create({
+                    userId,
+                    conversationId: client.data.conversationId,
+                    role: 'USER',
+                    message: transcription,
+                    audioUrl: null // Sẽ update sau khi upload xong
+                })
+                .then(async (result) => {
+                    const userMessageId = result.data?.id || null
+                    this.logger.log(`[Kaiwa] [${requestId}] ✅ Saved USER message (ID: ${userMessageId}), starting background audio upload...`)
+
+                        // Upload audio trong background (fire and forget, không block main flow)
+                        ; (async () => {
+                            await this.uploadAndUpdateMessageAudio(
+                                audioBuffer,
+                                audioFormat,
+                                userMessageId,
+                                'USER',
+                                userId,
+                                client.data.conversationId,
+                                requestId,
+                                client,
+                                'kaiwa/audio/user'
+                            )
+                        })().catch(err => {
+                            this.logger.error(`[Kaiwa] [${requestId}] ❌ [Background] User audio upload promise error: ${err.message}`, err.stack)
+                        })
+                })
+                .catch(err => {
+                    this.logger.error(`[Kaiwa] [${requestId}] ❌ Failed to save USER message: ${err.message}`, err.stack)
+                })
 
             // Update room với lastMessage (async, không block)
             // Chỉ update lastMessage, title sẽ được generate sau khi có AI response
-            this.aiConversationRoomService
-                .updateByConversationId(client.data.conversationId, {
+            this.updateRoomAndEmit(
+                client.data.conversationId,
+                userId,
+                {
                     lastMessage: transcription.length > 500 ? transcription.substring(0, 500) : transcription,
                     lastMessageAt: new Date()
-                })
-                .then((result) => {
-                    // Emit room-updated event để FE refresh danh sách
-                    const roomName = `kaiwa_${userId}`
-                    this.server.to(roomName).emit(KAIWA_EVENTS.ROOM_UPDATED, {
-                        room: result.data,
-                        conversationId: client.data.conversationId
-                    })
-                })
-                .catch(err => {
-                    this.logger.warn(`[Kaiwa] [${requestId}] Failed to update room: ${err.message}`)
-                })
+                },
+                requestId
+            ).catch(() => { }) // Fire and forget
 
             // Step 2: Gửi text đến Gemini Flash (chạy song song với các task khác nếu có thể)
             // Build prompt cho kaiwa (đàm thoại tiếng Nhật)
@@ -691,16 +1000,25 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                 timestamp: Date.now()
             })
 
-            // Lưu AI response vào database (async, không block) - audioUrl sẽ được update sau khi có TTS
-            this.userAIConversationService.create({
-                userId,
-                conversationId: client.data.conversationId,
-                role: 'AI',
-                message: geminiResponse,
-                audioUrl: null // Sẽ update sau khi có audio (TODO: upload file và lưu URL)
-            }).catch(err => {
-                this.logger.warn(`[Kaiwa] [${requestId}] Failed to save AI message: ${err.message}`)
-            })
+            // Lưu AI response vào database (audioUrl sẽ được update sau khi có TTS)
+            // Tạm thời lưu không có audioUrl, sẽ update sau khi upload TTS audio
+            let aiMessageId: number | null = null
+            this.userAIConversationService
+                .create({
+                    userId,
+                    conversationId: client.data.conversationId,
+                    role: 'AI',
+                    message: geminiResponse,
+                    audioUrl: null // Sẽ update sau khi có TTS audio
+                })
+                .then((result) => {
+                    // Lưu message ID để update audioUrl sau
+                    aiMessageId = result.data?.id || null
+                    this.logger.log(`[Kaiwa] [${requestId}] ✅ Saved AI message (ID: ${aiMessageId}), waiting for TTS audio...`)
+                })
+                .catch(err => {
+                    this.logger.warn(`[Kaiwa] [${requestId}] Failed to save AI message: ${err.message}`)
+                })
 
             // Update room với lastMessage từ AI (async, không block)
             // Cũng check và generate title nếu chưa có (có thể đã generate ở USER message, nhưng check lại để chắc chắn)
@@ -771,16 +1089,12 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                     }
 
                     this.logger.log(`[Kaiwa] [${requestId}] Updating room with data: ${JSON.stringify({ ...updateData, lastMessage: updateData.lastMessage?.substring(0, 50) + '...' })}`)
-                    return this.aiConversationRoomService.updateByConversationId(client.data.conversationId, updateData)
-                })
-                .then((result) => {
-                    this.logger.log(`[Kaiwa] [${requestId}] ✅ Room updated successfully, title: "${result.data?.title || 'null'}"`)
-                    // Emit room-updated event để FE refresh danh sách
-                    const roomName = `kaiwa_${userId}`
-                    this.server.to(roomName).emit(KAIWA_EVENTS.ROOM_UPDATED, {
-                        room: result.data,
-                        conversationId: client.data.conversationId
-                    })
+                    return this.updateRoomAndEmit(
+                        client.data.conversationId,
+                        userId,
+                        updateData,
+                        requestId
+                    )
                 })
                 .catch(err => {
                     this.logger.error(`[Kaiwa] [${requestId}] ❌ Failed to update room with AI message: ${err.message}`, err.stack)
@@ -853,10 +1167,22 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                             timestamp: Date.now()
                         })
 
-                        // Update audioUrl trong database nếu đã lưu message (async, không block)
-                        // Note: audioUrl có thể là URL file đã upload hoặc base64 data URL
-                        // Ở đây tạm để null, có thể upload file và lưu URL sau
-                        // TODO: Upload audio file và lưu URL vào audioUrl khi có upload service
+                            // Upload AI audio trong BACKGROUND (fire and forget, không block response)
+                            ; (async () => {
+                                await this.uploadAndUpdateMessageAudio(
+                                    result.audioContent,
+                                    'OGG', // AI audio luôn là OGG_OPUS
+                                    aiMessageId,
+                                    'AI',
+                                    userId,
+                                    client.data.conversationId,
+                                    requestId,
+                                    client,
+                                    'kaiwa/audio/ai'
+                                )
+                            })().catch(err => {
+                                this.logger.error(`[Kaiwa] [${requestId}] ❌ [Background] AI audio upload promise error: ${err.message}`, err.stack)
+                            })
 
                         client.data.processingAudio = false
                         this.logger.log(`[Kaiwa] [${requestId}] Audio processing completed successfully`)
@@ -954,18 +1280,12 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                                     // Sử dụng messages đầu tiên để có context ban đầu tốt nhất
                                     const generatedTitle = await this.generateRoomTitle(history, language, false)
                                     if (generatedTitle) {
-                                        await this.aiConversationRoomService.updateByConversationId(incomingConvId, {
-                                            title: generatedTitle
-                                        })
+                                        await this.updateRoomAndEmit(
+                                            incomingConvId,
+                                            userId,
+                                            { title: generatedTitle }
+                                        )
                                         this.logger.log(`[Kaiwa] ✅ Generated title for room ${incomingConvId}: "${generatedTitle}"`)
-
-                                        // Emit room-updated để FE refresh
-                                        const roomName = `kaiwa_${userId}`
-                                        const updatedRoom = await this.aiConversationRoomService.findByConversationId(incomingConvId, userId)
-                                        this.server.to(roomName).emit(KAIWA_EVENTS.ROOM_UPDATED, {
-                                            room: updatedRoom.data,
-                                            conversationId: incomingConvId
-                                        })
                                     } else {
                                         this.logger.warn(`[Kaiwa] ⚠️ Failed to generate title for room ${incomingConvId}`)
                                     }
@@ -1000,7 +1320,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             client.data.conversationHistory = []
         }
 
-        const roomName = `kaiwa_${userId}`
+        const roomName = this.getRoomName(userId)
         client.join(roomName)
 
         const conversationId = client.data.conversationId
@@ -1046,7 +1366,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                 return
             }
 
-            const roomName = `kaiwa_${userId}`
+            const roomName = this.getRoomName(userId)
             client.leave(roomName)
 
             // Cleanup kaiwa-specific state

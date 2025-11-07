@@ -704,7 +704,7 @@
       }
 
       /** ✅ ADD MESSAGE TO CHAT */
-      function addChatMessage(japaneseText, vietnameseText, isUser = false, showTyping = false) {
+      function addChatMessage(japaneseText, vietnameseText, isUser = false, showTyping = false, audioUrl = null) {
         // Remove empty state
         const emptyState = chatArea.querySelector('.empty-state');
         if (emptyState) {
@@ -739,6 +739,17 @@
             audioIcon.textContent = '🔊';
             audioIcon.style.marginLeft = '8px';
             audioIcon.title = isUser ? 'Phát audio của bạn' : 'Phát audio của AI';
+            audioIcon.style.cursor = audioUrl ? 'pointer' : 'not-allowed';
+            audioIcon.style.opacity = audioUrl ? '1' : '0.5';
+            // Lưu audioUrl vào data attribute để có thể update sau
+            if (audioUrl) {
+              audioIcon.setAttribute('data-audio-url', audioUrl);
+              audioIcon.addEventListener('click', () => {
+                playAudioFromUrl(audioUrl);
+              });
+            } else {
+              audioIcon.setAttribute('data-audio-url', '');
+            }
             japaneseLine.appendChild(audioIcon);
           });
           
@@ -761,6 +772,17 @@
           audioIcon.textContent = '🔊';
           audioIcon.style.marginLeft = '8px';
           audioIcon.title = isUser ? 'Phát audio của bạn' : 'Phát audio của AI';
+          audioIcon.style.cursor = audioUrl ? 'pointer' : 'not-allowed';
+          audioIcon.style.opacity = audioUrl ? '1' : '0.5';
+          // Lưu audioUrl vào data attribute để có thể update sau
+          if (audioUrl) {
+            audioIcon.setAttribute('data-audio-url', audioUrl);
+            audioIcon.addEventListener('click', () => {
+              playAudioFromUrl(audioUrl);
+            });
+          } else {
+            audioIcon.setAttribute('data-audio-url', '');
+          }
           japaneseLine.appendChild(audioIcon);
         }
         
@@ -832,6 +854,24 @@
           });
         } catch (error) {
           console.error('Error creating audio:', error);
+        }
+      }
+
+      /** ✅ PLAY AUDIO FROM URL */
+      function playAudioFromUrl(audioUrl) {
+        if (!audioUrl) {
+          console.warn('No audio URL provided');
+          return;
+        }
+        try {
+          const audio = new Audio(audioUrl);
+          audio.play().catch(err => {
+            console.error('Error playing audio from URL:', err);
+            alert('Không thể phát audio. Vui lòng thử lại.');
+          });
+        } catch (error) {
+          console.error('Error creating audio from URL:', error);
+          alert('Lỗi khi phát audio. Vui lòng thử lại.');
         }
       }
 
@@ -1001,7 +1041,7 @@
         if (data.messages && data.messages.length > 0) {
           data.messages.forEach(msg => {
             const isUser = msg.role === 'USER';
-            addChatMessage(msg.message, '', isUser, false);
+            addChatMessage(msg.message, '', isUser, false, msg.audioUrl || null);
           });
         }
       });
@@ -1029,7 +1069,8 @@
         console.log("📝 Transcription:", data.text);
         removeProcessingMessage();
         // Hiển thị user message với transcription tiếng Nhật
-        addChatMessage(data.text, '', true); // true = user message
+        // audioUrl sẽ được update sau khi upload xong, tạm thời để null
+        addChatMessage(data.text, '', true, false, null); // true = user message
       });
 
       /** ✅ TEXT RESPONSE */
@@ -1037,8 +1078,9 @@
         console.log("💬 AI Response:", data.text);
         removeProcessingMessage();
         // Add AI response với typing effect (chỉ khi có text)
+        // audioUrl sẽ được update sau khi upload xong, tạm thời để null
         if (data.text) {
-          addChatMessage(data.text, data.translation || '', false, true); // true = show typing effect
+          addChatMessage(data.text, data.translation || '', false, true, null); // false = AI, true = show typing, null = audioUrl sẽ update sau
         }
       });
 
@@ -1111,6 +1153,109 @@
         statusIndicator.textContent = 'Idle';
         statusIndicator.className = 'status-indicator idle';
         removeProcessingMessage();
+      });
+
+      /** ✅ MESSAGE AUDIO UPDATED - Update audioUrl cho message đã hiển thị */
+      socket.on("message-audio-updated", (data) => {
+        console.log("🔊 Message audio updated:", data);
+        
+        // Hàm helper để update icon (định nghĩa trước để có thể dùng trong updateAudioIcon)
+        const updateIcon = (icon) => {
+          if (!icon || !data.audioUrl) return;
+          
+          // Update styling
+          icon.style.cursor = 'pointer';
+          icon.style.opacity = '1';
+          icon.title = data.role === 'USER' ? 'Phát audio của bạn' : 'Phát audio của AI';
+          
+          // Update data attribute
+          icon.setAttribute('data-audio-url', data.audioUrl);
+          
+          // Remove old click listeners bằng cách clone node
+          const newIcon = icon.cloneNode(true);
+          icon.parentNode.replaceChild(newIcon, icon);
+          
+          // Add click handler mới
+          newIcon.addEventListener('click', () => {
+            const url = newIcon.getAttribute('data-audio-url');
+            console.log(`🔊 Playing audio from URL: ${url}`);
+            if (url) {
+              playAudioFromUrl(url);
+            } else {
+              console.warn('⚠️ Audio URL is empty');
+            }
+          });
+          
+          console.log(`✅ Updated audio icon for ${data.role} message (ID: ${data.messageId}) with URL: ${data.audioUrl}`);
+        };
+        
+        // Hàm helper để update audio icon
+        const updateAudioIcon = (targetMessage) => {
+          if (!targetMessage) return false;
+          
+          // Tìm audio icon trong message (có thể chưa có nếu typing effect chưa xong)
+          let audioIcon = targetMessage.querySelector('.chat-icon');
+          
+          // Nếu chưa có icon, đợi một chút rồi thử lại (typing effect có thể đang chạy)
+          if (!audioIcon) {
+            console.log(`⏳ Audio icon not found yet, waiting for typing effect to complete...`);
+            setTimeout(() => {
+              audioIcon = targetMessage.querySelector('.chat-icon');
+              if (audioIcon && data.audioUrl) {
+                updateIcon(audioIcon);
+              } else if (!audioIcon) {
+                // Nếu vẫn chưa có, tạo icon mới
+                console.log(`🔨 Creating audio icon for ${data.role} message`);
+                const japaneseLine = targetMessage.querySelector('.chat-line');
+                if (japaneseLine) {
+                  const newIcon = document.createElement('span');
+                  newIcon.className = 'chat-icon';
+                  newIcon.textContent = '🔊';
+                  newIcon.style.marginLeft = '8px';
+                  newIcon.title = data.role === 'USER' ? 'Phát audio của bạn' : 'Phát audio của AI';
+                  japaneseLine.appendChild(newIcon);
+                  updateIcon(newIcon);
+                }
+              }
+            }, 500); // Đợi 500ms cho typing effect
+            return false;
+          }
+          
+          if (audioIcon && data.audioUrl) {
+            updateIcon(audioIcon);
+            return true;
+          }
+          return false;
+        };
+        
+        // Tìm message bubble gần nhất với role tương ứng và update audio icon
+        const messages = chatArea.querySelectorAll('.chat-message');
+        if (messages.length > 0) {
+          // Tìm message cuối cùng có role tương ứng
+          let targetMessage = null;
+          for (let i = messages.length - 1; i >= 0; i--) {
+            const msg = messages[i];
+            const isUser = msg.classList.contains('user');
+            if ((data.role === 'USER' && isUser) || (data.role === 'AI' && !isUser)) {
+              targetMessage = msg;
+              break;
+            }
+          }
+          
+          if (targetMessage) {
+            const updated = updateAudioIcon(targetMessage);
+            if (!updated && data.audioUrl) {
+              // Nếu không update được ngay, thử lại sau 1 giây
+              setTimeout(() => {
+                updateAudioIcon(targetMessage);
+              }, 1000);
+            }
+          } else {
+            console.warn(`⚠️ Target message not found for role: ${data.role}`);
+          }
+        } else {
+          console.warn(`⚠️ No messages found in chat area`);
+        }
       });
 
       socket.on("error", (error) => {

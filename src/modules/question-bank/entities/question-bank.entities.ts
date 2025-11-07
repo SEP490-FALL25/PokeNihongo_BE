@@ -107,6 +107,38 @@ export const GetQuestionBankListQuerySchema = z
     })
     .strict()
 
+// Schema for getting questions by array of IDs
+export const GetQuestionBanksByIdsQuerySchema = z
+    .object({
+        questionIds: z.preprocess(
+            (val) => {
+                // Handle different input formats from query parameters
+                if (Array.isArray(val)) {
+                    // Case: ?questionIds=1&questionIds=2 -> ['1', '2']
+                    return val.flatMap(v => {
+                        if (typeof v === 'string') {
+                            return v.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id))
+                        }
+                        return typeof v === 'number' ? [v] : []
+                    })
+                }
+                if (typeof val === 'string') {
+                    // Case: ?questionIds=1,2,3 -> '1,2,3'
+                    return val.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id))
+                }
+                if (typeof val === 'number') {
+                    // Case: ?questionIds=1 -> 1
+                    return [val]
+                }
+                return []
+            },
+            z.array(z.number().int().positive())
+                .min(1, 'Phải có ít nhất 1 questionId')
+                .max(100, 'Tối đa 100 questionIds')
+        )
+    })
+    .strict()
+
 // Types
 // Schema for creating question bank with meanings
 export const CreateQuestionBankWithMeaningsBodySchema = z.object({
@@ -216,6 +248,7 @@ export type QuestionBankResType = z.infer<typeof QuestionBankResSchema>
 export type QuestionBankListResType = z.infer<typeof QuestionBankListResSchema>
 export type GetQuestionBankByIdParamsType = z.infer<typeof GetQuestionBankByIdParamsSchema>
 export type GetQuestionBankListQueryType = z.infer<typeof GetQuestionBankListQuerySchema>
+export type GetQuestionBanksByIdsQueryType = z.infer<typeof GetQuestionBanksByIdsQuerySchema>
 export type CreateQuestionBankWithMeaningsBodyType = z.infer<typeof CreateQuestionBankWithMeaningsBodySchema>
 export type UpdateQuestionBankWithMeaningsBodyType = z.infer<typeof UpdateQuestionBankWithMeaningsBodySchema>
 export type CreateQuestionBankWithAnswersBodyType = z.infer<typeof CreateQuestionBankWithAnswersBodySchema>

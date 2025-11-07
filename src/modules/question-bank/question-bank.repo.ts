@@ -1,6 +1,7 @@
 import { QuestionBankType, CreateQuestionBankBodyType, CreateQuestionBankWithMeaningsBodyType, UpdateQuestionBankWithMeaningsBodyType, UpdateQuestionBankBodyType, GetQuestionBankListQueryType } from '@/modules/question-bank/entities/question-bank.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable, Logger } from '@nestjs/common'
+import { pickLabelFromComposite } from '@/common/utils/prase.utils'
 import { QuestionType } from '@prisma/client'
 
 @Injectable()
@@ -154,11 +155,11 @@ export class QuestionBankRepository {
             return null
         }
 
-        // Lấy translation cho questionKey nếu có
+        // Lấy translation cho questionKey nếu có (trả về tất cả translations, không filter theo language)
         if (questionBank.questionKey) {
             // Tìm translation theo 2 pattern:
-            // 1. Key chính xác: GRAMMAR.5.question
-            // 2. Pattern meaning: GRAMMAR.5.question.meaning.*
+            // 1. Key chính xác: question.VOCABULARY.5
+            // 2. Pattern meaning: question.VOCABULARY.5.meaning.*
             let translations = await this.prisma.translation.findMany({
                 where: {
                     OR: [
@@ -188,17 +189,171 @@ export class QuestionBankRepository {
                 })
             }
 
-            // Lấy tất cả translations cho findById
-            (questionBank as any).meanings = translations.length > 0 ? translations.map(t => ({
-                language: t.language.code,
-                value: t.value
-            })) : []
+            // Trả về mảng translations (tất cả languages)
+            (questionBank as any).meanings = translations.length > 0 ? translations
+                .filter(t => t.key.startsWith(questionBank.questionKey! + '.meaning.'))
+                .map(t => ({
+                    language: t.language.code,
+                    value: t.value
+                })) : []
         } else {
             // Nếu không có questionKey, vẫn set field rỗng
             (questionBank as any).meanings = []
         }
 
         return questionBank
+    }
+
+    async findByIds(ids: number[], language?: string): Promise<QuestionBankType[]> {
+        const questionBanks = await this.prisma.questionBank.findMany({
+            where: {
+                id: { in: ids }
+            },
+            include: {
+                answers: true,
+            },
+            orderBy: {
+                id: 'asc'
+            }
+        })
+
+        if (questionBanks.length === 0) {
+            return []
+        }
+
+        // Lấy languageId nếu có language filter
+        let languageId: number | undefined
+        if (language) {
+            const languageRecord = await this.prisma.languages.findFirst({
+                where: { code: language }
+            })
+            if (languageRecord) {
+                languageId = languageRecord.id
+            }
+        }
+
+        // Lấy tất cả translations cho các questionBanks
+        const questionKeys = questionBanks.map(qb => qb.questionKey).filter(Boolean) as string[]
+
+        if (questionKeys.length === 0) {
+            // Nếu không có questionKey nào, set meanings rỗng cho tất cả
+            questionBanks.forEach(qb => {
+                (qb as any).meanings = []
+            })
+            return questionBanks
+        }
+
+        // Build where clause for translations
+        const translationWhere: any = {
+            OR: questionKeys.flatMap(key => [
+                { key: key },
+                { key: { startsWith: key + '.meaning.' } }
+            ])
+        }
+
+        if (languageId) {
+            translationWhere.languageId = languageId
+        }
+
+        const allTranslations = await this.prisma.translation.findMany({
+            where: translationWhere,
+            include: {
+                language: true
+            }
+        })
+
+        // Map translations to each questionBank
+        const data = await Promise.all(
+            questionBanks.map(async (questionBank) => {
+                let questionText = questionBank.questionJp || ''
+
+                if (questionBank.questionKey) {
+                    // Tìm translations cho questionBank này
+                    const questionTranslations = allTranslations.filter(t =>
+                        t.key === questionBank.questionKey || t.key.startsWith(questionBank.questionKey + '.meaning.')
+                    )
+
+                    // Nếu không tìm thấy và key có format cũ, thử tìm theo format mới
+                    if (questionTranslations.length === 0 && questionBank.questionKey.includes('.question')) {
+                        const newKey = questionBank.questionKey.replace('.question', '').replace(/^(\w+)\.(\d+)$/, 'question.$1.$2')
+                        const newTranslations = allTranslations.filter(t =>
+                            t.key === newKey || t.key.startsWith(newKey + '.meaning.')
+                        )
+
+                        if (newTranslations.length > 0) {
+                            // Xử lý với newTranslations
+                            if (languageId) {
+                                // Nếu có language filter, lấy translation của ngôn ngữ đó
+                                const meaningTranslation = newTranslations.find(t => t.key.startsWith(newKey + '.meaning.'))
+                                if (meaningTranslation && meaningTranslation.value) {
+                                    questionText = meaningTranslation.value
+                                }
+                            } else {
+                                // Nếu không có language filter, lấy translation đầu tiên
+                                const meaningTranslation = newTranslations
+                                    .filter(t => t.key.startsWith(newKey + '.meaning.'))[0]
+                                if (meaningTranslation && meaningTranslation.value) {
+                                    questionText = meaningTranslation.value
+                                }
+                            }
+                        }
+                    } else {
+                        // Xử lý translations
+                        if (languageId) {
+                            // Nếu có language filter, chỉ lấy translation của ngôn ngữ đó
+                            const meaningTranslation = questionTranslations.find(t => t.key.startsWith(questionBank.questionKey! + '.meaning.'))
+                            if (meaningTranslation && meaningTranslation.value) {
+                                questionText = meaningTranslation.value
+                            }
+                        } else {
+                            // Nếu không có language filter, lấy translation đầu tiên
+                            const meaningTranslation = questionTranslations
+                                .filter(t => t.key.startsWith(questionBank.questionKey! + '.meaning.'))[0]
+                            if (meaningTranslation && meaningTranslation.value) {
+                                questionText = meaningTranslation.value
+                            }
+                        }
+                    }
+                }
+
+                // Transform answers: parse answerJp và loại bỏ các field không cần thiết
+                const transformedAnswers = (questionBank.answers || []).map((ans: any) => {
+                    // Parse answerJp theo format jp:私+vi:Tôi+en:I
+                    let answerText = ans.answerJp || ''
+                    if (language) {
+                        answerText = pickLabelFromComposite(ans.answerJp || '', language) || ans.answerJp || ''
+                    } else {
+                        // Nếu không có language, lấy phần vi (fallback)
+                        answerText = pickLabelFromComposite(ans.answerJp || '', 'vi') || ans.answerJp || ''
+                    }
+
+                    return {
+                        id: ans.id,
+                        answer: answerText
+                    }
+                })
+
+                // Transform response: đổi questionJp thành question, loại bỏ các field không cần thiết
+                const {
+                    questionJp,
+                    questionKey,
+                    role,
+                    createdById,
+                    createdAt,
+                    updatedAt,
+                    answers,
+                    ...rest
+                } = questionBank as any
+
+                return {
+                    ...rest,
+                    question: questionText,
+                    answers: transformedAnswers
+                }
+            })
+        )
+
+        return data
     }
 
     async create(data: CreateQuestionBankBodyType): Promise<QuestionBankType> {

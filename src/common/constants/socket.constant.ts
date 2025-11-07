@@ -74,6 +74,7 @@ export const KAIWA_EVENTS = {
   LEFT: 'left',
   ERROR: 'error',
   ROOM_UPDATED: 'room-updated', // Emit khi room được tạo/cập nhật
+  MESSAGE_AUDIO_UPDATED: 'message-audio-updated', // Emit khi audioUrl được update cho message
   // Client -> Server events
   JOIN_KAIWA_ROOM: 'join-kaiwa-room',
   LEAVE_KAIWA_ROOM: 'leave-kaiwa-room',
