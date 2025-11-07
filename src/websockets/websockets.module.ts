@@ -4,11 +4,15 @@ import { UploadModule } from '@/3rdService/upload/upload.module'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { InitializerGateway } from './initializer.gateway'
-import { KaiwaGateway } from './kaiwa.gateway'
+
 import { MatchingGateway } from './matching.gateway'
 import { SocketServerService } from './socket-server.service'
 import { WebsocketsService } from './websockets.service'
-import { KaiwaProcessor } from './workers/kaiwa.processor'
+
+import { AIConversationRoomModule } from '@/modules/ai-conversation-room/ai-conversation-room.module'
+import { UserAIConversationModule } from '@/modules/user-ai-conversation/user-ai-conversation.module'
+import { KaiwaProcessor } from '../shared/workers/kaiwa.processor'
+import { KaiwaGateway } from './kaiwa.gateway'
 
 // @Global()
 @Module({
@@ -31,7 +35,9 @@ import { KaiwaProcessor } from './workers/kaiwa.processor'
     }),
     ConfigModule, // Cần để inject ConfigService
     UploadModule, // Cần cho TextToSpeechService
-    SpeechModule // Cần cho SpeechToTextService và TextToSpeechService
+    SpeechModule, // Cần cho SpeechToTextService và TextToSpeechService
+    UserAIConversationModule, // Cần để lưu conversation vào database
+    AIConversationRoomModule // Cần để quản lý phòng hội thoại
     // MatchRoundModule
   ],
   providers: [
