@@ -56,6 +56,8 @@ export const MATCHING_EVENTS = {
   ROUND_POKES_SELECTED: 'round-pokes-selected',
   QUESTION_COMPLETED: 'question-completed',
   OPPONENT_COMPLETED: 'opponent-completed',
+  QUESTION_ANSWERED: 'question-answered',
+  ROUND_COMPLETED: 'round-completed',
   // Client -> Server events
   JOIN_MATCHING_ROOM: 'join-matching-room',
   LEAVE_MATCHING_ROOM: 'leave-matching-room',

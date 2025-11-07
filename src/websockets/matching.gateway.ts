@@ -494,4 +494,67 @@ export class MatchingGateway {
       `[MatchingGateway] Notified user ${opponentUserId} in match ${matchId} that opponent completed`
     )
   }
+
+  /**
+   * Notify user about their answer result and next question
+   * @param matchId - Match ID
+   * @param userId - User who answered
+   * @param answerResult - Answer result data (answerId, isCorrect, pointsEarned, timeAnswerMs)
+   * @param nextQuestion - Next question data or null if last question
+   */
+  notifyQuestionAnswered(
+    matchId: number,
+    userId: number,
+    answerResult: {
+      roundQuestionId: number
+      answerId: number
+      isCorrect: boolean
+      pointsEarned: number
+      timeAnswerMs: number
+    },
+    nextQuestion: any | null
+  ): void {
+    const userMatchRoom = `match_${matchId}_user_${userId}`
+
+    this.server.to(userMatchRoom).emit(MATCHING_EVENTS.QUESTION_ANSWERED, {
+      type: 'QUESTION_ANSWERED',
+      matchId,
+      answerResult,
+      nextQuestion
+    })
+
+    this.logger.log(
+      `[MatchingGateway] Notified user ${userId} in match ${matchId} about answer result (roundQuestionId=${answerResult.roundQuestionId}, nextQuestion=${nextQuestion ? nextQuestion.id : 'null'})`
+    )
+  }
+
+  /**
+   * Notify both users about round completion result
+   * @param matchId - Match ID
+   * @param userId1 - First user ID
+   * @param userId2 - Second user ID
+   * @param roundData - Complete round data with participants and winner info
+   */
+  notifyRoundCompleted(
+    matchId: number,
+    userId1: number,
+    userId2: number,
+    roundData: any
+  ): void {
+    const userMatchRoom1 = `match_${matchId}_user_${userId1}`
+    const userMatchRoom2 = `match_${matchId}_user_${userId2}`
+
+    const payload = {
+      type: 'ROUND_COMPLETED',
+      matchId,
+      round: roundData
+    }
+
+    this.server.to(userMatchRoom1).emit(MATCHING_EVENTS.ROUND_COMPLETED, payload)
+    this.server.to(userMatchRoom2).emit(MATCHING_EVENTS.ROUND_COMPLETED, payload)
+
+    this.logger.log(
+      `[MatchingGateway] Notified users ${userId1} and ${userId2} in match ${matchId} about round ${roundData.roundNumber} completion (winner: ${roundData.roundWinnerId})`
+    )
+  }
 }

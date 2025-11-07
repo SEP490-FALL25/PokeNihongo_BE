@@ -21,6 +21,9 @@ import {
 import { Inject, Logger, OnModuleInit } from '@nestjs/common'
 import { Job, Queue } from 'bull'
 
+const TIME_CHOOSE_POKEMON_MS = 5000
+const TIME_LIMIT_ANSWER_QUESTION_MS = 5000
+
 @Processor(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
 export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
   private readonly logger = new Logger(MatchRoundParticipantTimeoutProcessor.name)
@@ -417,7 +420,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         await this.prismaService.matchRoundParticipant.update({
           where: { id: nextParticipant.id },
           data: {
-            endTimeSelected: addTimeUTC(new Date(), 30000) // 30 seconds
+            endTimeSelected: addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
           }
         })
 
@@ -428,7 +431,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             matchRoundParticipantId: nextParticipant.id
           },
           {
-            delay: 30000 // 30 seconds
+            delay: TIME_CHOOSE_POKEMON_MS
           }
         )
 
@@ -513,7 +516,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         await this.prismaService.matchRoundParticipant.update({
           where: { id: firstParticipant.id },
           data: {
-            endTimeSelected: addTimeUTC(new Date(), 30000) // 30 seconds
+            endTimeSelected: addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
           }
         })
 
@@ -524,7 +527,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             matchRoundParticipantId: firstParticipant.id
           },
           {
-            delay: 30000 // 30 seconds
+            delay: TIME_CHOOSE_POKEMON_MS
           }
         )
 
@@ -654,7 +657,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             data: {
               matchRoundParticipantId: p.id,
               questionBankId: q.id,
-              timeLimitMs: 60000,
+              timeLimitMs: TIME_LIMIT_ANSWER_QUESTION_MS,
               basePoints: 100,
               orderNumber
             }
@@ -724,7 +727,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
                     data: {
                       matchRoundParticipantId: debuffedParticipantId,
                       questionBankId: extra.id,
-                      timeLimitMs: 60000,
+                      timeLimitMs: TIME_LIMIT_ANSWER_QUESTION_MS,
                       basePoints: 100,
                       orderNumber: nextOrder++,
                       debuffId: debuffRow.id
