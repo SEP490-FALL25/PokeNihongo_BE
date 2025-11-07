@@ -293,6 +293,16 @@ export class GetQuestionBankListQuerySwaggerDTO {
     noTestSet?: boolean
 }
 
+export class GetQuestionBanksByIdsQuerySwaggerDTO {
+    @ApiProperty({
+        example: [1, 2, 3],
+        description: 'Mảng các ID câu hỏi cần lấy (tối đa 100 ID). Có thể truyền dạng mảng hoặc chuỗi phân cách bằng dấu phẩy: "1,2,3"',
+        type: [Number],
+        required: true
+    })
+    questionIds: number[] | string
+}
+
 export class AnswerSwaggerDTO {
     @ApiProperty({ example: '田中太郎です', description: 'Câu trả lời bằng tiếng Nhật' })
     answerJp: string

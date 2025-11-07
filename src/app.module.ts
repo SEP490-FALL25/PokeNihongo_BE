@@ -71,6 +71,8 @@ import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.m
 import { UserHistoryModule } from './modules/user-history/user-history.module'
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserProgressModule } from './modules/user-progress/user-progress.module'
+import { UserAIConversationModule } from './modules/user-ai-conversation/user-ai-conversation.module'
+import { AIConversationRoomModule } from './modules/ai-conversation-room/ai-conversation-room.module'
 import { UserTestAnswerLogModule } from './modules/user-test-answer-log/user-test-answer-log.module'
 import { UserTestAttemptModule } from './modules/user-test-attempt/user-test-attempt.module'
 import { UserTestModule } from './modules/user-test/user-test.module'
@@ -130,6 +132,8 @@ import { RoundQuestionAnswerlogModule } from './modules/round-question-answerlog
     UserTestAnswerLogModule,
     UserTestModule,
     UserProgressModule,
+    UserAIConversationModule,
+    AIConversationRoomModule,
     UserHistoryModule,
     AchievementGroupModule,
     AchievementModule,
@@ -162,6 +166,8 @@ import { RoundQuestionAnswerlogModule } from './modules/round-question-answerlog
     DebuffRoundModule,
     SrsReviewModule,
     UserSeasonHistoryModule,
+    UserAIConversationModule,
+    AIConversationRoomModule,
     RoundQuestionModule,
     RoundQuestionAnswerlogModule
   ],
