@@ -83,6 +83,8 @@ import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
 import { UserSeasonHistoryModule } from './modules/user-season-history/user-season-history.module';
+import { RoundQuestionModule } from './modules/round-question/round-question.module';
+import { RoundQuestionAnswerlogModule } from './modules/round-question-answerlog/round-question-answerlog.module';
 
 @Module({
   imports: [
@@ -166,6 +168,8 @@ import { UserSeasonHistoryModule } from './modules/user-season-history/user-seas
     UserSeasonHistoryModule,
     UserAIConversationModule,
     AIConversationRoomModule,
+    RoundQuestionModule,
+    RoundQuestionAnswerlogModule
   ],
 
   controllers: [],

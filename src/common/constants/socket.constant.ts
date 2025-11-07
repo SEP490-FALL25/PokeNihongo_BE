@@ -52,9 +52,14 @@ export const MATCHING_EVENTS = {
   // Server -> Client events
   MATCHING_EVENT: 'matching-event',
   SELECT_POKEMON: 'select-pokemon',
+  ROUND_STARTED: 'round-started',
+  ROUND_POKES_SELECTED: 'round-pokes-selected',
+  QUESTION_COMPLETED: 'question-completed',
+  OPPONENT_COMPLETED: 'opponent-completed',
   // Client -> Server events
   JOIN_MATCHING_ROOM: 'join-matching-room',
   LEAVE_MATCHING_ROOM: 'leave-matching-room',
+  JOIN_USER_MATCH_ROOM: 'join-user-match-room',
   JOIN_SEARCHING_ROOM: 'join-searching-room',
   LEAVE_SEARCHING_ROOM: 'leave-searching-room'
   // Add more events as needed

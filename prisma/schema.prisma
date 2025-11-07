@@ -723,6 +723,7 @@ model QuestionBank {
 
   // Quan hệ với TestSetQuestionBank (bảng nối)
   testSetQuestionBanks TestSetQuestionBank[]
+  roundQuestions       RoundQuestion[]
 
   @@index([questionType])
   @@index([questionKey])
@@ -849,7 +850,8 @@ model Answer {
   userAnswerLogs UserAnswerLog[]
 
   // Quan hệ với UserTestAnswerLog
-  userTestAnswerLogs UserTestAnswerLog[] @relation("AnswerUserTestAnswerLogs")
+  userTestAnswerLogs       UserTestAnswerLog[]       @relation("AnswerUserTestAnswerLogs")
+  roundQuestionsAnswerLogs RoundQuestionsAnswerLog[]
 
   @@index([questionBankId])
   @@index([answerKey])
@@ -1696,6 +1698,8 @@ model MatchRoundParticipant {
   questionsTotal Int               @default(10) // 11 nếu bị debuff
   status         RoundResultStatus @default(SELECTING_POKEMON) // PENDING, COMPLETED
 
+  roundQuestions RoundQuestion[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -1703,6 +1707,53 @@ model MatchRoundParticipant {
   // 1 user chỉ có 1 record cho 1 round
   @@unique([matchParticipantId, matchRoundId])
   @@index([selectedUserPokemonId])
+}
+
+model RoundQuestion {
+  id Int @id @default(autoincrement())
+
+  matchRoundParticipantId Int
+  matchRoundParticipant   MatchRoundParticipant @relation(fields: [matchRoundParticipantId], references: [id], onDelete: Cascade)
+
+  questionBankId Int
+  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+
+  debuffId Int?
+  debuff   DebuffRound? @relation(fields: [debuffId], references: [id], onDelete: SetNull)
+
+  timeLimitMs     Int       @default(60000) // Thời gian làm câu hỏi này (ms)
+  endTimeQuestion DateTime? // Thời gian kết thúc câu hỏi này
+  basePoints      Int       @default(100) // Điểm của câu hỏi này
+  orderNumber     Int // Thứ tự câu hỏi trong danh sách (1-10 hoặc 1-11)
+
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  deletedAt                DateTime?
+  roundQuestionsAnswerLogs RoundQuestionsAnswerLog[]
+
+  @@index([matchRoundParticipantId])
+  @@index([questionBankId])
+}
+
+model RoundQuestionsAnswerLog {
+  id Int @id @default(autoincrement())
+
+  roundQuestionId Int
+  roundQuestion   RoundQuestion @relation(fields: [roundQuestionId], references: [id], onDelete: Cascade)
+
+  answerId Int?
+  answer   Answer? @relation(fields: [answerId], references: [id], onDelete: Cascade)
+
+  isCorrect    Boolean
+  timeAnswerMs Int // Thời gian làm câu hỏi (ms)
+  pointsEarned Int // Điểm nhận được cho câu hỏi này
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([roundQuestionId])
+  @@index([answerId])
 }
 
 model DebuffRound {
@@ -1715,6 +1766,8 @@ model DebuffRound {
 
   //translate
   nameTranslations Translation[] @relation("DebuffRoundNameRelation")
+
+  roundQuestions RoundQuestion[]
 
   // meta
   createdById Int?

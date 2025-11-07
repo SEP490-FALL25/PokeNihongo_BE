@@ -1,7 +1,10 @@
 import { BullQueueModule } from '@/3rdService/bull/bull-queue.module'
-import { ConfigModule } from '@nestjs/config'
+import { SpeechModule } from '@/3rdService/speech/speech.module'
+import { UploadModule } from '@/3rdService/upload/upload.module'
 import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
 import { InitializerGateway } from './initializer.gateway'
+import { KaiwaGateway } from './kaiwa.gateway'
 import { MatchingGateway } from './matching.gateway'
 import { SocketServerService } from './socket-server.service'
 import { WebsocketsService } from './websockets.service'
@@ -14,6 +17,8 @@ import { KaiwaProcessor } from '../shared/workers/kaiwa.processor'
 import { UserAIConversationModule } from '@/modules/user-ai-conversation/user-ai-conversation.module'
 import { AIConversationRoomModule } from '@/modules/ai-conversation-room/ai-conversation-room.module'
 
+
+// @Global()
 @Module({
   imports: [
     BullQueueModule.registerQueue('kaiwa-processor', {
@@ -36,7 +41,9 @@ import { AIConversationRoomModule } from '@/modules/ai-conversation-room/ai-conv
     UploadModule, // Cần cho TextToSpeechService
     SpeechModule, // Cần cho SpeechToTextService và TextToSpeechService
     UserAIConversationModule, // Cần để lưu conversation vào database
-    AIConversationRoomModule // Cần để quản lý phòng hội thoại
+    AIConversationRoomModule, // Cần để quản lý phòng hội thoại
+    // MatchRoundModule
+
   ],
   providers: [
     WebsocketsService,
@@ -48,4 +55,4 @@ import { AIConversationRoomModule } from '@/modules/ai-conversation-room/ai-conv
   ],
   exports: [WebsocketsService, SocketServerService, MatchingGateway, KaiwaGateway]
 })
-export class WebsocketsModule { }
+export class WebsocketsModule {}

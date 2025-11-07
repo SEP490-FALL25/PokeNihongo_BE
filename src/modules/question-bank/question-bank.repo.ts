@@ -236,11 +236,39 @@ export class QuestionBankRepository {
         const questionKeys = questionBanks.map(qb => qb.questionKey).filter(Boolean) as string[]
 
         if (questionKeys.length === 0) {
-            // Nếu không có questionKey nào, set meanings rỗng cho tất cả
-            questionBanks.forEach(qb => {
-                (qb as any).meanings = []
+            // Nếu không có questionKey nào, set meanings rỗng cho tất cả và transform answers
+            const data = questionBanks.map(questionBank => {
+                const transformedAnswers = (questionBank.answers || []).map((ans: any) => {
+                    let answerText = ans.answerJp || ''
+                    if (language) {
+                        answerText = pickLabelFromComposite(ans.answerJp || '', language) || ans.answerJp || ''
+                    } else {
+                        answerText = pickLabelFromComposite(ans.answerJp || '', 'vi') || ans.answerJp || ''
+                    }
+                    return {
+                        id: ans.id,
+                        answer: answerText
+                    }
+                })
+
+                const {
+                    questionJp,
+                    questionKey,
+                    role,
+                    createdById,
+                    createdAt,
+                    updatedAt,
+                    answers,
+                    ...rest
+                } = questionBank as any
+
+                return {
+                    ...rest,
+                    question: questionBank.questionJp || '',
+                    answers: transformedAnswers
+                }
             })
-            return questionBanks
+            return data
         }
 
         // Build where clause for translations
@@ -600,5 +628,30 @@ export class QuestionBankRepository {
                 deletedIds: foundIds
             }
         })
+    }
+
+    /**
+     * Random lấy ra các câu hỏi theo số lượng và levelN
+     * Chỉ lấy các câu có questionType: VOCABULARY, GRAMMAR, KANJI
+     */
+    async getRandomQuestions(count: number, levelN: number): Promise<QuestionBankType[]> {
+        // Lấy tất cả câu hỏi phù hợp với điều kiện
+        const questions = await this.prisma.questionBank.findMany({
+            where: {
+                levelN,
+                questionType: {
+                    in: ['VOCABULARY', 'GRAMMAR', 'KANJI']
+                }
+            }
+        })
+
+        // Nếu số câu hỏi ít hơn số lượng yêu cầu, trả về tất cả
+        if (questions.length <= count) {
+            return questions
+        }
+
+        // Random shuffle và lấy số lượng câu hỏi cần thiết
+        const shuffled = questions.sort(() => Math.random() - 0.5)
+        return shuffled.slice(0, count)
     }
 }
