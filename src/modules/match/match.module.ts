@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 import { LanguagesModule } from '../languages/languages.module'
 import { LeaderboardSeasonModule } from '../leaderboard-season/leaderboard-season.module'
 import { MatchController } from './match.controller'
@@ -6,7 +6,7 @@ import { MatchRepo } from './match.repo'
 import { MatchService } from './match.service'
 
 @Module({
-  imports: [LeaderboardSeasonModule, LanguagesModule],
+  imports: [forwardRef(() => LeaderboardSeasonModule), forwardRef(() => LanguagesModule)],
   controllers: [MatchController],
   providers: [MatchService, MatchRepo],
   exports: [MatchService, MatchRepo]

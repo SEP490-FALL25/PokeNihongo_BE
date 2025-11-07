@@ -129,6 +129,15 @@ export class MatchParticipantService {
         updatedById: userId
       })
 
+      // User đã đưa ra quyết định thủ công -> xóa Bull job timeout tương ứng (nếu còn)
+      await this.removeBullJobForParticipant(
+        existingParticipant.id,
+        existingParticipant.userId
+      )
+      this.logger.debug(
+        `[MatchParticipant] Removed acceptance timeout job after manual update for participant ${existingParticipant.id}`
+      )
+
       // Nếu user đã quyết định (accept hoặc reject, hasAccepted !== null)
       if (data.hasAccepted !== null && data.hasAccepted !== undefined) {
         // Kiểm tra xem cả 2 participants đã quyết định chưa
@@ -366,7 +375,7 @@ export class MatchParticipantService {
           })
 
           // Tạo Bull job
-          await this.matchRoundParticipantTimeoutQueue.add(
+          const job = await this.matchRoundParticipantTimeoutQueue.add(
             BullAction.CHECK_POKEMON_SELECTION_TIMEOUT,
             {
               matchRoundParticipantId: firstParticipant.id
@@ -376,8 +385,14 @@ export class MatchParticipantService {
             }
           )
 
+          // Log job id and current state for diagnostics
+          // @ts-ignore
+          const state = await job.getState?.()
           this.logger.log(
-            `[MatchParticipant] Set endTime and Bull job for first participant of Round ONE (id: ${firstParticipant.id})`
+            `[MatchParticipant] Set endTime and Bull job for first participant of Round ONE (id: ${firstParticipant.id}), jobId=${job.id}, state=${state}`
+          )
+          this.logger.log(
+            `[MatchParticipant] Enqueued CHECK_POKEMON_SELECTION_TIMEOUT for participant ${firstParticipant.id} delay=30000ms (jobId=${job.id})`
           )
         }
       }
