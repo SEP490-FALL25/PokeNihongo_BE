@@ -97,11 +97,42 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
       `[RoundParticipant Timeout] ⏳ (jobId=${jobId}) WAITING in queue - awaiting worker activation`
     )
     // Try to fetch job details to confirm name matches processor
-    this.matchRoundParticipantTimeoutQueue.getJob(jobId).then((job) => {
+    this.matchRoundParticipantTimeoutQueue.getJob(jobId).then(async (job) => {
       if (job) {
         this.logger.warn(
           `[RoundParticipant Timeout] ⏳ (jobId=${jobId}) name=${job.name}, attemptsMade=${job.attemptsMade}`
         )
+        // Safety net: if still waiting after 3s, promote/retry
+        setTimeout(async () => {
+          try {
+            const current = await this.matchRoundParticipantTimeoutQueue.getJob(jobId)
+            if (!current) return
+            const state = await current.getState()
+            if (state === 'waiting') {
+              this.logger.error(
+                `[RoundParticipant Timeout] 🚨 Job ${jobId} still WAITING after 3s, forcing promote/retry`
+              )
+              try {
+                await current.promote()
+                this.logger.log(`[RoundParticipant Timeout] ✅ Promoted job ${jobId}`)
+              } catch (e) {
+                try {
+                  await current.retry()
+                  this.logger.log(`[RoundParticipant Timeout] ✅ Retried job ${jobId}`)
+                } catch (e2) {
+                  this.logger.error(
+                    `[RoundParticipant Timeout] ❌ Failed to recover job ${jobId}: ${e2?.message}`
+                  )
+                }
+              }
+            }
+          } catch (err) {
+            this.logger.error(
+              `[RoundParticipant Timeout] Error during waiting recovery for job ${jobId}`,
+              err
+            )
+          }
+        }, 3000)
       }
     })
   }
@@ -131,7 +162,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
   }
 
   // Revert to simple string-based @Process decorator for compatibility with @nestjs/bull v11
-  @Process(BullAction.CHECK_POKEMON_SELECTION_TIMEOUT)
+  @Process({ name: BullAction.CHECK_POKEMON_SELECTION_TIMEOUT, concurrency: 10 })
   async handlePokemonSelectionTimeout(
     job: Job<{ matchRoundParticipantId: number }>
   ): Promise<void> {
@@ -734,6 +765,19 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
                     }
                   })
                 }
+                // Increment questionsTotal for the debuffed participant so completion logic stays accurate
+                const incrementBy = debuffRow.valueDebuff || 1
+                await this.prismaService.matchRoundParticipant.update({
+                  where: { id: debuffedParticipantId },
+                  data: {
+                    questionsTotal: {
+                      increment: incrementBy
+                    }
+                  }
+                })
+                this.logger.log(
+                  `[Round Timeout] ADD_QUESTION debuff applied: +${incrementBy} questions to participant ${debuffedParticipantId}`
+                )
               }
             } else if (debuffRow.typeDebuff === 'DECREASE_POINT') {
               const target =
