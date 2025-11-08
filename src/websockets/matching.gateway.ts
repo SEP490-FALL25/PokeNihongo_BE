@@ -522,7 +522,7 @@ export class MatchingGateway {
    * @param matchId - Match ID
    * @param userId - User who answered
    * @param answerResult - Answer result data (answerId, isCorrect, pointsEarned, timeAnswerMs)
-   * @param nextQuestion - Next question data or null if last question
+   * @param nextQuestion - Next question data or null if last question (must include roundQuestionId if present)
    */
   notifyQuestionAnswered(
     matchId: number,
@@ -546,7 +546,7 @@ export class MatchingGateway {
     })
 
     this.logger.log(
-      `[MatchingGateway] Notified user ${userId} in match ${matchId} about answer result (roundQuestionId=${answerResult.roundQuestionId}, nextQuestion=${nextQuestion ? nextQuestion.id : 'null'})`
+      `[MatchingGateway] Notified user ${userId} in match ${matchId} about answer result (roundQuestionId=${answerResult.roundQuestionId}, nextQuestion=${nextQuestion?.nextQuestion ? `id: ${nextQuestion.nextQuestion.id}, roundQuestionId: ${nextQuestion.nextQuestion.roundQuestionId}` : 'null'})`
     )
   }
 
@@ -623,7 +623,7 @@ export class MatchingGateway {
    * @param matchId - Match ID
    * @param userId - User ID
    * @param roundData - Round data with participants and opponent
-   * @param firstQuestion - User's first question
+   * @param firstQuestion - User's first question (must include roundQuestionId)
    */
   notifyRoundStarted(
     matchId: number,
@@ -641,7 +641,7 @@ export class MatchingGateway {
     })
 
     this.logger.log(
-      `[MatchingGateway] Notified user ${userId} that round ${roundData.roundNumber} started with first question ${firstQuestion?.id}`
+      `[MatchingGateway] Notified user ${userId} that round ${roundData.roundNumber} started with first question ${firstQuestion?.id} (roundQuestionId: ${firstQuestion?.roundQuestionId})`
     )
   }
 

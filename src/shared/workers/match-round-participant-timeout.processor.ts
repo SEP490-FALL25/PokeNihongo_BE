@@ -985,6 +985,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
           // Always include debuff field (null if none)
           if (firstQuestionForNotify) {
             firstQuestionForNotify.debuff = firstQuestion.debuff || null
+            // Include roundQuestionId so FE can reference it
+            firstQuestionForNotify.roundQuestionId = firstQuestion.id
           }
         } catch (err) {
           this.logger.warn(

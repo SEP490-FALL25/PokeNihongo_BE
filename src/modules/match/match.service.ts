@@ -179,58 +179,75 @@ export class MatchService {
     }
   }
 
-  async getTrackingMatch(matchId: number, userId: number, lang: string = 'vi') {
-    // 1) Fetch match with participants and rounds context needed for tracking
-    const match = await this.prismaService.match.findUnique({
-      where: { id: matchId, deletedAt: null },
-      include: {
-        participants: {
-          include: {
-            user: {
-              select: { id: true, name: true, avatar: true, eloscore: true }
+  async getTrackingMatch(userId: number, lang: string = 'vi') {
+    // 1) Auto-find the user's active match by status (prefer IN_PROGRESS, then PENDING)
+    const includeForMatch = {
+      participants: {
+        include: {
+          user: { select: { id: true, name: true, avatar: true, eloscore: true } }
+        }
+      },
+      rounds: {
+        include: {
+          participants: {
+            include: {
+              matchParticipant: {
+                include: {
+                  user: { select: { id: true, name: true, avatar: true } }
+                }
+              },
+              selectedUserPokemon: { include: { pokemon: true } },
+              debuff: true,
+              roundQuestions: {
+                include: {
+                  debuff: true,
+                  roundQuestionsAnswerLogs: true,
+                  questionBank: { include: { answers: true } }
+                },
+                orderBy: { orderNumber: 'asc' }
+              }
             }
           }
         },
-        rounds: {
-          include: {
-            participants: {
-              include: {
-                matchParticipant: {
-                  include: {
-                    user: { select: { id: true, name: true, avatar: true } }
-                  }
-                },
-                selectedUserPokemon: {
-                  include: {
-                    pokemon: true
-                  }
-                },
-                debuff: true,
-                // bring minimal for scoring/tracking
-                roundQuestions: {
-                  include: {
-                    debuff: true,
-                    roundQuestionsAnswerLogs: true,
-                    questionBank: {
-                      include: { answers: true }
-                    }
-                  },
-                  orderBy: { orderNumber: 'asc' }
-                }
-              }
-            }
-          },
-          orderBy: { roundNumber: 'asc' }
-        }
+        orderBy: { roundNumber: 'asc' }
       }
+    } as const
+
+    const matchInProgress = await this.prismaService.match.findFirst({
+      where: {
+        deletedAt: null,
+        status: 'IN_PROGRESS',
+        participants: { some: { userId } }
+      },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      include: includeForMatch as any
     })
 
+    const matchPending = !matchInProgress
+      ? await this.prismaService.match.findFirst({
+          where: {
+            deletedAt: null,
+            status: 'PENDING',
+            participants: { some: { userId } }
+          },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          include: includeForMatch as any
+        })
+      : null
+
+    const match: any = matchInProgress ?? matchPending
+
     if (!match) {
-      throw new NotFoundRecordException()
+      return {
+        type: 'NO_ACTIVE_MATCH',
+        matchId: null,
+        match: null
+      }
     }
 
-    const me = match.participants.find((p: any) => p.userId === userId)
-    const opp = match.participants.find((p: any) => p.userId !== userId)
+    const participants = (match?.participants ?? []) as any[]
+    const me = participants.find((p: any) => p.userId === userId)
+    const opp = participants.find((p: any) => p.userId !== userId)
 
     if (!me || !opp) {
       // Should not happen for a valid PvP match
@@ -251,15 +268,17 @@ export class MatchService {
           createdAt: createdAt.toISOString(),
           endTime
         },
-        opponent: {
-          id: opp.user.id,
-          name: opp.user.name,
-          avatar: opp.user.avatar
-        },
+        opponent: opp?.user
+          ? {
+              id: opp.user.id,
+              name: opp.user.name,
+              avatar: opp.user.avatar
+            }
+          : null,
         participant: {
           id: me.id,
           hasAccepted: (me as any).hasAccepted ?? null,
-          userId: me.userId,
+          userId: (me as any).userId,
           matchId: match.id
         }
       }
@@ -267,7 +286,7 @@ export class MatchService {
 
     // 3) IN_PROGRESS -> determine current round and state
     if (match.status === 'IN_PROGRESS') {
-      const currentRound = (match.rounds || [])
+      const currentRound: any = (match.rounds || [])
         .filter((r: any) => r.status !== 'COMPLETED')
         .sort((a: any, b: any) => `${a.roundNumber}`.localeCompare(`${b.roundNumber}`))[0]
 
@@ -279,10 +298,10 @@ export class MatchService {
         }
       }
 
-      const myRoundP = currentRound.participants.find(
+      const myRoundP = (currentRound.participants as any[]).find(
         (p: any) => p.matchParticipant.userId === userId
       )
-      const oppRoundP = currentRound.participants.find(
+      const oppRoundP = (currentRound.participants as any[]).find(
         (p: any) => p.matchParticipant.userId !== userId
       )
 
@@ -318,11 +337,9 @@ export class MatchService {
                   status: oppRoundP.status,
                   selectedUserPokemon: oppRoundP.selectedUserPokemon,
                   debuff: oppRoundP.debuff || null,
-                  user: {
-                    id: opp.user.id,
-                    name: opp.user.name,
-                    avatar: opp.user.avatar
-                  }
+                  user: opp?.user
+                    ? { id: opp.user.id, name: opp.user.name, avatar: opp.user.avatar }
+                    : null
                 }
               : null
           },
@@ -355,11 +372,9 @@ export class MatchService {
                   status: oppRoundP.status,
                   selectedUserPokemon: oppRoundP.selectedUserPokemon,
                   debuff: oppRoundP.debuff || null,
-                  user: {
-                    id: opp.user.id,
-                    name: opp.user.name,
-                    avatar: opp.user.avatar
-                  }
+                  user: opp?.user
+                    ? { id: opp.user.id, name: opp.user.name, avatar: opp.user.avatar }
+                    : null
                 }
               : null
           },
@@ -466,11 +481,9 @@ export class MatchService {
                   status: oppRoundP.status,
                   selectedUserPokemon: oppRoundP.selectedUserPokemon,
                   debuff: oppRoundP.debuff || null,
-                  user: {
-                    id: opp.user.id,
-                    name: opp.user.name,
-                    avatar: opp.user.avatar
-                  }
+                  user: opp?.user
+                    ? { id: opp.user.id, name: opp.user.name, avatar: opp.user.avatar }
+                    : null
                 }
               : null
           },

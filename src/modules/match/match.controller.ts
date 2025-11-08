@@ -50,13 +50,9 @@ export class MatchController {
   }
 
   @Get('tracking')
-  @ZodSerializerDto(GetMatchDetailResDTO)
-  getTrackingMatch(
-    @Param() params: GetMatchParamsDTO,
-    @ActiveUser('userId') userId: number,
-    @I18nLang() lang: string
-  ) {
-    return this.matchService.getTrackingMatch(params.matchId, userId, lang)
+  // @ZodSerializerDto(GetMatchDetailResDTO)
+  getTrackingMatch(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
+    return this.matchService.getTrackingMatch(userId, lang)
   }
 
   @Get(':matchId')
