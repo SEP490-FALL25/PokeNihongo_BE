@@ -21,7 +21,7 @@ import {
 import { Inject, Logger, OnModuleInit } from '@nestjs/common'
 import { Job, Queue } from 'bull'
 
-const TIME_CHOOSE_POKEMON_MS = 5000
+const TIME_CHOOSE_POKEMON_MS = 30000
 const TIME_LIMIT_ANSWER_QUESTION_MS = 60000
 
 @Processor(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
