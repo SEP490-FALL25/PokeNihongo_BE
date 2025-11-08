@@ -19,6 +19,7 @@ import { ApiBearerAuth } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateMatchRoundBodyDTO,
+  GetMatchRoundDetailForUserResDTO,
   GetMatchRoundDetailResDTO,
   GetMatchRoundParamsDTO,
   UpdateMatchRoundBodyDTO,
@@ -36,6 +37,15 @@ export class MatchRoundController {
   @ZodSerializerDto(PaginationResponseSchema)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.matchRoundService.list(query, lang)
+  }
+
+  @Get('now/user')
+  @ZodSerializerDto(GetMatchRoundDetailForUserResDTO)
+  getListMatchRoundByUser(
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.matchRoundService.listNowByUser(userId, lang)
   }
 
   @Post()
