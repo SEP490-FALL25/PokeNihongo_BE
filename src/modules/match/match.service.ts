@@ -2,14 +2,17 @@ import { I18nService } from '@/i18n/i18n.service'
 import { MatchMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
+  addTimeUTC,
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError,
   isUniqueConstraintPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { PrismaService } from '@/shared/services/prisma.service'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
+import { QuestionBankRepository } from '../question-bank/question-bank.repo'
 import {
   MatchAlreadyExistsException,
   NotHaveActiveLeaderboardSeasonException
@@ -23,7 +26,9 @@ export class MatchService {
     private matchRepo: MatchRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
-    private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo
+    private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
+    private readonly prismaService: PrismaService,
+    private readonly questionBankRepo: QuestionBankRepository
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -174,5 +179,311 @@ export class MatchService {
     }
   }
 
-  async getTrackingMatch(matchId: number, userId: number, lang: string = 'vi') {}
+  async getTrackingMatch(matchId: number, userId: number, lang: string = 'vi') {
+    // 1) Fetch match with participants and rounds context needed for tracking
+    const match = await this.prismaService.match.findUnique({
+      where: { id: matchId, deletedAt: null },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: { id: true, name: true, avatar: true, eloscore: true }
+            }
+          }
+        },
+        rounds: {
+          include: {
+            participants: {
+              include: {
+                matchParticipant: {
+                  include: {
+                    user: { select: { id: true, name: true, avatar: true } }
+                  }
+                },
+                selectedUserPokemon: {
+                  include: {
+                    pokemon: true
+                  }
+                },
+                debuff: true,
+                // bring minimal for scoring/tracking
+                roundQuestions: {
+                  include: {
+                    debuff: true,
+                    roundQuestionsAnswerLogs: true,
+                    questionBank: {
+                      include: { answers: true }
+                    }
+                  },
+                  orderBy: { orderNumber: 'asc' }
+                }
+              }
+            }
+          },
+          orderBy: { roundNumber: 'asc' }
+        }
+      }
+    })
+
+    if (!match) {
+      throw new NotFoundRecordException()
+    }
+
+    const me = match.participants.find((p: any) => p.userId === userId)
+    const opp = match.participants.find((p: any) => p.userId !== userId)
+
+    if (!me || !opp) {
+      // Should not happen for a valid PvP match
+      throw new NotFoundRecordException()
+    }
+
+    // 2) If PENDING -> MATCH_FOUND payload
+    if (match.status === 'PENDING') {
+      // Accept window: assume 25s from createdAt (adjust if your system uses different window)
+      const createdAt = new Date(match.createdAt as any)
+      const endTime = addTimeUTC(createdAt, 25_000).toISOString()
+      return {
+        type: 'MATCH_FOUND',
+        matchId: match.id,
+        match: {
+          id: match.id,
+          status: match.status,
+          createdAt: createdAt.toISOString(),
+          endTime
+        },
+        opponent: {
+          id: opp.user.id,
+          name: opp.user.name,
+          avatar: opp.user.avatar
+        },
+        participant: {
+          id: me.id,
+          hasAccepted: (me as any).hasAccepted ?? null,
+          userId: me.userId,
+          matchId: match.id
+        }
+      }
+    }
+
+    // 3) IN_PROGRESS -> determine current round and state
+    if (match.status === 'IN_PROGRESS') {
+      const currentRound = (match.rounds || [])
+        .filter((r: any) => r.status !== 'COMPLETED')
+        .sort((a: any, b: any) => `${a.roundNumber}`.localeCompare(`${b.roundNumber}`))[0]
+
+      if (!currentRound) {
+        return {
+          type: 'BETWEEN_ROUNDS',
+          matchId: match.id,
+          match: { id: match.id, status: match.status }
+        }
+      }
+
+      const myRoundP = currentRound.participants.find(
+        (p: any) => p.matchParticipant.userId === userId
+      )
+      const oppRoundP = currentRound.participants.find(
+        (p: any) => p.matchParticipant.userId !== userId
+      )
+
+      if (!myRoundP) {
+        return {
+          type: 'BETWEEN_ROUNDS',
+          matchId: match.id,
+          match: { id: match.id, status: match.status }
+        }
+      }
+
+      // Selecting Pokemon phase
+      if (
+        currentRound.status === 'SELECTING_POKEMON' ||
+        myRoundP?.status === 'SELECTING_POKEMON'
+      ) {
+        return {
+          type: 'ROUND_SELECTING_POKEMON',
+          matchId: match.id,
+          round: {
+            id: currentRound.id,
+            roundNumber: currentRound.roundNumber,
+            status: currentRound.status,
+            participant: {
+              id: myRoundP.id,
+              status: myRoundP.status,
+              selectedUserPokemon: myRoundP.selectedUserPokemon,
+              debuff: myRoundP.debuff || null
+            },
+            opponent: oppRoundP
+              ? {
+                  id: oppRoundP.id,
+                  status: oppRoundP.status,
+                  selectedUserPokemon: oppRoundP.selectedUserPokemon,
+                  debuff: oppRoundP.debuff || null,
+                  user: {
+                    id: opp.user.id,
+                    name: opp.user.name,
+                    avatar: opp.user.avatar
+                  }
+                }
+              : null
+          },
+          selectionEndTime: myRoundP?.endTimeSelected
+            ? new Date(myRoundP.endTimeSelected as any).toISOString()
+            : null
+        }
+      }
+
+      // Round starting (pending)
+      if (currentRound.status === 'PENDING') {
+        // If you persist a startTime, map it here; otherwise null
+        const startTime = null as any
+        return {
+          type: 'ROUND_STARTING',
+          matchId: match.id,
+          round: {
+            id: currentRound.id,
+            roundNumber: currentRound.roundNumber,
+            status: currentRound.status,
+            participant: {
+              id: myRoundP.id,
+              status: myRoundP.status,
+              selectedUserPokemon: myRoundP.selectedUserPokemon,
+              debuff: myRoundP.debuff || null
+            },
+            opponent: oppRoundP
+              ? {
+                  id: oppRoundP.id,
+                  status: oppRoundP.status,
+                  selectedUserPokemon: oppRoundP.selectedUserPokemon,
+                  debuff: oppRoundP.debuff || null,
+                  user: {
+                    id: opp.user.id,
+                    name: opp.user.name,
+                    avatar: opp.user.avatar
+                  }
+                }
+              : null
+          },
+          startTime
+        }
+      }
+
+      // Round in progress -> return only current question
+      if (currentRound.status === 'IN_PROGRESS') {
+        const myRqs = ((myRoundP as any).roundQuestions || []).sort(
+          (a: any, b: any) => a.orderNumber - b.orderNumber
+        )
+        const currentRq = myRqs.find(
+          (rq: any) =>
+            !rq.roundQuestionsAnswerLogs || rq.roundQuestionsAnswerLogs.length === 0
+        )
+
+        let currentQuestion: any = null
+        if (currentRq) {
+          // Prefer canonical formatting via repository; fallback to included questionBank
+          try {
+            const qbList = await this.questionBankRepo.findByIds(
+              [currentRq.questionBankId],
+              lang
+            )
+            const canonical: any = qbList?.[0]
+            const endTime = currentRq.endTimeQuestion
+              ? new Date(currentRq.endTimeQuestion as any).toISOString()
+              : addTimeUTC(new Date(), currentRq.timeLimitMs).toISOString()
+            currentQuestion = {
+              id: canonical?.id ?? currentRq.questionBankId,
+              questionType:
+                canonical?.questionType ??
+                currentRq.questionBank?.questionType ??
+                'VOCABULARY',
+              audioUrl: canonical?.audioUrl ?? currentRq.questionBank?.audioUrl ?? null,
+              pronunciation:
+                canonical?.pronunciation ?? currentRq.questionBank?.pronunciation ?? null,
+              levelN: canonical?.levelN ?? currentRq.questionBank?.levelN ?? null,
+              question:
+                canonical?.question ??
+                (currentRq.questionBank as any)?.question ??
+                (currentRq.questionBank as any)?.questionJp ??
+                '',
+              answers: (
+                (canonical?.answers as any[]) ??
+                ((currentRq.questionBank as any)?.answers as any[]) ??
+                []
+              ).map((a: any) => ({
+                id: a.id,
+                answer: a.answer ?? a.answerJp ?? a.answerKey ?? ''
+              })),
+              endTimeQuestion: endTime,
+              debuff: currentRq.debuff || null,
+              // round meta
+              roundQuestionId: currentRq.id,
+              timeLimitMs: currentRq.timeLimitMs,
+              basePoints: currentRq.basePoints,
+              orderNumber: currentRq.orderNumber
+            }
+          } catch (_) {
+            // Fallback if repository fails
+            const qb = currentRq.questionBank
+            const endTime = currentRq.endTimeQuestion
+              ? new Date(currentRq.endTimeQuestion as any).toISOString()
+              : addTimeUTC(new Date(), currentRq.timeLimitMs).toISOString()
+            currentQuestion = {
+              id: qb?.id ?? currentRq.questionBankId,
+              questionType: qb?.questionType ?? 'VOCABULARY',
+              audioUrl: qb?.audioUrl ?? null,
+              pronunciation: qb?.pronunciation ?? null,
+              levelN: qb?.levelN ?? null,
+              question: (qb as any)?.question ?? (qb as any)?.questionJp ?? '',
+              answers: ((qb?.answers as any[]) ?? []).map((a: any) => ({
+                id: a.id,
+                answer: a.answer ?? a.answerJp ?? a.answerKey ?? ''
+              })),
+              endTimeQuestion: endTime,
+              debuff: currentRq.debuff || null,
+              roundQuestionId: currentRq.id,
+              timeLimitMs: currentRq.timeLimitMs,
+              basePoints: currentRq.basePoints,
+              orderNumber: currentRq.orderNumber
+            }
+          }
+        }
+
+        return {
+          type: 'ROUND_IN_PROGRESS',
+          matchId: match.id,
+          round: {
+            id: currentRound.id,
+            roundNumber: currentRound.roundNumber,
+            status: currentRound.status,
+            participant: {
+              id: (myRoundP as any).id,
+              status: (myRoundP as any).status,
+              selectedUserPokemon: (myRoundP as any).selectedUserPokemon,
+              debuff: (myRoundP as any).debuff || null
+            },
+            opponent: oppRoundP
+              ? {
+                  id: oppRoundP.id,
+                  status: oppRoundP.status,
+                  selectedUserPokemon: oppRoundP.selectedUserPokemon,
+                  debuff: oppRoundP.debuff || null,
+                  user: {
+                    id: opp.user.id,
+                    name: opp.user.name,
+                    avatar: opp.user.avatar
+                  }
+                }
+              : null
+          },
+          currentQuestion
+        }
+      }
+    }
+
+    // 4) Default/fallback (e.g., CANCELLED or COMPLETED, though controller should avoid)
+    return {
+      type: 'NO_ACTIVE_MATCH',
+      matchId: match.id,
+      match: { id: match.id, status: match.status }
+    }
+  }
 }
