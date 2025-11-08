@@ -1,5 +1,6 @@
 import { createZodDto } from 'nestjs-zod'
 import {
+  AnswerQuestionBodySchema,
   CreateRoundQuestionBodySchema,
   CreateRoundQuestionResSchema,
   GetRoundQuestionDetailResSchema,
@@ -33,3 +34,5 @@ export class UpdateWithListItemResDTO extends createZodDto(UpdateWithListItemRes
 export class GetRoundQuestionDetailResDTO extends createZodDto(
   GetRoundQuestionDetailResSchema
 ) {}
+
+export class AnswerQuestionBodyDTO extends createZodDto(AnswerQuestionBodySchema) {}

@@ -5,6 +5,7 @@ import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
+  AnswerQuestionBodyDTO,
   CreateRoundQuestionBodyDTO,
   CreateRoundQuestionResDTO,
   GetRoundQuestionDetailResDTO,
@@ -45,6 +46,23 @@ export class RoundQuestionController {
       {
         userId,
         data: body
+      },
+      lang
+    )
+  }
+
+  @Put('answer/:roundQuestionId')
+  answerQuestion(
+    @Body() body: AnswerQuestionBodyDTO,
+    @Param() params: GetRoundQuestionParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.roundQuestionService.answerQuestion(
+      {
+        data: body,
+        id: params.roundQuestionId,
+        userId
       },
       lang
     )

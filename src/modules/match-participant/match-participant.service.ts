@@ -27,7 +27,7 @@ import {
 } from './entities/match-participant.entity'
 import { MatchParticipantRepo } from './match-participant.repo'
 
-const TIME_CHOOSE_POKEMON_MS = 5000
+const TIME_CHOOSE_POKEMON_MS = 30000
 @Injectable()
 export class MatchParticipantService {
   private readonly logger = new Logger(MatchParticipantService.name)
