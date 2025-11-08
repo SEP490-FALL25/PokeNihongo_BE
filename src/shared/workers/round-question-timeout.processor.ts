@@ -122,7 +122,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     return Math.round(points)
   }
 
-  @Process(BullAction.CHECK_QUESTION_TIMEOUT)
+  @Process({ name: BullAction.CHECK_QUESTION_TIMEOUT, concurrency: 10 })
   async handleQuestionTimeout(
     job: Job<{ roundQuestionId: number; matchRoundParticipantId: number }>
   ): Promise<void> {
@@ -281,6 +281,8 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           // Always include debuff field (null if none)
           if (nextQuestionForNotify) {
             nextQuestionForNotify.debuff = nextQuestion.debuff || null
+            // Include roundQuestionId so FE can reference it
+            nextQuestionForNotify.roundQuestionId = nextQuestion.id
           }
           // Compute and persist server-side endTime for the next question BEFORE notifying FE
           endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
@@ -390,13 +392,13 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           `[RoundQuestion Timeout] Updated participant ${matchRoundParticipantId}: totalTimeMs=${totalTimeMs}, points=${points}, status=COMPLETED`
         )
 
-        // Find opponent participant
-        const opponentParticipant =
+        // Find opponent participant (match level)
+        const opponentMatchParticipant =
           matchRoundParticipant.matchRound.match.participants.find(
             (p) => p.userId !== currentUserId
           )
 
-        if (opponentParticipant) {
+        if (opponentMatchParticipant) {
           // Notify current user about their completion
           this.matchingGateway.notifyQuestionCompleted(
             matchId,
@@ -404,15 +406,31 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             updatedParticipant
           )
 
-          // Notify opponent that current user completed
-          this.matchingGateway.notifyOpponentCompleted(
-            matchId,
-            opponentParticipant.userId
-          )
+          // Find opponent's MatchRoundParticipant to check their status
+          const opponentRoundParticipant =
+            await this.prismaService.matchRoundParticipant.findFirst({
+              where: {
+                matchRoundId: matchRoundParticipant.matchRoundId,
+                matchParticipant: {
+                  userId: opponentMatchParticipant.userId
+                }
+              }
+            })
 
-          this.logger.log(
-            `[RoundQuestion Timeout] Sent socket notifications for match ${matchId}: user ${currentUserId} completed, opponent ${opponentParticipant.userId} notified`
-          )
+          // Only notify opponent if they haven't completed yet
+          if (opponentRoundParticipant?.status !== 'COMPLETED') {
+            this.matchingGateway.notifyOpponentCompleted(
+              matchId,
+              opponentMatchParticipant.userId
+            )
+            this.logger.log(
+              `[RoundQuestion Timeout] Notified opponent ${opponentMatchParticipant.userId} that user ${currentUserId} completed`
+            )
+          } else {
+            this.logger.log(
+              `[RoundQuestion Timeout] Opponent ${opponentMatchParticipant.userId} already completed, skipping OPPONENT_COMPLETED notification`
+            )
+          }
         }
 
         // Check if opponent also completed
