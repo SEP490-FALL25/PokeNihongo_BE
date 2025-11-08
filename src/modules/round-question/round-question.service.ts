@@ -258,6 +258,7 @@ export class RoundQuestionService {
           }
         }
       })
+    let endTimeQuestion: Date | null = null
 
     // Determine and schedule next question (if any) so we can include it in the socket payload
     let nextQuestion: any | null = null
@@ -269,11 +270,14 @@ export class RoundQuestionService {
             orderNumber: { gt: roundQuestion.orderNumber }
           },
           orderBy: { orderNumber: 'asc' },
-          include: { questionBank: { include: { answers: true } } }
+          include: {
+            questionBank: { include: { answers: true } },
+            debuff: true
+          }
         })
 
         if (nextQuestion) {
-          const endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
+          endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
           await this.prismaService.roundQuestion.update({
             where: { id: nextQuestion.id },
             data: { endTimeQuestion }
@@ -303,6 +307,10 @@ export class RoundQuestionService {
           'vi'
         )
         nextQuestionForNotify = qbList?.[0] || null
+        // Always include debuff field (null if none)
+        if (nextQuestionForNotify) {
+          nextQuestionForNotify.debuff = nextQuestion.debuff || null
+        }
       } catch (err) {
         console.warn(
           '[RoundQuestion] Failed to fetch formatted questionBank for nextQuestion',
@@ -327,7 +335,14 @@ export class RoundQuestionService {
             pointsEarned: finalAnswerLog.pointsEarned || 0,
             timeAnswerMs: finalAnswerLog.timeAnswerMs
           },
-          nextQuestionForNotify || null
+          nextQuestionForNotify
+            ? {
+                nextQuestion: {
+                  ...nextQuestionForNotify,
+                  endTimeQuestion: endTimeQuestion
+                }
+              }
+            : null
         )
       }
     }

@@ -21,8 +21,8 @@ import {
 import { Inject, Logger, OnModuleInit } from '@nestjs/common'
 import { Job, Queue } from 'bull'
 
-const TIME_CHOOSE_POKEMON_MS = 30000
-const TIME_LIMIT_ANSWER_QUESTION_MS = 60000
+const TIME_CHOOSE_POKEMON_MS = 5000
+const TIME_LIMIT_ANSWER_QUESTION_MS = 5000
 
 @Processor(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
 export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
@@ -738,6 +738,20 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             debuffedParticipantId = participants[0].id
           }
 
+          // Persist debuff assignment on the participant itself for consistent later includes
+          try {
+            if (debuffRow && debuffedParticipantId) {
+              await this.prismaService.matchRoundParticipant.update({
+                where: { id: debuffedParticipantId },
+                data: { debuffId: debuffRow.id }
+              })
+            }
+          } catch (assignErr) {
+            this.logger.warn(
+              `[Round Timeout] Failed to assign debuffId=${debuffRow?.id} to participant ${debuffedParticipantId}: ${assignErr?.message}`
+            )
+          }
+
           const questionsOfDebuffed = await this.prismaService.roundQuestion.findMany({
             where: { matchRoundParticipantId: debuffedParticipantId },
             orderBy: { orderNumber: 'asc' }
@@ -912,7 +926,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             include: {
               pokemon: true
             }
-          }
+          },
+          debuff: true
         },
         orderBy: { orderSelected: 'asc' }
       })
@@ -927,7 +942,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
               include: {
                 answers: true
               }
-            }
+            },
+            debuff: true
           }
         })
 
@@ -966,12 +982,21 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             'vi'
           )
           firstQuestionForNotify = qbList?.[0] || null
+          // Always include debuff field (null if none)
+          if (firstQuestionForNotify) {
+            firstQuestionForNotify.debuff = firstQuestion.debuff || null
+          }
         } catch (err) {
           this.logger.warn(
             `[Round Timeout] Failed to fetch formatted questionBank for firstQuestion ${firstQuestion.id}: ${err?.message}`
           )
           firstQuestionForNotify = null
         }
+
+        // Find opponent participant
+        const opponentParticipant = roundParticipants.find(
+          (p) => p.matchParticipant.userId !== userId
+        )
 
         this.matchingGateway.notifyRoundStarted(
           matchId,
@@ -983,10 +1008,27 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             participant: {
               id: participant.id,
               status: participant.status,
-              selectedUserPokemon: participant.selectedUserPokemon
-            }
+              selectedUserPokemon: participant.selectedUserPokemon,
+              debuff: participant.debuff || null
+            },
+            opponent: opponentParticipant
+              ? {
+                  id: opponentParticipant.id,
+                  status: opponentParticipant.status,
+                  selectedUserPokemon: opponentParticipant.selectedUserPokemon,
+                  debuff: opponentParticipant.debuff || null,
+                  user: {
+                    id: opponentParticipant.matchParticipant.user.id,
+                    name: opponentParticipant.matchParticipant.user.name,
+                    avatar: opponentParticipant.matchParticipant.user.avatar
+                  }
+                }
+              : null
           },
-          firstQuestionForNotify
+          {
+            ...firstQuestionForNotify,
+            endTimeQuestion
+          }
         )
 
         this.logger.log(

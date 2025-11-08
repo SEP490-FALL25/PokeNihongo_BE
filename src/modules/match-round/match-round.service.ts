@@ -17,6 +17,8 @@ import { LanguagesRepository } from '../languages/languages.repo'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import { MatchRoundParticipantRepo } from '../match-round-participant/match-round-participant.repo'
 import { MatchRepo } from '../match/match.repo'
+import { QuestionBankRepository } from '../question-bank/question-bank.repo'
+import { RoundQuestionRepo } from '../round-question/round-question.repo'
 import { MatchRoundAlreadyExistsException } from './dto/match-round.error'
 import {
   CreateMatchRoundBodyType,
@@ -34,7 +36,9 @@ export class MatchRoundService {
     private readonly languageRepo: LanguagesRepository,
     private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
-    private readonly matchRoundParticipantTimeoutQueue: Queue
+    private readonly matchRoundParticipantTimeoutQueue: Queue,
+    private readonly questionBankRepo: QuestionBankRepository,
+    private readonly roundQuestionRepo: RoundQuestionRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -86,12 +90,9 @@ export class MatchRoundService {
       }))
     }
 
-    const roundsSerialized = (matchRounds || []).map((round: any) => ({
-      id: round.id,
-      roundNumber: round.roundNumber,
-      status: round.status,
-      endTimeRound: round.endTimeRound,
-      participants: (round.participants || []).map((rp: any) => ({
+    const roundsSerialized: any[] = []
+    for (const round of matchRounds || []) {
+      const participantItems = (round.participants || []).map((rp: any) => ({
         id: rp.id,
         matchParticipantId: rp.matchParticipantId,
         orderSelected: rp.orderSelected,
@@ -115,7 +116,54 @@ export class MatchRoundService {
             }
           : null
       }))
-    }))
+
+      // Find the participant record that belongs to the requesting user (if any)
+      const userParticipant = (round.participants || []).find(
+        (p: any) =>
+          p.matchParticipant &&
+          p.matchParticipant.user &&
+          p.matchParticipant.user.id === userId
+      )
+
+      // Default empty questions
+      let questionsForUser: any[] = []
+      if (userParticipant) {
+        // Fetch roundQuestions for that participant and order them via RoundQuestionRepo
+        const roundQuestions = await this.roundQuestionRepo.findByMatchRoundParticipantId(
+          userParticipant.id
+        )
+
+        if ((roundQuestions || []).length > 0) {
+          const qbIds = roundQuestions.map((rq: any) => rq.questionBankId)
+          // Use QuestionBankRepository to get formatted canonical question objects
+          const formattedQbs = await this.questionBankRepo.findByIds(qbIds, lang)
+          const qbMap = new Map<number, any>()
+          for (const fq of formattedQbs) {
+            qbMap.set(fq.id, fq)
+          }
+
+          questionsForUser = roundQuestions.map((rq: any) => ({
+            roundQuestionId: rq.id,
+            questionBankId: rq.questionBankId,
+            timeLimitMs: rq.timeLimitMs,
+            basePoints: rq.basePoints,
+            orderNumber: rq.orderNumber,
+            debuffId: rq.debuffId,
+            endTimeQuestion: rq.endTimeQuestion,
+            question: qbMap.get(rq.questionBankId) || null
+          }))
+        }
+      }
+
+      roundsSerialized.push({
+        id: round.id,
+        roundNumber: round.roundNumber,
+        status: round.status,
+        endTimeRound: round.endTimeRound,
+        participants: participantItems,
+        questions: questionsForUser
+      })
+    }
 
     return {
       data: {
