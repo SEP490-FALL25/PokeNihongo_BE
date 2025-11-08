@@ -122,4 +122,11 @@ export class RoundQuestionRepo {
       }
     })
   }
+
+  async findByMatchRoundParticipantId(matchRoundParticipantId: number) {
+    return this.prismaService.roundQuestion.findMany({
+      where: { matchRoundParticipantId, deletedAt: null },
+      orderBy: { orderNumber: 'asc' }
+    })
+  }
 }

@@ -173,4 +173,6 @@ export class MatchService {
       throw error
     }
   }
+
+  async getTrackingMatch(matchId: number, userId: number, lang: string = 'vi') {}
 }

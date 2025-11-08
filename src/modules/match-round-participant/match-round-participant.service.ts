@@ -35,8 +35,8 @@ import {
 } from './entities/match-round-participant.entity'
 import { MatchRoundParticipantRepo } from './match-round-participant.repo'
 
-const TIME_CHOOSE_POKEMON_MS = 30000
-const TIME_LIMIT_ANSWER_QUESTION_MS = 60000
+const TIME_CHOOSE_POKEMON_MS = 5000
+const TIME_LIMIT_ANSWER_QUESTION_MS = 5000
 
 @Injectable()
 export class MatchRoundParticipantService {
@@ -668,6 +668,17 @@ export class MatchRoundParticipantService {
             }
 
             if (debuffRow && debuffedParticipantId) {
+              // Persist debuff assignment on the participant (so later includes expose participant.debuff)
+              try {
+                await this.prismaService.matchRoundParticipant.update({
+                  where: { id: debuffedParticipantId },
+                  data: { debuffId: debuffRow.id }
+                })
+              } catch (assignErr) {
+                this.logger.warn(
+                  `[MatchRoundParticipant] Failed to assign debuffId=${debuffRow.id} to participant ${debuffedParticipantId}: ${assignErr.message}`
+                )
+              }
               const questionsOfDebuffed = await this.prismaService.roundQuestion.findMany(
                 {
                   where: { matchRoundParticipantId: debuffedParticipantId },
@@ -784,7 +795,8 @@ export class MatchRoundParticipantService {
               include: {
                 matchParticipant: { include: { user: true } },
                 matchRound: true,
-                selectedUserPokemon: { include: { pokemon: true } }
+                selectedUserPokemon: { include: { pokemon: true } },
+                debuff: true
               },
               orderBy: { orderSelected: 'asc' }
             })
@@ -793,7 +805,10 @@ export class MatchRoundParticipantService {
             // find first question for participant
             const firstQuestion = await this.prismaService.roundQuestion.findFirst({
               where: { matchRoundParticipantId: participant.id },
-              orderBy: { orderNumber: 'asc' }
+              orderBy: { orderNumber: 'asc' },
+              include: {
+                debuff: true
+              }
             })
             if (!firstQuestion) continue
 
@@ -820,6 +835,10 @@ export class MatchRoundParticipantService {
                 firstQuestion.questionBankId
               ])
               firstQuestionForNotify = qbRes?.data?.results?.[0] || null
+              // Always include debuff field (null if none)
+              if (firstQuestionForNotify) {
+                firstQuestionForNotify.debuff = firstQuestion.debuff || null
+              }
             } catch (err) {
               this.logger.warn(
                 `[MatchRoundParticipant] Failed to fetch formatted questionBank for firstQuestion ${firstQuestion.id}: ${err?.message}`
@@ -827,6 +846,12 @@ export class MatchRoundParticipantService {
             }
 
             const userId = participant.matchParticipant.userId
+
+            // Find opponent participant
+            const opponentParticipant = roundParticipants.find(
+              (p) => p.matchParticipant.userId !== userId
+            )
+
             this.matchingGateway.notifyRoundStarted(
               matchId,
               userId,
@@ -837,10 +862,27 @@ export class MatchRoundParticipantService {
                 participant: {
                   id: participant.id,
                   status: participant.status,
-                  selectedUserPokemon: participant.selectedUserPokemon
-                }
+                  selectedUserPokemon: participant.selectedUserPokemon,
+                  debuff: participant.debuff || null
+                },
+                opponent: opponentParticipant
+                  ? {
+                      id: opponentParticipant.id,
+                      status: opponentParticipant.status,
+                      selectedUserPokemon: opponentParticipant.selectedUserPokemon,
+                      debuff: opponentParticipant.debuff || null,
+                      user: {
+                        id: opponentParticipant.matchParticipant.user.id,
+                        name: opponentParticipant.matchParticipant.user.name,
+                        avatar: opponentParticipant.matchParticipant.user.avatar
+                      }
+                    }
+                  : null
               },
-              firstQuestionForNotify
+              {
+                ...firstQuestionForNotify,
+                endTimeQuestion
+              }
             )
           }
           this.logger.log(
