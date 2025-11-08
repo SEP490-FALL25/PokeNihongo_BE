@@ -35,8 +35,8 @@ import {
 } from './entities/match-round-participant.entity'
 import { MatchRoundParticipantRepo } from './match-round-participant.repo'
 
-const TIME_CHOOSE_POKEMON_MS = 60000
-const TIME_LIMIT_ANSWER_QUESTION_MS = 6000
+const TIME_CHOOSE_POKEMON_MS = 30000
+const TIME_LIMIT_ANSWER_QUESTION_MS = 60000
 
 @Injectable()
 export class MatchRoundParticipantService {
@@ -55,8 +55,7 @@ export class MatchRoundParticipantService {
     private readonly questionBankService: QuestionBankService,
     private readonly roundQuestionRepo: RoundQuestionRepo,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
-    private readonly matchRoundParticipantTimeoutQueue: Queue
-    ,
+    private readonly matchRoundParticipantTimeoutQueue: Queue,
     @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
     private readonly roundQuestionTimeoutQueue: Queue
   ) {}
@@ -244,7 +243,9 @@ export class MatchRoundParticipantService {
       )
       allParticipants[currentIndex].selectedUserPokemonId = userPokemon.id
       const nextParticipant = allParticipants[currentIndex + 1]
-      const allSelectedNow = allParticipants.every((p) => p.selectedUserPokemonId !== null)
+      const allSelectedNow = allParticipants.every(
+        (p) => p.selectedUserPokemonId !== null
+      )
 
       if (allSelectedNow) {
         this.logger.log(
@@ -280,17 +281,17 @@ export class MatchRoundParticipantService {
         const matchFormatted = {
           id: match.id,
           status: match.status,
-            participants: match.participants.map((mp: any) => ({
-              id: mp.id,
-              userId: mp.userId,
-              user: {
-                id: mp.user.id,
-                name: mp.user.name,
-                email: mp.user.email,
-                eloscore: mp.user.eloscore,
-                avatar: mp.user.avatar
-              }
-            }))
+          participants: match.participants.map((mp: any) => ({
+            id: mp.id,
+            userId: mp.userId,
+            user: {
+              id: mp.user.id,
+              name: mp.user.name,
+              email: mp.user.email,
+              eloscore: mp.user.eloscore,
+              avatar: mp.user.avatar
+            }
+          }))
         }
         const roundsFormatted = rounds.map((round: any) => ({
           id: round.id,
@@ -303,19 +304,23 @@ export class MatchRoundParticipantService {
             orderSelected: rp.orderSelected,
             endTimeSelected: rp.endTimeSelected,
             selectedUserPokemonId: rp.selectedUserPokemonId,
-            selectedUserPokemon: rp.selectedUserPokemon ? {
-              id: rp.selectedUserPokemon.id,
-              userId: rp.selectedUserPokemon.userId,
-              pokemonId: rp.selectedUserPokemon.pokemonId,
-              pokemon: rp.selectedUserPokemon.pokemon ? {
-                id: rp.selectedUserPokemon.pokemon.id,
-                pokedex_number: rp.selectedUserPokemon.pokemon.pokedex_number,
-                nameJp: rp.selectedUserPokemon.pokemon.nameJp,
-                nameTranslations: rp.selectedUserPokemon.pokemon.nameTranslations,
-                imageUrl: rp.selectedUserPokemon.pokemon.imageUrl,
-                rarity: rp.selectedUserPokemon.pokemon.rarity
-              } : null
-            } : null
+            selectedUserPokemon: rp.selectedUserPokemon
+              ? {
+                  id: rp.selectedUserPokemon.id,
+                  userId: rp.selectedUserPokemon.userId,
+                  pokemonId: rp.selectedUserPokemon.pokemonId,
+                  pokemon: rp.selectedUserPokemon.pokemon
+                    ? {
+                        id: rp.selectedUserPokemon.pokemon.id,
+                        pokedex_number: rp.selectedUserPokemon.pokemon.pokedex_number,
+                        nameJp: rp.selectedUserPokemon.pokemon.nameJp,
+                        nameTranslations: rp.selectedUserPokemon.pokemon.nameTranslations,
+                        imageUrl: rp.selectedUserPokemon.pokemon.imageUrl,
+                        rarity: rp.selectedUserPokemon.pokemon.rarity
+                      }
+                    : null
+                }
+              : null
           }))
         }))
 
@@ -385,19 +390,23 @@ export class MatchRoundParticipantService {
           orderSelected: rp.orderSelected,
           endTimeSelected: rp.endTimeSelected,
           selectedUserPokemonId: rp.selectedUserPokemonId,
-          selectedUserPokemon: rp.selectedUserPokemon ? {
-            id: rp.selectedUserPokemon.id,
-            userId: rp.selectedUserPokemon.userId,
-            pokemonId: rp.selectedUserPokemon.pokemonId,
-            pokemon: rp.selectedUserPokemon.pokemon ? {
-              id: rp.selectedUserPokemon.pokemon.id,
-              pokedex_number: rp.selectedUserPokemon.pokemon.pokedex_number,
-              nameJp: rp.selectedUserPokemon.pokemon.nameJp,
-              nameTranslations: rp.selectedUserPokemon.pokemon.nameTranslations,
-              imageUrl: rp.selectedUserPokemon.pokemon.imageUrl,
-              rarity: rp.selectedUserPokemon.pokemon.rarity
-            } : null
-          } : null
+          selectedUserPokemon: rp.selectedUserPokemon
+            ? {
+                id: rp.selectedUserPokemon.id,
+                userId: rp.selectedUserPokemon.userId,
+                pokemonId: rp.selectedUserPokemon.pokemonId,
+                pokemon: rp.selectedUserPokemon.pokemon
+                  ? {
+                      id: rp.selectedUserPokemon.pokemon.id,
+                      pokedex_number: rp.selectedUserPokemon.pokemon.pokedex_number,
+                      nameJp: rp.selectedUserPokemon.pokemon.nameJp,
+                      nameTranslations: rp.selectedUserPokemon.pokemon.nameTranslations,
+                      imageUrl: rp.selectedUserPokemon.pokemon.imageUrl,
+                      rarity: rp.selectedUserPokemon.pokemon.rarity
+                    }
+                  : null
+              }
+            : null
         }))
       }))
       this.matchingGateway.notifyPokemonSelected(
@@ -823,13 +832,14 @@ export class MatchRoundParticipantService {
         const roundOne = allRounds.find((r) => r.roundNumber === MatchRoundNumber.ONE)
         if (roundOne) {
           // Schedule Round ONE start after 5s thay vì start ngay lập tức
-          const roundOneParticipants = await this.prismaService.matchRoundParticipant.findMany({
-            where: { matchRoundId: roundOne.id, deletedAt: null },
-            include: {
-              matchParticipant: { include: { user: true } }
-            },
-            orderBy: { orderSelected: 'asc' }
-          })
+          const roundOneParticipants =
+            await this.prismaService.matchRoundParticipant.findMany({
+              where: { matchRoundId: roundOne.id, deletedAt: null },
+              include: {
+                matchParticipant: { include: { user: true } }
+              },
+              orderBy: { orderSelected: 'asc' }
+            })
           if (roundOneParticipants.length === 2) {
             const userId1 = roundOneParticipants[0].matchParticipant.userId
             const userId2 = roundOneParticipants[1].matchParticipant.userId
