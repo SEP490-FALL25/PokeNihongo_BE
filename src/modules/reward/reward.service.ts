@@ -390,6 +390,7 @@ export class RewardService {
   }
 
   /**
+   *
    * Convert rewards to user benefits
    * Handles EXP, POKEMON, POKE_COINS, and SPARKLES reward types
    *
@@ -397,6 +398,7 @@ export class RewardService {
    * @param userId - User ID to receive the rewards
    * @returns Object with processed results for each reward type
    */
+  //todo Kumo
   async convertRewardsWithUser(rewardIds: number[], userId: number) {
     // 1. Fetch all rewards by IDs using findManyByIds
     const rewards = await this.rewardRepo.findManyByIds(rewardIds)

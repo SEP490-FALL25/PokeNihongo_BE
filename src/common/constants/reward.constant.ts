@@ -19,3 +19,12 @@ export const RewardTarget = {
   POKE_COINS: 'POKE_COINS',
   SPARKLES: 'SPARKLES'
 } as const
+
+export const RewardClaimStatus = {
+  PENDING: 'PENDING',
+  CLAIMED: 'CLAIMED',
+  COMPLETED: 'COMPLETED'
+} as const
+
+export type RewardClaimStatusType =
+  (typeof RewardClaimStatus)[keyof typeof RewardClaimStatus]
