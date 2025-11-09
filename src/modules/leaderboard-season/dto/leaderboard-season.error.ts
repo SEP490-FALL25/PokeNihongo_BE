@@ -9,3 +9,30 @@ export class LeaderboardSeasonAlreadyExistsException extends ConflictException {
     })
   }
 }
+
+export class LeaderboardSeasonHasActiveException extends ConflictException {
+  constructor() {
+    super({
+      message: LeaderboardSeasonMessage.HAS_ACTIVE,
+      errorKey: LeaderboardSeasonMessage.HAS_ACTIVE
+    })
+  }
+}
+
+export class LeaderboardSeasonHasInvalidToActiveException extends ConflictException {
+  constructor() {
+    super({
+      message: LeaderboardSeasonMessage.INVALID_DATA,
+      errorKey: LeaderboardSeasonMessage.INVALID_DATA
+    })
+  }
+}
+
+export class LeaderboardSeasonHasOpenedException extends ConflictException {
+  constructor() {
+    super({
+      message: LeaderboardSeasonMessage.HAS_OPENED,
+      errorKey: LeaderboardSeasonMessage.HAS_OPENED
+    })
+  }
+}

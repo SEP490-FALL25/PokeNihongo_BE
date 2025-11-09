@@ -1,0 +1,257 @@
+import { I18nService } from '@/i18n/i18n.service'
+import { SeasonRankRewardMessage } from '@/i18n/message-keys'
+import { NotFoundRecordException } from '@/shared/error'
+import {
+  isForeignKeyConstraintPrismaError,
+  isNotFoundPrismaError
+} from '@/shared/helpers'
+import { PaginationQueryType } from '@/shared/models/request.model'
+import { Injectable } from '@nestjs/common'
+import { LeaderboardSeasonHasOpenedException } from '../leaderboard-season/dto/leaderboard-season.error'
+import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
+import {
+  SeasonRankRewardNotFoundException,
+  SeasonRnakRewardNameInvalidException,
+  SeasonRnakRewardOrderInvalidException
+} from './dto/season-rank-reward.error'
+import {
+  CreateSeasonRankRewardBodyType,
+  UpdateSeasonRankRewardBodyType,
+  UpdateWithListItemBodySchemaType
+} from './entities/season-rank-reward.entity'
+import { SeasonRankRewardRepo } from './season-rank-reward.repo'
+
+@Injectable()
+export class SeasonRankRewardService {
+  constructor(
+    private seasonRankRewardRepo: SeasonRankRewardRepo,
+    private readonly leaderboardRepo: LeaderboardSeasonRepo,
+
+    private readonly i18nService: I18nService
+  ) {}
+
+  async list(pagination: PaginationQueryType, lang: string = 'vi') {
+    const data = await this.seasonRankRewardRepo.list(pagination)
+    return {
+      statusCode: 200,
+      data,
+      message: this.i18nService.translate(SeasonRankRewardMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  // Helper method to calculate weaknesses for a Pokemon (copied from PokemonService)
+  async findById(id: number, lang: string = 'vi') {
+    const seasonRankReward = await this.seasonRankRewardRepo.findById(id)
+    if (!seasonRankReward) {
+      throw new SeasonRankRewardNotFoundException()
+    }
+
+    return {
+      statusCode: 200,
+      data: seasonRankReward,
+      message: this.i18nService.translate(SeasonRankRewardMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  async create(
+    { userId, data }: { userId: number; data: CreateSeasonRankRewardBodyType },
+    lang: string = 'vi'
+  ) {
+    try {
+      const result = await this.seasonRankRewardRepo.create({
+        createdById: userId,
+        data: {
+          ...data
+        }
+      })
+      return {
+        statusCode: 201,
+        data: result,
+        message: this.i18nService.translate(SeasonRankRewardMessage.CREATE_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      throw error
+    }
+  }
+
+  async update(
+    {
+      id,
+      data,
+      userId
+    }: {
+      id: number
+      data: UpdateSeasonRankRewardBodyType
+      userId?: number
+    },
+    lang: string = 'vi'
+  ) {
+    try {
+      const seasonRankReward = await this.seasonRankRewardRepo.update({
+        id,
+        data: data,
+        updatedById: userId
+      })
+      return {
+        statusCode: 200,
+        data: seasonRankReward,
+        message: this.i18nService.translate(SeasonRankRewardMessage.UPDATE_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new SeasonRankRewardNotFoundException()
+      }
+
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      throw error
+    }
+  }
+
+  async updateByList(
+    {
+      updatedById,
+      data
+    }: {
+      updatedById: number
+      data: UpdateWithListItemBodySchemaType
+    },
+    lang: string = 'vi'
+  ) {
+    // Adapted from gacha-item batch update pattern: delete → validate → create
+    try {
+      const created = await this.seasonRankRewardRepo.withTransaction(async (tx) => {
+        const { seasonId, items } = data
+
+        //season active chua ? ko dc update
+        const season = await this.leaderboardRepo.findById(seasonId)
+        if (!season || season.status === 'ACTIVE') {
+          throw new SeasonRankRewardNotFoundException()
+        }
+
+        if (season.hasOpened === true) {
+          throw new LeaderboardSeasonHasOpenedException()
+        }
+
+        // 1. Delete existing season rank rewards for seasonId
+        await tx.seasonRankReward.deleteMany({ where: { seasonId } })
+
+        // 2. Validate items: rankName uniqueness + order uniqueness per rankName
+        const seenRankNames = new Set<string>()
+        const createBuffer: Array<{
+          seasonId: number
+          rankName: any
+          order: number
+          createdById: number
+          updatedById: number
+        }> = []
+
+        for (const rankGroup of items) {
+          const { rankName, infoOrders } = rankGroup
+          if (seenRankNames.has(rankName)) {
+            throw new SeasonRnakRewardNameInvalidException()
+          }
+          seenRankNames.add(rankName)
+
+          const seenOrders = new Set<number>()
+          for (const info of infoOrders) {
+            if (seenOrders.has(info.order)) {
+              throw new SeasonRnakRewardOrderInvalidException()
+            }
+            seenOrders.add(info.order)
+
+            createBuffer.push({
+              seasonId,
+              rankName: rankName as any,
+              order: info.order,
+              createdById: updatedById,
+              updatedById
+            })
+          }
+        }
+
+        // 3. Validate reward IDs and create rows with reward connections
+        const allRewardIds = new Set<number>()
+        for (const group of items) {
+          for (const info of group.infoOrders) {
+            info.rewards.forEach((rid) => allRewardIds.add(rid))
+          }
+        }
+
+        if (allRewardIds.size > 0) {
+          const rewards = await tx.reward.findMany({
+            where: { id: { in: Array.from(allRewardIds) } },
+            select: { id: true }
+          })
+          const found = new Set(rewards.map((r) => r.id))
+          for (const rid of allRewardIds) {
+            if (!found.has(rid)) throw new NotFoundRecordException()
+          }
+        }
+
+        // Create each SeasonRankReward with nested reward connects
+        for (const rankGroup of items) {
+          for (const info of rankGroup.infoOrders) {
+            await tx.seasonRankReward.create({
+              data: {
+                seasonId,
+                rankName: rankGroup.rankName as any,
+                order: info.order,
+                createdById: updatedById,
+                updatedById,
+                rewards: {
+                  connect: info.rewards.map((rid) => ({ id: rid }))
+                }
+              }
+            })
+          }
+        }
+
+        // 4. Re-fetch created data (simple list by seasonId)
+        return await tx.seasonRankReward.findMany({
+          where: { seasonId },
+          orderBy: [{ rankName: 'asc' }, { order: 'asc' }]
+        })
+      })
+
+      return {
+        statusCode: 200,
+        data: created,
+        message: this.i18nService.translate(SeasonRankRewardMessage.UPDATE_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      throw error
+    }
+  }
+
+  async delete({ id, userId }: { id: number; userId?: number }, lang: string = 'vi') {
+    try {
+      const existSeasonRankReward = await this.seasonRankRewardRepo.findById(id)
+      if (!existSeasonRankReward) {
+        throw new SeasonRankRewardNotFoundException()
+      }
+
+      await this.seasonRankRewardRepo.delete(id)
+      return {
+        statusCode: 200,
+        data: null,
+        message: this.i18nService.translate(SeasonRankRewardMessage.DELETE_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new SeasonRankRewardNotFoundException()
+      }
+      throw error
+    }
+  }
+}

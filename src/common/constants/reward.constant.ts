@@ -15,8 +15,7 @@ export const RewardItem = {
 
 export const RewardTarget = {
   EXP: 'EXP',
-  POINT: 'POINT',
   POKEMON: 'POKEMON',
-  BADGE: 'BADGE',
-  VOUCHER: 'VOUCHER'
+  POKE_COINS: 'POKE_COINS',
+  SPARKLES: 'SPARKLES'
 } as const

@@ -1,3 +1,4 @@
+import { LeaderboardStatus } from '@/common/constants/leaderboard.constants'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { LeaderboardSeasonMessage } from '@/i18n/message-keys'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
@@ -12,7 +13,18 @@ export const LeaderboardSeasonSchema = z.object({
   nameKey: z.string(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
-  isActive: z.boolean(),
+  hasOpened: z.boolean().default(false),
+  status: z
+    .enum([
+      LeaderboardStatus.INACTIVE,
+      LeaderboardStatus.PREVIEW,
+      LeaderboardStatus.ACTIVE,
+      LeaderboardStatus.EXPIRED
+    ])
+    .default(LeaderboardStatus.PREVIEW),
+  enablePrecreate: z.boolean().default(false), // bật/tắt tự tạo
+  precreateBeforeEndDays: z.number().min(0).default(2), // tạo trước X ngày (mặc định 2)
+  isRandomItemAgain: z.boolean().default(false), // có thể trùng item khi random lại
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
   deletedById: z.number().nullable(),
@@ -24,7 +36,10 @@ export const LeaderboardSeasonSchema = z.object({
 export const CreateLeaderboardSeasonBodyInputSchema = LeaderboardSeasonSchema.pick({
   startDate: true,
   endDate: true,
-  isActive: true
+  status: true,
+  enablePrecreate: true,
+  precreateBeforeEndDays: true,
+  isRandomItemAgain: true
 })
   .strict()
   .extend({
@@ -37,7 +52,10 @@ export const CreateLeaderboardSeasonBodySchema = LeaderboardSeasonSchema.pick({
   nameKey: true,
   startDate: true,
   endDate: true,
-  isActive: true
+  status: true,
+  enablePrecreate: true,
+  precreateBeforeEndDays: true,
+  isRandomItemAgain: true
 }).strict()
 
 export const CreateLeaderboardSeasonResSchema = z.object({
