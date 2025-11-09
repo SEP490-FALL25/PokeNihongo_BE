@@ -576,5 +576,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy nhật ký câu trả lời câu hỏi vòng đấu',
     ALREADY_EXISTS: 'Nhật ký câu trả lời câu hỏi vòng đấu đã tồn tại',
     INVALID_DATA: 'Dữ liệu nhật ký câu trả lời câu hỏi vòng đấu không hợp lệ'
+  },
+  season_rank_reward: {
+    CREATE_SUCCESS: 'Tạo phần thưởng xếp hạng mùa giải thành công',
+    UPDATE_SUCCESS: 'Cập nhật phần thưởng xếp hạng mùa giải thành công',
+    DELETE_SUCCESS: 'Xóa phần thưởng xếp hạng mùa giải thành công',
+    GET_SUCCESS: 'Lấy thông tin phần thưởng xếp hạng mùa giải thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách phần thưởng xếp hạng mùa giải thành công',
+    NOT_FOUND: 'Không tìm thấy phần thưởng xếp hạng mùa giải',
+    ALREADY_EXISTS: 'Phần thưởng xếp hạng mùa giải đã tồn tại',
+    INVALID_DATA: 'Dữ liệu phần thưởng xếp hạng mùa giải không hợp lệ'
   }
 }

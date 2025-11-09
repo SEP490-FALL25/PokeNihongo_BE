@@ -586,5 +586,15 @@ export const enMessages = {
 
     ALREADY_EXISTS: 'Round questions answer log already exists',
     INVALID_DATA: 'Invalid round questions answer log data'
+  },
+  season_rank_reward: {
+    CREATE_SUCCESS: 'Season rank reward created successfully',
+    UPDATE_SUCCESS: 'Season rank reward updated successfully',
+    DELETE_SUCCESS: 'Season rank reward deleted successfully',
+    GET_SUCCESS: 'Season rank reward retrieved successfully',
+    GET_LIST_SUCCESS: 'Season rank reward list retrieved successfully',
+    NOT_FOUND: 'Season rank reward not found',
+    ALREADY_EXISTS: 'Season rank reward already exists',
+    INVALID_DATA: 'Invalid season rank reward data'
   }
 }

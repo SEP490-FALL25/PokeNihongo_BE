@@ -622,3 +622,14 @@ export const RoundQuestionsAnswerLogMessage = {
   ALREADY_EXISTS: 'round_questions_answer_log.ALREADY_EXISTS',
   INVALID_DATA: 'round_questions_answer_log.INVALID_DATA'
 } as const
+
+export const SeasonRankRewardMessage = {
+  CREATE_SUCCESS: 'season_rank_reward.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'season_rank_reward.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'season_rank_reward.DELETE_SUCCESS',
+  GET_SUCCESS: 'season_rank_reward.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'season_rank_reward.GET_LIST_SUCCESS',
+  NOT_FOUND: 'season_rank_reward.NOT_FOUND',
+  ALREADY_EXISTS: 'season_rank_reward.ALREADY_EXISTS',
+  INVALID_DATA: 'season_rank_reward.INVALID_DATA'
+} as const

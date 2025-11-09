@@ -112,6 +112,9 @@ model User {
   createdGeminiConfigs                GeminiConfig[]      @relation("GeminiConfigCreatedBy")
   updatedGeminiConfigs                GeminiConfig[]      @relation("GeminiConfigUpdatedBy")
   deletedGeminiConfigs                GeminiConfig[]      @relation("GeminiConfigDeletedBy")
+  createdseasonRankRewards            SeasonRankReward[]  @relation("SeasonRankRewardCreatedBy")
+  updatedSeasonRankRewards            SeasonRankReward[]  @relation("SeasonRankRewardUpdatedBy")
+  deletedSeasonRankRewards            SeasonRankReward[]  @relation("SeasonRankRewardDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -420,7 +423,8 @@ model Reward {
   levels Level[]
 
   // Quan hệ với Lesson
-  lessons Lesson[]
+  lessons           Lesson[]
+  seasonRankRewards SeasonRankReward[]
 
   // Audit fields
   createdById Int?
@@ -1793,7 +1797,8 @@ model LeaderboardSeason {
 
   // --- THÊM MỚI ---
   // Lịch sử user của mùa này
-  userHistories UserSeasonHistory[]
+  userHistories     UserSeasonHistory[]
+  seasonRankRewards SeasonRankReward[]
 
   //translate
   nameTranslations Translation[] @relation("LeaderboardSeasonNameRelation")
@@ -1822,14 +1827,47 @@ model UserSeasonHistory {
   seasonId Int
   season   LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
-  finalElo  Int // Elo cuối cùng của user ở mùa giải này
-  finalRank String // Tên rank cuối cùng (vd: "N4")
+  finalElo           Int // Elo cuối cùng của user ở mùa giải này
+  finalRank          String // Tên rank cuối cùng (vd: "N4")
+  seasonRankRewardId Int?
+  seasonRankReward   SeasonRankReward? @relation(fields: [seasonRankRewardId], references: [id], onDelete: SetNull)
+  rewardsClaimed     Boolean           @default(false) // Đã nhận thưởng chưa
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   @@unique([userId, seasonId]) // 1 user chỉ có 1 record lịch sử cho 1 mùa
+  @@index([userId])
+}
+
+model SeasonRankReward {
+  id       Int               @id @default(autoincrement())
+  seasonId Int
+  season   LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  rankName RankName @default(N5) // Tên rank áp dụng (vd: "N4", "N3", "N5")
+  order    Int // Thứ hạng áp dụng (vd: 1, 2, 3)
+
+  // ---rewards
+  rewards             Reward[]
+  userSeasonHistories UserSeasonHistory[]
+
+  // meta
+  createdById Int?
+  createdBy   User? @relation("SeasonRankRewardCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("SeasonRankRewardDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("SeasonRankRewardUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([seasonId, rankName, order])
+  @@index([seasonId])
+  @@index([rankName])
 }
 
 enum MatchDebuffType {
@@ -2337,4 +2375,10 @@ model GeminiServiceConfig {
 enum RoleSpeaking {
   A
   B
+}
+
+enum RankName {
+  N5
+  N4
+  N3
 }

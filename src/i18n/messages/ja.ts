@@ -561,5 +561,16 @@ export const jaMessages = {
     NOT_FOUND: 'ラウンド質問回答ログが見つかりません',
     ALREADY_EXISTS: 'ラウンド質問回答ログは既に存在します',
     INVALID_DATA: '無効なラウンド質問回答ログデータです'
+  },
+  season_rank_reward: {
+    CREATE_SUCCESS: 'シーズンランク報酬の作成に成功しました',
+    UPDATE_SUCCESS: 'シーズンランク報酬の更新に成功しました',
+    DELETE_SUCCESS: 'シーズンランク報酬の削除に成功しました',
+    GET_SUCCESS: 'シーズンランク報酬情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'シーズンランク報酬リストの取得に成功しました',
+    NOT_FOUND: 'シーズンランク報酬が見つかりません',
+
+    ALREADY_EXISTS: 'シーズンランク報酬は既に存在します',
+    INVALID_DATA: '無効なシーズンランク報酬データです'
   }
 }

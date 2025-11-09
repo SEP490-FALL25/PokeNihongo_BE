@@ -85,6 +85,7 @@ import { WebsocketsModule } from './websockets/websockets.module'
 import { UserSeasonHistoryModule } from './modules/user-season-history/user-season-history.module';
 import { RoundQuestionModule } from './modules/round-question/round-question.module';
 import { RoundQuestionAnswerlogModule } from './modules/round-question-answerlog/round-question-answerlog.module';
+import { SeasonRankRewardModule } from './modules/season-rank-reward/season-rank-reward.module';
 
 @Module({
   imports: [
@@ -169,7 +170,8 @@ import { RoundQuestionAnswerlogModule } from './modules/round-question-answerlog
     UserAIConversationModule,
     AIConversationRoomModule,
     RoundQuestionModule,
-    RoundQuestionAnswerlogModule
+    RoundQuestionAnswerlogModule,
+    SeasonRankRewardModule
   ],
 
   controllers: [],
