@@ -512,7 +512,8 @@ export const LeaderboardSeasonMessage = {
   GET_LIST_SUCCESS: 'leaderboard_season.GET_LIST_SUCCESS',
   NOT_FOUND: 'leaderboard_season.NOT_FOUND',
   ALREADY_EXISTS: 'leaderboard_season.ALREADY_EXISTS',
-  INVALID_DATA: 'leaderboard_season.INVALID_DATA'
+  INVALID_DATA: 'leaderboard_season.INVALID_DATA',
+  HAS_ACTIVE: 'leaderboard_season.HAS_ACTIVE'
 } as const
 
 export const MatchQueueMessage = {
@@ -631,5 +632,7 @@ export const SeasonRankRewardMessage = {
   GET_LIST_SUCCESS: 'season_rank_reward.GET_LIST_SUCCESS',
   NOT_FOUND: 'season_rank_reward.NOT_FOUND',
   ALREADY_EXISTS: 'season_rank_reward.ALREADY_EXISTS',
-  INVALID_DATA: 'season_rank_reward.INVALID_DATA'
+  INVALID_DATA: 'season_rank_reward.INVALID_DATA',
+  RANK_NAME_INVALID: 'season_rank_reward.RANK_NAME_INVALID',
+  RANK_ORDER_INVALID: 'season_rank_reward.RANK_ORDER_INVALID'
 } as const

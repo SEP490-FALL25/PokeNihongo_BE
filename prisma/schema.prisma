@@ -1791,9 +1791,13 @@ model LeaderboardSeason {
   nameKey   String   @unique
   startDate DateTime
   endDate   DateTime
-  isActive  Boolean  @default(true) // Mùa giải đang diễn ra
 
   matches Match[] // Các trận đấu trong mùa này
+  status  LeaderboardStatus @default(PREVIEW)
+
+  enablePrecreate        Boolean @default(false) // bật/tắt tự tạo
+  precreateBeforeEndDays Int     @default(2) // tạo trước X ngày (mặc định 2)
+  isRandomItemAgain      Boolean @default(false) // có thể trùng item khi random lại
 
   // --- THÊM MỚI ---
   // Lịch sử user của mùa này
@@ -1815,7 +1819,9 @@ model LeaderboardSeason {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  @@index([isActive])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([status])
 }
 
 model UserSeasonHistory {
@@ -1955,10 +1961,9 @@ enum RewardType {
 
 enum RewardTarget {
   EXP
-  POINT
   POKEMON
-  BADGE
-  VOUCHER
+  POKE_COINS
+  SPARKLES
 }
 
 enum RarityPokemon {
@@ -2077,6 +2082,13 @@ enum TransactionPurpose {
 }
 
 enum BannerStatus {
+  ACTIVE // Đang áp dụng (hiển thị trên hệ thống)
+  INACTIVE // Ngưng sử dụng (ẩn hoặc tắt hiển thị)
+  EXPIRED // Hết hạn (đã qua thời gian kết thúc)
+  PREVIEW // Xem trước (chưa chính thức áp dụng)
+}
+
+enum LeaderboardStatus {
   ACTIVE // Đang áp dụng (hiển thị trên hệ thống)
   INACTIVE // Ngưng sử dụng (ẩn hoặc tắt hiển thị)
   EXPIRED // Hết hạn (đã qua thời gian kết thúc)

@@ -252,7 +252,7 @@ export class LeaderboardSeasonRepo {
   findActiveSeason(): Promise<LeaderboardSeasonType | null> {
     return this.prismaService.leaderboardSeason.findFirst({
       where: {
-        isActive: true,
+        status: 'ACTIVE',
         deletedAt: null
       }
     })
@@ -270,7 +270,7 @@ export class LeaderboardSeasonRepo {
   > {
     return this.prismaService.leaderboardSeason.findFirst({
       where: {
-        isActive: true,
+        status: 'ACTIVE',
         deletedAt: null
       },
       include: {

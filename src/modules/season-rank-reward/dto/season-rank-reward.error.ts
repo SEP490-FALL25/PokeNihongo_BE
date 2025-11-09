@@ -18,3 +18,21 @@ export class SeasonRankRewardAlreadyExistsException extends ConflictException {
     })
   }
 }
+
+export class SeasonRnakRewardNameInvalidException extends ConflictException {
+  constructor() {
+    super({
+      message: SeasonRankRewardMessage.RANK_NAME_INVALID,
+      errorKey: SeasonRankRewardMessage.RANK_NAME_INVALID
+    })
+  }
+}
+
+export class SeasonRnakRewardOrderInvalidException extends ConflictException {
+  constructor() {
+    super({
+      message: SeasonRankRewardMessage.RANK_ORDER_INVALID,
+      errorKey: SeasonRankRewardMessage.RANK_ORDER_INVALID
+    })
+  }
+}

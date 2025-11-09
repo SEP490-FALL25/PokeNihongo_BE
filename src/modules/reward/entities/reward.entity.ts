@@ -21,10 +21,9 @@ export const RewardSchema = z.object({
   rewardItem: z.number().min(0),
   rewardTarget: z.enum([
     RewardTarget.EXP,
-    RewardTarget.POINT,
     RewardTarget.POKEMON,
-    RewardTarget.BADGE,
-    RewardTarget.VOUCHER
+    RewardTarget.POKE_COINS,
+    RewardTarget.SPARKLES
   ]),
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),

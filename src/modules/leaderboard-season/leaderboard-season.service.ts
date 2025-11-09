@@ -18,7 +18,11 @@ import { HttpStatus, Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
-import { LeaderboardSeasonAlreadyExistsException } from './dto/leaderboard-season.error'
+import {
+  LeaderboardSeasonAlreadyExistsException,
+  LeaderboardSeasonHasActiveException,
+  LeaderboardSeasonHasInvalidToActiveException
+} from './dto/leaderboard-season.error'
 import {
   CreateLeaderboardSeasonBodyInputType,
   CreateLeaderboardSeasonBodyType,
@@ -167,23 +171,30 @@ export class LeaderboardSeasonService {
       return await this.leaderboardSeasonRepo.withTransaction(async (prismaTx) => {
         const nameKey = `leaderboardSeason.name.${Date.now()}`
 
+        //check xem neu active xem co active nao khac ko
+        if (data.status === 'ACTIVE') {
+          const activeSeason = await this.leaderboardSeasonRepo.findActiveSeason()
+          if (activeSeason) {
+            throw new LeaderboardSeasonHasActiveException()
+          }
+        }
+
         const startDateUtc = data.startDate
           ? addDaysUTC0000(data.startDate, 0)
           : todayUTCWith0000()
         const endDateUtc = data.endDate
           ? addDaysUTC0000(data.endDate, 0)
-          : todayUTCWith0000()
+          : addDaysUTC0000(startDateUtc, 30)
         // Convert data for create
         const now = todayUTCWith0000()
-        let isActive = false
-        if (startDateUtc <= now && endDateUtc >= now) {
-          isActive = true
-        }
         const dataCreate: CreateLeaderboardSeasonBodyType = {
           nameKey,
           startDate: startDateUtc,
           endDate: endDateUtc,
-          isActive: isActive
+          status: data.status,
+          enablePrecreate: data.enablePrecreate,
+          precreateBeforeEndDays: data.precreateBeforeEndDays,
+          isRandomItemAgain: data.isRandomItemAgain
         }
 
         createdLeaderboardSeason = await this.leaderboardSeasonRepo.create(
@@ -314,10 +325,12 @@ export class LeaderboardSeasonService {
         if (data.endDate) {
           dataUpdate.endDate = addDaysUTC0000(data.endDate, 0)
         }
-        if (data.isActive !== undefined) {
-          dataUpdate.isActive = data.isActive
-        }
-
+        if (data.enablePrecreate !== undefined)
+          dataUpdate.enablePrecreate = data.enablePrecreate
+        if (data.precreateBeforeEndDays !== undefined)
+          dataUpdate.precreateBeforeEndDays = data.precreateBeforeEndDays
+        if (data.isRandomItemAgain !== undefined)
+          dataUpdate.isRandomItemAgain = data.isRandomItemAgain
         // Handle translations if provided
         if (data.nameTranslations) {
           const nameList = data.nameTranslations.map((t) => t.key)
@@ -352,6 +365,26 @@ export class LeaderboardSeasonService {
             //   this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
             // )
             // await Promise.all(translationPromises)
+          }
+        }
+        if (data.status) {
+          // nếu status là active: check xem có cái nào khác đang active không, nếu có thì không cho
+          // nếu nếu không thì: kiểm tra xem date có hợp lệ không
+          if (data.status === 'ACTIVE') {
+            const activeSeason = await this.leaderboardSeasonRepo.findActiveSeason()
+            if (activeSeason && activeSeason.id !== id) {
+              throw new LeaderboardSeasonHasActiveException()
+            }
+            const now = todayUTCWith0000()
+            const startDateUtc = dataUpdate.startDate
+              ? dataUpdate.startDate
+              : existingLeaderboardSeason.startDate
+            const endDateUtc = dataUpdate.endDate
+              ? dataUpdate.endDate
+              : existingLeaderboardSeason.endDate
+            if (!(startDateUtc <= now && endDateUtc >= now)) {
+              throw new LeaderboardSeasonHasInvalidToActiveException()
+            }
           }
         }
 

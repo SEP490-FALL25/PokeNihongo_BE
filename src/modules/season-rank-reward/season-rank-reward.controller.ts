@@ -10,11 +10,13 @@ import {
   GetSeasonRankRewardDetailResDTO,
   GetSeasonRankRewardParamsDTO,
   UpdateSeasonRankRewardBodyDTO,
-  UpdateSeasonRankRewardResDTO
+  UpdateSeasonRankRewardResDTO,
+  UpdateWithListItemBodyDTO,
+  UpdateWithListItemResDTO
 } from './dto/season-rank-reward.dto'
 import { SeasonRankRewardService } from './season-rank-reward.service'
 
-@Controller('user-season-history')
+@Controller('season-rank-reward')
 export class SeasonRankRewardController {
   constructor(private readonly seasonRankRewardService: SeasonRankRewardService) {}
 
@@ -46,6 +48,19 @@ export class SeasonRankRewardController {
         userId,
         data: body
       },
+      lang
+    )
+  }
+
+  @Put('list')
+  @ZodSerializerDto(UpdateWithListItemResDTO)
+  updateByList(
+    @Body() body: UpdateWithListItemBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.seasonRankRewardService.updateByList(
+      { updatedById: userId, data: body },
       lang
     )
   }

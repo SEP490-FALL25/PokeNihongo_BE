@@ -1,3 +1,4 @@
+import { rankName } from '@/common/constants/season-rank-constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
@@ -11,7 +12,8 @@ patchNestJsSwagger()
 export const SeasonRankRewardSchema = z.object({
   id: z.number(),
   seasonId: z.number(),
-  rankName: z.enum(['N5', 'N4', 'N3']).default('N5'),
+  // Align with Prisma enum RankName: N5 | N4 | N3 | N2 | N1
+  rankName: z.enum([rankName.N5, rankName.N4, rankName.N3]).default(rankName.N5),
   order: z.number().min(1).default(1),
 
   createdById: z.number().nullable(),
@@ -42,6 +44,28 @@ export const UpdateSeasonRankRewardBodySchema =
   CreateSeasonRankRewardBodySchema.partial().strict()
 
 export const UpdateSeasonRankRewardResSchema = CreateSeasonRankRewardResSchema
+
+// Update multiple items: { seasonId, items: [{ rankType, rewards: [...] }] }
+export const UpdateSeasonRankRewardByRankTypeSchema = z.object({
+  rankName: SeasonRankRewardSchema.shape.rankName,
+  infoOrders: z
+    .array(
+      z.object({
+        order: z.number().min(1),
+        rewards: z.array(z.number()).min(1)
+      })
+    )
+    .min(1)
+})
+
+export const UpdateWithListItemBodySchema = z.object({
+  seasonId: z.number(),
+  items: z.array(UpdateSeasonRankRewardByRankTypeSchema)
+})
+
+export type UpdateWithListSeasonRankRewardBodyType = z.infer<
+  typeof UpdateWithListItemBodySchema
+>
 
 export const UpdateWithListItemResSchema = z.object({
   statusCode: z.number(),
@@ -74,6 +98,9 @@ export type GetSeasonRankRewardParamsType = z.infer<
   typeof GetSeasonRankRewardParamsSchema
 >
 
+export type UpdateWithListItemBodySchemaType = z.infer<
+  typeof UpdateWithListItemBodySchema
+>
 // Field for query
 export type SeasonRankRewardFieldType = keyof z.infer<typeof SeasonRankRewardSchema>
 export const USER_SEASON_HISTORY_FIELDS = Object.keys(

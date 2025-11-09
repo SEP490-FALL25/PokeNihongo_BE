@@ -571,6 +571,19 @@ export const jaMessages = {
     NOT_FOUND: 'シーズンランク報酬が見つかりません',
 
     ALREADY_EXISTS: 'シーズンランク報酬は既に存在します',
-    INVALID_DATA: '無効なシーズンランク報酬データです'
+    INVALID_DATA: '無効なシーズンランク報酬データです',
+    RANK_NAME_INVALID: '無効なランク名です',
+    RANK_ORDER_INVALID: '無効なランク順です'
+  },
+  leaderboard_season: {
+    CREATE_SUCCESS: 'リーダーボードシーズンの作成に成功しました',
+    UPDATE_SUCCESS: 'リーダーボードシーズンの更新に成功しました',
+    DELETE_SUCCESS: 'リーダーボードシーズンの削除に成功しました',
+    GET_SUCCESS: 'リーダーボードシーズン情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'リーダーボードシーズンリストの取得に成功しました',
+    NOT_FOUND: 'リーダーボードシーズンが見つかりません',
+    ALREADY_EXISTS: 'リーダーボードシーズンは既に存在します',
+    INVALID_DATA: '無効なリーダーボードシーズンデータです',
+    HAS_ACTIVE: '既にアクティブなリーダーボードシーズンが存在します'
   }
 }

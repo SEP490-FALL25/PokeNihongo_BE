@@ -7,11 +7,15 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
-import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
-import { SeasonRankRewardNotFoundException } from './dto/season-rank-reward.error'
+import {
+  SeasonRankRewardNotFoundException,
+  SeasonRnakRewardNameInvalidException,
+  SeasonRnakRewardOrderInvalidException
+} from './dto/season-rank-reward.error'
 import {
   CreateSeasonRankRewardBodyType,
-  UpdateSeasonRankRewardBodyType
+  UpdateSeasonRankRewardBodyType,
+  UpdateWithListItemBodySchemaType
 } from './entities/season-rank-reward.entity'
 import { SeasonRankRewardRepo } from './season-rank-reward.repo'
 
@@ -19,8 +23,6 @@ import { SeasonRankRewardRepo } from './season-rank-reward.repo'
 export class SeasonRankRewardService {
   constructor(
     private seasonRankRewardRepo: SeasonRankRewardRepo,
-    private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
-
     private readonly i18nService: I18nService
   ) {}
 
@@ -102,6 +104,115 @@ export class SeasonRankRewardService {
         throw new SeasonRankRewardNotFoundException()
       }
 
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      throw error
+    }
+  }
+
+  async updateByList(
+    {
+      updatedById,
+      data
+    }: {
+      updatedById: number
+      data: UpdateWithListItemBodySchemaType
+    },
+    lang: string = 'vi'
+  ) {
+    // Adapted from gacha-item batch update pattern: delete → validate → create
+    try {
+      const created = await this.seasonRankRewardRepo.withTransaction(async (tx) => {
+        const { seasonId, items } = data
+
+        // 1. Delete existing season rank rewards for seasonId
+        await tx.seasonRankReward.deleteMany({ where: { seasonId } })
+
+        // 2. Validate items: rankName uniqueness + order uniqueness per rankName
+        const seenRankNames = new Set<string>()
+        const createBuffer: Array<{
+          seasonId: number
+          rankName: any
+          order: number
+          createdById: number
+          updatedById: number
+        }> = []
+
+        for (const rankGroup of items) {
+          const { rankName, infoOrders } = rankGroup
+          if (seenRankNames.has(rankName)) {
+            throw new SeasonRnakRewardNameInvalidException()
+          }
+          seenRankNames.add(rankName)
+
+          const seenOrders = new Set<number>()
+          for (const info of infoOrders) {
+            if (seenOrders.has(info.order)) {
+              throw new SeasonRnakRewardOrderInvalidException()
+            }
+            seenOrders.add(info.order)
+
+            createBuffer.push({
+              seasonId,
+              rankName: rankName as any,
+              order: info.order,
+              createdById: updatedById,
+              updatedById
+            })
+          }
+        }
+
+        // 3. Validate reward IDs and create rows with reward connections
+        const allRewardIds = new Set<number>()
+        for (const group of items) {
+          for (const info of group.infoOrders) {
+            info.rewards.forEach((rid) => allRewardIds.add(rid))
+          }
+        }
+
+        if (allRewardIds.size > 0) {
+          const rewards = await tx.reward.findMany({
+            where: { id: { in: Array.from(allRewardIds) } },
+            select: { id: true }
+          })
+          const found = new Set(rewards.map((r) => r.id))
+          for (const rid of allRewardIds) {
+            if (!found.has(rid)) throw new NotFoundRecordException()
+          }
+        }
+
+        // Create each SeasonRankReward with nested reward connects
+        for (const rankGroup of items) {
+          for (const info of rankGroup.infoOrders) {
+            await tx.seasonRankReward.create({
+              data: {
+                seasonId,
+                rankName: rankGroup.rankName as any,
+                order: info.order,
+                createdById: updatedById,
+                updatedById,
+                rewards: {
+                  connect: info.rewards.map((rid) => ({ id: rid }))
+                }
+              }
+            })
+          }
+        }
+
+        // 4. Re-fetch created data (simple list by seasonId)
+        return await tx.seasonRankReward.findMany({
+          where: { seasonId },
+          orderBy: [{ rankName: 'asc' }, { order: 'asc' }]
+        })
+      })
+
+      return {
+        statusCode: 200,
+        data: created,
+        message: this.i18nService.translate(SeasonRankRewardMessage.UPDATE_SUCCESS, lang)
+      }
+    } catch (error) {
       if (isForeignKeyConstraintPrismaError(error)) {
         throw new NotFoundRecordException()
       }

@@ -585,6 +585,19 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách phần thưởng xếp hạng mùa giải thành công',
     NOT_FOUND: 'Không tìm thấy phần thưởng xếp hạng mùa giải',
     ALREADY_EXISTS: 'Phần thưởng xếp hạng mùa giải đã tồn tại',
-    INVALID_DATA: 'Dữ liệu phần thưởng xếp hạng mùa giải không hợp lệ'
+    INVALID_DATA: 'Dữ liệu phần thưởng xếp hạng mùa giải không hợp lệ',
+    RANK_NAME_INVALID: 'Tên hạng mục không hợp lệ',
+    RANK_ORDER_INVALID: 'Thứ tự hạng mục không hợp lệ'
+  },
+  leaderboard_season: {
+    CREATE_SUCCESS: 'Tạo mùa giải bảng xếp hạng thành công',
+    UPDATE_SUCCESS: 'Cập nhật mùa giải bảng xếp hạng thành công',
+    DELETE_SUCCESS: 'Xóa mùa giải bảng xếp hạng thành công',
+    GET_SUCCESS: 'Lấy thông tin mùa giải bảng xếp hạng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách mùa giải bảng xếp hạng thành công',
+    NOT_FOUND: 'Không tìm thấy mùa giải bảng xếp hạng',
+    ALREADY_EXISTS: 'Mùa giải bảng xếp hạng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu mùa giải bảng xếp hạng không hợp lệ',
+    HAS_ACTIVE: 'Đã có mùa giải bảng xếp hạng đang hoạt động'
   }
 }

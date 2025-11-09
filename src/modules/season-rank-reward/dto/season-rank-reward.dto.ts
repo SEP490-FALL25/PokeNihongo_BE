@@ -5,7 +5,9 @@ import {
   GetSeasonRankRewardDetailResSchema,
   GetSeasonRankRewardParamsSchema,
   UpdateSeasonRankRewardBodySchema,
+  UpdateSeasonRankRewardByRankTypeSchema,
   UpdateSeasonRankRewardResSchema,
+  UpdateWithListItemBodySchema,
   UpdateWithListItemResSchema
 } from '../entities/season-rank-reward.entity'
 
@@ -16,6 +18,10 @@ export class CreateSeasonRankRewardBodyDTO extends createZodDto(
 
 export class UpdateSeasonRankRewardBodyDTO extends createZodDto(
   UpdateSeasonRankRewardBodySchema
+) {}
+
+export class UpdateWithListItemBodyDTO extends createZodDto(
+  UpdateWithListItemBodySchema
 ) {}
 
 export class GetSeasonRankRewardParamsDTO extends createZodDto(
@@ -32,4 +38,8 @@ export class UpdateSeasonRankRewardResDTO extends createZodDto(
 export class UpdateWithListItemResDTO extends createZodDto(UpdateWithListItemResSchema) {}
 export class GetSeasonRankRewardDetailResDTO extends createZodDto(
   GetSeasonRankRewardDetailResSchema
+) {}
+
+export class UpdateSeasonRankRewardByRankTypeDTO extends createZodDto(
+  UpdateSeasonRankRewardByRankTypeSchema
 ) {}
