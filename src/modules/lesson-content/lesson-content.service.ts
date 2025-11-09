@@ -474,11 +474,9 @@ export class LessonContentService {
 
                             return {
                                 id: grammar.id,
-                                titleKey: firstUsage.explanationKey, // Sử dụng explanationKey làm title
-                                title: explanationValue,
-                                descriptionKey: firstUsage.explanationKey,
+                                titleKey: '', // Structure không có translation key, là string trực tiếp
+                                title: grammar.structure, // Sử dụng structure làm title
                                 description: explanationValue,
-                                usageKey: firstUsage.exampleSentenceKey,
                                 usage: exampleSentenceValue,
                                 contentOrder: lc.contentOrder,
                                 lessonContentId: lc.id
