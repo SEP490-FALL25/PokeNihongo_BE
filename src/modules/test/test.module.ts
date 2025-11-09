@@ -9,9 +9,10 @@ import { TestSetModule } from '../testset/testset.module'
 import { TestSetQuestionBankModule } from '../testset-questionbank/testset-questionbank.module'
 import { UserTestAttemptRepository } from '../user-test-attempt/user-test-attempt.repo'
 import { UserTestRepository } from '../user-test/user-test.repo'
+import { UserTestModule } from '../user-test/user-test.module'
 
 @Module({
-    imports: [TranslationModule, LanguagesModule, TestSetModule, TestSetQuestionBankModule],
+    imports: [TranslationModule, LanguagesModule, TestSetModule, TestSetQuestionBankModule, UserTestModule],
     controllers: [TestController],
     providers: [TestService, TestRepository, PrismaService, UserTestAttemptRepository, UserTestRepository],
     exports: [TestService, TestRepository],

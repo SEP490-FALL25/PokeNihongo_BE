@@ -10,7 +10,7 @@ import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { HashingService } from '@/shared/services/hashing.service'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { TokenService } from '@/shared/services/token.service'
-import { Global, Module } from '@nestjs/common'
+import { Global, Module, forwardRef } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { JwtModule } from '@nestjs/jwt'
 import { WebsocketsModule } from 'src/websockets/websockets.module'
@@ -38,7 +38,7 @@ const sharedServices = [
     BullQueueModule.registerQueue(BullQueue.MATCH_PARTICIPANT_TIMEOUT),
     BullQueueModule.registerQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT),
     BullQueueModule.registerQueue(BullQueue.ROUND_QUESTION_TIMEOUT),
-    WebsocketsModule
+    forwardRef(() => WebsocketsModule)
 
     // Không import GeminiModule ở đây để tránh circular dependency
     // GeminiModule sẽ được import trong AppModule và export GeminiService
@@ -64,4 +64,4 @@ const sharedServices = [
     // GeminiService sẽ được export từ GeminiModule, không cần export ở đây
   ]
 })
-export class SharedModule {}
+export class SharedModule { }

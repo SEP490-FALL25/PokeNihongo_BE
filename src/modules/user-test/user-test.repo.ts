@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { UserTestType, CreateUserTestBodyType, UpdateUserTestBodyType, GetUserTestListQueryType } from './entities/user-test.entities'
-import { TestSetStatus, UserTestStatus, TestStatus } from '@prisma/client'
+import { UserTestStatus, TestSetStatus, TestStatus } from '@prisma/client'
 
 
 @Injectable()
@@ -94,6 +94,21 @@ export class UserTestRepository {
         await this.prisma.userTest.delete({
             where: { id }
         })
+    }
+
+    /**
+     * Cập nhật status của tất cả user-test theo testId
+     */
+    async updateStatusByTestId(testId: number, status: UserTestStatus): Promise<number> {
+        const result = await this.prisma.userTest.updateMany({
+            where: {
+                testId: testId
+            },
+            data: {
+                status: status
+            }
+        })
+        return result.count
     }
 
     /**

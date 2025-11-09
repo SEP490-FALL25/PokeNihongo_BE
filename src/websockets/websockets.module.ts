@@ -1,7 +1,7 @@
 import { BullQueueModule } from '@/3rdService/bull/bull-queue.module'
 import { SpeechModule } from '@/3rdService/speech/speech.module'
 import { UploadModule } from '@/3rdService/upload/upload.module'
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { InitializerGateway } from './initializer.gateway'
 
@@ -11,6 +11,7 @@ import { WebsocketsService } from './websockets.service'
 
 import { AIConversationRoomModule } from '@/modules/ai-conversation-room/ai-conversation-room.module'
 import { UserAIConversationModule } from '@/modules/user-ai-conversation/user-ai-conversation.module'
+import { GeminiConfigModule } from '@/modules/gemini-config/gemini-config.module'
 import { KaiwaProcessor } from '../shared/workers/kaiwa.processor'
 import { KaiwaGateway } from './kaiwa.gateway'
 
@@ -37,7 +38,8 @@ import { KaiwaGateway } from './kaiwa.gateway'
     UploadModule, // Cần cho TextToSpeechService
     SpeechModule, // Cần cho SpeechToTextService và TextToSpeechService
     UserAIConversationModule, // Cần để lưu conversation vào database
-    AIConversationRoomModule // Cần để quản lý phòng hội thoại
+    AIConversationRoomModule, // Cần để quản lý phòng hội thoại
+    forwardRef(() => GeminiConfigModule) // Cần để lấy Gemini config từ DB (forwardRef để tránh circular dependency)
     // MatchRoundModule
   ],
   providers: [
@@ -50,4 +52,4 @@ import { KaiwaGateway } from './kaiwa.gateway'
   ],
   exports: [WebsocketsService, SocketServerService, MatchingGateway, KaiwaGateway]
 })
-export class WebsocketsModule {}
+export class WebsocketsModule { }
