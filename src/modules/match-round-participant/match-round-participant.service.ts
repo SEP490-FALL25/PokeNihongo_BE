@@ -246,7 +246,7 @@ export class MatchRoundParticipantService {
       const allSelectedNow = allParticipants.every(
         (p) => p.selectedUserPokemonId !== null
       )
-
+      const nextEndTime = addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
       if (allSelectedNow) {
         this.logger.log(
           `[MatchRoundParticipant] All participants selected manually in round ${matchRoundId}. Updating statuses then generating questions.`
@@ -302,7 +302,7 @@ export class MatchRoundParticipantService {
             id: rp.id,
             matchParticipantId: rp.matchParticipantId,
             orderSelected: rp.orderSelected,
-            endTimeSelected: rp.endTimeSelected,
+            endTimeSelected: rp.endTimeSelected ? rp.endTimeSelected : nextEndTime,
             selectedUserPokemonId: rp.selectedUserPokemonId,
             selectedUserPokemon: rp.selectedUserPokemon
               ? {
@@ -422,7 +422,7 @@ export class MatchRoundParticipantService {
         await this.matchRoundParticipantRepo.update({
           id: nextParticipant.id,
           data: {
-            endTimeSelected: addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
+            endTimeSelected: nextEndTime
           }
         })
 

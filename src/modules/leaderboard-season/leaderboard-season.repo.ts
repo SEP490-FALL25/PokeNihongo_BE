@@ -260,7 +260,7 @@ export class LeaderboardSeasonRepo {
 
   findActiveSeasonWithLangIdAndUser(
     userId: number,
-    langId: number
+    langId?: number
   ): Promise<
     | (LeaderboardSeasonType & {
         nameTranslations

@@ -24,7 +24,7 @@ export class UserSeasonHistoryController {
     return this.userSeasonHistoryService.list(query, lang)
   }
 
-  @Get('user/history')
+  @Get('user/now')
   @ZodSerializerDto(GetUserSeasonHistoryDetailResDTO)
   getUserHisNow(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
     return this.userSeasonHistoryService.getUserHisByUserId(userId, lang)
