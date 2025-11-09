@@ -278,15 +278,28 @@ export class AnswerListResponseSwaggerDTO {
 export class CreateMultipleAnswersSwaggerDTO {
     @ApiProperty({
         example: 1,
-        description: 'ID câu hỏi'
+        description: 'ID câu hỏi (questionBankId)'
     })
     questionBankId: number
 
     @ApiProperty({
-        type: [CreateAnswerSwaggerDTO],
-        description: 'Danh sách câu trả lời cần tạo (tối đa 10 câu)',
+        type: 'array',
+        description: 'Danh sách câu trả lời cần tạo hoặc cập nhật (tối đa 10 câu). ' +
+            '\n\n📌 Cách hoạt động (UPSERT - 2 chiến lược):' +
+            '\n\n1️⃣ Update bằng ID (nếu có field "id"):' +
+            '\n• Tìm answer theo ID → Update (có thể thay đổi answerJp, isCorrect, translations)' +
+            '\n• Cho phép thay đổi answerJp' +
+            '\n• ID phải thuộc cùng questionBankId' +
+            '\n\n2️⃣ Upsert bằng answerJp (nếu KHÔNG có field "id"):' +
+            '\n• Nếu answerJp đã tồn tại → Cập nhật (chỉ update isCorrect, translations, KHÔNG thay đổi answerJp)' +
+            '\n• Nếu answerJp chưa tồn tại → Tạo mới' +
+            '\n\n📝 Lưu ý:' +
+            '\n• questionBankId trong mỗi answer sẽ bị bỏ qua (dùng questionBankId ở ngoài)' +
+            '\n• translations là optional, nếu không có sẽ tạo default Vietnamese translation' +
+            '\n• Nên dùng ID khi muốn update answerJp, dùng answerJp khi muốn upsert đơn giản',
         example: [
             {
+                id: 1,
                 answerJp: 'これは本です。',
                 isCorrect: true,
                 translations: {
@@ -305,46 +318,103 @@ export class CreateMultipleAnswersSwaggerDTO {
                         { language_code: 'en', value: 'This is a pen' }
                     ]
                 }
+            },
+            {
+                answerJp: 'これは机です。',
+                isCorrect: false,
+                translations: {
+                    meaning: [
+                        { language_code: 'vi', value: 'Đây là cái bàn' },
+                        { language_code: 'en', value: 'This is a desk' }
+                    ]
+                }
             }
-        ]
+        ],
+        isArray: true
     })
-    answers: CreateAnswerSwaggerDTO[]
+    answers: Array<{
+        id?: number
+        answerJp: string
+        isCorrect?: boolean
+        translations?: {
+            meaning?: Array<{
+                language_code: string
+                value: string
+            }>
+        }
+    }>
 }
 
 export class CreateMultipleAnswersResponseSwaggerDTO {
-    @ApiProperty({ example: 201, description: 'HTTP status code' })
+    @ApiProperty({
+        example: 207,
+        description: 'HTTP status code: 201 (tất cả tạo mới), 200 (có update), 207 (mixed), 400 (tất cả failed)'
+    })
     statusCode: number
 
     @ApiProperty({
-        description: 'Dữ liệu kết quả tạo nhiều câu trả lời',
+        description: 'Dữ liệu kết quả tạo hoặc cập nhật nhiều câu trả lời',
         example: {
             created: [
-                { id: 1, answerJp: 'これは本です。', answerKey: 'answer.1.text', isCorrect: true, questionBankId: 1, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-                { id: 2, answerJp: 'これはペンです。', answerKey: 'answer.2.text', isCorrect: false, questionBankId: 1, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' }
+                {
+                    id: 1,
+                    answerJp: 'これは本です。',
+                    answerKey: 'answer.1.text',
+                    isCorrect: true,
+                    questionBankId: 1,
+                    createdAt: '2024-01-01T00:00:00.000Z',
+                    updatedAt: '2024-01-01T00:00:00.000Z'
+                },
+                {
+                    id: 2,
+                    answerJp: 'これはペンです。',
+                    answerKey: 'answer.2.text',
+                    isCorrect: false,
+                    questionBankId: 1,
+                    createdAt: '2024-01-01T00:00:00.000Z',
+                    updatedAt: '2024-01-01T00:00:00.000Z'
+                }
+            ],
+            updated: [
+                {
+                    id: 3,
+                    answerJp: 'これは机です。',
+                    answerKey: 'answer.3.text',
+                    isCorrect: true,
+                    questionBankId: 1,
+                    createdAt: '2024-01-01T00:00:00.000Z',
+                    updatedAt: '2024-01-01T01:00:00.000Z'
+                }
             ],
             failed: [
-                { answerJp: 'これは机です。', reason: 'Câu trả lời đã tồn tại cho câu hỏi này' }
+                {
+                    answerJp: 'これは椅子です。',
+                    reason: 'Mỗi câu hỏi chỉ được có 1 câu trả lời đúng'
+                }
             ],
             summary: {
-                total: 3,
-                success: 2,
+                total: 4,
+                created: 2,
+                updated: 1,
                 failed: 1
             }
         }
     })
     data: {
         created: AnswerDataSwaggerDTO[]
-        failed: { answerJp: string; reason: string }[]
+        updated: AnswerDataSwaggerDTO[]
+        failed: Array<{ answerJp: string; reason: string }>
         summary: {
             total: number
-            success: number
+            created: number
+            updated: number
             failed: number
         }
     }
 
     @ApiProperty({
-        example: 'Tạo thành công 2/3 câu trả lời',
-        description: 'Thông báo kết quả'
+        example: 'Tạo thành công 2 câu trả lời mới, cập nhật 1 câu trả lời, 1 câu trả lời thất bại',
+        description: 'Thông báo kết quả chi tiết'
     })
     message: string
 }

@@ -125,6 +125,22 @@ export class UserTestService {
     }
 
     /**
+     * Cập nhật status của tất cả user-test theo testId
+     * Sử dụng khi admin đổi status của test (ACTIVE ↔ INACTIVE)
+     */
+    async updateStatusByTestId(testId: number, status: UserTestStatus): Promise<number> {
+        try {
+            this.logger.log(`Updating status of all user-tests for testId ${testId} to ${status}`)
+            const count = await this.userTestRepo.updateStatusByTestId(testId, status)
+            this.logger.log(`Successfully updated ${count} user-tests for testId ${testId}`)
+            return count
+        } catch (error) {
+            this.logger.error(`Error updating user-test status for testId ${testId}:`, error)
+            throw error
+        }
+    }
+
+    /**
      * Khởi tạo UserTest cho user mới đăng ký
      * Add tất cả Test có status = ACTIVE (trừ MATCH_TEST) vào UserTest
      * Tạo mới hoặc cập nhật nếu đã tồn tại
