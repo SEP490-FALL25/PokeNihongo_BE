@@ -716,9 +716,12 @@ export class UserExerciseAttemptService {
             const totalQuestions = testSet?.testSetQuestionBanks?.length || 0
             const answeredCorrectCount = logs.filter((l: any) => l.isCorrect).length
             const correctPercentage = totalQuestions > 0 ? (answeredCorrectCount / totalQuestions) * 100 : 0
+            const roundedPercentage = Math.round(correctPercentage * 100) / 100 // Làm tròn 2 chữ số thập phân để tránh floating point precision issues
 
-            // Chỉ cho xem review khi tỷ lệ đúng >= 80%
-            if (correctPercentage < 80) {
+            // Chỉ cho xem review (bao gồm đáp án đúng) khi tỷ lệ đúng >= 80%
+            // Nếu < 80%: không cho xem review và đáp án đúng
+            // Nếu >= 80%: cho xem review với đáp án đúng được đánh dấu (type: 'correct_answer')
+            if (roundedPercentage < 80) {
                 return {
                     statusCode: 403,
                     message: this.i18nService.translate(UserExerciseAttemptMessage.REVIEW_INSUFFICIENT_SCORE, normalizedLang),
@@ -775,7 +778,9 @@ export class UserExerciseAttemptService {
                             else answeredInCorrect++
                         }
 
-                        // Build full answer list; mark correct and user-selected incorrect
+                        // Build full answer list; mark correct answer và user-selected incorrect answer
+                        // Lưu ý: Chỉ khi tỷ lệ đúng >= 80% mới được vào phần này (đã check ở trên)
+                        // Vì vậy, đáp án đúng sẽ được hiển thị với type: 'correct_answer' và có explanation
                         const reviewAnswers: any[] = []
                         const toShortLabel = (text: string): string => {
                             if (!text) return ''
@@ -788,10 +793,12 @@ export class UserExerciseAttemptService {
                             const label = toShortLabel(pickLabelFromComposite(a?.answerJp || '', normalizedLang))
                             const explanation = await translateOrFallback(a?.answerKey, a?.answerJp)
                             let entry: any = { id: a.id, answer: label }
+                            // Đánh dấu đáp án đúng (chỉ hiển thị khi tỷ lệ đúng >= 80%)
                             if (correct && a.id === correct.id) {
                                 entry.type = 'correct_answer'
                                 entry.explantion = explanation
                             } else if (userSelectedId && a.id === userSelectedId && (!correct || userSelectedId !== correct.id)) {
+                                // Đánh dấu đáp án user chọn nhưng sai
                                 entry.type = 'user_selected_incorrect'
                                 entry.explantion = explanation
                             }
