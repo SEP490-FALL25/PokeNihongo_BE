@@ -321,7 +321,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
                   },
                   orderBy: { roundNumber: 'asc' }
                 })
-
+                const nextEndTime = addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
                 if (matchData) {
                   // Format data theo GetMatchRoundDetailForUserResSchema
                   const formattedMatch = {
@@ -346,7 +346,9 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
                       id: p.id,
                       matchParticipantId: p.matchParticipantId,
                       orderSelected: p.orderSelected,
-                      endTimeSelected: p.endTimeSelected,
+                      endTimeSelected: p.endTimeSelected
+                        ? p.endTimeSelected
+                        : nextEndTime,
                       selectedUserPokemonId: p.selectedUserPokemonId,
                       selectedUserPokemon: p.selectedUserPokemon
                         ? {

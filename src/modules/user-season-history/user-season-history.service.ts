@@ -8,6 +8,7 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
+import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import { UserSeasonHistoryNotFoundException } from './dto/user-season-history.error'
 import {
   CreateUserSeasonHistoryBodyType,
@@ -19,6 +20,7 @@ import { UserSeasonHistoryRepo } from './user-season-history.repo'
 export class UserSeasonHistoryService {
   constructor(
     private userSeasonHistoryRepo: UserSeasonHistoryRepo,
+    private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
 
     private readonly i18nService: I18nService
   ) {}
