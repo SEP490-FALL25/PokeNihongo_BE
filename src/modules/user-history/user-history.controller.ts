@@ -6,11 +6,15 @@ import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import {
     GetHistoryListQueryDTO,
-    HistoryListResDTO
+    GetAdminHistoryListQueryDTO,
+    HistoryListResDTO,
+    AdminHistoryListResDTO
 } from './dto/user-history.zod-dto'
 import {
     GetHistoryListQuerySwaggerDTO,
-    HistoryListResponseSwaggerDTO
+    GetAdminHistoryListQuerySwaggerDTO,
+    HistoryListResponseSwaggerDTO,
+    AdminHistoryListResponseSwaggerDTO
 } from './dto/user-history.dto'
 
 @ApiTags('User History')
@@ -34,6 +38,26 @@ export class UserHistoryController {
         @I18nLang() lang: string
     ) {
         return this.userHistoryService.findHistory(userId, query, lang)
+    }
+
+    @Get('admin/all')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Admin: Lấy tất cả lịch sử làm bài của tất cả users (TEST và EXERCISE)',
+        description: 'Endpoint dành cho Admin để xem lịch sử làm bài của tất cả users. Có thể filter theo userId, type, status. Response bao gồm thông tin user (id, email).'
+    })
+    @ApiQuery({ type: GetAdminHistoryListQuerySwaggerDTO })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách lịch sử thành công',
+        type: AdminHistoryListResponseSwaggerDTO
+    })
+    @ZodSerializerDto(AdminHistoryListResDTO)
+    async getAllHistory(
+        @Query() query: GetAdminHistoryListQueryDTO,
+        @I18nLang() lang: string
+    ) {
+        return this.userHistoryService.findAllHistory(query, lang)
     }
 }
 

@@ -26,12 +26,38 @@ export const HistoryItemSchema = z.object({
     updatedAt: z.date()
 })
 
+// Admin History Item Schema (có thêm userId và user info)
+export const AdminHistoryItemSchema = HistoryItemSchema.extend({
+    userId: z.number().optional(),
+    user: z.object({
+        id: z.number(),
+        email: z.string().optional().nullable()
+    }).optional()
+})
+
 // History List Response Schema
 export const HistoryListResSchema = z
     .object({
         statusCode: z.number(),
         data: z.object({
             results: z.array(HistoryItemSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
+// Admin History List Response Schema (có thể có user info)
+export const AdminHistoryListResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(AdminHistoryItemSchema),
             pagination: z.object({
                 current: z.number(),
                 pageSize: z.number(),
@@ -53,9 +79,23 @@ export const GetHistoryListQuerySchema = z
     })
     .strict()
 
+// Admin History List Query Schema (có thêm userId để filter)
+export const GetAdminHistoryListQuerySchema = z
+    .object({
+        currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
+        pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
+        type: HistoryTypeSchema.optional(),
+        status: z.string().optional(),
+        userId: z.string().transform((val) => parseInt(val, 10)).optional() // Admin có thể filter theo userId
+    })
+    .strict()
+
 // Type exports
 export type HistoryType = z.infer<typeof HistoryTypeSchema>
 export type HistoryItemType = z.infer<typeof HistoryItemSchema>
+export type AdminHistoryItemType = z.infer<typeof AdminHistoryItemSchema>
 export type HistoryListResType = z.infer<typeof HistoryListResSchema>
+export type AdminHistoryListResType = z.infer<typeof AdminHistoryListResSchema>
 export type GetHistoryListQueryType = z.infer<typeof GetHistoryListQuerySchema>
+export type GetAdminHistoryListQueryType = z.infer<typeof GetAdminHistoryListQuerySchema>
 
