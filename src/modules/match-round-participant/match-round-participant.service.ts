@@ -260,95 +260,39 @@ export class MatchRoundParticipantService {
           where: { matchRoundId },
           data: { status: RoundStatus.PENDING }
         })
-
-        // Re-fetch match & rounds (latest status) để socket có trạng thái mới nhất
-        const match: any = await this.prismaService.match.findUnique({
-          where: { id: existMatchRound.match.id },
-          include: { participants: { include: { user: true } } }
+      } else if (nextParticipant) {
+        // Nếu chưa all selected và có nextParticipant -> Set time cho participant tiếp theo
+        await this.matchRoundParticipantRepo.update({
+          id: nextParticipant.id,
+          data: {
+            endTimeSelected: nextEndTime
+          }
         })
-        const rounds: any[] = await this.prismaService.matchRound.findMany({
-          where: { matchId: existMatchRound.match.id, deletedAt: null },
-          include: {
-            participants: {
-              include: {
-                selectedUserPokemon: { include: { pokemon: true } }
-              }
-            }
+
+        // Tạo Bull job cho participant tiếp theo
+        await this.matchRoundParticipantTimeoutQueue.add(
+          BullAction.CHECK_POKEMON_SELECTION_TIMEOUT,
+          {
+            matchRoundParticipantId: nextParticipant.id
           },
-          orderBy: { roundNumber: 'asc' }
-        })
-
-        const matchFormatted = {
-          id: match.id,
-          status: match.status,
-          participants: match.participants.map((mp: any) => ({
-            id: mp.id,
-            userId: mp.userId,
-            user: {
-              id: mp.user.id,
-              name: mp.user.name,
-              email: mp.user.email,
-              eloscore: mp.user.eloscore,
-              avatar: mp.user.avatar
-            }
-          }))
-        }
-        const roundsFormatted = rounds.map((round: any) => ({
-          id: round.id,
-          roundNumber: round.roundNumber,
-          status: round.status,
-          endTimeRound: round.endTimeRound,
-          participants: round.participants.map((rp: any) => ({
-            id: rp.id,
-            matchParticipantId: rp.matchParticipantId,
-            orderSelected: rp.orderSelected,
-            endTimeSelected: rp.endTimeSelected ? rp.endTimeSelected : nextEndTime,
-            selectedUserPokemonId: rp.selectedUserPokemonId,
-            selectedUserPokemon: rp.selectedUserPokemon
-              ? {
-                  id: rp.selectedUserPokemon.id,
-                  userId: rp.selectedUserPokemon.userId,
-                  pokemonId: rp.selectedUserPokemon.pokemonId,
-                  pokemon: rp.selectedUserPokemon.pokemon
-                    ? {
-                        id: rp.selectedUserPokemon.pokemon.id,
-                        pokedex_number: rp.selectedUserPokemon.pokemon.pokedex_number,
-                        nameJp: rp.selectedUserPokemon.pokemon.nameJp,
-                        nameTranslations: rp.selectedUserPokemon.pokemon.nameTranslations,
-                        imageUrl: rp.selectedUserPokemon.pokemon.imageUrl,
-                        rarity: rp.selectedUserPokemon.pokemon.rarity
-                      }
-                    : null
-                }
-              : null
-          }))
-        }))
-
-        this.matchingGateway.notifyPokemonSelected(
-          existMatchRound.match.id,
-          matchRoundId,
-          { match: matchFormatted, rounds: roundsFormatted },
-          null,
-          null
+          {
+            delay: TIME_CHOOSE_POKEMON_MS
+          }
         )
+        this.logger.log(
+          `[MatchRoundParticipant] Set endTime and Bull job for next participant ${nextParticipant.id}`
+        )
+      }
 
-        // Sau khi notify, generate questions + debuff và có thể countdown start Round ONE
+      // Nếu all selected -> generate questions + debuff + moveToNextRound TRƯỚC khi fetch & socket
+      if (allSelectedNow) {
         await this.handleQuestionsAndDebuffForCompletedSelection(
           existMatchRound,
           allParticipants.map((p) => p.id)
         )
-
-        return {
-          statusCode: 200,
-          data: matchRoundParticipant,
-          message: this.i18nService.translate(
-            MatchRoundParticipantMessage.UPDATE_SUCCESS,
-            lang
-          )
-        }
       }
 
-      // Nếu chưa all selected -> gửi socket trạng thái hiện tại (SELECTING_POKEMON)
+      // Fetch data và gửi socket 1 lần duy nhất SAU khi tất cả hàm chạy xong (bao gồm moveToNextRound)
       const match: any = await this.prismaService.match.findUnique({
         where: { id: existMatchRound.match.id },
         include: { participants: { include: { user: true } } }
@@ -364,6 +308,7 @@ export class MatchRoundParticipantService {
         },
         orderBy: { roundNumber: 'asc' }
       })
+
       const matchFormatted = {
         id: match.id,
         status: match.status,
@@ -409,6 +354,7 @@ export class MatchRoundParticipantService {
             : null
         }))
       }))
+
       this.matchingGateway.notifyPokemonSelected(
         existMatchRound.match.id,
         matchRoundId,
@@ -416,32 +362,6 @@ export class MatchRoundParticipantService {
         null,
         null
       )
-
-      if (nextParticipant) {
-        // Set time cho participant tiếp theo
-        await this.matchRoundParticipantRepo.update({
-          id: nextParticipant.id,
-          data: {
-            endTimeSelected: nextEndTime
-          }
-        })
-
-        // Tạo Bull job cho participant tiếp theo
-        await this.matchRoundParticipantTimeoutQueue.add(
-          BullAction.CHECK_POKEMON_SELECTION_TIMEOUT,
-          {
-            matchRoundParticipantId: nextParticipant.id
-          },
-          {
-            delay: TIME_CHOOSE_POKEMON_MS
-          }
-        )
-        this.logger.log(
-          `[MatchRoundParticipant] Set endTime and Bull job for next participant ${nextParticipant.id}`
-        )
-      }
-      // If no nextParticipant, either allSelectedNow is already handled above (early return),
-      // or we're waiting for timeout processor to handle remaining participants
 
       return {
         statusCode: 200,
