@@ -273,6 +273,15 @@ export class RewardRepo {
     })
   }
 
+  findManyByIds(ids: number[]): Promise<RewardType[]> {
+    return this.prismaService.reward.findMany({
+      where: {
+        id: { in: ids },
+        deletedAt: null
+      }
+    })
+  }
+
   findByIdWithLangId(id: number, langId: number): Promise<RewardType | null> {
     return this.prismaService.reward.findUnique({
       where: {

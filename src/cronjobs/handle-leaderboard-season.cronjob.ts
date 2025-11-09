@@ -10,7 +10,7 @@ export class HandleLeaderboardSeasonCronjob {
   constructor(private prisma: PrismaService) {}
 
   // Run daily at 00:00 UTC to expire/activate seasons
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { timeZone: 'UTC' })
   async handleLeaderboardSeasonStatus() {
     const now = todayUTCWith0000()
     this.logger.log(`[LeaderboardSeason Cron] Running at ${now.toISOString()}`)
