@@ -1791,6 +1791,7 @@ model LeaderboardSeason {
   nameKey   String   @unique
   startDate DateTime
   endDate   DateTime
+  hasOpened Boolean  @default(false)
 
   matches Match[] // Các trận đấu trong mùa này
   status  LeaderboardStatus @default(PREVIEW)

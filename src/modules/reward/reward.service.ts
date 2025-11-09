@@ -379,4 +379,6 @@ export class RewardService {
       throw error
     }
   }
+
+  async convertRewardsWithUser(rewardIds: number[], userId: number) {}
 }

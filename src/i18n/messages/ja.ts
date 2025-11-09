@@ -584,6 +584,7 @@ export const jaMessages = {
     NOT_FOUND: 'リーダーボードシーズンが見つかりません',
     ALREADY_EXISTS: 'リーダーボードシーズンは既に存在します',
     INVALID_DATA: '無効なリーダーボードシーズンデータです',
-    HAS_ACTIVE: '既にアクティブなリーダーボードシーズンが存在します'
+    HAS_ACTIVE: '既にアクティブなリーダーボードシーズンが存在します',
+    HAS_OPENED: '既に開始されたリーダーボードシーズンが存在します'
   }
 }

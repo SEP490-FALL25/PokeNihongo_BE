@@ -13,6 +13,7 @@ export const LeaderboardSeasonSchema = z.object({
   nameKey: z.string(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
+  hasOpened: z.boolean().default(false),
   status: z
     .enum([
       LeaderboardStatus.INACTIVE,

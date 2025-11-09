@@ -608,6 +608,7 @@ export const enMessages = {
     NOT_FOUND: 'Leaderboard season not found',
     ALREADY_EXISTS: 'Leaderboard season already exists',
     INVALID_DATA: 'Invalid leaderboard season data',
-    HAS_ACTIVE: 'There is already an active leaderboard season'
+    HAS_ACTIVE: 'There is already an active leaderboard season',
+    INVALID_DATA_TO_ACTIVE: 'Cannot set to active: season has already been opened before'
   }
 }

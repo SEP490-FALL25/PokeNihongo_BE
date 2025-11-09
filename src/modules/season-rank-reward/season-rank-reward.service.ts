@@ -7,6 +7,8 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
+import { LeaderboardSeasonHasOpenedException } from '../leaderboard-season/dto/leaderboard-season.error'
+import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import {
   SeasonRankRewardNotFoundException,
   SeasonRnakRewardNameInvalidException,
@@ -23,6 +25,8 @@ import { SeasonRankRewardRepo } from './season-rank-reward.repo'
 export class SeasonRankRewardService {
   constructor(
     private seasonRankRewardRepo: SeasonRankRewardRepo,
+    private readonly leaderboardRepo: LeaderboardSeasonRepo,
+
     private readonly i18nService: I18nService
   ) {}
 
@@ -125,6 +129,16 @@ export class SeasonRankRewardService {
     try {
       const created = await this.seasonRankRewardRepo.withTransaction(async (tx) => {
         const { seasonId, items } = data
+
+        //season active chua ? ko dc update
+        const season = await this.leaderboardRepo.findById(seasonId)
+        if (!season || season.status === 'ACTIVE') {
+          throw new SeasonRankRewardNotFoundException()
+        }
+
+        if (season.hasOpened === true) {
+          throw new LeaderboardSeasonHasOpenedException()
+        }
 
         // 1. Delete existing season rank rewards for seasonId
         await tx.seasonRankReward.deleteMany({ where: { seasonId } })

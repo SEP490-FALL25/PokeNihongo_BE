@@ -27,3 +27,12 @@ export class LeaderboardSeasonHasInvalidToActiveException extends ConflictExcept
     })
   }
 }
+
+export class LeaderboardSeasonHasOpenedException extends ConflictException {
+  constructor() {
+    super({
+      message: LeaderboardSeasonMessage.HAS_OPENED,
+      errorKey: LeaderboardSeasonMessage.HAS_OPENED
+    })
+  }
+}

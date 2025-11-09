@@ -598,6 +598,7 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy mùa giải bảng xếp hạng',
     ALREADY_EXISTS: 'Mùa giải bảng xếp hạng đã tồn tại',
     INVALID_DATA: 'Dữ liệu mùa giải bảng xếp hạng không hợp lệ',
-    HAS_ACTIVE: 'Đã có mùa giải bảng xếp hạng đang hoạt động'
+    HAS_ACTIVE: 'Đã có mùa giải bảng xếp hạng đang hoạt động',
+    HAS_OPENED: 'Mùa giải bảng xếp hạng đã từng diễn ra'
   }
 }
