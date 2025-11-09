@@ -12,6 +12,8 @@ import { TestSetNotFoundException } from '../testset/dto/testset.error'
 import { TestSetQuestionBankService } from '../testset-questionbank/testset-questionbank.service'
 import { UserTestAttemptRepository } from '../user-test-attempt/user-test-attempt.repo'
 import { UserTestRepository } from '../user-test/user-test.repo'
+import { UserTestService } from '../user-test/user-test.service'
+import { UserTestStatus } from '@prisma/client'
 
 @Injectable()
 export class TestService {
@@ -26,6 +28,7 @@ export class TestService {
         private readonly testSetQuestionBankService: TestSetQuestionBankService,
         private readonly userTestAttemptRepo: UserTestAttemptRepository,
         private readonly userTestRepo: UserTestRepository,
+        private readonly userTestService: UserTestService,
     ) { }
 
     private isValidUrl(url: string): boolean {
@@ -255,6 +258,9 @@ export class TestService {
             }
         }
 
+        // Lưu status cũ để so sánh
+        const oldStatus = test.status
+
         // Cập nhật test với transaction
         const result = await this.prisma.$transaction(async (tx) => {
             // Cập nhật test
@@ -299,6 +305,42 @@ export class TestService {
 
             return updatedTest
         })
+
+        // Kiểm tra nếu status thay đổi (ACTIVE ↔ INACTIVE)
+        const newStatus = data.status || oldStatus
+        if (data.status && data.status !== oldStatus) {
+            try {
+                this.logger.log(`Test status changed from ${oldStatus} to ${newStatus} for testId ${id}`)
+
+                if (newStatus === 'INACTIVE') {
+                    // Nếu test bị đổi thành INACTIVE, cập nhật tất cả user-test thành NOT_STARTED
+                    // (UserTestStatus không có INACTIVE, nên dùng NOT_STARTED để vô hiệu hóa)
+                    const updatedCount = await this.userTestService.updateStatusByTestId(id, UserTestStatus.NOT_STARTED)
+                    this.logger.log(`Updated ${updatedCount} user-tests to NOT_STARTED for testId ${id} (test is now INACTIVE)`)
+                } else if (newStatus === 'ACTIVE') {
+                    // Nếu test được đổi thành ACTIVE, cập nhật user-test status dựa trên testType
+                    // SUBSCRIPTION_TEST -> NOT_STARTED, các test khác -> ACTIVE
+                    const testType = data.testType || test.testType
+                    const userTestStatus = testType === 'SUBSCRIPTION_TEST' ? UserTestStatus.NOT_STARTED : UserTestStatus.ACTIVE
+                    const updatedCount = await this.userTestService.updateStatusByTestId(id, userTestStatus)
+                    this.logger.log(`Updated ${updatedCount} user-tests to ${userTestStatus} for testId ${id}`)
+                }
+            } catch (statusUpdateError) {
+                this.logger.error('Error updating user-test status after test status change:', statusUpdateError)
+            }
+        }
+
+        // Sau khi cập nhật test thành công, tự động cập nhật user-test cho tất cả users
+        // (để đồng bộ status, limit, và các test ACTIVE mới)
+        try {
+            this.logger.log('Auto-initializing user tests for all users after updating test')
+            await this.userTestService.initAllUsersTests()
+            this.logger.log('Successfully initialized user tests for all users')
+        } catch (initError) {
+            // Log error nhưng không throw để không ảnh hưởng đến response update test
+            this.logger.error('Error initializing user tests after updating test:', initError)
+            // Có thể thêm thông báo warning vào response nếu cần
+        }
 
         return {
             statusCode: 200,
@@ -446,6 +488,17 @@ export class TestService {
             // Tạo test với meanings
             const result = await this.testRepo.createWithMeanings(data, userId)
 
+            // Sau khi tạo test thành công, tự động thêm test này vào user-test cho tất cả users
+            try {
+                this.logger.log('Auto-initializing user tests for all users after creating new test')
+                await this.userTestService.initAllUsersTests()
+                this.logger.log('Successfully initialized user tests for all users')
+            } catch (initError) {
+                // Log error nhưng không throw để không ảnh hưởng đến response tạo test
+                this.logger.error('Error initializing user tests after creating test:', initError)
+                // Có thể thêm thông báo warning vào response nếu cần
+            }
+
             return {
                 statusCode: 201,
                 data: result,
@@ -501,8 +554,46 @@ export class TestService {
             }
         }
 
+        // Lưu status cũ để so sánh
+        const oldStatus = test.status
+
         // Cập nhật test với meanings
         const result = await this.testRepo.updateWithMeanings(id, data)
+
+        // Kiểm tra nếu status thay đổi (ACTIVE ↔ INACTIVE)
+        const newStatus = data.status || oldStatus
+        if (data.status && data.status !== oldStatus) {
+            try {
+                this.logger.log(`Test status changed from ${oldStatus} to ${newStatus} for testId ${id}`)
+
+                if (newStatus === 'INACTIVE') {
+                    // Nếu test bị đổi thành INACTIVE, cập nhật tất cả user-test thành NOT_STARTED
+                    // (UserTestStatus không có INACTIVE, nên dùng NOT_STARTED để vô hiệu hóa)
+                    const updatedCount = await this.userTestService.updateStatusByTestId(id, UserTestStatus.NOT_STARTED)
+                    this.logger.log(`Updated ${updatedCount} user-tests to NOT_STARTED for testId ${id} (test is now INACTIVE)`)
+                } else if (newStatus === 'ACTIVE') {
+                    // Nếu test được đổi thành ACTIVE, cập nhật user-test status dựa trên testType
+                    // SUBSCRIPTION_TEST -> NOT_STARTED, các test khác -> ACTIVE
+                    const userTestStatus = test.testType === 'SUBSCRIPTION_TEST' ? UserTestStatus.NOT_STARTED : UserTestStatus.ACTIVE
+                    const updatedCount = await this.userTestService.updateStatusByTestId(id, userTestStatus)
+                    this.logger.log(`Updated ${updatedCount} user-tests to ${userTestStatus} for testId ${id}`)
+                }
+            } catch (statusUpdateError) {
+                this.logger.error('Error updating user-test status after test status change:', statusUpdateError)
+            }
+        }
+
+        // Sau khi cập nhật test thành công, tự động cập nhật user-test cho tất cả users
+        // (để đồng bộ status, limit, và các test ACTIVE mới)
+        try {
+            this.logger.log('Auto-initializing user tests for all users after updating test')
+            await this.userTestService.initAllUsersTests()
+            this.logger.log('Successfully initialized user tests for all users')
+        } catch (initError) {
+            // Log error nhưng không throw để không ảnh hưởng đến response update test
+            this.logger.error('Error initializing user tests after updating test:', initError)
+            // Có thể thêm thông báo warning vào response nếu cần
+        }
 
         return {
             statusCode: 200,
