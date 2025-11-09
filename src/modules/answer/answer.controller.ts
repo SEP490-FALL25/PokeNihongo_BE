@@ -64,28 +64,25 @@ export class AnswerController {
 
     @Post('multiple')
     @ApiOperation({
-        summary: 'Tạo nhiều câu trả lời cùng lúc',
-        description: 'Tạo nhiều câu trả lời cho một câu hỏi cùng lúc. Hệ thống sẽ kiểm tra từng câu trả lời và báo cáo kết quả chi tiết.' +
-            '\n\nQuy tắc đặc biệt:' +
-            '\n• MATCHING type: Chỉ cho phép tạo 1 answer duy nhất' +
-            '\n• Các loại khác: Không giới hạn số lượng answer' +
-            '\n• Tối đa 4 câu trả lời mỗi lần tạo' +
-            '\n• Hệ thống sẽ báo cáo câu trả lời nào thành công, câu nào thất bại và lý do'
-    })
-    @ApiResponse({
-        status: 201,
-        description: 'Tạo câu trả lời thành công',
-        type: CreateMultipleAnswersResponseSwaggerDTO
-    })
-    @ApiResponse({
-        status: 207,
-        description: 'Tạo một phần câu trả lời thành công (Multi-status)',
-        type: CreateMultipleAnswersResponseSwaggerDTO
-    })
-    @ApiResponse({
-        status: 400,
-        description: 'Không thể tạo câu trả lời nào',
-        type: CreateMultipleAnswersResponseSwaggerDTO
+        summary: 'Tạo hoặc cập nhật nhiều câu trả lời cùng lúc (UPSERT)',
+        description: 'Tạo mới hoặc cập nhật nhiều câu trả lời cho một câu hỏi cùng lúc. Hỗ trợ 2 chiến lược:' +
+            '\n\n1️ Update bằng ID (nếu có field "id"):' +
+            '\n• Tìm answer theo ID → Update (có thể thay đổi answerJp, isCorrect, translations)' +
+            '\n• ID phải thuộc cùng questionBankId' +
+            '\n• Cho phép thay đổi answerJp' +
+            '\n\n2️ Upsert bằng answerJp (nếu KHÔNG có field "id"):' +
+            '\n• Nếu answerJp đã tồn tại → Cập nhật (chỉ update isCorrect, translations)' +
+            '\n• Nếu answerJp chưa tồn tại → Tạo mới' +
+            '\n• answerJp được dùng làm key, không thể thay đổi khi update' +
+            '\n\n Response:' +
+            '\n• created: Danh sách answers được tạo mới' +
+            '\n• updated: Danh sách answers được cập nhật' +
+            '\n• failed: Danh sách answers thất bại kèm lý do' +
+            '\n• summary: Tổng kết số lượng' +
+            '\n\n Quy tắc:' +
+            '\n• MATCHING type: Chỉ 1 answer, bắt buộc isCorrect = true' +
+            '\n• Các loại khác: Tối đa 4 answers, chỉ 1 answer có isCorrect = true' +
+            '\n• Khi update answer thành correct: Kiểm tra không có answer correct khác'
     })
     @ApiBody({ type: CreateMultipleAnswersSwaggerDTO })
     @ZodSerializerDto(CreateMultipleAnswersResponseDTO)

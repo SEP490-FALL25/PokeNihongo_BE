@@ -60,6 +60,7 @@ export const CreateAnswerBodyType = z.object({
 export const CreateMultipleAnswersBodyType = z.object({
     questionBankId: z.number().min(1, 'ID câu hỏi không hợp lệ'),
     answers: z.array(z.object({
+        id: z.number().min(1, 'ID câu trả lời không hợp lệ').optional(), // Optional: nếu có ID → update answer đó, nếu không → upsert bằng answerJp
         answerJp: z.string().min(1, 'Nội dung câu trả lời không được để trống').max(1000, 'Nội dung câu trả lời không được vượt quá 1000 ký tự'),
         isCorrect: z.boolean().default(false),
         translations: z.union([
@@ -154,13 +155,15 @@ export const CreateMultipleAnswersResponseSchema = z
         statusCode: z.number(),
         data: z.object({
             created: z.array(AnswerType),
+            updated: z.array(AnswerType),
             failed: z.array(z.object({
                 answerJp: z.string(),
                 reason: z.string()
             })),
             summary: z.object({
                 total: z.number(),
-                success: z.number(),
+                created: z.number(),
+                updated: z.number(),
                 failed: z.number()
             })
         }),

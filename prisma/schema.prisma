@@ -2176,6 +2176,8 @@ enum GeminiConfigType {
   PERSONALIZED_RECOMMENDATIONS // Gợi ý cá nhân hóa
   AI_KAIWA // Hội thoại AI (AI Kaiwa)
   PERSONALIZED_RECOMMENDATIONS_ANALYZE
+  AI_KAIWA_ROOM_TITLE // Tạo tiêu đề phòng hội thoại
+  AI_KAIWA_TRANSLATION // Dịch câu hội thoại
 }
 
 model GeminiConfig {
