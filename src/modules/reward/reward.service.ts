@@ -11,9 +11,14 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
+import { RarityPokemon, RewardTarget, WalletType } from '@prisma/client'
 import { LanguagesRepository } from '../languages/languages.repo'
+import { PokemonRepo } from '../pokemon/pokemon.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
+import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
+import { UserService } from '../user/user.service'
+import { WalletRepo } from '../wallet/wallet.repo'
 import { RewardAlreadyExistsException } from './dto/reward.error'
 import {
   CreateRewardBodyInputType,
@@ -29,7 +34,11 @@ export class RewardService {
     private rewardRepo: RewardRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
-    private readonly translationRepo: TranslationRepository
+    private readonly translationRepo: TranslationRepository,
+    private readonly userService: UserService,
+    private readonly walletRepo: WalletRepo,
+    private readonly pokemonRepo: PokemonRepo,
+    private readonly userPokemonRepo: UserPokemonRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -378,5 +387,137 @@ export class RewardService {
       }
       throw error
     }
+  }
+
+  /**
+   * Convert rewards to user benefits
+   * Handles EXP, POKEMON, POKE_COINS, and SPARKLES reward types
+   *
+   * @param rewardIds - Array of reward IDs to process
+   * @param userId - User ID to receive the rewards
+   * @returns Object with processed results for each reward type
+   */
+  async convertRewardsWithUser(rewardIds: number[], userId: number) {
+    // 1. Fetch all rewards by IDs using findManyByIds
+    const rewards = await this.rewardRepo.findManyByIds(rewardIds)
+
+    if (rewards.length !== rewardIds.length) {
+      throw new NotFoundRecordException()
+    }
+
+    // 2. Group rewards by target type
+    const rewardsByType: Record<RewardTarget, typeof rewards> = {
+      [RewardTarget.EXP]: [],
+      [RewardTarget.POKEMON]: [],
+      [RewardTarget.POKE_COINS]: [],
+      [RewardTarget.SPARKLES]: []
+    }
+
+    for (const reward of rewards) {
+      rewardsByType[reward.rewardTarget].push(reward)
+    }
+
+    const results: any = {
+      exp: null,
+      pokeCoins: null,
+      sparkles: null,
+      pokemons: []
+    }
+
+    // 3. Process EXP rewards
+    if (rewardsByType[RewardTarget.EXP].length > 0) {
+      const totalExp = rewardsByType[RewardTarget.EXP].reduce(
+        (sum, r) => sum + r.rewardItem,
+        0
+      )
+      results.exp = await this.userService.userAddExp(userId, totalExp)
+    }
+
+    // 4. Process POKE_COINS rewards
+    if (rewardsByType[RewardTarget.POKE_COINS].length > 0) {
+      const totalCoins = rewardsByType[RewardTarget.POKE_COINS].reduce(
+        (sum, r) => sum + r.rewardItem,
+        0
+      )
+      results.pokeCoins = await this.walletRepo.addBalanceToWalletWithType({
+        userId,
+        type: WalletType.POKE_COINS,
+        amount: totalCoins
+      })
+    }
+
+    // 5. Process SPARKLES rewards
+    if (rewardsByType[RewardTarget.SPARKLES].length > 0) {
+      const totalSparkles = rewardsByType[RewardTarget.SPARKLES].reduce(
+        (sum, r) => sum + r.rewardItem,
+        0
+      )
+      results.sparkles = await this.walletRepo.addBalanceToWalletWithType({
+        userId,
+        type: WalletType.SPARKLES,
+        amount: totalSparkles
+      })
+    }
+
+    // 6. Process POKEMON rewards (most complex)
+    for (const pokemonReward of rewardsByType[RewardTarget.POKEMON]) {
+      const pokemonId = pokemonReward.rewardItem
+
+      // Check if user already has this pokemon
+      const existingUserPokemon = await this.userPokemonRepo.findByUserAndPokemon(
+        userId,
+        pokemonId
+      )
+
+      if (!existingUserPokemon) {
+        // User doesn't have this pokemon -> add it
+        const newUserPokemon = await this.userPokemonRepo.create({
+          userId,
+          data: {
+            pokemonId,
+            isMain: false
+          }
+        })
+        results.pokemons.push({
+          action: 'added',
+          pokemon: newUserPokemon
+        })
+      } else {
+        // User already has this pokemon -> convert to coins based on rarity
+        const pokemon = await this.pokemonRepo.findById(pokemonId)
+        if (!pokemon) {
+          throw new NotFoundRecordException()
+        }
+
+        // Calculate value: 200 * rarity_level * 0.5
+        // Rarity levels: COMMON=1, UNCOMMON=2, RARE=3, EPIC=4, LEGENDARY=5
+        const rarityLevels: Record<RarityPokemon, number> = {
+          [RarityPokemon.COMMON]: 1,
+          [RarityPokemon.UNCOMMON]: 2,
+          [RarityPokemon.RARE]: 3,
+          [RarityPokemon.EPIC]: 4,
+          [RarityPokemon.LEGENDARY]: 5
+        }
+
+        const rarityLevel = rarityLevels[pokemon.rarity as RarityPokemon] || 1
+        const coinValue = Math.floor(200 * rarityLevel * 0.5)
+
+        // Add coins to user wallet
+        const updatedWallet = await this.walletRepo.addBalanceToWalletWithType({
+          userId,
+          type: WalletType.POKE_COINS,
+          amount: coinValue
+        })
+
+        results.pokemons.push({
+          action: 'converted_to_coins',
+          pokemon: pokemon,
+          coinValue,
+          wallet: updatedWallet
+        })
+      }
+    }
+
+    return results
   }
 }

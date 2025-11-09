@@ -32,7 +32,7 @@ export class LeaderboardSeasonRepo {
       data
     }: {
       createdById: number | null
-      data: CreateLeaderboardSeasonBodyType
+      data: CreateLeaderboardSeasonBodyType & { hasOpened: boolean }
     },
     prismaTx?: PrismaClient
   ): Promise<LeaderboardSeasonType> {
@@ -56,6 +56,7 @@ export class LeaderboardSeasonRepo {
       data: UpdateLeaderboardSeasonBodyType & {
         nameTranslations: CreateTranslationBodyType[]
         leaderboardSeasonNameKey: string
+        hasOpened: boolean
       }
     },
     prismaTx?: PrismaClient
@@ -252,7 +253,7 @@ export class LeaderboardSeasonRepo {
   findActiveSeason(): Promise<LeaderboardSeasonType | null> {
     return this.prismaService.leaderboardSeason.findFirst({
       where: {
-        isActive: true,
+        status: 'ACTIVE',
         deletedAt: null
       }
     })
@@ -270,7 +271,7 @@ export class LeaderboardSeasonRepo {
   > {
     return this.prismaService.leaderboardSeason.findFirst({
       where: {
-        isActive: true,
+        status: 'ACTIVE',
         deletedAt: null
       },
       include: {

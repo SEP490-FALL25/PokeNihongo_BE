@@ -49,6 +49,24 @@ export class HistoryItemSwaggerDTO {
     updatedAt: Date
 }
 
+export class AdminHistoryItemSwaggerDTO extends HistoryItemSwaggerDTO {
+    @ApiPropertyOptional({ example: 1, description: 'ID của user (chỉ có trong admin response)' })
+    userId?: number
+
+    @ApiPropertyOptional({
+        type: 'object',
+        properties: {
+            id: { type: 'number', example: 1 },
+            email: { type: 'string', example: 'user@example.com' }
+        },
+        description: 'Thông tin user (chỉ có trong admin response)'
+    })
+    user?: {
+        id: number
+        email?: string | null
+    }
+}
+
 export class GetHistoryListQuerySwaggerDTO {
     @ApiPropertyOptional({ example: 1, description: 'Trang hiện tại' })
     currentPage?: number
@@ -61,6 +79,23 @@ export class GetHistoryListQuerySwaggerDTO {
 
     @ApiPropertyOptional({ example: 'COMPLETED', description: 'Filter theo status' })
     status?: string
+}
+
+export class GetAdminHistoryListQuerySwaggerDTO {
+    @ApiPropertyOptional({ example: 1, description: 'Trang hiện tại' })
+    currentPage?: number
+
+    @ApiPropertyOptional({ example: 10, description: 'Số item mỗi trang' })
+    pageSize?: number
+
+    @ApiPropertyOptional({ enum: HistoryType, example: HistoryType.TEST, description: 'Filter theo loại (TEST hoặc EXERCISE)' })
+    type?: HistoryType
+
+    @ApiPropertyOptional({ example: 'COMPLETED', description: 'Filter theo status' })
+    status?: string
+
+    @ApiPropertyOptional({ example: 1, description: 'Filter theo userId (Admin có thể xem lịch sử của user cụ thể)' })
+    userId?: number
 }
 
 export class HistoryListResponseSwaggerDTO {
@@ -88,6 +123,43 @@ export class HistoryListResponseSwaggerDTO {
     })
     data: {
         results: HistoryItemSwaggerDTO[]
+        pagination: {
+            current: number
+            pageSize: number
+            totalPage: number
+            totalItem: number
+        }
+    }
+
+    @ApiProperty({ example: 'Lấy danh sách lịch sử thành công', description: 'Thông báo' })
+    message: string
+}
+
+export class AdminHistoryListResponseSwaggerDTO {
+    @ApiProperty({ example: 200, description: 'Mã trạng thái HTTP' })
+    statusCode: number
+
+    @ApiProperty({
+        type: 'object',
+        properties: {
+            results: {
+                type: 'array',
+                items: { $ref: '#/components/schemas/AdminHistoryItemSwaggerDTO' }
+            },
+            pagination: {
+                type: 'object',
+                properties: {
+                    current: { type: 'number', example: 1 },
+                    pageSize: { type: 'number', example: 10 },
+                    totalPage: { type: 'number', example: 5 },
+                    totalItem: { type: 'number', example: 50 }
+                }
+            }
+        },
+        description: 'Dữ liệu danh sách lịch sử và phân trang (Admin - có thêm thông tin user)'
+    })
+    data: {
+        results: AdminHistoryItemSwaggerDTO[]
         pagination: {
             current: number
             pageSize: number
