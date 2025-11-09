@@ -294,102 +294,6 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
                   `Successfully auto-selected Pokemon for match-round-participant ${matchRoundParticipantId}`
                 )
 
-                // Fetch full match data for socket notification
-                const matchData = await this.prismaService.match.findUnique({
-                  where: { id: match.id },
-                  include: {
-                    participants: {
-                      include: {
-                        user: true
-                      }
-                    }
-                  }
-                })
-
-                const roundsData = await this.prismaService.matchRound.findMany({
-                  where: { matchId: match.id },
-                  include: {
-                    participants: {
-                      include: {
-                        selectedUserPokemon: {
-                          include: {
-                            pokemon: true
-                          }
-                        }
-                      }
-                    }
-                  },
-                  orderBy: { roundNumber: 'asc' }
-                })
-                const nextEndTime = addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
-                if (matchData) {
-                  // Format data theo GetMatchRoundDetailForUserResSchema
-                  const formattedMatch = {
-                    id: matchData.id,
-                    status: matchData.status,
-                    participants: matchData.participants.map((p) => ({
-                      id: p.id,
-                      userId: p.userId,
-                      user: {
-                        id: p.user.id,
-                        email: p.user.email
-                      }
-                    }))
-                  }
-
-                  const formattedRounds = roundsData.map((round) => ({
-                    id: round.id,
-                    roundNumber: round.roundNumber,
-                    status: round.status,
-                    endTimeRound: round.endTimeRound,
-                    participants: round.participants.map((p) => ({
-                      id: p.id,
-                      matchParticipantId: p.matchParticipantId,
-                      orderSelected: p.orderSelected,
-                      endTimeSelected: p.endTimeSelected
-                        ? p.endTimeSelected
-                        : nextEndTime,
-                      selectedUserPokemonId: p.selectedUserPokemonId,
-                      selectedUserPokemon: p.selectedUserPokemon
-                        ? {
-                            id: p.selectedUserPokemon.id,
-                            userId: p.selectedUserPokemon.userId,
-                            pokemonId: p.selectedUserPokemon.pokemonId,
-                            pokemon: p.selectedUserPokemon.pokemon
-                              ? {
-                                  id: p.selectedUserPokemon.pokemon.id,
-                                  pokedex_number:
-                                    p.selectedUserPokemon.pokemon.pokedex_number,
-                                  nameJp: p.selectedUserPokemon.pokemon.nameJp,
-                                  imageUrl: p.selectedUserPokemon.pokemon.imageUrl,
-                                  rarity: p.selectedUserPokemon.pokemon.rarity
-                                }
-                              : null
-                          }
-                        : null
-                    }))
-                  }))
-
-                  // Gửi socket notification
-                  try {
-                    this.matchingGateway.notifyPokemonSelected(
-                      match.id,
-                      currentParticipant.matchRoundId,
-                      {
-                        match: formattedMatch as any,
-                        rounds: formattedRounds as any
-                      },
-                      matchData.participants[0] as any,
-                      matchData.participants[1] as any
-                    )
-                    this.logger.log(
-                      `Socket notification sent for auto-selected Pokemon in match ${match.id}`
-                    )
-                  } catch (socketError) {
-                    this.logger.error('Error sending socket notification', socketError)
-                  }
-                }
-
                 // Kiểm tra xem có phải participant cuối cùng không
                 const allParticipants = currentParticipant.matchRound.participants
                 const allSelected = allParticipants.every(
@@ -417,12 +321,6 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
                   this.logger.log(
                     `Updated round ${currentParticipant.matchRoundId} and all participants to PENDING status`
                   )
-
-                  // Generate round questions + apply debuff + auto start Round ONE if all rounds PENDING
-                  await this.generateQuestionsDebuffAndMaybeStartRound(
-                    currentParticipant.matchRoundId,
-                    match.id
-                  )
                 }
               } else {
                 this.logger.warn(
@@ -448,6 +346,10 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         (p) => p.orderSelected > currentParticipant.orderSelected
       )
 
+      // Track nếu cần generate questions (sau khi gửi socket)
+      let shouldGenerateQuestions = false
+      let matchIdForGenerate: number | null = null
+
       if (nextParticipant) {
         // Set time cho participant tiếp theo
         await this.prismaService.matchRoundParticipant.update({
@@ -471,7 +373,123 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         this.logger.log(
           `Set endTimeSelected and Bull job for next participant: ${nextParticipant.id}`
         )
-      } else {
+      }
+
+      // Check nếu all selected -> cần generate questions + moveToNextRound TRƯỚC khi fetch & socket
+      if (currentParticipant.selectedUserPokemonId !== null) {
+        const allParticipants = currentParticipant.matchRound.participants
+        const allSelected = allParticipants.every((p) => p.selectedUserPokemonId !== null)
+        if (allSelected) {
+          shouldGenerateQuestions = true
+          const matchRound = await this.prismaService.matchRound.findUnique({
+            where: { id: currentParticipant.matchRoundId },
+            select: { matchId: true }
+          })
+          if (matchRound) {
+            matchIdForGenerate = matchRound.matchId
+          }
+        }
+      }
+
+      // Nếu all selected -> generate questions SAU khi đã gửi socket
+      if (shouldGenerateQuestions && matchIdForGenerate) {
+        await this.generateQuestionsDebuffAndMaybeStartRound(
+          currentParticipant.matchRoundId,
+          matchIdForGenerate
+        )
+      }
+
+      // Fetch data và gửi socket 1 lần duy nhất SAU khi tất cả hàm chạy xong (bao gồm moveToNextRound)
+      const matchForSocket = await this.prismaService.match.findFirst({
+        where: {
+          rounds: {
+            some: { id: currentParticipant.matchRoundId }
+          }
+        },
+        include: {
+          participants: {
+            include: { user: true }
+          }
+        }
+      })
+
+      if (matchForSocket) {
+        const roundsForSocket = await this.prismaService.matchRound.findMany({
+          where: { matchId: matchForSocket.id, deletedAt: null },
+          include: {
+            participants: {
+              include: {
+                selectedUserPokemon: { include: { pokemon: true } }
+              }
+            }
+          },
+          orderBy: { roundNumber: 'asc' }
+        })
+
+        const formattedMatch = {
+          id: matchForSocket.id,
+          status: matchForSocket.status,
+          participants: matchForSocket.participants.map((mp: any) => ({
+            id: mp.id,
+            userId: mp.userId,
+            user: {
+              id: mp.user.id,
+              email: mp.user.email
+            }
+          }))
+        }
+
+        const formattedRounds = roundsForSocket.map((round: any) => ({
+          id: round.id,
+          roundNumber: round.roundNumber,
+          status: round.status,
+          endTimeRound: round.endTimeRound,
+          participants: round.participants.map((rp: any) => ({
+            id: rp.id,
+            matchParticipantId: rp.matchParticipantId,
+            orderSelected: rp.orderSelected,
+            endTimeSelected: rp.endTimeSelected,
+            selectedUserPokemonId: rp.selectedUserPokemonId,
+            selectedUserPokemon: rp.selectedUserPokemon
+              ? {
+                  id: rp.selectedUserPokemon.id,
+                  userId: rp.selectedUserPokemon.userId,
+                  pokemonId: rp.selectedUserPokemon.pokemonId,
+                  pokemon: rp.selectedUserPokemon.pokemon
+                    ? {
+                        id: rp.selectedUserPokemon.pokemon.id,
+                        pokedex_number: rp.selectedUserPokemon.pokemon.pokedex_number,
+                        nameJp: rp.selectedUserPokemon.pokemon.nameJp,
+                        imageUrl: rp.selectedUserPokemon.pokemon.imageUrl,
+                        rarity: rp.selectedUserPokemon.pokemon.rarity
+                      }
+                    : null
+                }
+              : null
+          }))
+        }))
+
+        try {
+          this.matchingGateway.notifyPokemonSelected(
+            matchForSocket.id,
+            currentParticipant.matchRoundId,
+            {
+              match: formattedMatch as any,
+              rounds: formattedRounds as any
+            },
+            matchForSocket.participants[0] as any,
+            matchForSocket.participants[1] as any
+          )
+          this.logger.log(
+            `Socket notification sent after all updates for match ${matchForSocket.id}`
+          )
+        } catch (socketError) {
+          this.logger.error('Error sending socket notification', socketError)
+        }
+      }
+
+      // Nếu không có nextParticipant -> chuyển round
+      if (!nextParticipant) {
         // Không còn participant nào trong round này
         // Round này đã hoàn thành (tất cả participant đã có lượt)
         this.logger.log(
