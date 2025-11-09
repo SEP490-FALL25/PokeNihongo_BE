@@ -610,5 +610,15 @@ export const enMessages = {
     INVALID_DATA: 'Invalid leaderboard season data',
     HAS_ACTIVE: 'There is already an active leaderboard season',
     INVALID_DATA_TO_ACTIVE: 'Cannot set to active: season has already been opened before'
+  },
+  user_reward_history: {
+    CREATE_SUCCESS: 'User reward history created successfully',
+    UPDATE_SUCCESS: 'User reward history updated successfully',
+    DELETE_SUCCESS: 'User reward history deleted successfully',
+    GET_SUCCESS: 'User reward history retrieved successfully',
+    GET_LIST_SUCCESS: 'User reward history list retrieved successfully',
+    NOT_FOUND: 'User reward history not found',
+    ALREADY_EXISTS: 'User reward history already exists',
+    INVALID_DATA: 'Invalid user reward history data'
   }
 }

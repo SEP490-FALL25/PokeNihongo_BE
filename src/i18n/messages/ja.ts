@@ -586,5 +586,15 @@ export const jaMessages = {
     INVALID_DATA: '無効なリーダーボードシーズンデータです',
     HAS_ACTIVE: '既にアクティブなリーダーボードシーズンが存在します',
     HAS_OPENED: '既に開始されたリーダーボードシーズンが存在します'
+  },
+  user_reward_history: {
+    CREATE_SUCCESS: 'ユーザー報酬履歴の作成に成功しました',
+    UPDATE_SUCCESS: 'ユーザー報酬履歴の更新に成功しました',
+    DELETE_SUCCESS: 'ユーザー報酬履歴の削除に成功しました',
+    GET_SUCCESS: 'ユーザー報酬履歴情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ユーザー報酬履歴リストの取得に成功しました',
+    NOT_FOUND: 'ユーザー報酬履歴が見つかりません',
+    ALREADY_EXISTS: 'ユーザー報酬履歴は既に存在します',
+    INVALID_DATA: '無効なユーザー報酬履歴データです'
   }
 }

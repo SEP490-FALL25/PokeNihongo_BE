@@ -1838,7 +1838,7 @@ model UserSeasonHistory {
   finalRank          String // Tên rank cuối cùng (vd: "N4")
   seasonRankRewardId Int?
   seasonRankReward   SeasonRankReward? @relation(fields: [seasonRankRewardId], references: [id], onDelete: SetNull)
-  rewardsClaimed     Boolean           @default(false) // Đã nhận thưởng chưa
+  rewardsClaimed     RewardClaimStatus @default(PENDING) // Đã nhận thưởng chưa
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -2394,4 +2394,10 @@ enum RankName {
   N5
   N4
   N3
+}
+
+enum RewardClaimStatus {
+  PENDING
+  CLAIMED
+  COMPLETED
 }

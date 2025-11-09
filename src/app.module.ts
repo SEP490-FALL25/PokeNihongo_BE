@@ -38,6 +38,7 @@ import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
 
+import { HandleLeaderboardSeasonCronjob } from './cronjobs/handle-leaderboard-season.cronjob'
 import { HandleMatchmakingCronjob } from './cronjobs/handle-matchmaking.cronjob'
 import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
 import { AIConversationRoomModule } from './modules/ai-conversation-room/ai-conversation-room.module'
@@ -86,6 +87,7 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
+import { UserRewardHistoryModule } from './modules/user-reward-history/user-reward-history.module';
 
 @Module({
   imports: [
@@ -171,13 +173,14 @@ import { WebsocketsModule } from './websockets/websockets.module'
     AIConversationRoomModule,
     RoundQuestionModule,
     RoundQuestionAnswerlogModule,
-    SeasonRankRewardModule
+    SeasonRankRewardModule,
+    UserRewardHistoryModule
   ],
 
   controllers: [],
   providers: [
     HandleShopBannerCronjob,
-    // HandleLeaderboardSeasonCronjob,
+    HandleLeaderboardSeasonCronjob,
     HandleMatchmakingCronjob, // Cronjob chạy mỗi 5s để xử lý matchmaking
     {
       provide: APP_PIPE,

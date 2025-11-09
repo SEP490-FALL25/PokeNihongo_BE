@@ -1,4 +1,6 @@
-import { addDaysUTC0000, todayUTCWith0000 } from '@/shared/helpers'
+import { RewardClaimStatus } from '@/common/constants/reward.constant'
+import { LeaderboardSeasonRepo } from '@/modules/leaderboard-season/leaderboard-season.repo'
+import { addDaysUTC0000, convertEloToRank, todayUTCWith0000 } from '@/shared/helpers'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
@@ -7,7 +9,10 @@ import { LeaderboardStatus } from '@prisma/client'
 @Injectable()
 export class HandleLeaderboardSeasonCronjob {
   private readonly logger = new Logger(HandleLeaderboardSeasonCronjob.name)
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private leaderboardRepo: LeaderboardSeasonRepo
+  ) {}
 
   // Run daily at 00:00 UTC to expire/activate seasons
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { timeZone: 'UTC' })
@@ -16,12 +21,30 @@ export class HandleLeaderboardSeasonCronjob {
     this.logger.log(`[LeaderboardSeason Cron] Running at ${now.toISOString()}`)
 
     try {
-      // 1) Expire active seasons that ended before today
-      const expired = await this.prisma.leaderboardSeason.updateMany({
+      // 1) Find ACTIVE seasons that ended before today and finalize them
+      const seasonsToExpire = await this.prisma.leaderboardSeason.findMany({
         where: { status: 'ACTIVE', endDate: { lt: now }, deletedAt: null },
-        data: { status: 'EXPIRED' }
+        select: { id: true }
       })
-      this.logger.log(`[LeaderboardSeason Cron] Expired ${expired.count} active seasons`)
+      this.logger.log(
+        `[LeaderboardSeason Cron] Found ${seasonsToExpire.length} season(s) to finalize`
+      )
+
+      for (const s of seasonsToExpire) {
+        try {
+          await this.finalizeSeason(s.id)
+          await this.prisma.leaderboardSeason.update({
+            where: { id: s.id },
+            data: { status: 'EXPIRED' }
+          })
+          this.logger.log(`[LeaderboardSeason Cron] Finalized and expired season ${s.id}`)
+        } catch (err) {
+          this.logger.error(
+            `[LeaderboardSeason Cron] Error finalizing season ${s.id}:`,
+            err
+          )
+        }
+      }
 
       // 2) Find PREVIEW seasons valid for today
       const candidates = await this.prisma.leaderboardSeason.findMany({
@@ -168,5 +191,134 @@ export class HandleLeaderboardSeasonCronjob {
       this.logger.error('[LeaderboardSeason Precreate] Error:', error)
       throw error
     }
+  }
+
+  /**
+   * Finalize a season: compute final elo/rank, assign rewards, mark claimed, and reset user eloscore.
+   * Steps:
+   * - Load season details (userHistories, seasonRankRewards)
+   * - Compute finalElo/finalRank from current user eloscore
+   * - Rank within each rankName by elo desc to get per-rank order
+   * - Map (rankName, order) -> SeasonRankReward (and its reward ids)
+   * - Update UserSeasonHistory: finalElo, finalRank, seasonRankRewardId, rewardsClaimed=CLAIMED
+   * - Reset each participant user's eloscore = max(0, eloscore - 1000)
+   */
+  private async finalizeSeason(seasonId: number) {
+    // 1) Get season details via repo (userHistories + bare seasonRankRewards)
+    const season = await this.leaderboardRepo.findWithDetailsWithoutLang(seasonId)
+    if (!season) {
+      this.logger.warn(`[FinalizeSeason] Season ${seasonId} not found or deleted`)
+      return
+    }
+
+    const userHistories = season.userHistories || []
+    if (userHistories.length === 0) {
+      this.logger.log(`[FinalizeSeason] Season ${seasonId} has no participants`)
+      return
+    }
+
+    // 2) Load SeasonRankRewards with reward ids for mapping
+    const srrList = await this.prisma.seasonRankReward.findMany({
+      where: { seasonId, deletedAt: null },
+      include: { rewards: { select: { id: true } } }
+    })
+
+    // Build map: rankName->order->SeasonRankReward
+    const rewardMap = new Map<string, Map<number, { id: number; rewardIds: number[] }>>()
+    for (const srr of srrList) {
+      if (!rewardMap.has(srr.rankName)) rewardMap.set(srr.rankName, new Map())
+      rewardMap
+        .get(srr.rankName)!
+        .set(srr.order, { id: srr.id, rewardIds: (srr.rewards || []).map((r) => r.id) })
+    }
+
+    // 3) Compute finalElo and finalRank from current user eloscore
+    type Participant = {
+      ushId: number
+      userId: number
+      finalElo: number
+      finalRank: string
+    }
+    const participants: Participant[] = userHistories.map((uh: any) => {
+      const elo = (uh.user?.eloscore as number) || 0
+      const rank = convertEloToRank(elo)
+      return { ushId: uh.id, userId: uh.userId, finalElo: elo, finalRank: rank }
+    })
+
+    // 4) Persist finalElo/finalRank on UserSeasonHistory
+    await this.prisma.$transaction(
+      participants.map((p) =>
+        this.prisma.userSeasonHistory.update({
+          where: { id: p.ushId },
+          data: { finalElo: p.finalElo, finalRank: p.finalRank }
+        })
+      )
+    )
+
+    // 5) Rank within each rank group by elo desc and determine order
+    const rankOrderPriority = ['N3', 'N4', 'N5'] // Highest rank first
+    const grouped: Record<string, Participant[]> = {}
+    for (const p of participants) {
+      grouped[p.finalRank] = grouped[p.finalRank] || []
+      grouped[p.finalRank].push(p)
+    }
+    const rankAssignments: Array<{
+      ushId: number
+      userId: number
+      rankName: string
+      order: number
+      seasonRankRewardId?: number
+      rewardIds?: number[]
+    }> = []
+
+    for (const rankName of rankOrderPriority) {
+      const list = (grouped[rankName] || []).sort((a, b) => b.finalElo - a.finalElo)
+      let order = 1
+      for (const p of list) {
+        const found = rewardMap.get(rankName)?.get(order)
+        rankAssignments.push({
+          ushId: p.ushId,
+          userId: p.userId,
+          rankName,
+          order,
+          seasonRankRewardId: found?.id,
+          rewardIds: found?.rewardIds || []
+        })
+        order += 1
+      }
+    }
+
+    // 6) Update USH with seasonRankRewardId and mark rewardsClaimed as CLAIMED
+    const ushUpdates = rankAssignments.map((ra) =>
+      this.prisma.userSeasonHistory.update({
+        where: { id: ra.ushId },
+        data: {
+          seasonRankRewardId: ra.seasonRankRewardId ?? null,
+          rewardsClaimed: RewardClaimStatus.CLAIMED
+        }
+      })
+    )
+    await this.prisma.$transaction(ushUpdates)
+
+    // Note: We only link to SeasonRankReward and mark CLAIMED. Actual delivery of rewards
+    // (EXP/Coins/Sparkles/Pokemon) can be handled elsewhere by a worker if needed.
+
+    // 7) Reset user eloscore: new = max(0, old - 1000)
+    const uniqueUserIds = Array.from(new Set(participants.map((p) => p.userId)))
+    const userRows = await this.prisma.user.findMany({
+      where: { id: { in: uniqueUserIds } },
+      select: { id: true, eloscore: true }
+    })
+
+    const userUpdateTx = userRows.map((u) => {
+      const current = u.eloscore || 0
+      const next = Math.max(0, current - 1000)
+      return this.prisma.user.update({ where: { id: u.id }, data: { eloscore: next } })
+    })
+    await this.prisma.$transaction(userUpdateTx)
+
+    this.logger.log(
+      `[FinalizeSeason] Season ${seasonId} finalized: participants=${participants.length}, rewardsAssigned=${rankAssignments.filter((a) => a.seasonRankRewardId).length}`
+    )
   }
 }
