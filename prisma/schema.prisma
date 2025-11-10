@@ -141,6 +141,7 @@ model User {
   matchWins           Match[]              @relation("WonMatches")
   matchParticipants   MatchParticipant[]
   userSeasonHistories UserSeasonHistory[]
+  userRewardHistories UserRewardHistory[]
 
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -435,11 +436,31 @@ model Reward {
   deletedBy   User? @relation("RewardDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   // Timestamps
-  deletedAt    DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  DailyRequest DailyRequest[]
-  Achievement  Achievement[]
+  deletedAt           DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  DailyRequest        DailyRequest[]
+  Achievement         Achievement[]
+  userRewardHistories UserRewardHistory[]
+}
+
+model UserRewardHistory {
+  id                   Int                  @id @default(autoincrement())
+  userId               Int
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  rewardId             Int?
+  reward               Reward?              @relation(fields: [rewardId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  rewardTargetSnapshot RewardTarget?
+  amount               Int?
+  sourceType           UserRewardSourceType
+  sourceId             Int?
+  note                 String?              @db.VarChar(1000)
+  meta                 Json?
+  createdAt            DateTime             @default(now())
+
+  @@index([userId])
+  @@index([rewardId])
+  @@index([sourceType])
 }
 
 model Level {
@@ -2400,4 +2421,14 @@ enum RewardClaimStatus {
   PENDING
   CLAIMED
   COMPLETED
+}
+
+enum UserRewardSourceType {
+  REWARD_SERVICE // Qua RewardService.convertRewardsWithUser
+  LESSON // Hoàn thành bài học / lesson-based reward
+  DAILY_REQUEST // Hoàn thành Daily Request / Streak
+  ATTENDANCE // Điểm danh (Attendance)
+  SEASON_REWARD // Thưởng mùa giải (Leaderboard Season)
+  ADMIN_ADJUST // Admin thưởng thủ công
+  OTHER // Trường hợp khác
 }
