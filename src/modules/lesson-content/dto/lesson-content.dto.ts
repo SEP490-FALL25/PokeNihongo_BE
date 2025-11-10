@@ -257,6 +257,9 @@ export class KanjiContentSwaggerDTO {
     @ApiProperty({ example: 'Mặt trời', description: 'Nghĩa đã dịch', required: false })
     meaning?: string
 
+    @ApiProperty({ example: 'Năm.##Tuổi.', description: 'Giải thích chi tiết nghĩa', required: false })
+    explanationMeaning?: string
+
     @ApiProperty({ example: 'ニチ', description: 'Âm On', required: false })
     onReading?: string
 
