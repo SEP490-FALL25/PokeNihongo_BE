@@ -13,7 +13,8 @@ import { TestSetQuestionBankService } from '../testset-questionbank/testset-ques
 import { UserTestAttemptRepository } from '../user-test-attempt/user-test-attempt.repo'
 import { UserTestRepository } from '../user-test/user-test.repo'
 import { UserTestService } from '../user-test/user-test.service'
-import { UserTestStatus } from '@prisma/client'
+import { TestStatus, UserTestStatus } from '@prisma/client'
+import { ExercisesRepository } from '../exercises/exercises.repo'
 
 @Injectable()
 export class TestService {
@@ -29,6 +30,7 @@ export class TestService {
         private readonly userTestAttemptRepo: UserTestAttemptRepository,
         private readonly userTestRepo: UserTestRepository,
         private readonly userTestService: UserTestService,
+        private readonly exercisesRepo: ExercisesRepository,
     ) { }
 
     private isValidUrl(url: string): boolean {
@@ -625,6 +627,75 @@ export class TestService {
 
             // Kiểm tra nếu test là READING_TEST, LISTENING_TEST, hoặc SPEAKING_TEST
             // thì chỉ cho phép thêm TestSet có cùng type (READING, LISTENING, SPEAKING)
+            // Validate cho LESSON_REVIEW: chỉ được thêm 3 loại VOCABULARY, GRAMMAR, KANJI
+            if (test.testType === 'LESSON_REVIEW') {
+                const allowedTestSetTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI']
+                const invalidTestSets = testSets.filter(ts => !allowedTestSetTypes.includes(ts.testType))
+
+                if (invalidTestSets.length > 0) {
+                    const invalidIds = invalidTestSets.map(ts => ts.id)
+                    const invalidTypes = invalidTestSets.map(ts => ts.testType).join(', ')
+                    throw new BadRequestException(
+                        `Test loại LESSON_REVIEW chỉ được thêm TestSet loại VOCABULARY, GRAMMAR, KANJI. ` +
+                        `TestSet không hợp lệ (ID: ${invalidIds.join(', ')}, Type: ${invalidTypes})`
+                    )
+                }
+
+                // Lấy danh sách testSet hiện có trong test
+                const existingTestSets = await (this.prisma as any).testTestSet.findMany({
+                    where: { testId },
+                    include: { testSet: true }
+                })
+                const existingTestSetIds = existingTestSets.map((tts: any) => tts.testSetId)
+                const existingTestSetTypes = existingTestSets.map((tts: any) => tts.testSet.testType)
+
+                // Lọc ra các testSet mới (chưa tồn tại)
+                const newTestSetIds = data.testSetIds.filter(id => !existingTestSetIds.includes(id))
+                const newTestSets = testSets.filter(ts => newTestSetIds.includes(ts.id))
+                const newTestSetTypes = newTestSets.map(ts => ts.testType)
+
+                // Kiểm tra duplicate trong các testSet mới (không được có 2 testSet cùng loại trong 1 lần thêm)
+                const newTypeCounts: Record<string, number> = {}
+                for (const type of newTestSetTypes) {
+                    newTypeCounts[type] = (newTypeCounts[type] || 0) + 1
+                }
+                const duplicateNewTypes = Object.entries(newTypeCounts)
+                    .filter(([type, count]) => count > 1)
+                    .map(([type]) => type)
+                if (duplicateNewTypes.length > 0) {
+                    throw new BadRequestException(
+                        `Không được thêm nhiều TestSet cùng loại trong 1 lần. ` +
+                        `Loại bị trùng: ${duplicateNewTypes.join(', ')}`
+                    )
+                }
+
+                // Kiểm tra duplicate với testSet đã tồn tại (không được có 2 testSet cùng loại)
+                const allTestSetTypes = [...existingTestSetTypes, ...newTestSetTypes]
+                const typeCounts: Record<string, number> = {}
+                for (const type of allTestSetTypes) {
+                    typeCounts[type] = (typeCounts[type] || 0) + 1
+                }
+                const duplicateTypes = Object.entries(typeCounts)
+                    .filter(([type, count]) => count > 1)
+                    .map(([type]) => type)
+                if (duplicateTypes.length > 0) {
+                    throw new BadRequestException(
+                        `Test LESSON_REVIEW chỉ được có 1 TestSet cho mỗi loại (VOCABULARY, GRAMMAR, KANJI). ` +
+                        `Loại bị trùng: ${duplicateTypes.join(', ')}`
+                    )
+                }
+
+                // Kiểm tra tổng số lượng: không được vượt quá 3
+                const totalTestSets = existingTestSets.length + newTestSets.length
+                if (totalTestSets > 3) {
+                    throw new BadRequestException(
+                        `Test LESSON_REVIEW chỉ được có tối đa 3 TestSet (VOCABULARY, GRAMMAR, KANJI). ` +
+                        `Hiện có ${existingTestSets.length}, đang cố thêm ${newTestSets.length}, tổng: ${totalTestSets}`
+                    )
+                }
+            }
+
+            // Validate cho các testType khác: READING_TEST, LISTENING_TEST, SPEAKING_TEST
             const restrictedTestTypes = ['READING_TEST', 'LISTENING_TEST', 'SPEAKING_TEST']
             if (restrictedTestTypes.includes(test.testType)) {
                 const allowedTestSetType = test.testType.replace('_TEST', '') // READING_TEST -> READING
@@ -1568,6 +1639,189 @@ export class TestService {
             }
             throw new BadRequestException('Không thể lấy câu hỏi')
         }
+    }
+
+    async generateLessonReviewTest(testId: number, userId: number, language: string = 'vi'): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Generating lesson review test for testId: ${testId}, user: ${userId}, language: ${language}`)
+
+            // Lấy test và các testSet của nó
+            const test = await this.testRepo.findByIdWithTestSetsAndQuestions(testId)
+
+            if (!test) {
+                throw TestNotFoundException
+            }
+
+            // Lọc 3 testSet: VOCABULARY, GRAMMAR, KANJI
+            const targetTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI']
+            const testSetsByType: Record<string, any> = {}
+
+            for (const testTestSet of test.testTestSets || []) {
+                const testSet = testTestSet.testSet
+                if (testSet && testSet.testType && targetTypes.includes(testSet.testType)) {
+                    const type = testSet.testType
+                    if (!testSetsByType[type]) {
+                        testSetsByType[type] = testSet
+                    }
+                }
+            }
+
+            // Kiểm tra có đủ 3 testSet không
+            const missingTypes = targetTypes.filter(type => !testSetsByType[type])
+            if (missingTypes.length > 0) {
+                throw new BadRequestException(`Test này thiếu testSet loại: ${missingTypes.join(', ')}`)
+            }
+
+            // Lấy 5 câu hỏi từ mỗi testSet (tổng 15 câu)
+            const allQuestions: any[] = []
+            for (const type of targetTypes) {
+                const testSet = testSetsByType[type]
+                const questions = testSet.testSetQuestionBanks || []
+
+                // Lọc chỉ lấy câu hỏi đúng loại
+                const filteredQuestions = questions.filter(
+                    (tsqb: any) => tsqb.questionBank.questionType === type
+                )
+
+                // Shuffle và lấy 5 câu đầu
+                const shuffled = this.shuffleArray(filteredQuestions)
+                const selected = shuffled.slice(0, 5)
+
+                if (selected.length < 5) {
+                    this.logger.warn(`TestSet ${type} chỉ có ${selected.length} câu, cần 5 câu`)
+                }
+
+                allQuestions.push(...selected)
+            }
+
+            if (allQuestions.length < 10) {
+                throw new BadRequestException(`Không đủ câu hỏi. Tổng có ${allQuestions.length} câu, cần ít nhất 10 câu`)
+            }
+
+            // Random chọn 10 câu từ 15 câu
+            const shuffledAll = this.shuffleArray(allQuestions)
+            const finalQuestions = shuffledAll.slice(0, 10)
+
+            // Kiểm tra UserTest tồn tại, nếu không thì tạo
+            let userTest = await this.userTestRepo.findByUserAndTest(userId, testId)
+            if (!userTest) {
+                await this.userTestService.create({
+                    userId,
+                    testId: testId,
+                    status: UserTestStatus.ACTIVE
+                })
+            }
+
+            // Tạo UserTestAttempt mới
+            const userTestAttempt = await this.userTestAttemptRepo.create({
+                userId,
+                testId: testId
+            })
+
+            // Map câu hỏi với translations
+            const mappedQuestions = await Promise.all(
+                finalQuestions.map(async (tsqb: any) => {
+                    const qb = tsqb.questionBank
+
+                    // Lấy translations cho question
+                    let questionTranslation = qb.questionJp
+                    if (qb.questionKey && language) {
+                        const languageRecord = await this.prisma.languages.findFirst({
+                            where: { code: language }
+                        })
+                        if (languageRecord) {
+                            const translation = await this.prisma.translation.findFirst({
+                                where: {
+                                    key: qb.questionKey,
+                                    languageId: languageRecord.id
+                                }
+                            })
+                            if (translation) {
+                                questionTranslation = translation.value
+                            }
+                        }
+                    }
+
+                    // Map answers với translations
+                    const mappedAnswers = await Promise.all(
+                        (qb.answers || []).map(async (ans: any) => {
+                            let answerTranslation = ans.answerJp
+
+                            if (ans.answerKey && language) {
+                                const languageRecord = await this.prisma.languages.findFirst({
+                                    where: { code: language }
+                                })
+                                if (languageRecord) {
+                                    const translation = await this.prisma.translation.findFirst({
+                                        where: {
+                                            key: ans.answerKey,
+                                            languageId: languageRecord.id
+                                        }
+                                    })
+                                    if (translation) {
+                                        answerTranslation = translation.value
+                                    }
+                                }
+                            }
+
+                            return {
+                                id: ans.id,
+                                answer: answerTranslation,
+                                isCorrect: ans.isCorrect
+                            }
+                        })
+                    )
+
+                    return {
+                        id: qb.id,
+                        question: questionTranslation,
+                        questionType: qb.questionType,
+                        audioUrl: qb.audioUrl,
+                        pronunciation: qb.pronunciation,
+                        levelN: qb.levelN,
+                        answers: this.shuffleArray(mappedAnswers) // Shuffle answers
+                    }
+                })
+            )
+
+            this.logger.log(`Generated lesson review test with ${finalQuestions.length} questions for testId ${testId}`)
+
+            // Tính distribution
+            const vocabularyCount = finalQuestions.filter((q: any) => q.questionBank.questionType === 'VOCABULARY').length
+            const grammarCount = finalQuestions.filter((q: any) => q.questionBank.questionType === 'GRAMMAR').length
+            const kanjiCount = finalQuestions.filter((q: any) => q.questionBank.questionType === 'KANJI').length
+
+            return {
+                statusCode: 200,
+                data: {
+                    testId: testId,
+                    userTestAttemptId: userTestAttempt.id,
+                    questions: mappedQuestions,
+                    distribution: {
+                        vocabulary: vocabularyCount,
+                        grammar: grammarCount,
+                        kanji: kanjiCount,
+                        total: finalQuestions.length
+                    }
+                },
+                message: 'Lấy câu hỏi bài test ôn tập thành công'
+            }
+        } catch (error) {
+            this.logger.error('Error generating lesson review test:', error)
+            if (error instanceof BadRequestException || error instanceof TestNotFoundException) {
+                throw error
+            }
+            throw new BadRequestException('Không thể lấy câu hỏi bài test ôn tập')
+        }
+    }
+
+    private shuffleArray<T>(array: T[]): T[] {
+        const shuffled = [...array]
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        }
+        return shuffled
     }
 }
 
