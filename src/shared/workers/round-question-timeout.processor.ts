@@ -87,7 +87,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
    * @param timeAnswerMs - Time taken to answer in milliseconds
    * @param timeLimitMs - Time limit for the question
    * @param debuff - Debuff applied to the question (if any)
-   * @returns Points earned (0 for incorrect, 50%-100% of base for correct based on speed)
+   * @returns Points earned (0 for incorrect, minimum 50% of base for correct)
    */
   private calculatePointsEarned(
     isCorrect: boolean,
@@ -96,30 +96,23 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     timeLimitMs: number,
     debuff?: { typeDebuff: string; valueDebuff: number } | null
   ): number {
-    if (!isCorrect) {
-      return 0
-    }
+    if (!isCorrect) return 0
 
-    // Calculate speed ratio: faster answer = lower ratio (0.0 = instant, 1.0 = timeout)
-    const speedRatio = Math.min(timeAnswerMs / timeLimitMs, 1.0)
+    // Calculate points: points = basePoints * (1 - timeAnswer / timeLimit)
+    const timeRatio = Math.min(timeAnswerMs / timeLimitMs, 1.0)
+    let points = basePoints * (1 - timeRatio)
 
-    // Calculate speed bonus: faster = higher bonus (0.0 to 0.5)
-    const speedBonus = (1 - speedRatio) * 0.5
-
-    // Base multiplier: 0.5 (minimum) to 1.0 (maximum)
-    const baseMultiplier = 0.5 + speedBonus
-
-    // Calculate points before debuff
-    let points = basePoints * baseMultiplier
+    // Ensure minimum 50% of base points for correct answers
+    points = Math.max(points, basePoints * 0.5)
 
     // Apply DECREASE_POINT debuff if present
     if (debuff && debuff.typeDebuff === 'DECREASE_POINT') {
       points -= debuff.valueDebuff
-      // Ensure minimum 10% of base points
-      points = Math.max(points, basePoints * 0.1)
+      // After debuff, still ensure minimum 50% of base points
+      points = Math.max(points, basePoints * 0.5)
     }
 
-    return Math.round(points)
+    return Math.ceil(points) // Làm tròn lên
   }
 
   @Process({ name: BullAction.CHECK_QUESTION_TIMEOUT, concurrency: 10 })
@@ -718,6 +711,19 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
    * Complete match: calculate overall winner, update Match status, and notify users
    */
   private async completeMatch(matchId: number): Promise<void> {
+    // Guard check: prevent duplicate processing if match already completed
+    const currentMatch = await this.prismaService.match.findUnique({
+      where: { id: matchId },
+      select: { status: true }
+    })
+
+    if (currentMatch?.status === 'COMPLETED') {
+      this.logger.log(
+        `[RoundQuestion Timeout] Match ${matchId} already COMPLETED, skipping duplicate processing`
+      )
+      return
+    }
+
     try {
       this.logger.log(`[RoundQuestion Timeout] Completing match ${matchId}`)
 
@@ -803,86 +809,87 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         include: { user: true }
       })
 
-      // Update Match with winner and COMPLETED status
-      const completedMatch = await this.prismaService.match.update({
-        where: { id: matchId },
-        data: {
-          status: 'COMPLETED',
-          winnerId: winnerParticipant?.userId || null
-        },
-        include: {
-          winner: true,
-          participants: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  avatar: true,
-                  eloscore: true
-                }
-              }
-            }
+      this.logger.log(
+        `[RoundQuestion Timeout] Match winner determined: participantId=${matchWinnerId}, userId=${winnerParticipant?.userId}, maxWins=${maxWins}`
+      )
+
+      // Wrap entire flow in atomic transaction to prevent race conditions
+      const result = await this.prismaService.$transaction(async (tx) => {
+        // First, update match status to COMPLETED to claim ownership
+        const completedMatch = await tx.match.update({
+          where: { id: matchId },
+          data: {
+            status: 'COMPLETED',
+            winnerId: winnerParticipant?.userId || null
           },
-          rounds: {
-            include: {
-              roundWinner: {
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                      avatar: true,
-                      eloscore: true
-                    }
-                  }
-                }
-              },
-              participants: {
-                include: {
-                  matchParticipant: {
-                    include: {
-                      user: {
-                        select: {
-                          id: true,
-                          name: true,
-                          email: true,
-                          avatar: true,
-                          eloscore: true
-                        }
-                      }
-                    }
-                  },
-                  selectedUserPokemon: {
-                    include: {
-                      pokemon: {
-                        select: {
-                          id: true,
-                          pokedex_number: true,
-                          nameJp: true,
-                          nameTranslations: true,
-                          rarity: true,
-                          imageUrl: true
-                        }
-                      }
-                    }
+          include: {
+            winner: true,
+            participants: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    avatar: true,
+                    eloscore: true
                   }
                 }
               }
             },
-            orderBy: { roundNumber: 'asc' }
+            rounds: {
+              include: {
+                roundWinner: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        avatar: true,
+                        eloscore: true
+                      }
+                    }
+                  }
+                },
+                participants: {
+                  include: {
+                    matchParticipant: {
+                      include: {
+                        user: {
+                          select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            avatar: true,
+                            eloscore: true
+                          }
+                        }
+                      }
+                    },
+                    selectedUserPokemon: {
+                      include: {
+                        pokemon: {
+                          select: {
+                            id: true,
+                            pokedex_number: true,
+                            nameJp: true,
+                            nameTranslations: true,
+                            rarity: true,
+                            imageUrl: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              orderBy: { roundNumber: 'asc' }
+            }
           }
-        }
-      })
+        })
 
-      this.logger.log(
-        `[RoundQuestion Timeout] Match ${matchId} completed with winner userId ${completedMatch.winnerId} (participant ${matchWinnerId}, ${maxWins} round wins)`
-      )
-
-      // Calculate and persist ELO changes, then notify users
-      try {
+        // Calculate and update ELO within same transaction
         const participants = completedMatch.participants || []
         const winnerUserId = completedMatch.winnerId
         const loserUserId = participants.find((p) => p.userId !== winnerUserId)?.userId
@@ -897,122 +904,139 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           const winnerElo = (winnerUser && winnerUser.eloscore) || 0
           const loserElo = (loserUser && loserUser.eloscore) || 0
 
-          // Compute elo changes
+          this.logger.log(
+            `[RoundQuestion Timeout] ELO before: winner=${winnerElo}, loser=${loserElo}`
+          )
+
           eloGained = calculateEloGain(winnerElo, loserElo)
           eloLost = calculateEloLoss(loserElo, winnerElo)
 
-          // Persist changes in a transaction: update match (elo fields) and both users' eloscore
+          this.logger.log(
+            `[RoundQuestion Timeout] ELO delta: gained=${eloGained}, lost=${eloLost}`
+          )
+
           const newLoserElo = Math.max(0, loserElo - eloLost)
 
-          await this.prismaService.$transaction([
-            this.prismaService.match.update({
-              where: { id: matchId },
-              data: { eloGained, eloLost }
-            }),
-            this.prismaService.user.update({
-              where: { id: winnerUserId },
-              data: { eloscore: { increment: eloGained } as any }
-            }),
-            this.prismaService.user.update({
-              where: { id: loserUserId },
-              data: { eloscore: newLoserElo }
-            })
-          ])
+          // Update Match with ELO deltas
+          await tx.match.update({
+            where: { id: matchId },
+            data: { eloGained, eloLost }
+          })
+
+          // Update winner ELO
+          await tx.user.update({
+            where: { id: winnerUserId },
+            data: { eloscore: { increment: eloGained } as any }
+          })
+
+          // Update loser ELO
+          await tx.user.update({
+            where: { id: loserUserId },
+            data: { eloscore: newLoserElo }
+          })
+
+          this.logger.log(
+            `[RoundQuestion Timeout] ELO after: winner=${winnerElo + eloGained}, loser=${newLoserElo}`
+          )
         }
 
-        const userId1 = completedMatch.participants[0]?.userId
-        const userId2 = completedMatch.participants[1]?.userId
+        return { completedMatch, eloGained, eloLost }
+      })
 
-        if (userId1 && userId2) {
-          // Re-fetch match with elo fields included for notification
-          const updatedMatch = await this.prismaService.match.findUnique({
-            where: { id: matchId },
-            include: {
-              winner: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  avatar: true,
-                  eloscore: true
-                }
-              },
-              participants: {
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                      avatar: true,
-                      eloscore: true
-                    }
+      this.logger.log(
+        `[RoundQuestion Timeout] Transaction completed successfully for match ${matchId}`
+      )
+
+      // Re-fetch match with updated ELO for notification (outside transaction)
+      const userId1 = result.completedMatch.participants[0]?.userId
+      const userId2 = result.completedMatch.participants[1]?.userId
+
+      if (userId1 && userId2) {
+        const updatedMatch = await this.prismaService.match.findUnique({
+          where: { id: matchId },
+          include: {
+            winner: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar: true,
+                eloscore: true
+              }
+            },
+            participants: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    avatar: true,
+                    eloscore: true
                   }
                 }
-              },
-              rounds: {
-                include: {
-                  roundWinner: {
-                    include: {
-                      user: {
-                        select: {
-                          id: true,
-                          name: true,
-                          email: true,
-                          avatar: true,
-                          eloscore: true
-                        }
-                      }
-                    }
-                  },
-                  participants: {
-                    include: {
-                      matchParticipant: {
-                        include: {
-                          user: {
-                            select: {
-                              id: true,
-                              name: true,
-                              email: true,
-                              avatar: true,
-                              eloscore: true
-                            }
-                          }
-                        }
-                      },
-                      selectedUserPokemon: {
-                        include: {
-                          pokemon: {
-                            select: {
-                              id: true,
-                              pokedex_number: true,
-                              nameJp: true,
-                              nameTranslations: true,
-                              rarity: true,
-                              imageUrl: true
-                            }
-                          }
-                        }
+              }
+            },
+            rounds: {
+              include: {
+                roundWinner: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        avatar: true,
+                        eloscore: true
                       }
                     }
                   }
                 },
-                orderBy: { roundNumber: 'asc' }
-              }
+                participants: {
+                  include: {
+                    matchParticipant: {
+                      include: {
+                        user: {
+                          select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            avatar: true,
+                            eloscore: true
+                          }
+                        }
+                      }
+                    },
+                    selectedUserPokemon: {
+                      include: {
+                        pokemon: {
+                          select: {
+                            id: true,
+                            pokedex_number: true,
+                            nameJp: true,
+                            nameTranslations: true,
+                            rarity: true,
+                            imageUrl: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              orderBy: { roundNumber: 'asc' }
             }
-          })
+          }
+        })
 
-          this.matchingGateway.notifyMatchCompleted(
-            matchId,
-            userId1,
-            userId2,
-            updatedMatch || completedMatch
-          )
-        }
-      } catch (e) {
-        this.logger.error(
-          `[RoundQuestion Timeout] Error persisting ELO for match ${matchId}`,
-          e
+        this.logger.log(
+          `[RoundQuestion Timeout] Sending match completed notification for match ${matchId}`
+        )
+        this.matchingGateway.notifyMatchCompleted(
+          matchId,
+          userId1,
+          userId2,
+          updatedMatch || result.completedMatch
         )
       }
     } catch (error) {
@@ -1020,6 +1044,8 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         `[RoundQuestion Timeout] Error completing match ${matchId}`,
         error
       )
+      // Don't swallow errors - let them bubble up
+      throw error
     }
   }
 }

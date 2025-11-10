@@ -191,7 +191,8 @@ export const enMessages = {
     NAME_REQUIRED: 'Name is required',
     PASSWORD_MIN: 'Password must be at least 6 characters',
     PHONE_INVALID: 'Invalid phone number',
-    SET_MAIN_POKEMON_SUCCESS: 'Main Pokemon set successfully'
+    SET_MAIN_POKEMON_SUCCESS: 'Main Pokemon set successfully',
+    HAS_NOT_JOINED_SEASON: 'You have not joined the current season'
   },
   role: {
     CREATE_SUCCESS: 'Role created successfully',

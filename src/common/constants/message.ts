@@ -351,7 +351,8 @@ export const USER_MESSAGE = {
   NAME_REQUIRED: 'Tên không được để trống',
   PASSWORD_MIN: 'Mật khẩu phải có ít nhất 6 ký tự',
   PHONE_INVALID: 'Số điện thoại không hợp lệ',
-  SET_MAIN_POKEMON_SUCCESS: 'Đặt Pokemon chính thành công'
+  SET_MAIN_POKEMON_SUCCESS: 'Đặt Pokemon chính thành công',
+  HAS_NOT_JOINED_SEASON: 'Bạn chưa tham gia mùa giải hiện tại'
 }
 
 export const LESSON_MESSAGE = {
@@ -461,7 +462,6 @@ export const SRS_MESSAGE = {
   INVALID_DATA: 'Dữ liệu SRS không hợp lệ'
 }
 
-
 export const Error = {
   // Kaiwa Gateway Errors
   MISSING_USER_ID: 'Missing userId',
@@ -478,4 +478,3 @@ export const Error = {
   PROCESS_AUDIO_FAILED: 'Failed to process audio',
   LEAVE_ROOM_FAILED: 'Failed to leave room'
 }
-
