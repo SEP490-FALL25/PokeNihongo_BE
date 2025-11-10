@@ -657,7 +657,11 @@ export class UserTestAttemptService {
 
                         const mappedAnswers = await Promise.all(
                             (qb?.answers || []).map(async (ans: any) => {
-                                const answerLabel = pickLabelFromComposite(ans?.answerJp || '', normalizedLang)
+                                let answerLabel = pickLabelFromComposite(ans?.answerJp || '', normalizedLang)
+                                // Loại bỏ prefix "jp:" nếu có
+                                if (answerLabel.startsWith('jp:')) {
+                                    answerLabel = answerLabel.replace(/^jp:\s*/, '')
+                                }
                                 return {
                                     id: ans.id,
                                     answer: answerLabel

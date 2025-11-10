@@ -1645,62 +1645,11 @@ export class TestService {
         try {
             this.logger.log(`Generating lesson review test for testId: ${testId}, user: ${userId}, language: ${language}`)
 
-            // Lấy test và các testSet của nó
-            const test = await this.testRepo.findByIdWithTestSetsAndQuestions(testId)
-
+            // Lấy thông tin Test cơ bản (giống findFullById)
+            const test = await this.testRepo.findById(testId, language)
             if (!test) {
                 throw TestNotFoundException
             }
-
-            // Lọc 3 testSet: VOCABULARY, GRAMMAR, KANJI
-            const targetTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI']
-            const testSetsByType: Record<string, any> = {}
-
-            for (const testTestSet of test.testTestSets || []) {
-                const testSet = testTestSet.testSet
-                if (testSet && testSet.testType && targetTypes.includes(testSet.testType)) {
-                    const type = testSet.testType
-                    if (!testSetsByType[type]) {
-                        testSetsByType[type] = testSet
-                    }
-                }
-            }
-
-            // Kiểm tra có đủ 3 testSet không
-            const missingTypes = targetTypes.filter(type => !testSetsByType[type])
-            if (missingTypes.length > 0) {
-                throw new BadRequestException(`Test này thiếu testSet loại: ${missingTypes.join(', ')}`)
-            }
-
-            // Lấy 5 câu hỏi từ mỗi testSet (tổng 15 câu)
-            const allQuestions: any[] = []
-            for (const type of targetTypes) {
-                const testSet = testSetsByType[type]
-                const questions = testSet.testSetQuestionBanks || []
-
-                // Lọc chỉ lấy câu hỏi đúng loại
-                const filteredQuestions = questions.filter(
-                    (tsqb: any) => tsqb.questionBank.questionType === type
-                )
-
-                // Shuffle và lấy 5 câu đầu
-                const shuffled = this.shuffleArray(filteredQuestions)
-                const selected = shuffled.slice(0, 5)
-
-                if (selected.length < 5) {
-                    this.logger.warn(`TestSet ${type} chỉ có ${selected.length} câu, cần 5 câu`)
-                }
-
-                allQuestions.push(...selected)
-            }
-
-            if (allQuestions.length < 10) {
-                throw new BadRequestException(`Không đủ câu hỏi. Tổng có ${allQuestions.length} câu, cần ít nhất 10 câu`)
-            }
-
-            // Random chọn 10 câu từ 15 câu
-            const shuffledAll = this.shuffleArray(allQuestions)
-            const finalQuestions = shuffledAll.slice(0, 10)
 
             // Kiểm tra UserTest tồn tại, nếu không thì tạo
             let userTest = await this.userTestRepo.findByUserAndTest(userId, testId)
@@ -1718,93 +1667,189 @@ export class TestService {
                 testId: testId
             })
 
-            // Map câu hỏi với translations
-            const mappedQuestions = await Promise.all(
-                finalQuestions.map(async (tsqb: any) => {
-                    const qb = tsqb.questionBank
+            // Lấy các TestSets của Test qua TestTestSet (giống findFullById)
+            const testTestSets = await this.testRepo.findTestTestSetsWithTestSetAndCreator(testId)
 
-                    // Lấy translations cho question
-                    let questionTranslation = qb.questionJp
-                    if (qb.questionKey && language) {
+            // Lọc 3 testSet: VOCABULARY, GRAMMAR, KANJI
+            const targetTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI']
+            const testSetsByType: Record<string, any> = {}
+
+            for (const testTestSet of testTestSets) {
+                const testSet = testTestSet.testSet
+                if (testSet && testSet.testType && targetTypes.includes(testSet.testType)) {
+                    const type = testSet.testType
+                    if (!testSetsByType[type]) {
+                        testSetsByType[type] = testTestSet
+                    }
+                }
+            }
+
+            // Kiểm tra có đủ 3 testSet không
+            const missingTypes = targetTypes.filter(type => !testSetsByType[type])
+            if (missingTypes.length > 0) {
+                throw new BadRequestException(`Test này thiếu testSet loại: ${missingTypes.join(', ')}`)
+            }
+
+            // Lấy tất cả questions từ 3 testSet để filter và random
+            // Lưu testSetId và testSetType vào mỗi question để có thể phân loại lại sau
+            const allQuestionsWithTestSetInfo: Array<{ question: any; testSetId: number; testSetType: string }> = []
+
+            for (const type of targetTypes) {
+                const testTestSet = testSetsByType[type]
+                const testSet = testTestSet.testSet
+
+                // Lấy questions + answers cho TestSet (giống findFullById)
+                const questionsResult = await this.testSetQuestionBankService.findFullWithAnswerByTestSetId(testSet.id, language)
+                const questions = questionsResult.data || []
+
+                // Lọc chỉ lấy câu hỏi đúng loại (nếu cần)
+                const filteredQuestions = questions.filter(
+                    (q: any) => q.questionBank?.questionType === type
+                )
+
+                // Shuffle và lấy 5 câu đầu từ mỗi testSet
+                const shuffled = this.shuffleArray(filteredQuestions)
+                const selected = shuffled.slice(0, 5)
+
+                if (selected.length < 5) {
+                    this.logger.warn(`TestSet ${type} chỉ có ${selected.length} câu, cần 5 câu`)
+                }
+
+                // Thêm testSetId và testSetType vào mỗi question
+                for (const question of selected) {
+                    allQuestionsWithTestSetInfo.push({
+                        question,
+                        testSetId: testSet.id,
+                        testSetType: type
+                    })
+                }
+            }
+
+            if (allQuestionsWithTestSetInfo.length < 10) {
+                throw new BadRequestException(`Không đủ câu hỏi. Tổng có ${allQuestionsWithTestSetInfo.length} câu, cần ít nhất 10 câu`)
+            }
+
+            // Random chọn 10 câu từ 15 câu
+            const shuffledAll = this.shuffleArray(allQuestionsWithTestSetInfo)
+            const finalQuestionsWithInfo = shuffledAll.slice(0, 10)
+
+            // Phân loại 10 câu đã chọn theo testSet
+            const finalQuestionsByTestSet: Record<string, any[]> = {}
+            for (const type of targetTypes) {
+                finalQuestionsByTestSet[type] = []
+            }
+
+            for (const { question, testSetType } of finalQuestionsWithInfo) {
+                if (finalQuestionsByTestSet[testSetType]) {
+                    finalQuestionsByTestSet[testSetType].push(question)
+                }
+            }
+
+            // Tạo testSets với details (giống findFullById)
+            const testSetsWithDetails = await Promise.all(
+                targetTypes.map(async (type) => {
+                    const testTestSet = testSetsByType[type]
+                    const testSet = testTestSet.testSet
+
+                    // Lấy translations cho TestSet (giống findFullById)
+                    const testSetNameKey = `testset.${testSet.id}.name`
+                    const testSetDescriptionKey = `testset.${testSet.id}.description`
+                    const testSetContentKey = `testset.${testSet.id}.content`
+
+                    const testSetTranslationWhere: any = {
+                        OR: [
+                            { key: testSetNameKey },
+                            { key: testSetDescriptionKey },
+                            { key: testSetContentKey },
+                            { key: { startsWith: testSetNameKey + '.meaning.' } },
+                            { key: { startsWith: testSetDescriptionKey + '.meaning.' } },
+                            { key: { startsWith: testSetContentKey + '.meaning.' } }
+                        ]
+                    }
+
+                    if (language) {
                         const languageRecord = await this.prisma.languages.findFirst({
                             where: { code: language }
                         })
                         if (languageRecord) {
-                            const translation = await this.prisma.translation.findFirst({
-                                where: {
-                                    key: qb.questionKey,
-                                    languageId: languageRecord.id
-                                }
-                            })
-                            if (translation) {
-                                questionTranslation = translation.value
-                            }
+                            testSetTranslationWhere.languageId = languageRecord.id
                         }
                     }
 
-                    // Map answers với translations
-                    const mappedAnswers = await Promise.all(
-                        (qb.answers || []).map(async (ans: any) => {
-                            let answerTranslation = ans.answerJp
+                    const testSetTranslations = await this.prisma.translation.findMany({
+                        where: testSetTranslationWhere,
+                        include: { language: true }
+                    })
 
-                            if (ans.answerKey && language) {
-                                const languageRecord = await this.prisma.languages.findFirst({
-                                    where: { code: language }
-                                })
-                                if (languageRecord) {
-                                    const translation = await this.prisma.translation.findFirst({
-                                        where: {
-                                            key: ans.answerKey,
-                                            languageId: languageRecord.id
-                                        }
-                                    })
-                                    if (translation) {
-                                        answerTranslation = translation.value
-                                    }
-                                }
-                            }
+                    let testSetName: any = testSet.name
+                    let testSetDescription: any = testSet.description
+                    let testSetContent: any = testSet.content
 
-                            return {
-                                id: ans.id,
-                                answer: answerTranslation,
-                                isCorrect: ans.isCorrect
+                    if (language) {
+                        const nameTranslation = testSetTranslations.find(t => t.key.startsWith(testSetNameKey + '.meaning.'))
+                        const descriptionTranslation = testSetTranslations.find(t => t.key.startsWith(testSetDescriptionKey + '.meaning.'))
+                        const contentTranslation = testSetTranslations.find(t => t.key.startsWith(testSetContentKey + '.meaning.'))
+
+                        testSetName = nameTranslation?.value || testSet.name
+                        testSetDescription = descriptionTranslation?.value || testSet.description
+                        testSetContent = contentTranslation?.value || testSet.content
+                    } else {
+                        const nameTranslations = testSetTranslations.filter(t => t.key.startsWith(testSetNameKey + '.meaning.'))
+                        const descriptionTranslations = testSetTranslations.filter(t => t.key.startsWith(testSetDescriptionKey + '.meaning.'))
+                        const contentTranslations = testSetTranslations.filter(t => t.key.startsWith(testSetContentKey + '.meaning.'))
+
+                        testSetName = nameTranslations.map(t => ({
+                            language: t.language.code,
+                            value: t.value
+                        }))
+                        testSetDescription = descriptionTranslations.map(t => ({
+                            language: t.language.code,
+                            value: t.value
+                        }))
+                        testSetContent = contentTranslations.map(t => ({
+                            language: t.language.code,
+                            value: t.value
+                        }))
+                    }
+
+                    // Chỉ lấy questions đã được chọn từ testSet này
+                    const selectedQuestions = finalQuestionsByTestSet[type] || []
+
+                    // Map questions để loại bỏ các fields không cần thiết
+                    const mappedQuestions = selectedQuestions.map((q: any) => {
+                        const { questionBank } = q
+                        return {
+                            id: q.id,
+                            questionOrder: q.questionOrder,
+                            questionBank: {
+                                id: questionBank.id,
+                                question: questionBank.question,
+                                answers: questionBank.answers
                             }
-                        })
-                    )
+                        }
+                    })
 
                     return {
-                        id: qb.id,
-                        question: questionTranslation,
-                        questionType: qb.questionType,
-                        audioUrl: qb.audioUrl,
-                        pronunciation: qb.pronunciation,
-                        levelN: qb.levelN,
-                        answers: this.shuffleArray(mappedAnswers) // Shuffle answers
+                        id: testSet.id,
+                        name: testSetName,
+                        questions: mappedQuestions
                     }
                 })
             )
 
-            this.logger.log(`Generated lesson review test with ${finalQuestions.length} questions for testId ${testId}`)
+            // Format response - chỉ giữ lại id và userTestAttemptId
+            const result = {
+                id: test.id,
+                testSets: testSetsWithDetails,
+                userTestAttemptId: userTestAttempt.id
+            }
 
-            // Tính distribution
-            const vocabularyCount = finalQuestions.filter((q: any) => q.questionBank.questionType === 'VOCABULARY').length
-            const grammarCount = finalQuestions.filter((q: any) => q.questionBank.questionType === 'GRAMMAR').length
-            const kanjiCount = finalQuestions.filter((q: any) => q.questionBank.questionType === 'KANJI').length
+            this.logger.log(`Generated lesson review test with ${finalQuestionsWithInfo.length} questions for testId ${testId}`)
 
             return {
                 statusCode: 200,
-                data: {
-                    testId: testId,
-                    userTestAttemptId: userTestAttempt.id,
-                    questions: mappedQuestions,
-                    distribution: {
-                        vocabulary: vocabularyCount,
-                        grammar: grammarCount,
-                        kanji: kanjiCount,
-                        total: finalQuestions.length
-                    }
-                },
-                message: 'Lấy câu hỏi bài test ôn tập thành công'
+                data: result,
+                message: TEST_MESSAGE.GET_SUCCESS
             }
         } catch (error) {
             this.logger.error('Error generating lesson review test:', error)

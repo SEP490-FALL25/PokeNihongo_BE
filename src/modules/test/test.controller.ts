@@ -135,7 +135,7 @@ export class TestController {
     @ApiResponse({
         status: 200,
         description: 'Lấy câu hỏi bài test ôn tập thành công',
-        type: MessageResDTO
+        type: TestResponseSwaggerDTO
     })
     async generateLessonReviewTest(
         @Param('testId') testId: string,
