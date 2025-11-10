@@ -15,8 +15,16 @@ export const RewardItem = {
 
 export const RewardTarget = {
   EXP: 'EXP',
-  POINT: 'POINT',
   POKEMON: 'POKEMON',
-  BADGE: 'BADGE',
-  VOUCHER: 'VOUCHER'
+  POKE_COINS: 'POKE_COINS',
+  SPARKLES: 'SPARKLES'
 } as const
+
+export const RewardClaimStatus = {
+  PENDING: 'PENDING',
+  CLAIMED: 'CLAIMED',
+  COMPLETED: 'COMPLETED'
+} as const
+
+export type RewardClaimStatusType =
+  (typeof RewardClaimStatus)[keyof typeof RewardClaimStatus]

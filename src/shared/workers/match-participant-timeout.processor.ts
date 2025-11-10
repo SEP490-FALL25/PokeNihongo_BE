@@ -63,7 +63,7 @@ export class MatchParticipantTimeoutProcessor {
    * Sau 25s, nếu hasAccepted vẫn null → set thành false
    * Sau đó check cả 2 participants để update Match status
    */
-  @Process(BullAction.CHECK_ACCEPTANCE_TIMEOUT)
+  @Process({ name: BullAction.CHECK_ACCEPTANCE_TIMEOUT, concurrency: 10 })
   async handleAcceptanceTimeout(job: Job<MatchParticipantTimeoutJobData>): Promise<void> {
     const { matchParticipantId, matchId, userId } = job.data
 

@@ -38,8 +38,10 @@ import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
 
+import { HandleLeaderboardSeasonCronjob } from './cronjobs/handle-leaderboard-season.cronjob'
 import { HandleMatchmakingCronjob } from './cronjobs/handle-matchmaking.cronjob'
 import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
+import { AIConversationRoomModule } from './modules/ai-conversation-room/ai-conversation-room.module'
 import { DebuffRoundModule } from './modules/debuff-round/debuff-round.module'
 import { GachaBannerModule } from './modules/gacha-banner/gacha-banner.module'
 import { GachaItemRateModule } from './modules/gacha-item-rate/gacha-item-rate.module'
@@ -54,6 +56,9 @@ import { MatchRoundModule } from './modules/match-round/match-round.module'
 import { MatchModule } from './modules/match/match.module'
 import { QuestionBankModule } from './modules/question-bank/question-bank.module'
 import { RewardModule } from './modules/reward/reward.module'
+import { RoundQuestionAnswerlogModule } from './modules/round-question-answerlog/round-question-answerlog.module'
+import { RoundQuestionModule } from './modules/round-question/round-question.module'
+import { SeasonRankRewardModule } from './modules/season-rank-reward/season-rank-reward.module'
 import { ShopBannerModule } from './modules/shop-banner/shop-banner.module'
 import { ShopItemModule } from './modules/shop-item/shop-item.module'
 import { ShopPurchaseModule } from './modules/shop-purchase/shop-purchase.module'
@@ -64,6 +69,7 @@ import { TestModule } from './modules/test/test.module'
 import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module'
 import { TestSetModule } from './modules/testset/testset.module'
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module'
+import { UserAIConversationModule } from './modules/user-ai-conversation/user-ai-conversation.module'
 import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.module'
 import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-request.module'
 import { UserExerciseAttemptModule } from './modules/user-exercise-attempt/user-exercise-attempt.module'
@@ -71,8 +77,7 @@ import { UserGachaPityModule } from './modules/user-gacha-pity/user-gacha-pity.m
 import { UserHistoryModule } from './modules/user-history/user-history.module'
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserProgressModule } from './modules/user-progress/user-progress.module'
-import { UserAIConversationModule } from './modules/user-ai-conversation/user-ai-conversation.module'
-import { AIConversationRoomModule } from './modules/ai-conversation-room/ai-conversation-room.module'
+import { UserSeasonHistoryModule } from './modules/user-season-history/user-season-history.module'
 import { UserTestAnswerLogModule } from './modules/user-test-answer-log/user-test-answer-log.module'
 import { UserTestAttemptModule } from './modules/user-test-attempt/user-test-attempt.module'
 import { UserTestModule } from './modules/user-test/user-test.module'
@@ -82,9 +87,6 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
-import { UserSeasonHistoryModule } from './modules/user-season-history/user-season-history.module';
-import { RoundQuestionModule } from './modules/round-question/round-question.module';
-import { RoundQuestionAnswerlogModule } from './modules/round-question-answerlog/round-question-answerlog.module';
 
 @Module({
   imports: [
@@ -169,12 +171,14 @@ import { RoundQuestionAnswerlogModule } from './modules/round-question-answerlog
     UserAIConversationModule,
     AIConversationRoomModule,
     RoundQuestionModule,
-    RoundQuestionAnswerlogModule
+    RoundQuestionAnswerlogModule,
+    SeasonRankRewardModule
   ],
 
   controllers: [],
   providers: [
     HandleShopBannerCronjob,
+    HandleLeaderboardSeasonCronjob,
     HandleMatchmakingCronjob, // Cronjob chạy mỗi 5s để xử lý matchmaking
     {
       provide: APP_PIPE,

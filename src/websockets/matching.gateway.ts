@@ -1,3 +1,4 @@
+import { addTimeUTC } from '@/shared/helpers'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { TokenService } from '@/shared/services/token.service'
 import { Injectable, Logger } from '@nestjs/common'
@@ -521,7 +522,7 @@ export class MatchingGateway {
    * @param matchId - Match ID
    * @param userId - User who answered
    * @param answerResult - Answer result data (answerId, isCorrect, pointsEarned, timeAnswerMs)
-   * @param nextQuestion - Next question data or null if last question
+   * @param nextQuestion - Next question data or null if last question (must include roundQuestionId if present)
    */
   notifyQuestionAnswered(
     matchId: number,
@@ -545,7 +546,7 @@ export class MatchingGateway {
     })
 
     this.logger.log(
-      `[MatchingGateway] Notified user ${userId} in match ${matchId} about answer result (roundQuestionId=${answerResult.roundQuestionId}, nextQuestion=${nextQuestion ? nextQuestion.id : 'null'})`
+      `[MatchingGateway] Notified user ${userId} in match ${matchId} about answer result (roundQuestionId=${answerResult.roundQuestionId}, nextQuestion=${nextQuestion?.nextQuestion ? `id: ${nextQuestion.nextQuestion.id}, roundQuestionId: ${nextQuestion.nextQuestion.roundQuestionId}` : 'null'})`
     )
   }
 
@@ -597,11 +598,15 @@ export class MatchingGateway {
     const userMatchRoom1 = `match_${matchId}_user_${userId1}`
     const userMatchRoom2 = `match_${matchId}_user_${userId2}`
 
+    // Calculate start time based on delay
+    const startTime = addTimeUTC(new Date(), delaySeconds * 1000)
+
     const payload = {
       type: 'ROUND_STARTING',
       matchId,
       roundNumber,
       delaySeconds,
+      startTime: startTime,
       message: `Round ${roundNumber} will start in ${delaySeconds} seconds`
     }
 
@@ -609,7 +614,7 @@ export class MatchingGateway {
     this.server.to(userMatchRoom2).emit(MATCHING_EVENTS.ROUND_STARTING, payload)
 
     this.logger.log(
-      `[MatchingGateway] Notified users ${userId1} and ${userId2} that round ${roundNumber} starting in ${delaySeconds}s`
+      `[MatchingGateway] Notified users ${userId1} and ${userId2} that round ${roundNumber} starting in ${delaySeconds}s at ${startTime.toISOString()}`
     )
   }
 
@@ -617,8 +622,8 @@ export class MatchingGateway {
    * Notify user about round start with their first question
    * @param matchId - Match ID
    * @param userId - User ID
-   * @param roundData - Round data with participants
-   * @param firstQuestion - User's first question
+   * @param roundData - Round data with participants and opponent
+   * @param firstQuestion - User's first question (must include roundQuestionId)
    */
   notifyRoundStarted(
     matchId: number,
@@ -636,7 +641,7 @@ export class MatchingGateway {
     })
 
     this.logger.log(
-      `[MatchingGateway] Notified user ${userId} that round ${roundData.roundNumber} started with first question ${firstQuestion?.id}`
+      `[MatchingGateway] Notified user ${userId} that round ${roundData.roundNumber} started with first question ${firstQuestion?.id} (roundQuestionId: ${firstQuestion?.roundQuestionId})`
     )
   }
 

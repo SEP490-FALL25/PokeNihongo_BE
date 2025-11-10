@@ -561,5 +561,40 @@ export const jaMessages = {
     NOT_FOUND: 'ラウンド質問回答ログが見つかりません',
     ALREADY_EXISTS: 'ラウンド質問回答ログは既に存在します',
     INVALID_DATA: '無効なラウンド質問回答ログデータです'
+  },
+  season_rank_reward: {
+    CREATE_SUCCESS: 'シーズンランク報酬の作成に成功しました',
+    UPDATE_SUCCESS: 'シーズンランク報酬の更新に成功しました',
+    DELETE_SUCCESS: 'シーズンランク報酬の削除に成功しました',
+    GET_SUCCESS: 'シーズンランク報酬情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'シーズンランク報酬リストの取得に成功しました',
+    NOT_FOUND: 'シーズンランク報酬が見つかりません',
+
+    ALREADY_EXISTS: 'シーズンランク報酬は既に存在します',
+    INVALID_DATA: '無効なシーズンランク報酬データです',
+    RANK_NAME_INVALID: '無効なランク名です',
+    RANK_ORDER_INVALID: '無効なランク順です'
+  },
+  leaderboard_season: {
+    CREATE_SUCCESS: 'リーダーボードシーズンの作成に成功しました',
+    UPDATE_SUCCESS: 'リーダーボードシーズンの更新に成功しました',
+    DELETE_SUCCESS: 'リーダーボードシーズンの削除に成功しました',
+    GET_SUCCESS: 'リーダーボードシーズン情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'リーダーボードシーズンリストの取得に成功しました',
+    NOT_FOUND: 'リーダーボードシーズンが見つかりません',
+    ALREADY_EXISTS: 'リーダーボードシーズンは既に存在します',
+    INVALID_DATA: '無効なリーダーボードシーズンデータです',
+    HAS_ACTIVE: '既にアクティブなリーダーボードシーズンが存在します',
+    HAS_OPENED: '既に開始されたリーダーボードシーズンが存在します'
+  },
+  user_reward_history: {
+    CREATE_SUCCESS: 'ユーザー報酬履歴の作成に成功しました',
+    UPDATE_SUCCESS: 'ユーザー報酬履歴の更新に成功しました',
+    DELETE_SUCCESS: 'ユーザー報酬履歴の削除に成功しました',
+    GET_SUCCESS: 'ユーザー報酬履歴情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ユーザー報酬履歴リストの取得に成功しました',
+    NOT_FOUND: 'ユーザー報酬履歴が見つかりません',
+    ALREADY_EXISTS: 'ユーザー報酬履歴は既に存在します',
+    INVALID_DATA: '無効なユーザー報酬履歴データです'
   }
 }
