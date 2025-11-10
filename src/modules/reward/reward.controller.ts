@@ -16,7 +16,7 @@ import {
   Query,
   UseGuards
 } from '@nestjs/common'
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreatedRewardBodyInputDTO,
@@ -28,18 +28,44 @@ import {
   UpdateRewardResDTO
 } from './dto/reward.zod-dto'
 import { RewardService } from './reward.service'
+import { ConvertRewardsBodyDTO, ConvertRewardsResDTO } from './dto/reward.zod-dto'
+import {
+  ConvertRewardsSwaggerDTO,
+  ConvertRewardsDataSwaggerDTO,
+  ConvertRewardsResponseSwaggerDTO
+} from './dto/reward.dto'
+import { UserRewardSourceType } from '@prisma/client'
 
 @Controller('reward')
 @UseGuards(AuthenticationGuard)
 @ApiBearerAuth()
 export class RewardController {
-  constructor(private readonly rewardService: RewardService) {}
+  constructor(private readonly rewardService: RewardService) { }
 
   @Get()
   @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
   list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
     return this.rewardService.list(query, lang)
+  }
+
+  @Post('convert')
+  @ApiOperation({ summary: 'Quy đổi reward cho user' })
+  @ApiBody({ type: ConvertRewardsSwaggerDTO, description: 'REWARD_SERVICE , LESSON , DAILY_REQUEST, ATTENDANCE, SEASON_REWARD, ADMIN_ADJUST, OTHER' })
+  @ApiResponse({ status: 200, description: 'Quy đổi thành công', type: ConvertRewardsResponseSwaggerDTO })
+  @ZodSerializerDto(ConvertRewardsResDTO)
+  convertRewards(
+    @Body() body: ConvertRewardsBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    const targetUserId = body.userId ?? userId
+    return this.rewardService.convertRewards({
+      rewardIds: body.rewardIds,
+      userId,
+      sourceType: body.sourceType ?? UserRewardSourceType.REWARD_SERVICE,
+      lang
+    })
   }
 
   @Get('admin')

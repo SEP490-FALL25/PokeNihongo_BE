@@ -524,6 +524,11 @@ export class LessonContentService {
                             }
 
                             // Tách meaning thành phần chính và phần giải thích
+                            const cleanText = (text?: string | null): string | undefined =>
+                                typeof text === 'string'
+                                    ? text.replace(/##/g, ' ').replace(/\s+/g, ' ').trim()
+                                    : undefined
+
                             let meaning = meaningValue
                             let explanationMeaning: string | undefined
 
@@ -533,6 +538,13 @@ export class LessonContentService {
                                     meaning = meaningValue.substring(0, firstDotIndex).trim()
                                     explanationMeaning = meaningValue.substring(firstDotIndex + 1).trim()
                                 }
+                            }
+
+                            if (typeof meaning === 'string') {
+                                meaning = cleanText(meaning) ?? ''
+                            }
+                            if (typeof explanationMeaning === 'string') {
+                                explanationMeaning = cleanText(explanationMeaning)
                             }
 
                             // Tách readings thành on và kun (lấy tất cả readings từ bảng Kanji_Reading)

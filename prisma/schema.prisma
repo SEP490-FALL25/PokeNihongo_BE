@@ -141,6 +141,7 @@ model User {
   matchWins           Match[]              @relation("WonMatches")
   matchParticipants   MatchParticipant[]
   userSeasonHistories UserSeasonHistory[]
+  userRewardHistories UserRewardHistory[]
 
   createdById  Int?
   createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -435,11 +436,31 @@ model Reward {
   deletedBy   User? @relation("RewardDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   // Timestamps
-  deletedAt    DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  DailyRequest DailyRequest[]
-  Achievement  Achievement[]
+  deletedAt           DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  DailyRequest        DailyRequest[]
+  Achievement         Achievement[]
+  userRewardHistories UserRewardHistory[]
+}
+
+model UserRewardHistory {
+  id                   Int                  @id @default(autoincrement())
+  userId               Int
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  rewardId             Int?
+  reward               Reward?              @relation(fields: [rewardId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  rewardTargetSnapshot RewardTarget?
+  amount               Int?
+  sourceType           UserRewardSourceType
+  sourceId             Int?
+  note                 String?              @db.VarChar(1000)
+  meta                 Json?
+  createdAt            DateTime             @default(now())
+
+  @@index([userId])
+  @@index([rewardId])
+  @@index([sourceType])
 }
 
 model Level {
@@ -631,6 +652,10 @@ model Lesson {
   rewardId Int?
   reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
+  // Quan hệ với Test (Bài test ôn tập)
+  testId Int?
+  test   Test? @relation("LessonTest", fields: [testId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
   // Quan hệ với User (created_by)
   createdById Int
   createdBy   User @relation("LessonCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -651,6 +676,7 @@ model Lesson {
   @@index([lessonOrder])
   @@index([isPublished])
   @@index([publishedAt])
+  @@index([testId])
 }
 
 // Model LessonContents (Nội dung bài học)
@@ -791,6 +817,9 @@ model Test {
 
   // Quan hệ với UserTestAttempt
   userTestAttempts UserTestAttempt[] @relation("TestUserTestAttempts")
+
+  // Quan hệ với Lesson (Bài test ôn tập cho lesson)
+  lessons Lesson[] @relation("LessonTest")
 
   @@index([testType])
   @@index([status])
@@ -1920,6 +1949,7 @@ enum QueueStatus {
 enum ProgressStatus {
   NOT_STARTED // Chưa bắt đầu
   IN_PROGRESS // Đang học
+  TESTING_LAST // Đang làm bài test
   COMPLETED // Đã hoàn thành
 }
 
@@ -2170,6 +2200,7 @@ enum TestStatus {
   READING_TEST // Đọc hiểu
   LISTENING_TEST // Nghe hiểu
   SPEAKING_TEST // Nói
+  LESSON_REVIEW // Ôn tập bài học
 }
 
 // === AI Recommendations ===
@@ -2400,4 +2431,14 @@ enum RewardClaimStatus {
   PENDING
   CLAIMED
   COMPLETED
+}
+
+enum UserRewardSourceType {
+  REWARD_SERVICE // Qua RewardService.convertRewardsWithUser
+  LESSON // Hoàn thành bài học / lesson-based reward
+  DAILY_REQUEST // Hoàn thành Daily Request / Streak
+  ATTENDANCE // Điểm danh (Attendance)
+  SEASON_REWARD // Thưởng mùa giải (Leaderboard Season)
+  ADMIN_ADJUST // Admin thưởng thủ công
+  OTHER // Trường hợp khác
 }
