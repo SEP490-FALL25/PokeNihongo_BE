@@ -11,17 +11,22 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
-import { RarityPokemon, RewardTarget, UserRewardSourceType, WalletType } from '@prisma/client'
+import {
+  RarityPokemon,
+  RewardTarget,
+  UserRewardSourceType,
+  WalletType
+} from '@prisma/client'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
+import { CreateUserRewardHistoryBodyType } from '../user-reward-history/entities/user-reward-history.entities'
+import { UserRewardHistoryService } from '../user-reward-history/user-reward-history.service'
 import { UserService } from '../user/user.service'
 import { WalletRepo } from '../wallet/wallet.repo'
-import { CreateUserRewardHistoryBodyType, UserRewardSourceTypeSchema } from '../user-reward-history/entities/user-reward-history.entities'
 import { RewardAlreadyExistsException } from './dto/reward.error'
-import { UserRewardHistoryService } from '../user-reward-history/user-reward-history.service'
 import {
   CreateRewardBodyInputType,
   CreateRewardBodyType,
@@ -42,7 +47,7 @@ export class RewardService {
     private readonly pokemonRepo: PokemonRepo,
     private readonly userPokemonRepo: UserPokemonRepo,
     private readonly userRewardHistoryService: UserRewardHistoryService
-  ) { }
+  ) {}
 
   private readonly logger = new Logger(RewardService.name)
 
@@ -271,7 +276,7 @@ export class RewardService {
             },
             true
           )
-        } catch (rollbackError) { }
+        } catch (rollbackError) {}
       }
 
       if (isUniqueConstraintPrismaError(error)) {
@@ -427,10 +432,13 @@ export class RewardService {
    * @returns Object with processed results for each reward type
    */
   //todo Kumo
-  async convertRewardsWithUser(rewardIds: number[], userId: number, sourceType: UserRewardSourceType) {
+  async convertRewardsWithUser(
+    rewardIds: number[],
+    userId: number,
+    sourceType: UserRewardSourceType
+  ) {
     // 1. Fetch all rewards by IDs using findManyByIds
     const rewards = await this.rewardRepo.findManyByIds(rewardIds)
-
     if (rewards.length !== rewardIds.length) {
       throw new NotFoundRecordException()
     }
@@ -498,11 +506,13 @@ export class RewardService {
         (sum, r) => sum + r.rewardItem,
         0
       )
+
       results.sparkles = await this.walletRepo.addBalanceToWalletWithType({
         userId,
         type: WalletType.SPARKLES,
         amount: totalSparkles
       })
+
       this.userRewardHistoryService.appendEntriesFromRewards(
         historyEntries,
         rewardsByType[RewardTarget.SPARKLES],
@@ -596,7 +606,9 @@ export class RewardService {
         try {
           await this.userRewardHistoryService.create(entry)
         } catch (error) {
-          this.logger.warn(`Failed to record user reward history for user ${userId}: ${error?.message ?? error}`)
+          this.logger.warn(
+            `Failed to record user reward history for user ${userId}: ${error?.message ?? error}`
+          )
         }
       }
     }
@@ -604,8 +616,17 @@ export class RewardService {
     return results
   }
 
-  async convertRewards(params: { rewardIds: number[]; userId: number; sourceType: UserRewardSourceType; lang?: string }) {
-    const data = await this.convertRewardsWithUser(params.rewardIds, params.userId, params.sourceType)
+  async convertRewards(params: {
+    rewardIds: number[]
+    userId: number
+    sourceType: UserRewardSourceType
+    lang?: string
+  }) {
+    const data = await this.convertRewardsWithUser(
+      params.rewardIds,
+      params.userId,
+      params.sourceType
+    )
     return {
       statusCode: HttpStatus.OK,
       data,

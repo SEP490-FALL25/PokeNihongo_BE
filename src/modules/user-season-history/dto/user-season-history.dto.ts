@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod'
 import {
   CreateUserSeasonHistoryBodySchema,
   CreateUserSeasonHistoryResSchema,
+  GetRewardByLeaderboardParamsSchema,
   GetUserSeasonHistoryDetailResSchema,
   GetUserSeasonHistoryParamsSchema,
   UpdateUserSeasonHistoryBodySchema,
@@ -20,6 +21,10 @@ export class UpdateUserSeasonHistoryBodyDTO extends createZodDto(
 
 export class GetUserSeasonHistoryParamsDTO extends createZodDto(
   GetUserSeasonHistoryParamsSchema
+) {}
+
+export class GetRewardByLeaderboardParamsDTO extends createZodDto(
+  GetRewardByLeaderboardParamsSchema
 ) {}
 
 // Response DTOs
