@@ -474,11 +474,9 @@ export class LessonContentService {
 
                             return {
                                 id: grammar.id,
-                                titleKey: firstUsage.explanationKey, // Sử dụng explanationKey làm title
-                                title: explanationValue,
-                                descriptionKey: firstUsage.explanationKey,
+                                titleKey: '', // Structure không có translation key, là string trực tiếp
+                                title: grammar.structure, // Sử dụng structure làm title
                                 description: explanationValue,
-                                usageKey: firstUsage.exampleSentenceKey,
                                 usage: exampleSentenceValue,
                                 contentOrder: lc.contentOrder,
                                 lessonContentId: lc.id
@@ -525,15 +523,27 @@ export class LessonContentService {
                                 }
                             }
 
-                            // Tách readings thành on và kun
-                            const onReadings = kanji.data.readings?.filter(r => r.readingType === 'ON').map(r => r.reading) || []
-                            const kunReadings = kanji.data.readings?.filter(r => r.readingType === 'KUN').map(r => r.reading) || []
+                            // Tách meaning thành phần chính và phần giải thích
+                            let meaning = meaningValue
+                            let explanationMeaning: string | undefined
+
+                            if (typeof meaningValue === 'string') {
+                                const firstDotIndex = meaningValue.indexOf('.')
+                                if (firstDotIndex !== -1) {
+                                    meaning = meaningValue.substring(0, firstDotIndex).trim()
+                                    explanationMeaning = meaningValue.substring(firstDotIndex + 1).trim()
+                                }
+                            }
+
+                            // Tách readings thành on và kun (lấy tất cả readings từ bảng Kanji_Reading)
+                            const onReadings = kanji.data.readings?.filter(r => r.readingType === 'onyomi').map(r => r.reading) || []
+                            const kunReadings = kanji.data.readings?.filter(r => r.readingType === 'kunyomi').map(r => r.reading) || []
 
                             return {
                                 id: kanji.data.id,
                                 character: kanji.data.character,
-                                meaningKey: kanji.data.meaningKey,
-                                meaning: meaningValue,
+                                meaning,
+                                explanationMeaning,
                                 onReading: onReadings.join(', '),
                                 kunReading: kunReadings.join(', '),
                                 strokeCount: kanji.data.strokeCount || undefined,
