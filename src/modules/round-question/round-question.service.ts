@@ -599,6 +599,21 @@ export class RoundQuestionService {
   }
 
   private async completeMatch(matchId: number) {
+    // Guard check: prevent duplicate processing if match already completed
+    const currentMatch = await this.prismaService.match.findUnique({
+      where: { id: matchId },
+      select: { status: true }
+    })
+
+    if (currentMatch?.status === 'COMPLETED') {
+      console.log(
+        `[RoundQuestion Service] Match ${matchId} already COMPLETED, skipping duplicate processing`
+      )
+      return
+    }
+
+    console.log(`[RoundQuestion Service] Starting completeMatch for matchId=${matchId}`)
+
     // similar to processor.completeMatch
     const allRounds = await this.prismaService.matchRound.findMany({
       where: { matchId, deletedAt: null },
@@ -608,7 +623,12 @@ export class RoundQuestionService {
       },
       orderBy: { roundNumber: 'asc' }
     })
-    if (allRounds.length !== 3) return
+    if (allRounds.length !== 3) {
+      console.warn(
+        `[RoundQuestion Service] Match ${matchId} has ${allRounds.length} rounds, expected 3`
+      )
+      return
+    }
 
     const roundWinCounts = new Map<number, number>()
     for (const round of allRounds)
@@ -648,22 +668,19 @@ export class RoundQuestionService {
       include: { user: true }
     })
 
-    const completedMatch = await this.prismaService.match.update({
-      where: { id: matchId },
-      data: { status: 'COMPLETED', winnerId: winnerParticipant?.userId || null },
-      include: {
-        winner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-            eloscore: true
-          }
-        },
-        participants: {
+    console.log(
+      `[RoundQuestion Service] Match winner determined: participantId=${matchWinnerId}, userId=${winnerParticipant?.userId}, maxWins=${maxWins}`
+    )
+
+    // Wrap entire flow in atomic transaction to prevent race conditions
+    try {
+      const result = await this.prismaService.$transaction(async (tx) => {
+        // First, update match status to COMPLETED to claim ownership
+        const completedMatch = await tx.match.update({
+          where: { id: matchId },
+          data: { status: 'COMPLETED', winnerId: winnerParticipant?.userId || null },
           include: {
-            user: {
+            winner: {
               select: {
                 id: true,
                 name: true,
@@ -671,12 +688,8 @@ export class RoundQuestionService {
                 avatar: true,
                 eloscore: true
               }
-            }
-          }
-        },
-        rounds: {
-          include: {
-            roundWinner: {
+            },
+            participants: {
               include: {
                 user: {
                   select: {
@@ -689,73 +702,109 @@ export class RoundQuestionService {
                 }
               }
             },
-            participants: {
+            rounds: {
               include: {
-                matchParticipant: { include: { user: true } },
-                selectedUserPokemon: {
+                roundWinner: {
                   include: {
-                    pokemon: {
+                    user: {
                       select: {
                         id: true,
-                        pokedex_number: true,
-                        nameJp: true,
-                        nameTranslations: true,
-                        rarity: true,
-                        imageUrl: true
+                        name: true,
+                        email: true,
+                        avatar: true,
+                        eloscore: true
+                      }
+                    }
+                  }
+                },
+                participants: {
+                  include: {
+                    matchParticipant: { include: { user: true } },
+                    selectedUserPokemon: {
+                      include: {
+                        pokemon: {
+                          select: {
+                            id: true,
+                            pokedex_number: true,
+                            nameJp: true,
+                            nameTranslations: true,
+                            rarity: true,
+                            imageUrl: true
+                          }
+                        }
                       }
                     }
                   }
                 }
-              }
+              },
+              orderBy: { roundNumber: 'asc' }
             }
-          },
-          orderBy: { roundNumber: 'asc' }
-        }
-      }
-    })
+          }
+        })
 
-    const userId1 = completedMatch.participants[0]?.userId
-    const userId2 = completedMatch.participants[1]?.userId
+        // Calculate and update ELO within same transaction
+        const participants = completedMatch.participants || []
+        const winnerUserId = completedMatch.winnerId
+        const loserUserId = participants.find((p) => p.userId !== winnerUserId)?.userId
 
-    // Calculate and persist ELO changes similar to the processor
-    try {
-      const participants = completedMatch.participants || []
-      const winnerUserId = completedMatch.winnerId
-      const loserUserId = participants.find((p) => p.userId !== winnerUserId)?.userId
+        let eloGained = 0
+        let eloLost = 0
 
-      let eloGained = 0
-      let eloLost = 0
+        if (winnerUserId && loserUserId) {
+          const winnerUser = participants.find((p) => p.userId === winnerUserId)?.user
+          const loserUser = participants.find((p) => p.userId === loserUserId)?.user
 
-      if (winnerUserId && loserUserId) {
-        const winnerUser = participants.find((p) => p.userId === winnerUserId)?.user
-        const loserUser = participants.find((p) => p.userId === loserUserId)?.user
+          const winnerElo = (winnerUser && winnerUser.eloscore) || 0
+          const loserElo = (loserUser && loserUser.eloscore) || 0
 
-        const winnerElo = (winnerUser && winnerUser.eloscore) || 0
-        const loserElo = (loserUser && loserUser.eloscore) || 0
+          console.log(
+            `[RoundQuestion Service] ELO before: winner=${winnerElo}, loser=${loserElo}`
+          )
 
-        eloGained = calculateEloGain(winnerElo, loserElo)
-        eloLost = calculateEloLoss(loserElo, winnerElo)
+          eloGained = calculateEloGain(winnerElo, loserElo)
+          eloLost = calculateEloLoss(loserElo, winnerElo)
 
-        const newLoserElo = Math.max(0, loserElo - eloLost)
+          console.log(
+            `[RoundQuestion Service] ELO delta: gained=${eloGained}, lost=${eloLost}`
+          )
 
-        await this.prismaService.$transaction([
-          this.prismaService.match.update({
+          const newLoserElo = Math.max(0, loserElo - eloLost)
+
+          // Update Match with ELO deltas
+          await tx.match.update({
             where: { id: matchId },
             data: { eloGained, eloLost }
-          }),
-          this.prismaService.user.update({
+          })
+
+          // Update winner ELO
+          await tx.user.update({
             where: { id: winnerUserId },
             data: { eloscore: { increment: eloGained } as any }
-          }),
-          this.prismaService.user.update({
+          })
+
+          // Update loser ELO
+          await tx.user.update({
             where: { id: loserUserId },
             data: { eloscore: newLoserElo }
           })
-        ])
-      }
+
+          console.log(
+            `[RoundQuestion Service] ELO after: winner=${winnerElo + eloGained}, loser=${newLoserElo}`
+          )
+        }
+
+        return { completedMatch, eloGained, eloLost }
+      })
+
+      console.log(
+        `[RoundQuestion Service] Transaction completed successfully for match ${matchId}`
+      )
+
+      // Re-fetch match with updated ELO for notification (outside transaction)
+      const userId1 = result.completedMatch.participants[0]?.userId
+      const userId2 = result.completedMatch.participants[1]?.userId
 
       if (userId1 && userId2) {
-        // Re-fetch match with elo fields included for notification
         const updatedMatch = await this.prismaService.match.findUnique({
           where: { id: matchId },
           include: {
@@ -775,7 +824,8 @@ export class RoundQuestionService {
                     id: true,
                     name: true,
                     email: true,
-                    avatar: true
+                    avatar: true,
+                    eloscore: true
                   }
                 }
               }
@@ -789,7 +839,8 @@ export class RoundQuestionService {
                         id: true,
                         name: true,
                         email: true,
-                        avatar: true
+                        avatar: true,
+                        eloscore: true
                       }
                     }
                   }
@@ -803,7 +854,8 @@ export class RoundQuestionService {
                             id: true,
                             name: true,
                             email: true,
-                            avatar: true
+                            avatar: true,
+                            eloscore: true
                           }
                         }
                       }
@@ -830,26 +882,20 @@ export class RoundQuestionService {
           }
         })
 
+        console.log(
+          `[RoundQuestion Service] Sending match completed notification for match ${matchId}`
+        )
         this.matchingGateway.notifyMatchCompleted(
           matchId,
           userId1,
           userId2,
-          updatedMatch || completedMatch
+          updatedMatch || result.completedMatch
         )
       }
     } catch (e) {
-      // If any error occurs while persisting ELO, log and still notify with existing completedMatch
-      try {
-        if (userId1 && userId2)
-          this.matchingGateway.notifyMatchCompleted(
-            matchId,
-            userId1,
-            userId2,
-            completedMatch
-          )
-      } catch (_) {
-        // swallow
-      }
+      console.error(`[RoundQuestion Service] Error completing match ${matchId}:`, e)
+      // Don't swallow errors - let them bubble up
+      throw e
     }
   }
 }
