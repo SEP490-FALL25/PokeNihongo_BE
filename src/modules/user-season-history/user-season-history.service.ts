@@ -182,4 +182,6 @@ export class UserSeasonHistoryService {
       message: this.i18nService.translate(UserSeasonHistoryMessage.GET_LIST_SUCCESS, lang)
     }
   }
+
+  async getReward({ id, userId }: { id: number; userId: number }, lang: string = 'vi') {}
 }

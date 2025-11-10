@@ -62,6 +62,10 @@ export const GetUserSeasonHistoryParamsSchema = z.object({
   userSeasonHistoryId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
 
+export const GetRewardByLeaderboardParamsSchema = z.object({
+  leaderboardSeasonId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
+})
+
 export const GetUserSeasonHistoryDetailSchema = UserSeasonHistorySchema
 
 export const GetUserSeasonHistoryDetailResSchema = z.object({

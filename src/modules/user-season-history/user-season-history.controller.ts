@@ -23,7 +23,7 @@ export class UserSeasonHistoryController {
     return this.userSeasonHistoryService.list(query, lang)
   }
 
-  @Get('user/now')
+  @Get('user')
   @ZodSerializerDto(GetUserSeasonHistoryDetailResDTO)
   getUserHisNow(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
     return this.userSeasonHistoryService.getUserHisByUserId(userId, lang)
@@ -43,6 +43,22 @@ export class UserSeasonHistoryController {
   joinSeason(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
     return this.userSeasonHistoryService.joinSeason(
       {
+        userId
+      },
+      lang
+    )
+  }
+
+  @Put('get-reward/:userSeasonHistoryId')
+  @ZodSerializerDto(UpdateUserSeasonHistoryResDTO)
+  getReward(
+    @Param() params: GetUserSeasonHistoryParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userSeasonHistoryService.getReward(
+      {
+        id: params.userSeasonHistoryId,
         userId
       },
       lang
