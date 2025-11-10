@@ -523,9 +523,9 @@ export class LessonContentService {
                                 }
                             }
 
-                            // Tách readings thành on và kun
-                            const onReadings = kanji.data.readings?.filter(r => r.readingType === 'ON').map(r => r.reading) || []
-                            const kunReadings = kanji.data.readings?.filter(r => r.readingType === 'KUN').map(r => r.reading) || []
+                            // Tách readings thành on và kun (lấy tất cả readings từ bảng Kanji_Reading)
+                            const onReadings = kanji.data.readings?.filter(r => r.readingType === 'onyomi').map(r => r.reading) || []
+                            const kunReadings = kanji.data.readings?.filter(r => r.readingType === 'kunyomi').map(r => r.reading) || []
 
                             return {
                                 id: kanji.data.id,

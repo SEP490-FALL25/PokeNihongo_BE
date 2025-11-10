@@ -106,6 +106,16 @@ export class KanjiRepository {
         const kanji = await this.prismaService.kanji.findUnique({
             where: { id },
             include: {
+                readings: {
+                    select: {
+                        id: true,
+                        kanjiId: true,
+                        readingType: true,
+                        reading: true,
+                        createdAt: true,
+                        updatedAt: true
+                    }
+                },
                 _count: {
                     select: {
                         vocabularies: true
