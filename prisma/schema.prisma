@@ -1386,7 +1386,7 @@ model ShopPurchase {
   @@index([walletTransId])
 }
 
-// 🧭 Banner chính
+// Banner chính
 model GachaBanner {
   id        Int          @id @default(autoincrement())
   nameKey   String       @unique
@@ -1430,7 +1430,7 @@ model GachaBanner {
   updatedAt DateTime  @updatedAt
 }
 
-// 🌟 Tỉ lệ ra từng mức sao
+// Tỉ lệ ra từng mức sao
 model GachaItemRate {
   id Int @id @default(autoincrement())
 
@@ -1452,7 +1452,7 @@ model GachaItemRate {
   updatedAt DateTime  @updatedAt
 }
 
-// 🎴 Danh sách Pokémon trong banner (gắn rate)
+// Danh sách Pokémon trong banner (gắn rate)
 model GachaItem {
   id Int @id @default(autoincrement())
 
@@ -1480,7 +1480,7 @@ model GachaItem {
   @@unique([bannerId, pokemonId]) // Một Pokémon chỉ xuất hiện 1 lần trong 1 banner
 }
 
-// 💰 Lưu mỗi lần user roll (1 roll hoặc 10 roll)
+// Lưu mỗi lần user roll (1 roll hoặc 10 roll)
 model GachaPurchase {
   id Int @id @default(autoincrement())
 
@@ -1518,7 +1518,7 @@ model GachaPurchase {
   @@index([walletTransId])
 }
 
-// 📜 Lịch sử roll chi tiết từng Pokémon
+// Lịch sử roll chi tiết từng Pokémon
 model GachaRollHistory {
   id Int @id @default(autoincrement())
 

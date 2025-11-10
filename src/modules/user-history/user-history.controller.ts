@@ -8,13 +8,17 @@ import {
     GetHistoryListQueryDTO,
     GetAdminHistoryListQueryDTO,
     HistoryListResDTO,
-    AdminHistoryListResDTO
+    AdminHistoryListResDTO,
+    GetRecentLessonsQueryDTO,
+    RecentLessonsResDTO
 } from './dto/user-history.zod-dto'
 import {
     GetHistoryListQuerySwaggerDTO,
     GetAdminHistoryListQuerySwaggerDTO,
     HistoryListResponseSwaggerDTO,
-    AdminHistoryListResponseSwaggerDTO
+    AdminHistoryListResponseSwaggerDTO,
+    GetRecentLessonsQuerySwaggerDTO,
+    RecentLessonsResponseSwaggerDTO
 } from './dto/user-history.dto'
 
 @ApiTags('User History')
@@ -58,6 +62,24 @@ export class UserHistoryController {
         @I18nLang() lang: string
     ) {
         return this.userHistoryService.findAllHistory(query, lang)
+    }
+
+    @Get('recent-lessons')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách bài học gần đây (LESSON và EXERCISE)' })
+    @ApiQuery({ type: GetRecentLessonsQuerySwaggerDTO })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách bài học gần đây thành công',
+        type: RecentLessonsResponseSwaggerDTO
+    })
+    @ZodSerializerDto(RecentLessonsResDTO)
+    async getRecentLessons(
+        @Query() query: GetRecentLessonsQueryDTO,
+        @ActiveUser('userId') userId: number,
+        @I18nLang() lang: string
+    ) {
+        return this.userHistoryService.findRecentLessons(userId, query, lang)
     }
 }
 
