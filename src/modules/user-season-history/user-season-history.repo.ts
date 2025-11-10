@@ -1,3 +1,4 @@
+import { RewardClaimStatus } from '@/common/constants/reward.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
@@ -129,6 +130,65 @@ export class UserSeasonHistoryRepo {
       where: {
         userId,
         deletedAt: null
+      }
+    })
+  }
+
+  checkUserHasSeasonHistoryInSeason(
+    userId: number,
+    seasonId: number
+  ): Promise<UserSeasonHistoryType | null> {
+    return this.prismaService.userSeasonHistory.findFirst({
+      where: {
+        userId,
+        seasonId,
+        deletedAt: null
+      }
+    })
+  }
+
+  /**
+   * Find the most recent season history for user that has unclaimed rewards
+   * @param userId - User ID to check
+   * @returns Season history with season and reward details, or null
+   */
+  async findLatestUnclaimedSeasonHistory(userId: number) {
+    return this.prismaService.userSeasonHistory.findFirst({
+      where: {
+        userId,
+        deletedAt: null,
+        rewardsClaimed: RewardClaimStatus.CLAIMED,
+        finalElo: { not: null }, // Must be finalized
+        seasonRankRewardId: { not: null } // Must have reward assigned
+      },
+      orderBy: {
+        season: { endDate: 'desc' } // Most recent season first
+      },
+      include: {
+        season: {
+          include: {
+            nameTranslations: true
+          }
+        },
+        seasonRankReward: {
+          include: {
+            rewards: true
+          }
+        }
+      }
+    })
+  }
+
+  /**
+   * Find season rank reward with all its rewards
+   * @param seasonRankRewardId - Season rank reward ID
+   * @returns Season rank reward with rewards
+   */
+  async findSeasonRankRewardWithRewards(seasonRankRewardId: number) {
+    return this.prismaService.seasonRankReward.findUnique({
+      where: { id: seasonRankRewardId },
+      include: {
+        rewards: true
       }
     })
   }

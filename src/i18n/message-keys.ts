@@ -515,7 +515,10 @@ export const LeaderboardSeasonMessage = {
   ALREADY_EXISTS: 'leaderboard_season.ALREADY_EXISTS',
   INVALID_DATA: 'leaderboard_season.INVALID_DATA',
   HAS_ACTIVE: 'leaderboard_season.HAS_ACTIVE',
-  HAS_OPENED: 'leaderboard_season.HAS_OPENED'
+  HAS_OPENED: 'leaderboard_season.HAS_OPENED',
+  NOT_STARTED: 'leaderboard_season.NOT_STARTED',
+  NEW_SEASON: 'leaderboard_season.NEW_SEASON',
+  NOT_JOIN_NEW_SEASON: 'leaderboard_season.NOT_JOIN_NEW_SEASON'
 } as const
 
 export const MatchQueueMessage = {
@@ -599,7 +602,9 @@ export const UserSeasonHistoryMessage = {
   GET_LIST_SUCCESS: 'user_season_history.GET_LIST_SUCCESS',
   NOT_FOUND: 'user_season_history.NOT_FOUND',
   ALREADY_EXISTS: 'user_season_history.ALREADY_EXISTS',
-  INVALID_DATA: 'user_season_history.INVALID_DATA'
+  INVALID_DATA: 'user_season_history.INVALID_DATA',
+  CAN_NOT_CLAIM_REWARDS: 'user_season_history.CAN_NOT_CLAIM_REWARDS',
+  GET_REWARD_SUCCESS: 'user_season_history.GET_REWARD_SUCCESS'
 } as const
 
 export const RoundQuestionMessage = {

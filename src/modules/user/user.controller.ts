@@ -9,7 +9,6 @@ import {
   CreateUserBodyDTO,
   CreateUserResDTO,
   GetListMatchHisByUserResDTO,
-  GetStatsUserSeasonResDTO,
   GetUserDetailResDTO,
   GetUserParamsDTO,
   SetMainPokemonBodyDTO,
@@ -29,7 +28,7 @@ export class UserController {
   }
 
   @Get('stats/season')
-  @ZodSerializerDto(GetStatsUserSeasonResDTO)
+  // @ZodSerializerDto(GetStatsUserSeasonResDTO)
   getInfoBattleWithUser(@I18nLang() lang: string, @ActiveUser('userId') userId: number) {
     return this.userService.getInfoBattleWithUser(userId, lang)
   }

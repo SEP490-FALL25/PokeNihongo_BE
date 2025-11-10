@@ -1863,8 +1863,8 @@ model UserSeasonHistory {
   seasonId Int
   season   LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
-  finalElo           Int // Elo cuối cùng của user ở mùa giải này
-  finalRank          String // Tên rank cuối cùng (vd: "N4")
+  finalElo           Int? // Elo cuối cùng của user ở mùa giải này
+  finalRank          String? // Tên rank cuối cùng (vd: "N4")
   seasonRankRewardId Int?
   seasonRankReward   SeasonRankReward? @relation(fields: [seasonRankRewardId], references: [id], onDelete: SetNull)
   rewardsClaimed     RewardClaimStatus @default(PENDING) // Đã nhận thưởng chưa
