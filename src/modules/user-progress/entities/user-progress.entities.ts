@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // ProgressStatus enum
-export const ProgressStatusSchema = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'])
+export const ProgressStatusSchema = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'TESTING_LAST', 'COMPLETED'])
 
 // Lesson schema for UserProgress
 export const LessonInfoSchema = z.object({
@@ -20,6 +20,7 @@ export const UserProgressSchema = z.object({
     progressPercentage: z.number().min(0).max(100),
     completedAt: z.date().nullable(),
     lastAccessedAt: z.date(),
+    testId: z.number().nullable().optional(),
     createdAt: z.date(),
     updatedAt: z.date(),
     lesson: LessonInfoSchema.optional()

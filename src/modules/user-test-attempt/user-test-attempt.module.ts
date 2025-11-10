@@ -12,6 +12,7 @@ import { PrismaService } from '@/shared/services/prisma.service'
 import { UserTestRepository } from '../user-test/user-test.repo'
 import { UserModule } from '../user/user.module'
 import { LevelModule } from '../level/level.module'
+import { UserProgressModule } from '../user-progress/user-progress.module'
 
 @Module({
     imports: [
@@ -22,7 +23,8 @@ import { LevelModule } from '../level/level.module'
         TestSetQuestionBankModule,
         TranslationModule,
         UserModule,
-        LevelModule
+        LevelModule,
+        UserProgressModule
     ],
     controllers: [UserTestAttemptController],
     providers: [UserTestAttemptService, UserTestAttemptRepository, UserTestRepository, PrismaService],

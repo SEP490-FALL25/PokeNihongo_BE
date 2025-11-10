@@ -17,6 +17,7 @@ import { UserTestRepository } from '@/modules/user-test/user-test.repo'
 import { QuestionBankService } from '@/modules/question-bank/question-bank.service'
 import { UserTestAnswerLogService } from '@/modules/user-test-answer-log/user-test-answer-log.service'
 import { TestService } from '@/modules/test/test.service'
+import { TestRepository } from '@/modules/test/test.repo'
 import { TestSetService } from '@/modules/testset/testset.service'
 import { TestSetQuestionBankService } from '@/modules/testset-questionbank/testset-questionbank.service'
 import { Injectable, Logger, HttpException } from '@nestjs/common'
@@ -29,6 +30,8 @@ import { PrismaService } from '@/shared/services/prisma.service'
 import { UserRepo } from '@/modules/user/user.repo'
 import { LevelRepo } from '@/modules/level/level.repo'
 import { LEVEL_TYPE } from '@/common/constants/level.constant'
+import { UserProgressRepository } from '@/modules/user-progress/user-progress.repo'
+import { ProgressStatus } from '@prisma/client'
 
 @Injectable()
 export class UserTestAttemptService {
@@ -40,13 +43,15 @@ export class UserTestAttemptService {
         private readonly questionBankService: QuestionBankService,
         private readonly userTestAnswerLogService: UserTestAnswerLogService,
         private readonly testService: TestService,
+        private readonly testRepo: TestRepository,
         private readonly testSetService: TestSetService,
         private readonly testSetQuestionBankService: TestSetQuestionBankService,
         private readonly translationHelper: TranslationHelperService,
         private readonly i18nService: I18nService,
         private readonly prisma: PrismaService,
         private readonly userRepo: UserRepo,
-        private readonly levelRepo: LevelRepo
+        private readonly levelRepo: LevelRepo,
+        private readonly userProgressRepository: UserProgressRepository
     ) { }
 
     async create(userId: number, testId: number) {
@@ -340,6 +345,11 @@ export class UserTestAttemptService {
                 )
                 this.logger.log(`Updated attempt ${userTestAttemptId} to ${newStatus} with score ${score}`)
 
+                // Nếu status là COMPLETED, cập nhật UserProgress
+                if (newStatus === 'COMPLETED') {
+                    await this.updateUserProgressOnLessonReviewCompletion(userId, attempt.testId)
+                }
+
                 return {
                     statusCode: 200,
                     message: message,
@@ -599,7 +609,7 @@ export class UserTestAttemptService {
                 const now = new Date()
                 const attemptTime = inProgressAttempt.updatedAt || inProgressAttempt.createdAt
                 const timeDiffMs = now.getTime() - attemptTime.getTime()
-                const oneHourMs = 60 * 60 * 1000 // 1 tiếng = 3,600,000ms
+                const oneHourMs = 60 * 60 * 1000 // 1 tiếng = 3,600,000ms //KUMO 
 
                 if (timeDiffMs > oneHourMs) {
                     // Quá 1 tiếng → đánh dấu ABANDONED và tạo mới
@@ -644,31 +654,7 @@ export class UserTestAttemptService {
 
             // Lấy thông tin Test với các TestSets
             const testRes = await this.testService.findOne(testId, languageCode)
-            const test = await this.prisma.test.findUnique({
-                where: { id: testId },
-                include: {
-                    testTestSets: {
-                        include: {
-                            testSet: {
-                                include: {
-                                    testSetQuestionBanks: {
-                                        include: {
-                                            questionBank: {
-                                                include: {
-                                                    answers: true
-                                                }
-                                            }
-                                        },
-                                        orderBy: {
-                                            questionOrder: 'asc'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            })
+            const test = await this.testRepo.findByIdWithTestSetsAndQuestions(testId)
 
             if (!test || !test.testTestSets || test.testTestSets.length === 0) {
                 throw new Error('Test không có test set nào')
@@ -822,31 +808,7 @@ export class UserTestAttemptService {
             }
 
             // Lấy thông tin Test với các TestSets
-            const test = await this.prisma.test.findUnique({
-                where: { id: attempt.testId },
-                include: {
-                    testTestSets: {
-                        include: {
-                            testSet: {
-                                include: {
-                                    testSetQuestionBanks: {
-                                        include: {
-                                            questionBank: {
-                                                include: {
-                                                    answers: true
-                                                }
-                                            }
-                                        },
-                                        orderBy: {
-                                            questionOrder: 'asc'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            })
+            const test = await this.testRepo.findByIdWithTestSetsAndQuestions(attempt.testId)
 
             if (!test || !test.testTestSets || test.testTestSets.length === 0) {
                 throw new Error('Test không có test set nào')
@@ -1425,6 +1387,65 @@ export class UserTestAttemptService {
                 throw error
             }
             throw error
+        }
+    }
+
+    /**
+     * Cập nhật UserProgress khi hoàn thành LESSON_REVIEW test
+     * Tìm lesson có testId = testId của attempt, sau đó update UserProgress với testId, status và progressPercentage
+     */
+    private async updateUserProgressOnLessonReviewCompletion(userId: number, testId: number) {
+        try {
+            this.logger.log(`Updating UserProgress for user ${userId} after completing LESSON_REVIEW test ${testId}`)
+
+            // Tìm lesson có testId = testId của attempt
+            const lesson = await this.prisma.lesson.findFirst({
+                where: { testId: testId },
+                select: { id: true }
+            })
+
+            if (!lesson) {
+                this.logger.warn(`No lesson found with testId ${testId}, skipping UserProgress update`)
+                return
+            }
+
+            // Tìm UserProgress của user và lesson đó
+            const userProgress = await this.userProgressRepository.findByUserAndLesson(userId, lesson.id)
+
+            if (!userProgress) {
+                this.logger.warn(`UserProgress not found for user ${userId}, lesson ${lesson.id}, skipping update`)
+                return
+            }
+
+            // Update UserProgress với testId, status COMPLETED và progressPercentage 100%
+            // Vì đã hoàn thành LESSON_REVIEW test nên coi như đã hoàn thành lesson
+            await this.userProgressRepository.update(
+                { id: userProgress.id },
+                {
+                    testId: testId,
+                    status: ProgressStatus.COMPLETED,
+                }
+            )
+            this.logger.log(`Updated UserProgress for user ${userId}, lesson ${lesson.id} with testId ${testId}, status COMPLETED`)
+
+            // Cập nhật UserProgress cho lesson tiếp theo
+            const nextLessonId = await this.userProgressRepository.getNextLessonId(lesson.id)
+            if (nextLessonId) {
+                // Sử dụng upsert để tự động tạo hoặc update UserProgress cho lesson tiếp theo
+                // Upsert sẽ tự động lấy testId từ lesson nếu chưa có
+                await this.userProgressRepository.upsert(userId, nextLessonId, {
+                    status: ProgressStatus.IN_PROGRESS,
+                    progressPercentage: 0
+                })
+                this.logger.log(`Updated/Created UserProgress for user ${userId}, lesson ${nextLessonId} with status IN_PROGRESS`)
+            } else {
+                this.logger.log(`No next lesson found for user ${userId} after completing lesson ${lesson.id}`)
+            }
+
+            this.logger.log(`Completed lesson ${lesson.id} for user ${userId}`)
+        } catch (error) {
+            this.logger.error('Error updating UserProgress on lesson review completion:', error)
+            // Không throw error để không ảnh hưởng đến flow chính
         }
     }
 }
