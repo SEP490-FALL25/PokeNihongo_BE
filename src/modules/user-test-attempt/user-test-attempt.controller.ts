@@ -218,5 +218,24 @@ export class UserTestAttemptController {
     ) {
         return this.userTestAttemptService.getTestAttemptReview(Number(id), userId, languageCode)
     }
+
+    //KUMO new
+    @Get('/lesson/test/:id/review')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Lấy review bài test của user (chỉ khi đã hoàn thành và đạt >= 80%)',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy review bài test thành công',
+        type: UserTestAttemptResponseSwaggerDTO
+    })
+    getLessonTestAttemptReview(
+        @Param('id') id: string,
+        @ActiveUser('userId') userId: number,
+        @I18nLang() languageCode: string
+    ) {
+        return this.userTestAttemptService.getLessonTestAttemptReview(Number(id), userId, languageCode)
+    }
 }
 
