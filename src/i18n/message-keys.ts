@@ -515,7 +515,10 @@ export const LeaderboardSeasonMessage = {
   ALREADY_EXISTS: 'leaderboard_season.ALREADY_EXISTS',
   INVALID_DATA: 'leaderboard_season.INVALID_DATA',
   HAS_ACTIVE: 'leaderboard_season.HAS_ACTIVE',
-  HAS_OPENED: 'leaderboard_season.HAS_OPENED'
+  HAS_OPENED: 'leaderboard_season.HAS_OPENED',
+  NOT_STARTED: 'leaderboard_season.NOT_STARTED',
+  NEW_SEASON: 'leaderboard_season.NEW_SEASON',
+  NOT_JOIN_NEW_SEASON: 'leaderboard_season.NOT_JOIN_NEW_SEASON'
 } as const
 
 export const MatchQueueMessage = {

@@ -13,8 +13,8 @@ export const UserSeasonHistorySchema = z.object({
   id: z.number(),
   userId: z.number(),
   seasonId: z.number(),
-  finalElo: z.number(),
-  finalRank: z.string(),
+  finalElo: z.number().nullable(),
+  finalRank: z.string().nullable(),
   seasonRankRewardId: z.number().nullable(),
   rewardsClaimed: z
     .enum([

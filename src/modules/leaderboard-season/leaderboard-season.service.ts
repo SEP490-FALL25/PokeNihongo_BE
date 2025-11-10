@@ -7,6 +7,7 @@ import {
 } from '@/shared/error'
 import {
   addDaysUTC0000,
+  convertEloToRank,
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError,
   isUniqueConstraintPrismaError,
@@ -500,6 +501,7 @@ export class LeaderboardSeasonService {
     }
 
     const seasonId = season.id
+    const isActiveSeason = season.status === 'ACTIVE'
 
     // Define rank thresholds (keep in sync with convertEloToRank)
     const rankThresholds = [
@@ -526,47 +528,134 @@ export class LeaderboardSeasonService {
       }
     }
 
-    // Build where for top list
-    const whereTop: any = { seasonId, deletedAt: null }
-    if (eloFilter) whereTop.finalElo = eloFilter
-
-    // Query top 20
-    const top = await this.prismaService.userSeasonHistory.findMany({
-      where: whereTop,
-      orderBy: { finalElo: 'desc' },
-      take: 20,
-      include: {
-        user: { select: { id: true, name: true, avatar: true } }
-      }
-    })
-
-    const topMapped = top.map((h: any, idx: number) => ({
-      position: idx + 1,
-      userId: h.userId,
-      name: h.user?.name ?? null,
-      avatar: h.user?.avatar ?? null,
-      finalElo: h.finalElo,
-      finalRank: h.finalRank
-    }))
-
-    // Compute 'me' record (overall position within season)
-    const myHist = await this.prismaService.userSeasonHistory.findFirst({
-      where: { seasonId, userId, deletedAt: null },
-      include: { user: { select: { id: true, name: true, avatar: true } } }
-    })
-
+    let topMapped: any[] = []
     let me: any = null
-    if (myHist) {
-      const higherCount = await this.prismaService.userSeasonHistory.count({
-        where: { seasonId, deletedAt: null, finalElo: { gt: myHist.finalElo } }
+
+    if (isActiveSeason) {
+      // Mùa hiện tại: dùng User.eloscore (chưa finalize)
+      // Build where for users
+      const whereUsers: any = { deletedAt: null }
+      if (eloFilter) whereUsers.eloscore = eloFilter
+
+      // Query top 20 users by eloscore (secondary sort by id for stability)
+      const topUsers = await this.prismaService.user.findMany({
+        where: whereUsers,
+        orderBy: [{ eloscore: 'desc' }, { name: 'asc' }],
+        take: 20,
+        select: {
+          id: true,
+          name: true,
+          avatar: true,
+          eloscore: true
+        }
       })
-      me = {
-        position: higherCount + 1,
-        userId: myHist.userId,
-        name: myHist.user?.name ?? null,
-        avatar: myHist.user?.avatar ?? null,
-        finalElo: myHist.finalElo,
-        finalRank: myHist.finalRank
+
+      topMapped = topUsers.map((u: any, idx: number) => ({
+        position: idx + 1,
+        userId: u.id,
+        name: u.name ?? null,
+        avatar: u.avatar ?? null,
+        finalElo: u.eloscore,
+        finalRank: convertEloToRank(u.eloscore)
+      }))
+
+      // Compute 'me' record
+      const myUser = await this.prismaService.user.findUnique({
+        where: { id: userId, deletedAt: null },
+        select: { id: true, name: true, avatar: true, eloscore: true }
+      })
+
+      if (myUser) {
+        // Check if user matches rankName filter (if provided)
+        const myRank = convertEloToRank(myUser.eloscore)
+        const matchesFilter = !rankName || myRank === rankName
+
+        if (matchesFilter) {
+          // Count users with same filter and higher elo, or same elo but lower id
+          const higherCount = await this.prismaService.user.count({
+            where: {
+              deletedAt: null,
+              ...(eloFilter ? { eloscore: eloFilter } : {}),
+              OR: [
+                { eloscore: { gt: myUser.eloscore } },
+                {
+                  eloscore: myUser.eloscore,
+                  id: { lt: myUser.id }
+                }
+              ]
+            }
+          })
+
+          me = {
+            position: higherCount + 1,
+            userId: myUser.id,
+            name: myUser.name ?? null,
+            avatar: myUser.avatar ?? null,
+            finalElo: myUser.eloscore,
+            finalRank: myRank
+          }
+        }
+      }
+    } else {
+      // Mùa đã kết thúc: dùng UserSeasonHistory.finalElo
+      const whereTop: any = { seasonId, deletedAt: null }
+      if (eloFilter) whereTop.finalElo = eloFilter
+
+      // Query top 20 (secondary sort by userId for stability)
+      const top = await this.prismaService.userSeasonHistory.findMany({
+        where: whereTop,
+        orderBy: [{ finalElo: 'desc' }, { userId: 'asc' }],
+        take: 20,
+        include: {
+          user: { select: { id: true, name: true, avatar: true } }
+        }
+      })
+
+      topMapped = top.map((h: any, idx: number) => ({
+        position: idx + 1,
+        userId: h.userId,
+        name: h.user?.name ?? null,
+        avatar: h.user?.avatar ?? null,
+        finalElo: h.finalElo,
+        finalRank: h.finalRank
+      }))
+
+      // Compute 'me' record
+      const myHist = await this.prismaService.userSeasonHistory.findFirst({
+        where: { seasonId, userId, deletedAt: null },
+        include: { user: { select: { id: true, name: true, avatar: true } } }
+      })
+
+      if (myHist && myHist.finalElo !== null) {
+        // Check if user matches rankName filter (if provided)
+        const matchesFilter = !rankName || myHist.finalRank === rankName
+
+        if (matchesFilter) {
+          // Count higher records with same filter
+          const higherCount = await this.prismaService.userSeasonHistory.count({
+            where: {
+              seasonId,
+              deletedAt: null,
+              ...(eloFilter ? { finalElo: eloFilter } : {}),
+              OR: [
+                { finalElo: { gt: myHist.finalElo } },
+                {
+                  finalElo: myHist.finalElo,
+                  userId: { lt: myHist.userId }
+                }
+              ]
+            }
+          })
+
+          me = {
+            position: higherCount + 1,
+            userId: myHist.userId,
+            name: myHist.user?.name ?? null,
+            avatar: myHist.user?.avatar ?? null,
+            finalElo: myHist.finalElo,
+            finalRank: myHist.finalRank
+          }
+        }
       }
     }
 

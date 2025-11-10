@@ -49,10 +49,10 @@ export class LeaderboardSeasonController {
     @I18nLang() lang: string,
     @ActiveUser('userId') userId: number,
     @Query('rankName') rankName?: string,
-    @Query('leaderboardSeasonId') leaderboardSeasonId?: number
+    @Query('leaderboardSeasonId') leaderboardSeasonId?: string
   ) {
     return this.leaderboardSeasonService.getListRankByLeaderboard({
-      id: leaderboardSeasonId,
+      id: leaderboardSeasonId ? +leaderboardSeasonId : undefined,
       lang,
       userId,
       rankName

@@ -8,6 +8,7 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
+import { NotStartedLeaderboardSeasonException } from '../leaderboard-season/dto/leaderboard-season.error'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import { UserSeasonHistoryNotFoundException } from './dto/user-season-history.error'
 import {
@@ -45,6 +46,37 @@ export class UserSeasonHistoryService {
       statusCode: 200,
       data: userSeasonHistory,
       message: this.i18nService.translate(UserSeasonHistoryMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+  async joinSeason({ userId }: { userId: number }, lang: string = 'vi') {
+    try {
+      // lay season hien tai
+      const currentSeason = await this.leaderboardSeasonRepo.findActiveSeason()
+      if (!currentSeason) {
+        throw new NotStartedLeaderboardSeasonException()
+      }
+      const result = await this.userSeasonHistoryRepo.create({
+        createdById: userId,
+        data: {
+          userId,
+          seasonId: currentSeason.id,
+          finalElo: null,
+          finalRank: ''
+        }
+      })
+      return {
+        statusCode: 201,
+        data: result,
+        message: this.i18nService.translate(UserSeasonHistoryMessage.CREATE_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      throw error
     }
   }
 

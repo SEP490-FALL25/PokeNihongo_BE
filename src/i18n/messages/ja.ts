@@ -586,7 +586,10 @@ export const jaMessages = {
     ALREADY_EXISTS: 'リーダーボードシーズンは既に存在します',
     INVALID_DATA: '無効なリーダーボードシーズンデータです',
     HAS_ACTIVE: '既にアクティブなリーダーボードシーズンが存在します',
-    HAS_OPENED: '既に開始されたリーダーボードシーズンが存在します'
+    HAS_OPENED: '既に開始されたリーダーボードシーズンが存在します',
+    NOT_STARTED: 'リーダーボードシーズンがまだ開始されていません',
+    NEW_SEASON: '新しいリーダーボードシーズンが開始されました',
+    NOT_JOIN_NEW_SEASON: '新しいリーダーボードシーズンに参加していません'
   },
   user_reward_history: {
     CREATE_SUCCESS: 'ユーザー報酬履歴の作成に成功しました',

@@ -600,7 +600,10 @@ export const viMessages = {
     ALREADY_EXISTS: 'Mùa giải bảng xếp hạng đã tồn tại',
     INVALID_DATA: 'Dữ liệu mùa giải bảng xếp hạng không hợp lệ',
     HAS_ACTIVE: 'Đã có mùa giải bảng xếp hạng đang hoạt động',
-    HAS_OPENED: 'Mùa giải bảng xếp hạng đã từng diễn ra'
+    HAS_OPENED: 'Mùa giải bảng xếp hạng đã từng diễn ra',
+    NOT_STARTED: 'Mùa giải bảng xếp hạng chưa bắt đầu',
+    NEW_SEASON: 'Mùa giải mới đã bắt đầu, chúc may mắn!',
+    NOT_JOIN_NEW_SEASON: ' Bạn chưa tham gia mùa giải mới'
   },
   user_reward_history: {
     CREATE_SUCCESS: 'Tạo lịch sử phần thưởng người dùng thành công',

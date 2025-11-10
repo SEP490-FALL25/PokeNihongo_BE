@@ -132,4 +132,17 @@ export class UserSeasonHistoryRepo {
       }
     })
   }
+
+  checkUserHasSeasonHistoryInSeason(
+    userId: number,
+    seasonId: number
+  ): Promise<UserSeasonHistoryType | null> {
+    return this.prismaService.userSeasonHistory.findFirst({
+      where: {
+        userId,
+        seasonId,
+        deletedAt: null
+      }
+    })
+  }
 }

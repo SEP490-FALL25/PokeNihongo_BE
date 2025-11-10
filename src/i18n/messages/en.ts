@@ -610,7 +610,10 @@ export const enMessages = {
     ALREADY_EXISTS: 'Leaderboard season already exists',
     INVALID_DATA: 'Invalid leaderboard season data',
     HAS_ACTIVE: 'There is already an active leaderboard season',
-    INVALID_DATA_TO_ACTIVE: 'Cannot set to active: season has already been opened before'
+    INVALID_DATA_TO_ACTIVE: 'Cannot set to active: season has already been opened before',
+    NOT_STARTED: 'Leaderboard season has not started yet',
+    NEW_SEASON: 'A new leaderboard season has started, good luck!',
+    NOT_JOIN_NEW_SEASON: 'You have not joined the new leaderboard season'
   },
   user_reward_history: {
     CREATE_SUCCESS: 'User reward history created successfully',

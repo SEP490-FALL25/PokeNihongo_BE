@@ -1,5 +1,5 @@
 import { LeaderboardSeasonMessage } from '@/i18n/message-keys'
-import { ConflictException } from '@nestjs/common'
+import { BadRequestException, ConflictException } from '@nestjs/common'
 
 export class LeaderboardSeasonAlreadyExistsException extends ConflictException {
   constructor() {
@@ -33,6 +33,24 @@ export class LeaderboardSeasonHasOpenedException extends ConflictException {
     super({
       message: LeaderboardSeasonMessage.HAS_OPENED,
       errorKey: LeaderboardSeasonMessage.HAS_OPENED
+    })
+  }
+}
+
+export class NotStartedLeaderboardSeasonException extends ConflictException {
+  constructor() {
+    super({
+      message: LeaderboardSeasonMessage.NOT_STARTED,
+      errorKey: LeaderboardSeasonMessage.NOT_STARTED
+    })
+  }
+}
+
+export class NewLeaderboardSeasonException extends BadRequestException {
+  constructor() {
+    super({
+      message: LeaderboardSeasonMessage.NOT_JOIN_NEW_SEASON,
+      errorKey: LeaderboardSeasonMessage.NOT_JOIN_NEW_SEASON
     })
   }
 }
