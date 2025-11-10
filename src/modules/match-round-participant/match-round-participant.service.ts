@@ -35,8 +35,8 @@ import {
 } from './entities/match-round-participant.entity'
 import { MatchRoundParticipantRepo } from './match-round-participant.repo'
 
-const TIME_CHOOSE_POKEMON_MS = 6000
-const TIME_LIMIT_ANSWER_QUESTION_MS = 6000
+const TIME_CHOOSE_POKEMON_MS = 30000
+const TIME_LIMIT_ANSWER_QUESTION_MS = 60000
 
 @Injectable()
 export class MatchRoundParticipantService {
