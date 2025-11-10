@@ -19,3 +19,12 @@ export class EmailAlreadyExistsException extends BadRequestException {
     })
   }
 }
+
+export class UserHasNotBeenJoinedSeasonException extends BadRequestException {
+  constructor() {
+    super({
+      message: UserMessage.HAS_NOT_JOINED_SEASON,
+      errorKey: UserMessage.HAS_NOT_JOINED_SEASON
+    })
+  }
+}

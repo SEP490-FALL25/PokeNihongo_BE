@@ -19,16 +19,20 @@ import { LanguagesRepository } from '../languages/languages.repo'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import { MatchRepo } from '../match/match.repo'
 import { UserPokemonNotFoundException } from '../user-pokemon/dto/user-pokemon.error'
+import { UserProgressService } from '../user-progress/user-progress.service'
 import { UserSeasonHistoryRepo } from '../user-season-history/user-season-history.repo'
 import { WalletService } from '../wallet/wallet.service'
-import { EmailAlreadyExistsException, UserNotFoundException } from './dto/user.error'
+import {
+  EmailAlreadyExistsException,
+  UserHasNotBeenJoinedSeasonException,
+  UserNotFoundException
+} from './dto/user.error'
 import {
   CreateUserBodyType,
   SetMainPokemonBodyType,
   UpdateUserBodyType
 } from './entities/user.entity'
 import { UserRepo } from './user.repo'
-import { UserProgressService } from '../user-progress/user-progress.service'
 
 @Injectable()
 export class UserService {
@@ -45,7 +49,7 @@ export class UserService {
     private readonly userSeaHistoryRepo: UserSeasonHistoryRepo,
     private readonly langRepo: LanguagesRepository,
     private readonly userProgressService: UserProgressService
-  ) { }
+  ) {}
 
   /**
    * Generate random password with 8 characters
@@ -308,7 +312,7 @@ export class UserService {
           // Reload user with level
           const updatedUser = await this.userRepo.findById(userId)
           if (updatedUser) {
-            ; (user as any).level = (updatedUser as any).level
+            ;(user as any).level = (updatedUser as any).level
             user.levelId = updatedUser.levelId
           }
         }
@@ -447,14 +451,26 @@ export class UserService {
     }
     // lay ra mua hien tai cua user
 
-    const [currentSeason, totalMatches, totalWins, currentWinStreak, userInfo] =
-      await Promise.all([
-        this.leaderboardSeasonRepo.findActiveSeasonWithLangIdAndUser(userId, langId),
-        this.matchRepo.countMatchesByUserId(userId),
-        this.matchRepo.countWinsByUserId(userId),
-        this.getCurrentWinStreak(userId),
-        this.userRepo.findById(userId)
-      ])
+    const [
+      currentSeason,
+      totalMatches,
+      totalWins,
+      currentWinStreak,
+      userInfo,
+      activeSeason
+    ] = await Promise.all([
+      this.leaderboardSeasonRepo.findActiveSeasonWithLangIdAndUser(userId, langId),
+      this.matchRepo.countMatchesByUserId(userId),
+      this.matchRepo.countWinsByUserId(userId),
+      this.getCurrentWinStreak(userId),
+      this.userRepo.findById(userId),
+      this.leaderboardSeasonRepo.findActiveSeason()
+    ])
+
+    // nếu là activeSeason có tồn tại nhưng currentSeason không tồn tại thì nghĩa là user chưa tham gia mùa giải
+    if (activeSeason && !currentSeason) {
+      throw new UserHasNotBeenJoinedSeasonException()
+    }
 
     // Find current translation by langId
     const currentTranslation = ((currentSeason as any).nameTranslations || []).find(
@@ -463,11 +479,11 @@ export class UserService {
 
     const seasonInfo = currentSeason
       ? {
-        id: currentSeason.id,
-        name: currentTranslation?.value ?? null,
-        startDate: currentSeason.startDate,
-        endDate: currentSeason.endDate
-      }
+          id: currentSeason.id,
+          name: currentTranslation?.value ?? null,
+          startDate: currentSeason.startDate,
+          endDate: currentSeason.endDate
+        }
       : null
 
     return {

@@ -188,7 +188,8 @@ export const viMessages = {
     NAME_REQUIRED: 'Tên không được để trống',
     PASSWORD_MIN: 'Mật khẩu phải có ít nhất 6 ký tự',
     PHONE_INVALID: 'Số điện thoại không hợp lệ',
-    SET_MAIN_POKEMON_SUCCESS: 'Đặt Pokemon chính thành công'
+    SET_MAIN_POKEMON_SUCCESS: 'Đặt Pokemon chính thành công',
+    HAS_NOT_JOINED_SEASON: 'Bạn chưa tham gia mùa giải hiện tại'
   },
   role: {
     CREATE_SUCCESS: 'Tạo vai trò thành công',
