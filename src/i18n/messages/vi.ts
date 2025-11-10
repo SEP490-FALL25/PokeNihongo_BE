@@ -600,5 +600,14 @@ export const viMessages = {
     INVALID_DATA: 'Dữ liệu mùa giải bảng xếp hạng không hợp lệ',
     HAS_ACTIVE: 'Đã có mùa giải bảng xếp hạng đang hoạt động',
     HAS_OPENED: 'Mùa giải bảng xếp hạng đã từng diễn ra'
+  },
+  user_reward_history: {
+    CREATE_SUCCESS: 'Tạo lịch sử phần thưởng người dùng thành công',
+    UPDATE_SUCCESS: 'Cập nhật lịch sử phần thưởng người dùng thành công',
+    GET_SUCCESS: 'Lấy thông tin lịch sử phần thưởng người dùng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách lịch sử phần thưởng người dùng thành công',
+    NOT_FOUND: 'Không tìm thấy lịch sử phần thưởng người dùng',
+    ALREADY_EXISTS: 'Lịch sử phần thưởng người dùng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu lịch sử phần thưởng người dùng không hợp lệ'
   }
 }

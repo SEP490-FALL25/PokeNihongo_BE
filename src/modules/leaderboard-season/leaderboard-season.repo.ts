@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
+import { SeasonRankRewardType } from '../season-rank-reward/entities/season-rank-reward.entity'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { UserSeasonHistoryType } from '../user-season-history/entities/user-season-history.entity'
 import {
@@ -281,6 +282,34 @@ export class LeaderboardSeasonRepo {
         },
         userHistories: {
           where: { userId, deletedAt: null }
+        }
+      }
+    })
+  }
+
+  findWithDetailsWithoutLang(id: number): Promise<
+    | (LeaderboardSeasonType & {
+        userHistories: UserSeasonHistoryType[]
+        seasonRankRewards: SeasonRankRewardType[]
+      })
+    | null
+  > {
+    return this.prismaService.leaderboardSeason.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        userHistories: {
+          where: { deletedAt: null },
+          include: {
+            user: {
+              select: { id: true, eloscore: true }
+            }
+          }
+        },
+        seasonRankRewards: {
+          where: { deletedAt: null }
         }
       }
     })

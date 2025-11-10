@@ -637,3 +637,15 @@ export const SeasonRankRewardMessage = {
   RANK_NAME_INVALID: 'season_rank_reward.RANK_NAME_INVALID',
   RANK_ORDER_INVALID: 'season_rank_reward.RANK_ORDER_INVALID'
 } as const
+
+export const UserRewardHistoryMessage = {
+  CREATE_SUCCESS: 'user_reward_history.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'user_reward_history.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'user_reward_history.DELETE_SUCCESS',
+  GET_SUCCESS: 'user_reward_history.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'user_reward_history.GET_LIST_SUCCESS',
+
+  NOT_FOUND: 'user_reward_history.NOT_FOUND',
+  ALREADY_EXISTS: 'user_reward_history.ALREADY_EXISTS',
+  INVALID_DATA: 'user_reward_history.INVALID_DATA'
+} as const

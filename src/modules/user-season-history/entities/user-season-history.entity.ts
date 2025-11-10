@@ -1,3 +1,4 @@
+import { RewardClaimStatus } from '@/common/constants/reward.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
@@ -14,6 +15,14 @@ export const UserSeasonHistorySchema = z.object({
   seasonId: z.number(),
   finalElo: z.number(),
   finalRank: z.string(),
+  seasonRankRewardId: z.number().nullable(),
+  rewardsClaimed: z
+    .enum([
+      RewardClaimStatus.CLAIMED,
+      RewardClaimStatus.COMPLETED,
+      RewardClaimStatus.PENDING
+    ])
+    .default(RewardClaimStatus.PENDING),
   deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
