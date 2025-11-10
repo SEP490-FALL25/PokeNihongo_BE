@@ -576,5 +576,38 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy nhật ký câu trả lời câu hỏi vòng đấu',
     ALREADY_EXISTS: 'Nhật ký câu trả lời câu hỏi vòng đấu đã tồn tại',
     INVALID_DATA: 'Dữ liệu nhật ký câu trả lời câu hỏi vòng đấu không hợp lệ'
+  },
+  season_rank_reward: {
+    CREATE_SUCCESS: 'Tạo phần thưởng xếp hạng mùa giải thành công',
+    UPDATE_SUCCESS: 'Cập nhật phần thưởng xếp hạng mùa giải thành công',
+    DELETE_SUCCESS: 'Xóa phần thưởng xếp hạng mùa giải thành công',
+    GET_SUCCESS: 'Lấy thông tin phần thưởng xếp hạng mùa giải thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách phần thưởng xếp hạng mùa giải thành công',
+    NOT_FOUND: 'Không tìm thấy phần thưởng xếp hạng mùa giải',
+    ALREADY_EXISTS: 'Phần thưởng xếp hạng mùa giải đã tồn tại',
+    INVALID_DATA: 'Dữ liệu phần thưởng xếp hạng mùa giải không hợp lệ',
+    RANK_NAME_INVALID: 'Tên hạng mục không hợp lệ',
+    RANK_ORDER_INVALID: 'Thứ tự hạng mục không hợp lệ'
+  },
+  leaderboard_season: {
+    CREATE_SUCCESS: 'Tạo mùa giải bảng xếp hạng thành công',
+    UPDATE_SUCCESS: 'Cập nhật mùa giải bảng xếp hạng thành công',
+    DELETE_SUCCESS: 'Xóa mùa giải bảng xếp hạng thành công',
+    GET_SUCCESS: 'Lấy thông tin mùa giải bảng xếp hạng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách mùa giải bảng xếp hạng thành công',
+    NOT_FOUND: 'Không tìm thấy mùa giải bảng xếp hạng',
+    ALREADY_EXISTS: 'Mùa giải bảng xếp hạng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu mùa giải bảng xếp hạng không hợp lệ',
+    HAS_ACTIVE: 'Đã có mùa giải bảng xếp hạng đang hoạt động',
+    HAS_OPENED: 'Mùa giải bảng xếp hạng đã từng diễn ra'
+  },
+  user_reward_history: {
+    CREATE_SUCCESS: 'Tạo lịch sử phần thưởng người dùng thành công',
+    UPDATE_SUCCESS: 'Cập nhật lịch sử phần thưởng người dùng thành công',
+    GET_SUCCESS: 'Lấy thông tin lịch sử phần thưởng người dùng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách lịch sử phần thưởng người dùng thành công',
+    NOT_FOUND: 'Không tìm thấy lịch sử phần thưởng người dùng',
+    ALREADY_EXISTS: 'Lịch sử phần thưởng người dùng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu lịch sử phần thưởng người dùng không hợp lệ'
   }
 }

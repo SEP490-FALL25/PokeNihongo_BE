@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
+import { SeasonRankRewardType } from '../season-rank-reward/entities/season-rank-reward.entity'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { UserSeasonHistoryType } from '../user-season-history/entities/user-season-history.entity'
 import {
@@ -32,7 +33,7 @@ export class LeaderboardSeasonRepo {
       data
     }: {
       createdById: number | null
-      data: CreateLeaderboardSeasonBodyType
+      data: CreateLeaderboardSeasonBodyType & { hasOpened: boolean }
     },
     prismaTx?: PrismaClient
   ): Promise<LeaderboardSeasonType> {
@@ -56,6 +57,7 @@ export class LeaderboardSeasonRepo {
       data: UpdateLeaderboardSeasonBodyType & {
         nameTranslations: CreateTranslationBodyType[]
         leaderboardSeasonNameKey: string
+        hasOpened: boolean
       }
     },
     prismaTx?: PrismaClient
@@ -252,7 +254,7 @@ export class LeaderboardSeasonRepo {
   findActiveSeason(): Promise<LeaderboardSeasonType | null> {
     return this.prismaService.leaderboardSeason.findFirst({
       where: {
-        isActive: true,
+        status: 'ACTIVE',
         deletedAt: null
       }
     })
@@ -260,7 +262,7 @@ export class LeaderboardSeasonRepo {
 
   findActiveSeasonWithLangIdAndUser(
     userId: number,
-    langId: number
+    langId?: number
   ): Promise<
     | (LeaderboardSeasonType & {
         nameTranslations
@@ -270,7 +272,7 @@ export class LeaderboardSeasonRepo {
   > {
     return this.prismaService.leaderboardSeason.findFirst({
       where: {
-        isActive: true,
+        status: 'ACTIVE',
         deletedAt: null
       },
       include: {
@@ -280,6 +282,34 @@ export class LeaderboardSeasonRepo {
         },
         userHistories: {
           where: { userId, deletedAt: null }
+        }
+      }
+    })
+  }
+
+  findWithDetailsWithoutLang(id: number): Promise<
+    | (LeaderboardSeasonType & {
+        userHistories: UserSeasonHistoryType[]
+        seasonRankRewards: SeasonRankRewardType[]
+      })
+    | null
+  > {
+    return this.prismaService.leaderboardSeason.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        userHistories: {
+          where: { deletedAt: null },
+          include: {
+            user: {
+              select: { id: true, eloscore: true }
+            }
+          }
+        },
+        seasonRankRewards: {
+          where: { deletedAt: null }
         }
       }
     })

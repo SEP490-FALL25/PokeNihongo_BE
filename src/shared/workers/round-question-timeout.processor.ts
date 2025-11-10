@@ -122,7 +122,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     return Math.round(points)
   }
 
-  @Process(BullAction.CHECK_QUESTION_TIMEOUT)
+  @Process({ name: BullAction.CHECK_QUESTION_TIMEOUT, concurrency: 10 })
   async handleQuestionTimeout(
     job: Job<{ roundQuestionId: number; matchRoundParticipantId: number }>
   ): Promise<void> {
@@ -228,7 +228,8 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             include: {
               answers: true
             }
-          }
+          },
+          debuff: true
         }
       })
 
@@ -267,7 +268,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
 
       const currentUserId = matchRoundParticipant.matchParticipant.userId
       const matchId = matchRoundParticipant.matchRound.match.id
-
+      let endTimeQuestion: Date | null = null
       // Prepare formatted nextQuestion via QuestionBankService so socket uses consistent shape
       let nextQuestionForNotify: any | null = null
       if (nextQuestion) {
@@ -277,6 +278,39 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             'vi'
           )
           nextQuestionForNotify = qbList?.[0] || null
+          // Always include debuff field (null if none)
+          if (nextQuestionForNotify) {
+            nextQuestionForNotify.debuff = nextQuestion.debuff || null
+            // Include roundQuestionId so FE can reference it
+            nextQuestionForNotify.roundQuestionId = nextQuestion.id
+          }
+          // Compute and persist server-side endTime for the next question BEFORE notifying FE
+          endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
+          await this.prismaService.roundQuestion.update({
+            where: { id: nextQuestion.id },
+            data: { endTimeQuestion }
+          })
+
+          // Enqueue timeout job for next question now that we have the endTime persisted
+          await this.roundQuestionTimeoutQueue.add(
+            BullAction.CHECK_QUESTION_TIMEOUT,
+            {
+              roundQuestionId: nextQuestion.id,
+              matchRoundParticipantId
+            },
+            {
+              delay: nextQuestion.timeLimitMs
+            }
+          )
+
+          // Attach computed endTime to the formatted payload
+          if (nextQuestionForNotify) {
+            nextQuestionForNotify.endTimeQuestion = endTimeQuestion
+          }
+
+          this.logger.log(
+            `[RoundQuestion Timeout] Scheduled next question ${nextQuestion.id} with delay ${nextQuestion.timeLimitMs}ms`
+          )
         } catch (err) {
           this.logger.warn(
             `[RoundQuestion Timeout] Failed to fetch formatted questionBank for nextQuestion ${nextQuestion.id}: ${err?.message}`
@@ -297,7 +331,16 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             pointsEarned: finalAnswerLog.pointsEarned || 0,
             timeAnswerMs: finalAnswerLog.timeAnswerMs
           },
-          nextQuestionForNotify // null if no next question (last question)
+          nextQuestionForNotify
+            ? {
+                nextQuestion: {
+                  ...nextQuestionForNotify,
+                  // ensure we send the computed endTime (fallback to existing DB value if available)
+                  endTimeQuestion:
+                    nextQuestionForNotify.endTimeQuestion || nextQuestion?.endTimeQuestion
+                }
+              }
+            : null
         )
       }
 
@@ -349,13 +392,13 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           `[RoundQuestion Timeout] Updated participant ${matchRoundParticipantId}: totalTimeMs=${totalTimeMs}, points=${points}, status=COMPLETED`
         )
 
-        // Find opponent participant
-        const opponentParticipant =
+        // Find opponent participant (match level)
+        const opponentMatchParticipant =
           matchRoundParticipant.matchRound.match.participants.find(
             (p) => p.userId !== currentUserId
           )
 
-        if (opponentParticipant) {
+        if (opponentMatchParticipant) {
           // Notify current user about their completion
           this.matchingGateway.notifyQuestionCompleted(
             matchId,
@@ -363,15 +406,31 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             updatedParticipant
           )
 
-          // Notify opponent that current user completed
-          this.matchingGateway.notifyOpponentCompleted(
-            matchId,
-            opponentParticipant.userId
-          )
+          // Find opponent's MatchRoundParticipant to check their status
+          const opponentRoundParticipant =
+            await this.prismaService.matchRoundParticipant.findFirst({
+              where: {
+                matchRoundId: matchRoundParticipant.matchRoundId,
+                matchParticipant: {
+                  userId: opponentMatchParticipant.userId
+                }
+              }
+            })
 
-          this.logger.log(
-            `[RoundQuestion Timeout] Sent socket notifications for match ${matchId}: user ${currentUserId} completed, opponent ${opponentParticipant.userId} notified`
-          )
+          // Only notify opponent if they haven't completed yet
+          if (opponentRoundParticipant?.status !== 'COMPLETED') {
+            this.matchingGateway.notifyOpponentCompleted(
+              matchId,
+              opponentMatchParticipant.userId
+            )
+            this.logger.log(
+              `[RoundQuestion Timeout] Notified opponent ${opponentMatchParticipant.userId} that user ${currentUserId} completed`
+            )
+          } else {
+            this.logger.log(
+              `[RoundQuestion Timeout] Opponent ${opponentMatchParticipant.userId} already completed, skipping OPPONENT_COMPLETED notification`
+            )
+          }
         }
 
         // Check if opponent also completed
@@ -380,30 +439,8 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         return // No more questions to schedule
       }
 
-      if (nextQuestion) {
-        // Set endTimeQuestion for next question
-        const endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
-        await this.prismaService.roundQuestion.update({
-          where: { id: nextQuestion.id },
-          data: { endTimeQuestion }
-        })
-
-        // Enqueue timeout job for next question
-        await this.roundQuestionTimeoutQueue.add(
-          BullAction.CHECK_QUESTION_TIMEOUT,
-          {
-            roundQuestionId: nextQuestion.id,
-            matchRoundParticipantId
-          },
-          {
-            delay: nextQuestion.timeLimitMs
-          }
-        )
-
-        this.logger.log(
-          `[RoundQuestion Timeout] Scheduled next question ${nextQuestion.id} with delay ${nextQuestion.timeLimitMs}ms`
-        )
-      } else {
+      // No need to schedule again here because we already persisted and enqueued above before notifying
+      if (!nextQuestion) {
         this.logger.log(
           `[RoundQuestion Timeout] No more questions for participant ${matchRoundParticipantId} - round completed`
         )

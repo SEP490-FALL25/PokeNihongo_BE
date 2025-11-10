@@ -4,14 +4,14 @@ import { Injectable } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
-  CreateRoundQuestionBodyType,
-  RoundQuestionType,
+  CreateSeasonRankRewardBodyType,
+  SeasonRankRewardType,
   USER_SEASON_HISTORY_FIELDS,
-  UpdateRoundQuestionBodyType
-} from './entities/round-question.entity'
+  UpdateSeasonRankRewardBodyType
+} from './entities/season-rank-reward.entity'
 
 @Injectable()
-export class RoundQuestionRepo {
+export class SeasonRankRewardRepo {
   constructor(private prismaService: PrismaService) {}
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
     return this.prismaService.$transaction(callback)
@@ -22,14 +22,15 @@ export class RoundQuestionRepo {
       data
     }: {
       createdById: number
-      data: CreateRoundQuestionBodyType
+      data: CreateSeasonRankRewardBodyType
     },
     prismaTx?: PrismaClient
-  ): Promise<RoundQuestionType> {
+  ): Promise<SeasonRankRewardType> {
     const client = prismaTx || this.prismaService
-    return client.roundQuestion.create({
+    return client.seasonRankReward.create({
       data: {
-        ...data
+        ...data,
+        createdById
       }
     })
   }
@@ -41,19 +42,20 @@ export class RoundQuestionRepo {
       updatedById
     }: {
       id: number
-      data: UpdateRoundQuestionBodyType
+      data: UpdateSeasonRankRewardBodyType
       updatedById?: number
     },
     prismaTx?: PrismaClient
-  ): Promise<RoundQuestionType> {
+  ): Promise<SeasonRankRewardType> {
     const client = prismaTx || this.prismaService
-    return client.roundQuestion.update({
+    return client.seasonRankReward.update({
       where: {
         id,
         deletedAt: null
       },
       data: {
-        ...data
+        ...data,
+        updatedById
       }
     })
   }
@@ -62,13 +64,13 @@ export class RoundQuestionRepo {
     id: number,
     isHard?: boolean,
     prismaTx?: PrismaClient
-  ): Promise<RoundQuestionType> {
+  ): Promise<SeasonRankRewardType> {
     const client = prismaTx || this.prismaService
     return isHard
-      ? client.roundQuestion.delete({
+      ? client.seasonRankReward.delete({
           where: { id }
         })
-      : client.roundQuestion.update({
+      : client.seasonRankReward.update({
           where: {
             id,
             deletedAt: null
@@ -91,10 +93,10 @@ export class RoundQuestionRepo {
     }
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.roundQuestion.count({
+      this.prismaService.seasonRankReward.count({
         where: filterWhere
       }),
-      this.prismaService.roundQuestion.findMany({
+      this.prismaService.seasonRankReward.findMany({
         where: filterWhere,
 
         orderBy,
@@ -114,19 +116,12 @@ export class RoundQuestionRepo {
     }
   }
 
-  findById(id: number): Promise<RoundQuestionType | null> {
-    return this.prismaService.roundQuestion.findUnique({
+  findById(id: number): Promise<SeasonRankRewardType | null> {
+    return this.prismaService.seasonRankReward.findUnique({
       where: {
         id,
         deletedAt: null
       }
-    })
-  }
-
-  async findByMatchRoundParticipantId(matchRoundParticipantId: number) {
-    return this.prismaService.roundQuestion.findMany({
-      where: { matchRoundParticipantId, deletedAt: null },
-      orderBy: { orderNumber: 'asc' }
     })
   }
 }

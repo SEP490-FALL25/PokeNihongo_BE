@@ -586,5 +586,39 @@ export const enMessages = {
 
     ALREADY_EXISTS: 'Round questions answer log already exists',
     INVALID_DATA: 'Invalid round questions answer log data'
+  },
+  season_rank_reward: {
+    CREATE_SUCCESS: 'Season rank reward created successfully',
+    UPDATE_SUCCESS: 'Season rank reward updated successfully',
+    DELETE_SUCCESS: 'Season rank reward deleted successfully',
+    GET_SUCCESS: 'Season rank reward retrieved successfully',
+    GET_LIST_SUCCESS: 'Season rank reward list retrieved successfully',
+    NOT_FOUND: 'Season rank reward not found',
+    ALREADY_EXISTS: 'Season rank reward already exists',
+    INVALID_DATA: 'Invalid season rank reward data',
+    RANK_NAME_INVALID: 'Invalid rank name',
+    RANK_ORDER_INVALID: 'Invalid rank order'
+  },
+  leaderboard_season: {
+    CREATE_SUCCESS: 'Leaderboard season created successfully',
+    UPDATE_SUCCESS: 'Leaderboard season updated successfully',
+    DELETE_SUCCESS: 'Leaderboard season deleted successfully',
+    GET_SUCCESS: 'Leaderboard season retrieved successfully',
+    GET_LIST_SUCCESS: 'Leaderboard season list retrieved successfully',
+    NOT_FOUND: 'Leaderboard season not found',
+    ALREADY_EXISTS: 'Leaderboard season already exists',
+    INVALID_DATA: 'Invalid leaderboard season data',
+    HAS_ACTIVE: 'There is already an active leaderboard season',
+    INVALID_DATA_TO_ACTIVE: 'Cannot set to active: season has already been opened before'
+  },
+  user_reward_history: {
+    CREATE_SUCCESS: 'User reward history created successfully',
+    UPDATE_SUCCESS: 'User reward history updated successfully',
+    DELETE_SUCCESS: 'User reward history deleted successfully',
+    GET_SUCCESS: 'User reward history retrieved successfully',
+    GET_LIST_SUCCESS: 'User reward history list retrieved successfully',
+    NOT_FOUND: 'User reward history not found',
+    ALREADY_EXISTS: 'User reward history already exists',
+    INVALID_DATA: 'Invalid user reward history data'
   }
 }

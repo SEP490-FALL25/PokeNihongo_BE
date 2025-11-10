@@ -35,7 +35,7 @@ import {
 } from './entities/match-round-participant.entity'
 import { MatchRoundParticipantRepo } from './match-round-participant.repo'
 
-const TIME_CHOOSE_POKEMON_MS = 5000
+const TIME_CHOOSE_POKEMON_MS = 30000
 const TIME_LIMIT_ANSWER_QUESTION_MS = 60000
 
 @Injectable()
@@ -55,7 +55,9 @@ export class MatchRoundParticipantService {
     private readonly questionBankService: QuestionBankService,
     private readonly roundQuestionRepo: RoundQuestionRepo,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
-    private readonly matchRoundParticipantTimeoutQueue: Queue
+    private readonly matchRoundParticipantTimeoutQueue: Queue,
+    @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
+    private readonly roundQuestionTimeoutQueue: Queue
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -227,47 +229,86 @@ export class MatchRoundParticipantService {
         id: existMatchRoundParticipant.id,
         data: {
           selectedUserPokemonId: userPokemon.id,
-          status: MatchRoundParticipantStatus.PENDING // Update status thành PENDING ngay khi chọn xong
+          status: MatchRoundParticipantStatus.PENDING // chuyển ngay participant này sang PENDING
         },
         updatedById: userId
       })
 
-      // Fetch đầy đủ dữ liệu theo GetMatchRoundDetailForUserResSchema format
-      // 1. Fetch match với participants và user
+      // Tìm participant tiếp theo và kiểm tra all selected trước khi gửi socket
+      const allParticipants = existMatchRound.participants.sort(
+        (a, b) => a.orderSelected - b.orderSelected
+      )
+      const currentIndex = allParticipants.findIndex(
+        (p) => p.id === existMatchRoundParticipant.id
+      )
+      allParticipants[currentIndex].selectedUserPokemonId = userPokemon.id
+      const nextParticipant = allParticipants[currentIndex + 1]
+      const allSelectedNow = allParticipants.every(
+        (p) => p.selectedUserPokemonId !== null
+      )
+      const nextEndTime = addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
+      if (allSelectedNow) {
+        this.logger.log(
+          `[MatchRoundParticipant] All participants selected manually in round ${matchRoundId}. Updating statuses then generating questions.`
+        )
+        // Update round & participants to PENDING trước khi notify
+        await this.prismaService.matchRound.update({
+          where: { id: matchRoundId },
+          data: { status: RoundStatus.PENDING }
+        })
+        await this.prismaService.matchRoundParticipant.updateMany({
+          where: { matchRoundId },
+          data: { status: RoundStatus.PENDING }
+        })
+      } else if (nextParticipant) {
+        // Nếu chưa all selected và có nextParticipant -> Set time cho participant tiếp theo
+        await this.matchRoundParticipantRepo.update({
+          id: nextParticipant.id,
+          data: {
+            endTimeSelected: nextEndTime
+          }
+        })
+
+        // Tạo Bull job cho participant tiếp theo
+        await this.matchRoundParticipantTimeoutQueue.add(
+          BullAction.CHECK_POKEMON_SELECTION_TIMEOUT,
+          {
+            matchRoundParticipantId: nextParticipant.id
+          },
+          {
+            delay: TIME_CHOOSE_POKEMON_MS
+          }
+        )
+        this.logger.log(
+          `[MatchRoundParticipant] Set endTime and Bull job for next participant ${nextParticipant.id}`
+        )
+      }
+
+      // Nếu all selected -> generate questions + debuff + moveToNextRound TRƯỚC khi fetch & socket
+      if (allSelectedNow) {
+        await this.handleQuestionsAndDebuffForCompletedSelection(
+          existMatchRound,
+          allParticipants.map((p) => p.id)
+        )
+      }
+
+      // Fetch data và gửi socket 1 lần duy nhất SAU khi tất cả hàm chạy xong (bao gồm moveToNextRound)
       const match: any = await this.prismaService.match.findUnique({
         where: { id: existMatchRound.match.id },
-        include: {
-          participants: {
-            include: {
-              user: true
-            }
-          }
-        }
+        include: { participants: { include: { user: true } } }
       })
-
-      // 2. Fetch tất cả rounds của match
       const rounds: any[] = await this.prismaService.matchRound.findMany({
-        where: {
-          matchId: existMatchRound.match.id,
-          deletedAt: null
-        },
+        where: { matchId: existMatchRound.match.id, deletedAt: null },
         include: {
           participants: {
             include: {
-              selectedUserPokemon: {
-                include: {
-                  pokemon: true
-                }
-              }
+              selectedUserPokemon: { include: { pokemon: true } }
             }
           }
         },
-        orderBy: {
-          roundNumber: 'asc'
-        }
+        orderBy: { roundNumber: 'asc' }
       })
 
-      // 3. Format data theo schema
       const matchFormatted = {
         id: match.id,
         status: match.status,
@@ -283,7 +324,6 @@ export class MatchRoundParticipantService {
           }
         }))
       }
-
       const roundsFormatted = rounds.map((round: any) => ({
         id: round.id,
         roundNumber: round.roundNumber,
@@ -315,76 +355,13 @@ export class MatchRoundParticipantService {
         }))
       }))
 
-      // Gửi socket notification với data đã format
       this.matchingGateway.notifyPokemonSelected(
-        existMatchRound.match.id, // matchId
+        existMatchRound.match.id,
         matchRoundId,
         { match: matchFormatted, rounds: roundsFormatted },
-        null, // không cần participant riêng
-        null // không cần opponent riêng
+        null,
+        null
       )
-
-      // Tìm participant tiếp theo (order cao hơn)
-      const allParticipants = existMatchRound.participants.sort(
-        (a, b) => a.orderSelected - b.orderSelected
-      )
-      const currentIndex = allParticipants.findIndex(
-        (p) => p.id === existMatchRoundParticipant.id
-      )
-
-      // Update participant hiện tại trong memory với selectedUserPokemonId mới
-      allParticipants[currentIndex].selectedUserPokemonId = userPokemon.id
-
-      const nextParticipant = allParticipants[currentIndex + 1]
-
-      // Kiểm tra đã chọn xong toàn bộ chưa (dùng sau khi cập nhật selectedUserPokemonId ở trên)
-      const allSelectedNow = allParticipants.every(
-        (p) => p.selectedUserPokemonId !== null
-      )
-      if (allSelectedNow) {
-        this.logger.log(
-          `[MatchRoundParticipant] All participants selected in round ${matchRoundId}. Generating questions + debuff logic.`
-        )
-        await this.handleQuestionsAndDebuffForCompletedSelection(
-          existMatchRound,
-          allParticipants.map((p) => p.id)
-        )
-        // Return early to prevent duplicate moveToNextRound call
-        return {
-          statusCode: 200,
-          data: matchRoundParticipant,
-          message: this.i18nService.translate(
-            MatchRoundParticipantMessage.UPDATE_SUCCESS,
-            lang
-          )
-        }
-      }
-
-      if (nextParticipant) {
-        // Set time cho participant tiếp theo
-        await this.matchRoundParticipantRepo.update({
-          id: nextParticipant.id,
-          data: {
-            endTimeSelected: addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
-          }
-        })
-
-        // Tạo Bull job cho participant tiếp theo
-        await this.matchRoundParticipantTimeoutQueue.add(
-          BullAction.CHECK_POKEMON_SELECTION_TIMEOUT,
-          {
-            matchRoundParticipantId: nextParticipant.id
-          },
-          {
-            delay: TIME_CHOOSE_POKEMON_MS
-          }
-        )
-        this.logger.log(
-          `[MatchRoundParticipant] Set endTime and Bull job for next participant ${nextParticipant.id}`
-        )
-      }
-      // If no nextParticipant, either allSelectedNow is already handled above (early return),
-      // or we're waiting for timeout processor to handle remaining participants
 
       return {
         statusCode: 200,
@@ -668,6 +645,17 @@ export class MatchRoundParticipantService {
             }
 
             if (debuffRow && debuffedParticipantId) {
+              // Persist debuff assignment on the participant (so later includes expose participant.debuff)
+              try {
+                await this.prismaService.matchRoundParticipant.update({
+                  where: { id: debuffedParticipantId },
+                  data: { debuffId: debuffRow.id }
+                })
+              } catch (assignErr) {
+                this.logger.warn(
+                  `[MatchRoundParticipant] Failed to assign debuffId=${debuffRow.id} to participant ${debuffedParticipantId}: ${assignErr.message}`
+                )
+              }
               const questionsOfDebuffed = await this.prismaService.roundQuestion.findMany(
                 {
                   where: { matchRoundParticipantId: debuffedParticipantId },
@@ -763,89 +751,34 @@ export class MatchRoundParticipantService {
       if (allPending) {
         const roundOne = allRounds.find((r) => r.roundNumber === MatchRoundNumber.ONE)
         if (roundOne) {
-          await this.prismaService.matchRound.update({
-            where: { id: roundOne.id },
-            data: {
-              status: RoundStatus.IN_PROGRESS,
-              endTimeRound: addTimeUTC(new Date(), 10 * 60 * 1000) // +10 minutes
-            }
-          })
-          await this.prismaService.matchRoundParticipant.updateMany({
-            where: { matchRoundId: roundOne.id },
-            data: {
-              status: MatchRoundParticipantStatus.IN_PROGRESS,
-              totalTimeMs: 60 * 1000 // +60s initial allocation
-            }
-          })
-          // Gửi socket to each participant with formatted firstQuestion (use QuestionBankService)
-          const roundParticipants =
+          // Schedule Round ONE start after 5s thay vì start ngay lập tức
+          const roundOneParticipants =
             await this.prismaService.matchRoundParticipant.findMany({
-              where: { matchRoundId: roundOne.id },
+              where: { matchRoundId: roundOne.id, deletedAt: null },
               include: {
-                matchParticipant: { include: { user: true } },
-                matchRound: true,
-                selectedUserPokemon: { include: { pokemon: true } }
+                matchParticipant: { include: { user: true } }
               },
               orderBy: { orderSelected: 'asc' }
             })
-
-          for (const participant of roundParticipants) {
-            // find first question for participant
-            const firstQuestion = await this.prismaService.roundQuestion.findFirst({
-              where: { matchRoundParticipantId: participant.id },
-              orderBy: { orderNumber: 'asc' }
-            })
-            if (!firstQuestion) continue
-
-            // Set endTime and enqueue timeout
-            const endTimeQuestion = addTimeUTC(new Date(), firstQuestion.timeLimitMs)
-            await this.prismaService.roundQuestion.update({
-              where: { id: firstQuestion.id },
-              data: { endTimeQuestion }
-            })
-
+          if (roundOneParticipants.length === 2) {
+            const userId1 = roundOneParticipants[0].matchParticipant.userId
+            const userId2 = roundOneParticipants[1].matchParticipant.userId
+            // Countdown socket
+            this.matchingGateway.notifyRoundStarting(matchId, userId1, userId2, 'ONE', 5)
+            // Enqueue START_ROUND job
             await this.matchRoundParticipantTimeoutQueue.add(
-              BullAction.CHECK_QUESTION_TIMEOUT,
-              {
-                roundQuestionId: firstQuestion.id,
-                matchRoundParticipantId: participant.id
-              },
-              { delay: firstQuestion.timeLimitMs }
+              BullAction.START_ROUND,
+              { matchId, matchRoundId: roundOne.id },
+              { delay: 5000 }
             )
-
-            // Fetch formatted first question from QuestionBankService
-            let firstQuestionForNotify: any | null = null
-            try {
-              const qbRes = await this.questionBankService.findByIds([
-                firstQuestion.questionBankId
-              ])
-              firstQuestionForNotify = qbRes?.data?.results?.[0] || null
-            } catch (err) {
-              this.logger.warn(
-                `[MatchRoundParticipant] Failed to fetch formatted questionBank for firstQuestion ${firstQuestion.id}: ${err?.message}`
-              )
-            }
-
-            const userId = participant.matchParticipant.userId
-            this.matchingGateway.notifyRoundStarted(
-              matchId,
-              userId,
-              {
-                id: roundOne.id,
-                roundNumber: participant.matchRound.roundNumber,
-                status: 'IN_PROGRESS',
-                participant: {
-                  id: participant.id,
-                  status: participant.status,
-                  selectedUserPokemon: participant.selectedUserPokemon
-                }
-              },
-              firstQuestionForNotify
+            this.logger.log(
+              `[MatchRoundParticipant] Scheduled Round ONE to start in 5 seconds for match ${matchId}`
+            )
+          } else {
+            this.logger.warn(
+              `[MatchRoundParticipant] Not enough participants to schedule Round ONE for match ${matchId}`
             )
           }
-          this.logger.log(
-            `[MatchRoundParticipant] Round ONE started automatically for match ${matchId}`
-          )
         }
       } else {
         // Not all rounds are PENDING yet, need to move to next round for Pokemon selection
