@@ -652,6 +652,10 @@ model Lesson {
   rewardId Int?
   reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
+  // Quan hệ với Test (Bài test ôn tập)
+  testId Int?
+  test   Test? @relation("LessonTest", fields: [testId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
   // Quan hệ với User (created_by)
   createdById Int
   createdBy   User @relation("LessonCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -672,6 +676,7 @@ model Lesson {
   @@index([lessonOrder])
   @@index([isPublished])
   @@index([publishedAt])
+  @@index([testId])
 }
 
 // Model LessonContents (Nội dung bài học)
@@ -812,6 +817,9 @@ model Test {
 
   // Quan hệ với UserTestAttempt
   userTestAttempts UserTestAttempt[] @relation("TestUserTestAttempts")
+
+  // Quan hệ với Lesson (Bài test ôn tập cho lesson)
+  lessons Lesson[] @relation("LessonTest")
 
   @@index([testType])
   @@index([status])
@@ -1941,6 +1949,7 @@ enum QueueStatus {
 enum ProgressStatus {
   NOT_STARTED // Chưa bắt đầu
   IN_PROGRESS // Đang học
+  TESTING_LAST // Đang làm bài test
   COMPLETED // Đã hoàn thành
 }
 
@@ -2191,6 +2200,7 @@ enum TestStatus {
   READING_TEST // Đọc hiểu
   LISTENING_TEST // Nghe hiểu
   SPEAKING_TEST // Nói
+  LESSON_REVIEW // Ôn tập bài học
 }
 
 // === AI Recommendations ===
