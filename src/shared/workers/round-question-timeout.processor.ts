@@ -87,7 +87,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
    * @param timeAnswerMs - Time taken to answer in milliseconds
    * @param timeLimitMs - Time limit for the question
    * @param debuff - Debuff applied to the question (if any)
-   * @returns Points earned (0 for incorrect, 50%-100% of base for correct based on speed)
+   * @returns Points earned (0 for incorrect, minimum 50% of base for correct)
    */
   private calculatePointsEarned(
     isCorrect: boolean,
@@ -96,30 +96,23 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     timeLimitMs: number,
     debuff?: { typeDebuff: string; valueDebuff: number } | null
   ): number {
-    if (!isCorrect) {
-      return 0
-    }
+    if (!isCorrect) return 0
 
-    // Calculate speed ratio: faster answer = lower ratio (0.0 = instant, 1.0 = timeout)
-    const speedRatio = Math.min(timeAnswerMs / timeLimitMs, 1.0)
+    // Calculate points: points = basePoints * (1 - timeAnswer / timeLimit)
+    const timeRatio = Math.min(timeAnswerMs / timeLimitMs, 1.0)
+    let points = basePoints * (1 - timeRatio)
 
-    // Calculate speed bonus: faster = higher bonus (0.0 to 0.5)
-    const speedBonus = (1 - speedRatio) * 0.5
-
-    // Base multiplier: 0.5 (minimum) to 1.0 (maximum)
-    const baseMultiplier = 0.5 + speedBonus
-
-    // Calculate points before debuff
-    let points = basePoints * baseMultiplier
+    // Ensure minimum 50% of base points for correct answers
+    points = Math.max(points, basePoints * 0.5)
 
     // Apply DECREASE_POINT debuff if present
     if (debuff && debuff.typeDebuff === 'DECREASE_POINT') {
       points -= debuff.valueDebuff
-      // Ensure minimum 10% of base points
-      points = Math.max(points, basePoints * 0.1)
+      // After debuff, still ensure minimum 50% of base points
+      points = Math.max(points, basePoints * 0.5)
     }
 
-    return Math.round(points)
+    return Math.ceil(points) // Làm tròn lên
   }
 
   @Process({ name: BullAction.CHECK_QUESTION_TIMEOUT, concurrency: 10 })

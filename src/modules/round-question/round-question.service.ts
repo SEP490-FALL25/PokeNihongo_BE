@@ -153,17 +153,21 @@ export class RoundQuestionService {
   ): number {
     if (!isCorrect) return 0
 
-    const speedRatio = Math.min(timeAnswerMs / timeLimitMs, 1.0)
-    const speedBonus = (1 - speedRatio) * 0.5
-    const baseMultiplier = 0.5 + speedBonus
-    let points = basePoints * baseMultiplier
+    // Calculate points: points = basePoints * (1 - timeAnswer / timeLimit)
+    const timeRatio = Math.min(timeAnswerMs / timeLimitMs, 1.0)
+    let points = basePoints * (1 - timeRatio)
 
+    // Ensure minimum 50% of base points for correct answers
+    points = Math.max(points, basePoints * 0.5)
+
+    // Apply DECREASE_POINT debuff if present
     if (debuff && debuff.typeDebuff === 'DECREASE_POINT') {
       points -= debuff.valueDebuff
-      points = Math.max(points, basePoints * 0.1)
+      // After debuff, still ensure minimum 50% of base points
+      points = Math.max(points, basePoints * 0.5)
     }
 
-    return Math.round(points)
+    return Math.ceil(points) // Làm tròn lên
   }
 
   async answerQuestion(
