@@ -123,11 +123,11 @@ export const GrammarContentSchema = z.object({
 export const KanjiContentSchema = z.object({
     id: z.number(),
     character: z.string(),
-    meaningKey: z.string(),
     meaning: z.union([z.string(), z.array(z.object({
         language: z.string(),
         value: z.string()
     }))]).optional(),
+    explanationMeaning: z.string().optional(),
     onReading: z.string().optional(),
     kunReading: z.string().optional(),
     strokeCount: z.number().optional(),
