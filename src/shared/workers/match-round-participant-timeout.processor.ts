@@ -375,27 +375,49 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         )
       }
 
-      // Check nếu all selected -> cần generate questions + moveToNextRound TRƯỚC khi fetch & socket
-      if (currentParticipant.selectedUserPokemonId !== null) {
-        const allParticipants = currentParticipant.matchRound.participants
-        const allSelected = allParticipants.every((p) => p.selectedUserPokemonId !== null)
-        if (allSelected) {
-          shouldGenerateQuestions = true
-          const matchRound = await this.prismaService.matchRound.findUnique({
-            where: { id: currentParticipant.matchRoundId },
-            select: { matchId: true }
-          })
-          if (matchRound) {
-            matchIdForGenerate = matchRound.matchId
-          }
+      // RE-FETCH participants để có data mới nhất sau khi auto-select
+      const freshParticipants = await this.prismaService.matchRoundParticipant.findMany({
+        where: { matchRoundId: currentParticipant.matchRoundId },
+        select: { id: true, selectedUserPokemonId: true }
+      })
+
+      this.logger.log(
+        `[Debug] Fresh participants for round ${currentParticipant.matchRoundId}: ${JSON.stringify(freshParticipants)}`
+      )
+
+      // Check nếu all selected -> cần generate questions
+      const allSelected = freshParticipants.every((p) => p.selectedUserPokemonId !== null)
+
+      this.logger.log(
+        `[Debug] allSelected check: ${allSelected} (${freshParticipants.length} participants)`
+      )
+
+      if (allSelected) {
+        shouldGenerateQuestions = true
+        const matchRound = await this.prismaService.matchRound.findUnique({
+          where: { id: currentParticipant.matchRoundId },
+          select: { matchId: true }
+        })
+        if (matchRound) {
+          matchIdForGenerate = matchRound.matchId
+          this.logger.log(
+            `[Debug] Will generate questions for matchId: ${matchIdForGenerate}, roundId: ${currentParticipant.matchRoundId}`
+          )
         }
       }
 
       // Nếu all selected -> generate questions SAU khi đã gửi socket
       if (shouldGenerateQuestions && matchIdForGenerate) {
+        this.logger.log(
+          `[Debug] Calling generateQuestionsDebuffAndMaybeStartRound for round ${currentParticipant.matchRoundId}`
+        )
         await this.generateQuestionsDebuffAndMaybeStartRound(
           currentParticipant.matchRoundId,
           matchIdForGenerate
+        )
+      } else {
+        this.logger.log(
+          `[Debug] NOT calling generate: shouldGenerateQuestions=${shouldGenerateQuestions}, matchIdForGenerate=${matchIdForGenerate}`
         )
       }
 

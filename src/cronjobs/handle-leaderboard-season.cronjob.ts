@@ -1,4 +1,4 @@
-import { RewardClaimStatus } from '@/common/constants/reward.constant'
+import { RewardClaimStatus, RewardTarget } from '@/common/constants/reward.constant'
 import { LeaderboardSeasonRepo } from '@/modules/leaderboard-season/leaderboard-season.repo'
 import { addDaysUTC0000, convertEloToRank, todayUTCWith0000 } from '@/shared/helpers'
 import { PrismaService } from '@/shared/services/prisma.service'
@@ -33,6 +33,8 @@ export class HandleLeaderboardSeasonCronjob {
       for (const s of seasonsToExpire) {
         try {
           await this.finalizeSeason(s.id)
+          // Precreate the next season right after finalizing this one
+          await this.precreateNextSeasonFromTemplate(s.id)
           await this.prisma.leaderboardSeason.update({
             where: { id: s.id },
             data: { status: 'EXPIRED' }
@@ -67,7 +69,7 @@ export class HandleLeaderboardSeasonCronjob {
           const toActivate = candidates[0]
           await this.prisma.leaderboardSeason.update({
             where: { id: toActivate.id },
-            data: { status: 'ACTIVE' }
+            data: { status: 'ACTIVE', hasOpened: true }
           })
           this.logger.log(
             `[LeaderboardSeason Cron] Activated season ID=${toActivate.id}, nameKey=${toActivate.nameKey}`
@@ -320,5 +322,135 @@ export class HandleLeaderboardSeasonCronjob {
     this.logger.log(
       `[FinalizeSeason] Season ${seasonId} finalized: participants=${participants.length}, rewardsAssigned=${rankAssignments.filter((a) => a.seasonRankRewardId).length}`
     )
+  }
+
+  /**
+   * Create the next season in PREVIEW based on a template (the just-finalized season).
+   * - Dates: start = template.endDate, end = start + duration(template)
+   * - Copy translations and config flags
+   * - SeasonRankRewards:
+   *   - if isRandomItemAgain=false: clone previous rewards
+   *   - if true: re-randomize rewards from pool (EXP, SPARKLES) keeping same structure counts
+   */
+  private async precreateNextSeasonFromTemplate(templateSeasonId: number) {
+    const template = await this.prisma.leaderboardSeason.findUnique({
+      where: { id: templateSeasonId, deletedAt: null },
+      include: {
+        nameTranslations: true,
+        seasonRankRewards: { include: { rewards: { select: { id: true } } } }
+      }
+    })
+    if (!template) return
+
+    if (!template.enablePrecreate) {
+      this.logger.debug(
+        `[PrecreateNext] Template season ${templateSeasonId} has enablePrecreate=false, skip`
+      )
+      return
+    }
+
+    if (!template.startDate || !template.endDate) {
+      this.logger.warn(
+        `[PrecreateNext] Template season ${templateSeasonId} missing dates, skip`
+      )
+      return
+    }
+
+    // Avoid duplicate by checking same newStartDate already exists
+    const durationMs = template.endDate.getTime() - template.startDate.getTime()
+    const durationDays = Math.max(1, Math.round(durationMs / (24 * 60 * 60 * 1000)))
+
+    const newStartDate = template.endDate
+    const newEndDate = addDaysUTC0000(template.endDate, durationDays)
+
+    const exists = await this.prisma.leaderboardSeason.findFirst({
+      where: { startDate: newStartDate, status: 'PREVIEW', deletedAt: null }
+    })
+    if (exists) {
+      this.logger.log(
+        `[PrecreateNext] Already has PREVIEW season starting ${newStartDate.toISOString()} (id=${exists.id}), skip`
+      )
+      return
+    }
+
+    // Prepare reward pool if randomization is needed
+    let rewardPool: { id: number }[] = []
+    if (template.isRandomItemAgain) {
+      rewardPool = await this.prisma.reward.findMany({
+        where: {
+          deletedAt: null,
+          rewardTarget: { in: [RewardTarget.EXP as any, RewardTarget.SPARKLES as any] }
+        },
+        select: { id: true }
+      })
+    }
+
+    // Transaction: create season, set nameKey + translations, create seasonRankRewards
+    await this.prisma.$transaction(async (tx) => {
+      const timestamp = Date.now()
+      const created = await tx.leaderboardSeason.create({
+        data: {
+          nameKey: `leaderboardSeason.name.temp.${timestamp}`,
+          startDate: newStartDate,
+          endDate: newEndDate,
+          status: 'PREVIEW' as any,
+          enablePrecreate: template.enablePrecreate,
+          precreateBeforeEndDays: template.precreateBeforeEndDays,
+          isRandomItemAgain: template.isRandomItemAgain,
+          createdById: template.createdById ?? undefined
+        }
+      })
+
+      const finalNameKey = `leaderboardSeason.name.${created.id}`
+      const upserts = template.nameTranslations.map((t) => ({
+        where: { languageId_key: { languageId: t.languageId, key: finalNameKey } },
+        update: { value: t.value },
+        create: { languageId: t.languageId, key: finalNameKey, value: t.value }
+      }))
+
+      await tx.leaderboardSeason.update({
+        where: { id: created.id },
+        data: {
+          nameKey: finalNameKey,
+          ...(upserts.length ? { nameTranslations: { upsert: upserts as any } } : {})
+        }
+      })
+
+      // Create SeasonRankRewards for new season
+      for (const item of template.seasonRankRewards) {
+        // Decide reward ids to connect
+        let rewardIds: number[] = []
+        if (!template.isRandomItemAgain) {
+          rewardIds = (item.rewards || []).map((r) => r.id)
+        } else {
+          // Random pick based on previous count; ensure at least 1 if pool not empty
+          const count = Math.max(1, (item.rewards || []).length || 1)
+          if (rewardPool.length > 0) {
+            // sample without replacement up to pool size
+            const shuffled = [...rewardPool].sort(() => Math.random() - 0.5)
+            rewardIds = shuffled
+              .slice(0, Math.min(count, shuffled.length))
+              .map((r) => r.id)
+          } else {
+            rewardIds = []
+          }
+        }
+
+        await tx.seasonRankReward.create({
+          data: {
+            seasonId: created.id,
+            rankName: item.rankName as any,
+            order: item.order,
+            ...(rewardIds.length
+              ? { rewards: { connect: rewardIds.map((rid) => ({ id: rid })) } }
+              : {})
+          }
+        })
+      }
+
+      this.logger.log(
+        `[PrecreateNext] Created next season ${created.id} from template ${template.id} (${finalNameKey})`
+      )
+    })
   }
 }
