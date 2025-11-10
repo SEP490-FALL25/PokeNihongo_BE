@@ -648,7 +648,15 @@ export class RoundQuestionService {
       where: { id: matchId },
       data: { status: 'COMPLETED', winnerId: winnerParticipant?.userId || null },
       include: {
-        winner: true,
+        winner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+            eloscore: true
+          }
+        },
         participants: {
           include: {
             user: {

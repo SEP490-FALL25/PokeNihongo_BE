@@ -181,7 +181,8 @@ export const jaMessages = {
     NAME_REQUIRED: '名前は必須です',
     PASSWORD_MIN: 'パスワードは最低6文字である必要があります',
     PHONE_INVALID: '無効な電話番号です',
-    SET_MAIN_POKEMON_SUCCESS: 'メインポケモンの設定が完了しました'
+    SET_MAIN_POKEMON_SUCCESS: 'メインポケモンの設定が完了しました',
+    HAS_NOT_JOINED_SEASON: '現在のシーズンに参加していません'
   },
   role: {
     CREATE_SUCCESS: 'ロールが正常に作成されました',

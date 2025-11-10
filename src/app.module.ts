@@ -38,7 +38,6 @@ import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
 
-import { HandleLeaderboardSeasonCronjob } from './cronjobs/handle-leaderboard-season.cronjob'
 import { HandleMatchmakingCronjob } from './cronjobs/handle-matchmaking.cronjob'
 import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
 import { AIConversationRoomModule } from './modules/ai-conversation-room/ai-conversation-room.module'
@@ -178,7 +177,7 @@ import { WebsocketsModule } from './websockets/websockets.module'
   controllers: [],
   providers: [
     HandleShopBannerCronjob,
-    HandleLeaderboardSeasonCronjob,
+    // HandleLeaderboardSeasonCronjob,
     HandleMatchmakingCronjob, // Cronjob chạy mỗi 5s để xử lý matchmaking
     {
       provide: APP_PIPE,
