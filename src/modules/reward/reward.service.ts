@@ -10,8 +10,8 @@ import {
   isUniqueConstraintPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
-import { HttpStatus, Injectable } from '@nestjs/common'
-import { RarityPokemon, RewardTarget, WalletType } from '@prisma/client'
+import { HttpStatus, Injectable, Logger } from '@nestjs/common'
+import { RarityPokemon, RewardTarget, UserRewardSourceType, WalletType } from '@prisma/client'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
@@ -19,7 +19,9 @@ import { TranslationRepository } from '../translation/translation.repo'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import { UserService } from '../user/user.service'
 import { WalletRepo } from '../wallet/wallet.repo'
+import { CreateUserRewardHistoryBodyType, UserRewardSourceTypeSchema } from '../user-reward-history/entities/user-reward-history.entities'
 import { RewardAlreadyExistsException } from './dto/reward.error'
+import { UserRewardHistoryService } from '../user-reward-history/user-reward-history.service'
 import {
   CreateRewardBodyInputType,
   CreateRewardBodyType,
@@ -38,8 +40,34 @@ export class RewardService {
     private readonly userService: UserService,
     private readonly walletRepo: WalletRepo,
     private readonly pokemonRepo: PokemonRepo,
-    private readonly userPokemonRepo: UserPokemonRepo
-  ) {}
+    private readonly userPokemonRepo: UserPokemonRepo,
+    private readonly userRewardHistoryService: UserRewardHistoryService
+  ) { }
+
+  private readonly logger = new Logger(RewardService.name)
+
+  private pushHistoryEntry(
+    entries: CreateUserRewardHistoryBodyType[],
+    params: {
+      userId: number
+      rewardId?: number
+      target: RewardTarget
+      amount?: number | null
+      note?: string
+      meta?: Record<string, any>
+    }
+  ) {
+    const payload = this.userRewardHistoryService.createEntryPayload({
+      userId: params.userId,
+      rewardId: params.rewardId,
+      rewardTargetSnapshot: params.target as any,
+      amount: params.amount ?? null,
+      sourceType: 'REWARD_SERVICE',
+      note: params.note,
+      meta: params.meta
+    })
+    entries.push(payload)
+  }
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const langId = await this.languageRepo.getIdByCode(lang)
@@ -243,7 +271,7 @@ export class RewardService {
             },
             true
           )
-        } catch (rollbackError) {}
+        } catch (rollbackError) { }
       }
 
       if (isUniqueConstraintPrismaError(error)) {
@@ -399,7 +427,7 @@ export class RewardService {
    * @returns Object with processed results for each reward type
    */
   //todo Kumo
-  async convertRewardsWithUser(rewardIds: number[], userId: number) {
+  async convertRewardsWithUser(rewardIds: number[], userId: number, sourceType: UserRewardSourceType) {
     // 1. Fetch all rewards by IDs using findManyByIds
     const rewards = await this.rewardRepo.findManyByIds(rewardIds)
 
@@ -426,6 +454,8 @@ export class RewardService {
       pokemons: []
     }
 
+    const historyEntries: CreateUserRewardHistoryBodyType[] = []
+
     // 3. Process EXP rewards
     if (rewardsByType[RewardTarget.EXP].length > 0) {
       const totalExp = rewardsByType[RewardTarget.EXP].reduce(
@@ -433,6 +463,13 @@ export class RewardService {
         0
       )
       results.exp = await this.userService.userAddExp(userId, totalExp)
+      this.userRewardHistoryService.appendEntriesFromRewards(
+        historyEntries,
+        rewardsByType[RewardTarget.EXP],
+        userId,
+        RewardTarget.EXP,
+        sourceType
+      )
     }
 
     // 4. Process POKE_COINS rewards
@@ -446,6 +483,13 @@ export class RewardService {
         type: WalletType.POKE_COINS,
         amount: totalCoins
       })
+      this.userRewardHistoryService.appendEntriesFromRewards(
+        historyEntries,
+        rewardsByType[RewardTarget.POKE_COINS],
+        userId,
+        RewardTarget.POKE_COINS,
+        sourceType
+      )
     }
 
     // 5. Process SPARKLES rewards
@@ -459,6 +503,13 @@ export class RewardService {
         type: WalletType.SPARKLES,
         amount: totalSparkles
       })
+      this.userRewardHistoryService.appendEntriesFromRewards(
+        historyEntries,
+        rewardsByType[RewardTarget.SPARKLES],
+        userId,
+        RewardTarget.SPARKLES,
+        sourceType
+      )
     }
 
     // 6. Process POKEMON rewards (most complex)
@@ -483,6 +534,15 @@ export class RewardService {
         results.pokemons.push({
           action: 'added',
           pokemon: newUserPokemon
+        })
+        this.pushHistoryEntry(historyEntries, {
+          userId,
+          rewardId: pokemonReward.id,
+          target: RewardTarget.POKEMON,
+          amount: 1,
+          meta: {
+            pokemonId
+          }
         })
       } else {
         // User already has this pokemon -> convert to coins based on rarity
@@ -517,9 +577,39 @@ export class RewardService {
           coinValue,
           wallet: updatedWallet
         })
+        this.pushHistoryEntry(historyEntries, {
+          userId,
+          rewardId: pokemonReward.id,
+          target: RewardTarget.POKE_COINS,
+          amount: coinValue,
+          note: `Converted pokemon ${pokemonId} reward to coins`,
+          meta: {
+            pokemonId,
+            coinValue
+          }
+        })
+      }
+    }
+
+    if (historyEntries.length > 0) {
+      for (const entry of historyEntries) {
+        try {
+          await this.userRewardHistoryService.create(entry)
+        } catch (error) {
+          this.logger.warn(`Failed to record user reward history for user ${userId}: ${error?.message ?? error}`)
+        }
       }
     }
 
     return results
+  }
+
+  async convertRewards(params: { rewardIds: number[]; userId: number; sourceType: UserRewardSourceType; lang?: string }) {
+    const data = await this.convertRewardsWithUser(params.rewardIds, params.userId, params.sourceType)
+    return {
+      statusCode: HttpStatus.OK,
+      data,
+      message: 'Convert rewards successfully'
+    }
   }
 }
