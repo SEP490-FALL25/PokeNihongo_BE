@@ -755,7 +755,15 @@ export class RoundQuestionService {
         const updatedMatch = await this.prismaService.match.findUnique({
           where: { id: matchId },
           include: {
-            winner: true,
+            winner: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar: true,
+                eloscore: true
+              }
+            },
             participants: {
               include: {
                 user: {
