@@ -1,3 +1,4 @@
+import { RewardClaimStatus } from '@/common/constants/reward.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserSeasonHistoryMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
@@ -7,10 +8,16 @@ import {
   isNotFoundPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
-import { Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
+import { UserRewardSourceType } from '@prisma/client'
 import { NotStartedLeaderboardSeasonException } from '../leaderboard-season/dto/leaderboard-season.error'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
-import { UserSeasonHistoryNotFoundException } from './dto/user-season-history.error'
+import { RewardService } from '../reward/reward.service'
+import {
+  UserCanNotClaimRewardsException,
+  UserNotHaveRewardsToClaimException,
+  UserSeasonHistoryNotFoundException
+} from './dto/user-season-history.error'
 import {
   CreateUserSeasonHistoryBodyType,
   UpdateUserSeasonHistoryBodyType
@@ -22,7 +29,7 @@ export class UserSeasonHistoryService {
   constructor(
     private userSeasonHistoryRepo: UserSeasonHistoryRepo,
     private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
-
+    private readonly rewardService: RewardService,
     private readonly i18nService: I18nService
   ) {}
 
@@ -183,5 +190,76 @@ export class UserSeasonHistoryService {
     }
   }
 
-  async getReward({ id, userId }: { id: number; userId: number }, lang: string = 'vi') {}
+  async getReward({ id, userId }: { id: number; userId: number }, lang: string = 'vi') {
+    try {
+      // 1. Fetch user season history with reward details
+      const userSeasonHistory = await this.userSeasonHistoryRepo.findById(id)
+
+      if (!userSeasonHistory) {
+        throw new UserSeasonHistoryNotFoundException()
+      }
+
+      // 2. Verify ownership
+      if (userSeasonHistory.userId !== userId) {
+        throw new NotFoundRecordException()
+      }
+
+      // 3. Check if rewards are ready to claim (CLAIMED = finalized but not collected yet)
+      if (userSeasonHistory.rewardsClaimed !== RewardClaimStatus.CLAIMED) {
+        throw new UserCanNotClaimRewardsException()
+      }
+
+      // 4. Check if user has rewards to claim
+      if (!userSeasonHistory.seasonRankRewardId) {
+        throw new UserNotHaveRewardsToClaimException()
+      }
+
+      // 5. Get season rank reward with all rewards
+      const seasonRankReward =
+        await this.userSeasonHistoryRepo.findSeasonRankRewardWithRewards(
+          userSeasonHistory.seasonRankRewardId
+        )
+
+      if (
+        !seasonRankReward ||
+        !seasonRankReward.rewards ||
+        seasonRankReward.rewards.length === 0
+      ) {
+        throw new UserNotHaveRewardsToClaimException()
+      }
+
+      // 6. Extract reward IDs
+      const rewardIds = seasonRankReward.rewards.map((r: any) => r.id)
+
+      // 7. Convert and give rewards to user
+      const rewardResults = await this.rewardService.convertRewardsWithUser(
+        rewardIds,
+        userId,
+        UserRewardSourceType.SEASON_REWARD
+      )
+
+      // 8. Update status to COMPLETED (already collected)
+      await this.userSeasonHistoryRepo.update({
+        id,
+        data: {
+          rewardsClaimed: RewardClaimStatus.COMPLETED
+        },
+        updatedById: userId
+      })
+
+      return {
+        statusCode: HttpStatus.OK,
+        data: rewardResults,
+        message: this.i18nService.translate(
+          UserSeasonHistoryMessage.GET_REWARD_SUCCESS,
+          lang
+        )
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new UserSeasonHistoryNotFoundException()
+      }
+      throw error
+    }
+  }
 }

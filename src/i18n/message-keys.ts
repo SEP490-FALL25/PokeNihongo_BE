@@ -602,7 +602,9 @@ export const UserSeasonHistoryMessage = {
   GET_LIST_SUCCESS: 'user_season_history.GET_LIST_SUCCESS',
   NOT_FOUND: 'user_season_history.NOT_FOUND',
   ALREADY_EXISTS: 'user_season_history.ALREADY_EXISTS',
-  INVALID_DATA: 'user_season_history.INVALID_DATA'
+  INVALID_DATA: 'user_season_history.INVALID_DATA',
+  CAN_NOT_CLAIM_REWARDS: 'user_season_history.CAN_NOT_CLAIM_REWARDS',
+  GET_REWARD_SUCCESS: 'user_season_history.GET_REWARD_SUCCESS'
 } as const
 
 export const RoundQuestionMessage = {

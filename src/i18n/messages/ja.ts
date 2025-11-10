@@ -541,7 +541,8 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'ユーザーシーズン履歴リストの取得に成功しました',
     NOT_FOUND: 'ユーザーシーズン履歴が見つかりません',
     ALREADY_EXISTS: 'ユーザーシーズン履歴は既に存在します',
-    INVALID_DATA: '無効なユーザーシーズン履歴データです'
+    INVALID_DATA: '無効なユーザーシーズン履歴データです',
+    GET_REWARD_SUCCESS: 'ユーザーシーズン履歴の報酬取得に成功しました'
   },
   round_question: {
     CREATE_SUCCESS: 'ラウンド質問の作成に成功しました',
@@ -589,7 +590,8 @@ export const jaMessages = {
     HAS_OPENED: '既に開始されたリーダーボードシーズンが存在します',
     NOT_STARTED: 'リーダーボードシーズンがまだ開始されていません',
     NEW_SEASON: '新しいリーダーボードシーズンが開始されました',
-    NOT_JOIN_NEW_SEASON: '新しいリーダーボードシーズンに参加していません'
+    NOT_JOIN_NEW_SEASON: '新しいリーダーボードシーズンに参加していません',
+    CAN_NOT_CLAIM_REWARDS: 'このシーズンの報酬を受け取ることができません'
   },
   user_reward_history: {
     CREATE_SUCCESS: 'ユーザー報酬履歴の作成に成功しました',

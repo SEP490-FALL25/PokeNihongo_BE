@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { LanguagesModule } from '../languages/languages.module'
 import { PokemonModule } from '../pokemon/pokemon.module'
 import { TranslationModule } from '../translation/translation.module'
@@ -14,8 +14,8 @@ import { RewardService } from './reward.service'
   imports: [
     LanguagesModule,
     TranslationModule,
-    UserModule,
-    WalletModule,
+    forwardRef(() => UserModule),
+    forwardRef(() => WalletModule),
     PokemonModule,
     UserPokemonModule,
     UserRewardHistoryModule
@@ -24,4 +24,4 @@ import { RewardService } from './reward.service'
   providers: [RewardService, RewardRepo],
   exports: [RewardService, RewardRepo]
 })
-export class RewardModule { }
+export class RewardModule {}

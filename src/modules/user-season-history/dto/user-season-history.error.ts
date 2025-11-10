@@ -18,3 +18,21 @@ export class UserSeasonHistoryAlreadyExistsException extends ConflictException {
     })
   }
 }
+
+export class UserCanNotClaimRewardsException extends ConflictException {
+  constructor() {
+    super({
+      message: UserSeasonHistoryMessage.CAN_NOT_CLAIM_REWARDS,
+      errorKey: UserSeasonHistoryMessage.CAN_NOT_CLAIM_REWARDS
+    })
+  }
+}
+
+export class UserNotHaveRewardsToClaimException extends ConflictException {
+  constructor() {
+    super({
+      message: UserSeasonHistoryMessage.CAN_NOT_CLAIM_REWARDS,
+      errorKey: UserSeasonHistoryMessage.CAN_NOT_CLAIM_REWARDS
+    })
+  }
+}

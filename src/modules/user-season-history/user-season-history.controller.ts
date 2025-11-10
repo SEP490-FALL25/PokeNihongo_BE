@@ -50,7 +50,7 @@ export class UserSeasonHistoryController {
   }
 
   @Put('get-reward/:userSeasonHistoryId')
-  @ZodSerializerDto(UpdateUserSeasonHistoryResDTO)
+  // @ZodSerializerDto(UpdateUserSeasonHistoryResDTO)
   getReward(
     @Param() params: GetUserSeasonHistoryParamsDTO,
     @ActiveUser('userId') userId: number,

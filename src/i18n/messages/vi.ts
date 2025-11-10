@@ -557,7 +557,9 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách lịch sử mùa giải người dùng thành công',
     NOT_FOUND: 'Không tìm thấy lịch sử mùa giải người dùng',
     ALREADY_EXISTS: 'Lịch sử mùa giải người dùng đã tồn tại',
-    INVALID_DATA: 'Dữ liệu lịch sử mùa giải người dùng không hợp lệ'
+    INVALID_DATA: 'Dữ liệu lịch sử mùa giải người dùng không hợp lệ',
+    CAN_NOT_CLAIM_REWARDS: 'Không thể nhận phần thưởng cho mùa giải này',
+    GET_REWARD_SUCCESS: 'Nhận phần thưởng mùa giải thành công'
   },
   round_question: {
     CREATE_SUCCESS: 'Tạo câu hỏi vòng đấu thành công',

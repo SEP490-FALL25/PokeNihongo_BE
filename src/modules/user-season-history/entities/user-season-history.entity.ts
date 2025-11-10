@@ -46,8 +46,15 @@ export const CreateUserSeasonHistoryResSchema = z.object({
 })
 
 // Update Schema
-export const UpdateUserSeasonHistoryBodySchema =
-  CreateUserSeasonHistoryBodySchema.partial().strict()
+export const UpdateUserSeasonHistoryBodySchema = UserSeasonHistorySchema.pick({
+  seasonId: true,
+  finalElo: true,
+  finalRank: true,
+  seasonRankRewardId: true,
+  rewardsClaimed: true
+})
+  .partial()
+  .strict()
 
 export const UpdateUserSeasonHistoryResSchema = CreateUserSeasonHistoryResSchema
 
