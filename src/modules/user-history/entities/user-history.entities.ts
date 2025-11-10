@@ -90,6 +90,52 @@ export const GetAdminHistoryListQuerySchema = z
     })
     .strict()
 
+// Recent Lesson Type enum (LESSON hoặc EXERCISE)
+export const RecentLessonTypeSchema = z.enum(['LESSON', 'EXERCISE'])
+
+// Recent Lesson Item Schema
+export const RecentLessonItemSchema = z.object({
+    id: z.number(),
+    type: RecentLessonTypeSchema,
+    lessonId: z.number().optional().nullable(),
+    lessonTitle: z.string().optional().nullable(),
+    lessonSlug: z.string().optional().nullable(),
+    lessonCategoryName: z.string().optional().nullable(),
+    exerciseId: z.number().optional().nullable(),
+    exerciseName: z.string().optional().nullable(),
+    status: z.string(), // IN_PROGRESS, COMPLETED
+    progressPercentage: z.number().optional().nullable(), // 0-100 cho lesson
+    lastAccessedAt: z.date().optional().nullable(),
+    completedAt: z.date().optional().nullable(),
+    updatedAt: z.date()
+})
+
+// Recent Lessons Query Schema
+export const GetRecentLessonsQuerySchema = z
+    .object({
+        currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
+        pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
+        status: z.enum(['IN_PROGRESS', 'COMPLETED']).optional() // Filter theo status
+    })
+    .strict()
+
+// Recent Lessons Response Schema
+export const RecentLessonsResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(RecentLessonItemSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
 // Type exports
 export type HistoryType = z.infer<typeof HistoryTypeSchema>
 export type HistoryItemType = z.infer<typeof HistoryItemSchema>
@@ -98,4 +144,8 @@ export type HistoryListResType = z.infer<typeof HistoryListResSchema>
 export type AdminHistoryListResType = z.infer<typeof AdminHistoryListResSchema>
 export type GetHistoryListQueryType = z.infer<typeof GetHistoryListQuerySchema>
 export type GetAdminHistoryListQueryType = z.infer<typeof GetAdminHistoryListQuerySchema>
+export type RecentLessonType = z.infer<typeof RecentLessonTypeSchema>
+export type RecentLessonItemType = z.infer<typeof RecentLessonItemSchema>
+export type GetRecentLessonsQueryType = z.infer<typeof GetRecentLessonsQuerySchema>
+export type RecentLessonsResType = z.infer<typeof RecentLessonsResSchema>
 
