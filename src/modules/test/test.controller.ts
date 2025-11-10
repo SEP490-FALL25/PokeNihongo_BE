@@ -125,6 +125,26 @@ export class TestController {
         return this.testService.getRandomQuestionsByLevel(Number(id), Number(levelN), Number(count), lang)
     }
 
+    @Post('lesson-review/:testId/questions')
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Lấy câu hỏi bài test ôn tập lesson',
+        description: 'Lấy 10 câu hỏi random từ 3 testSet (VOCABULARY, GRAMMAR, KANJI) của test. Mỗi testSet có 5 câu, tổng 15 câu, random chọn 10 câu.'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy câu hỏi bài test ôn tập thành công',
+        type: MessageResDTO
+    })
+    async generateLessonReviewTest(
+        @Param('testId') testId: string,
+        @ActiveUser('userId') userId: number,
+        @I18nLang() lang: string
+    ): Promise<MessageResDTO> {
+        return this.testService.generateLessonReviewTest(Number(testId), userId, lang)
+    }
+
     @Get(':id/full')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Lấy toàn bộ thông tin bài test kèm câu hỏi và câu trả lời' })

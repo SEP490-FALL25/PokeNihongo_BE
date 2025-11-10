@@ -528,5 +528,33 @@ export class TestRepository {
             }
         })
     }
+
+    async findByIdWithTestSetsAndQuestions(testId: number) {
+        return this.prisma.test.findUnique({
+            where: { id: testId },
+            include: {
+                testTestSets: {
+                    include: {
+                        testSet: {
+                            include: {
+                                testSetQuestionBanks: {
+                                    include: {
+                                        questionBank: {
+                                            include: {
+                                                answers: true
+                                            }
+                                        }
+                                    },
+                                    orderBy: {
+                                        questionOrder: 'asc'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    }
 }
 
