@@ -288,6 +288,16 @@ model Translation {
   debuffRoundNameKey String?
   debuffRound        DebuffRound? @relation("DebuffRoundNameRelation", fields: [debuffRoundNameKey], references: [nameKey], onDelete: Cascade)
 
+  achievementGroupNameKey String?
+  achievementGroup        AchievementGroup? @relation("AchievementGroupNameRelation", fields: [achievementGroupNameKey], references: [nameKey], onDelete: Cascade)
+
+  achievementNameKey          String?
+  achievement                 Achievement? @relation("AchievementNameRelation", fields: [achievementNameKey], references: [nameKey], onDelete: Cascade)
+  achievementDescriptionKey   String?
+  achievementDescription      Achievement? @relation("AchievementDescriptionRelation", fields: [achievementDescriptionKey], references: [descriptionKey], onDelete: Cascade)
+  achievementConditionTextKey String?
+  achievementCondition        Achievement? @relation("AchievementConditionTextRelation", fields: [achievementConditionTextKey], references: [conditionTextKey], onDelete: Cascade)
+
   @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
   @@index([languageId])
   @@index([key])
@@ -1097,13 +1107,14 @@ model UserDailyRequest {
 
 // === BẢNG ĐỊNH NGHĨA TOÀN BỘ HUY HIỆU ===
 model AchievementGroup {
-  id             Int    @id @default(autoincrement())
-  nameKey        String
-  descriptionKey String // Mô tả, VD: "Dành cho người mới tham gia"
-  displayOrder   Int // Thứ tự hiển thị, VD: 1, 2, 3...
-
+  id               Int           @id @default(autoincrement())
+  nameKey          String        @unique
+  displayOrder     Int // Thứ tự hiển thị, VD: 1, 2, 3...
+  isActive         Boolean       @default(true)
   // Quan hệ: Một nhóm có thể chứa nhiều huy hiệu
-  achievements Achievement[]
+  achievements     Achievement[]
+  //translation
+  nameTranslations Translation[] @relation("AchievementGroupNameRelation")
 
   createdById Int?
   createdBy   User? @relation("AchievementGroupCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -1121,10 +1132,11 @@ model Achievement {
   id Int @id @default(autoincrement())
 
   // Thông tin cơ bản
-  nameKey        String // Tên huy hiệu, VD: "Ngọn Lửa Nhỏ"
-  descriptionKey String // Mô tả chi tiết
-  imageUrl       String? // Đường dẫn tới ảnh của huy hiệu
-
+  nameKey             String               @unique
+  descriptionKey      String               @unique
+  conditionTextKey    String               @unique
+  imageUrl            String?
+  isActive            Boolean              @default(true)
   // Phân loại & Hiển thị
   achievementTierType AchievementTierType?
   // Điều kiện để nhận
@@ -1141,6 +1153,11 @@ model Achievement {
 
   // Quan hệ: Một huy hiệu có thể được nhiều user sở hữu
   userAchievements UserAchievement[]
+
+  //translation
+  nameTranslations          Translation[] @relation("AchievementNameRelation")
+  descriptionTranslations   Translation[] @relation("AchievementDescriptionRelation")
+  conditionTextTranslations Translation[] @relation("AchievementConditionTextRelation")
 
   createdById Int?
   createdBy   User? @relation("AchievementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
