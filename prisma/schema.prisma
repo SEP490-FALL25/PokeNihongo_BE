@@ -1964,6 +1964,8 @@ enum ProgressStatus {
   IN_PROGRESS // Đang học
   TESTING_LAST // Đang làm bài test
   COMPLETED // Đã hoàn thành
+  FAILED // Đã thất bại
+  TESTING_LAST_FAILED // Đã thất bại ở bài test cuối cùng
 }
 
 enum VerificationCodeType {

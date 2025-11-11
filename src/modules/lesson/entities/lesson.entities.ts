@@ -54,7 +54,7 @@ export const CreateLessonBodyType = z.object({
   titleJp: z.string().min(1).max(500),
   levelJlpt: z.number().min(1).max(5).optional(),
   estimatedTimeMinutes: z.number().min(1).max(480).default(30),
-  lessonOrder: z.number().min(0).default(0),
+  lessonOrder: z.number().min(0).optional(), // Optional: nếu không truyền sẽ tự động tính
   isPublished: z.boolean().default(false),
   version: z.string().default('1.0.0'),
   lessonCategoryId: z.number(),

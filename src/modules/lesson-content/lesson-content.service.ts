@@ -27,6 +27,8 @@ import { TranslationService } from '../translation/translation.service'
 import { LanguagesService } from '../languages/languages.service'
 import { MeaningService } from '../meaning/meaning.service'
 import { LessonRepository } from '../lesson/lesson.repo'
+import { UserExerciseAttemptRepository } from '../user-exercise-attempt/user-exercise-attempt.repo'
+import { ExercisesService } from '../exercises/exercises.service'
 
 @Injectable()
 export class LessonContentService {
@@ -40,7 +42,9 @@ export class LessonContentService {
         private readonly translationService: TranslationService,
         private readonly languagesService: LanguagesService,
         private readonly meaningService: MeaningService,
-        private readonly lessonRepository: LessonRepository
+        private readonly lessonRepository: LessonRepository,
+        private readonly userExerciseAttemptRepository: UserExerciseAttemptRepository,
+        private readonly exercisesService: ExercisesService
     ) { }
 
     async getLessonContentList(params: GetLessonContentListQueryType) {
@@ -277,7 +281,7 @@ export class LessonContentService {
         }
     }
 
-    async getLessonContentFull(lessonId: number, languageCode?: string): Promise<LessonContentFullResType> {
+    async getLessonContentFull(lessonId: number, languageCode?: string, userId?: number): Promise<LessonContentFullResType> {
         try {
             this.logger.log(`Getting full lesson content for lesson ${lessonId} with language ${languageCode ?? 'ALL'}`)
 
@@ -286,6 +290,9 @@ export class LessonContentService {
             if (!lesson) {
                 throw new LessonNotFoundException()
             }
+
+            // Check xem tất cả exercises đã COMPLETED chưa (nếu có userId)
+            const checkLastTest = userId ? await this.checkCanTakeTest(userId, lessonId) : false
 
             // Lấy tất cả lesson content của lesson này
             const lessonContents = await this.lessonContentRepository.findMany({
@@ -587,7 +594,8 @@ export class LessonContentService {
                 statusCode: 200,
                 data: {
                     ...groupedContent,
-                    testId: lesson.testId ?? null
+                    testId: lesson.testId ?? null,
+                    checkLastTest: checkLastTest
                 },
                 message: 'Lấy toàn bộ nội dung bài học thành công'
             }
@@ -634,6 +642,39 @@ export class LessonContentService {
                 throw error
             }
             throw new InvalidLessonContentDataException('Lỗi khi xóa nhiều nội dung bài học')
+        }
+    }
+
+    /**
+     * Kiểm tra xem user đã hoàn thành tất cả exercises của lesson chưa
+     * @param userId - ID của user
+     * @param lessonId - ID của lesson
+     * @returns true nếu tất cả exercises đã COMPLETED, false nếu không
+     */
+    private async checkCanTakeTest(userId: number, lessonId: number): Promise<boolean> {
+        try {
+            // Lấy tất cả exercises của lesson
+            const lessonExercises = await this.exercisesService.findByLessonId(lessonId)
+            const totalExercises = lessonExercises.length
+
+            if (totalExercises === 0) {
+                // Nếu không có exercises nào, không thể làm test
+                return false
+            }
+
+            // Lấy danh sách exercises đã COMPLETED
+            const completedExerciseIds = await this.userExerciseAttemptRepository.findCompletedExercisesByLesson(userId, lessonId)
+            const completedCount = completedExerciseIds.length
+
+            // Nếu tất cả exercises đều COMPLETED thì canTakeTest = true
+            const checkLastTest = completedCount === totalExercises
+            this.logger.log(`User ${userId} has completed ${completedCount}/${totalExercises} exercises in lesson ${lessonId}, canTakeTest: ${checkLastTest}`)
+
+            return checkLastTest
+        } catch (error) {
+            this.logger.warn(`Error checking exercises completion for user ${userId}, lesson ${lessonId}:`, error)
+            // Nếu có lỗi, mặc định canTakeTest = false
+            return false
         }
     }
 }

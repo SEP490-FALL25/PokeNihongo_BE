@@ -26,6 +26,7 @@ import { TranslationHelperService } from '@/modules/translation/translation.help
 import { I18nService } from '@/i18n/i18n.service'
 import { UserExerciseAttemptMessage } from '@/i18n/message-keys'
 import { pickLabelFromComposite } from '@/common/utils/prase.utils'
+import { ProgressStatus } from '@prisma/client'
 
 @Injectable()
 export class UserExerciseAttemptService {
@@ -277,6 +278,9 @@ export class UserExerciseAttemptService {
                 )
                 this.logger.log(`Updated attempt ${userExerciseAttemptId} to ${newStatus} - no answers provided`)
 
+                // Cập nhật UserProgress status thành FAILED
+                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, ProgressStatus.FAILED)
+
                 return {
                     statusCode: 200,
                     message: message,
@@ -302,6 +306,9 @@ export class UserExerciseAttemptService {
                     { status: newStatus, ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
                 )
                 this.logger.log(`Updated attempt ${userExerciseAttemptId} to ${newStatus} - incomplete answers`)
+
+                // Cập nhật UserProgress status thành FAILED
+                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'FAILED')
 
                 return {
                     statusCode: 200,
@@ -340,12 +347,14 @@ export class UserExerciseAttemptService {
             )
             this.logger.log(`Updated attempt ${userExerciseAttemptId} to ${newStatus}`)
 
-            //KUMO new 
-            // Nếu status là COMPLETED, cập nhật UserProgress
+            // Cập nhật UserProgress dựa trên kết quả
             if (newStatus === 'COMPLETED') {
-                await this.updateUserProgressOnTestingLesson(attempt.userId, attempt.exerciseId)
+                // Nếu hoàn thành (không fail), update status thành IN_PROGRESS
+                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'IN_PROGRESS')
+            } else if (newStatus === 'FAIL') {
+                // Nếu fail, update status thành FAILED
+                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'FAILED')
             }
-            //CON cá PILU
 
             return {
                 statusCode: 200,
@@ -856,9 +865,9 @@ export class UserExerciseAttemptService {
         }
     }
 
-    private async updateUserProgressOnTestingLesson(userId: number, exerciseId: number) {
+    private async updateUserProgressOnExerciseCompletion(userId: number, exerciseId: number, progressStatus: ProgressStatus) {
         try {
-            this.logger.log(`Updating user progress for completed exercise: ${exerciseId} for user: ${userId}`)
+            this.logger.log(`Updating user progress for exercise: ${exerciseId} for user: ${userId} with status: ${progressStatus}`)
 
             // 1. Lấy thông tin Exercise để biết lessonId
             const exercise = await this.exercisesService.findById(exerciseId)
@@ -885,13 +894,13 @@ export class UserExerciseAttemptService {
             const progressPercentage = Math.round((completedCount / totalExercises) * 100)
             this.logger.log(`Calculated progress percentage: ${progressPercentage}%`)
 
-            // 5. Cập nhật UserProgress
-            await this.userProgressService.updateProgressByLesson(userId, lessonId, progressPercentage)
+            // 5. Cập nhật UserProgress với status tương ứng
+            await this.userProgressService.updateProgressByLesson(userId, lessonId, progressPercentage, progressStatus)
 
-            this.logger.log(`Updated user progress for lesson ${lessonId}: ${progressPercentage}%`)
+            this.logger.log(`Updated user progress for lesson ${lessonId}: ${progressPercentage}% with status ${progressStatus}`)
 
         } catch (error) {
-            this.logger.error('Error updating user progress on completion:', error)
+            this.logger.error('Error updating user progress on exercise completion:', error)
             // Không throw error để không ảnh hưởng đến flow chính
         }
     }
@@ -912,7 +921,7 @@ export class UserExerciseAttemptService {
             this.logger.log(`Exercise ${exerciseId} belongs to lesson ${lessonId}`)
 
             // 2. Cập nhật UserProgress status thành IN_PROGRESS
-            await this.userProgressService.updateProgressByLesson(userId, lessonId, 0, 'IN_PROGRESS')
+            await this.userProgressService.updateProgressByLesson(userId, lessonId, 0, ProgressStatus.IN_PROGRESS)
 
             this.logger.log(`Updated UserProgress for user ${userId}, lesson ${lessonId} to IN_PROGRESS`)
 

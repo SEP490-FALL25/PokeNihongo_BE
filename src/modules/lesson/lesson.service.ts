@@ -252,14 +252,24 @@ export class LessonService {
                 }
             }
 
+            // Tự động tính lessonOrder nếu không được truyền vào
+            let lessonOrder = data.lessonOrder
+            if (lessonOrder === undefined || lessonOrder === null) {
+                const maxLessonOrder = await this.lessonRepository.getMaxLessonOrderByCategory(data.lessonCategoryId)
+                lessonOrder = maxLessonOrder + 1
+                this.logger.log(`Auto-calculated lessonOrder: ${lessonOrder} for category ${data.lessonCategoryId}`)
+            }
+
             // Auto-generate titleKey (will be updated with actual lesson ID after creation)
             const titleKey = `lesson.temp.${Date.now()}.title`
 
-            // Remove translations and slug from data before passing to Prisma
-            const { translations, slug, ...lessonData } = data
+            // Remove translations, slug, and lessonOrder from data before passing to Prisma
+            // lessonOrder sẽ được set riêng (tự động tính hoặc từ request)
+            const { translations, slug, lessonOrder: _, ...lessonData } = data
 
             const lesson = await this.lessonRepository.create({
                 ...lessonData,
+                lessonOrder, // Sử dụng lessonOrder đã được tính tự động hoặc từ request
                 titleKey, // Use the generated/validated titleKey
                 slug: `lesson-temp-${Date.now()}`, // Temporary slug
                 createdById: userId,
