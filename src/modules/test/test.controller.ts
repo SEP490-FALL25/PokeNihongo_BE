@@ -125,7 +125,7 @@ export class TestController {
         return this.testService.getRandomQuestionsByLevel(Number(id), Number(levelN), Number(count), lang)
     }
 
-    @Post('lesson-review/:testId/questions')
+    @Get('lesson-review/:testId/questions')
     @ApiBearerAuth()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
