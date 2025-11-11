@@ -309,6 +309,14 @@ export class GroupedLessonContentSwaggerDTO {
         example: 27
     })
     testId?: number | null
+
+    @ApiProperty({
+        type: Boolean,
+        description: 'Có thể làm bài test cuối cùng (true nếu tất cả exercises đã COMPLETED)',
+        required: false,
+        example: true
+    })
+    checkLastTest?: boolean
 }
 
 export class LessonContentFullResponseSwaggerDTO {

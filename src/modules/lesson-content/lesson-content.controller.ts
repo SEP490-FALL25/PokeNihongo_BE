@@ -38,6 +38,7 @@ import {
 } from './dto/lesson-content.response.dto'
 import { CreateMutiLessonContentBodyType, UpdateLessonContentOrder } from './entities/lesson-content.entities'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
+import { ActiveUser } from '@/common/decorators/active-user.decorator'
 
 @ApiTags('Lesson Contents')
 @Controller('lesson-contents')
@@ -91,9 +92,10 @@ export class LessonContentController {
     @ZodSerializerDto(LessonContentFullResDTO)
     async getLessonContentFull(
         @Param('lessonId') lessonId: string,
-        @Query('lang') lang?: string
+        @Query('lang') lang?: string,
+        @ActiveUser('userId') userId?: number
     ) {
-        return await this.lessonContentService.getLessonContentFull(Number(lessonId), lang)
+        return await this.lessonContentService.getLessonContentFull(Number(lessonId), lang, userId)
     }
 
     // @Get(':id')
