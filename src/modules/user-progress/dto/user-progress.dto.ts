@@ -22,6 +22,9 @@ export class UserProgressSwaggerDTO {
     @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Thời điểm truy cập cuối' })
     lastAccessedAt: Date
 
+    @ApiProperty({ example: 1, description: 'ID của test (LESSON_REVIEW)', required: false, nullable: true })
+    testId?: number | null
+
     @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Ngày tạo' })
     createdAt: Date
 

@@ -556,5 +556,25 @@ export class TestRepository {
             }
         })
     }
+
+    async findTestTestSetsWithTestSetAndCreator(testId: number) {
+        return (this.prisma as any).testTestSet.findMany({
+            where: { testId },
+            include: {
+                testSet: {
+                    include: {
+                        creator: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: { createdAt: 'asc' }
+        })
+    }
 }
 

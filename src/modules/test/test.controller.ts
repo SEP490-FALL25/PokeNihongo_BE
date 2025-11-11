@@ -125,7 +125,7 @@ export class TestController {
         return this.testService.getRandomQuestionsByLevel(Number(id), Number(levelN), Number(count), lang)
     }
 
-    @Post('lesson-review/:testId/questions')
+    @Get('lesson-review/:testId/questions')
     @ApiBearerAuth()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
@@ -135,7 +135,7 @@ export class TestController {
     @ApiResponse({
         status: 200,
         description: 'Lấy câu hỏi bài test ôn tập thành công',
-        type: MessageResDTO
+        type: TestResponseSwaggerDTO
     })
     async generateLessonReviewTest(
         @Param('testId') testId: string,
