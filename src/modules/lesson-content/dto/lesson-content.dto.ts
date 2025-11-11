@@ -300,6 +300,15 @@ export class GroupedLessonContentSwaggerDTO {
         required: false
     })
     kanji?: KanjiContentSwaggerDTO[]
+
+    @ApiProperty({
+        type: Number,
+        description: 'ID của bài test ôn tập',
+        required: false,
+        nullable: true,
+        example: 27
+    })
+    testId?: number | null
 }
 
 export class LessonContentFullResponseSwaggerDTO {

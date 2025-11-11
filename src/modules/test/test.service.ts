@@ -1830,16 +1830,13 @@ export class TestService {
                     })
 
                     return {
-                        id: testSet.id,
-                        name: testSetName,
                         questions: mappedQuestions
                     }
                 })
             )
 
-            // Format response - chỉ giữ lại id và userTestAttemptId
+            // Format response - chỉ giữ lại userTestAttemptId
             const result = {
-                id: test.id,
                 testSets: testSetsWithDetails,
                 userTestAttemptId: userTestAttempt.id
             }

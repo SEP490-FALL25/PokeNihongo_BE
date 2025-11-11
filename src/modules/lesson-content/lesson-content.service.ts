@@ -26,6 +26,7 @@ import { KanjiService } from '../kanji/kanji.service'
 import { TranslationService } from '../translation/translation.service'
 import { LanguagesService } from '../languages/languages.service'
 import { MeaningService } from '../meaning/meaning.service'
+import { LessonRepository } from '../lesson/lesson.repo'
 
 @Injectable()
 export class LessonContentService {
@@ -38,7 +39,8 @@ export class LessonContentService {
         private readonly kanjiService: KanjiService,
         private readonly translationService: TranslationService,
         private readonly languagesService: LanguagesService,
-        private readonly meaningService: MeaningService
+        private readonly meaningService: MeaningService,
+        private readonly lessonRepository: LessonRepository
     ) { }
 
     async getLessonContentList(params: GetLessonContentListQueryType) {
@@ -278,6 +280,12 @@ export class LessonContentService {
     async getLessonContentFull(lessonId: number, languageCode?: string): Promise<LessonContentFullResType> {
         try {
             this.logger.log(`Getting full lesson content for lesson ${lessonId} with language ${languageCode ?? 'ALL'}`)
+
+            // Lấy thông tin lesson để lấy testId
+            const lesson = await this.lessonRepository.findById(lessonId)
+            if (!lesson) {
+                throw new LessonNotFoundException()
+            }
 
             // Lấy tất cả lesson content của lesson này
             const lessonContents = await this.lessonContentRepository.findMany({
@@ -577,7 +585,10 @@ export class LessonContentService {
 
             return {
                 statusCode: 200,
-                data: groupedContent,
+                data: {
+                    ...groupedContent,
+                    testId: lesson.testId ?? null
+                },
                 message: 'Lấy toàn bộ nội dung bài học thành công'
             }
         } catch (error) {
