@@ -819,7 +819,8 @@ model Test {
   userTestAttempts UserTestAttempt[] @relation("TestUserTestAttempts")
 
   // Quan hệ với Lesson (Bài test ôn tập cho lesson)
-  lessons Lesson[] @relation("LessonTest")
+  lessons        Lesson[]       @relation("LessonTest")
+  userProgresses UserProgress[]
 
   @@index([testType])
   @@index([status])
@@ -1195,6 +1196,10 @@ model UserProgress {
   completedAt        DateTime? // Thời điểm hoàn thành
   lastAccessedAt     DateTime       @default(now()) // Thời điểm truy cập cuối
 
+  //Test
+  testId Int?
+  test   Test? @relation(fields: [testId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1204,6 +1209,7 @@ model UserProgress {
   @@index([status])
   @@index([progressPercentage])
   @@index([completedAt])
+  @@index([testId])
 }
 
 model AttendanceConfig {

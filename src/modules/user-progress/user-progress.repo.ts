@@ -1,6 +1,7 @@
 import { UserProgressType } from '@/modules/user-progress/entities/user-progress.entities'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
+import { ProgressStatus } from '@prisma/client'
 
 @Injectable()
 export class UserProgressRepository {
@@ -154,12 +155,14 @@ export class UserProgressRepository {
             status?: string
             progressPercentage?: number
             completedAt?: Date | null
+            testId?: number | null
         }
     ): Promise<UserProgressType> {
         const updateData: any = { ...data }
 
         // Nếu status được cập nhật thành COMPLETED, set completedAt
-        if (data.status === 'COMPLETED') {
+        // So sánh với cả enum và string để tương thích
+        if (data.status === ProgressStatus.COMPLETED || data.status === 'COMPLETED') {
             updateData.completedAt = new Date()
         }
 
@@ -179,12 +182,14 @@ export class UserProgressRepository {
         data: {
             status?: string
             progressPercentage?: number
+            testId?: number | null
         }
     ): Promise<UserProgressType> {
         const updateData: any = { ...data }
 
         // Nếu status được cập nhật thành COMPLETED, set completedAt
-        if (data.status === 'COMPLETED') {
+        // So sánh với cả enum và string để tương thích
+        if (data.status === ProgressStatus.COMPLETED || data.status === 'COMPLETED') {
             updateData.completedAt = new Date()
         }
 
@@ -220,8 +225,19 @@ export class UserProgressRepository {
         data: {
             status?: string
             progressPercentage?: number
+            testId?: number | null
         }
     ): Promise<UserProgressType> {
+        // Lấy testId từ lesson nếu chưa có trong data
+        let testId = data.testId
+        if (testId === undefined) {
+            const lesson = await this.prismaService.lesson.findUnique({
+                where: { id: lessonId },
+                select: { testId: true }
+            })
+            testId = lesson?.testId ?? null
+        }
+
         const result = await this.prismaService.userProgress.upsert({
             where: {
                 userId_lessonId: {
@@ -232,13 +248,16 @@ export class UserProgressRepository {
             update: {
                 status: (data.status || 'NOT_STARTED') as any,
                 progressPercentage: data.progressPercentage || 0,
-                lastAccessedAt: new Date()
+                lastAccessedAt: new Date(),
+                // Chỉ update testId nếu có trong data (không tự động update từ lesson khi update)
+                ...(data.testId !== undefined ? { testId: data.testId } : {})
             },
             create: {
                 userId,
                 lessonId,
                 status: (data.status || 'NOT_STARTED') as any,
-                progressPercentage: data.progressPercentage || 0
+                progressPercentage: data.progressPercentage || 0,
+                testId: testId
             }
         })
         return this.transformUserProgress(result)
@@ -247,10 +266,11 @@ export class UserProgressRepository {
     /**
      * Lấy tất cả lesson có trong hệ thống
      */
-    async getAllLessons(): Promise<{ id: number }[]> {
+    async getAllLessons(): Promise<{ id: number; testId: number | null }[]> {
         return await this.prismaService.lesson.findMany({
             select: {
-                id: true
+                id: true,
+                testId: true
             },
             orderBy: {
                 id: 'asc'
@@ -285,6 +305,7 @@ export class UserProgressRepository {
 
     /**
      * Lấy lesson liền sau theo thứ tự business (lessonOrder) trong cùng LessonCategory
+     * Nếu không có lesson tiếp theo trong category hiện tại, tìm lesson đầu tiên của category tiếp theo (categoryId + 1)
      */
     async getNextLessonId(lessonId: number): Promise<number | null> {
         const current = await this.prismaService.lesson.findUnique({
@@ -294,6 +315,7 @@ export class UserProgressRepository {
 
         if (!current) return null
 
+        // 1. Tìm lesson tiếp theo trong cùng category
         const next = await this.prismaService.lesson.findFirst({
             where: {
                 lessonCategoryId: current.lessonCategoryId,
@@ -304,7 +326,21 @@ export class UserProgressRepository {
             select: { id: true }
         })
 
-        return next?.id ?? null
+        if (next) {
+            return next.id
+        }
+
+        // 2. Nếu không có lesson tiếp theo trong category hiện tại, tìm lesson đầu tiên của category tiếp theo
+        const nextCategoryFirstLesson = await this.prismaService.lesson.findFirst({
+            where: {
+                lessonCategoryId: current.lessonCategoryId + 1, // Category tiếp theo (id tăng dần)
+                isPublished: true
+            },
+            orderBy: { lessonOrder: 'asc' },
+            select: { id: true }
+        })
+
+        return nextCategoryFirstLesson?.id ?? null
     }
 
     /**
@@ -353,13 +389,15 @@ export class UserProgressRepository {
         lessonId: number
         status: string
         progressPercentage: number
+        testId?: number | null
     }>): Promise<void> {
         await this.prismaService.userProgress.createMany({
             data: data.map(item => ({
                 userId: item.userId,
                 lessonId: item.lessonId,
                 status: item.status as any,
-                progressPercentage: item.progressPercentage
+                progressPercentage: item.progressPercentage,
+                testId: item.testId ?? null
             })),
             skipDuplicates: true // Bỏ qua nếu đã tồn tại
         })
@@ -374,6 +412,7 @@ export class UserProgressRepository {
             progressPercentage: userProgress.progressPercentage,
             completedAt: userProgress.completedAt,
             lastAccessedAt: userProgress.lastAccessedAt,
+            testId: userProgress.testId ?? null,
             createdAt: userProgress.createdAt,
             updatedAt: userProgress.updatedAt,
             lesson: userProgress.lesson ? {
