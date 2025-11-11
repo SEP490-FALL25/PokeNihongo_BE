@@ -340,9 +340,10 @@ export class UserExerciseAttemptService {
             )
             this.logger.log(`Updated attempt ${userExerciseAttemptId} to ${newStatus}`)
 
+            //KUMO new 
             // Nếu status là COMPLETED, cập nhật UserProgress
             if (newStatus === 'COMPLETED') {
-                await this.updateUserProgressOnCompletion(attempt.userId, attempt.exerciseId)
+                await this.updateUserProgressOnTestingLesson(attempt.userId, attempt.exerciseId)
             }
             //CON cá PILU
 
@@ -855,7 +856,7 @@ export class UserExerciseAttemptService {
         }
     }
 
-    private async updateUserProgressOnCompletion(userId: number, exerciseId: number) {
+    private async updateUserProgressOnTestingLesson(userId: number, exerciseId: number) {
         try {
             this.logger.log(`Updating user progress for completed exercise: ${exerciseId} for user: ${userId}`)
 

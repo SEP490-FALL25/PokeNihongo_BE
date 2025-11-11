@@ -139,7 +139,8 @@ export const KanjiContentSchema = z.object({
 export const GroupedLessonContentSchema = z.object({
     voca: z.array(VocabularyContentSchema).optional(),
     grama: z.array(GrammarContentSchema).optional(),
-    kanji: z.array(KanjiContentSchema).optional()
+    kanji: z.array(KanjiContentSchema).optional(),
+    testId: z.number().nullable().optional()
 })
 
 export const LessonContentFullResSchema = z

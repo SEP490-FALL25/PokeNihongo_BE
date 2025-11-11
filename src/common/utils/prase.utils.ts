@@ -32,7 +32,24 @@ export function pickLabelFromComposite(raw: string, lang: string): string {
         return map['jp'] ?? raw.replace(/\b(jp|vi|en)\s*:/g, '').trim()
     }
 
-    // Nếu không có dấu '+', trả về nguyên string (giữ nguyên behavior cũ)
+    // Nếu không có dấu '+', kiểm tra xem có format "lang:value" không
+    const colonIdx = raw.indexOf(':')
+    if (colonIdx > -1) {
+        const key = raw.slice(0, colonIdx).trim().toLowerCase()
+        const value = raw.slice(colonIdx + 1).trim()
+        // Nếu key là 'jp', 'ja' và lang là 'jp' hoặc 'ja', trả về value (bỏ prefix)
+        if ((key === 'jp' || key === 'ja') && (lang === 'jp' || lang === 'ja')) {
+            return value
+        }
+        // Nếu key khớp với lang, trả về value
+        if (key === lang || (key === 'vi' && lang.startsWith('vi')) || (key === 'en' && lang.startsWith('en'))) {
+            return value
+        }
+        // Nếu không khớp, trả về value (bỏ prefix) để tránh hiển thị "jp:..."
+        return value
+    }
+
+    // Nếu không có dấu ':' và '+', trả về nguyên string
     return raw.trim()
 }
 

@@ -17,6 +17,7 @@ import { UserTestRepository } from '@/modules/user-test/user-test.repo'
 import { QuestionBankService } from '@/modules/question-bank/question-bank.service'
 import { UserTestAnswerLogService } from '@/modules/user-test-answer-log/user-test-answer-log.service'
 import { TestService } from '@/modules/test/test.service'
+import { TestRepository } from '@/modules/test/test.repo'
 import { TestSetService } from '@/modules/testset/testset.service'
 import { TestSetQuestionBankService } from '@/modules/testset-questionbank/testset-questionbank.service'
 import { Injectable, Logger, HttpException } from '@nestjs/common'
@@ -29,6 +30,8 @@ import { PrismaService } from '@/shared/services/prisma.service'
 import { UserRepo } from '@/modules/user/user.repo'
 import { LevelRepo } from '@/modules/level/level.repo'
 import { LEVEL_TYPE } from '@/common/constants/level.constant'
+import { UserProgressRepository } from '@/modules/user-progress/user-progress.repo'
+import { ProgressStatus } from '@prisma/client'
 
 @Injectable()
 export class UserTestAttemptService {
@@ -40,13 +43,15 @@ export class UserTestAttemptService {
         private readonly questionBankService: QuestionBankService,
         private readonly userTestAnswerLogService: UserTestAnswerLogService,
         private readonly testService: TestService,
+        private readonly testRepo: TestRepository,
         private readonly testSetService: TestSetService,
         private readonly testSetQuestionBankService: TestSetQuestionBankService,
         private readonly translationHelper: TranslationHelperService,
         private readonly i18nService: I18nService,
         private readonly prisma: PrismaService,
         private readonly userRepo: UserRepo,
-        private readonly levelRepo: LevelRepo
+        private readonly levelRepo: LevelRepo,
+        private readonly userProgressRepository: UserProgressRepository
     ) { }
 
     async create(userId: number, testId: number) {
@@ -256,6 +261,7 @@ export class UserTestAttemptService {
         }
     }
 
+    //KUMO new logic update userProgress nữa
     async submitTestCompletion(userTestAttemptId: number, userId: number, timeSeconds?: number) {
         try {
             this.logger.log(`Submitting completion for user test attempt: ${userTestAttemptId}`)
@@ -271,12 +277,95 @@ export class UserTestAttemptService {
                 throw UnauthorizedUserTestAttemptAccessException
             }
 
-            // 3. Lấy thông tin Test để biết các TestSets
+            // 3. Lấy thông tin Test để biết testType
             const testRes = await this.testService.findOne(attempt.testId, 'vi')
             if (!testRes || !testRes.data) {
                 throw TestNotFoundException
             }
 
+            const testType = (testRes.data as any).testType
+
+            // 5. Lấy tất cả UserTestAnswerLog của attempt này
+            const answerLogsResult = await this.userTestAnswerLogService.findByUserTestAttemptId(userTestAttemptId)
+            const userAnswers = answerLogsResult.data.results
+
+            // Xử lý riêng cho LESSON_REVIEW test
+            if (testType === 'LESSON_REVIEW') {
+                // Với LESSON_REVIEW: mặc định 10 câu là đủ, không cần kiểm tra unansweredQuestions
+                const expectedQuestionCount = 10
+
+                // Nếu không có câu trả lời nào mà vẫn nộp bài, coi như FAIL
+                if (userAnswers.length === 0) {
+                    const newStatus = 'FAIL'
+                    const message = 'Bạn đã nộp bài nhưng chưa trả lời câu hỏi nào'
+
+                    await this.userTestAttemptRepository.update(
+                        { id: userTestAttemptId },
+                        { status: newStatus, ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
+                    )
+                    this.logger.log(`Updated attempt ${userTestAttemptId} to ${newStatus} - no answers provided`)
+
+                    return {
+                        statusCode: 200,
+                        message: message,
+                        data: {
+                            isCompleted: true,
+                            totalQuestions: expectedQuestionCount,
+                            answeredQuestions: 0,
+                            unansweredQuestions: expectedQuestionCount,
+                            allCorrect: false,
+                            status: newStatus
+                        }
+                    }
+                }
+
+                // Tính điểm số (số câu đúng / số câu đã trả lời * 100)
+                const correctCount = userAnswers.filter(log => log.isCorrect).length
+                const score = Math.round((correctCount / userAnswers.length) * 100)
+
+                // Kiểm tra xem tất cả câu trả lời có đúng không
+                const allCorrect = userAnswers.every(log => log.isCorrect)
+
+                // Update status dựa trên kết quả: >= 80% là COMPLETED
+                let newStatus: string
+                let message: string
+
+                if (score >= 80) {
+                    newStatus = 'COMPLETED'
+                    message = 'Chúc mừng! Bạn đã hoàn thành bài test'
+                } else {
+                    newStatus = 'FAIL'
+                    message = 'Bạn đã hoàn thành bài test nhưng chưa đạt yêu cầu (cần >= 80%)'
+                }
+
+                // Update status và score trong database
+                await this.userTestAttemptRepository.update(
+                    { id: userTestAttemptId },
+                    { status: newStatus, score, ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
+                )
+                this.logger.log(`Updated attempt ${userTestAttemptId} to ${newStatus} with score ${score}`)
+
+                // Nếu status là COMPLETED, cập nhật UserProgress
+                if (newStatus === 'COMPLETED') {
+                    await this.updateUserProgressOnLessonReviewCompletion(userId, attempt.testId)
+                }
+
+                return {
+                    statusCode: 200,
+                    message: message,
+                    data: {
+                        isCompleted: true,
+                        totalQuestions: userAnswers.length, // Số câu đã trả lời
+                        answeredQuestions: userAnswers.length,
+                        unansweredQuestions: 0,
+                        allCorrect: allCorrect,
+                        status: newStatus,
+                        score: score
+                    }
+                }
+            }
+
+            // Logic cho các test type khác (giữ nguyên)
             // 3. Lấy tất cả TestSets của Test
             const test = await this.prisma.test.findUnique({
                 where: { id: attempt.testId },
@@ -305,10 +394,6 @@ export class UserTestAttemptService {
                     allQuestionBanks.push(...questionsResult.data)
                 }
             }
-
-            // 5. Lấy tất cả UserTestAnswerLog của attempt này
-            const answerLogsResult = await this.userTestAnswerLogService.findByUserTestAttemptId(userTestAttemptId)
-            const userAnswers = answerLogsResult.data.results
 
             // 6. Kiểm tra xem đã trả lời hết chưa
             const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
@@ -524,7 +609,7 @@ export class UserTestAttemptService {
                 const now = new Date()
                 const attemptTime = inProgressAttempt.updatedAt || inProgressAttempt.createdAt
                 const timeDiffMs = now.getTime() - attemptTime.getTime()
-                const oneHourMs = 60 * 60 * 1000 // 1 tiếng = 3,600,000ms
+                const oneHourMs = 60 * 60 * 1000 // 1 tiếng = 3,600,000ms //KUMO 
 
                 if (timeDiffMs > oneHourMs) {
                     // Quá 1 tiếng → đánh dấu ABANDONED và tạo mới
@@ -569,31 +654,7 @@ export class UserTestAttemptService {
 
             // Lấy thông tin Test với các TestSets
             const testRes = await this.testService.findOne(testId, languageCode)
-            const test = await this.prisma.test.findUnique({
-                where: { id: testId },
-                include: {
-                    testTestSets: {
-                        include: {
-                            testSet: {
-                                include: {
-                                    testSetQuestionBanks: {
-                                        include: {
-                                            questionBank: {
-                                                include: {
-                                                    answers: true
-                                                }
-                                            }
-                                        },
-                                        orderBy: {
-                                            questionOrder: 'asc'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            })
+            const test = await this.testRepo.findByIdWithTestSetsAndQuestions(testId)
 
             if (!test || !test.testTestSets || test.testTestSets.length === 0) {
                 throw new Error('Test không có test set nào')
@@ -657,7 +718,11 @@ export class UserTestAttemptService {
 
                         const mappedAnswers = await Promise.all(
                             (qb?.answers || []).map(async (ans: any) => {
-                                const answerLabel = pickLabelFromComposite(ans?.answerJp || '', normalizedLang)
+                                let answerLabel = pickLabelFromComposite(ans?.answerJp || '', normalizedLang)
+                                // Loại bỏ prefix "jp:" nếu có
+                                if (answerLabel.startsWith('jp:')) {
+                                    answerLabel = answerLabel.replace(/^jp:\s*/, '')
+                                }
                                 return {
                                     id: ans.id,
                                     answer: answerLabel
@@ -743,31 +808,7 @@ export class UserTestAttemptService {
             }
 
             // Lấy thông tin Test với các TestSets
-            const test = await this.prisma.test.findUnique({
-                where: { id: attempt.testId },
-                include: {
-                    testTestSets: {
-                        include: {
-                            testSet: {
-                                include: {
-                                    testSetQuestionBanks: {
-                                        include: {
-                                            questionBank: {
-                                                include: {
-                                                    answers: true
-                                                }
-                                            }
-                                        },
-                                        orderBy: {
-                                            questionOrder: 'asc'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            })
+            const test = await this.testRepo.findByIdWithTestSetsAndQuestions(attempt.testId)
 
             if (!test || !test.testTestSets || test.testTestSets.length === 0) {
                 throw new Error('Test không có test set nào')
@@ -920,6 +961,237 @@ export class UserTestAttemptService {
             }
         } catch (error) {
             this.logger.error('Error building test attempt review:', error)
+            if (error instanceof HttpException) {
+                throw error
+            }
+            throw error
+        }
+    }
+
+    async getLessonTestAttemptReview(id: number, userId: number, languageCode: string): Promise<MessageResDTO> {
+        try {
+            const attemptRes = await this.findOne(id, languageCode)
+            const attempt = attemptRes.data as any
+
+            // Kiểm tra attempt có thuộc về user này không
+            if ((attempt as any)?.userId !== userId) {
+                throw ForbiddenReviewAccessException
+            }
+
+            const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
+
+            // Only build review when attempt is COMPLETED or FAIL
+            if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAIL') {
+                return {
+                    statusCode: 200,
+                    message: this.i18nService.translate(UserTestAttemptMessage.REVIEW_NOT_COMPLETED, normalizedLang),
+                    data: { status: attempt.status }
+                }
+            }
+
+            // Load user answer logs for this attempt
+            const logsRes = await this.userTestAnswerLogService.findByUserTestAttemptId(id)
+            const logs: Array<{ questionBankId: number; answerId: number; isCorrect: boolean; turnNumber?: number }> = (logsRes?.data?.results || []) as any
+
+            if (!logs || logs.length === 0) {
+                throw new Error('Không tìm thấy câu trả lời cho lần làm bài này')
+            }
+
+            // Tính tỷ lệ đúng
+            const totalQuestions = logs.length
+            const answeredCorrectCount = logs.filter((l: any) => l.isCorrect).length
+            const correctPercentage = totalQuestions > 0 ? (answeredCorrectCount / totalQuestions) * 100 : 0
+
+            // Chỉ cho xem review khi tỷ lệ đúng >= 80%
+            if (correctPercentage < 80) {
+                return {
+                    statusCode: 403,
+                    message: this.i18nService.translate(UserTestAttemptMessage.REVIEW_INSUFFICIENT_SCORE, normalizedLang),
+                    data: {
+                        status: attempt.status,
+                        totalQuestions,
+                        answeredCorrect: answeredCorrectCount,
+                        correctPercentage: Math.round(correctPercentage),
+                        minimumRequired: 80
+                    }
+                }
+            }
+
+            // Lấy tất cả questionBankIds từ logs
+            const questionBankIds = [...new Set(logs.map((l: any) => l.questionBankId))]
+
+            // Query QuestionBanks với answers từ database
+            const questionBanks = await this.prisma.questionBank.findMany({
+                where: {
+                    id: { in: questionBankIds }
+                },
+                include: {
+                    answers: true
+                }
+            })
+
+            // Tạo map để truy cập nhanh
+            const questionBankMap = new Map(questionBanks.map(qb => [qb.id, qb]))
+            const selectedByQuestion = new Map<number, number>(
+                logs.map((l) => [Number(l.questionBankId), Number(l.answerId)])
+            )
+
+            const translateOrFallback = async (key?: string, jp?: string): Promise<string> => {
+                if (key) {
+                    const t = (await this.translationHelper.getTranslation(key, normalizedLang))
+                        || (await this.translationHelper.getTranslation(key, 'vi'))
+                    if (t) return t
+                }
+                return jp || ''
+            }
+
+            // Group questions theo questionType (VOCABULARY, GRAMMAR, KANJI)
+            const questionsByType: Record<string, any[]> = {
+                VOCABULARY: [],
+                GRAMMAR: [],
+                KANJI: []
+            }
+
+            // Map questions với translations và answers
+            const mappedQuestions = await Promise.all(
+                logs.map(async (log: any) => {
+                    const qb = questionBankMap.get(log.questionBankId)
+                    if (!qb) return null
+
+                    let question = ''
+                    if (qb?.questionKey) {
+                        const keyCandidates = [
+                            qb.questionKey,
+                            qb.questionKey.endsWith('.meaning.1') ? qb.questionKey : `${qb.questionKey}.meaning.1`,
+                            qb.questionKey.endsWith('.question') ? qb.questionKey : `${qb.questionKey}.question`
+                        ]
+                        for (const key of keyCandidates) {
+                            const t = (await this.translationHelper.getTranslation(key, normalizedLang))
+                                || (await this.translationHelper.getTranslation(key, 'vi'))
+                            if (t) { question = t; break }
+                        }
+                    }
+                    if (!question) {
+                        question = qb?.questionJp || ''
+                    }
+
+                    const answers = qb?.answers || []
+                    const correct = answers.find((a: any) => a.isCorrect)
+                    const userSelectedId = selectedByQuestion.get(qb.id)
+                    const userSelected = answers.find((a: any) => a.id === userSelectedId)
+                    const isCorrect = Boolean(correct && userSelectedId && userSelectedId === correct.id)
+
+                    // Build full answer list; mark correct and user-selected incorrect
+                    const reviewAnswers: any[] = []
+                    const toShortLabel = (text: string): string => {
+                        if (!text) return ''
+                        const match = text.match(/"([^"]+)"/)
+                        if (match && match[1]) return match[1].trim()
+                        return text.trim()
+                    }
+                    for (const a of answers) {
+                        let answerLabel = pickLabelFromComposite(a?.answerJp || '', normalizedLang)
+                        // Loại bỏ prefix "jp:" nếu có
+                        if (answerLabel.startsWith('jp:')) {
+                            answerLabel = answerLabel.replace(/^jp:\s*/, '')
+                        }
+                        const label = toShortLabel(answerLabel)
+                        const explanation = await translateOrFallback(a?.answerKey || undefined, a?.answerJp || undefined)
+                        let entry: any = { id: a.id, answer: label }
+                        if (correct && a.id === correct.id) {
+                            entry.type = 'correct_answer'
+                            entry.explantion = explanation
+                        } else if (userSelectedId && a.id === userSelectedId && (!correct || userSelectedId !== correct.id)) {
+                            entry.type = 'user_selected_incorrect'
+                            entry.explantion = explanation
+                        }
+                        reviewAnswers.push(entry)
+                    }
+
+                    return {
+                        questionBank: qb,
+                        question,
+                        isCorrect,
+                        reviewAnswers,
+                        turnNumber: log.turnNumber || null
+                    }
+                })
+            )
+
+            // Filter null và group theo questionType
+            const validQuestions = mappedQuestions.filter(q => q !== null)
+            for (const q of validQuestions) {
+                const questionType = q.questionBank.questionType
+                if (questionType && questionsByType[questionType]) {
+                    questionsByType[questionType].push(q)
+                }
+            }
+
+            // Tạo testSets theo type (VOCABULARY, GRAMMAR, KANJI)
+            const allTestSets: any[] = []
+            let answeredCorrect = 0
+            let answeredInCorrect = 0
+
+            const targetTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI']
+            for (const type of targetTypes) {
+                const questions = questionsByType[type]
+                if (questions.length === 0) continue
+
+                // Sort theo turnNumber nếu có, nếu không thì theo thứ tự trong logs
+                questions.sort((a, b) => {
+                    if (a.turnNumber !== null && b.turnNumber !== null) {
+                        return a.turnNumber - b.turnNumber
+                    }
+                    return 0
+                })
+
+                const testSetData: any = {
+                    id: null, // Không có testSet ID vì lấy từ logs
+                    name: type === 'VOCABULARY' ? 'Từ vựng' : type === 'GRAMMAR' ? 'Ngữ pháp' : 'Kanji',
+                    testType: type,
+                    testSetQuestionBanks: questions.map((q, index) => {
+                        if (q.isCorrect) answeredCorrect++
+                        else answeredInCorrect++
+
+                        return {
+                            id: null, // Không có testSetQuestionBank ID
+                            questionOrder: index + 1,
+                            questionBank: {
+                                id: q.questionBank.id,
+                                question: q.question,
+                                isCorrect: q.isCorrect,
+                                answers: q.reviewAnswers
+                            }
+                        }
+                    })
+                }
+
+                allTestSets.push(testSetData)
+            }
+
+            const testRes = await this.testService.findOne(attempt.testId, normalizedLang)
+
+            const data = {
+                id: attempt.testId,
+                name: testRes.data.name,
+                description: testRes.data.description,
+                testType: testRes.data.testType,
+                testSets: allTestSets,
+                totalQuestions,
+                answeredCorrect,
+                answeredInCorrect,
+                time: Number((attempt as any)?.time ?? 0),
+                status: (attempt as any)?.status,
+                score: (attempt as any)?.score ?? 0
+            }
+
+            return {
+                statusCode: 200,
+                message: this.i18nService.translate(UserTestAttemptMessage.REVIEW_SUCCESS, normalizedLang),
+                data
+            }
+        } catch (error) {
+            this.logger.error('Error building lesson test attempt review:', error)
             if (error instanceof HttpException) {
                 throw error
             }
@@ -1115,6 +1387,65 @@ export class UserTestAttemptService {
                 throw error
             }
             throw error
+        }
+    }
+
+    /**
+     * Cập nhật UserProgress khi hoàn thành LESSON_REVIEW test
+     * Tìm lesson có testId = testId của attempt, sau đó update UserProgress với testId, status và progressPercentage
+     */
+    private async updateUserProgressOnLessonReviewCompletion(userId: number, testId: number) {
+        try {
+            this.logger.log(`Updating UserProgress for user ${userId} after completing LESSON_REVIEW test ${testId}`)
+
+            // Tìm lesson có testId = testId của attempt
+            const lesson = await this.prisma.lesson.findFirst({
+                where: { testId: testId },
+                select: { id: true }
+            })
+
+            if (!lesson) {
+                this.logger.warn(`No lesson found with testId ${testId}, skipping UserProgress update`)
+                return
+            }
+
+            // Tìm UserProgress của user và lesson đó
+            const userProgress = await this.userProgressRepository.findByUserAndLesson(userId, lesson.id)
+
+            if (!userProgress) {
+                this.logger.warn(`UserProgress not found for user ${userId}, lesson ${lesson.id}, skipping update`)
+                return
+            }
+
+            // Update UserProgress với testId, status COMPLETED và progressPercentage 100%
+            // Vì đã hoàn thành LESSON_REVIEW test nên coi như đã hoàn thành lesson
+            await this.userProgressRepository.update(
+                { id: userProgress.id },
+                {
+                    testId: testId,
+                    status: ProgressStatus.COMPLETED,
+                }
+            )
+            this.logger.log(`Updated UserProgress for user ${userId}, lesson ${lesson.id} with testId ${testId}, status COMPLETED`)
+
+            // Cập nhật UserProgress cho lesson tiếp theo
+            const nextLessonId = await this.userProgressRepository.getNextLessonId(lesson.id)
+            if (nextLessonId) {
+                // Sử dụng upsert để tự động tạo hoặc update UserProgress cho lesson tiếp theo
+                // Upsert sẽ tự động lấy testId từ lesson nếu chưa có
+                await this.userProgressRepository.upsert(userId, nextLessonId, {
+                    status: ProgressStatus.IN_PROGRESS,
+                    progressPercentage: 0
+                })
+                this.logger.log(`Updated/Created UserProgress for user ${userId}, lesson ${nextLessonId} with status IN_PROGRESS`)
+            } else {
+                this.logger.log(`No next lesson found for user ${userId} after completing lesson ${lesson.id}`)
+            }
+
+            this.logger.log(`Completed lesson ${lesson.id} for user ${userId}`)
+        } catch (error) {
+            this.logger.error('Error updating UserProgress on lesson review completion:', error)
+            // Không throw error để không ảnh hưởng đến flow chính
         }
     }
 }

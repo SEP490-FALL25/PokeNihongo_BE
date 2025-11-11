@@ -10,6 +10,7 @@ import { KanjiModule } from '../kanji/kanji.module'
 import { TranslationModule } from '../translation/translation.module'
 import { LanguagesModule } from '../languages/languages.module'
 import { MeaningModule } from '../meaning/meaning.module'
+import { LessonModule } from '../lesson/lesson.module'
 
 @Module({
     imports: [
@@ -19,7 +20,8 @@ import { MeaningModule } from '../meaning/meaning.module'
         KanjiModule,
         TranslationModule,
         LanguagesModule,
-        MeaningModule
+        MeaningModule,
+        LessonModule
     ],
     controllers: [LessonContentController],
     providers: [LessonContentService, LessonContentRepository, GrammarRepository],

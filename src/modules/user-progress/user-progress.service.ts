@@ -12,6 +12,7 @@ import {
 import { UserProgressRepository } from '@/modules/user-progress/user-progress.repo'
 import { isNotFoundPrismaError } from '@/shared/helpers'
 import { Injectable, Logger, HttpException } from '@nestjs/common'
+import { ProgressStatus } from '@prisma/client'
 
 @Injectable()
 export class UserProgressService {
@@ -253,7 +254,8 @@ export class UserProgressService {
                 userId,
                 lessonId: lesson.id,
                 status: 'NOT_STARTED' as const,
-                progressPercentage: 0
+                progressPercentage: 0,
+                testId: lesson.testId ?? null
             }))
 
             // Sử dụng bulk create để tạo tất cả UserProgress cùng lúc
@@ -296,7 +298,8 @@ export class UserProgressService {
                 userId,
                 lessonId: lesson.id,
                 status: 'NOT_STARTED' as const,
-                progressPercentage: 0
+                progressPercentage: 0,
+                testId: lesson.testId ?? null
             }))
 
             // Sử dụng bulk create để tạo tất cả UserProgress cùng lúc
@@ -364,6 +367,7 @@ export class UserProgressService {
                 lessonId: number
                 status: 'NOT_STARTED'
                 progressPercentage: number
+                testId: number | null
             }> = []
             const processedUsers: number[] = []
 
@@ -373,7 +377,8 @@ export class UserProgressService {
                         userId: user.id,
                         lessonId: lesson.id,
                         status: 'NOT_STARTED' as const,
-                        progressPercentage: 0
+                        progressPercentage: 0,
+                        testId: lesson.testId ?? null
                     })
                 }
                 processedUsers.push(user.id)
@@ -415,7 +420,7 @@ export class UserProgressService {
             // Xác định status
             let finalStatus = status
             if (!finalStatus) {
-                finalStatus = progressPercentage === 100 ? 'COMPLETED' : 'IN_PROGRESS'
+                finalStatus = progressPercentage === 100 ? ProgressStatus.TESTING_LAST : ProgressStatus.IN_PROGRESS
             }
 
             // Cập nhật progress percentage
@@ -428,18 +433,6 @@ export class UserProgressService {
                 }
             )
             this.logger.log(`Updated UserProgress for user ${userId}, lesson ${lessonId}: ${progressPercentage}% (${finalStatus})`)
-
-
-            //Nếu đã completed thì cập nhập user progress cho lesson tiếp theo
-            if (finalStatus === 'COMPLETED') {
-                const nextLessonId = await this.getNextLessonId(lessonId)
-                this.logger.log(`Next lesson id: ${nextLessonId}`)
-                if (nextLessonId) {
-                    await this.updateProgressByLesson(userId, nextLessonId, 0, 'IN_PROGRESS')
-                    this.logger.log(`Updated UserProgress for user ${userId}, lesson ${nextLessonId}: 0% (IN_PROGRESS)`)
-                }
-            }
-            this.logger.log(`Completed lesson ${lessonId} for user ${userId}`)
         } catch (error) {
             this.logger.error('Error updating progress by lesson:', error)
             throw error
