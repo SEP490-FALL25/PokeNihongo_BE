@@ -1,13 +1,18 @@
+import { RoleName } from '@/common/constants/role.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { AchievementMessage } from '@/i18n/message-keys'
 import {
   LanguageNotExistToTranslateException,
   NotFoundRecordException
 } from '@/shared/error'
-import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
+import {
+  isForeignKeyConstraintPrismaError,
+  isNotFoundPrismaError,
+  isUniqueConstraintPrismaError
+} from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
-import { Injectable } from '@nestjs/common'
-
+import { PrismaService } from '@/shared/services/prisma.service'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
@@ -23,78 +28,153 @@ import {
 @Injectable()
 export class AchievementService {
   constructor(
-    private AchievementRepo: AchievementRepo,
+    private achievementRepo: AchievementRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
-    private readonly translationRepo: TranslationRepository
+    private readonly translationRepo: TranslationRepository,
+    private readonly prismaService: PrismaService
   ) {}
 
-  async list(pagination: PaginationQueryType, lang: string = 'vi') {
+  private async convertTranslationsToLangCodes(
+    nameTranslations: Array<{ languageId: number; value: string }>
+  ): Promise<Array<{ key: string; value: string }>> {
+    if (!nameTranslations || nameTranslations.length === 0) return []
+
+    const allLangIds = Array.from(new Set(nameTranslations.map((t) => t.languageId)))
+    const langs = await this.languageRepo.getWithListId(allLangIds)
+    const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+
+    return nameTranslations.map((t) => ({
+      key: idToCode.get(t.languageId) || String(t.languageId),
+      value: t.value
+    }))
+  }
+
+  async list(pagination: PaginationQueryType, lang: string = 'vi', roleName: string) {
     const langId = await this.languageRepo.getIdByCode(lang)
-    if (!langId) {
-      throw new NotFoundRecordException()
+    const isAdmin = roleName === RoleName.Admin ? true : false
+
+    const data = await this.achievementRepo.list(pagination, langId ?? undefined, isAdmin)
+
+    // If admin, convert all translation arrays to language code format
+    if (isAdmin && data.results) {
+      const allLangIds = new Set<number>()
+
+      // Collect all unique language IDs from all translation types
+      data.results.forEach((achievement: any) => {
+        ;(achievement.nameTranslations || []).forEach((t: any) =>
+          allLangIds.add(t.languageId)
+        )
+        ;(achievement.descriptionTranslations || []).forEach((t: any) =>
+          allLangIds.add(t.languageId)
+        )
+        ;(achievement.conditionTextTranslations || []).forEach((t: any) =>
+          allLangIds.add(t.languageId)
+        )
+      })
+
+      const langs = await this.languageRepo.getWithListId(Array.from(allLangIds))
+      const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+
+      // Map each achievement's translations
+      data.results = data.results.map((achievement: any) => {
+        const nameTranslations = (achievement.nameTranslations || []).map((t: any) => ({
+          key: idToCode.get(t.languageId) || String(t.languageId),
+          value: t.value
+        }))
+
+        const descriptionTranslations = (achievement.descriptionTranslations || []).map(
+          (t: any) => ({
+            key: idToCode.get(t.languageId) || String(t.languageId),
+            value: t.value
+          })
+        )
+
+        const conditionTextTranslations = (
+          achievement.conditionTextTranslations || []
+        ).map((t: any) => ({
+          key: idToCode.get(t.languageId) || String(t.languageId),
+          value: t.value
+        }))
+
+        return {
+          ...achievement,
+          nameTranslations,
+          descriptionTranslations,
+          conditionTextTranslations
+        }
+      })
     }
 
-    const data = await this.AchievementRepo.list(pagination, langId)
-
-    // Lấy translation cho từng achievement group
-    const translationKeys = data.results.flatMap((item) => [
-      item.nameKey,
-      item.descriptionKey
-    ])
-
-    const translations = await this.translationRepo.findByKeysAndLanguage(
-      translationKeys,
-      langId
-    )
-    const translationMap = new Map(translations.map((t) => [t.key, t.value]))
-
-    // Gắn translation vào từng item
-    const resultsWithTranslation = data.results.map((item) => ({
-      ...item,
-      nameTranslation: translationMap.get(item.nameKey) || item.nameKey,
-      descriptionTranslation:
-        translationMap.get(item.descriptionKey) || item.descriptionKey
-    }))
-
     return {
-      data: {
-        ...data,
-        results: resultsWithTranslation
-      },
+      data,
       message: this.i18nService.translate(AchievementMessage.GET_LIST_SUCCESS, lang)
     }
   }
 
-  async findById(id: number, lang: string = 'vi') {
-    const [Achievement, langId] = await Promise.all([
-      this.AchievementRepo.findById(id),
-      this.languageRepo.getIdByCode(lang)
-    ])
+  async findById(id: number, roleName: string, lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const isAdmin = roleName === RoleName.Admin ? true : false
 
     if (!langId) {
-      throw new NotFoundRecordException()
+      return {
+        data: null,
+        message: this.i18nService.translate(AchievementMessage.GET_SUCCESS, lang)
+      }
     }
-    if (!Achievement) {
+
+    const achievement = await this.achievementRepo.findByIdWithLangId(id, isAdmin, langId)
+    if (!achievement) {
       throw new NotFoundRecordException()
     }
 
-    // Lấy translation
-    const translations = await this.translationRepo.findByKeysAndLanguage(
-      [Achievement.nameKey, Achievement.descriptionKey],
-      langId
+    // Convert translations to language code format for admin
+    const nameTranslations = await this.convertTranslationsToLangCodes(
+      (achievement as any).nameTranslations || []
     )
-    const translationMap = new Map(translations.map((t) => [t.key, t.value]))
+    const descriptionTranslations = await this.convertTranslationsToLangCodes(
+      (achievement as any).descriptionTranslations || []
+    )
+    const conditionTextTranslations = await this.convertTranslationsToLangCodes(
+      (achievement as any).conditionTextTranslations || []
+    )
 
-    const dataWithTranslation = {
-      ...Achievement,
-      nameTranslation: translationMap.get(Achievement.nameKey) || Achievement.nameKey,
-      descriptionTranslation:
-        translationMap.get(Achievement.descriptionKey) || Achievement.descriptionKey
+    // Get current language translations
+    const currentNameTranslation = ((achievement as any).nameTranslations || []).find(
+      (t: any) => t.languageId === langId
+    )
+    const currentDescriptionTranslation = (
+      (achievement as any).descriptionTranslations || []
+    ).find((t: any) => t.languageId === langId)
+    const currentConditionTextTranslation = (
+      (achievement as any).conditionTextTranslations || []
+    ).find((t: any) => t.languageId === langId)
+
+    // Remove raw translation arrays from response
+    const {
+      nameTranslations: _,
+      descriptionTranslations: __,
+      conditionTextTranslations: ___,
+      ...achievementWithoutTranslations
+    } = achievement as any
+
+    const result = {
+      ...achievementWithoutTranslations,
+      nameTranslation: currentNameTranslation?.value ?? null,
+      descriptionTranslation: currentDescriptionTranslation?.value ?? null,
+      conditionTextTranslation: currentConditionTextTranslation?.value ?? null,
+      ...(isAdmin
+        ? {
+            nameTranslations,
+            descriptionTranslations,
+            conditionTextTranslations
+          }
+        : {})
     }
 
     return {
-      data: dataWithTranslation,
+      statusCode: HttpStatus.OK,
+      data: result,
       message: this.i18nService.translate(AchievementMessage.GET_SUCCESS, lang)
     }
   }
@@ -109,95 +189,147 @@ export class AchievementService {
     },
     lang: string = 'vi'
   ) {
+    let createdAchievement: any = null
+
     try {
-      return await this.AchievementRepo.withTransaction(async (prismaTx) => {
-        // tạo trước để lấy id rồi update lại nameKey và descriptionKey
-        const initData: CreateAchievementBodyType = {
-          nameKey: `achievement.name.${Date.now()}`,
-          descriptionKey: `achievement.description.${Date.now()}`,
+      return await this.achievementRepo.withTransaction(async (prismaTx) => {
+        const nameKey = `achievement.name.${Date.now()}`
+        const descriptionKey = `achievement.description.${Date.now()}`
+        const conditionTextKey = `achievement.conditionText.${Date.now()}`
+        let hasOpened = false
+
+        const dataCreate: CreateAchievementBodyType = {
+          nameKey,
+          descriptionKey,
+          conditionTextKey,
           imageUrl: data.imageUrl,
+          isActive: data.isActive,
           achievementTierType: data.achievementTierType,
           conditionType: data.conditionType,
           conditionValue: data.conditionValue,
-          conditionElementId: data.conditionElementId || null,
+          conditionElementId: data.conditionElementId,
           rewardId: data.rewardId,
           groupId: data.groupId
         }
 
-        const AchievementResult = await this.AchievementRepo.create(
+        createdAchievement = await this.achievementRepo.create(
           {
             createdById,
-            data: initData
+            data: {
+              ...dataCreate
+            }
           },
           prismaTx
         )
 
-        //final key để add cho translation và update lại bảng Achievement
-        const nameKey = `achievement.name.${AchievementResult.id}`
-        const descriptionKey = `achievement.description.${AchievementResult.id}`
+        // Now we have id, create proper keys
+        const fNameKey = `achievement.name.${createdAchievement.id}`
+        const fDescriptionKey = `achievement.description.${createdAchievement.id}`
+        const fConditionTextKey = `achievement.conditionText.${createdAchievement.id}`
 
-        const nameList = data.nameTranslations.map((t) => t.key)
-        const desList = data.descriptionTranslations?.map((t) => t.key) ?? []
+        // Collect all language codes from all translation inputs
+        const allLangCodes = Array.from(
+          new Set([
+            ...data.nameTranslations.map((t) => t.key),
+            ...data.descriptionTranslations.map((t) => t.key),
+            ...data.conditionTextTranslations.map((t) => t.key)
+          ])
+        )
 
-        // Gộp & loại bỏ trùng key
-        const allLangCodes = Array.from(new Set([...nameList, ...desList]))
-
-        // Lấy danh sách ngôn ngữ tương ứng với các key
+        // Get languages corresponding to the keys
         const languages = await this.languageRepo.getWithListCode(allLangCodes)
 
-        // Tạo map { code: id } để truy cập nhanh
+        // Create map { code: id } for quick access
         const langMap = Object.fromEntries(languages.map((l) => [l.code, l.id]))
 
-        // Kiểm tra có ngôn ngữ nào bị thiếu không
+        // Check if any language is missing
         const missingLangs = allLangCodes.filter((code) => !langMap[code])
         if (missingLangs.length > 0) {
           throw new LanguageNotExistToTranslateException()
         }
 
-        // Tạo danh sách bản dịch
-        const translationRecords: CreateTranslationBodyType[] = []
+        // Create translation records for all three fields
+        const nameTranslationRecords: CreateTranslationBodyType[] = []
+        const descriptionTranslationRecords: CreateTranslationBodyType[] = []
+        const conditionTextTranslationRecords: CreateTranslationBodyType[] = []
 
-        // nameTranslations → key = nameKey
+        // nameTranslations → key = fNameKey
         for (const item of data.nameTranslations) {
-          translationRecords.push({
+          nameTranslationRecords.push({
             languageId: langMap[item.key],
-            key: nameKey,
+            key: fNameKey,
             value: item.value
           })
         }
 
-        //check khong cho trung name
-        await this.translationRepo.validateTranslationRecords(translationRecords)
-
-        // descriptionTranslations → key = descriptionKey
-        for (const item of data.descriptionTranslations ?? []) {
-          translationRecords.push({
+        // descriptionTranslations → key = fDescriptionKey
+        for (const item of data.descriptionTranslations) {
+          descriptionTranslationRecords.push({
             languageId: langMap[item.key],
-            key: descriptionKey,
+            key: fDescriptionKey,
             value: item.value
           })
         }
 
-        // Thêm bản dịch và update lại Achievement
-        const [, result] = await Promise.all([
-          this.translationRepo.createMany(translationRecords),
-          await this.AchievementRepo.update({
-            id: AchievementResult.id,
+        // conditionTextTranslations → key = fConditionTextKey
+        for (const item of data.conditionTextTranslations) {
+          conditionTextTranslationRecords.push({
+            languageId: langMap[item.key],
+            key: fConditionTextKey,
+            value: item.value
+          })
+        }
+
+        // Validate all translation records
+        await this.translationRepo.validateTranslationRecords([...nameTranslationRecords])
+
+        // Update achievement with final keys and translations
+        const result = await this.achievementRepo.update(
+          {
+            id: createdAchievement.id,
             data: {
-              nameKey,
-              descriptionKey
+              nameKey: fNameKey,
+              descriptionKey: fDescriptionKey,
+              conditionTextKey: fConditionTextKey,
+              nameTranslations: nameTranslationRecords,
+              descriptionTranslations: descriptionTranslationRecords,
+              conditionTextTranslations: conditionTextTranslationRecords,
+              achievementNameKey: fNameKey,
+              achievementDescriptionKey: fDescriptionKey,
+              achievementConditionTextKey: fConditionTextKey
             }
-          })
-        ])
+          },
+          prismaTx
+        )
 
         return {
+          statusCode: HttpStatus.CREATED,
           data: result,
           message: this.i18nService.translate(AchievementMessage.CREATE_SUCCESS, lang)
         }
       })
     } catch (error) {
+      // Rollback: Delete achievement if created
+      if (createdAchievement?.id) {
+        try {
+          await this.achievementRepo.delete(
+            {
+              id: createdAchievement.id,
+              deletedById: createdById
+            },
+            true
+          )
+        } catch (rollbackError) {}
+      }
+
       if (isUniqueConstraintPrismaError(error)) {
         throw new AchievementAlreadyExistsException()
+      }
+      if (isNotFoundPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
       }
       throw error
     }
@@ -218,78 +350,121 @@ export class AchievementService {
     let existingAchievement: any = null
 
     try {
-      return await this.AchievementRepo.withTransaction(async (prismaTx) => {
-        // --- 1. Lấy bản ghi hiện tại ---
-        existingAchievement = await this.AchievementRepo.findById(id)
+      return await this.achievementRepo.withTransaction(async (prismaTx) => {
+        let hasOpen = false
+        let nameTranslationRecords: CreateTranslationBodyType[] = []
+        let descriptionTranslationRecords: CreateTranslationBodyType[] = []
+        let conditionTextTranslationRecords: CreateTranslationBodyType[] = []
+
+        // Get current record
+        existingAchievement = await this.achievementRepo.findById(id)
         if (!existingAchievement) throw new NotFoundRecordException()
 
-        // --- 2. Chuẩn bị data update ---
-        const dataUpdate: UpdateAchievementBodyType = {
-          imageUrl: data.imageUrl,
-          achievementTierType: data.achievementTierType,
-          conditionType: data.conditionType,
-          conditionValue: data.conditionValue,
-          conditionElementId: data.conditionElementId,
-          rewardId: data.rewardId,
-          groupId: data.groupId
+        // Prepare data for update
+        const dataUpdate: Partial<UpdateAchievementBodyType> = {}
+
+        if (data.imageUrl !== undefined) dataUpdate.imageUrl = data.imageUrl
+        if (data.achievementTierType !== undefined)
+          dataUpdate.achievementTierType = data.achievementTierType
+        if (data.conditionType !== undefined)
+          dataUpdate.conditionType = data.conditionType
+        if (data.conditionValue !== undefined)
+          dataUpdate.conditionValue = data.conditionValue
+        if (data.conditionElementId !== undefined)
+          dataUpdate.conditionElementId = data.conditionElementId
+        if (data.rewardId !== undefined) dataUpdate.rewardId = data.rewardId
+        if (data.groupId !== undefined) dataUpdate.groupId = data.groupId
+        if (data.isActive !== undefined) dataUpdate.isActive = data.isActive
+        // Handle translations if provided
+        const allLangCodes: string[] = []
+
+        if (data.nameTranslations) {
+          allLangCodes.push(...data.nameTranslations.map((t) => t.key))
+        }
+        if (data.descriptionTranslations) {
+          allLangCodes.push(...data.descriptionTranslations.map((t) => t.key))
+        }
+        if (data.conditionTextTranslations) {
+          allLangCodes.push(...data.conditionTextTranslations.map((t) => t.key))
         }
 
-        // --- 3. Handle translations nếu có ---
-        if (data.nameTranslations || data.descriptionTranslations) {
-          const nameList = data.nameTranslations?.map((t) => t.key) ?? []
-          const descList = data.descriptionTranslations?.map((t) => t.key) ?? []
+        if (allLangCodes.length > 0) {
+          const uniqueLangCodes = Array.from(new Set(allLangCodes))
 
-          const allLangCodes = Array.from(new Set([...nameList, ...descList]))
+          // Get languages
+          const languages = await this.languageRepo.getWithListCode(uniqueLangCodes)
+          const langMap = Object.fromEntries(languages.map((l) => [l.code, l.id]))
 
-          if (allLangCodes.length > 0) {
-            // Lấy languages tương ứng
-            const languages = await this.languageRepo.getWithListCode(allLangCodes)
-            const langMap = Object.fromEntries(languages.map((l) => [l.code, l.id]))
+          // Check missing language
+          const missingLangs = uniqueLangCodes.filter((code) => !langMap[code])
+          if (missingLangs.length > 0) throw new LanguageNotExistToTranslateException()
 
-            // Kiểm tra missing language
-            const missingLangs = allLangCodes.filter((code) => !langMap[code])
-            if (missingLangs.length > 0) throw new LanguageNotExistToTranslateException()
-
-            // --- 4. Tạo translation records ---
-            const translationRecords: CreateTranslationBodyType[] = []
-
-            // nameTranslations
-            for (const t of data.nameTranslations ?? []) {
-              translationRecords.push({
+          // Create translation records for nameTranslations
+          if (data.nameTranslations) {
+            for (const t of data.nameTranslations) {
+              nameTranslationRecords.push({
                 languageId: langMap[t.key],
                 key: existingAchievement.nameKey,
                 value: t.value
               })
             }
+          }
 
-            // --- 5. Validate translation records: check name la dc, desc cho trung---
-            await this.translationRepo.validateTranslationRecords(translationRecords)
-
-            // descriptionTranslations
-            for (const t of data.descriptionTranslations ?? []) {
-              translationRecords.push({
+          // Create translation records for descriptionTranslations
+          if (data.descriptionTranslations) {
+            for (const t of data.descriptionTranslations) {
+              descriptionTranslationRecords.push({
                 languageId: langMap[t.key],
                 key: existingAchievement.descriptionKey,
                 value: t.value
               })
             }
-
-            // --- 6. Update translations với transaction ---
-            const translationPromises = translationRecords.map((record) =>
-              this.translationRepo.createOrUpdateWithTransaction(record, prismaTx)
-            )
-            await Promise.all(translationPromises)
           }
+
+          // Create translation records for conditionTextTranslations
+          if (data.conditionTextTranslations) {
+            for (const t of data.conditionTextTranslations) {
+              conditionTextTranslationRecords.push({
+                languageId: langMap[t.key],
+                key: existingAchievement.conditionTextKey,
+                value: t.value
+              })
+            }
+          }
+
+          // Validate translation records
+          await this.translationRepo.validateTranslationRecords([
+            ...nameTranslationRecords
+          ])
         }
 
-        // --- 7. Update Achievement chính ---
-        const updatedAchievement = await this.AchievementRepo.update({
-          id,
-          updatedById,
-          data: dataUpdate
-        })
+        // Update Achievement main record
+        const updatedAchievement = await this.achievementRepo.update(
+          {
+            id,
+            updatedById,
+            data: {
+              ...dataUpdate,
+              nameTranslations:
+                nameTranslationRecords.length > 0 ? nameTranslationRecords : undefined,
+              descriptionTranslations:
+                descriptionTranslationRecords.length > 0
+                  ? descriptionTranslationRecords
+                  : undefined,
+              conditionTextTranslations:
+                conditionTextTranslationRecords.length > 0
+                  ? conditionTextTranslationRecords
+                  : undefined,
+              achievementNameKey: existingAchievement.nameKey,
+              achievementDescriptionKey: existingAchievement.descriptionKey,
+              achievementConditionTextKey: existingAchievement.conditionTextKey
+            }
+          },
+          prismaTx
+        )
 
         return {
+          statusCode: HttpStatus.OK,
           data: updatedAchievement,
           message: this.i18nService.translate(AchievementMessage.UPDATE_SUCCESS, lang)
         }
@@ -301,6 +476,9 @@ export class AchievementService {
       if (isUniqueConstraintPrismaError(error)) {
         throw new AchievementAlreadyExistsException()
       }
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
       throw error
     }
   }
@@ -310,11 +488,23 @@ export class AchievementService {
     lang: string = 'vi'
   ) {
     try {
-      await this.AchievementRepo.delete({
-        id,
-        deletedById
-      })
+      const existingAchievement = await this.achievementRepo.findById(id)
+      if (!existingAchievement) {
+        throw new NotFoundRecordException()
+      }
+
+      await Promise.all([
+        this.achievementRepo.delete({
+          id,
+          deletedById
+        }),
+        this.translationRepo.deleteByKey(existingAchievement.nameKey),
+        this.translationRepo.deleteByKey(existingAchievement.descriptionKey),
+        this.translationRepo.deleteByKey(existingAchievement.conditionTextKey)
+      ])
+
       return {
+        statusCode: HttpStatus.OK,
         data: null,
         message: this.i18nService.translate(AchievementMessage.DELETE_SUCCESS, lang)
       }

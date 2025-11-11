@@ -1,10 +1,20 @@
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
-import { IsPublic } from '@/common/decorators/auth.decorator'
+import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { PaginationResponseSchema } from '@/shared/models/response.model'
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards
+} from '@nestjs/common'
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { AchievementGroupService } from './achievement-group.service'
@@ -18,22 +28,19 @@ import {
 } from './dto/achievement-group.zod-dto'
 
 @Controller('achievement-group')
+@UseGuards(AuthenticationGuard)
 @ApiBearerAuth()
 export class AchievementGroupController {
   constructor(private readonly achievementGroupService: AchievementGroupService) {}
 
   @Get()
-  @IsPublic()
   @ZodSerializerDto(PaginationResponseSchema)
-  list(@Query() query: PaginationQueryDTO, @I18nLang() lang: string) {
-    return this.achievementGroupService.list(query, lang)
-  }
-
-  @Get(':achievementGroupId')
-  @IsPublic()
-  @ZodSerializerDto(GetAchievementGroupDetailResDTO)
-  findById(@Param() params: GetAchievementGroupParamsDTO, @I18nLang() lang: string) {
-    return this.achievementGroupService.findById(params.achievementGroupId, lang)
+  list(
+    @Query() query: PaginationQueryDTO,
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string
+  ) {
+    return this.achievementGroupService.list(query, lang, roleName)
   }
 
   @Post()
@@ -48,6 +55,20 @@ export class AchievementGroupController {
         data: body,
         createdById: userId
       },
+      lang
+    )
+  }
+
+  @Get(':achievementGroupId')
+  @ZodSerializerDto(GetAchievementGroupDetailResDTO)
+  findById(
+    @Param() params: GetAchievementGroupParamsDTO,
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string
+  ) {
+    return this.achievementGroupService.findById(
+      params.achievementGroupId,
+      roleName,
       lang
     )
   }

@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
+import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import {
   ACHIEVEMENT_GROUP_FIELDS,
   AchievementGroupType,
@@ -11,13 +12,17 @@ import {
   UpdateAchievementGroupBodyType
 } from './entities/achievement-group.entity'
 
+type AchievementGroupPrismaType = Omit<AchievementGroupType, 'nameKey'> & {
+  name: string
+}
+
 @Injectable()
 export class AchievementGroupRepo {
   constructor(private prismaService: PrismaService) {}
 
   // Wrapper cho transaction
-  async withTransaction<T>(fn: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
-    return this.prismaService.$transaction(fn)
+  async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
+    return this.prismaService.$transaction(callback)
   }
 
   create(
@@ -39,7 +44,7 @@ export class AchievementGroupRepo {
     })
   }
 
-  update(
+  async update(
     {
       id,
       updatedById,
@@ -47,24 +52,51 @@ export class AchievementGroupRepo {
     }: {
       id: number
       updatedById?: number
-      data: UpdateAchievementGroupBodyType
+      data: UpdateAchievementGroupBodyType & {
+        nameTranslations: CreateTranslationBodyType[]
+        achievementGroupNameKey: string
+      }
     },
     prismaTx?: PrismaClient
   ): Promise<AchievementGroupType> {
     const client = prismaTx || this.prismaService
-    return client.achievementGroup.update({
-      where: {
-        id,
-        deletedAt: null
-      },
+    const { nameTranslations, achievementGroupNameKey, ...achievementGroupData } = data
+
+    const updatedAchievementGroup = await client.achievementGroup.update({
+      where: { id, deletedAt: null },
       data: {
-        ...data,
+        ...achievementGroupData,
         updatedById
       }
     })
+
+    // Upsert translations riêng
+    await Promise.all(
+      nameTranslations.map((tr) =>
+        client.translation.upsert({
+          where: {
+            languageId_key: {
+              languageId: tr.languageId,
+              key: achievementGroupNameKey
+            }
+          },
+          create: {
+            languageId: tr.languageId,
+            key: achievementGroupNameKey,
+            value: tr.value,
+            achievementGroupNameKey
+          },
+          update: {
+            value: tr.value
+          }
+        })
+      )
+    )
+
+    return updatedAchievementGroup
   }
 
-  delete(
+  async delete(
     {
       id,
       deletedById
@@ -72,17 +104,17 @@ export class AchievementGroupRepo {
       id: number
       deletedById: number
     },
-    prismaTx?: PrismaClient,
-    isHard?: boolean
+    isHard?: boolean,
+    prismaTx?: PrismaClient
   ): Promise<AchievementGroupType> {
     const client = prismaTx || this.prismaService
-    return isHard
-      ? client.achievementGroup.delete({
+    const result = isHard
+      ? await this.prismaService.achievementGroup.delete({
           where: {
             id
           }
         })
-      : client.achievementGroup.update({
+      : await client.achievementGroup.update({
           where: {
             id,
             deletedAt: null
@@ -92,10 +124,10 @@ export class AchievementGroupRepo {
             deletedById
           }
         })
+    return result
   }
 
-  async list(pagination: PaginationQueryType, languageId?: number) {
-    // --- 1. Parse QS bình thường ---
+  async list(pagination: PaginationQueryType, langId?: number, isAdmin: boolean = false) {
     const { where: rawWhere = {}, orderBy } = parseQs(
       pagination.qs,
       ACHIEVEMENT_GROUP_FIELDS
@@ -104,66 +136,73 @@ export class AchievementGroupRepo {
     const skip = (pagination.currentPage - 1) * pagination.pageSize
     const take = pagination.pageSize
 
-    // --- 2. Xử lý filter nameTranslation ---
-    let nameKeys: string[] | undefined
-    if (rawWhere.nameTranslation && languageId) {
-      // Nếu rawWhere.nameTranslation là object { contains, mode }
-      const searchValue =
-        typeof rawWhere.nameTranslation === 'object'
-          ? rawWhere.nameTranslation.contains
-          : rawWhere.nameTranslation
+    // Build base where
+    const where: any = { deletedAt: null, ...rawWhere }
+    // Non-admin should only see active groups
+    if (!isAdmin) {
+      ;(where as any).isActive = true
+    }
 
-      const translations = await this.prismaService.translation.findMany({
-        where: {
-          languageId: languageId, // từ param
-          value: {
-            contains: searchValue,
-            mode: 'insensitive'
-          }
-        },
-        select: { key: true }
-      })
-
-      nameKeys = translations.map((t) => t.key)
-
-      // Nếu không tìm thấy translation nào, trả về rỗng
-      if (nameKeys.length === 0) {
-        return {
-          results: [],
-          pagination: {
-            current: pagination.currentPage,
-            pageSize: pagination.pageSize,
-            totalPage: 0,
-            totalItem: 0
-          }
+    // Support filtering by nameTranslation/nameTranslations via relational filter
+    const nameFilterRaw =
+      (rawWhere as any).nameTranslation ?? (rawWhere as any).nameTranslations
+    let childNameIncludeWhere: any = {}
+    if (nameFilterRaw && langId) {
+      const toContainsFilter = (raw: any) => {
+        if (typeof raw === 'object' && raw !== null) {
+          const val =
+            (raw as any).has ?? (raw as any).contains ?? (raw as any).equals ?? raw
+          return { contains: String(val), mode: 'insensitive' as const }
+        }
+        return { contains: String(raw), mode: 'insensitive' as const }
+      }
+      const searchFilter = toContainsFilter(nameFilterRaw)
+      delete (where as any).nameTranslation
+      delete (where as any).nameTranslations
+      where.nameTranslations = {
+        some: {
+          languageId: langId,
+          value: searchFilter
         }
       }
+      childNameIncludeWhere = { languageId: langId, value: searchFilter }
+    } else if (langId) {
+      childNameIncludeWhere = { languageId: langId }
     }
-
-    // --- 3. Build where clause ---
-    const where: any = {
-      deletedAt: null,
-      ...rawWhere,
-      ...(nameKeys && { nameKey: { in: nameKeys } })
-    }
-
-    // Loại bỏ nameTranslation khỏi where vì nó không phải field thực
-    delete where.nameTranslation
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.achievementGroup.count({
-        where
-      }),
+      this.prismaService.achievementGroup.count({ where }),
       this.prismaService.achievementGroup.findMany({
         where,
-        orderBy: orderBy || { displayOrder: 'asc' },
+        include: {
+          // Always include all translations with languageId for service-level mapping
+          nameTranslations: {
+            select: { value: true, languageId: true }
+          }
+        },
+        orderBy,
         skip,
         take
       })
     ])
 
+    // Map results to include nameTranslation and exclude nameTranslations array
+    const results = data.map((d: any) => {
+      const { nameTranslations, ...rest } = d
+      // Find single translation for current langId if provided
+      const single = langId
+        ? (nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
+          d.nameKey)
+        : undefined
+      return {
+        ...rest,
+        nameTranslations, // keep raw translations for service to format to all languages
+        nameTranslation: single
+      }
+    })
+
     return {
-      results: data,
+      results,
       pagination: {
         current: pagination.currentPage,
         pageSize: pagination.pageSize,
@@ -172,12 +211,45 @@ export class AchievementGroupRepo {
       }
     }
   }
-
   findById(id: number): Promise<AchievementGroupType | null> {
     return this.prismaService.achievementGroup.findUnique({
       where: {
         id,
         deletedAt: null
+      }
+    })
+  }
+
+  findByIdWithLangId(
+    id: number,
+    isAllLang: boolean,
+    langId: number
+  ): Promise<AchievementGroupType | null> {
+    return this.prismaService.achievementGroup.findUnique({
+      where: {
+        id,
+        deletedAt: null,
+        // Non-admin consumers (isAllLang=false) only fetch active records
+        ...(isAllLang ? {} : { isActive: true })
+      },
+      include: {
+        nameTranslations: isAllLang
+          ? { select: { value: true, languageId: true } }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } }
+      }
+    })
+  }
+
+  findByIdWithAllLang(id: number) {
+    return this.prismaService.achievementGroup.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        nameTranslations: {
+          select: { id: true, languageId: true, key: true, value: true }
+        }
       }
     })
   }
