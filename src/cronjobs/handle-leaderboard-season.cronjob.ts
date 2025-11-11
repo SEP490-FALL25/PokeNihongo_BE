@@ -15,7 +15,7 @@ export class HandleLeaderboardSeasonCronjob {
   ) {}
 
   // Run daily at 00:00 UTC to expire/activate seasons
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { timeZone: 'UTC' })
+  @Cron(CronExpression.EVERY_10_SECONDS, { timeZone: 'UTC' })
   async handleLeaderboardSeasonStatus() {
     const now = todayUTCWith0000()
     this.logger.log(`[LeaderboardSeason Cron] Running at ${now.toISOString()}`)
@@ -49,16 +49,27 @@ export class HandleLeaderboardSeasonCronjob {
       }
 
       // 2) Find PREVIEW seasons valid for today
-      const candidates = await this.prisma.leaderboardSeason.findMany({
+      // Query all PREVIEW seasons and filter in code (simpler than complex Prisma OR with nulls)
+      const allPreview = await this.prisma.leaderboardSeason.findMany({
         where: {
           status: 'PREVIEW',
-          deletedAt: null,
-          AND: [
-            { OR: [{ startDate: null as any }, { startDate: { lte: now } }] },
-            { OR: [{ endDate: null as any }, { endDate: { gte: now } }] }
-          ]
-        },
-        orderBy: { startDate: 'asc' }
+          deletedAt: null
+        }
+      })
+
+      // Filter: (startDate null OR startDate <= now) AND (endDate null OR endDate >= now)
+      const candidatesRaw = allPreview.filter((s) => {
+        const startOk = s.startDate === null || s.startDate <= now
+        const endOk = s.endDate === null || s.endDate >= now
+        return startOk && endOk
+      })
+
+      // Sort manually: startDate asc (nulls last)
+      const candidates = candidatesRaw.sort((a, b) => {
+        if (a.startDate === null && b.startDate === null) return 0
+        if (a.startDate === null) return 1 // nulls last
+        if (b.startDate === null) return -1
+        return a.startDate.getTime() - b.startDate.getTime()
       })
 
       if (candidates.length > 0) {
@@ -91,7 +102,7 @@ export class HandleLeaderboardSeasonCronjob {
   }
 
   // Run daily at 01:00 UTC to precreate next season if enabled
-  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  @Cron(CronExpression.EVERY_5_SECONDS)
   async handlePrecreateNextSeason() {
     const now = todayUTCWith0000()
     this.logger.log(`[LeaderboardSeason Precreate] Running at ${now.toISOString()}`)

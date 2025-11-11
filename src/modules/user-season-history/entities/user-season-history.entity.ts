@@ -13,8 +13,8 @@ export const UserSeasonHistorySchema = z.object({
   id: z.number(),
   userId: z.number(),
   seasonId: z.number(),
-  finalElo: z.number(),
-  finalRank: z.string(),
+  finalElo: z.number().nullable(),
+  finalRank: z.string().nullable(),
   seasonRankRewardId: z.number().nullable(),
   rewardsClaimed: z
     .enum([
@@ -46,8 +46,15 @@ export const CreateUserSeasonHistoryResSchema = z.object({
 })
 
 // Update Schema
-export const UpdateUserSeasonHistoryBodySchema =
-  CreateUserSeasonHistoryBodySchema.partial().strict()
+export const UpdateUserSeasonHistoryBodySchema = UserSeasonHistorySchema.pick({
+  seasonId: true,
+  finalElo: true,
+  finalRank: true,
+  seasonRankRewardId: true,
+  rewardsClaimed: true
+})
+  .partial()
+  .strict()
 
 export const UpdateUserSeasonHistoryResSchema = CreateUserSeasonHistoryResSchema
 
@@ -60,6 +67,10 @@ export const UpdateWithListItemResSchema = z.object({
 // Query Schema
 export const GetUserSeasonHistoryParamsSchema = z.object({
   userSeasonHistoryId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
+})
+
+export const GetRewardByLeaderboardParamsSchema = z.object({
+  leaderboardSeasonId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
 
 export const GetUserSeasonHistoryDetailSchema = UserSeasonHistorySchema

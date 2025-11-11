@@ -5,7 +5,6 @@ import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
-  CreateUserSeasonHistoryBodyDTO,
   CreateUserSeasonHistoryResDTO,
   GetUserSeasonHistoryDetailResDTO,
   GetUserSeasonHistoryParamsDTO,
@@ -24,7 +23,7 @@ export class UserSeasonHistoryController {
     return this.userSeasonHistoryService.list(query, lang)
   }
 
-  @Get('user/now')
+  @Get('user')
   @ZodSerializerDto(GetUserSeasonHistoryDetailResDTO)
   getUserHisNow(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
     return this.userSeasonHistoryService.getUserHisByUserId(userId, lang)
@@ -39,18 +38,28 @@ export class UserSeasonHistoryController {
   ) {
     return this.userSeasonHistoryService.findById(params.userSeasonHistoryId, lang)
   }
-
-  @Post()
+  @Post('join')
   @ZodSerializerDto(CreateUserSeasonHistoryResDTO)
-  create(
-    @Body() body: CreateUserSeasonHistoryBodyDTO,
+  joinSeason(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
+    return this.userSeasonHistoryService.joinSeason(
+      {
+        userId
+      },
+      lang
+    )
+  }
+
+  @Put('get-reward/:userSeasonHistoryId')
+  // @ZodSerializerDto(UpdateUserSeasonHistoryResDTO)
+  getReward(
+    @Param() params: GetUserSeasonHistoryParamsDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.userSeasonHistoryService.create(
+    return this.userSeasonHistoryService.getReward(
       {
-        userId,
-        data: body
+        id: params.userSeasonHistoryId,
+        userId
       },
       lang
     )

@@ -16,17 +16,14 @@ import { HttpStatus, Injectable } from '@nestjs/common'
 import { UserStatus } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
 import { LanguagesRepository } from '../languages/languages.repo'
+import { NotStartedLeaderboardSeasonException } from '../leaderboard-season/dto/leaderboard-season.error'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import { MatchRepo } from '../match/match.repo'
 import { UserPokemonNotFoundException } from '../user-pokemon/dto/user-pokemon.error'
 import { UserProgressService } from '../user-progress/user-progress.service'
 import { UserSeasonHistoryRepo } from '../user-season-history/user-season-history.repo'
 import { WalletService } from '../wallet/wallet.service'
-import {
-  EmailAlreadyExistsException,
-  UserHasNotBeenJoinedSeasonException,
-  UserNotFoundException
-} from './dto/user.error'
+import { EmailAlreadyExistsException, UserNotFoundException } from './dto/user.error'
 import {
   CreateUserBodyType,
   SetMainPokemonBodyType,
@@ -451,25 +448,62 @@ export class UserService {
     }
     // lay ra mua hien tai cua user
 
-    const [
-      currentSeason,
-      totalMatches,
-      totalWins,
-      currentWinStreak,
-      userInfo,
-      activeSeason
-    ] = await Promise.all([
-      this.leaderboardSeasonRepo.findActiveSeasonWithLangIdAndUser(userId, langId),
-      this.matchRepo.countMatchesByUserId(userId),
-      this.matchRepo.countWinsByUserId(userId),
-      this.getCurrentWinStreak(userId),
-      this.userRepo.findById(userId),
-      this.leaderboardSeasonRepo.findActiveSeason()
-    ])
+    const [currentSeason, totalMatches, totalWins, currentWinStreak, userInfo] =
+      await Promise.all([
+        this.leaderboardSeasonRepo.findActiveSeasonWithLangIdAndUser(userId, langId),
+        this.matchRepo.countMatchesByUserId(userId),
+        this.matchRepo.countWinsByUserId(userId),
+        this.getCurrentWinStreak(userId),
+        this.userRepo.findById(userId)
+      ])
 
-    // nếu là activeSeason có tồn tại nhưng currentSeason không tồn tại thì nghĩa là user chưa tham gia mùa giải
-    if (activeSeason && !currentSeason) {
-      throw new UserHasNotBeenJoinedSeasonException()
+    if (!currentSeason) {
+      throw new NotStartedLeaderboardSeasonException()
+    }
+
+    const userHasJoinedSeason =
+      await this.userSeaHistoryRepo.checkUserHasSeasonHistoryInSeason(
+        userId,
+        currentSeason.id
+      )
+
+    if (!userHasJoinedSeason) {
+      // User hasn't joined current season yet
+      // Check if there's any unclaimed reward from previous seasons
+      const unclaimedHistory =
+        await this.userSeaHistoryRepo.findLatestUnclaimedSeasonHistory(userId)
+
+      if (!unclaimedHistory) {
+        // No unclaimed rewards, return null data
+        return {
+          message: this.i18nService.translate(UserMessage.GET_DETAIL_SUCCESS, lang),
+          statusCode: HttpStatus.OK,
+          data: null
+        }
+      }
+
+      // User has unclaimed rewards from previous season
+      const seasonTranslation = (
+        (unclaimedHistory.season as any).nameTranslations || []
+      ).find((t: any) => t.languageId === langId)
+
+      return {
+        message: this.i18nService.translate(UserMessage.GET_DETAIL_SUCCESS, lang),
+        statusCode: HttpStatus.OK,
+        data: {
+          id: unclaimedHistory.id,
+          hasUnclaimedReward: true,
+          season: {
+            id: unclaimedHistory.seasonId,
+            name: seasonTranslation?.value ?? null,
+            startDate: (unclaimedHistory.season as any).startDate,
+            endDate: (unclaimedHistory.season as any).endDate
+          },
+          finalRank: unclaimedHistory.finalRank,
+          finalElo: unclaimedHistory.finalElo,
+          rewards: (unclaimedHistory.seasonRankReward as any)?.rewards || []
+        }
+      }
     }
 
     // Find current translation by langId
