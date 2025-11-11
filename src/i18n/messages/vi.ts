@@ -615,5 +615,14 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy lịch sử phần thưởng người dùng',
     ALREADY_EXISTS: 'Lịch sử phần thưởng người dùng đã tồn tại',
     INVALID_DATA: 'Dữ liệu lịch sử phần thưởng người dùng không hợp lệ'
+  },
+  user_achievement: {
+    CREATE_SUCCESS: 'Tạo thành tích người dùng thành công',
+    UPDATE_SUCCESS: 'Cập nhật thành tích người dùng thành công',
+    GET_SUCCESS: 'Lấy thông tin thành tích người dùng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách thành tích người dùng thành công',
+    NOT_FOUND: 'Không tìm thấy thành tích người dùng',
+    ALREADY_EXISTS: 'Thành tích người dùng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu thành tích người dùng không hợp lệ'
   }
 }

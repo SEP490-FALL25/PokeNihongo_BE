@@ -602,5 +602,15 @@ export const jaMessages = {
     NOT_FOUND: 'ユーザー報酬履歴が見つかりません',
     ALREADY_EXISTS: 'ユーザー報酬履歴は既に存在します',
     INVALID_DATA: '無効なユーザー報酬履歴データです'
+  },
+  user_achievement: {
+    CREATE_SUCCESS: 'ユーザー実績の作成に成功しました',
+    UPDATE_SUCCESS: 'ユーザー実績の更新に成功しました',
+    DELETE_SUCCESS: 'ユーザー実績の削除に成功しました',
+    GET_SUCCESS: 'ユーザー実績情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ユーザー実績リストの取得に成功しました',
+    NOT_FOUND: 'ユーザー実績が見つかりません',
+    ALREADY_EXISTS: 'ユーザー実績は既に存在します',
+    INVALID_DATA: '無効なユーザー実績データです'
   }
 }

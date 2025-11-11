@@ -46,6 +46,7 @@ export class LeaderboardSeasonController {
   @Get('rank-list')
   // @ZodSerializerDto(PaginationResponseSchema)
   getListRankByLeaderboard(
+    @Query() pagination: PaginationQueryDTO,
     @I18nLang() lang: string,
     @ActiveUser('userId') userId: number,
     @Query('rankName') rankName?: string,
@@ -55,7 +56,8 @@ export class LeaderboardSeasonController {
       id: leaderboardSeasonId ? +leaderboardSeasonId : undefined,
       lang,
       userId,
-      rankName
+      rankName,
+      pagination
     })
   }
 
