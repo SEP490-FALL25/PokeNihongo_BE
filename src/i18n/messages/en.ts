@@ -626,5 +626,15 @@ export const enMessages = {
     NOT_FOUND: 'User reward history not found',
     ALREADY_EXISTS: 'User reward history already exists',
     INVALID_DATA: 'Invalid user reward history data'
+  },
+  user_achievement: {
+    CREATE_SUCCESS: 'User achievement created successfully',
+    UPDATE_SUCCESS: 'User achievement updated successfully',
+    DELETE_SUCCESS: 'User achievement deleted successfully',
+    GET_SUCCESS: 'User achievement retrieved successfully',
+    GET_LIST_SUCCESS: 'User achievement list retrieved successfully',
+    NOT_FOUND: 'User achievement not found',
+    ALREADY_EXISTS: 'User achievement already exists',
+    INVALID_DATA: 'Invalid user achievement data'
   }
 }

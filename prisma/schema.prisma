@@ -58,9 +58,6 @@ model User {
   createdAchievements        Achievement[]       @relation("AchievementCreatedBy")
   updatedAchievements        Achievement[]       @relation("AchievementUpdatedBy")
   deletedAchievements        Achievement[]       @relation("AchievementDeletedBy")
-  createdUserAchievements    UserAchievement[]   @relation("UserAchievementCreatedBy")
-  updatedUserAchievements    UserAchievement[]   @relation("UserAchievementUpdatedBy")
-  deletedUserAchievements    UserAchievement[]   @relation("UserAchievementDeletedBy")
   createdAchievementGroups   AchievementGroup[]  @relation("AchievementGroupCreatedBy")
   updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
   deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
@@ -287,6 +284,16 @@ model Translation {
 
   debuffRoundNameKey String?
   debuffRound        DebuffRound? @relation("DebuffRoundNameRelation", fields: [debuffRoundNameKey], references: [nameKey], onDelete: Cascade)
+
+  achievementGroupNameKey String?
+  achievementGroup        AchievementGroup? @relation("AchievementGroupNameRelation", fields: [achievementGroupNameKey], references: [nameKey], onDelete: Cascade)
+
+  achievementNameKey          String?
+  achievement                 Achievement? @relation("AchievementNameRelation", fields: [achievementNameKey], references: [nameKey], onDelete: Cascade)
+  achievementDescriptionKey   String?
+  achievementDescription      Achievement? @relation("AchievementDescriptionRelation", fields: [achievementDescriptionKey], references: [descriptionKey], onDelete: Cascade)
+  achievementConditionTextKey String?
+  achievementCondition        Achievement? @relation("AchievementConditionTextRelation", fields: [achievementConditionTextKey], references: [conditionTextKey], onDelete: Cascade)
 
   @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
   @@index([languageId])
@@ -1097,13 +1104,14 @@ model UserDailyRequest {
 
 // === BẢNG ĐỊNH NGHĨA TOÀN BỘ HUY HIỆU ===
 model AchievementGroup {
-  id             Int    @id @default(autoincrement())
-  nameKey        String
-  descriptionKey String // Mô tả, VD: "Dành cho người mới tham gia"
-  displayOrder   Int // Thứ tự hiển thị, VD: 1, 2, 3...
-
+  id               Int           @id @default(autoincrement())
+  nameKey          String        @unique
+  displayOrder     Int // Thứ tự hiển thị, VD: 1, 2, 3...
+  isActive         Boolean       @default(true)
   // Quan hệ: Một nhóm có thể chứa nhiều huy hiệu
-  achievements Achievement[]
+  achievements     Achievement[]
+  //translation
+  nameTranslations Translation[] @relation("AchievementGroupNameRelation")
 
   createdById Int?
   createdBy   User? @relation("AchievementGroupCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -1121,10 +1129,11 @@ model Achievement {
   id Int @id @default(autoincrement())
 
   // Thông tin cơ bản
-  nameKey        String // Tên huy hiệu, VD: "Ngọn Lửa Nhỏ"
-  descriptionKey String // Mô tả chi tiết
-  imageUrl       String? // Đường dẫn tới ảnh của huy hiệu
-
+  nameKey             String               @unique
+  descriptionKey      String               @unique
+  conditionTextKey    String               @unique
+  imageUrl            String?
+  isActive            Boolean              @default(true)
   // Phân loại & Hiển thị
   achievementTierType AchievementTierType?
   // Điều kiện để nhận
@@ -1141,6 +1150,11 @@ model Achievement {
 
   // Quan hệ: Một huy hiệu có thể được nhiều user sở hữu
   userAchievements UserAchievement[]
+
+  //translation
+  nameTranslations          Translation[] @relation("AchievementNameRelation")
+  descriptionTranslations   Translation[] @relation("AchievementDescriptionRelation")
+  conditionTextTranslations Translation[] @relation("AchievementConditionTextRelation")
 
   createdById Int?
   createdBy   User? @relation("AchievementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -1166,15 +1180,8 @@ model UserAchievement {
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   // Thông tin thêm
-  achievedAt      DateTime @default(now()) // Thời điểm nhận được huy hiệu
-  isRewardClaimed Boolean  @default(false) // Đã nhận quà của huy hiệu này chưa?
-
-  createdById Int?
-  createdBy   User? @relation("UserAchievementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  updatedById Int?
-  updatedBy   User? @relation("UserAchievementUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  deletedById Int?
-  deletedBy   User? @relation("UserAchievementDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  achievedAt DateTime?
+  status     UserAchievementStatus @default(IN_PROGRESS) // Trạng thái của huy hiệu
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
@@ -2447,4 +2454,10 @@ enum UserRewardSourceType {
   SEASON_REWARD // Thưởng mùa giải (Leaderboard Season)
   ADMIN_ADJUST // Admin thưởng thủ công
   OTHER // Trường hợp khác
+}
+
+enum UserAchievementStatus {
+  IN_PROGRESS
+  COMPLETED_NOT_CLAIMED
+  CLAIMED
 }

@@ -655,3 +655,14 @@ export const UserRewardHistoryMessage = {
   ALREADY_EXISTS: 'user_reward_history.ALREADY_EXISTS',
   INVALID_DATA: 'user_reward_history.INVALID_DATA'
 } as const
+
+export const UserAchievementMessage = {
+  CREATE_SUCCESS: 'user_achievement.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'user_achievement.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'user_achievement.DELETE_SUCCESS',
+  GET_SUCCESS: 'user_achievement.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'user_achievement.GET_LIST_SUCCESS',
+  NOT_FOUND: 'user_achievement.NOT_FOUND',
+  ALREADY_EXISTS: 'user_achievement.ALREADY_EXISTS',
+  INVALID_DATA: 'user_achievement.INVALID_DATA'
+} as const

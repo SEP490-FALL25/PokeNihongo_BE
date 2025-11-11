@@ -17,7 +17,9 @@ export const AchievementSchema = z.object({
   id: z.number(),
   nameKey: z.string().min(1),
   descriptionKey: z.string().min(1),
+  conditionTextKey: z.string().min(1),
   imageUrl: z.string().url().nullable(),
+  isActive: z.boolean().default(true),
 
   achievementTierType: z
     .enum([
@@ -53,6 +55,7 @@ export const AchievementSchema = z.object({
 
 export const CreateAchievementBodyInputSchema = AchievementSchema.pick({
   imageUrl: true,
+  isActive: true,
   achievementTierType: true,
   conditionType: true,
   conditionValue: true,
@@ -62,14 +65,17 @@ export const CreateAchievementBodyInputSchema = AchievementSchema.pick({
 })
   .extend({
     nameTranslations: TranslationInputSchema,
-    descriptionTranslations: TranslationInputSchema
+    descriptionTranslations: TranslationInputSchema,
+    conditionTextTranslations: TranslationInputSchema
   })
   .strict()
 
 export const CreateAchievementBodySchema = AchievementSchema.pick({
   imageUrl: true,
   nameKey: true,
+  isActive: true,
   descriptionKey: true,
+  conditionTextKey: true,
   achievementTierType: true,
   conditionType: true,
   conditionValue: true,
@@ -98,8 +104,12 @@ export const GetAchievementParamsSchema = z
 export const GetAchievementDetailResSchema = z.object({
   statusCode: z.number(),
   data: AchievementSchema.extend({
-    nameTranslation: z.string(),
-    descriptionTranslation: z.string()
+    nameTranslation: z.string().nullable(),
+    nameTranslations: TranslationInputSchema.optional().nullable(),
+    descriptionTranslation: z.string().nullable(),
+    descriptionTranslations: TranslationInputSchema.optional().nullable(),
+    conditionTextTranslation: z.string().nullable(),
+    conditionTextTranslations: TranslationInputSchema.optional().nullable()
   }),
   message: z.string()
 })
@@ -128,5 +138,6 @@ type AchievementFieldType = keyof z.infer<typeof AchievementSchema>
 export const ACHIEVEMENT_FIELDS = [
   ...Object.keys(AchievementSchema.shape),
   'nameTranslation',
-  'descriptionTranslation'
+  'descriptionTranslation',
+  'conditionTextTranslation'
 ] as AchievementFieldType[]

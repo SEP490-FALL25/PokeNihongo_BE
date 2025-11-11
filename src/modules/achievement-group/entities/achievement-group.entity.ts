@@ -10,8 +10,8 @@ patchNestJsSwagger()
 export const AchievementGroupSchema = z.object({
   id: z.number(),
   nameKey: z.string().min(1),
-  descriptionKey: z.string().min(1),
   displayOrder: z.number().min(0),
+  isActive: z.boolean().default(true),
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
   deletedById: z.number().nullable(),
@@ -21,18 +21,18 @@ export const AchievementGroupSchema = z.object({
 })
 
 export const CreateAchievementGroupBodyInputSchema = AchievementGroupSchema.pick({
-  displayOrder: true
+  displayOrder: true,
+  isActive: true
 })
   .extend({
-    nameTranslations: TranslationInputSchema,
-    descriptionTranslations: TranslationInputSchema
+    nameTranslations: TranslationInputSchema
   })
   .strict()
 
 export const CreateAchievementGroupBodySchema = AchievementGroupSchema.pick({
   displayOrder: true,
-  nameKey: true,
-  descriptionKey: true
+  isActive: true,
+  nameKey: true
 })
 
 export const CreateAchievementGroupResSchema = z.object({
@@ -56,8 +56,8 @@ export const GetAchievementGroupParamsSchema = z
 export const GetAchievementGroupDetailResSchema = z.object({
   statusCode: z.number(),
   data: AchievementGroupSchema.extend({
-    nameTranslation: z.string(),
-    descriptionTranslation: z.string()
+    nameTranslation: z.string().nullable().optional(),
+    nameTranslations: TranslationInputSchema.optional().nullable()
   }),
   message: z.string()
 })
@@ -93,6 +93,5 @@ export type GetAchievementGroupDetailResType = z.infer<
 type AchievementGroupFieldType = keyof z.infer<typeof AchievementGroupSchema>
 export const ACHIEVEMENT_GROUP_FIELDS = [
   ...Object.keys(AchievementGroupSchema.shape),
-  'nameTranslation',
-  'descriptionTranslation'
+  'nameTranslation'
 ] as AchievementGroupFieldType[]

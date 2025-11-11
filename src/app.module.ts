@@ -87,6 +87,7 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
+import { UserAchievementModule } from './modules/user-achievement/user-achievement.module';
 
 @Module({
   imports: [
@@ -173,7 +174,8 @@ import { WebsocketsModule } from './websockets/websockets.module'
     AIConversationRoomModule,
     RoundQuestionModule,
     RoundQuestionAnswerlogModule,
-    SeasonRankRewardModule
+    SeasonRankRewardModule,
+    UserAchievementModule
   ],
 
   controllers: [],
