@@ -58,9 +58,6 @@ model User {
   createdAchievements        Achievement[]       @relation("AchievementCreatedBy")
   updatedAchievements        Achievement[]       @relation("AchievementUpdatedBy")
   deletedAchievements        Achievement[]       @relation("AchievementDeletedBy")
-  createdUserAchievements    UserAchievement[]   @relation("UserAchievementCreatedBy")
-  updatedUserAchievements    UserAchievement[]   @relation("UserAchievementUpdatedBy")
-  deletedUserAchievements    UserAchievement[]   @relation("UserAchievementDeletedBy")
   createdAchievementGroups   AchievementGroup[]  @relation("AchievementGroupCreatedBy")
   updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
   deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
@@ -1183,15 +1180,8 @@ model UserAchievement {
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   // Thông tin thêm
-  achievedAt      DateTime @default(now()) // Thời điểm nhận được huy hiệu
-  isRewardClaimed Boolean  @default(false) // Đã nhận quà của huy hiệu này chưa?
-
-  createdById Int?
-  createdBy   User? @relation("UserAchievementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  updatedById Int?
-  updatedBy   User? @relation("UserAchievementUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  deletedById Int?
-  deletedBy   User? @relation("UserAchievementDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  achievedAt DateTime?
+  status     UserAchievementStatus @default(IN_PROGRESS) // Trạng thái của huy hiệu
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
@@ -2464,4 +2454,10 @@ enum UserRewardSourceType {
   SEASON_REWARD // Thưởng mùa giải (Leaderboard Season)
   ADMIN_ADJUST // Admin thưởng thủ công
   OTHER // Trường hợp khác
+}
+
+enum UserAchievementStatus {
+  IN_PROGRESS
+  COMPLETED_NOT_CLAIMED
+  CLAIMED
 }

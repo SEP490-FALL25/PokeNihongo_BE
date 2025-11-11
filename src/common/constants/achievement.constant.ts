@@ -38,3 +38,11 @@ export const categoryType = {
   MONTHLY: 'MONTHLY'
 } as const
 export type CategoryTypeType = keyof typeof categoryType
+
+export const UserAchievementStatus = {
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED_NOT_CLAIMED: 'COMPLETED_NOT_CLAIMED',
+  CLAIMED: 'CLAIMED'
+} as const
+
+export type UserAchievementStatusType = keyof typeof UserAchievementStatus
