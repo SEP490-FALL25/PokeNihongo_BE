@@ -138,6 +138,9 @@ export class QuestionBankService {
         const { currentPage, pageSize } = query
         const totalPage = Math.ceil(total / pageSize)
 
+        // Đếm số câu hỏi theo từng levelN
+        const levelCounts = await this.questionBankRepository.countByLevelN(query)
+
         return {
             statusCode: 200,
             data: {
@@ -147,6 +150,13 @@ export class QuestionBankService {
                     pageSize: pageSize,
                     totalPage: totalPage,
                     totalItem: total,
+                },
+                levelCounts: {
+                    N5: levelCounts.N5,
+                    N4: levelCounts.N4,
+                    N3: levelCounts.N3,
+                    N2: levelCounts.N2,
+                    N1: levelCounts.N1,
                 },
             },
             message: QUESTION_BANK_MESSAGE.GET_LIST_SUCCESS,

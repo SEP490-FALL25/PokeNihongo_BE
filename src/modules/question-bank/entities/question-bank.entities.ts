@@ -70,6 +70,13 @@ export const QuestionBankListResSchema = z
                 pageSize: z.number(),
                 totalPage: z.number(),
                 totalItem: z.number()
+            }),
+            levelCounts: z.object({
+                N5: z.number(),
+                N4: z.number(),
+                N3: z.number(),
+                N2: z.number(),
+                N1: z.number()
             })
         }),
         message: z.string()

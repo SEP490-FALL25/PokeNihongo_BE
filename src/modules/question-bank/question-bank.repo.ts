@@ -548,6 +548,75 @@ export class QuestionBankRepository {
     }
 
     /**
+     * Đếm số câu hỏi theo từng levelN với cùng where clause (nhưng không filter theo levelN)
+     */
+    async countByLevelN(query: GetQuestionBankListQueryType): Promise<{ N5: number; N4: number; N3: number; N2: number; N1: number }> {
+        const { questionType, search, testSetId, noTestSet } = query
+
+        const where: any = {}
+
+        if (search) {
+            where.OR = [
+                { questionJp: { contains: search, mode: 'insensitive' } },
+                { questionKey: { contains: search, mode: 'insensitive' } },
+                { pronunciation: { contains: search, mode: 'insensitive' } },
+            ]
+        }
+
+        // Không filter theo levelN để đếm tất cả các level
+        // if (levelN) {
+        //     where.levelN = levelN
+        // }
+
+        if (questionType) {
+            where.questionType = questionType
+        }
+
+        // Lọc theo testSetId - loại trừ những câu hỏi thuộc testSetId đó
+        if (testSetId) {
+            where.testSetQuestionBanks = {
+                none: {
+                    testSetId: testSetId
+                }
+            }
+        }
+
+        // Lọc câu hỏi chưa có trong testSet nào
+        if (noTestSet) {
+            where.testSetQuestionBanks = {
+                none: {}
+            }
+        }
+
+        // Đếm theo từng levelN
+        const byLevel = await this.prisma.questionBank.groupBy({
+            by: ['levelN'],
+            where,
+            _count: { levelN: true },
+        })
+
+        // Khởi tạo kết quả với giá trị mặc định
+        const result = {
+            N5: 0,
+            N4: 0,
+            N3: 0,
+            N2: 0,
+            N1: 0
+        }
+
+        // Cập nhật số lượng theo từng level
+        byLevel.forEach(item => {
+            if (item.levelN === 5) result.N5 = item._count.levelN
+            else if (item.levelN === 4) result.N4 = item._count.levelN
+            else if (item.levelN === 3) result.N3 = item._count.levelN
+            else if (item.levelN === 2) result.N2 = item._count.levelN
+            else if (item.levelN === 1) result.N1 = item._count.levelN
+        })
+
+        return result
+    }
+
+    /**
      * Cập nhật questionKey cho question bank
      */
     async updateQuestionKey(id: number, questionKey: string): Promise<void> {
