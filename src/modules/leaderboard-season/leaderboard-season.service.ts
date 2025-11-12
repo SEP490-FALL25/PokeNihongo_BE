@@ -92,7 +92,6 @@ export class LeaderboardSeasonService {
     if (!leaderboardSeason) {
       throw new NotFoundRecordException()
     }
-
     const nameTranslations = await this.convertTranslationsToLangCodes(
       (leaderboardSeason as any).nameTranslations || []
     )
@@ -101,20 +100,32 @@ export class LeaderboardSeasonService {
       (t: any) => t.languageId === langId
     )
 
-    // Remove raw nameTranslations from shopBanner
-    const { nameTranslations: _, ...leaderboardWithoutTranslations } =
-      leaderboardSeason as any
-
-    const data = {}
-    const result = {
-      ...leaderboardWithoutTranslations,
-      nameTranslation: currentTranslation?.value ?? null,
-      ...(isAdmin ? { nameTranslations } : {})
-    }
+    // Chuyển nameTranslations của rewards -> chỉ lấy bản dịch hiện tại (current)
+    const transformed = leaderboardSeason
+      ? {
+          ...leaderboardSeason,
+          seasonRankRewards: (leaderboardSeason as any).seasonRankRewards?.map(
+            (sr: any) => ({
+              ...sr,
+              rewards: (sr.rewards || []).map((r: any) => ({
+                ...r,
+                nameTranslation:
+                  ((r.nameTranslations || []).find((t: any) => t.languageId === langId)
+                    ?.value as string) ?? null,
+                nameTranslations: undefined
+              }))
+            })
+          )
+        }
+      : null
 
     return {
       statusCode: HttpStatus.OK,
-      data: result,
+      data: {
+        ...transformed,
+        nameTranslation: currentTranslation?.value ?? null,
+        ...(isAdmin ? { nameTranslations } : {})
+      },
       message: this.i18nService.translate(LeaderboardSeasonMessage.GET_SUCCESS, lang)
     }
   }
@@ -686,6 +697,55 @@ export class LeaderboardSeasonService {
           totalItem: totalItems
         },
         me
+      },
+      message: this.i18nService.translate(LeaderboardSeasonMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  async getRewardLeaderboardSeasonNow(roleName: string, lang: string) {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    if (!langId) {
+      throw new LanguageNotExistToTranslateException()
+    }
+    const isAdmin = roleName === RoleName.Admin ? true : false
+    const inforLeaderboardWithRewards =
+      await this.leaderboardSeasonRepo.findLeaderboardSeasonNowWithRewards(
+        langId,
+        isAdmin
+      )
+    const nameTranslations = await this.convertTranslationsToLangCodes(
+      (inforLeaderboardWithRewards as any).nameTranslations || []
+    )
+    const currentTranslation = (
+      (inforLeaderboardWithRewards as any).nameTranslations || []
+    ).find((t: any) => t.languageId === langId)
+
+    // Chuyển nameTranslations của rewards -> chỉ lấy bản dịch hiện tại (current)
+    const transformed = inforLeaderboardWithRewards
+      ? {
+          ...inforLeaderboardWithRewards,
+          seasonRankRewards: (inforLeaderboardWithRewards as any).seasonRankRewards?.map(
+            (sr: any) => ({
+              ...sr,
+              rewards: (sr.rewards || []).map((r: any) => ({
+                ...r,
+                nameTranslation:
+                  ((r.nameTranslations || []).find((t: any) => t.languageId === langId)
+                    ?.value as string) ?? null,
+                // remove bulky translations array
+                nameTranslations: undefined
+              }))
+            })
+          )
+        }
+      : null
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: {
+        ...transformed,
+        nameTranslation: currentTranslation?.value ?? null,
+        ...(isAdmin ? { nameTranslations } : {})
       },
       message: this.i18nService.translate(LeaderboardSeasonMessage.GET_LIST_SUCCESS, lang)
     }

@@ -22,6 +22,7 @@ import {
   CreateLeaderboardSeasonResDTO,
   GetLeaderboardSeasonDetailResDTO,
   GetLeaderboardSeasonParamsDTO,
+  GetLeaderboardWithRewardSeasonDetailResDTO,
   UpdateLeaderboardSeasonBodyInputDTO,
   UpdateLeaderboardSeasonResDTO
 } from './dto/leaderboard-season.zod-dto'
@@ -75,6 +76,15 @@ export class LeaderboardSeasonController {
       },
       lang
     )
+  }
+
+  @Get('reward-now')
+  @ZodSerializerDto(GetLeaderboardWithRewardSeasonDetailResDTO)
+  getRewardLeaderboardSeasonNow(
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string
+  ) {
+    return this.leaderboardSeasonService.getRewardLeaderboardSeasonNow(roleName, lang)
   }
 
   @Get(':leaderboardSeasonId')
