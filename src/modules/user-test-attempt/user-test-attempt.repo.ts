@@ -210,5 +210,16 @@ export class UserTestAttemptRepository {
         // Fallback: trả về attempt đầu tiên trong latestAttempts
         return this.transformUserTestAttempt(latestAttempts[0])
     }
+
+    async hasCompletedAttempt(userId: number, testId: number): Promise<boolean> {
+        const completedAttempt = await this.prismaService.userTestAttempt.findFirst({
+            where: {
+                userId,
+                testId,
+                status: 'COMPLETED'
+            }
+        })
+        return !!completedAttempt
+    }
 }
 
