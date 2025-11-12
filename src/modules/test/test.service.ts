@@ -15,6 +15,7 @@ import { UserTestRepository } from '../user-test/user-test.repo'
 import { UserTestService } from '../user-test/user-test.service'
 import { TestStatus, UserTestStatus } from '@prisma/client'
 import { ExercisesRepository } from '../exercises/exercises.repo'
+import { pickLabelFromComposite } from '@/common/utils/prase.utils'
 
 @Injectable()
 export class TestService {
@@ -1401,6 +1402,7 @@ export class TestService {
             const finalQuestions = shuffleArray(allSelected)
 
             // Map với translations và answers
+            const normalizedLang = (language || '').toLowerCase().split('-')[0] || 'vi'
             const mappedQuestions = await Promise.all(
                 finalQuestions.map(async (tsqb: any) => {
                     const qb = tsqb.questionBank
@@ -1424,31 +1426,14 @@ export class TestService {
                         }
                     }
 
-                    // Map answers với translations
+                    // Map answers với pickLabelFromComposite (giống như findFullWithAnswerByTestSetId)
                     const mappedAnswers = await Promise.all(
                         (qb.answers || []).map(async (ans: any) => {
-                            let answerTranslation = ans.answerJp
-
-                            if (ans.answerKey && language) {
-                                const languageRecord = await this.prisma.languages.findFirst({
-                                    where: { code: language }
-                                })
-                                if (languageRecord) {
-                                    const translation = await this.prisma.translation.findFirst({
-                                        where: {
-                                            key: ans.answerKey,
-                                            languageId: languageRecord.id
-                                        }
-                                    })
-                                    if (translation) {
-                                        answerTranslation = translation.value
-                                    }
-                                }
-                            }
-
+                            // Derive from answerJp composite string based on language
+                            const answerLabel = pickLabelFromComposite(ans?.answerJp || '', normalizedLang)
                             return {
                                 id: ans.id,
-                                answer: answerTranslation
+                                answer: answerLabel
                             }
                         })
                     )
