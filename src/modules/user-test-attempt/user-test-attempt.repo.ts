@@ -221,5 +221,29 @@ export class UserTestAttemptRepository {
         })
         return !!completedAttempt
     }
+
+    async findTestSetQuestionBanksByTestSetIds(testSetIds: number[]) {
+        return this.prismaService.testSetQuestionBank.findMany({
+            where: {
+                testSetId: { in: testSetIds }
+            },
+            include: {
+                questionBank: {
+                    select: {
+                        id: true,
+                        levelN: true,
+                        questionType: true
+                    }
+                }
+            }
+        })
+    }
+
+    async findTestTestSetsByTestId(testId: number) {
+        return this.prismaService.testTestSet.findMany({
+            where: { testId },
+            select: { testSetId: true }
+        })
+    }
 }
 

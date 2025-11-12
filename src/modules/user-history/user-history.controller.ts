@@ -11,7 +11,8 @@ import {
     AdminHistoryListResDTO,
     GetRecentExercisesQueryDTO,
     RecentExercisesResDTO,
-    HistoryExercisesResDTO
+    HistoryExercisesResDTO,
+    HistoryTestsResDTO
 } from './dto/user-history.zod-dto'
 import {
     GetHistoryListQuerySwaggerDTO,
@@ -19,7 +20,8 @@ import {
     HistoryListResponseSwaggerDTO,
     AdminHistoryListResponseSwaggerDTO,
     GetRecentExercisesQuerySwaggerDTO,
-    RecentExercisesResponseSwaggerDTO
+    RecentExercisesResponseSwaggerDTO,
+    HistoryTestsResponseSwaggerDTO
 } from './dto/user-history.dto'
 
 @ApiTags('User History')
@@ -95,6 +97,24 @@ export class UserHistoryController {
         @I18nLang() lang: string
     ) {
         return this.userHistoryService.findHistoryExercises(userId, query, lang)
+    }
+
+    @Get('history-tests')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách bài test đã làm' })
+    @ApiQuery({ type: GetRecentExercisesQuerySwaggerDTO })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy danh sách bài test đã làm thành công',
+        type: HistoryTestsResponseSwaggerDTO
+    })
+    @ZodSerializerDto(HistoryTestsResDTO)
+    async getHistoryTests(
+        @Query() query: GetRecentExercisesQueryDTO,
+        @ActiveUser('userId') userId: number,
+        @I18nLang() lang: string
+    ) {
+        return this.userHistoryService.findHistoryTests(userId, query, lang)
     }
 }
 
