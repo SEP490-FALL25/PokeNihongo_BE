@@ -27,15 +27,18 @@ export class UserController {
   }
 
   @Get('stats/season')
-  // @ZodSerializerDto(GetStatsUserSeasonResDTO)
   getInfoBattleWithUser(@I18nLang() lang: string, @ActiveUser('userId') userId: number) {
     return this.userService.getInfoBattleWithUser(userId, lang)
   }
 
   @Get('matching/history')
-  // @ZodSerializerDto(GetListMatchHisByUserResDTO)
-  getMatchingHisByUserId(@I18nLang() lang: string, @ActiveUser('userId') userId: number) {
-    return this.userService.getMatchingHisByUserId(userId, lang)
+  @ZodSerializerDto(PaginationResponseDTO)
+  getMatchingHisByUserId(
+    @Query() query: PaginationQueryDTO,
+    @I18nLang() lang: string,
+    @ActiveUser('userId') userId: number
+  ) {
+    return this.userService.getMatchingHisByUserId(userId, lang, query)
   }
 
   @Get(':userId')
