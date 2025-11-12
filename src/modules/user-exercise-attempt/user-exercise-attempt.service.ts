@@ -728,10 +728,13 @@ export class UserExerciseAttemptService {
             const correctPercentage = totalQuestions > 0 ? (answeredCorrectCount / totalQuestions) * 100 : 0
             const roundedPercentage = Math.round(correctPercentage * 100) / 100 // Làm tròn 2 chữ số thập phân để tránh floating point precision issues
 
-            // Chỉ cho xem review (bao gồm đáp án đúng) khi tỷ lệ đúng >= 80%
-            // Nếu < 80%: không cho xem review và đáp án đúng
-            // Nếu >= 80%: cho xem review với đáp án đúng được đánh dấu (type: 'correct_answer')
-            if (roundedPercentage < 80) {
+            // Kiểm tra xem exercise này có ít nhất 1 lần làm COMPLETED không
+            const hasCompletedAttempt = await this.userExerciseAttemptRepository.hasCompletedAttempt(userId, attempt.exerciseId)
+
+            // Logic kiểm tra quyền xem review:
+            // - Nếu exercise có ít nhất 1 lần làm COMPLETED → được quyền xem (không cần đúng 80%)
+            // - Nếu chưa có lần nào COMPLETED → phải đúng >= 80% mới được xem
+            if (!hasCompletedAttempt && roundedPercentage < 80) {
                 return {
                     statusCode: 403,
                     message: this.i18nService.translate(UserExerciseAttemptMessage.REVIEW_INSUFFICIENT_SCORE, normalizedLang),

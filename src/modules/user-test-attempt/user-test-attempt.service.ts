@@ -836,8 +836,13 @@ export class UserTestAttemptService {
             const answeredCorrectCount = logs.filter((l: any) => l.isCorrect).length
             const correctPercentage = totalQuestions > 0 ? (answeredCorrectCount / totalQuestions) * 100 : 0
 
-            // Chỉ cho xem review khi tỷ lệ đúng >= 80%
-            if (correctPercentage < 80) {
+            // Kiểm tra xem test này có ít nhất 1 lần làm COMPLETED không
+            const hasCompletedAttempt = await this.userTestAttemptRepository.hasCompletedAttempt(userId, attempt.testId)
+
+            // Logic kiểm tra quyền xem review:
+            // - Nếu test có ít nhất 1 lần làm COMPLETED → được quyền xem (không cần đúng 80%)
+            // - Nếu chưa có lần nào COMPLETED → phải đúng >= 80% mới được xem
+            if (!hasCompletedAttempt && correctPercentage < 80) {
                 return {
                     statusCode: 403,
                     message: this.i18nService.translate(UserTestAttemptMessage.REVIEW_INSUFFICIENT_SCORE, normalizedLang),
@@ -1009,8 +1014,13 @@ export class UserTestAttemptService {
             const answeredCorrectCount = logs.filter((l: any) => l.isCorrect).length
             const correctPercentage = totalQuestions > 0 ? (answeredCorrectCount / totalQuestions) * 100 : 0
 
-            // Chỉ cho xem review khi tỷ lệ đúng >= 80%
-            if (correctPercentage < 80) {
+            // Kiểm tra xem test này có ít nhất 1 lần làm COMPLETED không
+            const hasCompletedAttempt = await this.userTestAttemptRepository.hasCompletedAttempt(userId, attempt.testId)
+
+            // Logic kiểm tra quyền xem review:
+            // - Nếu test có ít nhất 1 lần làm COMPLETED → được quyền xem (không cần đúng 80%)
+            // - Nếu chưa có lần nào COMPLETED → phải đúng >= 80% mới được xem
+            if (!hasCompletedAttempt && correctPercentage < 80) {
                 return {
                     statusCode: 403,
                     message: this.i18nService.translate(UserTestAttemptMessage.REVIEW_INSUFFICIENT_SCORE, normalizedLang),
