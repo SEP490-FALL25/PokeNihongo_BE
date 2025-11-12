@@ -314,4 +314,43 @@ export class LeaderboardSeasonRepo {
       }
     })
   }
+
+  findLeaderboardSeasonNowWithRewards(
+    langId: number,
+    isAdmin: boolean
+  ): Promise<LeaderboardSeasonType | null> {
+    return this.prismaService.leaderboardSeason.findFirst({
+      where: {
+        status: 'ACTIVE',
+        deletedAt: null
+      },
+      include: {
+        nameTranslations: isAdmin
+          ? { select: { value: true, languageId: true } }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } },
+        seasonRankRewards: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            rankName: true,
+            order: true,
+            rewards: {
+              select: {
+                id: true,
+                rewardType: true,
+                rewardItem: true,
+                rewardTarget: true,
+                nameTranslations: isAdmin
+                  ? { select: { value: true, languageId: true } }
+                  : {
+                      where: { languageId: langId },
+                      select: { value: true, languageId: true }
+                    }
+              }
+            }
+          }
+        }
+      }
+    })
+  }
 }

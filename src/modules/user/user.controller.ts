@@ -8,7 +8,6 @@ import { UpdateLevelJLPTBodyDTO, UpdateLevelJLPTResDTO } from '../auth/dto/auth.
 import {
   CreateUserBodyDTO,
   CreateUserResDTO,
-  GetListMatchHisByUserResDTO,
   GetUserDetailResDTO,
   GetUserParamsDTO,
   SetMainPokemonBodyDTO,
@@ -34,7 +33,7 @@ export class UserController {
   }
 
   @Get('matching/history')
-  @ZodSerializerDto(GetListMatchHisByUserResDTO)
+  // @ZodSerializerDto(GetListMatchHisByUserResDTO)
   getMatchingHisByUserId(@I18nLang() lang: string, @ActiveUser('userId') userId: number) {
     return this.userService.getMatchingHisByUserId(userId, lang)
   }

@@ -1,6 +1,8 @@
 import { LeaderboardStatus } from '@/common/constants/leaderboard.constants'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { LeaderboardSeasonMessage } from '@/i18n/message-keys'
+import { RewardSchema } from '@/modules/reward/entities/reward.entity'
+import { SeasonRankRewardSchema } from '@/modules/season-rank-reward/entities/season-rank-reward.entity'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -93,6 +95,35 @@ export const GetLeaderboardSeasonDetailWithAllLangResSchema = z.object({
   message: z.string()
 })
 
+export const GetLeaderboardWithRewardSeasonDetailSchema = LeaderboardSeasonSchema.extend({
+  nameTranslation: z.string().nullable().optional(),
+  nameTranslations: TranslationInputSchema.optional().nullable(),
+  seasonRankRewards: z.array(
+    SeasonRankRewardSchema.pick({ id: true, rankName: true, order: true })
+      .extend({
+        rewards: z.array(
+          RewardSchema.pick({
+            id: true,
+            rewardType: true,
+            rewardItem: true,
+            rewardTarget: true
+          })
+            .extend({
+              nameTranslation: z.string().nullable().optional(),
+              nameTranslations: TranslationInputSchema.optional().nullable()
+            })
+            .nullable()
+        )
+      })
+      .nullable()
+  )
+})
+
+export const GetLeaderboardWithRewardSeasonDetailResSchema = z.object({
+  statusCode: z.number(),
+  data: GetLeaderboardWithRewardSeasonDetailSchema,
+  message: z.string()
+})
 export const GetLeaderboardSeasonDetailResSchema = z.object({
   statusCode: z.number(),
   data: LeaderboardSeasonSchema.extend({

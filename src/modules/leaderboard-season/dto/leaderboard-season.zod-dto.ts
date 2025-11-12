@@ -5,6 +5,7 @@ import {
   GetLeaderboardSeasonDetailResSchema,
   GetLeaderboardSeasonDetailWithAllLangResSchema,
   GetLeaderboardSeasonParamsSchema,
+  GetLeaderboardWithRewardSeasonDetailResSchema,
   UpdateLeaderboardSeasonBodyInputSchema,
   UpdateLeaderboardSeasonResSchema
 } from '../entities/leaderboard-season.entity'
@@ -35,4 +36,8 @@ export class GetLeaderboardSeasonDetailResDTO extends createZodDto(
 
 export class GetLeaderboardSeasonDetailWithAllLangResDTO extends createZodDto(
   GetLeaderboardSeasonDetailWithAllLangResSchema
+) {}
+
+export class GetLeaderboardWithRewardSeasonDetailResDTO extends createZodDto(
+  GetLeaderboardWithRewardSeasonDetailResSchema
 ) {}
