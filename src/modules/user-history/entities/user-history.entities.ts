@@ -99,6 +99,67 @@ export const RecentExerciseItemSchema = z.object({
     status: z.string()
 })
 
+// Recent Exercises Item Schema
+export const HistoryExerciseItemSchema = z.object({
+    attemptId: z.number(),
+    exerciseId: z.number(),
+    exerciseName: z.string().optional().nullable(),
+    status: z.string(),
+    score: z.number().optional().nullable(),
+    totalQuestions: z.number(),
+    correctAnswers: z.number(),
+    incorrectAnswers: z.number(),
+    updatedAt: z.date()
+})
+
+
+export const HistoryExercisesResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(HistoryExerciseItemSchema),
+            allTime: z.number(), // Tổng thời gian của tất cả attempts (giây)
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
+// History Tests Item Schema
+export const HistoryTestItemSchema = z.object({
+    attemptId: z.number(),
+    testId: z.number(),
+    testName: z.string().optional().nullable(),
+    status: z.string(),
+    score: z.number().optional().nullable(),
+    totalQuestions: z.number(),
+    correctAnswers: z.number(),
+    incorrectAnswers: z.number(),
+    updatedAt: z.date()
+})
+
+export const HistoryTestsResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(HistoryTestItemSchema),
+            allTime: z.number(), // Tổng thời gian của tất cả attempts (giây)
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
 // Recent Exercises Query Schema
 export const GetRecentExercisesQuerySchema = z
     .object({
@@ -136,6 +197,10 @@ export type AdminHistoryListResType = z.infer<typeof AdminHistoryListResSchema>
 export type GetHistoryListQueryType = z.infer<typeof GetHistoryListQuerySchema>
 export type GetAdminHistoryListQueryType = z.infer<typeof GetAdminHistoryListQuerySchema>
 export type RecentExerciseItemType = z.infer<typeof RecentExerciseItemSchema>
+export type HistoryExerciseItemType = z.infer<typeof HistoryExerciseItemSchema>
+export type HistoryExercisesResType = z.infer<typeof HistoryExercisesResSchema>
+export type HistoryTestItemType = z.infer<typeof HistoryTestItemSchema>
+export type HistoryTestsResType = z.infer<typeof HistoryTestsResSchema>
 export type GetRecentExercisesQueryType = z.infer<typeof GetRecentExercisesQuerySchema>
 export type RecentExercisesResType = z.infer<typeof RecentExercisesResSchema>
 

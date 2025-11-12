@@ -234,3 +234,75 @@ export class RecentExercisesResponseSwaggerDTO {
     message: string
 }
 
+export class HistoryTestItemSwaggerDTO {
+    @ApiProperty({ example: 42, description: 'ID của lần attempt' })
+    attemptId: number
+
+    @ApiProperty({ example: 5, description: 'ID của bài test' })
+    testId: number
+
+    @ApiPropertyOptional({ example: 'Kiểm tra từ vựng N3', description: 'Tên bài test' })
+    testName?: string | null
+
+    @ApiProperty({ example: 'COMPLETED', description: 'Trạng thái' })
+    status: string
+
+    @ApiPropertyOptional({ example: 80, description: 'Điểm số (%)' })
+    score?: number | null
+
+    @ApiProperty({ example: 20, description: 'Tổng số câu hỏi' })
+    totalQuestions: number
+
+    @ApiProperty({ example: 16, description: 'Số câu trả lời đúng' })
+    correctAnswers: number
+
+    @ApiProperty({ example: 4, description: 'Số câu trả lời sai' })
+    incorrectAnswers: number
+
+    @ApiProperty({ example: '2024-01-01T10:20:00.000Z', description: 'Thời gian cập nhật' })
+    updatedAt: Date
+}
+
+export class HistoryTestsResponseSwaggerDTO {
+    @ApiProperty({ example: 200, description: 'Mã trạng thái HTTP' })
+    statusCode: number
+
+    @ApiProperty({
+        type: 'object',
+        properties: {
+            results: {
+                type: 'array',
+                items: { $ref: '#/components/schemas/HistoryTestItemSwaggerDTO' }
+            },
+            allTime: {
+                type: 'number',
+                example: 3600,
+                description: 'Tổng thời gian của tất cả attempts (giây)'
+            },
+            pagination: {
+                type: 'object',
+                properties: {
+                    current: { type: 'number', example: 1 },
+                    pageSize: { type: 'number', example: 10 },
+                    totalPage: { type: 'number', example: 5 },
+                    totalItem: { type: 'number', example: 50 }
+                }
+            }
+        },
+        description: 'Dữ liệu danh sách Test đã làm và phân trang'
+    })
+    data: {
+        results: HistoryTestItemSwaggerDTO[]
+        allTime: number
+        pagination: {
+            current: number
+            pageSize: number
+            totalPage: number
+            totalItem: number
+        }
+    }
+
+    @ApiProperty({ example: 'Lấy danh sách bài test gần đây thành công', description: 'Thông báo' })
+    message: string
+}
+
