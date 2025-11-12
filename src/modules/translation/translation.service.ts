@@ -76,6 +76,32 @@ export class TranslationService {
         }
     }
 
+    async findByKeyOrMeaningPrefix(key: string, languageId: number) {
+        try {
+            if (!key || key.trim() === '') {
+                this.logger.warn(`Translation key is empty or undefined: ${key}`)
+                return []
+            }
+            this.logger.log(`Finding translations by key or meaning prefix: ${key}, languageId: ${languageId}`)
+            return await this.translationRepository.findByKeyOrMeaningPrefix(key, languageId)
+        } catch (error) {
+            this.logger.error('Error finding translation by key or meaning prefix:', error)
+            throw error
+        }
+    }
+
+    async resolvePreferredTranslationValue(key: string, languageId: number): Promise<string | null> {
+        const translations = await this.findByKeyOrMeaningPrefix(key, languageId)
+        if (!translations.length) {
+            return null
+        }
+
+        const meaningTranslation = translations.find(t => t.key.startsWith(`${key}.meaning.`))
+        const directTranslation = translations.find(t => t.key === key)
+
+        return meaningTranslation?.value || directTranslation?.value || null
+    }
+
     async findByKey(params: GetTranslationsByKeyQueryType) {
         try {
             this.logger.log(`Finding translations by key: ${params.key}`)

@@ -724,6 +724,7 @@ export class LeaderboardSeasonService {
     const transformed = inforLeaderboardWithRewards
       ? {
           ...inforLeaderboardWithRewards,
+          nameTranslations: undefined,
           seasonRankRewards: (inforLeaderboardWithRewards as any).seasonRankRewards?.map(
             (sr: any) => ({
               ...sr,

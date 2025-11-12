@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { GetHistoryListQueryType, GetAdminHistoryListQueryType, GetRecentLessonsQueryType } from './entities/user-history.entities'
+import { GetHistoryListQueryType, GetAdminHistoryListQueryType, GetRecentExercisesQueryType } from './entities/user-history.entities'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
-import { TestAttemptStatus, ExerciseAttemptStatus, ProgressStatus } from '@prisma/client'
+import { TestAttemptStatus, ExerciseAttemptStatus } from '@prisma/client'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserHistoryMessage } from '@/i18n/message-keys'
 import { TranslationService } from '@/modules/translation/translation.service'
 import { LanguagesService } from '@/modules/languages/languages.service'
+import { UserHistoryRepository } from './user-history.repo'
 
 @Injectable()
 export class UserHistoryService {
@@ -14,6 +15,7 @@ export class UserHistoryService {
 
     constructor(
         private readonly prisma: PrismaService,
+        private readonly userHistoryRepository: UserHistoryRepository,
         private readonly i18nService: I18nService,
         private readonly translationService: TranslationService,
         private readonly languagesService: LanguagesService
@@ -485,15 +487,14 @@ export class UserHistoryService {
         }
     }
 
-    async findRecentLessons(userId: number, query: GetRecentLessonsQueryType, language?: string): Promise<MessageResDTO> {
+    async findRecentExercises(userId: number, query: GetRecentExercisesQueryType, language?: string): Promise<MessageResDTO> {
         try {
-            this.logger.log(`Finding recent lessons for user ${userId}, status: ${query.status || 'ALL'}`)
+            this.logger.log(`Finding recent exercises for user ${userId}, status: ${'ALL'}`)
 
             const { currentPage = 1, pageSize = 10, status } = query
             const skip = (currentPage - 1) * pageSize
             const normalizedLang = (language || '').toLowerCase().split('-')[0] || 'vi'
 
-            // Lấy languageId
             let languageId: number | undefined
             try {
                 const languageRecord = await this.languagesService.findByCode({ code: normalizedLang })
@@ -502,216 +503,138 @@ export class UserHistoryService {
                 this.logger.warn(`Failed to find language for code ${normalizedLang}:`, error)
             }
 
-            // Build where clause cho UserProgress
-            const progressWhere: any = {
+            // Nếu có status filter, query với filter đó
+            // Nếu không có status filter, query tất cả để có thể ưu tiên COMPLETED
+            const exerciseAttempts = await this.userHistoryRepository.findRecentExerciseAttempts({
                 userId,
-                status: {
-                    in: status ? [status as ProgressStatus] : ['IN_PROGRESS', 'COMPLETED'] as ProgressStatus[]
+                status: status as ExerciseAttemptStatus | undefined
+            })
+
+            // Group attempts theo exerciseId
+            const attemptsByExerciseId = new Map<number, typeof exerciseAttempts>()
+
+            for (const attempt of exerciseAttempts) {
+                if (!attempt.exerciseId) {
+                    continue
+                }
+
+                if (!attemptsByExerciseId.has(attempt.exerciseId)) {
+                    attemptsByExerciseId.set(attempt.exerciseId, [])
+                }
+                attemptsByExerciseId.get(attempt.exerciseId)!.push(attempt)
+            }
+
+            // Với mỗi exerciseId, chọn attempt phù hợp
+            const uniqueAttempts: typeof exerciseAttempts = []
+
+            for (const [exerciseId, attempts] of attemptsByExerciseId.entries()) {
+                // Đảm bảo attempts trong group được sort theo updatedAt desc (mới nhất trước)
+                attempts.sort((a, b) =>
+                    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+                )
+
+                // Nếu có status filter, chỉ lấy attempts có status đó (đã được filter ở query)
+                if (status) {
+                    // Lấy attempt mới nhất trong các attempts đã được filter
+                    uniqueAttempts.push(attempts[0])
+                } else {
+                    // Không có status filter:
+                    // - Nếu lần làm mới nhất là COMPLETED, lấy nó
+                    // - Nếu lần làm mới nhất không phải COMPLETED, nhưng exercise có COMPLETED, lấy COMPLETED mới nhất
+                    // - Nếu exercise không có COMPLETED, lấy lần làm mới nhất
+                    const latestAttempt = attempts[0] // Lần làm mới nhất
+
+                    if (latestAttempt.status === 'COMPLETED') {
+                        // Lần làm mới nhất là COMPLETED, lấy nó
+                        uniqueAttempts.push(latestAttempt)
+                    } else {
+                        // Lần làm mới nhất không phải COMPLETED, kiểm tra xem có COMPLETED không
+                        const completedAttempts = attempts.filter(a => a.status === 'COMPLETED')
+
+                        if (completedAttempts.length > 0) {
+                            // Có COMPLETED, lấy COMPLETED mới nhất
+                            // completedAttempts đã được sort theo updatedAt desc từ attempts
+                            uniqueAttempts.push(completedAttempts[0])
+                        } else {
+                            // Không có COMPLETED, lấy lần làm mới nhất
+                            uniqueAttempts.push(latestAttempt)
+                        }
+                    }
                 }
             }
 
-            // Lấy UserProgress (Lessons)
-            const userProgresses = await this.prisma.userProgress.findMany({
-                where: progressWhere,
-                include: {
-                    lesson: {
-                        include: {
-                            lessonCategory: true
-                        }
-                    }
-                },
-                orderBy: {
-                    lastAccessedAt: 'desc'
-                }
-            })
-
-            // Build where clause cho UserExerciseAttempt
-            // Chỉ lấy IN_PROGRESS và COMPLETED (bỏ qua FAIL, ABANDONED, SKIPPED)
-            const exerciseStatusFilter: ExerciseAttemptStatus[] = status
-                ? [status === 'IN_PROGRESS' ? 'IN_PROGRESS' : 'COMPLETED']
-                : ['IN_PROGRESS', 'COMPLETED']
-
-            const exerciseWhere: any = {
-                userId,
-                status: {
-                    in: exerciseStatusFilter
-                }
-            }
-
-            // Lấy UserExerciseAttempt (Exercises)
-            const exerciseAttempts = await this.prisma.userExerciseAttempt.findMany({
-                where: exerciseWhere,
-                include: {
-                    exercise: {
-                        include: {
-                            testSet: true,
-                            lesson: {
-                                include: {
-                                    lessonCategory: true
-                                }
-                            }
-                        }
-                    }
-                },
-                orderBy: {
-                    updatedAt: 'desc'
-                }
-            })
-
-            // Map UserProgress to RecentLessonItem
-            const lessonItems = await Promise.all(
-                userProgresses.map(async (progress: any) => {
-                    // Lấy translation cho lesson title
-                    let lessonTitle = progress.lesson.titleJp || ''
-                    if (progress.lesson.titleKey && languageId) {
-                        try {
-                            const translation = await this.translationService.findByKeyAndLanguage(
-                                progress.lesson.titleKey,
-                                languageId
-                            )
-                            if (translation?.value) {
-                                lessonTitle = translation.value
-                            }
-                        } catch (error) {
-                            this.logger.warn(`Failed to get translation for ${progress.lesson.titleKey}:`, error)
-                        }
-                    }
-
-                    // Lấy translation cho lesson category name
-                    let categoryName = ''
-                    if (progress.lesson.lessonCategory?.nameKey && languageId) {
-                        try {
-                            const translation = await this.translationService.findByKeyAndLanguage(
-                                progress.lesson.lessonCategory.nameKey,
-                                languageId
-                            )
-                            if (translation?.value) {
-                                categoryName = translation.value
-                            }
-                        } catch (error) {
-                            this.logger.warn(`Failed to get translation for category ${progress.lesson.lessonCategory.nameKey}:`, error)
-                        }
-                    }
-
-                    return {
-                        id: progress.id,
-                        type: 'LESSON' as const,
-                        lessonId: progress.lessonId,
-                        lessonTitle,
-                        lessonSlug: progress.lesson.slug,
-                        lessonCategoryName: categoryName || progress.lesson.lessonCategory?.nameKey || '',
-                        exerciseId: null,
-                        exerciseName: null,
-                        status: progress.status,
-                        progressPercentage: progress.progressPercentage,
-                        lastAccessedAt: progress.lastAccessedAt,
-                        completedAt: progress.completedAt,
-                        updatedAt: progress.updatedAt
-                    }
-                })
+            // Sort lại theo updatedAt desc để đảm bảo thứ tự đúng
+            uniqueAttempts.sort((a, b) =>
+                new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
             )
 
-            // Map UserExerciseAttempt to RecentLessonItem
-            const exerciseItems = await Promise.all(
-                exerciseAttempts.map(async (attempt: any) => {
-                    // Lấy tên exercise từ testSet
-                    let exerciseName = 'Bài tập'
+            const total = uniqueAttempts.length
+            const paginatedAttempts = uniqueAttempts.slice(skip, skip + pageSize)
+
+            const results = await Promise.all(
+                paginatedAttempts.map(async (attempt: any) => {
+                    let exerciseName = attempt.exercise?.title || attempt.exercise?.testSet?.name || 'Bài tập'
+
                     if (attempt.exercise?.testSet) {
                         const nameKey = `testset.${attempt.exercise.testSet.id}.name`
+
                         if (languageId) {
                             try {
-                                const translation = await this.translationService.findByKeyAndLanguage(
+                                const translatedValue = await this.translationService.resolvePreferredTranslationValue(
                                     nameKey,
                                     languageId
                                 )
-                                if (translation?.value) {
-                                    exerciseName = translation.value
+
+                                if (translatedValue) {
+                                    exerciseName = translatedValue
                                 }
                             } catch (error) {
                                 this.logger.warn(`Failed to get translation for testset ${nameKey}:`, error)
                             }
                         }
-                        if (exerciseName === 'Bài tập' && attempt.exercise.testSet.name) {
+
+                        if ((!exerciseName || exerciseName === nameKey) && attempt.exercise.testSet.name) {
                             exerciseName = attempt.exercise.testSet.name
                         }
                     }
 
-                    // Lấy lesson info nếu có
+                    // Lấy lessonId và lessonTitle
+                    let lessonId: number | null = null
                     let lessonTitle: string | null = null
-                    let lessonSlug: string | null = null
-                    let categoryName: string | null = null
 
                     if (attempt.exercise?.lesson) {
-                        const lesson = attempt.exercise.lesson
-                        lessonSlug = lesson.slug
+                        lessonId = attempt.exercise.lesson.id
 
-                        if (lesson.titleKey && languageId) {
+                        if (attempt.exercise.lesson.titleKey && languageId) {
                             try {
-                                const translation = await this.translationService.findByKeyAndLanguage(
-                                    lesson.titleKey,
+                                const titleTranslation = await this.translationService.findByKeyAndLanguage(
+                                    attempt.exercise.lesson.titleKey,
                                     languageId
                                 )
-                                if (translation?.value) {
-                                    lessonTitle = translation.value
+                                if (titleTranslation?.value) {
+                                    lessonTitle = titleTranslation.value
                                 }
                             } catch (error) {
-                                this.logger.warn(`Failed to get translation for lesson ${lesson.titleKey}:`, error)
+                                this.logger.warn(`Failed to get translation for lesson ${attempt.exercise.lesson.titleKey}:`, error)
                             }
-                        }
-                        if (!lessonTitle) {
-                            lessonTitle = lesson.titleJp || null
                         }
 
-                        // Lấy category name nếu có
-                        if (lesson.lessonCategory?.nameKey && languageId) {
-                            try {
-                                const categoryTranslation = await this.translationService.findByKeyAndLanguage(
-                                    lesson.lessonCategory.nameKey,
-                                    languageId
-                                )
-                                if (categoryTranslation?.value) {
-                                    categoryName = categoryTranslation.value
-                                }
-                            } catch (error) {
-                                this.logger.warn(`Failed to get translation for category ${lesson.lessonCategory.nameKey}:`, error)
-                            }
-                        }
-                        if (!categoryName && lesson.lessonCategory?.nameKey) {
-                            categoryName = lesson.lessonCategory.nameKey
+                        // Fallback về titleJp nếu không có translation
+                        if (!lessonTitle && attempt.exercise.lesson.titleJp) {
+                            lessonTitle = attempt.exercise.lesson.titleJp
                         }
                     }
 
                     return {
-                        id: attempt.id,
-                        type: 'EXERCISE' as const,
-                        lessonId: attempt.exercise?.lessonId || null,
-                        lessonTitle,
-                        lessonSlug,
-                        lessonCategoryName: categoryName,
                         exerciseId: attempt.exerciseId,
                         exerciseName,
-                        status: attempt.status, // Đã filter ở where clause nên chỉ có IN_PROGRESS hoặc COMPLETED
-                        progressPercentage: null,
-                        lastAccessedAt: null,
-                        completedAt: attempt.status === 'COMPLETED' ? attempt.updatedAt : null,
-                        updatedAt: attempt.updatedAt
+                        lessonId,
+                        lessonTitle,
+                        status: attempt.status
                     }
                 })
             )
 
-            // Merge và sort tất cả items theo thời gian gần đây nhất
-            // Ưu tiên lastAccessedAt cho lesson, updatedAt cho exercise
-            const allItems = [...lessonItems, ...exerciseItems].sort((a, b) => {
-                const timeA = a.lastAccessedAt || a.updatedAt
-                const timeB = b.lastAccessedAt || b.updatedAt
-                return new Date(timeB).getTime() - new Date(timeA).getTime()
-            })
-
-            // Pagination
-            const total = allItems.length
-            const results = allItems.slice(skip, skip + pageSize)
-
-            // Translate message
             const message = this.i18nService.translate(
                 UserHistoryMessage.GET_LIST_SUCCESS,
                 normalizedLang
@@ -719,7 +642,7 @@ export class UserHistoryService {
 
             return {
                 statusCode: 200,
-                message: message || 'Lấy danh sách bài học gần đây thành công',
+                message: message || 'Lấy danh sách bài exercise gần đây thành công',
                 data: {
                     results,
                     pagination: {
@@ -731,7 +654,123 @@ export class UserHistoryService {
                 }
             }
         } catch (error) {
-            this.logger.error('Error finding recent lessons:', error)
+            this.logger.error('Error finding recent exercises:', error)
+            throw error
+        }
+    }
+
+    async findHistoryExercises(userId: number, query: GetRecentExercisesQueryType, language?: string): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Finding recent exercises for user ${userId}, status: ${'ALL'}`)
+
+            const { currentPage = 1, pageSize = 10, status } = query
+            const skip = (currentPage - 1) * pageSize
+            const normalizedLang = (language || '').toLowerCase().split('-')[0] || 'vi'
+
+            let languageId: number | undefined
+            try {
+                const languageRecord = await this.languagesService.findByCode({ code: normalizedLang })
+                languageId = languageRecord?.data?.id
+            } catch (error) {
+                this.logger.warn(`Failed to find language for code ${normalizedLang}:`, error)
+            }
+
+            // Query attempts với status filter nếu có
+            const exerciseAttempts = await this.userHistoryRepository.findRecentExerciseAttempts({
+                userId,
+                status: status as ExerciseAttemptStatus | undefined
+            })
+
+            // Lấy attempt mới nhất cho mỗi exerciseId (không trùng nhau)
+            const uniqueAttempts: typeof exerciseAttempts = []
+            const seenExerciseIds = new Set<number>()
+
+            for (const attempt of exerciseAttempts) {
+                if (!attempt.exerciseId) {
+                    continue
+                }
+                if (seenExerciseIds.has(attempt.exerciseId)) {
+                    continue
+                }
+                seenExerciseIds.add(attempt.exerciseId)
+                uniqueAttempts.push(attempt)
+            }
+
+            const total = uniqueAttempts.length
+            const paginatedAttempts = uniqueAttempts.slice(skip, skip + pageSize)
+
+            const results = await Promise.all(
+                paginatedAttempts.map(async (attempt: any) => {
+                    const answerLogs = await this.prisma.userAnswerLog.findMany({
+                        where: {
+                            userExerciseAttemptId: attempt.id
+                        }
+                    })
+
+                    const correctAnswers = answerLogs.filter(log => log.isCorrect).length
+                    const incorrectAnswers = answerLogs.filter(log => !log.isCorrect).length
+                    const totalQuestions = answerLogs.length
+                    const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : null
+
+                    let exerciseName = attempt.exercise?.title || attempt.exercise?.testSet?.name || 'Bài tập'
+
+                    if (attempt.exercise?.testSet) {
+                        const nameKey = `testset.${attempt.exercise.testSet.id}.name`
+
+                        if (languageId) {
+                            try {
+                                const translatedValue = await this.translationService.resolvePreferredTranslationValue(
+                                    nameKey,
+                                    languageId
+                                )
+
+                                if (translatedValue) {
+                                    exerciseName = translatedValue
+                                }
+                            } catch (error) {
+                                this.logger.warn(`Failed to get translation for testset ${nameKey}:`, error)
+                            }
+                        }
+
+                        if ((!exerciseName || exerciseName === nameKey) && attempt.exercise.testSet.name) {
+                            exerciseName = attempt.exercise.testSet.name
+                        }
+                    }
+
+                    return {
+                        attemptId: attempt.id,
+                        exerciseId: attempt.exerciseId,
+                        exerciseName,
+                        status: attempt.status,
+                        score,
+                        totalQuestions,
+                        correctAnswers,
+                        incorrectAnswers,
+                        updatedAt: attempt.updatedAt
+                    }
+                })
+            )
+
+            const message = this.i18nService.translate(
+                UserHistoryMessage.GET_LIST_SUCCESS,
+                normalizedLang
+            )
+
+            return {
+                statusCode: 200,
+                message: message || 'Lấy danh sách bài exercise gần đây thành công',
+                data: {
+                    results,
+                    pagination: {
+                        current: currentPage,
+                        pageSize,
+                        totalPage: Math.ceil(total / pageSize),
+                        totalItem: total
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error finding recent exercises:', error)
             throw error
         }
     }

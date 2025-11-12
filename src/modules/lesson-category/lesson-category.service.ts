@@ -347,18 +347,28 @@ export class LessonCategoryService {
         },
         {
           id: 4,
-          nameKey: 'category.grammar',
-          slug: 'grammar'
+          nameKey: 'category.jlpt_n2',
+          slug: 'jlpt-n2'
         },
         {
           id: 5,
-          nameKey: 'category.vocabulary',
-          slug: 'vocabulary'
+          nameKey: 'category.jlpt_n1',
+          slug: 'jlpt-n1'
         },
         {
           id: 6,
+          nameKey: 'category.reading',
+          slug: 'reading'
+        },
+        {
+          id: 7,
           nameKey: 'category.listening',
           slug: 'listening'
+        },
+        {
+          id: 8,
+          nameKey: 'category.speaking',
+          slug: 'speaking'
         }
       ]
 
@@ -375,17 +385,26 @@ export class LessonCategoryService {
         { key: 'category.jlpt_n3', languageId: 1, value: 'Trình độ JLPT N3' },
         { key: 'category.jlpt_n3', languageId: 2, value: 'JLPT N3 Level' },
 
-        // Grammar
-        { key: 'category.grammar', languageId: 1, value: 'Ngữ pháp' },
-        { key: 'category.grammar', languageId: 2, value: 'Grammar' },
+        // JLPT N2
+        { key: 'category.jlpt_n2', languageId: 1, value: 'Trình độ JLPT N2' },
+        { key: 'category.jlpt_n2', languageId: 2, value: 'JLPT N2 Level' },
 
-        // Vocabulary
-        { key: 'category.vocabulary', languageId: 1, value: 'Từ vựng' },
-        { key: 'category.vocabulary', languageId: 2, value: 'Vocabulary' },
+        // JLPT N1
+        { key: 'category.jlpt_n1', languageId: 1, value: 'Trình độ JLPT N1' },
+        { key: 'category.jlpt_n1', languageId: 2, value: 'JLPT N1 Level' },
+
+        // Reading
+        { key: 'category.reading', languageId: 1, value: 'Luyện đọc' },
+        { key: 'category.reading', languageId: 2, value: 'Reading Practice' },
 
         // Listening
         { key: 'category.listening', languageId: 1, value: 'Luyện nghe' },
-        { key: 'category.listening', languageId: 2, value: 'Listening Practice' }
+        { key: 'category.listening', languageId: 2, value: 'Listening Practice' },
+
+        // Speaking
+        { key: 'category.speaking', languageId: 1, value: 'Luyện nói' },
+        { key: 'category.speaking', languageId: 2, value: 'Speaking Practice' },
+
       ]
 
       const results: any[] = []
