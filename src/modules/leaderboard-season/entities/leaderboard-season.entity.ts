@@ -95,9 +95,14 @@ export const GetLeaderboardSeasonDetailWithAllLangResSchema = z.object({
   message: z.string()
 })
 
-export const GetLeaderboardWithRewardSeasonDetailSchema = LeaderboardSeasonSchema.extend({
+export const GetLeaderboardWithRewardSeasonDetailSchema = LeaderboardSeasonSchema.pick({
+  id: true,
+  startDate: true,
+  endDate: true,
+  status: true
+}).extend({
   nameTranslation: z.string().nullable().optional(),
-  nameTranslations: TranslationInputSchema.optional().nullable(),
+  nameTranslations: TranslationInputSchema.nullable().optional(),
   seasonRankRewards: z.array(
     SeasonRankRewardSchema.pick({ id: true, rankName: true, order: true })
       .extend({
