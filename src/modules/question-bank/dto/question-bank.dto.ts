@@ -207,6 +207,16 @@ export class QuestionBankListResponseSwaggerDTO {
                     totalPage: { type: 'number', example: 5 },
                     totalItem: { type: 'number', example: 50 }
                 }
+            },
+            levelCounts: {
+                type: 'object',
+                properties: {
+                    N5: { type: 'number', example: 100, description: 'Tổng số câu hỏi N5' },
+                    N4: { type: 'number', example: 150, description: 'Tổng số câu hỏi N4' },
+                    N3: { type: 'number', example: 200, description: 'Tổng số câu hỏi N3' },
+                    N2: { type: 'number', example: 180, description: 'Tổng số câu hỏi N2' },
+                    N1: { type: 'number', example: 120, description: 'Tổng số câu hỏi N1' }
+                }
             }
         }
     })
@@ -217,6 +227,13 @@ export class QuestionBankListResponseSwaggerDTO {
             pageSize: number
             totalPage: number
             totalItem: number
+        }
+        levelCounts: {
+            N5: number
+            N4: number
+            N3: number
+            N2: number
+            N1: number
         }
     }
 
