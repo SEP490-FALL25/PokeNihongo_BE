@@ -133,7 +133,7 @@ export const GetLeaderboardSeasonDetailResSchema = z.object({
   statusCode: z.number(),
   data: LeaderboardSeasonSchema.extend({
     nameTranslation: z.string().nullable().optional(),
-    nameTranslations: TranslationInputSchema.optional().nullable()
+    nameTranslations: TranslationInputSchema.nullable().optional()
   }),
   message: z.string()
 })

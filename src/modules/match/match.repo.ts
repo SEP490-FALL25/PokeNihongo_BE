@@ -298,39 +298,75 @@ export class MatchRepo {
       }
     })
   }
-  getMatchesHistoryByUser(userId: number, langId?: number): Promise<MatchType[]> {
-    return this.prismaService.match.findMany({
-      where: {
-        participants: {
-          some: { userId }
-        },
-        status: 'COMPLETED',
-        deletedAt: null
+  // Nếu pagination được truyền vào sẽ trả về cấu trúc paginated { results, pagination }
+  // Ngược lại trả về mảng đầy đủ như trước để không phá vỡ các caller hiện tại.
+  async getMatchesHistoryByUser(
+    userId: number,
+    langId?: number,
+    pagination?: PaginationQueryType
+  ): Promise<any> {
+    const baseWhere: any = {
+      participants: {
+        some: { userId }
       },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      include: {
-        participants: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                avatar: true
-              }
-            }
-          }
-        },
-        leaderboardSeason: {
-          include: {
-            nameTranslations: {
-              where: { languageId: langId },
-              select: { value: true, languageId: true }
+      status: 'COMPLETED',
+      deletedAt: null
+    }
+
+    const include = {
+      participants: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true
             }
           }
         }
+      },
+      leaderboardSeason: {
+        include: {
+          nameTranslations: {
+            where: { languageId: langId },
+            select: { value: true, languageId: true }
+          }
+        }
       }
-    })
+    }
+
+    if (!pagination) {
+      return this.prismaService.match.findMany({
+        where: baseWhere,
+        orderBy: { createdAt: 'desc' },
+        include
+      })
+    }
+
+    const currentPage = pagination.currentPage || 1
+    const pageSize = pagination.pageSize || 20
+    const skip = (currentPage - 1) * pageSize
+    const take = pageSize
+
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.match.count({ where: baseWhere }),
+      this.prismaService.match.findMany({
+        where: baseWhere,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+        include
+      })
+    ])
+
+    return {
+      results: data,
+      pagination: {
+        current: currentPage,
+        pageSize,
+        totalPage: Math.ceil(totalItems / pageSize),
+        totalItem: totalItems
+      }
+    }
   }
 }
