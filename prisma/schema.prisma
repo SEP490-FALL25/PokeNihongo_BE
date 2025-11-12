@@ -577,9 +577,6 @@ model ElementalType {
   // Quan hệ nhiều-nhiều với Pokémon
   pokemons Pokemon[]
 
-  //1-n
-  achievement Achievement[]
-
   // Quan hệ tấn công / phòng thủ
   attacking_relations TypeEffectiveness[] @relation("Attacker")
   defending_relations TypeEffectiveness[] @relation("Defender")
@@ -1139,9 +1136,7 @@ model Achievement {
   // Điều kiện để nhận
   conditionType       AchievementType // Loại điều kiện, VD: LEARNING_STREAK
   conditionValue      Int? // Giá trị cần đạt, VD: 3 (cho 3 ngày)
-  conditionElementId  Int? // Yếu tố liên quan (nếu có)
-  elementalType       ElementalType?       @relation(fields: [conditionElementId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  // Phần thưởng (nếu có)
+  conditionElementId  Int? // Yếu tố liên quan (nếu có)  // Phần thưởng (nếu có)
   rewardId            Int? // Liên kết tới bảng Reward
   reward              Reward?              @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
@@ -2044,14 +2039,8 @@ enum AchievementTierType {
 
 enum AchievementType {
   COMPLETE_LESSON // Hoàn thành bài học (value: 1 = bài đầu tiên)
-  CHOOSE_STARTER_POKEMON // Chọn Pokémon khởi đầu
   PLACEMENT_TEST_DONE // Hoàn thành bài kiểm tra đầu vào
   LEARNING_STREAK // Chuỗi ngày học (value: 3, 7, 30, 100)
-  CAPTURE_POKEMON_COUNT // Sở hữu X Pokémon (value: 10)
-  CAPTURE_TYPE_COLLECTION // Thu thập đủ Pokémon 1 hệ (meta: {"type": "GRASS"})
-  CAPTURE_ALL_POKEMON // Hoàn thành Pokédex (value: 151)
-  CAPTURE_LEGENDARY // Bắt được Pokémon huyền thoại
-  EVOLVE_POKEMON_FINAL // Tiến hóa Pokémon lên dạng cuối (meta: {"pokemon_name": "Charizard"})
 }
 
 enum TestSetStatus {

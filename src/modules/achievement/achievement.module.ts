@@ -8,6 +8,7 @@ import { AchievementService } from './achievement.service'
 @Module({
   imports: [LanguagesModule, TranslationModule],
   controllers: [AchievementController],
-  providers: [AchievementService, AchievementRepo]
+  providers: [AchievementService, AchievementRepo],
+  exports: [AchievementService, AchievementRepo]
 })
 export class AchievementModule {}

@@ -1,3 +1,4 @@
+import { UserAchievementStatus } from '@/common/constants/achievement.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserAchievementMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
@@ -6,7 +7,11 @@ import {
   isNotFoundPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
+import { AchievementGroupRepo } from '../achievement-group/achievement-group.repo'
+import { AchievementRepo } from '../achievement/achievement.repo'
+import { LanguagesRepository } from '../languages/languages.repo'
 import { UserAchievementNotFoundException } from './dto/user-achievement.error'
 import {
   CreateUserAchievementBodyType,
@@ -18,7 +23,10 @@ import { UserAchievementRepo } from './user-achievement.repo'
 export class UserAchievementService {
   constructor(
     private userAchievementRepo: UserAchievementRepo,
-
+    private achievementGroupRepo: AchievementGroupRepo,
+    private achievementRepo: AchievementRepo,
+    private readonly languageRepo: LanguagesRepository,
+    private readonly prismaService: PrismaService,
     private readonly i18nService: I18nService
   ) {}
 
@@ -125,6 +133,179 @@ export class UserAchievementService {
         throw new UserAchievementNotFoundException()
       }
       throw error
+    }
+  }
+
+  async getListAchieveforUser(
+    userId: number,
+    lang: string = 'vi',
+    pagination: PaginationQueryType,
+    achCurrentPage?: number,
+    achPageSize?: number,
+    achievementGroupId?: number
+  ) {
+    // 1. Resolve language id
+    const langId = await this.languageRepo.getIdByCode(lang)
+
+    // 2. Fetch paginated achievement groups (non-admin view)
+    // NOTE: even when achievementGroupId is provided we still return the groups list
+    // and only apply achievementGroupId to which group's achievements are paginated by
+    // the provided achCurrentPage/achPageSize. This prevents losing other groups.
+    const groupsPage: any = await this.achievementGroupRepo.list(
+      pagination,
+      langId ?? undefined,
+      false
+    )
+
+    const groupIds = (groupsPage.results || []).map((g: any) => g.id)
+    if (groupIds.length === 0) {
+      return {
+        statusCode: 200,
+        data: groupsPage,
+        message: this.i18nService.translate(UserAchievementMessage.GET_LIST_SUCCESS, lang)
+      }
+    }
+
+    // 3. Fetch achievements for these groups (only active ones for user)
+    // If achPagination is provided, paginate achievements *per group*; otherwise use default per-group pagination.
+    let achievements: any[] = []
+    const perGroupAchievementCounts: Map<number, number> = new Map()
+
+    const defaultPageSize = 3
+    const achSkip = achCurrentPage && achPageSize ? (achCurrentPage - 1) * achPageSize : 0
+    const achTake = achCurrentPage && achPageSize ? achPageSize : defaultPageSize
+
+    const perGroupPromises = (groupsPage.results || []).map(async (g: any) => {
+      // decide whether this group should use the provided achCurrentPage/achPageSize
+      const isTargetGroup = achievementGroupId ? achievementGroupId === g.id : true
+
+      // when achCurrentPage/achPageSize are provided, only apply them to the target group(s)
+      const skip = achCurrentPage && achPageSize && isTargetGroup ? achSkip : 0
+      const take =
+        achCurrentPage && achPageSize && isTargetGroup ? achTake : defaultPageSize
+
+      const [count, rows] = await Promise.all([
+        this.prismaService.achievement.count({
+          where: { groupId: g.id, deletedAt: null, isActive: true }
+        }),
+        this.prismaService.achievement.findMany({
+          where: { groupId: g.id, deletedAt: null, isActive: true },
+          include: { nameTranslations: { select: { value: true, languageId: true } } },
+          orderBy: [{ achievementTierType: 'asc' }, { id: 'asc' }],
+          skip,
+          take
+        })
+      ])
+      perGroupAchievementCounts.set(g.id, count)
+      return { groupId: g.id, rows }
+    })
+
+    const perGroupResults = await Promise.all(perGroupPromises)
+    perGroupResults.forEach((r) => {
+      achievements.push(...r.rows)
+    })
+
+    const achievementIds = achievements.map((a: any) => a.id)
+
+    // 4. Fetch existing userAchievement for this user and these achievements
+    const existingUserAchievements = achievementIds.length
+      ? await this.prismaService.userAchievement.findMany({
+          where: { userId, achievementId: { in: achievementIds }, deletedAt: null }
+        })
+      : []
+
+    const existingMap = new Map<number, any>()
+    existingUserAchievements.forEach((ua: any) => existingMap.set(ua.achievementId, ua))
+
+    // 5. Create missing userAchievement records (only for active achievements we fetched)
+    const missingAchievementIds = achievementIds.filter((id) => !existingMap.has(id))
+    if (missingAchievementIds.length > 0) {
+      await this.userAchievementRepo.withTransaction(async (tx) => {
+        const creates = missingAchievementIds.map((aid) =>
+          this.userAchievementRepo.create(
+            {
+              createdById: userId,
+              data: {
+                userId,
+                achievementId: aid,
+                status: UserAchievementStatus.IN_PROGRESS
+              }
+            },
+            tx
+          )
+        )
+        const created = await Promise.all(creates)
+        created.forEach((c: any) => existingMap.set(c.achievementId, c))
+      })
+    }
+
+    // 6. Group achievements by groupId for attaching to group results
+    const achByGroup = new Map<number, any[]>()
+    for (const a of achievements) {
+      const arr = achByGroup.get(a.groupId) || []
+      arr.push(a)
+      achByGroup.set(a.groupId, arr)
+    }
+
+    // 7. Build final grouped results: for each group include achievements and userAchievement
+    //    - strip raw translation arrays from groups and achievements to keep payload light
+    const results = (groupsPage.results || []).map((g: any) => {
+      const { nameTranslations: _nt, ...groupWithoutTranslations } = g
+  const groupAchList = achByGroup.get(g.id) || []
+      const achs = groupAchList.map((a: any) => {
+        const nameTranslation = langId
+          ? (a.nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
+            a.nameKey)
+          : undefined
+        const ua = existingMap.get(a.id) || null
+        const { nameTranslations: _ant, ...achievementWithoutTranslations } = a
+        return {
+          ...achievementWithoutTranslations,
+          nameTranslation,
+          userAchievement: ua
+        }
+      })
+
+      // build achievements pagination info per-group
+      const isTargetGroup = achievementGroupId ? achievementGroupId === g.id : true
+      const achPage =
+        achCurrentPage && achPageSize && isTargetGroup
+          ? {
+              current: achCurrentPage,
+              pageSize: achPageSize,
+              totalItem: perGroupAchievementCounts.get(g.id) ?? 0,
+              totalPage: Math.ceil(
+                (perGroupAchievementCounts.get(g.id) ?? 0) / achPageSize
+              )
+            }
+          : undefined
+
+      const defaultPageSize = 3
+      const totalItem = perGroupAchievementCounts.get(g.id) ?? achs.length
+      const defaultAchPage = {
+        current: 1,
+        pageSize: defaultPageSize,
+        totalItem,
+        totalPage: totalItem > 0 ? Math.ceil(totalItem / defaultPageSize) : 0
+      }
+      const finalAchPage = achPage ? achPage : defaultAchPage
+
+      return {
+        ...groupWithoutTranslations,
+        achievements: {
+          results: achs,
+          pagination: finalAchPage
+        }
+      }
+    })
+
+    return {
+      statusCode: 200,
+      data: {
+        results,
+        pagination: groupsPage.pagination
+      },
+      message: this.i18nService.translate(UserAchievementMessage.GET_LIST_SUCCESS, lang)
     }
   }
 }

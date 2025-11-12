@@ -110,7 +110,12 @@ export class AchievementService {
       } else {
         // strip raw translation arrays for non-admin consumers
         for (let i = 0; i < results.length; i++) {
-          const { nameTranslations, descriptionTranslations, conditionTextTranslations, ...rest } = results[i]
+          const {
+            nameTranslations,
+            descriptionTranslations,
+            conditionTextTranslations,
+            ...rest
+          } = results[i]
           ;(data as any).results[i] = rest
         }
       }

@@ -24,6 +24,33 @@ export class UserAchievementController {
     return this.userAchievementService.list(query, lang)
   }
 
+  @Get('user')
+  @ZodSerializerDto(PaginationResponseDTO)
+  getListAchieveforUser(
+    @Query() query: PaginationQueryDTO,
+    // optional pagination for achievements inside each group
+    @Query('achCurrentPage') achCurrentPage: string,
+    @Query('achPageSize') achPageSize: string,
+    // optional: restrict to single achievement group and paginate achievements only in that group
+    @Query('achievementGroupId') achievementGroupId: string,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    // Nếu không truyền thì mặc định achievements pagination: current=1, pageSize=3
+    const achCurrent = achCurrentPage ? Number(achCurrentPage) : 1
+    const achSize = achPageSize ? Number(achPageSize) : 3
+    const groupId = achievementGroupId ? Number(achievementGroupId) : undefined
+
+    return this.userAchievementService.getListAchieveforUser(
+      userId,
+      lang,
+      query,
+      achCurrent,
+      achSize,
+      groupId
+    )
+  }
+
   @Get(':userAchievementId')
   @ZodSerializerDto(GetUserAchievementDetailResDTO)
   findById(
