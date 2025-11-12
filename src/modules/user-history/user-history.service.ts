@@ -675,29 +675,22 @@ export class UserHistoryService {
                 this.logger.warn(`Failed to find language for code ${normalizedLang}:`, error)
             }
 
-            // Query attempts với status filter nếu có
+            // Query attempts với status filter nếu có - lấy tất cả các lần làm
             const exerciseAttempts = await this.userHistoryRepository.findRecentExerciseAttempts({
                 userId,
                 status: status as ExerciseAttemptStatus | undefined
             })
 
-            // Lấy attempt mới nhất cho mỗi exerciseId (không trùng nhau)
-            const uniqueAttempts: typeof exerciseAttempts = []
-            const seenExerciseIds = new Set<number>()
+            // Lọc bỏ attempts không có exerciseId
+            const validAttempts = exerciseAttempts.filter(attempt => attempt.exerciseId)
 
-            for (const attempt of exerciseAttempts) {
-                if (!attempt.exerciseId) {
-                    continue
-                }
-                if (seenExerciseIds.has(attempt.exerciseId)) {
-                    continue
-                }
-                seenExerciseIds.add(attempt.exerciseId)
-                uniqueAttempts.push(attempt)
-            }
+            // Tính tổng thời gian của tất cả attempts (giây)
+            const allTime = validAttempts.reduce((sum, attempt) => {
+                return sum + (attempt.time || 0)
+            }, 0)
 
-            const total = uniqueAttempts.length
-            const paginatedAttempts = uniqueAttempts.slice(skip, skip + pageSize)
+            const total = validAttempts.length
+            const paginatedAttempts = validAttempts.slice(skip, skip + pageSize)
 
             const results = await Promise.all(
                 paginatedAttempts.map(async (attempt: any) => {
@@ -761,6 +754,7 @@ export class UserHistoryService {
                 message: message || 'Lấy danh sách bài exercise gần đây thành công',
                 data: {
                     results,
+                    allTime,
                     pagination: {
                         current: currentPage,
                         pageSize,

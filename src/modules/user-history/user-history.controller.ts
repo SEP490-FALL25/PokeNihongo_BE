@@ -10,7 +10,8 @@ import {
     HistoryListResDTO,
     AdminHistoryListResDTO,
     GetRecentExercisesQueryDTO,
-    RecentExercisesResDTO
+    RecentExercisesResDTO,
+    HistoryExercisesResDTO
 } from './dto/user-history.zod-dto'
 import {
     GetHistoryListQuerySwaggerDTO,
@@ -87,7 +88,7 @@ export class UserHistoryController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Lấy danh sách bài exercise đã làm' })
     @ApiQuery({ type: GetRecentExercisesQuerySwaggerDTO })
-    @ZodSerializerDto(RecentExercisesResDTO)
+    @ZodSerializerDto(HistoryExercisesResDTO)
     async getHistoryExercises(
         @Query() query: GetRecentExercisesQueryDTO,
         @ActiveUser('userId') userId: number,

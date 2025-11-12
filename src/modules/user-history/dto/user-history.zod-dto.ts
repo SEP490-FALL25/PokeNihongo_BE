@@ -5,7 +5,9 @@ import {
     HistoryListResSchema,
     AdminHistoryListResSchema,
     GetRecentExercisesQuerySchema,
-    RecentExercisesResSchema
+    RecentExercisesResSchema,
+    HistoryExerciseItemSchema,
+    HistoryExercisesResSchema
 } from '../entities/user-history.entities'
 
 export class GetHistoryListQueryDTO extends createZodDto(GetHistoryListQuerySchema) { }
@@ -14,4 +16,4 @@ export class HistoryListResDTO extends createZodDto(HistoryListResSchema) { }
 export class AdminHistoryListResDTO extends createZodDto(AdminHistoryListResSchema) { }
 export class GetRecentExercisesQueryDTO extends createZodDto(GetRecentExercisesQuerySchema) { }
 export class RecentExercisesResDTO extends createZodDto(RecentExercisesResSchema) { }
-
+export class HistoryExercisesResDTO extends createZodDto(HistoryExercisesResSchema) { }
