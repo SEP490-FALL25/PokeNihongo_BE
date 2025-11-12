@@ -104,16 +104,18 @@ export class LeaderboardSeasonService {
     const transformed = leaderboardSeason
       ? {
           ...leaderboardSeason,
-          seasonRankRewards: (leaderboardSeason as any).seasonRankRewards?.map((sr: any) => ({
-            ...sr,
-            rewards: (sr.rewards || []).map((r: any) => ({
-              ...r,
-              nameTranslation:
-                ((r.nameTranslations || []).find((t: any) => t.languageId === langId)
-                  ?.value as string) ?? null,
-              nameTranslations: undefined
-            }))
-          }))
+          seasonRankRewards: (leaderboardSeason as any).seasonRankRewards?.map(
+            (sr: any) => ({
+              ...sr,
+              rewards: (sr.rewards || []).map((r: any) => ({
+                ...r,
+                nameTranslation:
+                  ((r.nameTranslations || []).find((t: any) => t.languageId === langId)
+                    ?.value as string) ?? null,
+                nameTranslations: undefined
+              }))
+            })
+          )
         }
       : null
 
