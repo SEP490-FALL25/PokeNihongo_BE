@@ -553,19 +553,28 @@ export class UserService {
     return streak
   }
 
-  async getMatchingHisByUserId(userId: number, lang: string) {
+  async getMatchingHisByUserId(
+    userId: number,
+    lang: string,
+    pagination?: PaginationQueryType
+  ) {
     const langId = await this.langRepo.getIdByCode(lang)
 
     if (!langId) {
       throw new NotFoundRecordException()
     }
-    const matchHis = await this.matchRepo.getMatchesHistoryByUser(userId, langId)
 
-    const convertMatchHisInfo = matchHis.map((match) => {
+    const matchHis = await this.matchRepo.getMatchesHistoryByUser(
+      userId,
+      langId,
+      pagination
+    )
+
+    const mapFn = (match: any) => {
       const currentTranslation =
         ((match as any).leaderboardSeason?.nameTranslations || []).find(
           (t: any) => t.languageId === langId
-        ).value || ''
+        )?.value || ''
 
       const opponent = (match as any).participants.find(
         (p: any) => p.userId !== userId
@@ -578,7 +587,23 @@ export class UserService {
         eloGain,
         opponent
       }
-    })
+    }
+
+    if (pagination) {
+      // paginated response
+      const results = matchHis.results.map(mapFn)
+      return {
+        statusCode: HttpStatus.OK,
+        data: {
+          results,
+          pagination: matchHis.pagination
+        },
+        message: this.i18nService.translate(ENTITY_MESSAGE.GET_LIST_SUCCESS, lang)
+      }
+    }
+
+    // legacy: full array
+    const convertMatchHisInfo = (matchHis as any).map ? (matchHis as any).map(mapFn) : []
 
     return {
       statusCode: HttpStatus.OK,
