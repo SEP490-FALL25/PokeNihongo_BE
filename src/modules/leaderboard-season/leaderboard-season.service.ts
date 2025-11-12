@@ -67,6 +67,28 @@ export class LeaderboardSeasonService {
       langId ?? undefined,
       isAdmin
     )
+
+    // Nếu là admin thì chuyển các `nameTranslations` thành chuẩn { key: code, value }
+    // Ngược lại (non-admin) thì loại bỏ hoàn toàn trường `nameTranslations` để trả payload nhẹ
+    if (data && Array.isArray((data as any).results)) {
+      const results = (data as any).results
+      if (isAdmin) {
+        await Promise.all(
+          results.map(async (item: any, idx: number) => {
+            const raw = (item as any).nameTranslations || []
+            const converted = await this.convertTranslationsToLangCodes(raw)
+            ;(data as any).results[idx] = { ...item, nameTranslations: converted }
+          })
+        )
+      } else {
+        // remove translations array for non-admin consumers
+        for (let i = 0; i < results.length; i++) {
+          const { nameTranslations, ...rest } = results[i]
+          ;(data as any).results[i] = rest
+        }
+      }
+    }
+
     return {
       data,
       message: this.i18nService.translate(LeaderboardSeasonMessage.GET_LIST_SUCCESS, lang)
@@ -101,9 +123,13 @@ export class LeaderboardSeasonService {
     )
 
     // Chuyển nameTranslations của rewards -> chỉ lấy bản dịch hiện tại (current)
+    // và loại bỏ top-level `nameTranslations` trong `transformed` để tránh trả về
+    // trường này cho người dùng non-admin (nếu cần admin sẽ được thêm lại bên dưới)
     const transformed = leaderboardSeason
       ? {
           ...leaderboardSeason,
+          // remove top-level translations to avoid leaking for non-admin
+          nameTranslations: undefined,
           seasonRankRewards: (leaderboardSeason as any).seasonRankRewards?.map(
             (sr: any) => ({
               ...sr,
