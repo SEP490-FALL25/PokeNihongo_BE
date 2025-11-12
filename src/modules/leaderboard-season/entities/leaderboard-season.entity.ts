@@ -133,7 +133,26 @@ export const GetLeaderboardSeasonDetailResSchema = z.object({
   statusCode: z.number(),
   data: LeaderboardSeasonSchema.extend({
     nameTranslation: z.string().nullable().optional(),
-    nameTranslations: TranslationInputSchema.nullable().optional()
+    nameTranslations: TranslationInputSchema.nullable().optional(),
+    seasonRankRewards: z.array(
+      SeasonRankRewardSchema.pick({ id: true, rankName: true, order: true })
+        .extend({
+          rewards: z.array(
+            RewardSchema.pick({
+              id: true,
+              rewardType: true,
+              rewardItem: true,
+              rewardTarget: true
+            })
+              .extend({
+                nameTranslation: z.string().nullable().optional(),
+                nameTranslations: TranslationInputSchema.optional().nullable()
+              })
+              .nullable()
+          )
+        })
+        .nullable()
+    )
   }),
   message: z.string()
 })
