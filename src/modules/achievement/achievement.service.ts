@@ -56,54 +56,69 @@ export class AchievementService {
 
     const data = await this.achievementRepo.list(pagination, langId ?? undefined, isAdmin)
 
-    // If admin, convert all translation arrays to language code format
-    if (isAdmin && data.results) {
-      const allLangIds = new Set<number>()
+    // Admins receive translations converted to { key: code, value } format.
+    // Non-admins should not receive bulky translation arrays to keep payload light.
+    if (data && Array.isArray(data.results)) {
+      const results = data.results
+      if (isAdmin) {
+        const allLangIds = new Set<number>()
 
-      // Collect all unique language IDs from all translation types
-      data.results.forEach((achievement: any) => {
-        ;(achievement.nameTranslations || []).forEach((t: any) =>
-          allLangIds.add(t.languageId)
-        )
-        ;(achievement.descriptionTranslations || []).forEach((t: any) =>
-          allLangIds.add(t.languageId)
-        )
-        ;(achievement.conditionTextTranslations || []).forEach((t: any) =>
-          allLangIds.add(t.languageId)
-        )
-      })
+        // Collect all unique language IDs from all translation types
+        results.forEach((achievement: any) => {
+          ;(achievement.nameTranslations || []).forEach((t: any) =>
+            allLangIds.add(t.languageId)
+          )
+          ;(achievement.descriptionTranslations || []).forEach((t: any) =>
+            allLangIds.add(t.languageId)
+          )
+          ;(achievement.conditionTextTranslations || []).forEach((t: any) =>
+            allLangIds.add(t.languageId)
+          )
+        })
 
-      const langs = await this.languageRepo.getWithListId(Array.from(allLangIds))
-      const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+        const langs = await this.languageRepo.getWithListId(Array.from(allLangIds))
+        const idToCode = new Map(langs.map((l) => [l.id, l.code]))
 
-      // Map each achievement's translations
-      data.results = data.results.map((achievement: any) => {
-        const nameTranslations = (achievement.nameTranslations || []).map((t: any) => ({
-          key: idToCode.get(t.languageId) || String(t.languageId),
-          value: t.value
-        }))
-
-        const descriptionTranslations = (achievement.descriptionTranslations || []).map(
-          (t: any) => ({
+        // Map each achievement's translations
+        data.results = results.map((achievement: any) => {
+          const nameTranslations = (achievement.nameTranslations || []).map((t: any) => ({
             key: idToCode.get(t.languageId) || String(t.languageId),
             value: t.value
-          })
-        )
+          }))
 
-        const conditionTextTranslations = (
-          achievement.conditionTextTranslations || []
-        ).map((t: any) => ({
-          key: idToCode.get(t.languageId) || String(t.languageId),
-          value: t.value
-        }))
+          const descriptionTranslations = (achievement.descriptionTranslations || []).map(
+            (t: any) => ({
+              key: idToCode.get(t.languageId) || String(t.languageId),
+              value: t.value
+            })
+          )
 
-        return {
-          ...achievement,
-          nameTranslations,
-          descriptionTranslations,
-          conditionTextTranslations
+          const conditionTextTranslations = (
+            achievement.conditionTextTranslations || []
+          ).map((t: any) => ({
+            key: idToCode.get(t.languageId) || String(t.languageId),
+            value: t.value
+          }))
+
+          return {
+            ...achievement,
+            nameTranslations,
+            descriptionTranslations,
+            conditionTextTranslations
+          }
+        })
+      } else {
+        // strip raw translation arrays for non-admin consumers
+        for (let i = 0; i < results.length; i++) {
+          const {
+            nameTranslations,
+            descriptionTranslations,
+            conditionTextTranslations,
+            ...rest
+          } = results[i]
+          ;(data as any).results[i] = rest
         }
-      })
+      }
     }
 
     return {
