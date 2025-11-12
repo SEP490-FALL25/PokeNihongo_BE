@@ -305,6 +305,9 @@ export class UserTestAttemptService {
                     )
                     this.logger.log(`Updated attempt ${userTestAttemptId} to ${newStatus} - no answers provided`)
 
+                    // Cập nhật UserProgress status thành TESTING_LAST_FAILED
+                    await this.updateUserProgressOnLessonReviewFailure(userId, attempt.testId)
+
                     return {
                         statusCode: 200,
                         message: message,
@@ -345,9 +348,13 @@ export class UserTestAttemptService {
                 )
                 this.logger.log(`Updated attempt ${userTestAttemptId} to ${newStatus} with score ${score}`)
 
-                // Nếu status là COMPLETED, cập nhật UserProgress
+                // Cập nhật UserProgress dựa trên kết quả
                 if (newStatus === 'COMPLETED') {
+                    // Nếu hoàn thành (score >= 80%), update status thành COMPLETED
                     await this.updateUserProgressOnLessonReviewCompletion(userId, attempt.testId)
+                } else if (newStatus === 'FAIL') {
+                    // Nếu fail (score < 80%), update status thành TESTING_LAST_FAILED
+                    await this.updateUserProgressOnLessonReviewFailure(userId, attempt.testId)
                 }
 
                 return {
@@ -1391,8 +1398,8 @@ export class UserTestAttemptService {
     }
 
     /**
-     * Cập nhật UserProgress khi hoàn thành LESSON_REVIEW test
-     * Tìm lesson có testId = testId của attempt, sau đó update UserProgress với testId, status và progressPercentage
+     * Cập nhật UserProgress khi hoàn thành LESSON_REVIEW test (COMPLETED)
+     * Tìm lesson có testId = testId của attempt, sau đó update UserProgress với testId, status COMPLETED
      */
     private async updateUserProgressOnLessonReviewCompletion(userId: number, testId: number) {
         try {
@@ -1445,6 +1452,50 @@ export class UserTestAttemptService {
             this.logger.log(`Completed lesson ${lesson.id} for user ${userId}`)
         } catch (error) {
             this.logger.error('Error updating UserProgress on lesson review completion:', error)
+            // Không throw error để không ảnh hưởng đến flow chính
+        }
+    }
+
+    /**
+     * Cập nhật UserProgress thành status TESTING_LAST_FAILED khi thất bại LESSON_REVIEW test (FAIL)
+     * Tìm lesson có testId = testId của attempt, sau đó update UserProgress với testId, status TESTING_LAST_FAILED
+     */
+    private async updateUserProgressOnLessonReviewFailure(userId: number, testId: number) {
+        try {
+            this.logger.log(`Updating UserProgress for user ${userId} after failing LESSON_REVIEW test ${testId}`)
+
+            // Tìm lesson có testId = testId của attempt
+            const lesson = await this.prisma.lesson.findFirst({
+                where: { testId: testId },
+                select: { id: true }
+            })
+
+            if (!lesson) {
+                this.logger.warn(`No lesson found with testId ${testId}, skipping UserProgress update`)
+                return
+            }
+
+            // Tìm UserProgress của user và lesson đó
+            const userProgress = await this.userProgressRepository.findByUserAndLesson(userId, lesson.id)
+
+            if (!userProgress) {
+                this.logger.warn(`UserProgress not found for user ${userId}, lesson ${lesson.id}, skipping update`)
+                return
+            }
+
+            // Update UserProgress với testId, status TESTING_LAST_FAILED
+            // User cần làm lại LESSON_REVIEW test
+            await this.userProgressRepository.update(
+                { id: userProgress.id },
+                {
+                    testId: testId,
+                    status: ProgressStatus.TESTING_LAST_FAILED,
+                }
+            )
+            this.logger.log(`Updated UserProgress for user ${userId}, lesson ${lesson.id} with testId ${testId}, status TESTING_LAST_FAILED`)
+
+        } catch (error) {
+            this.logger.error('Error updating UserProgress on lesson review failure:', error)
             // Không throw error để không ảnh hưởng đến flow chính
         }
     }

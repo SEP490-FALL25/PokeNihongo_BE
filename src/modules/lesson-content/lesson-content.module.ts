@@ -11,6 +11,8 @@ import { TranslationModule } from '../translation/translation.module'
 import { LanguagesModule } from '../languages/languages.module'
 import { MeaningModule } from '../meaning/meaning.module'
 import { LessonModule } from '../lesson/lesson.module'
+import { UserExerciseAttemptModule } from '../user-exercise-attempt/user-exercise-attempt.module'
+import { ExercisesModule } from '../exercises/exercises.module'
 
 @Module({
     imports: [
@@ -21,7 +23,9 @@ import { LessonModule } from '../lesson/lesson.module'
         TranslationModule,
         LanguagesModule,
         MeaningModule,
-        LessonModule
+        LessonModule,
+        UserExerciseAttemptModule,
+        ExercisesModule
     ],
     controllers: [LessonContentController],
     providers: [LessonContentService, LessonContentRepository, GrammarRepository],
