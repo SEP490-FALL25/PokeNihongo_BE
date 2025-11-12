@@ -15,7 +15,7 @@ import {
 
 @Injectable()
 export class TranslationRepository {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
   async findMany(params: {
     page: number
@@ -392,6 +392,27 @@ export class TranslationRepository {
         languageId
       }
     })
+  }
+
+  async findByKeyOrMeaningPrefix(
+    key: string,
+    languageId: number
+  ): Promise<TranslationType[]> {
+    const translations = await this.prismaService.translation.findMany({
+      where: {
+        languageId,
+        OR: [
+          { key },
+          {
+            key: {
+              startsWith: `${key}.meaning.`
+            }
+          }
+        ]
+      }
+    })
+
+    return translations.map((item) => this.transformTranslation(item))
   }
 
   private transformTranslation(translation: any): TranslationType {
