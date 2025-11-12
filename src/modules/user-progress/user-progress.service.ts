@@ -405,7 +405,7 @@ export class UserProgressService {
         }
     }
 
-    async updateProgressByLesson(userId: number, lessonId: number, progressPercentage: number, status?: string) {
+    async updateProgressByLesson(userId: number, lessonId: number, progressPercentage: number, status?: ProgressStatus) {
         try {
             this.logger.log(`Updating progress for user ${userId}, lesson ${lessonId}: ${progressPercentage}%`)
 

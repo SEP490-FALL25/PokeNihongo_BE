@@ -221,4 +221,13 @@ export class LessonRepository {
         const count = await this.prismaService.lesson.count({ where })
         return count > 0
     }
+
+    async getMaxLessonOrderByCategory(lessonCategoryId: number): Promise<number> {
+        const result = await this.prismaService.lesson.findFirst({
+            where: { lessonCategoryId },
+            orderBy: { lessonOrder: 'desc' },
+            select: { lessonOrder: true }
+        })
+        return result?.lessonOrder ?? 0
+    }
 }
