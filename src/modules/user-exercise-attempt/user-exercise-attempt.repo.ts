@@ -240,6 +240,17 @@ export class UserExerciseAttemptRepository {
         return uniqueExerciseIds
     }
 
+    async hasCompletedAttempt(userId: number, exerciseId: number): Promise<boolean> {
+        const completedAttempt = await this.prismaService.userExerciseAttempt.findFirst({
+            where: {
+                userId,
+                exerciseId,
+                status: 'COMPLETED'
+            }
+        })
+        return !!completedAttempt
+    }
+
     async findLatestByLessonAndUser(userId: number, lessonId: number): Promise<LatestExerciseAttemptType[]> {
         // Lấy tất cả exercise trong lesson
         const exercises = await this.prismaService.exercises.findMany({
