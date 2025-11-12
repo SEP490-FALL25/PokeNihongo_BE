@@ -9,16 +9,16 @@ import {
     GetAdminHistoryListQueryDTO,
     HistoryListResDTO,
     AdminHistoryListResDTO,
-    GetRecentLessonsQueryDTO,
-    RecentLessonsResDTO
+    GetRecentExercisesQueryDTO,
+    RecentExercisesResDTO
 } from './dto/user-history.zod-dto'
 import {
     GetHistoryListQuerySwaggerDTO,
     GetAdminHistoryListQuerySwaggerDTO,
     HistoryListResponseSwaggerDTO,
     AdminHistoryListResponseSwaggerDTO,
-    GetRecentLessonsQuerySwaggerDTO,
-    RecentLessonsResponseSwaggerDTO
+    GetRecentExercisesQuerySwaggerDTO,
+    RecentExercisesResponseSwaggerDTO
 } from './dto/user-history.dto'
 
 @ApiTags('User History')
@@ -64,22 +64,36 @@ export class UserHistoryController {
         return this.userHistoryService.findAllHistory(query, lang)
     }
 
-    @Get('recent-lessons')
+    @Get('recent-exercises')
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Lấy danh sách bài học gần đây (LESSON và EXERCISE)' })
-    @ApiQuery({ type: GetRecentLessonsQuerySwaggerDTO })
+    @ApiOperation({ summary: 'Lấy danh sách bài exercise gần đây (không trùng nhau)' })
+    @ApiQuery({ type: GetRecentExercisesQuerySwaggerDTO })
     @ApiResponse({
         status: 200,
-        description: 'Lấy danh sách bài học gần đây thành công',
-        type: RecentLessonsResponseSwaggerDTO
+        description: 'Lấy danh sách bài exercise gần đây thành công',
+        type: RecentExercisesResponseSwaggerDTO
     })
-    @ZodSerializerDto(RecentLessonsResDTO)
-    async getRecentLessons(
-        @Query() query: GetRecentLessonsQueryDTO,
+    @ZodSerializerDto(RecentExercisesResDTO)
+    async getRecentExercises(
+        @Query() query: GetRecentExercisesQueryDTO,
         @ActiveUser('userId') userId: number,
         @I18nLang() lang: string
     ) {
-        return this.userHistoryService.findRecentLessons(userId, query, lang)
+        return this.userHistoryService.findRecentExercises(userId, query, lang)
+    }
+
+
+    @Get('history-exercises')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Lấy danh sách bài exercise đã làm' })
+    @ApiQuery({ type: GetRecentExercisesQuerySwaggerDTO })
+    @ZodSerializerDto(RecentExercisesResDTO)
+    async getHistoryExercises(
+        @Query() query: GetRecentExercisesQueryDTO,
+        @ActiveUser('userId') userId: number,
+        @I18nLang() lang: string
+    ) {
+        return this.userHistoryService.findHistoryExercises(userId, query, lang)
     }
 }
 
