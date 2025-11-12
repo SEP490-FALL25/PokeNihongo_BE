@@ -32,14 +32,8 @@ export const AchievementSchema = z.object({
     .default(null),
   conditionType: z.enum([
     AchievementType.COMPLETE_LESSON,
-    AchievementType.CHOOSE_STARTER_POKEMON,
     AchievementType.PLACEMENT_TEST_DONE,
-    AchievementType.LEARNING_STREAK,
-    AchievementType.CAPTURE_POKEMON_COUNT,
-    AchievementType.CAPTURE_TYPE_COLLECTION,
-    AchievementType.CAPTURE_ALL_POKEMON,
-    AchievementType.CAPTURE_LEGENDARY,
-    AchievementType.EVOLVE_POKEMON_FINAL
+    AchievementType.LEARNING_STREAK
   ]),
   conditionValue: z.number().nullable(),
   conditionElementId: z.number().nullable(),

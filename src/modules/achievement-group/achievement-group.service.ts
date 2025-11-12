@@ -59,6 +59,27 @@ export class AchievementGroupService {
       langId ?? undefined,
       isAdmin
     )
+    // Nếu là admin thì chuyển các `nameTranslations` thành chuẩn { key: code, value }
+    // Ngược lại (non-admin) thì loại bỏ hoàn toàn trường `nameTranslations` để trả payload nhẹ
+    if (data && Array.isArray((data as any).results)) {
+      const results = (data as any).results
+      if (isAdmin) {
+        await Promise.all(
+          results.map(async (item: any, idx: number) => {
+            const raw = (item as any).nameTranslations || []
+            const converted = await this.convertTranslationsToLangCodes(raw)
+            ;(data as any).results[idx] = { ...item, nameTranslations: converted }
+          })
+        )
+      } else {
+        // remove translations array for non-admin consumers
+        for (let i = 0; i < results.length; i++) {
+          const { nameTranslations, ...rest } = results[i]
+          ;(data as any).results[i] = rest
+        }
+      }
+    }
+
     return {
       data,
       message: this.i18nService.translate(AchievementGroupMessage.GET_LIST_SUCCESS, lang)

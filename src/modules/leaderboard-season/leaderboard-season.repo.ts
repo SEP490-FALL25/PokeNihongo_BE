@@ -232,7 +232,29 @@ export class LeaderboardSeasonRepo {
       include: {
         nameTranslations: isAllLang
           ? { select: { value: true, languageId: true } }
-          : { where: { languageId: langId }, select: { value: true, languageId: true } }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } },
+        seasonRankRewards: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            rankName: true,
+            order: true,
+            rewards: {
+              select: {
+                id: true,
+                rewardType: true,
+                rewardItem: true,
+                rewardTarget: true,
+                nameTranslations: isAllLang
+                  ? { select: { value: true, languageId: true } }
+                  : {
+                      where: { languageId: langId },
+                      select: { value: true, languageId: true }
+                    }
+              }
+            }
+          }
+        }
       }
     })
   }
