@@ -103,11 +103,6 @@ export class UserHistoryController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Lấy danh sách bài test đã làm' })
     @ApiQuery({ type: GetRecentExercisesQuerySwaggerDTO })
-    @ApiResponse({
-        status: 200,
-        description: 'Lấy danh sách bài test đã làm thành công',
-        type: HistoryTestsResponseSwaggerDTO
-    })
     @ZodSerializerDto(HistoryTestsResDTO)
     async getHistoryTests(
         @Query() query: GetRecentExercisesQueryDTO,
