@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { GetHistoryListQueryType, GetAdminHistoryListQueryType, GetRecentExercisesQueryType } from './entities/user-history.entities'
+import { GetHistoryListQueryType, GetAdminHistoryListQueryType, GetRecentExercisesQueryType, HistoryTestsResType } from './entities/user-history.entities'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { TestAttemptStatus, ExerciseAttemptStatus } from '@prisma/client'
 import { I18nService } from '@/i18n/i18n.service'
@@ -765,6 +765,114 @@ export class UserHistoryService {
             }
         } catch (error) {
             this.logger.error('Error finding recent exercises:', error)
+            throw error
+        }
+    }
+
+    async findHistoryTests(userId: number, query: GetRecentExercisesQueryType, language?: string): Promise<MessageResDTO> {
+        try {
+            this.logger.log(`Finding history tests for user ${userId}, status: ${'ALL'}`)
+
+            const { currentPage = 1, pageSize = 10, status } = query
+            const skip = (currentPage - 1) * pageSize
+            const normalizedLang = (language || '').toLowerCase().split('-')[0] || 'vi'
+
+            let languageId: number | undefined
+            try {
+                const languageRecord = await this.languagesService.findByCode({ code: normalizedLang })
+                languageId = languageRecord?.data?.id
+            } catch (error) {
+                this.logger.warn(`Failed to find language for code ${normalizedLang}:`, error)
+            }
+
+            // Query attempts với status filter nếu có - lấy tất cả các lần làm
+            const testAttempts = await this.userHistoryRepository.findRecentTestAttempts({
+                userId,
+                status: status as TestAttemptStatus | undefined
+            })
+
+            // Lọc bỏ attempts không có testId
+            const validAttempts = testAttempts.filter(attempt => attempt.testId)
+
+            // Tính tổng thời gian của tất cả attempts (giây)
+            const allTime = validAttempts.reduce((sum, attempt) => {
+                return sum + (attempt.time || 0)
+            }, 0)
+
+            const total = validAttempts.length
+            const paginatedAttempts = validAttempts.slice(skip, skip + pageSize)
+
+            const results = await Promise.all(
+                paginatedAttempts.map(async (attempt: any) => {
+                    const answerLogs = await this.prisma.userTestAnswerLog.findMany({
+                        where: {
+                            userTestAttemptId: attempt.id
+                        }
+                    })
+
+                    const correctAnswers = answerLogs.filter(log => log.isCorrect).length
+                    const incorrectAnswers = answerLogs.filter(log => !log.isCorrect).length
+                    const totalQuestions = answerLogs.length
+                    const score = attempt.score ? Number(attempt.score) : (totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : null)
+
+                    let testName = attempt.test?.name || ''
+
+                    if (attempt.test && languageId) {
+                        const nameKey = `test.${attempt.test.id}.name`
+                        try {
+                            const translatedValue = await this.translationService.resolvePreferredTranslationValue(
+                                nameKey,
+                                languageId
+                            )
+
+                            if (translatedValue) {
+                                testName = translatedValue
+                            }
+                        } catch (error) {
+                            this.logger.warn(`Failed to get translation for test ${nameKey}:`, error)
+                        }
+                    }
+
+                    // Fallback về tên gốc nếu không có translation
+                    if (!testName && attempt.test?.name) {
+                        testName = attempt.test.name
+                    }
+
+                    return {
+                        attemptId: attempt.id,
+                        testId: attempt.testId,
+                        testName,
+                        status: attempt.status,
+                        score,
+                        totalQuestions,
+                        correctAnswers,
+                        incorrectAnswers,
+                        updatedAt: attempt.updatedAt
+                    }
+                })
+            )
+
+            const message = this.i18nService.translate(
+                UserHistoryMessage.GET_LIST_SUCCESS,
+                normalizedLang
+            )
+
+            return {
+                statusCode: 200,
+                message: message || 'Lấy danh sách bài test gần đây thành công',
+                data: {
+                    results,
+                    allTime,
+                    pagination: {
+                        current: currentPage,
+                        pageSize,
+                        totalPage: Math.ceil(total / pageSize),
+                        totalItem: total
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error finding history tests:', error)
             throw error
         }
     }
