@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { ExerciseAttemptStatus } from '@prisma/client'
+import { ExerciseAttemptStatus, TestAttemptStatus } from '@prisma/client'
 
 @Injectable()
 export class UserHistoryRepository {
@@ -26,6 +26,28 @@ export class UserHistoryRepository {
                         lesson: true
                     }
                 }
+            },
+            orderBy: {
+                updatedAt: 'desc'
+            }
+        })
+    }
+
+    async findRecentTestAttempts(params: {
+        userId: number
+        status?: TestAttemptStatus
+    }) {
+        const { userId, status } = params
+
+        const testWhere: any = { userId }
+        if (status) {
+            testWhere.status = status
+        }
+
+        return this.prisma.userTestAttempt.findMany({
+            where: testWhere,
+            include: {
+                test: true
             },
             orderBy: {
                 updatedAt: 'desc'
