@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
+import { AchievementType } from '../achievement/entities/achievement.entity'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import {
   ACHIEVEMENT_GROUP_FIELDS,
@@ -224,7 +225,7 @@ export class AchievementGroupRepo {
     id: number,
     isAllLang: boolean,
     langId: number
-  ): Promise<AchievementGroupType | null> {
+  ): Promise<(AchievementGroupType & { achievements: AchievementType[] }) | null> {
     return this.prismaService.achievementGroup.findUnique({
       where: {
         id,
@@ -235,7 +236,29 @@ export class AchievementGroupRepo {
       include: {
         nameTranslations: isAllLang
           ? { select: { value: true, languageId: true } }
-          : { where: { languageId: langId }, select: { value: true, languageId: true } }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } },
+        achievements: {
+          include: {
+            nameTranslations: isAllLang
+              ? { select: { value: true, languageId: true } }
+              : {
+                  where: { languageId: langId },
+                  select: { value: true, languageId: true }
+                },
+            descriptionTranslations: isAllLang
+              ? { select: { value: true, languageId: true } }
+              : {
+                  where: { languageId: langId },
+                  select: { value: true, languageId: true }
+                },
+            conditionTextTranslations: isAllLang
+              ? { select: { value: true, languageId: true } }
+              : {
+                  where: { languageId: langId },
+                  select: { value: true, languageId: true }
+                }
+          }
+        }
       }
     })
   }

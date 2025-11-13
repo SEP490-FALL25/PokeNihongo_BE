@@ -125,9 +125,58 @@ export class AchievementGroupService {
       ...(isAdmin ? { nameTranslations } : {})
     }
 
+    // Map achievements: keep only current language translation and reward (with current translation).
+    const achievements = await Promise.all(
+      (achievementGroup.achievements || []).map(async (a: any) => {
+        const nameTranslationsConverted = await this.convertTranslationsToLangCodes(
+          a.nameTranslations || []
+        )
+        const descriptionTranslationsConverted =
+          await this.convertTranslationsToLangCodes(a.descriptionTranslations || [])
+        const conditionTextTranslationsConverted =
+          await this.convertTranslationsToLangCodes(a.conditionTextTranslations || [])
+
+        const nameTranslation =
+          (a.nameTranslations || []).find((t: any) => t.languageId === langId)?.value ??
+          null
+        const descriptionTranslation =
+          (a.descriptionTranslations || []).find((t: any) => t.languageId === langId)
+            ?.value ?? null
+        const conditionTextTranslation =
+          (a.conditionTextTranslations || []).find((t: any) => t.languageId === langId)
+            ?.value ?? null
+
+        const {
+          nameTranslations: _nt,
+          descriptionTranslations: _dt,
+          conditionTextTranslations: _ct,
+          ...achievementWithoutTranslations
+        } = a
+        if (isAdmin) {
+          return {
+            ...achievementWithoutTranslations,
+            nameTranslation,
+            descriptionTranslation,
+            conditionTextTranslation,
+            nameTranslations: nameTranslationsConverted,
+            descriptionTranslations: descriptionTranslationsConverted,
+            conditionTextTranslations: conditionTextTranslationsConverted
+          }
+        }
+
+        // non-admin: strip translation fields entirely
+        return {
+          ...achievementWithoutTranslations
+        }
+      })
+    )
+
     return {
       statusCode: HttpStatus.OK,
-      data: result,
+      data: {
+        ...result,
+        achievements: achievements
+      },
       message: this.i18nService.translate(AchievementGroupMessage.GET_SUCCESS, lang)
     }
   }

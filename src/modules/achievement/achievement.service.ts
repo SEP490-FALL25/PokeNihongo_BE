@@ -165,6 +165,25 @@ export class AchievementService {
       (achievement as any).conditionTextTranslations || []
     ).find((t: any) => t.languageId === langId)
 
+    // Map reward (include current language translation, and full translations for admin)
+    let rewardResult: any = null
+    if ((achievement as any).reward) {
+      const reward = (achievement as any).reward
+
+      const rewardNameTranslations = await this.convertTranslationsToLangCodes(
+        (reward as any).nameTranslations || []
+      )
+      const currentRewardName = ((reward as any).nameTranslations || []).find(
+        (t: any) => t.languageId === langId
+      )
+      const { nameTranslations: _rnt, ...rewardWithoutTranslations } = reward as any
+      rewardResult = {
+        ...rewardWithoutTranslations,
+        nameTranslation: currentRewardName?.value ?? null,
+        ...(isAdmin ? { nameTranslations: rewardNameTranslations } : {})
+      }
+    }
+
     // Remove raw translation arrays from response
     const {
       nameTranslations: _,
@@ -178,6 +197,7 @@ export class AchievementService {
       nameTranslation: currentNameTranslation?.value ?? null,
       descriptionTranslation: currentDescriptionTranslation?.value ?? null,
       conditionTextTranslation: currentConditionTextTranslation?.value ?? null,
+      reward: rewardResult,
       ...(isAdmin
         ? {
             nameTranslations,
