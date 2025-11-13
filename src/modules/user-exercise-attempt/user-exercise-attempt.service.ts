@@ -19,6 +19,8 @@ import { QuestionBankService } from '@/modules/question-bank/question-bank.servi
 import { UserAnswerLogService } from '@/modules/user-answer-log/user-answer-log.service'
 import { UserProgressService } from '@/modules/user-progress/user-progress.service'
 import { ExercisesService } from '@/modules/exercises/exercises.service'
+import { ExercisesRepository } from '@/modules/exercises/exercises.repo'
+import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { isNotFoundPrismaError } from '@/shared/helpers'
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
@@ -38,6 +40,8 @@ export class UserExerciseAttemptService {
         private readonly userAnswerLogService: UserAnswerLogService,
         private readonly userProgressService: UserProgressService,
         private readonly exercisesService: ExercisesService,
+        private readonly exercisesRepository: ExercisesRepository,
+        private readonly sharedUserRepository: SharedUserRepository,
         private readonly translationHelper: TranslationHelperService,
         private readonly i18nService: I18nService
     ) { }
@@ -49,15 +53,25 @@ export class UserExerciseAttemptService {
             if (!exercise) {
                 throw ExerciseNotFoundException
             }
-
+            // 2. Lấy thông tin lesson
             const targetLessonId = exercise.lessonId
 
-            // 2. Kiểm tra xem user có đang có lesson IN_PROGRESS không
+            // 2. Kiểm tra levelJLPT: nếu user level cao hơn lesson level thì không chặn
+            const user = await this.sharedUserRepository.findUnique({ id: userId })
+            const userLevelJLPT = user?.levelJLPT ?? null
+            const lessonLevelJlpt = await this.exercisesRepository.getLessonLevelJlpt(targetLessonId)
+
+            // Nếu user levelJLPT < lesson levelJlpt (user level cao hơn) thì không chặn
+            // Ví dụ: user N4 (4) < lesson N5 (5) → không chặn
+            // Ví dụ: user N5 (5) = lesson N5 (5) → chặn (nếu không đáp ứng điều kiện khác)
+            const shouldSkipBlocking = userLevelJLPT !== null && lessonLevelJlpt !== null && userLevelJLPT < lessonLevelJlpt
+
+            // 3. Kiểm tra xem user có đang có lesson IN_PROGRESS không
             const currentInProgressLesson = await this.userProgressService.getCurrentInProgressLesson(userId)
-            if (currentInProgressLesson) {
-                // 3. Nếu có lesson IN_PROGRESS, kiểm tra xem có phải lesson target không
+            if (currentInProgressLesson && !shouldSkipBlocking) {
+                // 4. Nếu có lesson IN_PROGRESS, kiểm tra xem có phải lesson target không
                 if (currentInProgressLesson.lessonId !== targetLessonId) {
-                    // 4. Nếu không phải lesson target, kiểm tra xem lesson target có COMPLETED không
+                    // 5. Nếu không phải lesson target, kiểm tra xem lesson target có COMPLETED không
                     const targetLessonProgress = await this.userProgressService.getUserProgressByLesson(userId, targetLessonId)
                     if (!targetLessonProgress || targetLessonProgress.status !== 'COMPLETED') {
                         throw LessonBlockedException
