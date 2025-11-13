@@ -13,8 +13,8 @@ export class UserExerciseAttemptSwaggerDTO {
 
     @ApiProperty({
         example: 'IN_PROGRESS',
-        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
-        enum: ['IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED']
+        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAILED (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'FAILED', 'ABANDONED']
     })
     status: string
 
@@ -37,8 +37,8 @@ export class TimeSwaggerDTO {
 export class UpdateUserExerciseAttemptSwaggerDTO {
     @ApiProperty({
         example: 'COMPLETED',
-        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
-        enum: ['IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED'],
+        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAILED (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'FAILED', 'ABANDONED'],
         required: false
     })
     status?: string
@@ -112,7 +112,7 @@ export class GetUserExerciseAttemptListQuerySwaggerDTO {
     @ApiProperty({
         example: 'IN_PROGRESS',
         description: 'Lọc theo trạng thái: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
-        enum: ['IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED'],
+        enum: ['IN_PROGRESS', 'COMPLETED', 'FAILED', 'ABANDONED'],
         required: false
     })
     status?: string
@@ -145,7 +145,7 @@ export class ExerciseCompletionStatusSwaggerDTO {
     @ApiProperty({
         example: 'COMPLETED',
         description: 'Trạng thái hiện tại của attempt',
-        enum: ['IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED']
+        enum: ['IN_PROGRESS', 'COMPLETED', 'FAILED', 'ABANDONED']
     })
     status: string
 }
@@ -176,8 +176,8 @@ export class LatestExerciseAttemptSwaggerDTO {
 
     @ApiProperty({
         example: 'COMPLETED',
-        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
-        enum: ['IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED']
+        description: 'Trạng thái làm bài: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAILED (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
+        enum: ['IN_PROGRESS', 'COMPLETED', 'FAILED', 'ABANDONED']
     })
     status: string
 

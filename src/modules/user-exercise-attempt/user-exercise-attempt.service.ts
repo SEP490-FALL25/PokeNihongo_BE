@@ -227,7 +227,7 @@ export class UserExerciseAttemptService {
             const allCorrect = userAnswers.every(log => log.isCorrect)
 
             // 7. Chỉ trả kết quả, KHÔNG cập nhật DB trong hàm check
-            const finalStatus = allCorrect ? 'COMPLETED' : 'FAIL'
+            const finalStatus = allCorrect ? 'COMPLETED' : 'FAILED'
             const message = allCorrect
                 ? 'Chúc mừng! Bạn đã hoàn thành bài tập và trả lời đúng hết'
                 : 'Bạn đã hoàn thành bài tập nhưng có một số câu trả lời sai'
@@ -282,9 +282,9 @@ export class UserExerciseAttemptService {
             const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
             const unansweredQuestions = allQuestions.filter(q => !answeredQuestionIds.has(q.id))
 
-            // Nếu không có câu trả lời nào mà vẫn nộp bài, coi như FAIL
+            // Nếu không có câu trả lời nào mà vẫn nộp bài, coi như FAILED
             if (userAnswers.length === 0) {
-                const newStatus = 'FAIL'
+                const newStatus = 'FAILED'
                 const message = 'Bạn đã nộp bài nhưng chưa trả lời câu hỏi nào'
 
                 await this.userExerciseAttemptRepository.update(
@@ -311,9 +311,9 @@ export class UserExerciseAttemptService {
                 }
             }
 
-            // Nếu chưa trả lời hết, coi như FAIL
+            // Nếu chưa trả lời hết, coi như FAILED
             if (unansweredQuestions.length > 0) {
-                const newStatus = 'FAIL'
+                const newStatus = 'FAILED'
                 const message = 'Bạn đã nộp bài nhưng chưa trả lời đủ câu hỏi'
 
                 await this.userExerciseAttemptRepository.update(
@@ -351,7 +351,7 @@ export class UserExerciseAttemptService {
                 newStatus = 'COMPLETED'
                 message = 'Chúc mừng! Bạn đã hoàn thành bài tập và trả lời đúng hết'
             } else {
-                newStatus = 'FAIL'
+                newStatus = 'FAILED'
                 message = 'Bạn đã hoàn thành bài tập nhưng có một số câu trả lời sai'
             }
 
@@ -366,7 +366,7 @@ export class UserExerciseAttemptService {
             if (newStatus === 'COMPLETED') {
                 // Nếu hoàn thành (không fail), update status thành IN_PROGRESS
                 await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'IN_PROGRESS')
-            } else if (newStatus === 'FAIL') {
+            } else if (newStatus === 'FAILED') {
                 // Nếu fail, update status thành FAILED
                 await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'FAILED')
             }
@@ -555,14 +555,14 @@ export class UserExerciseAttemptService {
 
             const exerciseId = baseAttempt.exerciseId
 
-            // Tìm attempt gần nhất theo thứ tự ưu tiên: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAIL
+            // Tìm attempt gần nhất theo thứ tự ưu tiên: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAILED
             const latestAttempt = await this.userExerciseAttemptRepository.findLatestByPriority(userId, exerciseId)
 
             if (!latestAttempt) {
                 throw UserExerciseAttemptNotFoundException
             }
 
-            // Nếu attempt gần nhất là SKIPPED, COMPLETED hoặc FAIL → tạo attempt mới hoàn toàn
+            // Nếu attempt gần nhất là SKIPPED, COMPLETED hoặc FAILED → tạo attempt mới hoàn toàn
             let attempt = latestAttempt
             let userExerciseAttemptId = latestAttempt.id
             let shouldLoadOldAnswers = false // Chỉ load answers cũ nếu là ABANDONED
@@ -577,12 +577,12 @@ export class UserExerciseAttemptService {
                 attempt = updatedAttempt as any
                 userExerciseAttemptId = attempt.id
                 shouldLoadOldAnswers = false
-            } else if (latestAttempt.status === 'SKIPPED' || latestAttempt.status === 'COMPLETED' || latestAttempt.status === 'FAIL') {
+            } else if (latestAttempt.status === 'SKIPPED' || latestAttempt.status === 'COMPLETED' || latestAttempt.status === 'FAILED') {
                 this.logger.log(`Latest attempt is ${latestAttempt.status}, creating new attempt for user ${userId}, exercise ${exerciseId}`)
                 const createAttempt = await this.create(userId, exerciseId)
                 attempt = createAttempt.data as any
                 userExerciseAttemptId = attempt.id
-                // Khi tạo mới từ SKIPPED/COMPLETED/FAIL, không load answers cũ
+                // Khi tạo mới từ SKIPPED/COMPLETED/FAILED, không load answers cũ
                 shouldLoadOldAnswers = false
             } else if (latestAttempt.status === 'ABANDONED') {
                 // Nếu là ABANDONED, load answers cũ để khôi phục
@@ -610,7 +610,7 @@ export class UserExerciseAttemptService {
                     this.logger.warn('Cannot load user answer logs', e as any)
                 }
             } else {
-                // Nếu là attempt mới (từ SKIPPED/COMPLETED/FAIL) hoặc IN_PROGRESS, không load answers cũ
+                // Nếu là attempt mới (từ SKIPPED/COMPLETED/FAILED) hoặc IN_PROGRESS, không load answers cũ
                 // answeredCount sẽ là 0, selectedAnswerIds sẽ là empty
                 try {
                     const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
@@ -717,9 +717,9 @@ export class UserExerciseAttemptService {
 
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
 
-            // Only build review when attempt is COMPLETED or FAIL
+            // Only build review when attempt is COMPLETED or FAILED
             // NOT_STARTED không được xem review
-            if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAIL') {
+            if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAILED') {
                 return {
                     statusCode: 200,
                     message: this.i18nService.translate(UserExerciseAttemptMessage.REVIEW_NOT_COMPLETED, normalizedLang),

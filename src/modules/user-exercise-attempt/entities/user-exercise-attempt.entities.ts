@@ -7,7 +7,7 @@ extendZodWithOpenApi(z)
 patchNestJsSwagger()
 
 // ExerciseAttemptStatus enum
-export const ExerciseAttemptStatusSchema = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED', 'SKIPPED'])
+export const ExerciseAttemptStatusSchema = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'ABANDONED', 'SKIPPED'])
 
 // UserExerciseAttempt schema
 export const UserExerciseAttemptSchema = z.object({

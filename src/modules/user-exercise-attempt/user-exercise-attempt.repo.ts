@@ -187,7 +187,7 @@ export class UserExerciseAttemptRepository {
 
         // Ưu tiên: attempt gần nhất (updatedAt gần nhất) là quan trọng nhất
         // Nhưng nếu có nhiều attempts cùng updatedAt, ưu tiên theo status
-        const priorityOrder = ['IN_PROGRESS', 'ABANDONED', 'SKIPPED', 'NOT_STARTED', 'COMPLETED', 'FAIL']
+        const priorityOrder = ['IN_PROGRESS', 'ABANDONED', 'SKIPPED', 'NOT_STARTED', 'COMPLETED', 'FAILED']
 
         // Lấy attempt gần nhất (updatedAt gần nhất)
         const latestUpdatedAt = allAttempts[0].updatedAt
