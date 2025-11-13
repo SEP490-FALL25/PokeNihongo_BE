@@ -28,6 +28,7 @@ import { TranslationHelperService } from '@/modules/translation/translation.help
 import { I18nService } from '@/i18n/i18n.service'
 import { UserExerciseAttemptMessage } from '@/i18n/message-keys'
 import { pickLabelFromComposite } from '@/common/utils/prase.utils'
+import { calculateScore } from '@/common/utils/algorithm'
 import { ProgressStatus } from '@prisma/client'
 
 @Injectable()
@@ -845,6 +846,10 @@ export class UserExerciseAttemptService {
                     })
                 )
 
+                // Tính score: (số câu đúng / tổng số câu) * 100, max 100 điểm
+                const totalQuestions = mappedBanks.length
+                const score = calculateScore(answeredCorrect, totalQuestions)
+
                 const data = {
                     id: (exerciseRes.data as any).id,
                     exerciseType: (exerciseRes.data as any).exerciseType,
@@ -854,9 +859,10 @@ export class UserExerciseAttemptService {
                         id: testSet.id,
                         testSetQuestionBanks: mappedBanks
                     },
-                    totalQuestions: mappedBanks.length,
+                    totalQuestions,
                     answeredCorrect,
                     answeredInCorrect,
+                    score,
                     time: Number((attempt as any)?.time ?? 0),
                     status: (attempt as any)?.status
                 }
