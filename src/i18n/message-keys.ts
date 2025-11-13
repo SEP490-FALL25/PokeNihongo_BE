@@ -713,3 +713,14 @@ export const SubscriptionFeatureMessage = {
   INVALID_XP_MULTIPLIER_VALUE: 'subscription_feature.INVALID_XP_MULTIPLIER_VALUE',
   INVALID_COIN_MULTIPLIER_VALUE: 'subscription_feature.INVALID_COIN_MULTIPLIER_VALUE'
 } as const
+
+export const SubscriptionPlanMessage = {
+  CREATE_SUCCESS: 'subscription_plan.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'subscription_plan.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'subscription_plan.DELETE_SUCCESS',
+  GET_SUCCESS: 'subscription_plan.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'subscription_plan.GET_LIST_SUCCESS',
+  NOT_FOUND: 'subscription_plan.NOT_FOUND',
+  ALREADY_EXISTS: 'subscription_plan.ALREADY_EXISTS',
+  INVALID_DATA: 'subscription_plan.INVALID_DATA'
+} as const

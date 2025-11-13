@@ -656,5 +656,15 @@ export const jaMessages = {
     INVALID_DATA: '無効なサブスクリプション機能データです',
     INVALID_XP_MULTIPLIER_VALUE: 'XP倍率は1以上である必要があります',
     INVALID_COIN_MULTIPLIER_VALUE: 'コイン倍率は1以上である必要があります'
+  },
+  subscription_plan: {
+    CREATE_SUCCESS: 'サブスクリプションプランの作成に成功しました',
+    UPDATE_SUCCESS: 'サブスクリプションプランの更新に成功しました',
+    DELETE_SUCCESS: 'サブスクリプションプランの削除に成功しました',
+    GET_SUCCESS: 'サブスクリプションプラン情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'サブスクリプションプランリストの取得に成功しました',
+    NOT_FOUND: 'サブスクリプションプランが見つかりません',
+    ALREADY_EXISTS: 'サブスクリプションプランは既に存在します',
+    INVALID_DATA: '無効なサブスクリプションプランデータです'
   }
 }

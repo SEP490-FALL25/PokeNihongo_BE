@@ -681,5 +681,15 @@ export const enMessages = {
     INVALID_DATA: 'Invalid subscription feature data',
     INVALID_XP_MULTIPLIER_VALUE: 'XP multiplier must be greater than or equal to 1',
     INVALID_COIN_MULTIPLIER_VALUE: 'Coin multiplier must be greater than or equal to 1'
+  },
+  subscription_plan: {
+    CREATE_SUCCESS: 'Subscription plan created successfully',
+    UPDATE_SUCCESS: 'Subscription plan updated successfully',
+    DELETE_SUCCESS: 'Subscription plan deleted successfully',
+    GET_SUCCESS: 'Subscription plan retrieved successfully',
+    GET_LIST_SUCCESS: 'Subscription plan list retrieved successfully',
+    NOT_FOUND: 'Subscription plan not found',
+    ALREADY_EXISTS: 'Subscription plan already exists',
+    INVALID_DATA: 'Invalid subscription plan data'
   }
 }

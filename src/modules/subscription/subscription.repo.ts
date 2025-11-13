@@ -210,6 +210,9 @@ export class SubscriptionRepo {
           nameTranslations: {
             select: { value: true, languageId: true }
           },
+          descriptionTranslations: {
+            select: { value: true, languageId: true }
+          },
           features: {
             select: {
               id: true,
@@ -224,18 +227,24 @@ export class SubscriptionRepo {
       })
     ])
 
-    // Map results to include nameTranslation and exclude nameTranslations array
+    // Map results to include nameTranslation, descriptionTranslation and keep raw translations arrays
     const results = data.map((d: any) => {
-      const { nameTranslations, ...rest } = d
+      const { nameTranslations, descriptionTranslations, ...rest } = d
       // Find single translation for current langId if provided
-      const single = langId
+      const singleNameTrans = langId
         ? (nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
           d.nameKey)
+        : undefined
+      const singleDescTrans = langId
+        ? (descriptionTranslations?.find((t: any) => t.languageId === langId)?.value ??
+          d.descriptionKey)
         : undefined
       return {
         ...rest,
         nameTranslations, // keep raw translations for service to format to all languages
-        nameTranslation: single
+        descriptionTranslations, // keep raw translations for service to format to all languages
+        nameTranslation: singleNameTrans,
+        descriptionTranslation: singleDescTrans
       }
     })
 
@@ -270,6 +279,9 @@ export class SubscriptionRepo {
       },
       include: {
         nameTranslations: isAllLang
+          ? { select: { value: true, languageId: true } }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } },
+        descriptionTranslations: isAllLang
           ? { select: { value: true, languageId: true } }
           : { where: { languageId: langId }, select: { value: true, languageId: true } },
         features: {

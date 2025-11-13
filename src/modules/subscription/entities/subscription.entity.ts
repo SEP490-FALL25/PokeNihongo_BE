@@ -74,6 +74,14 @@ export const GetSubscriptionDetailWithAllLangResSchema = z.object({
           value: z.string()
         })
       )
+      .optional(),
+    descriptionTranslations: z
+      .array(
+        z.object({
+          key: z.string(),
+          value: z.string()
+        })
+      )
       .optional()
   }),
   message: z.string()
@@ -84,7 +92,9 @@ export const GetLeaderboardWithRewardSeasonDetailSchema = SubscriptionSchema.pic
   tagName: true
 }).extend({
   nameTranslation: z.string().nullable().optional(),
-  nameTranslations: TranslationInputSchema.nullable().optional()
+  nameTranslations: TranslationInputSchema.nullable().optional(),
+  descriptionTranslation: z.string().nullable().optional(),
+  descriptionTranslations: TranslationInputSchema.nullable().optional()
 })
 
 export const GetLeaderboardWithRewardSeasonDetailResSchema = z.object({
@@ -97,6 +107,8 @@ export const GetSubscriptionDetailResSchema = z.object({
   data: SubscriptionSchema.extend({
     nameTranslation: z.string().nullable().optional(),
     nameTranslations: TranslationInputSchema.nullable().optional(),
+    descriptionTranslation: z.string().nullable().optional(),
+    descriptionTranslations: TranslationInputSchema.nullable().optional(),
     features: z
       .array(
         SubscriptionFeatureSchema.pick({

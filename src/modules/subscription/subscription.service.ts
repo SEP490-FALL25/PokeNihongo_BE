@@ -59,22 +59,30 @@ export class SubscriptionService {
       isAdmin
     )
 
-    // Nếu là admin thì chuyển các `nameTranslations` thành chuẩn { key: code, value }
-    // Ngược lại (non-admin) thì loại bỏ hoàn toàn trường `nameTranslations` để trả payload nhẹ
+    // Nếu là admin thì chuyển các `nameTranslations` và `descriptionTranslations` thành chuẩn { key: code, value }
+    // Ngược lại (non-admin) thì loại bỏ hoàn toàn trường `nameTranslations` và `descriptionTranslations` để trả payload nhẹ
     if (data && Array.isArray((data as any).results)) {
       const results = (data as any).results
       if (isAdmin) {
         await Promise.all(
           results.map(async (item: any, idx: number) => {
-            const raw = (item as any).nameTranslations || []
-            const converted = await this.convertTranslationsToLangCodes(raw)
-            ;(data as any).results[idx] = { ...item, nameTranslations: converted }
+            const rawNameTrans = (item as any).nameTranslations || []
+            const rawDescTrans = (item as any).descriptionTranslations || []
+            const convertedNameTrans =
+              await this.convertTranslationsToLangCodes(rawNameTrans)
+            const convertedDescTrans =
+              await this.convertTranslationsToLangCodes(rawDescTrans)
+            ;(data as any).results[idx] = {
+              ...item,
+              nameTranslations: convertedNameTrans,
+              descriptionTranslations: convertedDescTrans
+            }
           })
         )
       } else {
         // remove translations array for non-admin consumers
         for (let i = 0; i < results.length; i++) {
-          const { nameTranslations, ...rest } = results[i]
+          const { nameTranslations, descriptionTranslations, ...rest } = results[i]
           ;(data as any).results[i] = rest
         }
       }
@@ -108,19 +116,26 @@ export class SubscriptionService {
     const nameTranslations = await this.convertTranslationsToLangCodes(
       (subscription as any).nameTranslations || []
     )
-
-    const currentTranslation = ((subscription as any).nameTranslations || []).find(
-      (t: any) => t.languageId === langId
+    const descriptionTranslations = await this.convertTranslationsToLangCodes(
+      (subscription as any).descriptionTranslations || []
     )
 
-    // Chuyển nameTranslations của rewards -> chỉ lấy bản dịch hiện tại (current)
-    // và loại bỏ top-level `nameTranslations` trong `transformed` để tránh trả về
+    const currentNameTranslation = ((subscription as any).nameTranslations || []).find(
+      (t: any) => t.languageId === langId
+    )
+    const currentDescriptionTranslation = (
+      (subscription as any).descriptionTranslations || []
+    ).find((t: any) => t.languageId === langId)
+
+    // Chuyển nameTranslations và descriptionTranslations -> chỉ lấy bản dịch hiện tại (current)
+    // và loại bỏ top-level `nameTranslations` và `descriptionTranslations` trong `transformed` để tránh trả về
     // trường này cho người dùng non-admin (nếu cần admin sẽ được thêm lại bên dưới)
     const transformed = subscription
       ? {
           ...subscription,
           // remove top-level translations to avoid leaking for non-admin
-          nameTranslations: undefined
+          nameTranslations: undefined,
+          descriptionTranslations: undefined
         }
       : null
 
@@ -128,8 +143,9 @@ export class SubscriptionService {
       statusCode: HttpStatus.OK,
       data: {
         ...transformed,
-        nameTranslation: currentTranslation?.value ?? null,
-        ...(isAdmin ? { nameTranslations } : {})
+        nameTranslation: currentNameTranslation?.value ?? null,
+        descriptionTranslation: currentDescriptionTranslation?.value ?? null,
+        ...(isAdmin ? { nameTranslations, descriptionTranslations } : {})
       },
       message: this.i18nService.translate(SubscriptionMessage.GET_SUCCESS, lang)
     }
