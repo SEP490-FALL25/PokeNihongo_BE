@@ -858,7 +858,7 @@ Không thêm bất kỳ text nào ngoài JSON. Không bịa ID, chỉ dùng ID c
         const failedExercises = new Map<number, { exerciseId: number; updatedAt: any; questionTypes: Set<string> }>()
 
         for (const attempt of testAttempts) {
-            if (attempt.score !== null && (attempt.score < 60 || attempt.status === 'FAIL')) {
+            if (attempt.score !== null && (attempt.score < 60 || attempt.status === 'FAILED')) {
                 const existing = failedTests.get(attempt.testId) || { testId: attempt.testId, score: attempt.score, updatedAt: attempt.updatedAt, questionTypes: new Set<string>() }
                 for (const tal of testAnswerLogs) {
                     if (tal.userTestAttemptId === attempt.id && !tal.isCorrect) {

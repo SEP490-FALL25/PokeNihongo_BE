@@ -169,7 +169,7 @@ export class UserTestAttemptRepository {
     /**
      * Tìm attempt gần nhất theo thứ tự ưu tiên:
      * Ưu tiên theo thời gian: attempt có updatedAt gần nhất là ưu tiên cao nhất
-     * Trong cùng khoảng thời gian (cùng updatedAt), ưu tiên theo status: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAIL
+     * Trong cùng khoảng thời gian (cùng updatedAt), ưu tiên theo status: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAILED
      */
     async findLatestByPriority(userId: number, testId: number): Promise<UserTestAttemptType | null> {
         // Lấy tất cả attempts và sắp xếp theo updatedAt desc
@@ -184,7 +184,7 @@ export class UserTestAttemptRepository {
 
         // Ưu tiên: attempt gần nhất (updatedAt gần nhất) là quan trọng nhất
         // Nhưng nếu có nhiều attempts cùng updatedAt, ưu tiên theo status
-        const priorityOrder = ['IN_PROGRESS', 'ABANDONED', 'SKIPPED', 'NOT_STARTED', 'COMPLETED', 'FAIL']
+        const priorityOrder = ['IN_PROGRESS', 'ABANDONED', 'SKIPPED', 'NOT_STARTED', 'COMPLETED', 'FAILED']
 
         // Lấy attempt gần nhất (updatedAt gần nhất)
         const latestUpdatedAt = allAttempts[0].updatedAt
