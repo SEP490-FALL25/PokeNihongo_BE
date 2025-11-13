@@ -79,10 +79,48 @@ export class VocabularyRepository {
         const result = await this.prismaService.vocabulary.findUnique({
             where: { id: where.id },
             include: {
-                wordType: true
+                wordType: true,
+                kanji: {
+                    include: {
+                        kanji: {
+                            select: {
+                                id: true,
+                                character: true,
+                                meaningKey: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        displayOrder: 'asc'
+                    }
+                }
             }
         })
         return result ? this.transformVocabulary(result) : null
+    }
+
+    async getKanjiForVocabulary(vocabularyId: number) {
+        const vocabularyKanji = await this.prismaService.vocabulary_Kanji.findMany({
+            where: { vocabularyId },
+            include: {
+                kanji: {
+                    select: {
+                        id: true,
+                        character: true,
+                        meaningKey: true
+                    }
+                }
+            },
+            orderBy: {
+                displayOrder: 'asc'
+            }
+        })
+
+        return vocabularyKanji.map(vk => ({
+            character: vk.kanji.character,
+            meaningKey: vk.kanji.meaningKey,
+            displayOrder: vk.displayOrder
+        }))
     }
 
     async findFirst(where: { wordJp: string }): Promise<VocabularyType | null> {
@@ -318,6 +356,44 @@ export class VocabularyRepository {
                 vocabularyId: vocabularyId || null
             }
         })
+    }
+
+    async findSearchHistory(userId: number, currentPage: number, pageSize: number) {
+        const skip = (currentPage - 1) * pageSize
+
+        const [items, total] = await Promise.all([
+            this.prismaService.vocabularySearchHistory.findMany({
+                where: { userId },
+                skip,
+                take: pageSize,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    vocabulary: {
+                        select: {
+                            id: true,
+                            wordJp: true,
+                            reading: true
+                        }
+                    }
+                }
+            }),
+            this.prismaService.vocabularySearchHistory.count({
+                where: { userId }
+            })
+        ])
+
+        return {
+            items: items.map(item => ({
+                id: item.id,
+                searchKeyword: item.searchKeyword,
+                vocabularyId: item.vocabularyId,
+                vocabulary: item.vocabulary,
+                createdAt: item.createdAt
+            })),
+            total,
+            page: currentPage,
+            limit: pageSize
+        }
     }
 
     async findRelatedWords(wordJp: string, excludeId: number, limit: number = 10) {

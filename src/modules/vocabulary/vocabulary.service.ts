@@ -572,7 +572,7 @@ export class VocabularyService {
         }
     }
 
-    async findOneDetail(id: number, lang: string) {
+    async findOneDetail(id: number, lang: string, userId?: number) {
         const vocabulary = await this.vocabularyRepository.findUnique({
             id
         })
@@ -646,16 +646,77 @@ export class VocabularyService {
         )
 
         // Resolve wordType translation for vocabulary
-        let wordTypeName: string | null = null
-        if (vocabulary.wordType && languageId) {
+        let wordTypeName: string = ''
+        if (vocabulary.wordType) {
+            if (languageId) {
+                try {
+                    const translation = await this.translationService.findByKeyAndLanguage(
+                        vocabulary.wordType.nameKey,
+                        languageId
+                    )
+                    if (translation?.value) {
+                        wordTypeName = translation.value
+                    } else {
+                        // Fallback: thử lấy translation tiếng Việt nếu không có translation cho ngôn ngữ hiện tại
+                        try {
+                            const viLanguage = await this.languagesService.findByCode({ code: 'vi' })
+                            if (viLanguage?.data?.id) {
+                                const viTranslation = await this.translationService.findByKeyAndLanguage(
+                                    vocabulary.wordType.nameKey,
+                                    viLanguage.data.id
+                                )
+                                wordTypeName = viTranslation?.value || ''
+                            }
+                        } catch {
+                            wordTypeName = ''
+                        }
+                    }
+                } catch {
+                    wordTypeName = ''
+                }
+            }
+        }
+
+        // Get Kanji meanings (Hán Việt) - gộp thành một chuỗi
+        let kanjiMeaning: string = ''
+        if ((vocabulary as any).kanji && (vocabulary as any).kanji.length > 0) {
+            // Get Vietnamese language ID for Han Viet
+            let viLanguageId: number | undefined
             try {
-                const translation = await this.translationService.findByKeyAndLanguage(
-                    vocabulary.wordType.nameKey,
-                    languageId
-                )
-                wordTypeName = translation?.value || vocabulary.wordType.nameKey
+                const viLanguage = await this.languagesService.findByCode({ code: 'vi' })
+                viLanguageId = viLanguage?.data?.id
             } catch {
-                wordTypeName = vocabulary.wordType.nameKey
+                viLanguageId = undefined
+            }
+
+            if (viLanguageId) {
+                const kanjiMeanings = await Promise.all(
+                    (vocabulary as any).kanji.map(async (vk: any) => {
+                        let hanVietMeaning = ''
+                        if (vk.kanji?.meaningKey) {
+                            try {
+                                const translation = await this.translationService.findByKeyAndLanguage(
+                                    vk.kanji.meaningKey,
+                                    viLanguageId
+                                )
+                                const rawMeaning = translation?.value || ''
+                                // Lấy phần trước dấu chấm đầu tiên (ví dụ: "NAM. Con trai." → "NAM")
+                                const firstPart = rawMeaning.split('.')[0]?.trim() || ''
+                                if (firstPart) {
+                                    // Lấy phần trước dấu chấm (bỏ phần sau)
+                                    hanVietMeaning = firstPart
+                                } else {
+                                    hanVietMeaning = ''
+                                }
+                            } catch {
+                                hanVietMeaning = ''
+                            }
+                        }
+                        return hanVietMeaning
+                    })
+                )
+                // Gộp tất cả các nghĩa thành một chuỗi, cách nhau bằng dấu cách
+                kanjiMeaning = kanjiMeanings.filter(m => m).join(' ')
             }
         }
 
@@ -688,6 +749,16 @@ export class VocabularyService {
             })
         )
 
+        // Save search history if user is logged in (lưu với wordJp của vocabulary)
+        if (userId && vocabulary.wordJp.trim()) {
+            try {
+                await this.vocabularyRepository.saveSearchHistory(userId, vocabulary.wordJp.trim(), vocabulary.id)
+            } catch (error) {
+                // Log error but don't fail the request
+                this.logger.warn(`Failed to save search history: ${error}`)
+            }
+        }
+
         return {
             statusCode: 200,
             message: VOCABULARY_MESSAGE.GET_SUCCESS,
@@ -699,6 +770,7 @@ export class VocabularyService {
                 imageUrl: vocabulary.imageUrl || null,
                 levelN: vocabulary.levelN || null,
                 wordType: wordTypeName,
+                kanjiMeaning: kanjiMeaning,
                 meanings: meaningsWithTranslations,
                 relatedWords
             }
@@ -749,16 +821,6 @@ export class VocabularyService {
                 })
             )
 
-            // Save search history if user is logged in
-            if (userId && searchKeyword.trim()) {
-                try {
-                    await this.vocabularyRepository.saveSearchHistory(userId, searchKeyword.trim())
-                } catch (error) {
-                    // Log error but don't fail the request
-                    this.logger.warn(`Failed to save search history: ${error}`)
-                }
-            }
-
             return {
                 statusCode: 200,
                 message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS,
@@ -774,6 +836,51 @@ export class VocabularyService {
             }
         } catch (error) {
             this.logger.error('Error in search vocabulary:', error)
+            throw error
+        }
+    }
+    //#endregion
+
+    //#region Search History
+    async getSearchHistory(userId: number, currentPage: number, pageSize: number, lang: string) {
+        try {
+            const result = await this.vocabularyRepository.findSearchHistory(userId, currentPage, pageSize)
+
+            // Get language ID
+            let languageId: number | undefined
+            try {
+                const language = await this.languagesService.findByCode({ code: lang })
+                languageId = language?.data?.id
+            } catch {
+                languageId = undefined
+            }
+
+            // Map results với meaning nếu có vocabulary
+            const results = await Promise.all(
+                result.items.map(async (item) => {
+                    return {
+                        id: item.id,
+                        searchKeyword: item.searchKeyword,
+                        createdAt: item.createdAt
+                    }
+                })
+            )
+
+            return {
+                statusCode: 200,
+                message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS,
+                data: {
+                    results,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: Math.ceil(result.total / result.limit),
+                        totalItem: result.total
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error in get search history:', error)
             throw error
         }
     }

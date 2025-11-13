@@ -526,10 +526,16 @@ export class VocabularyDetailSwaggerDTO {
 
     @ApiProperty({
         example: 'Trạng từ',
-        description: 'Loại từ (theo ngôn ngữ header)',
+        description: 'Loại từ (theo ngôn ngữ header, đã được dịch)',
         nullable: true
     })
     wordType: string | null
+
+    @ApiProperty({
+        example: 'NAM TÍNH',
+        description: 'Nghĩa Hán Việt của các Kanji trong từ vựng (gộp thành một chuỗi, cách nhau bằng dấu cách)'
+    })
+    kanjiMeaning: string
 
     @ApiProperty({
         type: [VocabularyMeaningDetailSwaggerDTO],
@@ -562,5 +568,65 @@ export class VocabularyDetailResponseSwaggerDTO {
         description: 'Thông báo'
     })
     message: string
+}
+
+// Search History DTOs
+export class VocabularySearchHistoryItemSwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'ID của lịch sử tìm kiếm'
+    })
+    id: number
+
+    @ApiProperty({
+        example: '横に',
+        description: 'Từ khóa tìm kiếm'
+    })
+    searchKeyword: string
+
+    @ApiProperty({
+        type: VocabularySearchItemSwaggerDTO,
+        description: 'Thông tin từ vựng (nếu có)',
+        nullable: true
+    })
+    vocabulary: VocabularySearchItemSwaggerDTO | null
+
+    @ApiProperty({
+        example: '2025-01-01T10:00:00.000Z',
+        description: 'Thời gian tìm kiếm'
+    })
+    createdAt: Date
+}
+
+export class VocabularySearchHistoryResponseSwaggerDTO {
+    @ApiProperty({
+        type: [VocabularySearchHistoryItemSwaggerDTO],
+        description: 'Danh sách lịch sử tìm kiếm'
+    })
+    results: VocabularySearchHistoryItemSwaggerDTO[]
+
+    @ApiProperty({
+        type: VocabularySearchPaginationSwaggerDTO,
+        description: 'Thông tin phân trang'
+    })
+    pagination: VocabularySearchPaginationSwaggerDTO
+}
+
+export class VocabularySearchHistoryQuerySwaggerDTO {
+    @ApiProperty({
+        example: '1',
+        description: 'Trang hiện tại',
+        required: false,
+        default: '1'
+    })
+    currentPage?: string
+
+    @ApiProperty({
+        example: '20',
+        description: 'Số lượng kết quả mỗi trang',
+        required: false,
+        default: '20'
+    })
+    pageSize?: string
 }
 

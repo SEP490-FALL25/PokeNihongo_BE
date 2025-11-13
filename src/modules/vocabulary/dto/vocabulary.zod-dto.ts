@@ -9,6 +9,8 @@ import {
     VocabularySearchQuerySchema,
     VocabularySearchResSchema,
     VocabularyDetailResSchema,
+    VocabularySearchHistoryQuerySchema,
+    VocabularySearchHistoryResSchema,
 } from '@/modules/vocabulary/entities/vocabulary.entities'
 import { createZodDto } from 'nestjs-zod'
 
@@ -31,3 +33,7 @@ export class VocabularySearchQueryDTO extends createZodDto(VocabularySearchQuery
 export class VocabularySearchResDTO extends createZodDto(VocabularySearchResSchema) { }
 
 export class VocabularyDetailResDTO extends createZodDto(VocabularyDetailResSchema) { }
+
+export class VocabularySearchHistoryQueryDTO extends createZodDto(VocabularySearchHistoryQuerySchema) { }
+
+export class VocabularySearchHistoryResDTO extends createZodDto(VocabularySearchHistoryResSchema) { }

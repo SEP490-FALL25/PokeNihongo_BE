@@ -188,6 +188,7 @@ export const VocabularyDetailSchema = z.object({
     imageUrl: z.string().nullable(),
     levelN: z.number().nullable(),
     wordType: z.string().nullable(),
+    kanjiMeaning: z.string(),
     meanings: z.array(VocabularyMeaningDetailSchema),
     relatedWords: z.array(VocabularySearchItemSchema)
 })
@@ -196,6 +197,36 @@ export const VocabularyDetailResSchema = z
     .object({
         statusCode: z.number(),
         data: VocabularyDetailSchema,
+        message: z.string()
+    })
+    .strict()
+
+// Search History Schema
+export const VocabularySearchHistoryItemSchema = z.object({
+    id: z.number(),
+    searchKeyword: z.string(),
+    createdAt: z.date()
+})
+
+export const VocabularySearchHistoryQuerySchema = z
+    .object({
+        currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
+        pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('20')
+    })
+    .strict()
+
+export const VocabularySearchHistoryResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(VocabularySearchHistoryItemSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
         message: z.string()
     })
     .strict()
@@ -216,3 +247,6 @@ export type VocabularySearchResType = z.infer<typeof VocabularySearchResSchema>
 export type VocabularyMeaningDetailType = z.infer<typeof VocabularyMeaningDetailSchema>
 export type VocabularyDetailType = z.infer<typeof VocabularyDetailSchema>
 export type VocabularyDetailResType = z.infer<typeof VocabularyDetailResSchema>
+export type VocabularySearchHistoryItemType = z.infer<typeof VocabularySearchHistoryItemSchema>
+export type VocabularySearchHistoryQueryType = z.infer<typeof VocabularySearchHistoryQuerySchema>
+export type VocabularySearchHistoryResType = z.infer<typeof VocabularySearchHistoryResSchema>
