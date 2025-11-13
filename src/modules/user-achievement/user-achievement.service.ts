@@ -409,5 +409,6 @@ export class UserAchievementService {
   }
 
   //todo Kumo
+  // làm đi
   async checkAnyAchievementcompletetheCriteria(userId: number) {}
 }
