@@ -679,3 +679,14 @@ export const SubscriptionMessage = {
   ALREADY_EXISTS: 'subscription.ALREADY_EXISTS',
   INVALID_DATA: 'subscription.INVALID_DATA'
 } as const
+
+export const SubscriptionFeatureMessage = {
+  CREATE_SUCCESS: 'subscription_feature.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'subscription_feature.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'subscription_feature.DELETE_SUCCESS',
+  GET_SUCCESS: 'subscription_feature.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'subscription_feature.GET_LIST_SUCCESS',
+  NOT_FOUND: 'subscription_feature.NOT_FOUND',
+  ALREADY_EXISTS: 'subscription_feature.ALREADY_EXISTS',
+  INVALID_DATA: 'subscription_feature.INVALID_DATA'
+} as const

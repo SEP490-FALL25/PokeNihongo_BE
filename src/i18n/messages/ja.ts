@@ -624,5 +624,15 @@ export const jaMessages = {
     NOT_FOUND: 'サブスクリプションが見つかりません',
     ALREADY_EXISTS: 'サブスクリプションは既に存在します',
     INVALID_DATA: '無効なサブスクリプションデータです'
+  },
+  subscription_feature: {
+    CREATE_SUCCESS: 'サブスクリプション機能の作成に成功しました',
+    UPDATE_SUCCESS: 'サブスクリプション機能の更新に成功しました',
+    DELETE_SUCCESS: 'サブスクリプション機能の削除に成功しました',
+    GET_SUCCESS: 'サブスクリプション機能情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'サブスクリプション機能リストの取得に成功しました',
+    NOT_FOUND: 'サブスクリプション機能が見つかりません',
+    ALREADY_EXISTS: 'サブスクリプション機能は既に存在します',
+    INVALID_DATA: '無効なサブスクリプション機能データです'
   }
 }

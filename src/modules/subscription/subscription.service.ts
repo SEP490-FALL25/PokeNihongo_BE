@@ -120,17 +120,7 @@ export class SubscriptionService {
       ? {
           ...subscription,
           // remove top-level translations to avoid leaking for non-admin
-          nameTranslations: undefined,
-          seasonRankRewards: (subscription as any).seasonRankRewards?.map((sr: any) => ({
-            ...sr,
-            rewards: (sr.rewards || []).map((r: any) => ({
-              ...r,
-              nameTranslation:
-                ((r.nameTranslations || []).find((t: any) => t.languageId === langId)
-                  ?.value as string) ?? null,
-              nameTranslations: undefined
-            }))
-          }))
+          nameTranslations: undefined
         }
       : null
 

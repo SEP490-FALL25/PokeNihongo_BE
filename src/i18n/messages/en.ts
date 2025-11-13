@@ -649,5 +649,15 @@ export const enMessages = {
 
     ALREADY_EXISTS: 'Subscription already exists',
     INVALID_DATA: 'Invalid subscription data'
+  },
+  subscription_plan: {
+    CREATE_SUCCESS: 'Subscription plan created successfully',
+    UPDATE_SUCCESS: 'Subscription plan updated successfully',
+    DELETE_SUCCESS: 'Subscription plan deleted successfully',
+    GET_SUCCESS: 'Subscription plan retrieved successfully',
+    GET_LIST_SUCCESS: 'Subscription plan list retrieved successfully',
+    NOT_FOUND: 'Subscription plan not found',
+    ALREADY_EXISTS: 'Subscription plan already exists',
+    INVALID_DATA: 'Invalid subscription plan data'
   }
 }

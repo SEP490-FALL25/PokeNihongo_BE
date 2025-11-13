@@ -635,5 +635,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy gói đăng ký',
     ALREADY_EXISTS: 'Gói đăng ký đã tồn tại',
     INVALID_DATA: 'Dữ liệu gói đăng ký không hợp lệ'
+  },
+  subscription_feature: {
+    CREATE_SUCCESS: 'Tạo tính năng gói đăng ký thành công',
+    UPDATE_SUCCESS: 'Cập nhật tính năng gói đăng ký thành công',
+    DELETE_SUCCESS: 'Xóa tính năng gói đăng ký thành công',
+    GET_SUCCESS: 'Lấy thông tin tính năng gói đăng ký thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách tính năng gói đăng ký thành công',
+    NOT_FOUND: 'Không tìm thấy tính năng gói đăng ký',
+    ALREADY_EXISTS: 'Tính năng gói đăng ký đã tồn tại',
+    INVALID_DATA: 'Dữ liệu tính năng gói đăng ký không hợp lệ'
   }
 }

@@ -209,6 +209,13 @@ export class SubscriptionRepo {
           // Always include all translations with languageId for service-level mapping
           nameTranslations: {
             select: { value: true, languageId: true }
+          },
+          features: {
+            select: {
+              id: true,
+              featureKey: true,
+              value: true
+            }
           }
         },
         orderBy,
@@ -264,7 +271,14 @@ export class SubscriptionRepo {
       include: {
         nameTranslations: isAllLang
           ? { select: { value: true, languageId: true } }
-          : { where: { languageId: langId }, select: { value: true, languageId: true } }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } },
+        features: {
+          select: {
+            id: true,
+            featureKey: true,
+            value: true
+          }
+        }
       }
     })
   }

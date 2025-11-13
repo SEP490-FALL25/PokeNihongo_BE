@@ -1,6 +1,7 @@
 import { TagNameSubscription } from '@/common/constants/subscription.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { SubscriptionMessage } from '@/i18n/message-keys'
+import { SubscriptionFeatureSchema } from '@/modules/subscription-feature/entities/subscription-feature.entity'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -95,7 +96,16 @@ export const GetSubscriptionDetailResSchema = z.object({
   statusCode: z.number(),
   data: SubscriptionSchema.extend({
     nameTranslation: z.string().nullable().optional(),
-    nameTranslations: TranslationInputSchema.nullable().optional()
+    nameTranslations: TranslationInputSchema.nullable().optional(),
+    features: z
+      .array(
+        SubscriptionFeatureSchema.pick({
+          id: true,
+          featureKey: true,
+          value: true
+        })
+      )
+      .optional()
   }),
   message: z.string()
 })

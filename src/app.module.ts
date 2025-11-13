@@ -89,6 +89,7 @@ import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
 import { UserAchievementModule } from './modules/user-achievement/user-achievement.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { SubscriptionFeatureModule } from './modules/subscription-feature/subscription-feature.module';
 
 @Module({
   imports: [
@@ -177,7 +178,8 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
     RoundQuestionAnswerlogModule,
     SeasonRankRewardModule,
     UserAchievementModule,
-    SubscriptionModule
+    SubscriptionModule,
+    SubscriptionFeatureModule
   ],
 
   controllers: [],
