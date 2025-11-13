@@ -635,6 +635,7 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'User achievement list retrieved successfully',
     NOT_FOUND: 'User achievement not found',
     ALREADY_EXISTS: 'User achievement already exists',
-    INVALID_DATA: 'Invalid user achievement data'
+    INVALID_DATA: 'Invalid user achievement data',
+    INVALID_STATUS_CLAIM: 'Invalid status for claiming achievement'
   }
 }

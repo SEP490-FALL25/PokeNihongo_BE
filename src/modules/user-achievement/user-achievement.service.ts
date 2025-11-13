@@ -8,11 +8,16 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
+import { UserRewardSourceType } from '@prisma/client'
 import { AchievementGroupRepo } from '../achievement-group/achievement-group.repo'
 import { AchievementRepo } from '../achievement/achievement.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
-import { UserAchievementNotFoundException } from './dto/user-achievement.error'
+import { RewardService } from '../reward/reward.service'
+import {
+  StatusClaimedException,
+  UserAchievementNotFoundException
+} from './dto/user-achievement.error'
 import {
   CreateUserAchievementBodyType,
   UpdateUserAchievementBodyType
@@ -27,7 +32,8 @@ export class UserAchievementService {
     private achievementRepo: AchievementRepo,
     private readonly languageRepo: LanguagesRepository,
     private readonly prismaService: PrismaService,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly rewardService: RewardService
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -331,6 +337,74 @@ export class UserAchievementService {
         pagination: groupsPage.pagination
       },
       message: this.i18nService.translate(UserAchievementMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  async getReward({ id, userId }: { id: number; userId: number }, lang: string = 'vi') {
+    try {
+      // 1. Fetch user achievement with achievement details
+      const userAchievement = await this.prismaService.userAchievement.findUnique({
+        where: { id, deletedAt: null },
+        include: {
+          achievement: {
+            include: {
+              reward: true
+            }
+          }
+        }
+      })
+
+      if (!userAchievement) {
+        throw new UserAchievementNotFoundException()
+      }
+
+      // 2. Verify ownership
+      if (userAchievement.userId !== userId) {
+        throw new NotFoundRecordException()
+      }
+
+      // 3. Check if achievement is completed but not claimed yet
+      if (userAchievement.status !== UserAchievementStatus.COMPLETED_NOT_CLAIMED) {
+        throw new StatusClaimedException() // Can add a specific exception like UserCanNotClaimRewardsException
+      }
+
+      // 4. Check if achievement has a reward
+      if (!userAchievement.achievement?.reward) {
+        throw new StatusClaimedException() // Can add a specific exception like UserNotHaveRewardsToClaimException
+      }
+
+      // 5. Get reward ID
+      const rewardId = userAchievement.achievement.reward.id
+
+      // 6. Convert and give reward to user
+      const rewardResults = await this.rewardService.convertRewardsWithUser(
+        [rewardId],
+        userId,
+        UserRewardSourceType.ACHIEVEMENT_REWARD
+      )
+
+      // 7. Update status to CLAIMED
+      await this.userAchievementRepo.update({
+        id,
+        data: {
+          status: UserAchievementStatus.CLAIMED
+        },
+        updatedById: userId
+      })
+
+      return {
+        statusCode: HttpStatus.OK,
+        data: rewardResults,
+        message: this.i18nService.translate(
+          UserAchievementMessage.GET_REWARD_SUCCESS,
+          lang
+        )
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new UserAchievementNotFoundException()
+      }
+      throw error
     }
   }
 

@@ -18,3 +18,12 @@ export class UserAchievementAlreadyExistsException extends BadRequestException {
     })
   }
 }
+
+export class StatusClaimedException extends BadRequestException {
+  constructor() {
+    super({
+      message: UserAchievementMessage.INVALID_STATUS_CLAIM,
+      errorKey: UserAchievementMessage.INVALID_STATUS_CLAIM
+    })
+  }
+}

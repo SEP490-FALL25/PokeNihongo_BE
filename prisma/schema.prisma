@@ -2444,6 +2444,7 @@ enum UserRewardSourceType {
   SEASON_REWARD // Thưởng mùa giải (Leaderboard Season)
   ADMIN_ADJUST // Admin thưởng thủ công
   OTHER // Trường hợp khác
+  ACHIEVEMENT_REWARD // Thưởng từ thành tích
 }
 
 enum UserAchievementStatus {

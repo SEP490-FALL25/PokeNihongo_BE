@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "UserRewardSourceType" ADD VALUE 'ACHIEVEMENT_REWARD';
