@@ -901,7 +901,7 @@ enum ExerciseAttemptStatus {
   NOT_STARTED // Chưa bắt đầu
   IN_PROGRESS // Đang làm
   COMPLETED // Đã hoàn thành
-  FAIL // Đã hoàn thành nhưng sai
+  FAILED // Đã hoàn thành nhưng sai
   ABANDONED // Đã bỏ dở
   SKIPPED // Đã bỏ qua
 }

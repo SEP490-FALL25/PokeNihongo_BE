@@ -26,6 +26,7 @@ import { TranslationHelperService } from '@/modules/translation/translation.help
 import { I18nService } from '@/i18n/i18n.service'
 import { UserTestAttemptMessage } from '@/i18n/message-keys'
 import { pickLabelFromComposite } from '@/common/utils/prase.utils'
+import { calculateScore } from '@/common/utils/algorithm'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { UserRepo } from '@/modules/user/user.repo'
 import { LevelRepo } from '@/modules/level/level.repo'
@@ -952,6 +953,9 @@ export class UserTestAttemptService {
 
             const testRes = await this.testService.findOne(attempt.testId, normalizedLang)
 
+            // Tính score: (số câu đúng / tổng số câu) * 100, max 100 điểm
+            const score = calculateScore(answeredCorrect, totalQuestions)
+
             const data = {
                 id: test.id,
                 name: testRes.data.name,
@@ -961,9 +965,9 @@ export class UserTestAttemptService {
                 totalQuestions,
                 answeredCorrect,
                 answeredInCorrect,
+                score,
                 time: Number((attempt as any)?.time ?? 0),
-                status: (attempt as any)?.status,
-                score: (attempt as any)?.score ?? 0
+                status: (attempt as any)?.status
             }
 
             return {
@@ -1188,6 +1192,9 @@ export class UserTestAttemptService {
 
             const testRes = await this.testService.findOne(attempt.testId, normalizedLang)
 
+            // Tính score: (số câu đúng / tổng số câu) * 100, max 100 điểm
+            const score = calculateScore(answeredCorrect, totalQuestions)
+
             const data = {
                 id: attempt.testId,
                 name: testRes.data.name,
@@ -1197,9 +1204,9 @@ export class UserTestAttemptService {
                 totalQuestions,
                 answeredCorrect,
                 answeredInCorrect,
+                score,
                 time: Number((attempt as any)?.time ?? 0),
-                status: (attempt as any)?.status,
-                score: (attempt as any)?.score ?? 0
+                status: (attempt as any)?.status
             }
 
             return {

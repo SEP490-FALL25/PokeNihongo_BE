@@ -19,6 +19,8 @@ import { QuestionBankService } from '@/modules/question-bank/question-bank.servi
 import { UserAnswerLogService } from '@/modules/user-answer-log/user-answer-log.service'
 import { UserProgressService } from '@/modules/user-progress/user-progress.service'
 import { ExercisesService } from '@/modules/exercises/exercises.service'
+import { ExercisesRepository } from '@/modules/exercises/exercises.repo'
+import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { isNotFoundPrismaError } from '@/shared/helpers'
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
@@ -26,6 +28,7 @@ import { TranslationHelperService } from '@/modules/translation/translation.help
 import { I18nService } from '@/i18n/i18n.service'
 import { UserExerciseAttemptMessage } from '@/i18n/message-keys'
 import { pickLabelFromComposite } from '@/common/utils/prase.utils'
+import { calculateScore } from '@/common/utils/algorithm'
 import { ProgressStatus } from '@prisma/client'
 
 @Injectable()
@@ -38,6 +41,8 @@ export class UserExerciseAttemptService {
         private readonly userAnswerLogService: UserAnswerLogService,
         private readonly userProgressService: UserProgressService,
         private readonly exercisesService: ExercisesService,
+        private readonly exercisesRepository: ExercisesRepository,
+        private readonly sharedUserRepository: SharedUserRepository,
         private readonly translationHelper: TranslationHelperService,
         private readonly i18nService: I18nService
     ) { }
@@ -49,15 +54,25 @@ export class UserExerciseAttemptService {
             if (!exercise) {
                 throw ExerciseNotFoundException
             }
-
+            // 2. Lấy thông tin lesson
             const targetLessonId = exercise.lessonId
 
-            // 2. Kiểm tra xem user có đang có lesson IN_PROGRESS không
+            // 2. Kiểm tra levelJLPT: nếu user level cao hơn lesson level thì không chặn
+            const user = await this.sharedUserRepository.findUnique({ id: userId })
+            const userLevelJLPT = user?.levelJLPT ?? null
+            const lessonLevelJlpt = await this.exercisesRepository.getLessonLevelJlpt(targetLessonId)
+
+            // Nếu user levelJLPT < lesson levelJlpt (user level cao hơn) thì không chặn
+            // Ví dụ: user N4 (4) < lesson N5 (5) → không chặn
+            // Ví dụ: user N5 (5) = lesson N5 (5) → chặn (nếu không đáp ứng điều kiện khác)
+            const shouldSkipBlocking = userLevelJLPT !== null && lessonLevelJlpt !== null && userLevelJLPT < lessonLevelJlpt
+
+            // 3. Kiểm tra xem user có đang có lesson IN_PROGRESS không
             const currentInProgressLesson = await this.userProgressService.getCurrentInProgressLesson(userId)
-            if (currentInProgressLesson) {
-                // 3. Nếu có lesson IN_PROGRESS, kiểm tra xem có phải lesson target không
+            if (currentInProgressLesson && !shouldSkipBlocking) {
+                // 4. Nếu có lesson IN_PROGRESS, kiểm tra xem có phải lesson target không
                 if (currentInProgressLesson.lessonId !== targetLessonId) {
-                    // 4. Nếu không phải lesson target, kiểm tra xem lesson target có COMPLETED không
+                    // 5. Nếu không phải lesson target, kiểm tra xem lesson target có COMPLETED không
                     const targetLessonProgress = await this.userProgressService.getUserProgressByLesson(userId, targetLessonId)
                     if (!targetLessonProgress || targetLessonProgress.status !== 'COMPLETED') {
                         throw LessonBlockedException
@@ -212,7 +227,7 @@ export class UserExerciseAttemptService {
             const allCorrect = userAnswers.every(log => log.isCorrect)
 
             // 7. Chỉ trả kết quả, KHÔNG cập nhật DB trong hàm check
-            const finalStatus = allCorrect ? 'COMPLETED' : 'FAIL'
+            const finalStatus = allCorrect ? 'COMPLETED' : 'FAILED'
             const message = allCorrect
                 ? 'Chúc mừng! Bạn đã hoàn thành bài tập và trả lời đúng hết'
                 : 'Bạn đã hoàn thành bài tập nhưng có một số câu trả lời sai'
@@ -267,9 +282,9 @@ export class UserExerciseAttemptService {
             const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
             const unansweredQuestions = allQuestions.filter(q => !answeredQuestionIds.has(q.id))
 
-            // Nếu không có câu trả lời nào mà vẫn nộp bài, coi như FAIL
+            // Nếu không có câu trả lời nào mà vẫn nộp bài, coi như FAILED
             if (userAnswers.length === 0) {
-                const newStatus = 'FAIL'
+                const newStatus = 'FAILED'
                 const message = 'Bạn đã nộp bài nhưng chưa trả lời câu hỏi nào'
 
                 await this.userExerciseAttemptRepository.update(
@@ -296,9 +311,9 @@ export class UserExerciseAttemptService {
                 }
             }
 
-            // Nếu chưa trả lời hết, coi như FAIL
+            // Nếu chưa trả lời hết, coi như FAILED
             if (unansweredQuestions.length > 0) {
-                const newStatus = 'FAIL'
+                const newStatus = 'FAILED'
                 const message = 'Bạn đã nộp bài nhưng chưa trả lời đủ câu hỏi'
 
                 await this.userExerciseAttemptRepository.update(
@@ -336,7 +351,7 @@ export class UserExerciseAttemptService {
                 newStatus = 'COMPLETED'
                 message = 'Chúc mừng! Bạn đã hoàn thành bài tập và trả lời đúng hết'
             } else {
-                newStatus = 'FAIL'
+                newStatus = 'FAILED'
                 message = 'Bạn đã hoàn thành bài tập nhưng có một số câu trả lời sai'
             }
 
@@ -351,7 +366,7 @@ export class UserExerciseAttemptService {
             if (newStatus === 'COMPLETED') {
                 // Nếu hoàn thành (không fail), update status thành IN_PROGRESS
                 await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'IN_PROGRESS')
-            } else if (newStatus === 'FAIL') {
+            } else if (newStatus === 'FAILED') {
                 // Nếu fail, update status thành FAILED
                 await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'FAILED')
             }
@@ -540,14 +555,14 @@ export class UserExerciseAttemptService {
 
             const exerciseId = baseAttempt.exerciseId
 
-            // Tìm attempt gần nhất theo thứ tự ưu tiên: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAIL
+            // Tìm attempt gần nhất theo thứ tự ưu tiên: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAILED
             const latestAttempt = await this.userExerciseAttemptRepository.findLatestByPriority(userId, exerciseId)
 
             if (!latestAttempt) {
                 throw UserExerciseAttemptNotFoundException
             }
 
-            // Nếu attempt gần nhất là SKIPPED, COMPLETED hoặc FAIL → tạo attempt mới hoàn toàn
+            // Nếu attempt gần nhất là SKIPPED, COMPLETED hoặc FAILED → tạo attempt mới hoàn toàn
             let attempt = latestAttempt
             let userExerciseAttemptId = latestAttempt.id
             let shouldLoadOldAnswers = false // Chỉ load answers cũ nếu là ABANDONED
@@ -562,12 +577,12 @@ export class UserExerciseAttemptService {
                 attempt = updatedAttempt as any
                 userExerciseAttemptId = attempt.id
                 shouldLoadOldAnswers = false
-            } else if (latestAttempt.status === 'SKIPPED' || latestAttempt.status === 'COMPLETED' || latestAttempt.status === 'FAIL') {
+            } else if (latestAttempt.status === 'SKIPPED' || latestAttempt.status === 'COMPLETED' || latestAttempt.status === 'FAILED') {
                 this.logger.log(`Latest attempt is ${latestAttempt.status}, creating new attempt for user ${userId}, exercise ${exerciseId}`)
                 const createAttempt = await this.create(userId, exerciseId)
                 attempt = createAttempt.data as any
                 userExerciseAttemptId = attempt.id
-                // Khi tạo mới từ SKIPPED/COMPLETED/FAIL, không load answers cũ
+                // Khi tạo mới từ SKIPPED/COMPLETED/FAILED, không load answers cũ
                 shouldLoadOldAnswers = false
             } else if (latestAttempt.status === 'ABANDONED') {
                 // Nếu là ABANDONED, load answers cũ để khôi phục
@@ -595,7 +610,7 @@ export class UserExerciseAttemptService {
                     this.logger.warn('Cannot load user answer logs', e as any)
                 }
             } else {
-                // Nếu là attempt mới (từ SKIPPED/COMPLETED/FAIL) hoặc IN_PROGRESS, không load answers cũ
+                // Nếu là attempt mới (từ SKIPPED/COMPLETED/FAILED) hoặc IN_PROGRESS, không load answers cũ
                 // answeredCount sẽ là 0, selectedAnswerIds sẽ là empty
                 try {
                     const logsRes = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
@@ -702,9 +717,9 @@ export class UserExerciseAttemptService {
 
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
 
-            // Only build review when attempt is COMPLETED or FAIL
+            // Only build review when attempt is COMPLETED or FAILED
             // NOT_STARTED không được xem review
-            if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAIL') {
+            if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAILED') {
                 return {
                     statusCode: 200,
                     message: this.i18nService.translate(UserExerciseAttemptMessage.REVIEW_NOT_COMPLETED, normalizedLang),
@@ -831,6 +846,10 @@ export class UserExerciseAttemptService {
                     })
                 )
 
+                // Tính score: (số câu đúng / tổng số câu) * 100, max 100 điểm
+                const totalQuestions = mappedBanks.length
+                const score = calculateScore(answeredCorrect, totalQuestions)
+
                 const data = {
                     id: (exerciseRes.data as any).id,
                     exerciseType: (exerciseRes.data as any).exerciseType,
@@ -840,9 +859,10 @@ export class UserExerciseAttemptService {
                         id: testSet.id,
                         testSetQuestionBanks: mappedBanks
                     },
-                    totalQuestions: mappedBanks.length,
+                    totalQuestions,
                     answeredCorrect,
                     answeredInCorrect,
+                    score,
                     time: Number((attempt as any)?.time ?? 0),
                     status: (attempt as any)?.status
                 }
