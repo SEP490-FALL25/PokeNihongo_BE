@@ -219,10 +219,6 @@ export class UserProgressRepository {
         return this.prismaService.userProgress.count({ where })
     }
 
-    async countAllCompleted(where?: any): Promise<number> {
-        return this.prismaService.userProgress.count({ where: { ...where, status: ProgressStatus.COMPLETED } })
-    }
-
     async upsert(
         userId: number,
         lessonId: number,
@@ -444,7 +440,13 @@ export class UserProgressRepository {
     }
 
     async countCompletedByLevel(userId: number, levelJlpt: number) {
-        const completedLessons = await Promise.all([
+        const [totalLessons, completedLessons] = await Promise.all([
+            this.prismaService.lesson.count({
+                where: {
+                    levelJlpt,
+                    isPublished: true
+                }
+            }),
             this.prismaService.userProgress.count({
                 where: {
                     userId,
@@ -455,7 +457,39 @@ export class UserProgressRepository {
                 }
             })
         ])
-        return completedLessons
+        return { totalLessons, completedLessons }
+    }
+
+    async countAllCompleted(userId: number) {
+        return this.prismaService.userProgress.count({
+            where: {
+                userId,
+                status: ProgressStatus.COMPLETED
+            }
+        })
+    }
+
+    async listCompletedLessons(userId: number) {
+        return this.prismaService.userProgress.findMany({
+            where: {
+                userId,
+                status: ProgressStatus.COMPLETED
+            },
+            orderBy: [
+                { completedAt: 'asc' },
+                { updatedAt: 'asc' }
+            ],
+            select: {
+                lessonId: true,
+                completedAt: true,
+                updatedAt: true,
+                lesson: {
+                    select: {
+                        levelJlpt: true
+                    }
+                }
+            }
+        })
     }
 
     async getLessonProgress(userId: number, lessonId: number) {

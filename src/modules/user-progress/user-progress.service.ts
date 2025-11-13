@@ -532,46 +532,22 @@ export class UserProgressService {
         this.logger.log(`updateUserProgressLevelJlpt for user ${userId}, level N${levelN} completed`)
     }
 
-
-    async getMyProgress(userId: number, levelJLPT?: number, lessonId?: number, all?: boolean) {
-        try {
-            if (lessonId) {
-                const progress = await this.userProgressRepository.getLessonProgress(userId, lessonId)
-                const completed = progress ? progress.status === ProgressStatus.COMPLETED || progress.progressPercentage >= 100 : false
-                return {
-                    data: {
-                        scope: 'LESSON',
-                        lessonId,
-                        completed,
-                        status: progress?.status ?? ProgressStatus.NOT_STARTED,
-                        progressPercentage: progress?.progressPercentage ?? 0
-                    }
-                }
-            }
-
-            if (levelJLPT) {
-                const completedLessons = await this.userProgressRepository.countCompletedByLevel(userId, levelJLPT)
-                return {
-                    data: {
-                        scope: 'LEVEL',
-                        levelJLPT,
-                        completedLessons
-                    }
-                }
-            }
-
-            if (all) {
-                const completedLessons = await this.userProgressRepository.countAllCompleted(userId)
-                return {
-                    data: {
-                        scope: 'ALL',
-                        completedLessons
-                    }
-                }
-            }
-        } catch (error) {
-            this.logger.error('Error getting my progress summary:', error)
-            throw error
+    /**
+     * Lấy danh sách bài học đã hoàn thành của user
+     * Để check các achievement COMPLETE_LESSON đã hoàn thành tiêu chí chưa
+     */
+    async getCompletedLessonsForAchievements(userId: number) {
+        const [totalCompleted, completedLessons] = await Promise.all([
+            this.userProgressRepository.countAllCompleted(userId),
+            this.userProgressRepository.listCompletedLessons(userId)
+        ])
+        return {
+            totalCompleted,
+            completedLessons: completedLessons.map((item: any) => ({
+                lessonId: item.lessonId,
+                levelJLPT: item.lesson?.levelJlpt ?? null,
+                completedAt: item.completedAt ?? item.updatedAt ?? null
+            }))
         }
     }
 }
