@@ -611,6 +611,7 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'ユーザー実績リストの取得に成功しました',
     NOT_FOUND: 'ユーザー実績が見つかりません',
     ALREADY_EXISTS: 'ユーザー実績は既に存在します',
-    INVALID_DATA: '無効なユーザー実績データです'
+    INVALID_DATA: '無効なユーザー実績データです',
+    INVALID_STATUS_CLAIM: 'この実績のステータスは報酬を受け取るのに適していません'
   }
 }

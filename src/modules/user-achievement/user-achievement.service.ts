@@ -11,12 +11,17 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { Injectable } from '@nestjs/common'
-import { UserProgressService } from '../user-progress/user-progress.service'
+import { HttpStatus, Injectable } from '@nestjs/common'
+import { UserRewardSourceType } from '@prisma/client'
 import { AchievementGroupRepo } from '../achievement-group/achievement-group.repo'
 import { AchievementRepo } from '../achievement/achievement.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
-import { UserAchievementNotFoundException } from './dto/user-achievement.error'
+import { RewardService } from '../reward/reward.service'
+import { UserProgressService } from '../user-progress/user-progress.service'
+import {
+  StatusClaimedException,
+  UserAchievementNotFoundException
+} from './dto/user-achievement.error'
 import {
   CreateUserAchievementBodyType,
   UpdateUserAchievementBodyType
@@ -32,8 +37,10 @@ export class UserAchievementService {
     private readonly languageRepo: LanguagesRepository,
     private readonly prismaService: PrismaService,
     private readonly i18nService: I18nService,
-    private readonly userProgressService: UserProgressService
-  ) { }
+    private readonly userProgressService: UserProgressService,
+
+    private readonly rewardService: RewardService
+  ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.userAchievementRepo.list(pagination)
@@ -220,8 +227,8 @@ export class UserAchievementService {
     // 4. Fetch existing userAchievement for this user and these achievements
     const existingUserAchievements = achievementIds.length
       ? await this.prismaService.userAchievement.findMany({
-        where: { userId, achievementId: { in: achievementIds }, deletedAt: null }
-      })
+          where: { userId, achievementId: { in: achievementIds }, deletedAt: null }
+        })
       : []
 
     const existingMap = new Map<number, any>()
@@ -249,7 +256,7 @@ export class UserAchievementService {
       })
     }
 
-    // check các achievement COMPLETE_LESSON đã hoàn thành tiêu chí chưa 
+    // check các achievement COMPLETE_LESSON đã hoàn thành tiêu chí chưa
     // (nếu có) => nếu có thì cập nhật status và achievedAt
     await this.checkAnyAchievementcompletetheCriteria(userId, achievements, existingMap)
 
@@ -284,7 +291,7 @@ export class UserAchievementService {
         if (a.reward) {
           const rewardName = langId
             ? (a.reward.nameTranslations?.find((t: any) => t.languageId === langId)
-              ?.value ?? a.reward.nameKey)
+                ?.value ?? a.reward.nameKey)
             : undefined
           const { nameTranslations: _rnt, ...rewardWithoutTranslations } = a.reward
           reward = {
@@ -306,13 +313,13 @@ export class UserAchievementService {
       const achPage =
         achCurrentPage && achPageSize && isTargetGroup
           ? {
-            current: achCurrentPage,
-            pageSize: achPageSize,
-            totalItem: perGroupAchievementCounts.get(g.id) ?? 0,
-            totalPage: Math.ceil(
-              (perGroupAchievementCounts.get(g.id) ?? 0) / achPageSize
-            )
-          }
+              current: achCurrentPage,
+              pageSize: achPageSize,
+              totalItem: perGroupAchievementCounts.get(g.id) ?? 0,
+              totalPage: Math.ceil(
+                (perGroupAchievementCounts.get(g.id) ?? 0) / achPageSize
+              )
+            }
           : undefined
 
       const defaultPageSize = 3
@@ -343,8 +350,80 @@ export class UserAchievementService {
     }
   }
 
+  async getReward({ id, userId }: { id: number; userId: number }, lang: string = 'vi') {
+    try {
+      // 1. Fetch user achievement with achievement details
+      const userAchievement = await this.prismaService.userAchievement.findUnique({
+        where: { id, deletedAt: null },
+        include: {
+          achievement: {
+            include: {
+              reward: true
+            }
+          }
+        }
+      })
+
+      if (!userAchievement) {
+        throw new UserAchievementNotFoundException()
+      }
+
+      // 2. Verify ownership
+      if (userAchievement.userId !== userId) {
+        throw new NotFoundRecordException()
+      }
+
+      // 3. Check if achievement is completed but not claimed yet
+      if (userAchievement.status !== UserAchievementStatus.COMPLETED_NOT_CLAIMED) {
+        throw new StatusClaimedException() // Can add a specific exception like UserCanNotClaimRewardsException
+      }
+
+      // 4. Check if achievement has a reward
+      if (!userAchievement.achievement?.reward) {
+        throw new StatusClaimedException() // Can add a specific exception like UserNotHaveRewardsToClaimException
+      }
+
+      // 5. Get reward ID
+      const rewardId = userAchievement.achievement.reward.id
+
+      // 6. Convert and give reward to user
+      const rewardResults = await this.rewardService.convertRewardsWithUser(
+        [rewardId],
+        userId,
+        UserRewardSourceType.ACHIEVEMENT_REWARD
+      )
+
+      // 7. Update status to CLAIMED
+      await this.userAchievementRepo.update({
+        id,
+        data: {
+          status: UserAchievementStatus.CLAIMED
+        },
+        updatedById: userId
+      })
+
+      return {
+        statusCode: HttpStatus.OK,
+        data: rewardResults,
+        message: this.i18nService.translate(
+          UserAchievementMessage.GET_REWARD_SUCCESS,
+          lang
+        )
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new UserAchievementNotFoundException()
+      }
+      throw error
+    }
+  }
+
   // check các achievement COMPLETE_LESSON đã hoàn thành tiêu chí chưa
-  async checkAnyAchievementcompletetheCriteria( userId: number, achievements: any[], userAchievementMap: Map<number, any>) {
+  async checkAnyAchievementcompletetheCriteria(
+    userId: number,
+    achievements: any[],
+    userAchievementMap: Map<number, any>
+  ) {
     if (!achievements.length) return
 
     const lessonAchievements = achievements.filter(
@@ -352,7 +431,8 @@ export class UserAchievementService {
     )
     if (!lessonAchievements.length) return
 
-    const progressData = await this.userProgressService.getCompletedLessonsForAchievements(userId)
+    const progressData =
+      await this.userProgressService.getCompletedLessonsForAchievements(userId)
     const completedLessons = progressData.completedLessons || []
 
     if (!completedLessons.length) return
@@ -383,7 +463,10 @@ export class UserAchievementService {
       } else if (achievement.conditionValue && achievement.conditionValue > 0) {
         if (totalCompleted >= achievement.conditionValue) {
           qualified = true
-          const index = Math.min(achievement.conditionValue - 1, completedLessons.length - 1)
+          const index = Math.min(
+            achievement.conditionValue - 1,
+            completedLessons.length - 1
+          )
           const milestone = completedLessons[index]
           achievedAt = achievedAt ?? milestone.completedAt ?? new Date()
         }

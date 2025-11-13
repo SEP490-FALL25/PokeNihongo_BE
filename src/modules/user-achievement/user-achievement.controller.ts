@@ -77,6 +77,22 @@ export class UserAchievementController {
     )
   }
 
+  @Put('get-reward/:userAchievementId')
+  // @ZodSerializerDto(UpdateUserSeasonHistoryResDTO)
+  getReward(
+    @Param() params: GetUserAchievementParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userAchievementService.getReward(
+      {
+        id: params.userAchievementId,
+        userId
+      },
+      lang
+    )
+  }
+
   @Put(':userAchievementId')
   @ZodSerializerDto(UpdateUserAchievementResDTO)
   update(
