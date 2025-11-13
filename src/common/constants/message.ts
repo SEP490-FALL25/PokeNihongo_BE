@@ -386,8 +386,7 @@ export const USER_EXERCISE_ATTEMPT_MESSAGE = {
   ALREADY_EXISTS: 'Lần thử bài tập đã tồn tại',
   INVALID_DATA: 'Dữ liệu lần thử bài tập không hợp lệ',
   EXERCISE_NOT_FOUND: 'Không tìm thấy bài tập',
-  LESSON_BLOCKED:
-    'Bạn đang học lesson khác. Chỉ có thể làm bài tập trong lesson hiện tại',
+  LESSON_BLOCKED:'Bạn đang học lesson khác. Chỉ có thể làm bài tập trong lesson hiện tại',
   EXERCISE_COMPLETED: 'Bài tập đã hoàn thành',
   EXERCISE_ABANDONED: 'Bài tập đã bị bỏ dở',
   CHECK_COMPLETION_SUCCESS: 'Kiểm tra trạng thái hoàn thành thành công',
