@@ -164,18 +164,19 @@ model User {
   deletedUsers User[] @relation("DeletorUsers")
 
   deletedAt                 DateTime?
-  createdAt                 DateTime               @default(now())
-  updatedAt                 DateTime               @updatedAt
-  tests                     Test[]                 @relation("TestCreatedBy")
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  tests                     Test[]                    @relation("TestCreatedBy")
   // Audit backlink for GeminiConfigModel
-  createdGeminiConfigModels GeminiConfigModel[]    @relation("GeminiConfigModelCreatedBy")
-  updatedGeminiConfigModels GeminiConfigModel[]    @relation("GeminiConfigModelUpdatedBy")
-  deletedGeminiConfigModels GeminiConfigModel[]    @relation("GeminiConfigModelDeletedBy")
+  createdGeminiConfigModels GeminiConfigModel[]       @relation("GeminiConfigModelCreatedBy")
+  updatedGeminiConfigModels GeminiConfigModel[]       @relation("GeminiConfigModelUpdatedBy")
+  deletedGeminiConfigModels GeminiConfigModel[]       @relation("GeminiConfigModelDeletedBy")
   UserAIRecommendation      UserAIRecommendation[]
   UserSrsReview             UserSrsReview[]
   aiconversationRooms       AIConversationRoom[]
   userSubscriptions         UserSubscription[]
   flashcardDecks            FlashcardDeck[]
+  vocabularySearchHistories VocabularySearchHistory[]
 
   @@index([deletedAt])
 }
@@ -428,14 +429,30 @@ model Vocabulary {
   createdById Int?
   createdBy   User? @relation("VocabularyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  flashcardCards FlashcardCard[]
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  flashcardCards  FlashcardCard[]
+  searchHistories VocabularySearchHistory[]
 
   @@index([wordJp])
   @@index([reading])
   @@index([levelN])
   @@index([wordTypeId])
+}
+
+model VocabularySearchHistory {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabularyId  Int?
+  vocabulary    Vocabulary? @relation(fields: [vocabularyId], references: [id], onDelete: SetNull)
+  searchKeyword String      @db.VarChar(500) // Từ khóa tìm kiếm
+  createdAt     DateTime    @default(now())
+
+  @@index([userId])
+  @@index([vocabularyId])
+  @@index([createdAt])
+  @@index([searchKeyword])
 }
 
 model Reward {

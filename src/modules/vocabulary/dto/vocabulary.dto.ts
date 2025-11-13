@@ -356,3 +356,277 @@ export class ImportVocabularyTxtSwaggerDTO {
     file: any
 }
 
+// Search DTOs
+export class VocabularySearchItemSwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'ID của từ vựng'
+    })
+    id: number
+
+    @ApiProperty({
+        example: 'こんにちは',
+        description: 'Từ tiếng Nhật'
+    })
+    wordJp: string
+
+    @ApiProperty({
+        example: 'konnichiwa',
+        description: 'Cách đọc từ tiếng Nhật (romaji)'
+    })
+    reading: string
+
+    @ApiProperty({
+        example: 'Xin chào',
+        description: 'Nghĩa của từ (theo ngôn ngữ header)'
+    })
+    meaning: string
+}
+
+export class VocabularySearchPaginationSwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'Trang hiện tại'
+    })
+    current: number
+
+    @ApiProperty({
+        example: 20,
+        description: 'Số lượng kết quả mỗi trang'
+    })
+    pageSize: number
+
+    @ApiProperty({
+        example: 5,
+        description: 'Tổng số trang'
+    })
+    totalPage: number
+
+    @ApiProperty({
+        example: 100,
+        description: 'Tổng số kết quả'
+    })
+    totalItem: number
+}
+
+export class VocabularySearchResponseSwaggerDTO {
+    @ApiProperty({
+        type: [VocabularySearchItemSwaggerDTO],
+        description: 'Danh sách kết quả tìm kiếm'
+    })
+    results: VocabularySearchItemSwaggerDTO[]
+
+    @ApiProperty({
+        type: VocabularySearchPaginationSwaggerDTO,
+        description: 'Thông tin phân trang'
+    })
+    pagination: VocabularySearchPaginationSwaggerDTO
+}
+
+export class VocabularySearchQuerySwaggerDTO {
+    @ApiProperty({
+        example: 'こんにちは',
+        description: 'Từ khóa tìm kiếm (tiếng Nhật, romaji, hoặc tiếng Việt)',
+        required: true
+    })
+    keyword: string
+
+    @ApiProperty({
+        example: '1',
+        description: 'Trang hiện tại',
+        required: false,
+        default: '1'
+    })
+    currentPage?: string
+
+    @ApiProperty({
+        example: '20',
+        description: 'Số lượng kết quả mỗi trang',
+        required: false,
+        default: '20'
+    })
+    pageSize?: string
+}
+
+// Detail DTOs
+export class VocabularyMeaningDetailSwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'ID của meaning'
+    })
+    id: number
+
+    @ApiProperty({
+        example: 'Ngang qua; crossways; chéo chữ thập; về bên cạnh; phương nằm ngang',
+        description: 'Nghĩa của từ (theo ngôn ngữ header)'
+    })
+    meaning: string
+
+    @ApiProperty({
+        example: 'ちょっと横になる',
+        description: 'Câu ví dụ tiếng Nhật',
+        nullable: true
+    })
+    exampleSentenceJp: string | null
+
+    @ApiProperty({
+        example: 'Tôi sẽ nằm xuống một chút',
+        description: 'Câu ví dụ đã dịch (theo ngôn ngữ header)',
+        nullable: true
+    })
+    exampleSentence: string | null
+
+    @ApiProperty({
+        description: 'Loại từ',
+        nullable: true,
+        required: false
+    })
+    wordType?: any
+}
+
+export class VocabularyDetailSwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'ID của từ vựng'
+    })
+    id: number
+
+    @ApiProperty({
+        example: '横に',
+        description: 'Từ tiếng Nhật'
+    })
+    wordJp: string
+
+    @ApiProperty({
+        example: 'よこに',
+        description: 'Cách đọc từ tiếng Nhật (romaji)'
+    })
+    reading: string
+
+    @ApiProperty({
+        example: 'https://example.com/audio/yokoni.mp3',
+        description: 'URL âm thanh phát âm từ vựng',
+        nullable: true
+    })
+    audioUrl: string | null
+
+    @ApiProperty({
+        example: 'https://example.com/images/yokoni.jpg',
+        description: 'URL hình ảnh minh họa từ vựng',
+        nullable: true
+    })
+    imageUrl: string | null
+
+    @ApiProperty({
+        example: 5,
+        description: 'Cấp độ JLPT (1-5)',
+        nullable: true
+    })
+    levelN: number | null
+
+    @ApiProperty({
+        example: 'Trạng từ',
+        description: 'Loại từ (theo ngôn ngữ header, đã được dịch)',
+        nullable: true
+    })
+    wordType: string | null
+
+    @ApiProperty({
+        example: 'NAM TÍNH',
+        description: 'Nghĩa Hán Việt của các Kanji trong từ vựng (gộp thành một chuỗi, cách nhau bằng dấu cách)'
+    })
+    kanjiMeaning: string
+
+    @ApiProperty({
+        type: [VocabularyMeaningDetailSwaggerDTO],
+        description: 'Danh sách nghĩa của từ'
+    })
+    meanings: VocabularyMeaningDetailSwaggerDTO[]
+
+    @ApiProperty({
+        type: [VocabularySearchItemSwaggerDTO],
+        description: 'Các từ vựng liên quan (chứa wordJp này)'
+    })
+    relatedWords: VocabularySearchItemSwaggerDTO[]
+}
+
+export class VocabularyDetailResponseSwaggerDTO {
+    @ApiProperty({
+        type: VocabularyDetailSwaggerDTO,
+        description: 'Thông tin chi tiết từ vựng'
+    })
+    data: VocabularyDetailSwaggerDTO
+
+    @ApiProperty({
+        example: 200,
+        description: 'Mã trạng thái HTTP'
+    })
+    statusCode: number
+
+    @ApiProperty({
+        example: 'Lấy thông tin từ vựng thành công',
+        description: 'Thông báo'
+    })
+    message: string
+}
+
+// Search History DTOs
+export class VocabularySearchHistoryItemSwaggerDTO {
+    @ApiProperty({
+        example: 1,
+        description: 'ID của lịch sử tìm kiếm'
+    })
+    id: number
+
+    @ApiProperty({
+        example: '横に',
+        description: 'Từ khóa tìm kiếm'
+    })
+    searchKeyword: string
+
+    @ApiProperty({
+        type: VocabularySearchItemSwaggerDTO,
+        description: 'Thông tin từ vựng (nếu có)',
+        nullable: true
+    })
+    vocabulary: VocabularySearchItemSwaggerDTO | null
+
+    @ApiProperty({
+        example: '2025-01-01T10:00:00.000Z',
+        description: 'Thời gian tìm kiếm'
+    })
+    createdAt: Date
+}
+
+export class VocabularySearchHistoryResponseSwaggerDTO {
+    @ApiProperty({
+        type: [VocabularySearchHistoryItemSwaggerDTO],
+        description: 'Danh sách lịch sử tìm kiếm'
+    })
+    results: VocabularySearchHistoryItemSwaggerDTO[]
+
+    @ApiProperty({
+        type: VocabularySearchPaginationSwaggerDTO,
+        description: 'Thông tin phân trang'
+    })
+    pagination: VocabularySearchPaginationSwaggerDTO
+}
+
+export class VocabularySearchHistoryQuerySwaggerDTO {
+    @ApiProperty({
+        example: '1',
+        description: 'Trang hiện tại',
+        required: false,
+        default: '1'
+    })
+    currentPage?: string
+
+    @ApiProperty({
+        example: '20',
+        description: 'Số lượng kết quả mỗi trang',
+        required: false,
+        default: '20'
+    })
+    pageSize?: string
+}
+
