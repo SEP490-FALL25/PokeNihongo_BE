@@ -40,7 +40,7 @@ enum TestAttemptStatus {
   NOT_STARTED
   IN_PROGRESS
   COMPLETED
-  FAIL
+  FAILED
   ABANDONED
   SKIPPED
 }
@@ -251,7 +251,7 @@ Update status: IN_PROGRESS khi bắt đầu
   ↓
 User trả lời từng câu → Tạo/Update UserTestAnswerLog
   ↓
-Submit → Tính điểm → Update status: COMPLETED/FAIL
+Submit → Tính điểm → Update status: COMPLETED/FAILED
 ```
 
 ### 2.2. Matching Flow (Chi tiết với Question Logging)
