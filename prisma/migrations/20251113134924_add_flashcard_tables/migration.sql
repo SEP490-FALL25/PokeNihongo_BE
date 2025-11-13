@@ -16,17 +16,6 @@ CREATE TYPE "FlashcardCardStatus" AS ENUM ('ACTIVE', 'ARCHIVED');
 -- CreateEnum
 CREATE TYPE "FlashcardContentType" AS ENUM ('VOCABULARY', 'KANJI', 'GRAMMAR', 'CUSTOM');
 
--- AlterEnum
-BEGIN;
-CREATE TYPE "TestAttemptStatus_new" AS ENUM ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'ABANDONED', 'SKIPPED');
-ALTER TABLE "UserTestAttempt" ALTER COLUMN "status" DROP DEFAULT;
-ALTER TABLE "UserTestAttempt" ALTER COLUMN "status" TYPE "TestAttemptStatus_new" USING ("status"::text::"TestAttemptStatus_new");
-ALTER TYPE "TestAttemptStatus" RENAME TO "TestAttemptStatus_old";
-ALTER TYPE "TestAttemptStatus_new" RENAME TO "TestAttemptStatus";
-DROP TYPE "TestAttemptStatus_old";
-ALTER TABLE "UserTestAttempt" ALTER COLUMN "status" SET DEFAULT 'IN_PROGRESS';
-COMMIT;
-
 -- CreateTable
 CREATE TABLE "FlashcardDeck" (
     "id" SERIAL NOT NULL,
