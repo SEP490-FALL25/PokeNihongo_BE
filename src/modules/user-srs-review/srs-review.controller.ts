@@ -2,9 +2,9 @@ import { Controller, Get, Query, Param, Post, Body, Patch } from '@nestjs/common
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { SrsReviewService } from './srs-review.service'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
-import { UpsertSrsReviewDto, ReviewActionDto, ListSrsQueryDto } from './dto/srs-review.zod-dto'
+import { UpsertSrsReviewDto, ReviewActionDto, ListSrsQueryDto, ListSrsTodayQueryDto } from './dto/srs-review.zod-dto'
 import { ApiBody, ApiResponse } from '@nestjs/swagger'
-import { ListSrsQuerySwaggerDTO, ReviewActionSwaggerDTO, SrsReviewSwaggerDTO, UpsertSrsReviewSwaggerDTO } from './dto/srs-review.dto'
+import { ListSrsQuerySwaggerDTO, ListSrsTodayQuerySwaggerDTO, ReviewActionSwaggerDTO, SrsReviewSwaggerDTO, UpsertSrsReviewSwaggerDTO } from './dto/srs-review.dto'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('User SRS Review')
@@ -27,11 +27,13 @@ export class SrsReviewController {
 
     @Get('my')
     @ApiOperation({ summary: 'Danh sách SRS cần ôn trong ngày của user' })
+    @ApiQuery({ type: ListSrsTodayQuerySwaggerDTO })
     @ApiResponse({ status: 200, type: SrsReviewSwaggerDTO, isArray: true })
     async listMyToday(
-        @ActiveUser('userId') userId: number
+        @ActiveUser('userId') userId: number,
+        @Query() query: ListSrsTodayQueryDto
     ) {
-        const data = await this.srsService.listToday(userId)
+        const data = await this.srsService.listToday(userId, query)
         return { statusCode: 200, data, message: 'GET_SUCCESS' }
     }
 

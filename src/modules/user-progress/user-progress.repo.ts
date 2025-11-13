@@ -219,6 +219,10 @@ export class UserProgressRepository {
         return this.prismaService.userProgress.count({ where })
     }
 
+    async countAllCompleted(where?: any): Promise<number> {
+        return this.prismaService.userProgress.count({ where: { ...where, status: ProgressStatus.COMPLETED } })
+    }
+
     async upsert(
         userId: number,
         lessonId: number,
@@ -437,5 +441,38 @@ export class UserProgressRepository {
         }
 
         return this.transformUserProgress(result)
+    }
+
+    async countCompletedByLevel(userId: number, levelJlpt: number) {
+        const completedLessons = await Promise.all([
+            this.prismaService.userProgress.count({
+                where: {
+                    userId,
+                    status: ProgressStatus.COMPLETED,
+                    lesson: {
+                        levelJlpt
+                    }
+                }
+            })
+        ])
+        return completedLessons
+    }
+
+    async getLessonProgress(userId: number, lessonId: number) {
+        return this.prismaService.userProgress.findUnique({
+            where: {
+                userId_lessonId: {
+                    userId,
+                    lessonId
+                }
+            },
+            select: {
+                id: true,
+                status: true,
+                progressPercentage: true,
+                completedAt: true,
+                updatedAt: true
+            }
+        })
     }
 }
