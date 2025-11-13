@@ -39,4 +39,10 @@ export const ListSrsQueryType = z.object({
 })
 export type ListSrsQuery = z.infer<typeof ListSrsQueryType>
 
+export const ListSrsTodayQueryType = z.object({
+    currentPage: z.coerce.number().int().positive().optional(),
+    pageSize: z.coerce.number().int().positive().max(200).optional()
+})
+export type ListSrsTodayQuery = z.infer<typeof ListSrsTodayQueryType>
+
 

@@ -531,4 +531,23 @@ export class UserProgressService {
         }
         this.logger.log(`updateUserProgressLevelJlpt for user ${userId}, level N${levelN} completed`)
     }
+
+    /**
+     * Lấy danh sách bài học đã hoàn thành của user
+     * Để check các achievement COMPLETE_LESSON đã hoàn thành tiêu chí chưa
+     */
+    async getCompletedLessonsForAchievements(userId: number) {
+        const [totalCompleted, completedLessons] = await Promise.all([
+            this.userProgressRepository.countAllCompleted(userId),
+            this.userProgressRepository.listCompletedLessons(userId)
+        ])
+        return {
+            totalCompleted,
+            completedLessons: completedLessons.map((item: any) => ({
+                lessonId: item.lessonId,
+                levelJLPT: item.lesson?.levelJlpt ?? null,
+                completedAt: item.completedAt ?? item.updatedAt ?? null
+            }))
+        }
+    }
 }
