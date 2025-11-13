@@ -277,14 +277,24 @@ export class GeminiService {
             }
             // Lấy config default theo mapping service ↔ config
             const svcCfg = await this.geminiConfigRepo.getDefaultConfigForService('PERSONALIZED_RECOMMENDATIONS' as any)
+
+            this.logger.log(`[RECOMMEND] SvcCfg: ${JSON.stringify(svcCfg)}`)
             const config: any = svcCfg?.geminiConfig || null
             const policy = (config?.geminiConfigModel?.extraParams as any)?.policy
 
             let analysis: any
+            this.logger.log(`[RECOMMEND] Policy: ${JSON.stringify(policy)}`)
             if (policy) {
                 // Lấy dữ liệu theo policy (scope + whitelist + masking)
                 const safeData = await this.dataAccessService.getAiSafeData(userId, policy)
                 analysis = this.buildSummaryFromSafeData(safeData, limit)
+                // this.logger.log(`[RECOMMEND] Analysis: ${JSON.stringify(analysis)}`)
+                // this.logger.log(`[RECOMMEND] SafeData: ${JSON.stringify(safeData)}`)
+                // this.logger.log(`[RECOMMEND] Limit: ${limit}`)
+                // this.logger.log(`[RECOMMEND] Config: ${JSON.stringify(config)}`)
+                // this.logger.log(`[RECOMMEND] SvcCfg: ${JSON.stringify(svcCfg)}`)
+                // this.logger.log(`[RECOMMEND] UserId: ${userId}`)
+                // this.logger.log(`[RECOMMEND] Options: ${JSON.stringify(options)}`)
             } else {
                 // Bắt buộc phải có policy, nếu không thì từ chối xử lý
                 throw new BadRequestException('PERSONALIZED_RECOMMENDATIONS policy is required but not configured')
@@ -346,9 +356,16 @@ export class GeminiService {
             try {
                 // SRS types: VOCABULARY, GRAMMAR, KANJI, TEST, EXERCISE
                 const validSrsTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI', 'TEST', 'EXERCISE']
+                const priorityToLevel: Record<string, number> = {
+                    high: 2,
+                    medium: 1,
+                    low: 0
+                }
                 const srsRows = (options?.createSrs ? (payload.recommendations || []) : []).map((r: any) => {
                     const contentType = String(r.targetType || r.contentType || 'VOCABULARY').toUpperCase()
                     const contentId = Number(r.targetId || r.contentId) || 0
+                    const priority = String(r.priority || '').toLowerCase()
+                    const srsLevel = priorityToLevel[priority] ?? 0
 
                     // Validate contentType và contentId
                     if (!contentId || !validSrsTypes.includes(contentType)) {
@@ -363,7 +380,7 @@ export class GeminiService {
                         contentType,
                         contentId,
                         message: r.message || r.reason || '',
-                        srsLevel: 0, // Mới học
+                        srsLevel,
                         nextReviewDate: new Date(), // Ôn ngay
                         incorrectStreak: 0,
                         isLeech: false
@@ -501,6 +518,8 @@ export class GeminiService {
         const questionBanks = safeData['QuestionBank'] || []
         const answers = safeData['Answer'] || []
         const vocabularies = safeData['Vocabulary'] || []
+        const kanjiList = safeData['Kanji'] || []
+        const grammarList = safeData['Grammar'] || []
         const existingSrs = (safeData['UserSrsReview'] || []).map((s: any) => `${s.contentType}-${s.contentId}`)
 
         // Build maps for quick lookup
@@ -593,7 +612,7 @@ export class GeminiService {
         }
 
         for (const attempt of exerciseAttempts) {
-            if (attempt.status === 'FAIL' || attempt.status === 'ABANDONED') {
+            if (attempt.status === 'FAILED' || attempt.status === 'ABANDONED') {
                 const existing = failedExercises.get(attempt.exerciseId) || { exerciseId: attempt.exerciseId, updatedAt: attempt.updatedAt, questionTypes: new Set<string>() }
                 // Thêm question types từ answer logs
                 for (const al of answerLogs) {
@@ -613,6 +632,16 @@ export class GeminiService {
                 wordJp: v.wordJp,
                 reading: v.reading,
                 levelN: v.levelN
+            })),
+            kanji: kanjiList.map((k: any) => ({
+                id: k.id,
+                character: k.character,
+                jlptLevel: k.jlptLevel
+            })),
+            grammar: grammarList.map((g: any) => ({
+                id: g.id,
+                structure: g.structure,
+                level: g.level
             })),
             failedTests: Array.from(failedTests.values()).map((t: any) => ({
                 testId: t.testId,
