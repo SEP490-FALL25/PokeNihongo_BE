@@ -190,7 +190,12 @@ export class UserAchievementService {
         }),
         this.prismaService.achievement.findMany({
           where: { groupId: g.id, deletedAt: null, isActive: true },
-          include: { nameTranslations: { select: { value: true, languageId: true } } },
+          include: {
+            nameTranslations: { select: { value: true, languageId: true } },
+            reward: {
+              include: { nameTranslations: { select: { value: true, languageId: true } } }
+            }
+          },
           orderBy: [{ achievementTierType: 'asc' }, { id: 'asc' }],
           skip,
           take
@@ -251,18 +256,39 @@ export class UserAchievementService {
     //    - strip raw translation arrays from groups and achievements to keep payload light
     const results = (groupsPage.results || []).map((g: any) => {
       const { nameTranslations: _nt, ...groupWithoutTranslations } = g
-  const groupAchList = achByGroup.get(g.id) || []
+      const groupAchList = achByGroup.get(g.id) || []
       const achs = groupAchList.map((a: any) => {
         const nameTranslation = langId
           ? (a.nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
             a.nameKey)
           : undefined
         const ua = existingMap.get(a.id) || null
-        const { nameTranslations: _ant, ...achievementWithoutTranslations } = a
+        // extract raw translations and reward raw translations
+        const {
+          nameTranslations: _ant,
+          reward: _r,
+          ...achievementWithoutTranslations
+        } = a
+
+        // map reward (include only current language translation)
+        let reward = null
+        if (a.reward) {
+          const rewardName = langId
+            ? (a.reward.nameTranslations?.find((t: any) => t.languageId === langId)
+                ?.value ?? a.reward.nameKey)
+            : undefined
+          const { nameTranslations: _rnt, ...rewardWithoutTranslations } = a.reward
+          reward = {
+            ...rewardWithoutTranslations,
+            nameTranslation: rewardName
+          }
+        }
+
         return {
           ...achievementWithoutTranslations,
           nameTranslation,
-          userAchievement: ua
+          userAchievement: ua,
+          reward
         }
       })
 
@@ -293,8 +319,7 @@ export class UserAchievementService {
       return {
         ...groupWithoutTranslations,
         achievements: {
-          results: achs,
-          pagination: finalAchPage
+          results: achs
         }
       }
     })

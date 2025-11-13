@@ -4,6 +4,7 @@ import {
 } from '@/common/constants/achievement.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
+import { RewardSchema } from '@/modules/reward/entities/reward.entity'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -103,7 +104,11 @@ export const GetAchievementDetailResSchema = z.object({
     descriptionTranslation: z.string().nullable(),
     descriptionTranslations: TranslationInputSchema.optional().nullable(),
     conditionTextTranslation: z.string().nullable(),
-    conditionTextTranslations: TranslationInputSchema.optional().nullable()
+    conditionTextTranslations: TranslationInputSchema.optional().nullable(),
+    reward: RewardSchema.extend({
+      nameTranslation: z.string().nullable(),
+      nameTranslations: TranslationInputSchema.optional().nullable()
+    }).nullable()
   }),
   message: z.string()
 })
