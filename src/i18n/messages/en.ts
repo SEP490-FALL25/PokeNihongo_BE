@@ -194,6 +194,26 @@ export const enMessages = {
     SET_MAIN_POKEMON_SUCCESS: 'Main Pokemon set successfully',
     HAS_NOT_JOINED_SEASON: 'You have not joined the current season'
   },
+  flashcard: {
+    CREATE_DECK_SUCCESS: 'Flashcard deck created successfully',
+    UPDATE_DECK_SUCCESS: 'Flashcard deck updated successfully',
+    DELETE_DECK_SUCCESS: 'Flashcard deck deleted successfully',
+    GET_DECK_SUCCESS: 'Flashcard deck retrieved successfully',
+    GET_DECK_LIST_SUCCESS: 'Flashcard decks retrieved successfully',
+    CREATE_CARD_SUCCESS: 'Flashcard card added successfully',
+    UPDATE_CARD_SUCCESS: 'Flashcard card updated successfully',
+    DELETE_CARD_SUCCESS: 'Flashcard card deleted successfully',
+    IMPORT_CARD_SUCCESS: 'Flashcard cards imported successfully',
+    NOT_FOUND_DECK: 'Flashcard deck not found',
+    NOT_FOUND_CARD: 'Flashcard card not found',
+    INVALID_CONTENT_TYPE: 'Invalid flashcard content type',
+    CONTENT_ALREADY_IN_DECK: 'Content already exists in this deck',
+    INVALID_IMPORT_IDS: 'Invalid content list for import',
+    GET_LIBRARY_SUCCESS: 'Flashcard library fetched successfully',
+    GET_REVIEW_LIST_SUCCESS: 'Flashcard review queue fetched successfully',
+    REVIEW_CARD_SUCCESS: 'Flashcard review result recorded successfully',
+    EXPORT_DECK_SUCCESS: 'Flashcard deck exported successfully'
+  },
   role: {
     CREATE_SUCCESS: 'Role created successfully',
     UPDATE_SUCCESS: 'Role updated successfully',

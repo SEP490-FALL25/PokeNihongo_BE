@@ -24,7 +24,7 @@ export class HistoryItemSwaggerDTO {
     @ApiPropertyOptional({ example: 'Bài tập N3', description: 'Tên exercise (nếu type = EXERCISE)' })
     exerciseName?: string | null
 
-    @ApiProperty({ example: 'COMPLETED', description: 'Trạng thái (COMPLETED, FAIL, etc.)' })
+    @ApiProperty({ example: 'COMPLETED', description: 'Trạng thái (COMPLETED, FAILED, etc.)' })
     status: string
 
     @ApiPropertyOptional({ example: 80, description: 'Điểm số (%)' })
