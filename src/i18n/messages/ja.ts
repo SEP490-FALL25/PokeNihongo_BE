@@ -633,5 +633,38 @@ export const jaMessages = {
     ALREADY_EXISTS: 'ユーザー実績は既に存在します',
     INVALID_DATA: '無効なユーザー実績データです',
     INVALID_STATUS_CLAIM: 'この実績のステータスは報酬を受け取るのに適していません'
+  },
+  subscription: {
+    CREATE_SUCCESS: 'サブスクリプションの作成に成功しました',
+    UPDATE_SUCCESS: 'サブスクリプションの更新に成功しました',
+    DELETE_SUCCESS: 'サブスクリプションの削除に成功しました',
+
+    GET_SUCCESS: 'サブスクリプション情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'サブスクリプションリストの取得に成功しました',
+    NOT_FOUND: 'サブスクリプションが見つかりません',
+    ALREADY_EXISTS: 'サブスクリプションは既に存在します',
+    INVALID_DATA: '無効なサブスクリプションデータです'
+  },
+  subscription_feature: {
+    CREATE_SUCCESS: 'サブスクリプション機能の作成に成功しました',
+    UPDATE_SUCCESS: 'サブスクリプション機能の更新に成功しました',
+    DELETE_SUCCESS: 'サブスクリプション機能の削除に成功しました',
+    GET_SUCCESS: 'サブスクリプション機能情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'サブスクリプション機能リストの取得に成功しました',
+    NOT_FOUND: 'サブスクリプション機能が見つかりません',
+    ALREADY_EXISTS: 'サブスクリプション機能は既に存在します',
+    INVALID_DATA: '無効なサブスクリプション機能データです',
+    INVALID_XP_MULTIPLIER_VALUE: 'XP倍率は1以上である必要があります',
+    INVALID_COIN_MULTIPLIER_VALUE: 'コイン倍率は1以上である必要があります'
+  },
+  subscription_plan: {
+    CREATE_SUCCESS: 'サブスクリプションプランの作成に成功しました',
+    UPDATE_SUCCESS: 'サブスクリプションプランの更新に成功しました',
+    DELETE_SUCCESS: 'サブスクリプションプランの削除に成功しました',
+    GET_SUCCESS: 'サブスクリプションプラン情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'サブスクリプションプランリストの取得に成功しました',
+    NOT_FOUND: 'サブスクリプションプランが見つかりません',
+    ALREADY_EXISTS: 'サブスクリプションプランは既に存在します',
+    INVALID_DATA: '無効なサブスクリプションプランデータです'
   }
 }
