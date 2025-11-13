@@ -6,6 +6,7 @@ import { TranslationHelperService } from '@/modules/translation/translation.help
 import { ForbiddenSrsAccessException, InvalidSrsDataException, SrsNotFoundException } from './dto/srs-review.error'
 import { SRS_REVIEW_MESSAGE } from '@/common/constants/message'
 import { isForeignKeyConstraintPrismaError, isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
+import { ListSrsTodayQuery } from './entities/srs-review.entities'
 
 @Injectable()
 export class SrsReviewService {
@@ -58,19 +59,24 @@ export class SrsReviewService {
         }
     }
 
-    async listToday(userId: number) {
+    async listToday(userId: number, query?: ListSrsTodayQuery) {
         try {
-            const rows = await this.repo.listForDate(userId, new Date())
+            const currentPage = Math.max(1, query?.currentPage ?? 1)
+            const requestedPageSize = query?.pageSize ?? 20
+            const pageSize = Math.min(200, Math.max(1, requestedPageSize))
+            const skip = (currentPage - 1) * pageSize
+            const { rows, total } = await this.repo.listForDate(userId, new Date(), { skip, take: pageSize })
+            const totalPage = Math.max(1, Math.ceil(total / pageSize))
             return {
                 statusCode: 200,
                 message: SRS_REVIEW_MESSAGE.GET_LIST_SUCCESS,
                 data: {
                     results: rows,
                     pagination: {
-                        current: 1,
-                        pageSize: rows.length,
-                        totalPage: 1,
-                        totalItem: rows.length
+                        current: currentPage,
+                        pageSize,
+                        totalPage,
+                        totalItem: total
                     }
                 }
             }

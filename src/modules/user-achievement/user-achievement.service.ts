@@ -1,4 +1,7 @@
-import { UserAchievementStatus } from '@/common/constants/achievement.constant'
+import {
+  AchievementType as AchievementTypeEnum,
+  UserAchievementStatus
+} from '@/common/constants/achievement.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserAchievementMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
@@ -14,6 +17,7 @@ import { AchievementGroupRepo } from '../achievement-group/achievement-group.rep
 import { AchievementRepo } from '../achievement/achievement.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { RewardService } from '../reward/reward.service'
+import { UserProgressService } from '../user-progress/user-progress.service'
 import {
   StatusClaimedException,
   UserAchievementNotFoundException
@@ -33,6 +37,8 @@ export class UserAchievementService {
     private readonly languageRepo: LanguagesRepository,
     private readonly prismaService: PrismaService,
     private readonly i18nService: I18nService,
+    private readonly userProgressService: UserProgressService,
+
     private readonly rewardService: RewardService
   ) {}
 
@@ -250,6 +256,10 @@ export class UserAchievementService {
       })
     }
 
+    // check các achievement COMPLETE_LESSON đã hoàn thành tiêu chí chưa
+    // (nếu có) => nếu có thì cập nhật status và achievedAt
+    await this.checkAnyAchievementcompletetheCriteria(userId, achievements, existingMap)
+
     // 6. Group achievements by groupId for attaching to group results
     const achByGroup = new Map<number, any[]>()
     for (const a of achievements) {
@@ -408,7 +418,75 @@ export class UserAchievementService {
     }
   }
 
-  //todo Kumo
-  // làm đi
-  async checkAnyAchievementcompletetheCriteria(userId: number) {}
+  // check các achievement COMPLETE_LESSON đã hoàn thành tiêu chí chưa
+  async checkAnyAchievementcompletetheCriteria(
+    userId: number,
+    achievements: any[],
+    userAchievementMap: Map<number, any>
+  ) {
+    if (!achievements.length) return
+
+    const lessonAchievements = achievements.filter(
+      (a) => a?.conditionType === AchievementTypeEnum.COMPLETE_LESSON
+    )
+    if (!lessonAchievements.length) return
+
+    const progressData =
+      await this.userProgressService.getCompletedLessonsForAchievements(userId)
+    const completedLessons = progressData.completedLessons || []
+
+    if (!completedLessons.length) return
+
+    const completedLessonIds = new Map<number, Date>()
+    completedLessons.forEach((p) => {
+      const completedAt = p.completedAt ?? new Date()
+      completedLessonIds.set(p.lessonId, completedAt)
+    })
+
+    const totalCompleted = progressData.totalCompleted || completedLessons.length
+
+    for (const achievement of lessonAchievements) {
+      const ua = userAchievementMap.get(achievement.id)
+      if (!ua || ua.status === UserAchievementStatus.CLAIMED) continue
+
+      let qualified = false
+      let achievedAt: Date | null = ua.achievedAt ?? null
+
+      // Thành tựu yêu cầu hoàn thành một bài cụ thể (conditionElementId = lessonId)
+      if (achievement.conditionElementId) {
+        const lessonDate = completedLessonIds.get(achievement.conditionElementId)
+        if (lessonDate) {
+          qualified = true
+          achievedAt = achievedAt ?? lessonDate
+        }
+        // Thành tựu yêu cầu hoàn thành đủ số lượng bài (conditionValue = số bài)
+      } else if (achievement.conditionValue && achievement.conditionValue > 0) {
+        if (totalCompleted >= achievement.conditionValue) {
+          qualified = true
+          const index = Math.min(
+            achievement.conditionValue - 1,
+            completedLessons.length - 1
+          )
+          const milestone = completedLessons[index]
+          achievedAt = achievedAt ?? milestone.completedAt ?? new Date()
+        }
+      }
+
+      if (!qualified) continue
+
+      if (ua.status !== UserAchievementStatus.COMPLETED_NOT_CLAIMED || !ua.achievedAt) {
+        const updated = await this.prismaService.userAchievement.update({
+          where: { id: ua.id },
+          data: {
+            status:
+              ua.status === UserAchievementStatus.CLAIMED
+                ? ua.status
+                : UserAchievementStatus.COMPLETED_NOT_CLAIMED,
+            achievedAt: achievedAt ?? new Date()
+          }
+        })
+        userAchievementMap.set(achievement.id, updated)
+      }
+    }
+  }
 }
