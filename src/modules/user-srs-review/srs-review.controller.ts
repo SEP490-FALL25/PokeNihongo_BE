@@ -9,7 +9,7 @@ import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('User SRS Review')
 @ApiBearerAuth()
-@Controller('srs-review')
+@Controller('user-srs-review')
 export class SrsReviewController {
     constructor(private readonly srsService: SrsReviewService) { }
 
