@@ -756,6 +756,11 @@ export class UserHistoryService {
                 data: {
                     results,
                     allTime,
+                    allAttempts: validAttempts.length,
+                    completedAttempts: validAttempts.filter(attempt => attempt.status === 'COMPLETED').length,
+                    failedAttempts: validAttempts.filter(attempt => attempt.status === 'FAILED').length,
+                    skippedAttempts: validAttempts.filter(attempt => attempt.status === 'SKIPPED').length,
+                    abandonedAttempts: validAttempts.filter(attempt => attempt.status === 'ABANDONED').length,
                     pagination: {
                         current: currentPage,
                         pageSize,
@@ -864,6 +869,11 @@ export class UserHistoryService {
                 data: {
                     results,
                     allTime,
+                    allAttempts: validAttempts.length,
+                    completedAttempts: validAttempts.filter(attempt => attempt.status === TestAttemptStatus.COMPLETED).length,
+                    failedAttempts: validAttempts.filter(attempt => attempt.status === TestAttemptStatus.FAILED).length,
+                    skippedAttempts: validAttempts.filter(attempt => attempt.status === TestAttemptStatus.SKIPPED).length,
+                    abandonedAttempts: validAttempts.filter(attempt => attempt.status === TestAttemptStatus.ABANDONED).length,
                     pagination: {
                         current: currentPage,
                         pageSize,

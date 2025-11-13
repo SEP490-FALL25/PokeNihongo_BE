@@ -13,7 +13,7 @@ export class UserTestAttemptSwaggerDTO {
 
     @ApiProperty({
         example: 'IN_PROGRESS',
-        description: 'Trạng thái làm bài: NOT_STARTED, IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở), SKIPPED (bỏ qua)',
+        description: 'Trạng thái làm bài: NOT_STARTED, IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAILED (hoàn thành nhưng sai), ABANDONED (bỏ dở), SKIPPED (bỏ qua)',
         enum: TestAttemptStatus
     })
     status: string
@@ -43,7 +43,7 @@ export class TimeSwaggerDTO {
 export class UpdateUserTestAttemptSwaggerDTO {
     @ApiProperty({
         example: 'COMPLETED',
-        description: 'Trạng thái làm bài: NOT_STARTED, IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở), SKIPPED (bỏ qua)',
+        description: 'Trạng thái làm bài: NOT_STARTED, IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAILED (hoàn thành nhưng sai), ABANDONED (bỏ dở), SKIPPED (bỏ qua)',
         enum: TestAttemptStatus,
         required: false
     })
@@ -117,7 +117,7 @@ export class GetUserTestAttemptListQuerySwaggerDTO {
 
     @ApiProperty({
         example: 'IN_PROGRESS',
-        description: 'Lọc theo trạng thái: NOT_STARTED, IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở), SKIPPED (bỏ qua)',
+        description: 'Lọc theo trạng thái: NOT_STARTED, IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAILED (hoàn thành nhưng sai), ABANDONED (bỏ dở), SKIPPED (bỏ qua)',
         enum: TestAttemptStatus,
         required: false
     })

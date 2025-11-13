@@ -175,6 +175,7 @@ model User {
   UserSrsReview             UserSrsReview[]
   aiconversationRooms       AIConversationRoom[]
   userSubscriptions         UserSubscription[]
+  flashcardDecks            FlashcardDeck[]
 
   @@index([deletedAt])
 }
@@ -342,8 +343,9 @@ model Kanji {
   vocabularies Vocabulary_Kanji[] // Quan hệ Nhiều-Nhiều với Vocabulary
   readings     Kanji_Reading[] // Quan hệ Một-Nhiều với Kanji_Reading
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  flashcardCards FlashcardCard[]
 
   @@index([character])
   @@index([meaningKey])
@@ -426,8 +428,9 @@ model Vocabulary {
   createdById Int?
   createdBy   User? @relation("VocabularyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  flashcardCards FlashcardCard[]
 
   @@index([wordJp])
   @@index([reading])
@@ -928,9 +931,78 @@ enum TestAttemptStatus {
   NOT_STARTED // Chưa bắt đầu
   IN_PROGRESS // Đang làm
   COMPLETED // Đã hoàn thành
-  FAIL // Đã hoàn thành nhưng sai
+  FAILED // Đã hoàn thành nhưng sai
   ABANDONED // Đã bỏ dở
   SKIPPED // Đã bỏ qua
+}
+
+enum FlashcardDeckStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum FlashcardDeckSource {
+  SYSTEM
+  USER
+}
+
+enum FlashcardCardStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum FlashcardContentType {
+  VOCABULARY
+  KANJI
+  GRAMMAR
+  CUSTOM
+}
+
+model FlashcardDeck {
+  id          Int                 @id @default(autoincrement())
+  userId      Int
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String              @db.VarChar(200)
+  description String?             @db.Text
+  status      FlashcardDeckStatus @default(ACTIVE)
+  source      FlashcardDeckSource @default(USER)
+  jlptLevel   Int?
+  coverImage  String?             @db.VarChar(1000)
+  metadata    Json?
+  deletedAt   DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  cards FlashcardCard[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model FlashcardCard {
+  id           Int                  @id @default(autoincrement())
+  deckId       Int
+  deck         FlashcardDeck        @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  contentType  FlashcardContentType
+  vocabularyId Int?
+  vocabulary   Vocabulary?          @relation(fields: [vocabularyId], references: [id], onDelete: SetNull)
+  kanjiId      Int?
+  kanji        Kanji?               @relation(fields: [kanjiId], references: [id], onDelete: SetNull)
+  grammarId    Int?
+  grammar      Grammar?             @relation(fields: [grammarId], references: [id], onDelete: SetNull)
+  customFront  String?              @db.Text
+  customBack   String?              @db.Text
+  notes        String?              @db.Text
+  imageUrl     String?              @db.VarChar(1000)
+  audioUrl     String?              @db.VarChar(1000)
+  status       FlashcardCardStatus  @default(ACTIVE)
+  metadata     Json?
+  deletedAt    DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([deckId])
+  @@index([contentType])
 }
 
 // Model UserExerciseAttempt (Lần thử bài tập của user)
@@ -1037,7 +1109,8 @@ model Grammar {
   updatedAt DateTime @updatedAt
 
   // Relations
-  usages GrammarUsage[]
+  usages         GrammarUsage[]
+  flashcardCards FlashcardCard[]
 
   @@index([level])
   @@index([structure])

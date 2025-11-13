@@ -238,7 +238,7 @@ export class UserTestAttemptService {
             const allCorrect = userAnswers.every(log => log.isCorrect)
 
             // 8. Chỉ trả kết quả, KHÔNG cập nhật DB trong hàm check
-            const finalStatus = allCorrect ? 'COMPLETED' : 'FAIL'
+            const finalStatus = allCorrect ? 'COMPLETED' : 'FAILED'
             const message = allCorrect
                 ? 'Chúc mừng! Bạn đã hoàn thành bài test và trả lời đúng hết'
                 : 'Bạn đã hoàn thành bài test nhưng có một số câu trả lời sai'
@@ -295,9 +295,9 @@ export class UserTestAttemptService {
                 // Với LESSON_REVIEW: mặc định 10 câu là đủ, không cần kiểm tra unansweredQuestions
                 const expectedQuestionCount = 10
 
-                // Nếu không có câu trả lời nào mà vẫn nộp bài, coi như FAIL
+                // Nếu không có câu trả lời nào mà vẫn nộp bài, coi như FAILED
                 if (userAnswers.length === 0) {
-                    const newStatus = 'FAIL'
+                    const newStatus = 'FAILED'
                     const message = 'Bạn đã nộp bài nhưng chưa trả lời câu hỏi nào'
 
                     await this.userTestAttemptRepository.update(
@@ -338,7 +338,7 @@ export class UserTestAttemptService {
                     newStatus = 'COMPLETED'
                     message = 'Chúc mừng! Bạn đã hoàn thành bài test'
                 } else {
-                    newStatus = 'FAIL'
+                    newStatus = 'FAILED'
                     message = 'Bạn đã hoàn thành bài test nhưng chưa đạt yêu cầu (cần >= 80%)'
                 }
 
@@ -353,7 +353,7 @@ export class UserTestAttemptService {
                 if (newStatus === 'COMPLETED') {
                     // Nếu hoàn thành (score >= 80%), update status thành COMPLETED
                     await this.updateUserProgressOnLessonReviewCompletion(userId, attempt.testId)
-                } else if (newStatus === 'FAIL') {
+                } else if (newStatus === 'FAILED') {
                     // Nếu fail (score < 80%), update status thành TESTING_LAST_FAILED
                     await this.updateUserProgressOnLessonReviewFailure(userId, attempt.testId)
                 }
@@ -407,9 +407,9 @@ export class UserTestAttemptService {
             const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
             const unansweredQuestions = allQuestionBanks.filter(q => !answeredQuestionIds.has(q.questionBankId))
 
-            // Nếu không có câu trả lời nào mà vẫn nộp bài, coi như FAIL
+            // Nếu không có câu trả lời nào mà vẫn nộp bài, coi như FAILED
             if (userAnswers.length === 0) {
-                const newStatus = 'FAIL'
+                const newStatus = 'FAILED'
                 const message = 'Bạn đã nộp bài nhưng chưa trả lời câu hỏi nào'
 
                 await this.userTestAttemptRepository.update(
@@ -433,9 +433,9 @@ export class UserTestAttemptService {
                 }
             }
 
-            // Nếu chưa trả lời hết, coi như FAIL
+            // Nếu chưa trả lời hết, coi như FAILED
             if (unansweredQuestions.length > 0) {
-                const newStatus = 'FAIL'
+                const newStatus = 'FAILED'
                 const message = 'Bạn đã nộp bài nhưng chưa trả lời đủ câu hỏi'
 
                 await this.userTestAttemptRepository.update(
@@ -473,7 +473,7 @@ export class UserTestAttemptService {
                 newStatus = 'COMPLETED'
                 message = 'Chúc mừng! Bạn đã hoàn thành bài test và trả lời đúng hết'
             } else {
-                newStatus = 'FAIL'
+                newStatus = 'FAILED'
                 message = 'Bạn đã hoàn thành bài test nhưng có một số câu trả lời sai'
             }
 
@@ -649,7 +649,7 @@ export class UserTestAttemptService {
                     userTestAttemptId = attempt.id
                 }
             } else {
-                // Nếu không có IN_PROGRESS (có thể là ABANDONED, COMPLETED, FAIL hoặc chưa có) → tạo mới
+                // Nếu không có IN_PROGRESS (có thể là ABANDONED, COMPLETED, FAILED hoặc chưa có) → tạo mới
                 this.logger.log(`No IN_PROGRESS attempt found for user ${userId} and test ${testId}, creating new attempt`)
 
                 // Giảm limit trước khi cho phép làm bài (chỉ khi tạo mới)
@@ -806,8 +806,8 @@ export class UserTestAttemptService {
 
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
 
-            // Only build review when attempt is COMPLETED or FAIL
-            if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAIL') {
+            // Only build review when attempt is COMPLETED or FAILED
+            if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAILED') {
                 return {
                     statusCode: 200,
                     message: this.i18nService.translate(UserTestAttemptMessage.REVIEW_NOT_COMPLETED, normalizedLang),
@@ -996,8 +996,8 @@ export class UserTestAttemptService {
 
             const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
 
-            // Only build review when attempt is COMPLETED or FAIL
-            if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAIL') {
+            // Only build review when attempt is COMPLETED or FAILED
+            if (attempt.status !== 'COMPLETED' && attempt.status !== 'FAILED') {
                 return {
                     statusCode: 200,
                     message: this.i18nService.translate(UserTestAttemptMessage.REVIEW_NOT_COMPLETED, normalizedLang),
@@ -1470,7 +1470,7 @@ export class UserTestAttemptService {
     }
 
     /**
-     * Cập nhật UserProgress thành status TESTING_LAST_FAILED khi thất bại LESSON_REVIEW test (FAIL)
+     * Cập nhật UserProgress thành status TESTING_LAST_FAILED khi thất bại LESSON_REVIEW test (FAILED)
      * Tìm lesson có testId = testId của attempt, sau đó update UserProgress với testId, status TESTING_LAST_FAILED
      */
     private async updateUserProgressOnLessonReviewFailure(userId: number, testId: number) {

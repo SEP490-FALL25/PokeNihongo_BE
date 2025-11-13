@@ -191,6 +191,26 @@ export const viMessages = {
     SET_MAIN_POKEMON_SUCCESS: 'Đặt Pokemon chính thành công',
     HAS_NOT_JOINED_SEASON: 'Bạn chưa tham gia mùa giải hiện tại'
   },
+  flashcard: {
+    CREATE_DECK_SUCCESS: 'Tạo bộ flashcard thành công',
+    UPDATE_DECK_SUCCESS: 'Cập nhật bộ flashcard thành công',
+    DELETE_DECK_SUCCESS: 'Xóa bộ flashcard thành công',
+    GET_DECK_SUCCESS: 'Lấy thông tin bộ flashcard thành công',
+    GET_DECK_LIST_SUCCESS: 'Lấy danh sách bộ flashcard thành công',
+    CREATE_CARD_SUCCESS: 'Thêm thẻ flashcard thành công',
+    UPDATE_CARD_SUCCESS: 'Cập nhật thẻ flashcard thành công',
+    DELETE_CARD_SUCCESS: 'Xóa thẻ flashcard thành công',
+    IMPORT_CARD_SUCCESS: 'Nhập thẻ flashcard thành công',
+    NOT_FOUND_DECK: 'Không tìm thấy bộ flashcard',
+    NOT_FOUND_CARD: 'Không tìm thấy thẻ flashcard',
+    INVALID_CONTENT_TYPE: 'Loại nội dung flashcard không hợp lệ',
+    CONTENT_ALREADY_IN_DECK: 'Nội dung đã có trong bộ flashcard',
+    INVALID_IMPORT_IDS: 'Danh sách nội dung cần nhập không hợp lệ',
+    GET_LIBRARY_SUCCESS: 'Lấy thư viện flashcard thành công',
+    GET_REVIEW_LIST_SUCCESS: 'Lấy danh sách thẻ đến hạn ôn tập thành công',
+    REVIEW_CARD_SUCCESS: 'Cập nhật kết quả ôn tập thành công',
+    EXPORT_DECK_SUCCESS: 'Xuất dữ liệu flashcard thành công'
+  },
   role: {
     CREATE_SUCCESS: 'Tạo vai trò thành công',
     UPDATE_SUCCESS: 'Cập nhật vai trò thành công',

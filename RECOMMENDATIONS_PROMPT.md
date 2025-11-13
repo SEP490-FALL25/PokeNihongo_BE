@@ -17,8 +17,8 @@ Nhiệm vụ (tùy theo endpoint):
    - Nếu questionType = KANJI → contentType = KANJI và contentId = kanjiId (nếu có)
 
    B) Cho TEST/EXERCISE:
-   - Từ failedTests: contentType = "TEST" và contentId = testId (ID của bài test đã làm sai, score < 60 hoặc status = FAIL)
-   - Từ failedExercises: contentType = "EXERCISE" và contentId = exerciseId (ID của bài exercise đã làm sai, status = FAIL/ABANDONED)
+   - Từ failedTests: contentType = "TEST" và contentId = testId (ID của bài test đã làm sai, score < 60 hoặc status = FAILED)
+   - Từ failedExercises: contentType = "EXERCISE" và contentId = exerciseId (ID của bài exercise đã làm sai, status = FAILED/ABANDONED)
    - Ưu tiên test/exercise có questionTypes chứa LISTENING, READING, SPEAKING
 
 2) Loại bỏ những content đã có SRS hiện hành (có trong srs.existing dạng "VOCABULARY-123" hoặc "TEST-456").

@@ -184,6 +184,26 @@ export const jaMessages = {
     SET_MAIN_POKEMON_SUCCESS: 'メインポケモンの設定が完了しました',
     HAS_NOT_JOINED_SEASON: '現在のシーズンに参加していません'
   },
+  flashcard: {
+    CREATE_DECK_SUCCESS: 'フラッシュカードデッキの作成に成功しました',
+    UPDATE_DECK_SUCCESS: 'フラッシュカードデッキの更新に成功しました',
+    DELETE_DECK_SUCCESS: 'フラッシュカードデッキの削除に成功しました',
+    GET_DECK_SUCCESS: 'フラッシュカードデッキを取得しました',
+    GET_DECK_LIST_SUCCESS: 'フラッシュカードデッキ一覧を取得しました',
+    CREATE_CARD_SUCCESS: 'フラッシュカードの追加に成功しました',
+    UPDATE_CARD_SUCCESS: 'フラッシュカードの更新に成功しました',
+    DELETE_CARD_SUCCESS: 'フラッシュカードの削除に成功しました',
+    IMPORT_CARD_SUCCESS: 'フラッシュカードのインポートに成功しました',
+    NOT_FOUND_DECK: 'フラッシュカードデッキが見つかりません',
+    NOT_FOUND_CARD: 'フラッシュカードが見つかりません',
+    INVALID_CONTENT_TYPE: 'フラッシュカードのコンテンツタイプが無効です',
+    CONTENT_ALREADY_IN_DECK: 'このデッキには既に同じコンテンツが存在します',
+    INVALID_IMPORT_IDS: 'インポートするコンテンツ一覧が無効です',
+    GET_LIBRARY_SUCCESS: 'フラッシュカードライブラリの取得に成功しました',
+    GET_REVIEW_LIST_SUCCESS: '復習用フラッシュカードの取得に成功しました',
+    REVIEW_CARD_SUCCESS: 'フラッシュカードの復習結果を記録しました',
+    EXPORT_DECK_SUCCESS: 'フラッシュカードデッキのエクスポートに成功しました'
+  },
   role: {
     CREATE_SUCCESS: 'ロールが正常に作成されました',
     UPDATE_SUCCESS: 'ロールが正常に更新されました',

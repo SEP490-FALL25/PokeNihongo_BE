@@ -119,6 +119,11 @@ export const HistoryExercisesResSchema = z
         data: z.object({
             results: z.array(HistoryExerciseItemSchema),
             allTime: z.number(), // Tổng thời gian của tất cả attempts (giây)
+            allAttempts: z.number(),
+            completedAttempts: z.number(),
+            failedAttempts: z.number(),
+            skippedAttempts: z.number(),
+            abandonedAttempts: z.number(),
             pagination: z.object({
                 current: z.number(),
                 pageSize: z.number(),
@@ -149,6 +154,11 @@ export const HistoryTestsResSchema = z
         data: z.object({
             results: z.array(HistoryTestItemSchema),
             allTime: z.number(), // Tổng thời gian của tất cả attempts (giây)
+            allAttempts: z.number(),
+            completedAttempts: z.number(),
+            failedAttempts: z.number(),
+            skippedAttempts: z.number(),
+            abandonedAttempts: z.number(),
             pagination: z.object({
                 current: z.number(),
                 pageSize: z.number(),
