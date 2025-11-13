@@ -139,6 +139,67 @@ export const VocabularyStatisticsResSchema = z
     })
     .strict()
 
+// Search Schema
+export const VocabularySearchItemSchema = z.object({
+    id: z.number(),
+    wordJp: z.string(),
+    reading: z.string(),
+    meaning: z.string()
+})
+
+export const VocabularySearchQuerySchema = z
+    .object({
+        keyword: z.string().min(1, 'Từ khóa tìm kiếm không được để trống'),
+        currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
+        pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('20')
+    })
+    .strict()
+
+export const VocabularySearchResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: z.object({
+            results: z.array(VocabularySearchItemSchema),
+            pagination: z.object({
+                current: z.number(),
+                pageSize: z.number(),
+                totalPage: z.number(),
+                totalItem: z.number()
+            })
+        }),
+        message: z.string()
+    })
+    .strict()
+
+// Detail Schema (for search/:id)
+export const VocabularyMeaningDetailSchema = z.object({
+    id: z.number(),
+    meaning: z.string(),
+    exampleSentenceJp: z.string().nullable(),
+    exampleSentence: z.string().nullable(),
+    wordType: z.any().nullable().optional()
+})
+
+export const VocabularyDetailSchema = z.object({
+    id: z.number(),
+    wordJp: z.string(),
+    reading: z.string(),
+    audioUrl: z.string().nullable(),
+    imageUrl: z.string().nullable(),
+    levelN: z.number().nullable(),
+    wordType: z.string().nullable(),
+    meanings: z.array(VocabularyMeaningDetailSchema),
+    relatedWords: z.array(VocabularySearchItemSchema)
+})
+
+export const VocabularyDetailResSchema = z
+    .object({
+        statusCode: z.number(),
+        data: VocabularyDetailSchema,
+        message: z.string()
+    })
+    .strict()
+
 // Types
 export type VocabularyType = z.infer<typeof VocabularySchema>
 export type CreateVocabularyBodyType = z.infer<typeof CreateVocabularyBodySchema>
@@ -149,3 +210,9 @@ export type GetVocabularyByIdParamsType = z.infer<typeof GetVocabularyByIdParams
 export type GetVocabularyListQueryType = z.infer<typeof GetVocabularyListQuerySchema>
 export type VocabularyStatisticsType = z.infer<typeof VocabularyStatisticsSchema>
 export type VocabularyStatisticsResType = z.infer<typeof VocabularyStatisticsResSchema>
+export type VocabularySearchItemType = z.infer<typeof VocabularySearchItemSchema>
+export type VocabularySearchQueryType = z.infer<typeof VocabularySearchQuerySchema>
+export type VocabularySearchResType = z.infer<typeof VocabularySearchResSchema>
+export type VocabularyMeaningDetailType = z.infer<typeof VocabularyMeaningDetailSchema>
+export type VocabularyDetailType = z.infer<typeof VocabularyDetailSchema>
+export type VocabularyDetailResType = z.infer<typeof VocabularyDetailResSchema>

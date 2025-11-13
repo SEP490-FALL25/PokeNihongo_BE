@@ -175,6 +175,180 @@ export class VocabularyRepository {
         return result
     }
 
+    async search(searchKeyword: string, currentPage: number, pageSize: number) {
+        // Tối ưu search theo độ ưu tiên:
+        // Priority 1: Exact match (wordJp hoặc reading chính xác bằng keyword)
+        // Priority 2: Starts with (bắt đầu bằng keyword)
+        // Priority 3: Contains (chứa keyword)
+
+        const skip = (currentPage - 1) * pageSize
+        const neededCount = skip + pageSize
+
+        // 1. Query exact matches
+        const exactMatches = await this.prismaService.vocabulary.findMany({
+            where: {
+                OR: [
+                    { wordJp: { equals: searchKeyword, mode: 'insensitive' } },
+                    { reading: { equals: searchKeyword, mode: 'insensitive' } }
+                ]
+            },
+            include: { meanings: true },
+            orderBy: { createdAt: 'desc' }
+        })
+
+        const exactIds = exactMatches.map(v => v.id)
+        const exactCount = exactMatches.length
+
+        // 2. Query starts with (loại trừ exact matches đã có)
+        // Chỉ fetch đủ để fill page nếu cần
+        const neededStartsWith = Math.max(0, neededCount - exactCount)
+        const startsWithMatches = neededStartsWith > 0
+            ? await this.prismaService.vocabulary.findMany({
+                where: {
+                    AND: [
+                        {
+                            OR: [
+                                { wordJp: { startsWith: searchKeyword, mode: 'insensitive' } },
+                                { reading: { startsWith: searchKeyword, mode: 'insensitive' } }
+                            ]
+                        },
+                        ...(exactIds.length > 0 ? [{ id: { notIn: exactIds } }] : [])
+                    ]
+                },
+                include: { meanings: true },
+                orderBy: { createdAt: 'desc' },
+                take: neededStartsWith + 10 // Fetch thêm một chút để đảm bảo có đủ
+            })
+            : []
+
+        const startsWithIds = startsWithMatches.map(v => v.id)
+        const startsWithCount = startsWithMatches.length
+        const allExcludedIds = [...exactIds, ...startsWithIds]
+
+        // 3. Query contains (loại trừ exact và starts with đã có)
+        // Chỉ fetch đủ để fill page nếu cần
+        const neededContains = Math.max(0, neededCount - exactCount - startsWithCount)
+        const containsMatches = neededContains > 0
+            ? await this.prismaService.vocabulary.findMany({
+                where: {
+                    AND: [
+                        {
+                            OR: [
+                                { wordJp: { contains: searchKeyword, mode: 'insensitive' } },
+                                { reading: { contains: searchKeyword, mode: 'insensitive' } }
+                            ]
+                        },
+                        ...(allExcludedIds.length > 0 ? [{ id: { notIn: allExcludedIds } }] : [])
+                    ]
+                },
+                include: { meanings: true },
+                orderBy: { createdAt: 'desc' },
+                take: neededContains + 10 // Fetch thêm một chút để đảm bảo có đủ
+            })
+            : []
+
+        // 4. Combine theo priority
+        const allResults = [
+            ...exactMatches,
+            ...startsWithMatches,
+            ...containsMatches
+        ]
+
+        // 5. Count total (cần count riêng để biết tổng số)
+        const [exactTotal, startsWithTotal, containsTotal] = await Promise.all([
+            this.prismaService.vocabulary.count({
+                where: {
+                    OR: [
+                        { wordJp: { equals: searchKeyword, mode: 'insensitive' } },
+                        { reading: { equals: searchKeyword, mode: 'insensitive' } }
+                    ]
+                }
+            }),
+            this.prismaService.vocabulary.count({
+                where: {
+                    AND: [
+                        {
+                            OR: [
+                                { wordJp: { startsWith: searchKeyword, mode: 'insensitive' } },
+                                { reading: { startsWith: searchKeyword, mode: 'insensitive' } }
+                            ]
+                        },
+                        ...(exactIds.length > 0 ? [{ id: { notIn: exactIds } }] : [])
+                    ]
+                }
+            }),
+            this.prismaService.vocabulary.count({
+                where: {
+                    AND: [
+                        {
+                            OR: [
+                                { wordJp: { contains: searchKeyword, mode: 'insensitive' } },
+                                { reading: { contains: searchKeyword, mode: 'insensitive' } }
+                            ]
+                        },
+                        ...(allExcludedIds.length > 0 ? [{ id: { notIn: allExcludedIds } }] : [])
+                    ]
+                }
+            })
+        ])
+
+        const total = exactTotal + startsWithTotal + containsTotal
+
+        // 6. Paginate
+        const paginatedResults = allResults.slice(skip, skip + pageSize)
+
+        return {
+            items: paginatedResults.map(item => ({
+                id: item.id,
+                wordJp: item.wordJp,
+                reading: item.reading,
+                meanings: item.meanings
+            })),
+            total,
+            page: currentPage,
+            limit: pageSize
+        }
+    }
+
+    async saveSearchHistory(userId: number, searchKeyword: string, vocabularyId?: number) {
+        await this.prismaService.vocabularySearchHistory.create({
+            data: {
+                userId,
+                searchKeyword,
+                vocabularyId: vocabularyId || null
+            }
+        })
+    }
+
+    async findRelatedWords(wordJp: string, excludeId: number, limit: number = 10) {
+        // Tìm các từ vựng có chứa wordJp này (loại trừ chính nó)
+        const relatedWords = await this.prismaService.vocabulary.findMany({
+            where: {
+                AND: [
+                    {
+                        OR: [
+                            { wordJp: { contains: wordJp, mode: 'insensitive' } },
+                            { reading: { contains: wordJp, mode: 'insensitive' } }
+                        ]
+                    },
+                    { id: { not: excludeId } }
+                ]
+            },
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                meanings: true
+            }
+        })
+
+        return relatedWords.map(item => ({
+            id: item.id,
+            wordJp: item.wordJp,
+            reading: item.reading,
+            meanings: item.meanings
+        }))
+    }
+
     private transformVocabulary(vocabulary: any): VocabularyType {
         return {
             ...vocabulary,

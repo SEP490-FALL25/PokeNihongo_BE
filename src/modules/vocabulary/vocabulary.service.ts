@@ -14,6 +14,7 @@ import {
 } from '@/modules/vocabulary/dto/vocabulary.error'
 import { VocabularyRepository } from '@/modules/vocabulary/vocabulary.repo'
 import { VocabularyHelperService } from '@/modules/vocabulary/vocabulary.helper.service'
+import { MeaningService } from '@/modules/meaning/meaning.service'
 import { VOCABULARY_MESSAGE } from '@/common/constants/message'
 import { UploadService } from '@/3rdService/upload/upload.service'
 import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
@@ -34,6 +35,7 @@ export class VocabularyService {
         private readonly uploadService: UploadService,
         private readonly textToSpeechService: TextToSpeechService,
         private readonly vocabularyHelperService: VocabularyHelperService,
+        private readonly meaningService: MeaningService,
         private readonly translationService: TranslationService,
         private readonly languagesService: LanguagesService,
         private readonly wordTypeService: WordTypeService
@@ -567,6 +569,212 @@ export class VocabularyService {
         return {
             data: vocabulary,
             message: VOCABULARY_MESSAGE.GET_SUCCESS
+        }
+    }
+
+    async findOneDetail(id: number, lang: string) {
+        const vocabulary = await this.vocabularyRepository.findUnique({
+            id
+        })
+
+        if (!vocabulary) {
+            throw VocabularyNotFoundException
+        }
+
+        // Get language ID
+        let languageId: number | undefined
+        try {
+            const language = await this.languagesService.findByCode({ code: lang })
+            languageId = language?.data?.id
+        } catch {
+            languageId = undefined
+        }
+
+        // Get all meanings with translations
+        const meanings = await this.meaningService.findByVocabularyId(vocabulary.id)
+        const meaningsWithTranslations = await Promise.all(
+            meanings.map(async (meaning: any) => {
+                let meaningText = ''
+                let exampleSentence = ''
+
+                if (meaning.meaningKey && languageId) {
+                    try {
+                        const translation = await this.translationService.findByKeyAndLanguage(
+                            meaning.meaningKey,
+                            languageId
+                        )
+                        meaningText = translation?.value || ''
+                    } catch {
+                        meaningText = ''
+                    }
+                }
+
+                if (meaning.exampleSentenceKey && languageId) {
+                    try {
+                        const translation = await this.translationService.findByKeyAndLanguage(
+                            meaning.exampleSentenceKey,
+                            languageId
+                        )
+                        exampleSentence = translation?.value || ''
+                    } catch {
+                        exampleSentence = ''
+                    }
+                }
+
+                // Resolve wordType for meaning if exists
+                let meaningWordType = null
+                if (meaning.wordType && languageId) {
+                    try {
+                        const translation = await this.translationService.findByKeyAndLanguage(
+                            meaning.wordType.nameKey,
+                            languageId
+                        )
+                        meaningWordType = translation?.value || meaning.wordType.nameKey
+                    } catch {
+                        meaningWordType = meaning.wordType?.nameKey || null
+                    }
+                }
+
+                return {
+                    id: meaning.id,
+                    meaning: meaningText,
+                    exampleSentenceJp: meaning.exampleSentenceJp || null,
+                    exampleSentence: exampleSentence || null,
+                    wordType: meaningWordType
+                }
+            })
+        )
+
+        // Resolve wordType translation for vocabulary
+        let wordTypeName: string | null = null
+        if (vocabulary.wordType && languageId) {
+            try {
+                const translation = await this.translationService.findByKeyAndLanguage(
+                    vocabulary.wordType.nameKey,
+                    languageId
+                )
+                wordTypeName = translation?.value || vocabulary.wordType.nameKey
+            } catch {
+                wordTypeName = vocabulary.wordType.nameKey
+            }
+        }
+
+        // Get related words
+        const relatedWordsData = await this.vocabularyRepository.findRelatedWords(vocabulary.wordJp, vocabulary.id, 10)
+        const relatedWords = await Promise.all(
+            relatedWordsData.map(async (vocab) => {
+                let meaning = ''
+                if (vocab.meanings && vocab.meanings.length > 0 && languageId) {
+                    const firstMeaning = vocab.meanings[0]
+                    if (firstMeaning.meaningKey) {
+                        try {
+                            const translation = await this.translationService.findByKeyAndLanguage(
+                                firstMeaning.meaningKey,
+                                languageId
+                            )
+                            meaning = translation?.value || ''
+                        } catch {
+                            meaning = ''
+                        }
+                    }
+                }
+
+                return {
+                    id: vocab.id,
+                    wordJp: vocab.wordJp,
+                    reading: vocab.reading,
+                    meaning
+                }
+            })
+        )
+
+        return {
+            statusCode: 200,
+            message: VOCABULARY_MESSAGE.GET_SUCCESS,
+            data: {
+                id: vocabulary.id,
+                wordJp: vocabulary.wordJp,
+                reading: vocabulary.reading,
+                audioUrl: vocabulary.audioUrl || null,
+                imageUrl: vocabulary.imageUrl || null,
+                levelN: vocabulary.levelN || null,
+                wordType: wordTypeName,
+                meanings: meaningsWithTranslations,
+                relatedWords
+            }
+        }
+    }
+
+    async search(searchKeyword: string, lang: string, currentPage: number, pageSize: number, userId?: number) {
+        try {
+            // Search vocabulary
+            const result = await this.vocabularyRepository.search(searchKeyword, currentPage, pageSize)
+
+            // Get language ID
+            let languageId: number | undefined
+            try {
+                const language = await this.languagesService.findByCode({ code: lang })
+                languageId = language?.data?.id
+            } catch {
+                languageId = undefined
+            }
+
+            // Map results to include only wordJp, reading, and meaning
+            const results = await Promise.all(
+                result.items.map(async (vocab) => {
+                    // Get the first meaning's translation for the requested language
+                    let meaning = ''
+                    if (vocab.meanings && vocab.meanings.length > 0 && languageId) {
+                        const firstMeaning = vocab.meanings[0]
+                        if (firstMeaning.meaningKey) {
+                            try {
+                                const translation = await this.translationService.findByKeyAndLanguage(
+                                    firstMeaning.meaningKey,
+                                    languageId
+                                )
+                                meaning = translation?.value || ''
+                            } catch {
+                                // If translation not found, leave empty
+                                meaning = ''
+                            }
+                        }
+                    }
+
+                    return {
+                        id: vocab.id,
+                        wordJp: vocab.wordJp,
+                        reading: vocab.reading,
+                        meaning
+                    }
+                })
+            )
+
+            // Save search history if user is logged in
+            if (userId && searchKeyword.trim()) {
+                try {
+                    await this.vocabularyRepository.saveSearchHistory(userId, searchKeyword.trim())
+                } catch (error) {
+                    // Log error but don't fail the request
+                    this.logger.warn(`Failed to save search history: ${error}`)
+                }
+            }
+
+            return {
+                statusCode: 200,
+                message: VOCABULARY_MESSAGE.GET_LIST_SUCCESS,
+                data: {
+                    results,
+                    pagination: {
+                        current: result.page,
+                        pageSize: result.limit,
+                        totalPage: Math.ceil(result.total / result.limit),
+                        totalItem: result.total
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.error('Error in search vocabulary:', error)
+            throw error
         }
     }
     //#endregion
