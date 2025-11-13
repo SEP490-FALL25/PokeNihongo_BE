@@ -1136,7 +1136,7 @@ model Achievement {
   // Điều kiện để nhận
   conditionType       AchievementType // Loại điều kiện, VD: LEARNING_STREAK
   conditionValue      Int? // Giá trị cần đạt, VD: 3 (cho 3 ngày)
-  conditionElementId  Int? // Yếu tố liên quan (nếu có)  // Phần thưởng (nếu có)
+  conditionElementId  Int? // Yếu tố liên quan (nếu có)  // Phần thưởng (nếu có) // hoac bai nao do
   rewardId            Int? // Liên kết tới bảng Reward
   reward              Reward?              @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
@@ -2039,7 +2039,6 @@ enum AchievementTierType {
 
 enum AchievementType {
   COMPLETE_LESSON // Hoàn thành bài học (value: 1 = bài đầu tiên)
-  PLACEMENT_TEST_DONE // Hoàn thành bài kiểm tra đầu vào
   LEARNING_STREAK // Chuỗi ngày học (value: 3, 7, 30, 100)
 }
 

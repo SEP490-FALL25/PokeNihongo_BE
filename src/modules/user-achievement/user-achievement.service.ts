@@ -333,4 +333,6 @@ export class UserAchievementService {
       message: this.i18nService.translate(UserAchievementMessage.GET_LIST_SUCCESS, lang)
     }
   }
+
+  async checkAnyAchievementcompletetheCriteria(userId: number) {}
 }

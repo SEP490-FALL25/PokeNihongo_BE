@@ -33,7 +33,6 @@ export const AchievementSchema = z.object({
     .default(null),
   conditionType: z.enum([
     AchievementType.COMPLETE_LESSON,
-    AchievementType.PLACEMENT_TEST_DONE,
     AchievementType.LEARNING_STREAK
   ]),
   conditionValue: z.number().nullable(),
