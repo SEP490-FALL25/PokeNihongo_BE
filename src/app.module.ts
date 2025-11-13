@@ -42,6 +42,7 @@ import { HandleMatchmakingCronjob } from './cronjobs/handle-matchmaking.cronjob'
 import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
 import { AIConversationRoomModule } from './modules/ai-conversation-room/ai-conversation-room.module'
 import { DebuffRoundModule } from './modules/debuff-round/debuff-round.module'
+import { FlashcardModule } from './modules/flashcard/flashcard.module'
 import { GachaBannerModule } from './modules/gacha-banner/gacha-banner.module'
 import { GachaItemRateModule } from './modules/gacha-item-rate/gacha-item-rate.module'
 import { GachaItemModule } from './modules/gacha-item/gacha-item.module'
@@ -63,11 +64,13 @@ import { ShopItemModule } from './modules/shop-item/shop-item.module'
 import { ShopPurchaseModule } from './modules/shop-purchase/shop-purchase.module'
 import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module'
 import { SpeakingModule } from './modules/speaking/speaking.module'
-import { SrsReviewModule } from './modules/user-srs-review/srs-review.module'
+import { SubscriptionFeatureModule } from './modules/subscription-feature/subscription-feature.module'
+import { SubscriptionModule } from './modules/subscription/subscription.module'
 import { TestModule } from './modules/test/test.module'
 import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module'
 import { TestSetModule } from './modules/testset/testset.module'
 import { TypeEffectivenessModule } from './modules/type-effectiveness/type-effectiveness.module'
+import { UserAchievementModule } from './modules/user-achievement/user-achievement.module'
 import { UserAIConversationModule } from './modules/user-ai-conversation/user-ai-conversation.module'
 import { UserAnswerLogModule } from './modules/user-answer-log/user-answer-log.module'
 import { UserDailyRequestModule } from './modules/user-daily-request/user-daily-request.module'
@@ -77,8 +80,8 @@ import { UserHistoryModule } from './modules/user-history/user-history.module'
 import { UserPokemonModule } from './modules/user-pokemon/user-pokemon.module'
 import { UserProgressModule } from './modules/user-progress/user-progress.module'
 import { UserRewardHistoryModule } from './modules/user-reward-history/user-reward-history.module'
-import { FlashcardModule } from './modules/flashcard/flashcard.module'
 import { UserSeasonHistoryModule } from './modules/user-season-history/user-season-history.module'
+import { SrsReviewModule } from './modules/user-srs-review/srs-review.module'
 import { UserTestAnswerLogModule } from './modules/user-test-answer-log/user-test-answer-log.module'
 import { UserTestAttemptModule } from './modules/user-test-attempt/user-test-attempt.module'
 import { UserTestModule } from './modules/user-test/user-test.module'
@@ -88,7 +91,7 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
-import { UserAchievementModule } from './modules/user-achievement/user-achievement.module';
+import { SubscriptionPlanModule } from './modules/subscription-plan/subscription-plan.module';
 
 @Module({
   imports: [
@@ -177,7 +180,10 @@ import { UserAchievementModule } from './modules/user-achievement/user-achieveme
     RoundQuestionAnswerlogModule,
     SeasonRankRewardModule,
     UserAchievementModule,
-    FlashcardModule
+    SubscriptionModule,
+    SubscriptionFeatureModule,
+    FlashcardModule,
+    SubscriptionPlanModule
   ],
 
   controllers: [],

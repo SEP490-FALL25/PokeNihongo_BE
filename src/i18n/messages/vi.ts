@@ -645,5 +645,39 @@ export const viMessages = {
     ALREADY_EXISTS: 'Thành tích người dùng đã tồn tại',
     INVALID_DATA: 'Dữ liệu thành tích người dùng không hợp lệ',
     INVALID_STATUS_CLAIM: 'Trạng thái nhận thành tích không hợp lệ'
+  },
+  subscription: {
+    CREATE_SUCCESS: 'Tạo gói đăng ký thành công',
+    UPDATE_SUCCESS: 'Cập nhật gói đăng ký thành công',
+    DELETE_SUCCESS: 'Xóa gói đăng ký thành công',
+    GET_SUCCESS: 'Lấy thông tin gói đăng ký thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách gói đăng ký thành công',
+    NOT_FOUND: 'Không tìm thấy gói đăng ký',
+    ALREADY_EXISTS: 'Gói đăng ký đã tồn tại',
+    INVALID_DATA: 'Dữ liệu gói đăng ký không hợp lệ'
+  },
+  subscription_feature: {
+    CREATE_SUCCESS: 'Tạo tính năng gói đăng ký thành công',
+    UPDATE_SUCCESS: 'Cập nhật tính năng gói đăng ký thành công',
+    DELETE_SUCCESS: 'Xóa tính năng gói đăng ký thành công',
+    GET_SUCCESS: 'Lấy thông tin tính năng gói đăng ký thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách tính năng gói đăng ký thành công',
+    NOT_FOUND: 'Không tìm thấy tính năng gói đăng ký',
+    ALREADY_EXISTS: 'Tính năng gói đăng ký đã tồn tại',
+    INVALID_DATA: 'Dữ liệu tính năng gói đăng ký không hợp lệ',
+    INVALID_XP_MULTIPLIER_VALUE:
+      'Giá trị hệ số nhân XP không hợp lệ (phải lớn hơn hoặc bằng 1)',
+    INVALID_COIN_MULTIPLIER_VALUE:
+      'Giá trị hệ số nhân Coin không hợp lệ (phải lớn hơn hoặc bằng 1)'
+  },
+  subscription_plan: {
+    CREATE_SUCCESS: 'Tạo kế hoạch đăng ký thành công',
+    UPDATE_SUCCESS: 'Cập nhật kế hoạch đăng ký thành công',
+    DELETE_SUCCESS: 'Xóa kế hoạch đăng ký thành công',
+    GET_SUCCESS: 'Lấy thông tin kế hoạch đăng ký thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách kế hoạch đăng ký thành công',
+    NOT_FOUND: 'Không tìm thấy kế hoạch đăng ký',
+    ALREADY_EXISTS: 'Kế hoạch đăng ký đã tồn tại',
+    INVALID_DATA: 'Dữ liệu kế hoạch đăng ký không hợp lệ'
   }
 }

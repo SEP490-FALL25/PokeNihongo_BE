@@ -62,56 +62,68 @@ model User {
   updatedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupUpdatedBy")
   deletedAchievementGroups   AchievementGroup[]  @relation("AchievementGroupDeletedBy")
 
-  createdQuestionBanks                QuestionBank[]      @relation("QuestionBankCreatedBy")
-  createdAttendanceConfigs            AttendanceConfig[]  @relation("AttendanceConfigCreatedBy")
-  updatedAttendanceConfigs            AttendanceConfig[]  @relation("AttendanceConfigUpdatedBy")
-  deletedAttendanceConfigs            AttendanceConfig[]  @relation("AttendanceConfigDeletedBy")
-  createdAttendances                  Attendance[]        @relation("AttendanceCreatedBy")
-  updatedAttendances                  Attendance[]        @relation("AttendanceUpdatedBy")
-  deletedAttendances                  Attendance[]        @relation("AttendanceDeletedBy")
-  createdTestSets                     TestSet[]           @relation("TestSetCreatedBy")
-  createdWallets                      Wallet[]            @relation("WalletCreatedBy")
-  updatedWallets                      Wallet[]            @relation("WalletUpdatedBy")
-  deletedWallets                      Wallet[]            @relation("WalletDeletedBy")
-  createdWalletTransactions           WalletTransaction[] @relation("WalletTransactionCreatedBy")
-  updatedWalletTransactions           WalletTransaction[] @relation("WalletTransactionUpdatedBy")
-  deletedWalletTransactions           WalletTransaction[] @relation("WalletTransactionDeletedBy")
-  createdShopBanners                  ShopBanner[]        @relation("ShopBannerCreatedBy")
-  updatedShopBanners                  ShopBanner[]        @relation("ShopBannerUpdatedBy")
-  deletedShopBanners                  ShopBanner[]        @relation("ShopBannerDeletedBy")
-  createdShopPurchases                ShopPurchase[]      @relation("ShopPurchaseCreatedBy")
-  updatedShopPurchases                ShopPurchase[]      @relation("ShopPurchaseUpdatedBy")
-  deletedShopPurchases                ShopPurchase[]      @relation("ShopPurchaseDeletedBy")
-  createdShopItems                    ShopItem[]          @relation("ShopItemCreatedBy")
-  updatedShopItems                    ShopItem[]          @relation("ShopItemUpdatedBy")
-  deletedShopItems                    ShopItem[]          @relation("ShopItemDeletedBy")
-  createdGachaBanners                 GachaBanner[]       @relation("GachaBannerCreatedBy")
-  updatedGachaBanners                 GachaBanner[]       @relation("GachaBannerUpdatedBy")
-  deletedGachaBanners                 GachaBanner[]       @relation("GachaBannerDeletedBy")
-  createdGachaItemRates               GachaItemRate[]     @relation("GachaItemRateCreatedBy")
-  updatedGachaItemRates               GachaItemRate[]     @relation("GachaItemRateUpdatedBy")
-  deletedGachaItemRates               GachaItemRate[]     @relation("GachaItemRateDeletedBy")
-  createdGachaItems                   GachaItem[]         @relation("GachaItemCreatedBy")
-  updatedGachaItems                   GachaItem[]         @relation("GachaItemUpdatedBy")
-  deletedGachaItems                   GachaItem[]         @relation("GachaItemDeletedBy")
-  createdGachaPurchases               GachaPurchase[]     @relation("GachaPurchaseCreatedBy")
-  updatedGachaPurchases               GachaPurchase[]     @relation("GachaPurchaseUpdatedBy")
-  deletedGachaPurchases               GachaPurchase[]     @relation("GachaPurchaseDeletedBy")
-  createdShopRarityPrices             ShopRarityPrice[]   @relation("ShopRarityPriceCreatedBy")
-  updatedShopRarityPrices             ShopRarityPrice[]   @relation("ShopRarityPriceUpdatedBy")
-  deletedShopRarityPrices             ShopRarityPrice[]   @relation("ShopRarityPriceDeletedBy")
-  createdLeaderboardSeasons           LeaderboardSeason[] @relation("LeaderboardSeasonCreatedBy")
-  updatedLeaderboardSeasons           LeaderboardSeason[] @relation("LeaderboardSeasonUpdatedBy")
-  deletedLeaderboardSeasons           LeaderboardSeason[] @relation("LeaderboardSeasonDeletedBy")
-  createdDebuffMatchRoundParticipants DebuffRound[]       @relation("DebuffMatchRoundParticipantCreatedBy")
-  updatedDebuffMatchRoundParticipants DebuffRound[]       @relation("DebuffMatchRoundParticipantUpdatedBy")
-  deletedDebuffMatchRoundParticipants DebuffRound[]       @relation("DebuffMatchRoundParticipantDeletedBy")
-  createdGeminiConfigs                GeminiConfig[]      @relation("GeminiConfigCreatedBy")
-  updatedGeminiConfigs                GeminiConfig[]      @relation("GeminiConfigUpdatedBy")
-  deletedGeminiConfigs                GeminiConfig[]      @relation("GeminiConfigDeletedBy")
-  createdseasonRankRewards            SeasonRankReward[]  @relation("SeasonRankRewardCreatedBy")
-  updatedSeasonRankRewards            SeasonRankReward[]  @relation("SeasonRankRewardUpdatedBy")
-  deletedSeasonRankRewards            SeasonRankReward[]  @relation("SeasonRankRewardDeletedBy")
+  createdQuestionBanks                QuestionBank[]        @relation("QuestionBankCreatedBy")
+  createdAttendanceConfigs            AttendanceConfig[]    @relation("AttendanceConfigCreatedBy")
+  updatedAttendanceConfigs            AttendanceConfig[]    @relation("AttendanceConfigUpdatedBy")
+  deletedAttendanceConfigs            AttendanceConfig[]    @relation("AttendanceConfigDeletedBy")
+  createdAttendances                  Attendance[]          @relation("AttendanceCreatedBy")
+  updatedAttendances                  Attendance[]          @relation("AttendanceUpdatedBy")
+  deletedAttendances                  Attendance[]          @relation("AttendanceDeletedBy")
+  createdTestSets                     TestSet[]             @relation("TestSetCreatedBy")
+  createdWallets                      Wallet[]              @relation("WalletCreatedBy")
+  updatedWallets                      Wallet[]              @relation("WalletUpdatedBy")
+  deletedWallets                      Wallet[]              @relation("WalletDeletedBy")
+  createdWalletTransactions           WalletTransaction[]   @relation("WalletTransactionCreatedBy")
+  updatedWalletTransactions           WalletTransaction[]   @relation("WalletTransactionUpdatedBy")
+  deletedWalletTransactions           WalletTransaction[]   @relation("WalletTransactionDeletedBy")
+  createdShopBanners                  ShopBanner[]          @relation("ShopBannerCreatedBy")
+  updatedShopBanners                  ShopBanner[]          @relation("ShopBannerUpdatedBy")
+  deletedShopBanners                  ShopBanner[]          @relation("ShopBannerDeletedBy")
+  createdShopPurchases                ShopPurchase[]        @relation("ShopPurchaseCreatedBy")
+  updatedShopPurchases                ShopPurchase[]        @relation("ShopPurchaseUpdatedBy")
+  deletedShopPurchases                ShopPurchase[]        @relation("ShopPurchaseDeletedBy")
+  createdShopItems                    ShopItem[]            @relation("ShopItemCreatedBy")
+  updatedShopItems                    ShopItem[]            @relation("ShopItemUpdatedBy")
+  deletedShopItems                    ShopItem[]            @relation("ShopItemDeletedBy")
+  createdGachaBanners                 GachaBanner[]         @relation("GachaBannerCreatedBy")
+  updatedGachaBanners                 GachaBanner[]         @relation("GachaBannerUpdatedBy")
+  deletedGachaBanners                 GachaBanner[]         @relation("GachaBannerDeletedBy")
+  createdGachaItemRates               GachaItemRate[]       @relation("GachaItemRateCreatedBy")
+  updatedGachaItemRates               GachaItemRate[]       @relation("GachaItemRateUpdatedBy")
+  deletedGachaItemRates               GachaItemRate[]       @relation("GachaItemRateDeletedBy")
+  createdGachaItems                   GachaItem[]           @relation("GachaItemCreatedBy")
+  updatedGachaItems                   GachaItem[]           @relation("GachaItemUpdatedBy")
+  deletedGachaItems                   GachaItem[]           @relation("GachaItemDeletedBy")
+  createdGachaPurchases               GachaPurchase[]       @relation("GachaPurchaseCreatedBy")
+  updatedGachaPurchases               GachaPurchase[]       @relation("GachaPurchaseUpdatedBy")
+  deletedGachaPurchases               GachaPurchase[]       @relation("GachaPurchaseDeletedBy")
+  createdShopRarityPrices             ShopRarityPrice[]     @relation("ShopRarityPriceCreatedBy")
+  updatedShopRarityPrices             ShopRarityPrice[]     @relation("ShopRarityPriceUpdatedBy")
+  deletedShopRarityPrices             ShopRarityPrice[]     @relation("ShopRarityPriceDeletedBy")
+  createdLeaderboardSeasons           LeaderboardSeason[]   @relation("LeaderboardSeasonCreatedBy")
+  updatedLeaderboardSeasons           LeaderboardSeason[]   @relation("LeaderboardSeasonUpdatedBy")
+  deletedLeaderboardSeasons           LeaderboardSeason[]   @relation("LeaderboardSeasonDeletedBy")
+  createdDebuffMatchRoundParticipants DebuffRound[]         @relation("DebuffMatchRoundParticipantCreatedBy")
+  updatedDebuffMatchRoundParticipants DebuffRound[]         @relation("DebuffMatchRoundParticipantUpdatedBy")
+  deletedDebuffMatchRoundParticipants DebuffRound[]         @relation("DebuffMatchRoundParticipantDeletedBy")
+  createdGeminiConfigs                GeminiConfig[]        @relation("GeminiConfigCreatedBy")
+  updatedGeminiConfigs                GeminiConfig[]        @relation("GeminiConfigUpdatedBy")
+  deletedGeminiConfigs                GeminiConfig[]        @relation("GeminiConfigDeletedBy")
+  createdseasonRankRewards            SeasonRankReward[]    @relation("SeasonRankRewardCreatedBy")
+  updatedSeasonRankRewards            SeasonRankReward[]    @relation("SeasonRankRewardUpdatedBy")
+  deletedSeasonRankRewards            SeasonRankReward[]    @relation("SeasonRankRewardDeletedBy")
+  createdSubscription                 Subscription[]        @relation("SubscriptionCreatedBy")
+  updatedSubscription                 Subscription[]        @relation("SubscriptionUpdatedBy")
+  deletedSubscription                 Subscription[]        @relation("SubscriptionDeletedBy")
+  createdSubscriptionPlans            SubscriptionPlan[]    @relation("SubscriptionPlanCreatedBy")
+  updatedSubscriptionPlans            SubscriptionPlan[]    @relation("SubscriptionPlanUpdatedBy")
+  deletedSubscriptionPlans            SubscriptionPlan[]    @relation("SubscriptionPlanDeletedBy")
+  createdSubscriptionFeatures         SubscriptionFeature[] @relation("SubscriptionFeatureCreatedBy")
+  updatedSubscriptionFeatures         SubscriptionFeature[] @relation("SubscriptionFeatureUpdatedBy")
+  deletedSubscriptionFeatures         SubscriptionFeature[] @relation("SubscriptionFeatureDeletedBy")
+  createdUserSubscriptions            UserSubscription[]    @relation("UserSubscriptionCreatedBy")
+  updatedUserSubscriptions            UserSubscription[]    @relation("UserSubscriptionUpdatedBy")
+  deletedUserSubscriptions            UserSubscription[]    @relation("UserSubscriptionDeletedBy")
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -162,6 +174,7 @@ model User {
   UserAIRecommendation      UserAIRecommendation[]
   UserSrsReview             UserSrsReview[]
   aiconversationRooms       AIConversationRoom[]
+  userSubscriptions         UserSubscription[]
   flashcardDecks            FlashcardDeck[]
   vocabularySearchHistories VocabularySearchHistory[]
 
@@ -296,6 +309,11 @@ model Translation {
   achievementDescription      Achievement? @relation("AchievementDescriptionRelation", fields: [achievementDescriptionKey], references: [descriptionKey], onDelete: Cascade)
   achievementConditionTextKey String?
   achievementCondition        Achievement? @relation("AchievementConditionTextRelation", fields: [achievementConditionTextKey], references: [conditionTextKey], onDelete: Cascade)
+
+  subscriptionNameKey        String?
+  subscriptionName           Subscription? @relation("SubscriptionNameRelation", fields: [subscriptionNameKey], references: [nameKey], onDelete: Cascade)
+  subscriptionDescriptionKey String?
+  subscriptionDescription    Subscription? @relation("SubscriptionDescriptionRelation", fields: [subscriptionDescriptionKey], references: [descriptionKey], onDelete: Cascade)
 
   @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
   @@index([languageId])
@@ -2002,6 +2020,159 @@ model SeasonRankReward {
   @@unique([seasonId, rankName, order])
   @@index([seasonId])
   @@index([rankName])
+}
+
+model Subscription {
+  id             Int                 @id @default(autoincrement())
+  tagName        TagNameSubscription @default(NORMAL)
+  nameKey        String              @unique
+  descriptionKey String              @unique
+
+  // Liên kết
+  features                SubscriptionFeature[] // Các tính năng của sản phẩm này
+  plans                   SubscriptionPlan[] // Các phương án giá của sản phẩm này
+  // translation
+  nameTranslations        Translation[]         @relation("SubscriptionNameRelation")
+  descriptionTranslations Translation[]         @relation("SubscriptionDescriptionRelation")
+
+  // --- Meta Fields ---
+  createdById Int?
+  createdBy   User? @relation("SubscriptionCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("SubscriptionDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("SubscriptionUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([tagName])
+}
+
+// Bảng trung gian định nghĩa chi tiết tính năng (ví dụ: "Gói Ultra" có "XP_MULTIPLIER" giá trị "1.2")
+model SubscriptionFeature {
+  id Int @id @default(autoincrement())
+
+  subscriptionId Int
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  featureKey FeatureKey // Tính năng là gì (vd: XP_MULTIPLIER)
+  value      String? // Giá trị của tính năng (vd: "1.2", "true")
+
+  // --- Meta Fields ---
+  createdById Int?
+  createdBy   User? @relation("SubscriptionFeatureCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("SubscriptionFeatureDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("SubscriptionFeatureUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([subscriptionId])
+}
+
+// Định nghĩa GIÁ & THỜI HẠN cho một Sản phẩm (ví dụ: "Gói Ultra" bán "Gói 1 Tháng" giá 129k)
+model SubscriptionPlan {
+  id             Int          @id @default(autoincrement())
+  subscriptionId Int
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  isActive       Boolean      @default(false)
+
+  // Thông tin giá
+  price Int // Lưu 129000, 99000
+
+  // Thông tin thời hạn
+  type           SubscriptionType // LIFETIME hay RECURRING
+  durationInDays Int? // 30, 90, 180. NULL nếu type = LIFETIME
+
+  // Liên kết
+  userSubscribers UserSubscription[]
+
+  // --- Meta Fields ---
+  createdById Int?
+  createdBy   User? @relation("SubscriptionPlanCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("SubscriptionPlanDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("SubscriptionPlanUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([subscriptionId])
+}
+
+// Bảng ghi lại việc User đã mua "Phương án" nào
+model UserSubscription {
+  id Int @id @default(autoincrement())
+
+  // --- Ai là người đăng ký ---
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // --- Mua "Phương án" nào ---
+  subscriptionPlanId Int
+  subscriptionPlan   SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id], onDelete: Restrict) // Không cho xóa Plan nếu user đã mua
+
+  // --- Thời hạn ---
+  startDate DateTime  @default(now())
+  expiresAt DateTime? // NULL nếu là gói LIFETIME
+
+  // --- Trạng thái ---
+  status UserSubscriptionStatus @default(PENDING_PAYMENT)
+
+  // --- Meta Fields ---
+  // createdById ở đây có thể là Admin (nếu admin thêm thủ công),
+  // khác với userId là người sở hữu gói
+  createdById Int?
+  createdBy   User? @relation("UserSubscriptionCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("UserSubscriptionDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("UserSubscriptionUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([userId])
+  @@index([subscriptionPlanId])
+  @@index([expiresAt])
+}
+
+enum UserSubscriptionStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  PAYMENT_FAILED
+  CANCELED
+}
+
+enum TagNameSubscription {
+  NORMAL
+  COMBO
+  ULTRA
+}
+
+// Loại gói: Mua 1 lần hay đăng ký lặp lại
+enum SubscriptionType {
+  LIFETIME
+  RECURRING
+}
+
+// Các "khóa" tính năng để code của bạn có thể nhận diện
+enum FeatureKey {
+  UNLOCK_READING
+  UNLOCK_LISTENING
+  XP_MULTIPLIER
+  COIN_MULTIPLIER
+  UNLIMITED_TESTS
+  PERSONALIZATION
+  // Bạn có thể thêm các key khác ở đây
 }
 
 enum MatchDebuffType {

@@ -689,3 +689,38 @@ export const UserAchievementMessage = {
   INVALID_DATA: 'user_achievement.INVALID_DATA',
   INVALID_STATUS_CLAIM: 'user_achievement.INVALID_STATUS_CLAIM'
 } as const
+
+export const SubscriptionMessage = {
+  CREATE_SUCCESS: 'subscription.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'subscription.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'subscription.DELETE_SUCCESS',
+  GET_SUCCESS: 'subscription.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'subscription.GET_LIST_SUCCESS',
+  NOT_FOUND: 'subscription.NOT_FOUND',
+  ALREADY_EXISTS: 'subscription.ALREADY_EXISTS',
+  INVALID_DATA: 'subscription.INVALID_DATA'
+} as const
+
+export const SubscriptionFeatureMessage = {
+  CREATE_SUCCESS: 'subscription_feature.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'subscription_feature.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'subscription_feature.DELETE_SUCCESS',
+  GET_SUCCESS: 'subscription_feature.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'subscription_feature.GET_LIST_SUCCESS',
+  NOT_FOUND: 'subscription_feature.NOT_FOUND',
+  ALREADY_EXISTS: 'subscription_feature.ALREADY_EXISTS',
+  INVALID_DATA: 'subscription_feature.INVALID_DATA',
+  INVALID_XP_MULTIPLIER_VALUE: 'subscription_feature.INVALID_XP_MULTIPLIER_VALUE',
+  INVALID_COIN_MULTIPLIER_VALUE: 'subscription_feature.INVALID_COIN_MULTIPLIER_VALUE'
+} as const
+
+export const SubscriptionPlanMessage = {
+  CREATE_SUCCESS: 'subscription_plan.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'subscription_plan.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'subscription_plan.DELETE_SUCCESS',
+  GET_SUCCESS: 'subscription_plan.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'subscription_plan.GET_LIST_SUCCESS',
+  NOT_FOUND: 'subscription_plan.NOT_FOUND',
+  ALREADY_EXISTS: 'subscription_plan.ALREADY_EXISTS',
+  INVALID_DATA: 'subscription_plan.INVALID_DATA'
+} as const

@@ -657,5 +657,39 @@ export const enMessages = {
     ALREADY_EXISTS: 'User achievement already exists',
     INVALID_DATA: 'Invalid user achievement data',
     INVALID_STATUS_CLAIM: 'Invalid status for claiming achievement'
+  },
+  subscription: {
+    CREATE_SUCCESS: 'Subscription created successfully',
+    UPDATE_SUCCESS: 'Subscription updated successfully',
+    DELETE_SUCCESS: 'Subscription deleted successfully',
+    GET_SUCCESS: 'Subscription retrieved successfully',
+
+    GET_LIST_SUCCESS: 'Subscription list retrieved successfully',
+    NOT_FOUND: 'Subscription not found',
+
+    ALREADY_EXISTS: 'Subscription already exists',
+    INVALID_DATA: 'Invalid subscription data'
+  },
+  subscription_feature: {
+    CREATE_SUCCESS: 'Subscription feature created successfully',
+    UPDATE_SUCCESS: 'Subscription feature updated successfully',
+    DELETE_SUCCESS: 'Subscription feature deleted successfully',
+    GET_SUCCESS: 'Subscription feature retrieved successfully',
+    GET_LIST_SUCCESS: 'Subscription feature list retrieved successfully',
+    NOT_FOUND: 'Subscription feature not found',
+    ALREADY_EXISTS: 'Subscription feature already exists',
+    INVALID_DATA: 'Invalid subscription feature data',
+    INVALID_XP_MULTIPLIER_VALUE: 'XP multiplier must be greater than or equal to 1',
+    INVALID_COIN_MULTIPLIER_VALUE: 'Coin multiplier must be greater than or equal to 1'
+  },
+  subscription_plan: {
+    CREATE_SUCCESS: 'Subscription plan created successfully',
+    UPDATE_SUCCESS: 'Subscription plan updated successfully',
+    DELETE_SUCCESS: 'Subscription plan deleted successfully',
+    GET_SUCCESS: 'Subscription plan retrieved successfully',
+    GET_LIST_SUCCESS: 'Subscription plan list retrieved successfully',
+    NOT_FOUND: 'Subscription plan not found',
+    ALREADY_EXISTS: 'Subscription plan already exists',
+    INVALID_DATA: 'Invalid subscription plan data'
   }
 }
