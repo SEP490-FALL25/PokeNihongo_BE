@@ -329,7 +329,17 @@ export class AchievementRepo {
           : { where: { languageId: langId }, select: { value: true, languageId: true } },
         conditionTextTranslations: isAllLang
           ? { select: { value: true, languageId: true } }
-          : { where: { languageId: langId }, select: { value: true, languageId: true } }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } },
+        reward: {
+          include: {
+            nameTranslations: isAllLang
+              ? { select: { value: true, languageId: true } }
+              : {
+                  where: { languageId: langId },
+                  select: { value: true, languageId: true }
+                }
+          }
+        }
       }
     })
   }
