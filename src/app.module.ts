@@ -88,6 +88,7 @@ import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
 import { UserAchievementModule } from './modules/user-achievement/user-achievement.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -175,7 +176,8 @@ import { UserAchievementModule } from './modules/user-achievement/user-achieveme
     RoundQuestionModule,
     RoundQuestionAnswerlogModule,
     SeasonRankRewardModule,
-    UserAchievementModule
+    UserAchievementModule,
+    SubscriptionModule
   ],
 
   controllers: [],

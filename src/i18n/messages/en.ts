@@ -637,5 +637,17 @@ export const enMessages = {
     ALREADY_EXISTS: 'User achievement already exists',
     INVALID_DATA: 'Invalid user achievement data',
     INVALID_STATUS_CLAIM: 'Invalid status for claiming achievement'
+  },
+  subscription: {
+    CREATE_SUCCESS: 'Subscription created successfully',
+    UPDATE_SUCCESS: 'Subscription updated successfully',
+    DELETE_SUCCESS: 'Subscription deleted successfully',
+    GET_SUCCESS: 'Subscription retrieved successfully',
+
+    GET_LIST_SUCCESS: 'Subscription list retrieved successfully',
+    NOT_FOUND: 'Subscription not found',
+
+    ALREADY_EXISTS: 'Subscription already exists',
+    INVALID_DATA: 'Invalid subscription data'
   }
 }

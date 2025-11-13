@@ -668,3 +668,14 @@ export const UserAchievementMessage = {
   INVALID_DATA: 'user_achievement.INVALID_DATA',
   INVALID_STATUS_CLAIM: 'user_achievement.INVALID_STATUS_CLAIM'
 } as const
+
+export const SubscriptionMessage = {
+  CREATE_SUCCESS: 'subscription.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'subscription.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'subscription.DELETE_SUCCESS',
+  GET_SUCCESS: 'subscription.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'subscription.GET_LIST_SUCCESS',
+  NOT_FOUND: 'subscription.NOT_FOUND',
+  ALREADY_EXISTS: 'subscription.ALREADY_EXISTS',
+  INVALID_DATA: 'subscription.INVALID_DATA'
+} as const

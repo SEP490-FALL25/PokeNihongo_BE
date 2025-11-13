@@ -613,5 +613,16 @@ export const jaMessages = {
     ALREADY_EXISTS: 'ユーザー実績は既に存在します',
     INVALID_DATA: '無効なユーザー実績データです',
     INVALID_STATUS_CLAIM: 'この実績のステータスは報酬を受け取るのに適していません'
+  },
+  subscription: {
+    CREATE_SUCCESS: 'サブスクリプションの作成に成功しました',
+    UPDATE_SUCCESS: 'サブスクリプションの更新に成功しました',
+    DELETE_SUCCESS: 'サブスクリプションの削除に成功しました',
+
+    GET_SUCCESS: 'サブスクリプション情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'サブスクリプションリストの取得に成功しました',
+    NOT_FOUND: 'サブスクリプションが見つかりません',
+    ALREADY_EXISTS: 'サブスクリプションは既に存在します',
+    INVALID_DATA: '無効なサブスクリプションデータです'
   }
 }
