@@ -871,7 +871,7 @@ Không thêm bất kỳ text nào ngoài JSON. Không bịa ID, chỉ dùng ID c
         }
 
         for (const attempt of exerciseAttempts) {
-            if (attempt.status === 'FAIL' || attempt.status === 'ABANDONED') {
+            if (attempt.status === 'FAILED' || attempt.status === 'ABANDONED') {
                 const existing = failedExercises.get(attempt.exerciseId) || { exerciseId: attempt.exerciseId, updatedAt: attempt.updatedAt, questionTypes: new Set<string>() }
                 for (const al of answerLogs) {
                     if (al.userExerciseAttemptId === attempt.id && !al.isCorrect) {

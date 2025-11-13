@@ -593,7 +593,7 @@ export class GeminiService {
         }
 
         for (const attempt of exerciseAttempts) {
-            if (attempt.status === 'FAIL' || attempt.status === 'ABANDONED') {
+            if (attempt.status === 'FAILED' || attempt.status === 'ABANDONED') {
                 const existing = failedExercises.get(attempt.exerciseId) || { exerciseId: attempt.exerciseId, updatedAt: attempt.updatedAt, questionTypes: new Set<string>() }
                 // Thêm question types từ answer logs
                 for (const al of answerLogs) {

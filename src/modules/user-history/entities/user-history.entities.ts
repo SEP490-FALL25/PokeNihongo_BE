@@ -166,7 +166,7 @@ export const GetRecentExercisesQuerySchema = z
         currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
         pageSize: z.string().transform((val) => parseInt(val, 10)).optional().default('10'),
         status: z
-            .enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'FAIL', 'ABANDONED', 'SKIPPED'])
+            .enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'ABANDONED', 'SKIPPED'])
             .optional()
     })
     .strict()
