@@ -111,7 +111,7 @@ export class GetUserExerciseAttemptListQuerySwaggerDTO {
 
     @ApiProperty({
         example: 'IN_PROGRESS',
-        description: 'Lọc theo trạng thái: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAIL (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
+        description: 'Lọc theo trạng thái: IN_PROGRESS (đang làm), COMPLETED (hoàn thành), FAILED (hoàn thành nhưng sai), ABANDONED (bỏ dở)',
         enum: ['IN_PROGRESS', 'COMPLETED', 'FAILED', 'ABANDONED'],
         required: false
     })

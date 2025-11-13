@@ -167,7 +167,7 @@ export class UserExerciseAttemptRepository {
     /**
      * Tìm attempt gần nhất theo thứ tự ưu tiên:
      * Ưu tiên theo thời gian: attempt có updatedAt gần nhất là ưu tiên cao nhất
-     * Trong cùng khoảng thời gian (cùng updatedAt), ưu tiên theo status: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAIL
+     * Trong cùng khoảng thời gian (cùng updatedAt), ưu tiên theo status: IN_PROGRESS > ABANDONED > SKIPPED > COMPLETED/FAILED
      * 
      * Logic: 
      * - Nếu SKIPPED gần nhất (updatedAt gần nhất) → sẽ được chọn, sau đó service sẽ tạo mới
