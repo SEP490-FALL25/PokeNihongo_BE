@@ -664,6 +664,10 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách tính năng gói đăng ký thành công',
     NOT_FOUND: 'Không tìm thấy tính năng gói đăng ký',
     ALREADY_EXISTS: 'Tính năng gói đăng ký đã tồn tại',
-    INVALID_DATA: 'Dữ liệu tính năng gói đăng ký không hợp lệ'
+    INVALID_DATA: 'Dữ liệu tính năng gói đăng ký không hợp lệ',
+    INVALID_XP_MULTIPLIER_VALUE:
+      'Giá trị hệ số nhân XP không hợp lệ (phải lớn hơn hoặc bằng 1)',
+    INVALID_COIN_MULTIPLIER_VALUE:
+      'Giá trị hệ số nhân Coin không hợp lệ (phải lớn hơn hoặc bằng 1)'
   }
 }

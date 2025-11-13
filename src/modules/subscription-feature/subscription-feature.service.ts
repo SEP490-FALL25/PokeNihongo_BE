@@ -1,3 +1,4 @@
+import { FeatureKey } from '@/common/constants/subscription.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { SubscriptionFeatureMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
@@ -8,7 +9,11 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 import { SubscriptionRepo } from '../subscription/subscription.repo'
-import { SubscriptionFeatureNotFoundException } from './dto/subscription-feature.error'
+import {
+  InvalidValueForCoinMultiplierExistsException,
+  InvalidValueForXPMultiplierExistsException,
+  SubscriptionFeatureNotFoundException
+} from './dto/subscription-feature.error'
 import {
   CreateSubscriptionFeatureBodyType,
   UpdateSubscriptionFeatureBodyType,
@@ -58,6 +63,21 @@ export class SubscriptionFeatureService {
     lang: string = 'vi'
   ) {
     try {
+      // Validate numeric multiplier features for create
+      if (
+        data.featureKey === FeatureKey.COIN_MULTIPLIER ||
+        data.featureKey === FeatureKey.XP_MULTIPLIER
+      ) {
+        const num = Number(data.value)
+        if (!data.value || !Number.isFinite(num) || num < 1) {
+          if (data.featureKey === FeatureKey.COIN_MULTIPLIER) {
+            throw new InvalidValueForCoinMultiplierExistsException()
+          } else {
+            throw new InvalidValueForXPMultiplierExistsException()
+          }
+        }
+        data.value = num.toString()
+      }
       const result = await this.subscriptionFeatureRepo.create({
         createdById: userId,
         data: {
@@ -96,6 +116,29 @@ export class SubscriptionFeatureService {
     lang: string = 'vi'
   ) {
     try {
+      // Fetch existing if needed for validation (when only value changed)
+      const existing = await this.subscriptionFeatureRepo.findById(id)
+      if (!existing) {
+        throw new SubscriptionFeatureNotFoundException()
+      }
+      const effectiveFeatureKey = data.featureKey || existing.featureKey
+      if (
+        effectiveFeatureKey === FeatureKey.COIN_MULTIPLIER ||
+        effectiveFeatureKey === FeatureKey.XP_MULTIPLIER
+      ) {
+        // Determine value to validate (new value or existing if unchanged?) Only validate new value if provided
+        if (data.value !== undefined) {
+          const num = Number(data.value)
+          if (!data.value || !Number.isFinite(num) || num < 1) {
+            if (effectiveFeatureKey === FeatureKey.COIN_MULTIPLIER) {
+              throw new InvalidValueForCoinMultiplierExistsException()
+            } else {
+              throw new InvalidValueForXPMultiplierExistsException()
+            }
+          }
+          data.value = num.toString()
+        }
+      }
       const subscriptionFeature = await this.subscriptionFeatureRepo.update({
         id,
         data: data,
@@ -178,6 +221,23 @@ export class SubscriptionFeatureService {
           createdById: updatedById,
           updatedById
         }))
+
+        // Validate numeric multiplier features: must be a number >= 1 with specific error classes
+        for (const item of createData) {
+          if (item.featureKey === FeatureKey.COIN_MULTIPLIER) {
+            const num = Number(item.value)
+            if (!item.value || !Number.isFinite(num) || num < 1) {
+              throw new InvalidValueForCoinMultiplierExistsException()
+            }
+            item.value = num.toString()
+          } else if (item.featureKey === FeatureKey.XP_MULTIPLIER) {
+            const num = Number(item.value)
+            if (!item.value || !Number.isFinite(num) || num < 1) {
+              throw new InvalidValueForXPMultiplierExistsException()
+            }
+            item.value = num.toString()
+          }
+        }
 
         // 3. Create all features at once
         await tx.subscriptionFeature.createMany({

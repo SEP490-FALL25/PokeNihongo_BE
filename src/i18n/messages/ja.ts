@@ -653,6 +653,8 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'サブスクリプション機能リストの取得に成功しました',
     NOT_FOUND: 'サブスクリプション機能が見つかりません',
     ALREADY_EXISTS: 'サブスクリプション機能は既に存在します',
-    INVALID_DATA: '無効なサブスクリプション機能データです'
+    INVALID_DATA: '無効なサブスクリプション機能データです',
+    INVALID_XP_MULTIPLIER_VALUE: 'XP倍率は1以上である必要があります',
+    INVALID_COIN_MULTIPLIER_VALUE: 'コイン倍率は1以上である必要があります'
   }
 }

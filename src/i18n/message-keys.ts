@@ -709,5 +709,7 @@ export const SubscriptionFeatureMessage = {
   GET_LIST_SUCCESS: 'subscription_feature.GET_LIST_SUCCESS',
   NOT_FOUND: 'subscription_feature.NOT_FOUND',
   ALREADY_EXISTS: 'subscription_feature.ALREADY_EXISTS',
-  INVALID_DATA: 'subscription_feature.INVALID_DATA'
+  INVALID_DATA: 'subscription_feature.INVALID_DATA',
+  INVALID_XP_MULTIPLIER_VALUE: 'subscription_feature.INVALID_XP_MULTIPLIER_VALUE',
+  INVALID_COIN_MULTIPLIER_VALUE: 'subscription_feature.INVALID_COIN_MULTIPLIER_VALUE'
 } as const

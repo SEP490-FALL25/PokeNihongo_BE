@@ -18,3 +18,21 @@ export class SubscriptionFeatureAlreadyExistsException extends BadRequestExcepti
     })
   }
 }
+
+export class InvalidValueForCoinMultiplierExistsException extends BadRequestException {
+  constructor() {
+    super({
+      message: SubscriptionFeatureMessage.INVALID_COIN_MULTIPLIER_VALUE,
+      errorKey: SubscriptionFeatureMessage.INVALID_COIN_MULTIPLIER_VALUE
+    })
+  }
+}
+
+export class InvalidValueForXPMultiplierExistsException extends BadRequestException {
+  constructor() {
+    super({
+      message: SubscriptionFeatureMessage.INVALID_XP_MULTIPLIER_VALUE,
+      errorKey: SubscriptionFeatureMessage.INVALID_XP_MULTIPLIER_VALUE
+    })
+  }
+}
