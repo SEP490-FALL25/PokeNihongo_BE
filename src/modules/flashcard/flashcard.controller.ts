@@ -30,8 +30,20 @@ import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
+import {
+  CreateFlashcardCardSwaggerDTO,
+  CreateFlashcardDeckSwaggerDTO,
+  FlashcardImportCardsBodySwaggerDTO,
+  FlashcardLibrarySearchQuerySwaggerDTO,
+  FlashcardReviewActionSwaggerDTO,
+  FlashcardReviewQuerySwaggerDTO,
+  GetFlashcardCardListQuerySwaggerDTO,
+  GetFlashcardDeckListQuerySwaggerDTO,
+  UpdateFlashcardCardSwaggerDTO,
+  UpdateFlashcardDeckSwaggerDTO
+} from './dto/flashcard.dto'
 
 @ApiTags('Flashcards')
 @ApiBearerAuth()
@@ -40,11 +52,12 @@ export class FlashcardController {
   constructor(
     private readonly flashcardService: FlashcardService,
     private readonly flashcardSearchService: FlashcardSearchService
-  ) {}
+  ) { }
 
   @Post('decks')
   @ApiOperation({ summary: 'Tạo bộ flashcard mới' })
   @ApiResponse({ status: 201, type: MessageResDTO })
+  @ApiBody({ type: CreateFlashcardDeckSwaggerDTO })
   @ZodSerializerDto(MessageResDTO)
   async createDeck(
     @Body() body: CreateFlashcardDeckBodyDTO,
@@ -61,6 +74,7 @@ export class FlashcardController {
   @Get('decks')
   @ApiOperation({ summary: 'Lấy danh sách bộ flashcard của người dùng' })
   @ApiResponse({ status: 200, type: PaginationResponseDTO })
+  @ApiQuery({ type: GetFlashcardDeckListQuerySwaggerDTO })
   @ZodSerializerDto(PaginationResponseDTO)
   async getDecks(
     @Query() query: GetFlashcardDeckListQueryDTO,
@@ -101,6 +115,7 @@ export class FlashcardController {
   @Patch('decks/:deckId')
   @ApiOperation({ summary: 'Cập nhật thông tin bộ flashcard' })
   @ApiResponse({ status: 200, type: MessageResDTO })
+  @ApiBody({ type: UpdateFlashcardDeckSwaggerDTO })
   @ZodSerializerDto(MessageResDTO)
   async updateDeck(
     @Param() params: FlashcardDeckParamsDTO,
@@ -131,6 +146,7 @@ export class FlashcardController {
   @Get('decks/:deckId/cards')
   @ApiOperation({ summary: 'Lấy danh sách thẻ trong bộ flashcard' })
   @ApiResponse({ status: 200, type: PaginationResponseDTO })
+  @ApiQuery({ type: GetFlashcardCardListQuerySwaggerDTO })
   @ZodSerializerDto(PaginationResponseDTO)
   async getDeckCards(
     @Param() params: FlashcardDeckParamsDTO,
@@ -149,6 +165,7 @@ export class FlashcardController {
   @Post('decks/:deckId/cards')
   @ApiOperation({ summary: 'Thêm một thẻ mới vào bộ flashcard' })
   @ApiResponse({ status: 201, type: MessageResDTO })
+  @ApiBody({ type: CreateFlashcardCardSwaggerDTO })
   @ZodSerializerDto(MessageResDTO)
   async createCard(
     @Param() params: FlashcardDeckParamsDTO,
@@ -167,6 +184,7 @@ export class FlashcardController {
   @Patch('decks/:deckId/cards/:cardId')
   @ApiOperation({ summary: 'Cập nhật thông tin thẻ flashcard' })
   @ApiResponse({ status: 200, type: MessageResDTO })
+  @ApiBody({ type: UpdateFlashcardCardSwaggerDTO })
   @ZodSerializerDto(MessageResDTO)
   async updateCard(
     @Param() params: FlashcardDeckCardParamsDTO,
@@ -198,6 +216,7 @@ export class FlashcardController {
   @Post('decks/:deckId/cards/import')
   @ApiOperation({ summary: 'Import nhiều thẻ từ Vocabulary/Kanji/Grammar vào bộ flashcard' })
   @ApiResponse({ status: 200, type: MessageResDTO })
+  @ApiBody({ type: FlashcardImportCardsBodySwaggerDTO })
   @ZodSerializerDto(MessageResDTO)
   async importCards(
     @Param() params: FlashcardDeckParamsDTO,
@@ -216,6 +235,7 @@ export class FlashcardController {
   @Get('decks/:deckId/library')
   @ApiOperation({ summary: 'Tra cứu nội dung Vocabulary/Kanji/Grammar để thêm vào flashcard' })
   @ApiResponse({ status: 200, type: PaginationResponseDTO })
+  @ApiQuery({ type: FlashcardLibrarySearchQuerySwaggerDTO })
   @ZodSerializerDto(PaginationResponseDTO)
   async searchLibrary(
     @Param() params: FlashcardDeckParamsDTO,
@@ -234,6 +254,7 @@ export class FlashcardController {
   @Get('decks/:deckId/review')
   @ApiOperation({ summary: 'Lấy danh sách thẻ đến hạn ôn tập (SRS)' })
   @ApiResponse({ status: 200, type: PaginationResponseDTO })
+  @ApiQuery({ type: FlashcardReviewQuerySwaggerDTO })
   @ZodSerializerDto(PaginationResponseDTO)
   async getReviewCards(
     @Param() params: FlashcardDeckParamsDTO,
@@ -252,6 +273,7 @@ export class FlashcardController {
   @Post('decks/:deckId/cards/:cardId/review')
   @ApiOperation({ summary: 'Ghi nhận kết quả ôn tập của một thẻ flashcard' })
   @ApiResponse({ status: 200, type: MessageResDTO })
+  @ApiBody({ type: FlashcardReviewActionSwaggerDTO })
   @ZodSerializerDto(MessageResDTO)
   async reviewCard(
     @Param() params: FlashcardDeckCardParamsDTO,
