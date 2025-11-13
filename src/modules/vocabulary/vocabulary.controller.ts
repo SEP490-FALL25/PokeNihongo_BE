@@ -8,7 +8,12 @@ import {
     UpdateVocabularyBodyDTO,
     VocabularyListResDTO,
     VocabularyResDTO,
-    VocabularyStatisticsResDTO
+    VocabularyStatisticsResDTO,
+    VocabularySearchQueryDTO,
+    VocabularySearchResDTO,
+    VocabularyDetailResDTO,
+    VocabularySearchHistoryQueryDTO,
+    VocabularySearchHistoryResDTO
 } from '@/modules/vocabulary/dto/vocabulary.zod-dto'
 import { VocabularyNotFoundException } from '@/modules/vocabulary/dto/vocabulary.error'
 import {
@@ -19,6 +24,11 @@ import {
     VocabularyStatisticsResponseSwaggerDTO,
     ImportVocabularyXlsxSwaggerDTO,
     ImportVocabularyTxtSwaggerDTO,
+    VocabularySearchQuerySwaggerDTO,
+    VocabularySearchResponseSwaggerDTO,
+    VocabularyDetailResponseSwaggerDTO,
+    VocabularySearchHistoryQuerySwaggerDTO,
+    VocabularySearchHistoryResponseSwaggerDTO,
 } from '@/modules/vocabulary/dto/vocabulary.dto'
 import { AddMeaningToVocabularyDTO, AddMeaningSwaggerDTO } from '@/modules/vocabulary/dto/add-meaning.dto'
 import {
@@ -76,11 +86,6 @@ export class VocabularyController {
     @ApiBody({
         type: UpdateVocabularyMultipartSwaggerDTO,
         description: 'Form data với reading, imageUrl và audioUrl (optional)'
-    })
-    @ApiResponse({
-        status: 200,
-        description: 'Cập nhật từ vựng thành công',
-        type: VocabularyResponseSwaggerDTO
     })
     @ZodSerializerDto(VocabularyResDTO)
     async updateByWordJp(
@@ -153,6 +158,62 @@ export class VocabularyController {
     findAll(@Query() query: GetVocabularyListQueryDTO, @I18nLang() lang: string) {
         return this.vocabularyService.findAll(query, lang)
     }
+
+    @Get('search')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Tìm kiếm từ vựng theo từ khóa', description: 'Tìm kiếm từ vựng và trả về wordJp, reading, meaning (theo ngôn ngữ header). Tự động lưu lịch sử tìm kiếm nếu user đã đăng nhập.' })
+    @ApiQuery({ type: VocabularySearchQuerySwaggerDTO })
+    @ZodSerializerDto(VocabularySearchResDTO)
+    async search(
+        @Query() query: VocabularySearchQueryDTO,
+        @I18nLang() lang: string,
+        @ActiveUser('userId') userId?: number
+    ) {
+        return this.vocabularyService.search(query.keyword, lang, query.currentPage, query.pageSize, userId)
+    }
+
+
+    @Get('search/:id')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Lấy thông tin chi tiết từ vựng theo ID (cho search)',
+        description: 'Lấy thông tin chi tiết từ vựng bao gồm: wordJp, reading, audioUrl, imageUrl, wordType, meanings (với translations), và related words (các từ vựng có chứa wordJp này). Tự động lưu lịch sử tìm kiếm nếu user đã đăng nhập.'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy thông tin từ vựng thành công',
+        type: VocabularyDetailResponseSwaggerDTO
+    })
+    @ZodSerializerDto(VocabularyDetailResDTO)
+    findOneBySearch(
+        @Param('id') id: string,
+        @I18nLang() lang: string,
+        @ActiveUser('userId') userId?: number
+    ) {
+        return this.vocabularyService.findOneDetail(Number(id), lang, userId)
+    }
+
+    @Get('search-history')
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Lấy lịch sử tìm kiếm từ vựng của user',
+        description: 'Lấy danh sách lịch sử tìm kiếm từ vựng của user đã đăng nhập, bao gồm từ khóa tìm kiếm và thông tin từ vựng (nếu có)'
+    })
+    @ApiQuery({ type: VocabularySearchHistoryQuerySwaggerDTO })
+    @ApiResponse({
+        status: 200,
+        description: 'Lấy lịch sử tìm kiếm thành công',
+        type: VocabularySearchHistoryResponseSwaggerDTO
+    })
+    @ZodSerializerDto(VocabularySearchHistoryResDTO)
+    getSearchHistory(
+        @Query() query: VocabularySearchHistoryQueryDTO,
+        @I18nLang() lang: string,
+        @ActiveUser('userId') userId: number
+    ) {
+        return this.vocabularyService.getSearchHistory(userId, query.currentPage, query.pageSize, lang)
+    }
+
 
     @Get('statistics')
     @ApiBearerAuth()
