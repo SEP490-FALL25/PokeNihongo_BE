@@ -438,4 +438,75 @@ export class UserProgressRepository {
 
         return this.transformUserProgress(result)
     }
+
+    async countCompletedByLevel(userId: number, levelJlpt: number) {
+        const [totalLessons, completedLessons] = await Promise.all([
+            this.prismaService.lesson.count({
+                where: {
+                    levelJlpt,
+                    isPublished: true
+                }
+            }),
+            this.prismaService.userProgress.count({
+                where: {
+                    userId,
+                    status: ProgressStatus.COMPLETED,
+                    lesson: {
+                        levelJlpt
+                    }
+                }
+            })
+        ])
+        return { totalLessons, completedLessons }
+    }
+
+    async countAllCompleted(userId: number) {
+        return this.prismaService.userProgress.count({
+            where: {
+                userId,
+                status: ProgressStatus.COMPLETED
+            }
+        })
+    }
+
+    async listCompletedLessons(userId: number) {
+        return this.prismaService.userProgress.findMany({
+            where: {
+                userId,
+                status: ProgressStatus.COMPLETED
+            },
+            orderBy: [
+                { completedAt: 'asc' },
+                { updatedAt: 'asc' }
+            ],
+            select: {
+                lessonId: true,
+                completedAt: true,
+                updatedAt: true,
+                lesson: {
+                    select: {
+                        levelJlpt: true
+                    }
+                }
+            }
+        })
+    }
+
+    async getLessonProgress(userId: number, lessonId: number) {
+        return this.prismaService.userProgress.findUnique({
+            where: {
+                userId_lessonId: {
+                    userId,
+                    lessonId
+                }
+            },
+            select: {
+                id: true,
+                status: true,
+                progressPercentage: true,
+                completedAt: true,
+                updatedAt: true
+            }
+        })
+    }
 }

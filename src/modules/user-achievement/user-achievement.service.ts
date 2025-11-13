@@ -1,4 +1,7 @@
-import { UserAchievementStatus } from '@/common/constants/achievement.constant'
+import {
+  AchievementType as AchievementTypeEnum,
+  UserAchievementStatus
+} from '@/common/constants/achievement.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserAchievementMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
@@ -8,11 +11,17 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
+import { UserRewardSourceType } from '@prisma/client'
 import { AchievementGroupRepo } from '../achievement-group/achievement-group.repo'
 import { AchievementRepo } from '../achievement/achievement.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
-import { UserAchievementNotFoundException } from './dto/user-achievement.error'
+import { RewardService } from '../reward/reward.service'
+import { UserProgressService } from '../user-progress/user-progress.service'
+import {
+  StatusClaimedException,
+  UserAchievementNotFoundException
+} from './dto/user-achievement.error'
 import {
   CreateUserAchievementBodyType,
   UpdateUserAchievementBodyType
@@ -27,7 +36,10 @@ export class UserAchievementService {
     private achievementRepo: AchievementRepo,
     private readonly languageRepo: LanguagesRepository,
     private readonly prismaService: PrismaService,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly userProgressService: UserProgressService,
+
+    private readonly rewardService: RewardService
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -244,6 +256,10 @@ export class UserAchievementService {
       })
     }
 
+    // check các achievement COMPLETE_LESSON đã hoàn thành tiêu chí chưa
+    // (nếu có) => nếu có thì cập nhật status và achievedAt
+    await this.checkAnyAchievementcompletetheCriteria(userId, achievements, existingMap)
+
     // 6. Group achievements by groupId for attaching to group results
     const achByGroup = new Map<number, any[]>()
     for (const a of achievements) {
@@ -334,6 +350,143 @@ export class UserAchievementService {
     }
   }
 
-  //todo Kumo
-  async checkAnyAchievementcompletetheCriteria(userId: number) {}
+  async getReward({ id, userId }: { id: number; userId: number }, lang: string = 'vi') {
+    try {
+      // 1. Fetch user achievement with achievement details
+      const userAchievement = await this.prismaService.userAchievement.findUnique({
+        where: { id, deletedAt: null },
+        include: {
+          achievement: {
+            include: {
+              reward: true
+            }
+          }
+        }
+      })
+
+      if (!userAchievement) {
+        throw new UserAchievementNotFoundException()
+      }
+
+      // 2. Verify ownership
+      if (userAchievement.userId !== userId) {
+        throw new NotFoundRecordException()
+      }
+
+      // 3. Check if achievement is completed but not claimed yet
+      if (userAchievement.status !== UserAchievementStatus.COMPLETED_NOT_CLAIMED) {
+        throw new StatusClaimedException() // Can add a specific exception like UserCanNotClaimRewardsException
+      }
+
+      // 4. Check if achievement has a reward
+      if (!userAchievement.achievement?.reward) {
+        throw new StatusClaimedException() // Can add a specific exception like UserNotHaveRewardsToClaimException
+      }
+
+      // 5. Get reward ID
+      const rewardId = userAchievement.achievement.reward.id
+
+      // 6. Convert and give reward to user
+      const rewardResults = await this.rewardService.convertRewardsWithUser(
+        [rewardId],
+        userId,
+        UserRewardSourceType.ACHIEVEMENT_REWARD
+      )
+
+      // 7. Update status to CLAIMED
+      await this.userAchievementRepo.update({
+        id,
+        data: {
+          status: UserAchievementStatus.CLAIMED
+        },
+        updatedById: userId
+      })
+
+      return {
+        statusCode: HttpStatus.OK,
+        data: rewardResults,
+        message: this.i18nService.translate(
+          UserAchievementMessage.GET_REWARD_SUCCESS,
+          lang
+        )
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new UserAchievementNotFoundException()
+      }
+      throw error
+    }
+  }
+
+  // check các achievement COMPLETE_LESSON đã hoàn thành tiêu chí chưa
+  async checkAnyAchievementcompletetheCriteria(
+    userId: number,
+    achievements: any[],
+    userAchievementMap: Map<number, any>
+  ) {
+    if (!achievements.length) return
+
+    const lessonAchievements = achievements.filter(
+      (a) => a?.conditionType === AchievementTypeEnum.COMPLETE_LESSON
+    )
+    if (!lessonAchievements.length) return
+
+    const progressData =
+      await this.userProgressService.getCompletedLessonsForAchievements(userId)
+    const completedLessons = progressData.completedLessons || []
+
+    if (!completedLessons.length) return
+
+    const completedLessonIds = new Map<number, Date>()
+    completedLessons.forEach((p) => {
+      const completedAt = p.completedAt ?? new Date()
+      completedLessonIds.set(p.lessonId, completedAt)
+    })
+
+    const totalCompleted = progressData.totalCompleted || completedLessons.length
+
+    for (const achievement of lessonAchievements) {
+      const ua = userAchievementMap.get(achievement.id)
+      if (!ua || ua.status === UserAchievementStatus.CLAIMED) continue
+
+      let qualified = false
+      let achievedAt: Date | null = ua.achievedAt ?? null
+
+      // Thành tựu yêu cầu hoàn thành một bài cụ thể (conditionElementId = lessonId)
+      if (achievement.conditionElementId) {
+        const lessonDate = completedLessonIds.get(achievement.conditionElementId)
+        if (lessonDate) {
+          qualified = true
+          achievedAt = achievedAt ?? lessonDate
+        }
+        // Thành tựu yêu cầu hoàn thành đủ số lượng bài (conditionValue = số bài)
+      } else if (achievement.conditionValue && achievement.conditionValue > 0) {
+        if (totalCompleted >= achievement.conditionValue) {
+          qualified = true
+          const index = Math.min(
+            achievement.conditionValue - 1,
+            completedLessons.length - 1
+          )
+          const milestone = completedLessons[index]
+          achievedAt = achievedAt ?? milestone.completedAt ?? new Date()
+        }
+      }
+
+      if (!qualified) continue
+
+      if (ua.status !== UserAchievementStatus.COMPLETED_NOT_CLAIMED || !ua.achievedAt) {
+        const updated = await this.prismaService.userAchievement.update({
+          where: { id: ua.id },
+          data: {
+            status:
+              ua.status === UserAchievementStatus.CLAIMED
+                ? ua.status
+                : UserAchievementStatus.COMPLETED_NOT_CLAIMED,
+            achievedAt: achievedAt ?? new Date()
+          }
+        })
+        userAchievementMap.set(achievement.id, updated)
+      }
+    }
+  }
 }

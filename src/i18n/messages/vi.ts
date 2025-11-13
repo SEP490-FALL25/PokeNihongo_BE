@@ -623,6 +623,7 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách thành tích người dùng thành công',
     NOT_FOUND: 'Không tìm thấy thành tích người dùng',
     ALREADY_EXISTS: 'Thành tích người dùng đã tồn tại',
-    INVALID_DATA: 'Dữ liệu thành tích người dùng không hợp lệ'
+    INVALID_DATA: 'Dữ liệu thành tích người dùng không hợp lệ',
+    INVALID_STATUS_CLAIM: 'Trạng thái nhận thành tích không hợp lệ'
   }
 }

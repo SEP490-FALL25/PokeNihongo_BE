@@ -19,6 +19,11 @@ export class ListSrsQuerySwaggerDTO {
     @ApiPropertyOptional({ type: Boolean }) dueOnly?: boolean
 }
 
+export class ListSrsTodayQuerySwaggerDTO {
+    @ApiPropertyOptional({ type: Number, minimum: 1, default: 1 }) currentPage?: number
+    @ApiPropertyOptional({ type: Number, minimum: 1, maximum: 200, default: 20 }) pageSize?: number
+}
+
 export class UpsertSrsReviewSwaggerDTO {
     @ApiProperty({ enum: ['VOCABULARY', 'GRAMMAR', 'KANJI', 'TEST', 'EXERCISE'] }) contentType!: string
     @ApiProperty() contentId!: number

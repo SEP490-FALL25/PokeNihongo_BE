@@ -628,6 +628,7 @@ export class UserHistoryService {
                     return {
                         exerciseId: attempt.exerciseId,
                         exerciseName,
+                        exerciseType: attempt.exercise?.exerciseType,
                         lessonId,
                         lessonTitle,
                         status: attempt.status

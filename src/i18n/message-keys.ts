@@ -662,7 +662,9 @@ export const UserAchievementMessage = {
   DELETE_SUCCESS: 'user_achievement.DELETE_SUCCESS',
   GET_SUCCESS: 'user_achievement.GET_SUCCESS',
   GET_LIST_SUCCESS: 'user_achievement.GET_LIST_SUCCESS',
+  GET_REWARD_SUCCESS: 'user_achievement.GET_REWARD_SUCCESS',
   NOT_FOUND: 'user_achievement.NOT_FOUND',
   ALREADY_EXISTS: 'user_achievement.ALREADY_EXISTS',
-  INVALID_DATA: 'user_achievement.INVALID_DATA'
+  INVALID_DATA: 'user_achievement.INVALID_DATA',
+  INVALID_STATUS_CLAIM: 'user_achievement.INVALID_STATUS_CLAIM'
 } as const

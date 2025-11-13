@@ -577,7 +577,7 @@ export class RewardService {
         // Add coins to user wallet
         const updatedWallet = await this.walletRepo.addBalanceToWalletWithType({
           userId,
-          type: WalletType.POKE_COINS,
+          type: WalletType.SPARKLES,
           amount: coinValue
         })
 
@@ -590,7 +590,7 @@ export class RewardService {
         this.pushHistoryEntry(historyEntries, {
           userId,
           rewardId: pokemonReward.id,
-          target: RewardTarget.POKE_COINS,
+          target: RewardTarget.SPARKLES,
           amount: coinValue,
           note: `Converted pokemon ${pokemonId} reward to coins`,
           meta: {
