@@ -1,5 +1,6 @@
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
+import { AchievementSchema } from '@/modules/achievement/entities/achievement.entity'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
@@ -57,7 +58,17 @@ export const GetAchievementGroupDetailResSchema = z.object({
   statusCode: z.number(),
   data: AchievementGroupSchema.extend({
     nameTranslation: z.string().nullable().optional(),
-    nameTranslations: TranslationInputSchema.optional().nullable()
+    nameTranslations: TranslationInputSchema.optional().nullable(),
+    achievements: z.array(
+      AchievementSchema.extend({
+        nameTranslation: z.string().nullable(),
+        nameTranslations: TranslationInputSchema.optional().nullable(),
+        descriptionTranslation: z.string().nullable(),
+        descriptionTranslations: TranslationInputSchema.optional().nullable(),
+        conditionTextTranslation: z.string().nullable(),
+        conditionTextTranslations: TranslationInputSchema.optional().nullable()
+      }).nullable()
+    )
   }),
   message: z.string()
 })
