@@ -1,18 +1,18 @@
-import { UserSubscriptionStatusType } from '@/common/constants/subscription.constant'
+import { InvoiceStatusType } from '@/common/constants/invoice.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import {
-  CreateUserSubscriptionBodyType,
+  CreateInvoiceBodyType,
+  InvoiceType,
   USER_SEASON_HISTORY_FIELDS,
-  UpdateUserSubscriptionBodyType,
-  UserSubscriptionType
-} from './entities/user-subscription.entity'
+  UpdateInvoiceBodyType
+} from './entities/invoice.entity'
 
 @Injectable()
-export class UserSubscriptionRepo {
+export class InvoiceRepo {
   constructor(private prismaService: PrismaService) {}
   async withTransaction<T>(callback: (prismaTx: PrismaClient) => Promise<T>): Promise<T> {
     return this.prismaService.$transaction(callback)
@@ -23,12 +23,17 @@ export class UserSubscriptionRepo {
       data
     }: {
       createdById: number
-      data: CreateUserSubscriptionBodyType & { userId: number }
+      data: CreateInvoiceBodyType & {
+        userId: number
+        subtotalAmount: number
+        discountAmount: number
+        totalAmount: number
+      }
     },
     prismaTx?: PrismaClient
-  ): Promise<UserSubscriptionType> {
+  ): Promise<InvoiceType> {
     const client = prismaTx || this.prismaService
-    return client.userSubscription.create({
+    return client.invoice.create({
       data: {
         ...data,
         userId: data.userId || createdById
@@ -43,13 +48,13 @@ export class UserSubscriptionRepo {
       updatedById
     }: {
       id: number
-      data: UpdateUserSubscriptionBodyType
+      data: UpdateInvoiceBodyType
       updatedById?: number
     },
     prismaTx?: PrismaClient
-  ): Promise<UserSubscriptionType> {
+  ): Promise<InvoiceType> {
     const client = prismaTx || this.prismaService
-    return client.userSubscription.update({
+    return client.invoice.update({
       where: {
         id,
         deletedAt: null
@@ -60,17 +65,13 @@ export class UserSubscriptionRepo {
     })
   }
 
-  delete(
-    id: number,
-    isHard?: boolean,
-    prismaTx?: PrismaClient
-  ): Promise<UserSubscriptionType> {
+  delete(id: number, isHard?: boolean, prismaTx?: PrismaClient): Promise<InvoiceType> {
     const client = prismaTx || this.prismaService
     return isHard
-      ? client.userSubscription.delete({
+      ? client.invoice.delete({
           where: { id }
         })
-      : client.userSubscription.update({
+      : client.invoice.update({
           where: {
             id,
             deletedAt: null
@@ -93,10 +94,10 @@ export class UserSubscriptionRepo {
     }
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.userSubscription.count({
+      this.prismaService.invoice.count({
         where: filterWhere
       }),
-      this.prismaService.userSubscription.findMany({
+      this.prismaService.invoice.findMany({
         where: filterWhere,
 
         orderBy,
@@ -116,8 +117,8 @@ export class UserSubscriptionRepo {
     }
   }
 
-  findById(id: number): Promise<UserSubscriptionType | null> {
-    return this.prismaService.userSubscription.findUnique({
+  findById(id: number): Promise<InvoiceType | null> {
+    return this.prismaService.invoice.findUnique({
       where: {
         id,
         deletedAt: null
@@ -128,22 +129,13 @@ export class UserSubscriptionRepo {
   findActiveByUserIdPlanIdAndStatus(
     userId: number,
     planId: number,
-    status: UserSubscriptionStatusType
-  ): Promise<UserSubscriptionType | null> {
-    return this.prismaService.userSubscription.findFirst({
+    status: InvoiceStatusType
+  ): Promise<InvoiceType | null> {
+    return this.prismaService.invoice.findFirst({
       where: {
         userId,
         subscriptionPlanId: planId,
         status,
-        deletedAt: null
-      }
-    })
-  }
-
-  findByInvoiceId(invoiceId: number): Promise<UserSubscriptionType | null> {
-    return this.prismaService.userSubscription.findFirst({
-      where: {
-        invoiceId,
         deletedAt: null
       }
     })

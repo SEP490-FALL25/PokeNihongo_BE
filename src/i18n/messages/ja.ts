@@ -692,5 +692,31 @@ export const jaMessages = {
     HAS_ACTIVE_SUBSCRIPTION: 'ユーザーは既にアクティブなサブスクリプションを持っています',
     HAS_PAYMENT_PENDING_SUBSCRIPTION:
       'ユーザーは保留中の支払いがあるサブスクリプションを持っています'
+  },
+  invoice: {
+    CREATE_SUCCESS: '請求書の作成に成功しました',
+    UPDATE_SUCCESS: '請求書の更新に成功しました',
+    DELETE_SUCCESS: '請求書の削除に成功しました',
+    GET_SUCCESS: '請求書情報の取得に成功しました',
+    GET_LIST_SUCCESS: '請求書リストの取得に成功しました',
+    NOT_FOUND: '請求書が見つかりません',
+    ALREADY_EXISTS: '請求書は既に存在します',
+    INVALID_DATA: '無効な請求書データです'
+  },
+  payment: {
+    CREATE_SUCCESS: '支払いの作成に成功しました',
+    UPDATE_SUCCESS: '支払いの更新に成功しました',
+    DELETE_SUCCESS: '支払いの削除に成功しました',
+    GET_SUCCESS: '支払い情報の取得に成功しました',
+    GET_LIST_SUCCESS: '支払いリストの取得に成功しました',
+    NOT_FOUND: '支払いが見つかりません',
+    ALREADY_EXISTS: '支払いは既に存在します',
+    INVALID_DATA: '無効な支払いデータです',
+    INVALID_STATUS_PENDING: '支払いは保留中のステータスである必要があります',
+    ERROR_UNKNOWN_PAY: '不明な支払いエラーが発生しました',
+    ALREADY_PAID: 'この請求書は既に支払われています',
+    PAY_SUCCESS: '支払いが正常に完了しました',
+    PAY_FAILED: '支払いに失敗しました',
+    PAY_CANCELLED: '支払いがキャンセルされました'
   }
 }

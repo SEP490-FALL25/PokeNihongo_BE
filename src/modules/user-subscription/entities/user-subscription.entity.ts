@@ -13,6 +13,7 @@ export const UserSubscriptionSchema = z.object({
   id: z.number(),
   userId: z.number(),
   subscriptionPlanId: z.number(),
+  invoiceId: z.number(),
   startDate: z.coerce.date().nullable(),
   expiresAt: z.coerce.date().nullable(),
   status: z
@@ -33,7 +34,8 @@ export const UserSubscriptionSchema = z.object({
 
 // Create Schema
 export const CreateUserSubscriptionBodySchema = UserSubscriptionSchema.pick({
-  subscriptionPlanId: true
+  subscriptionPlanId: true,
+  invoiceId: true
 })
 
   .strict()

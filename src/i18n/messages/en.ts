@@ -717,5 +717,31 @@ export const enMessages = {
     INVALID_DATA: 'Invalid user subscription data',
     HAS_ACTIVE_SUBSCRIPTION: 'User already has an active subscription',
     HAS_PAYMENT_PENDING_SUBSCRIPTION: 'User has a same subscription with pending payment'
+  },
+  invoice: {
+    CREATE_SUCCESS: 'Invoice created successfully',
+    UPDATE_SUCCESS: 'Invoice updated successfully',
+    DELETE_SUCCESS: 'Invoice deleted successfully',
+    GET_SUCCESS: 'Invoice retrieved successfully',
+    GET_LIST_SUCCESS: 'Invoice list retrieved successfully',
+    NOT_FOUND: 'Invoice not found',
+    ALREADY_EXISTS: 'Invoice already exists',
+    INVALID_DATA: 'Invalid invoice data'
+  },
+  payment: {
+    CREATE_SUCCESS: 'Payment created successfully',
+    UPDATE_SUCCESS: 'Payment updated successfully',
+    DELETE_SUCCESS: 'Payment deleted successfully',
+    GET_SUCCESS: 'Payment retrieved successfully',
+    GET_LIST_SUCCESS: 'Payment list retrieved successfully',
+    NOT_FOUND: 'Payment not found',
+    ALREADY_EXISTS: 'Payment already exists',
+    INVALID_DATA: 'Invalid payment data',
+    INVALID_STATUS_PENDING: 'Payment status is not pending',
+    ERROR_UNKNOWN_PAY: 'An unknown error occurred during payment processing',
+    ALREADY_PAID: 'Invoice has already been paid',
+    PAY_SUCCESS: 'Payment processed successfully',
+    PAY_FAILED: 'Payment processing failed',
+    PAY_CANCELLED: 'Payment was cancelled'
   }
 }

@@ -14,6 +14,7 @@ import { Global, Module, forwardRef } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { JwtModule } from '@nestjs/jwt'
 import { WebsocketsModule } from 'src/websockets/websockets.module'
+import { PayOSService } from './services/payos.service'
 import { MatchParticipantTimeoutProcessor } from './workers/match-participant-timeout.processor'
 import { MatchRoundParticipantTimeoutProcessor } from './workers/match-round-participant-timeout.processor'
 import { RoundQuestionTimeoutProcessor } from './workers/round-question-timeout.processor'
@@ -27,7 +28,8 @@ const sharedServices = [
   SharedUserRepository,
   SharedRoleRepository,
   QuestionBankRepository,
-  PokemonRepo
+  PokemonRepo,
+  PayOSService
 ]
 @Global()
 @Module({
@@ -64,4 +66,4 @@ const sharedServices = [
     // GeminiService sẽ được export từ GeminiModule, không cần export ở đây
   ]
 })
-export class SharedModule { }
+export class SharedModule {}

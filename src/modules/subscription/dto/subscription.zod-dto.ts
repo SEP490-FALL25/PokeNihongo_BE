@@ -38,9 +38,7 @@ export class GetLeaderboardWithRewardSeasonDetailResDTO extends createZodDto(
   GetLeaderboardWithRewardSeasonDetailResSchema
 ) {}
 
-export class GetMarketplaceListResDTO extends createZodDto(
-  GetMarketplaceListResSchema
-) {}
+export class GetMarketplaceListResDTO extends createZodDto(GetMarketplaceListResSchema) {}
 
 export class GetMarketplaceOptionsResDTO extends createZodDto(
   GetMarketplaceOptionsResSchema

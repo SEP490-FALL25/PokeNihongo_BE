@@ -705,5 +705,32 @@ export const viMessages = {
     HAS_ACTIVE_SUBSCRIPTION: 'Người dùng đã có gói đăng ký đang hoạt động',
     HAS_PAYMENT_PENDING_SUBSCRIPTION:
       'Người dùng đã có gói đăng ký tương tự đang chờ thanh toán'
+  },
+  invoice: {
+    CREATE_SUCCESS: 'Tạo hóa đơn thành công',
+    UPDATE_SUCCESS: 'Cập nhật hóa đơn thành công',
+    DELETE_SUCCESS: 'Xóa hóa đơn thành công',
+    GET_SUCCESS: 'Lấy thông tin hóa đơn thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách hóa đơn thành công',
+    NOT_FOUND: 'Không tìm thấy hóa đơn',
+    ALREADY_EXISTS: 'Hóa đơn đã tồn tại',
+    INVALID_DATA: 'Dữ liệu hóa đơn không hợp lệ'
+  },
+  payment: {
+    CREATE_SUCCESS: 'Tạo giao dịch thanh toán thành công',
+    UPDATE_SUCCESS: 'Cập nhật giao dịch thanh toán thành công',
+
+    GET_SUCCESS: 'Lấy thông tin giao dịch thanh toán thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách giao dịch thanh toán thành công',
+    NOT_FOUND: 'Không tìm thấy giao dịch thanh toán',
+    ALREADY_EXISTS: 'Giao dịch thanh toán đã tồn tại',
+    INVALID_DATA: 'Dữ liệu giao dịch thanh toán không hợp lệ',
+    INVALID_STATUS_PENDING:
+      'Chỉ có thể cập nhật giao dịch thanh toán ở trạng thái PENDING',
+    ERROR_UNKNOWN_PAY: 'Lỗi không xác định trong quá trình thanh toán',
+    ALREADY_PAID: 'Giao dịch thanh toán đã được thanh toán',
+    PAY_SUCCESS: 'Thanh toán thành công',
+    PAY_FAILED: 'Thanh toán thất bại',
+    PAY_CANCELLED: 'Thanh toán bị hủy bỏ'
   }
 }
