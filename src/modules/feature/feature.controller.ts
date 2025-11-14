@@ -27,7 +27,7 @@ import {
 } from './dto/feature.zod-dto'
 import { FeatureService } from './feature.service'
 
-@Controller('Feature')
+@Controller('feature')
 @UseGuards(AuthenticationGuard)
 @ApiBearerAuth()
 export class FeatureController {
@@ -59,7 +59,7 @@ export class FeatureController {
     )
   }
 
-  @Get(':FeatureId')
+  @Get(':featureId')
   @ZodSerializerDto(GetFeatureDetailResDTO)
   findById(
     @Param() params: GetFeatureParamsDTO,
@@ -69,7 +69,7 @@ export class FeatureController {
     return this.FeatureService.findById(params.featureId, roleName, lang)
   }
 
-  @Put(':FeatureId')
+  @Put(':featureId')
   @ZodSerializerDto(UpdateFeatureResDTO)
   update(
     @Body() body: UpdateFeatureBodyInputDTO,
@@ -87,7 +87,7 @@ export class FeatureController {
     )
   }
 
-  @Delete(':FeatureId')
+  @Delete(':featureId')
   @ZodSerializerDto(MessageResDTO)
   delete(
     @Param() params: GetFeatureParamsDTO,

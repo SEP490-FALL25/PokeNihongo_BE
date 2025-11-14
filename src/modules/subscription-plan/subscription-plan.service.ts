@@ -105,21 +105,56 @@ export class SubscriptionPlanService {
       const rawNameTrans = (subscriptionPlan.subscription as any).nameTranslations || []
       const rawDescTrans =
         (subscriptionPlan.subscription as any).descriptionTranslations || []
+      const features = (subscriptionPlan.subscription as any).features || []
 
       if (isAdmin) {
         const convertedNameTrans = await this.convertTranslationsToLangCodes(rawNameTrans)
         const convertedDescTrans = await this.convertTranslationsToLangCodes(rawDescTrans)
 
+        // Convert feature nameTranslations for admin
+        const convertedFeatures = await Promise.all(
+          features.map(async (f: any) => {
+            if (!f.feature || !f.feature.nameTranslations) return f
+
+            const convertedFeatureNameTrans = await this.convertTranslationsToLangCodes(
+              f.feature.nameTranslations
+            )
+
+            return {
+              ...f,
+              feature: {
+                ...f.feature,
+                nameTranslations: convertedFeatureNameTrans
+              }
+            }
+          })
+        )
+
         subscriptionPlan.subscription = {
           ...subscriptionPlan.subscription,
           nameTranslations: convertedNameTrans,
-          descriptionTranslations: convertedDescTrans
+          descriptionTranslations: convertedDescTrans,
+          features: convertedFeatures
         }
       } else {
         // Remove translations arrays for non-admin
         const { nameTranslations, descriptionTranslations, ...subRest } =
           subscriptionPlan.subscription
-        subscriptionPlan.subscription = subRest
+
+        // Remove feature nameTranslations arrays for non-admin
+        const cleanedFeatures = features.map((f: any) => {
+          if (!f.feature) return f
+          const { nameTranslations: featureNameTrans, ...featureRest } = f.feature
+          return {
+            ...f,
+            feature: featureRest
+          }
+        })
+
+        subscriptionPlan.subscription = {
+          ...subRest,
+          features: cleanedFeatures
+        }
       }
     }
 
