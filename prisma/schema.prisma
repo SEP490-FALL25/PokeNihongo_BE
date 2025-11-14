@@ -981,19 +981,16 @@ enum FlashcardContentType {
 }
 
 model FlashcardDeck {
-  id          Int                 @id @default(autoincrement())
-  userId      Int
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String              @db.VarChar(200)
-  description String?             @db.Text
-  status      FlashcardDeckStatus @default(ACTIVE)
-  source      FlashcardDeckSource @default(USER)
-  jlptLevel   Int?
-  coverImage  String?             @db.VarChar(1000)
-  metadata    Json?
-  deletedAt   DateTime?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id        Int                 @id @default(autoincrement())
+  userId    Int
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String              @db.VarChar(200)
+  status    FlashcardDeckStatus @default(ACTIVE)
+  source    FlashcardDeckSource @default(USER)
+  metadata  Json?
+  deletedAt DateTime?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
 
   cards FlashcardCard[]
 
