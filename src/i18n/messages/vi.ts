@@ -610,7 +610,8 @@ export const viMessages = {
     ALREADY_EXISTS: 'Phần thưởng xếp hạng mùa giải đã tồn tại',
     INVALID_DATA: 'Dữ liệu phần thưởng xếp hạng mùa giải không hợp lệ',
     RANK_NAME_INVALID: 'Tên hạng mục không hợp lệ',
-    RANK_ORDER_INVALID: 'Thứ tự hạng mục không hợp lệ'
+    RANK_ORDER_INVALID: 'Thứ tự hạng mục không hợp lệ',
+    MISSSING_REWARD_FOR_ALL: 'Thiếu phần thưởng chung cho xếp hạng'
   },
   leaderboard_season: {
     CREATE_SUCCESS: 'Tạo mùa giải bảng xếp hạng thành công',
@@ -621,7 +622,7 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy mùa giải bảng xếp hạng',
     ALREADY_EXISTS: 'Mùa giải bảng xếp hạng đã tồn tại',
     INVALID_DATA: 'Dữ liệu mùa giải bảng xếp hạng không hợp lệ',
-    HAS_ACTIVE: 'Đã có mùa giải bảng xếp hạng đang hoạt động',
+    HAS_ACTIVE: 'Mùa giải bảng xếp hạng đang hoạt động',
     HAS_OPENED: 'Mùa giải bảng xếp hạng đã từng diễn ra',
     NOT_STARTED: 'Mùa giải bảng xếp hạng chưa bắt đầu',
     NEW_SEASON: 'Mùa giải mới đã bắt đầu, chúc may mắn!',
@@ -679,5 +680,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy kế hoạch đăng ký',
     ALREADY_EXISTS: 'Kế hoạch đăng ký đã tồn tại',
     INVALID_DATA: 'Dữ liệu kế hoạch đăng ký không hợp lệ'
+  },
+  feature: {
+    CREATE_SUCCESS: 'Tạo tính năng thành công',
+    UPDATE_SUCCESS: 'Cập nhật tính năng thành công',
+    DELETE_SUCCESS: 'Xóa tính năng thành công',
+    GET_SUCCESS: 'Lấy thông tin tính năng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách tính năng thành công',
+    NOT_FOUND: 'Không tìm thấy tính năng',
+    ALREADY_EXISTS: 'Tính năng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu tính năng không hợp lệ'
   }
 }

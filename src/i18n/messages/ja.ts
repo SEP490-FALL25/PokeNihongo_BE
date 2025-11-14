@@ -595,7 +595,8 @@ export const jaMessages = {
     ALREADY_EXISTS: 'シーズンランク報酬は既に存在します',
     INVALID_DATA: '無効なシーズンランク報酬データです',
     RANK_NAME_INVALID: '無効なランク名です',
-    RANK_ORDER_INVALID: '無効なランク順です'
+    RANK_ORDER_INVALID: '無効なランク順です',
+    MISSSING_REWARD_FOR_ALL: 'すべてのランクに対する報酬が不足しています'
   },
   leaderboard_season: {
     CREATE_SUCCESS: 'リーダーボードシーズンの作成に成功しました',
@@ -666,5 +667,15 @@ export const jaMessages = {
     NOT_FOUND: 'サブスクリプションプランが見つかりません',
     ALREADY_EXISTS: 'サブスクリプションプランは既に存在します',
     INVALID_DATA: '無効なサブスクリプションプランデータです'
+  },
+  feature: {
+    CREATE_SUCCESS: '機能の作成に成功しました',
+    UPDATE_SUCCESS: '機能の更新に成功しました',
+    DELETE_SUCCESS: '機能の削除に成功しました',
+    GET_SUCCESS: '機能情報の取得に成功しました',
+    GET_LIST_SUCCESS: '機能リストの取得に成功しました',
+    NOT_FOUND: '機能が見つかりません',
+    ALREADY_EXISTS: '機能は既に存在します',
+    INVALID_DATA: '無効な機能データです'
   }
 }

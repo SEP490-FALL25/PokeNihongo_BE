@@ -124,18 +124,20 @@ model User {
   createdUserSubscriptions            UserSubscription[]    @relation("UserSubscriptionCreatedBy")
   updatedUserSubscriptions            UserSubscription[]    @relation("UserSubscriptionUpdatedBy")
   deletedUserSubscriptions            UserSubscription[]    @relation("UserSubscriptionDeletedBy")
-
+  createdFeatures                     Feature[]             @relation("FeatureCreatedBy")
+  updatedFeatures                     Feature[]             @relation("FeatureUpdatedBy")
+  deletedFeatures                     Feature[]             @relation("FeatureDeletedBy")
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
   // Tự quan hệ 1-n
-  devices              Device[] // Liên kết 1-n với Device
-  refreshTokens        RefreshToken[]
-  userDailyRequests    UserDailyRequest[]
-  userPokemons         UserPokemon[]
-  userAchievements     UserAchievement[]
-  userExerciseAttempts UserExerciseAttempt[]
-  userTests            UserTest[]            @relation("UserTests")
-  userTestAttempts     UserTestAttempt[]     @relation("UserTestAttempts")
+  devices                             Device[] // Liên kết 1-n với Device
+  refreshTokens                       RefreshToken[]
+  userDailyRequests                   UserDailyRequest[]
+  userPokemons                        UserPokemon[]
+  userAchievements                    UserAchievement[]
+  userExerciseAttempts                UserExerciseAttempt[]
+  userTests                           UserTest[]            @relation("UserTests")
+  userTestAttempts                    UserTestAttempt[]     @relation("UserTestAttempts")
 
   userAIConversations UserAIConversation[]
   userProgresses      UserProgress[]
@@ -314,6 +316,9 @@ model Translation {
   subscriptionName           Subscription? @relation("SubscriptionNameRelation", fields: [subscriptionNameKey], references: [nameKey], onDelete: Cascade)
   subscriptionDescriptionKey String?
   subscriptionDescription    Subscription? @relation("SubscriptionDescriptionRelation", fields: [subscriptionDescriptionKey], references: [descriptionKey], onDelete: Cascade)
+
+  featureNameKey String?
+  feature        Feature? @relation("FeatureNameRelation", fields: [featureNameKey], references: [nameKey], onDelete: Cascade)
 
   @@unique([languageId, key]) // Cặp (languageId, key) phải duy nhất
   @@index([languageId])
@@ -1999,7 +2004,7 @@ model SeasonRankReward {
   season   LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
   rankName RankName @default(N5) // Tên rank áp dụng (vd: "N4", "N3", "N5")
-  order    Int // Thứ hạng áp dụng (vd: 1, 2, 3)
+  order    Int? // Thứ hạng áp dụng (vd: 1, 2, 3)
 
   // ---rewards
   rewards             Reward[]
@@ -2050,6 +2055,28 @@ model Subscription {
   @@index([tagName])
 }
 
+// Bảng định nghĩa các tính năng gốc (Từ điển)
+model Feature {
+  id         Int        @id @default(autoincrement())
+  nameKey    String     @unique
+  featureKey FeatureKey // Tính năng là gì (vd: XP_MULTIPLIER)
+
+  // Translation (giống như model Subscription của bạn)
+  nameTranslations Translation[] @relation("FeatureNameRelation")
+
+  createdById Int?
+  createdBy   User? @relation("FeatureCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("FeatureDeletedBy", fields: [deletedById], references: [id], onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("FeatureUpdatedBy", fields: [updatedById], references: [id], onUpdate: NoAction)
+
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  deletedAt            DateTime?
+  subscriptionFeatures SubscriptionFeature[]
+}
+
 // Bảng trung gian định nghĩa chi tiết tính năng (ví dụ: "Gói Ultra" có "XP_MULTIPLIER" giá trị "1.2")
 model SubscriptionFeature {
   id Int @id @default(autoincrement())
@@ -2057,8 +2084,10 @@ model SubscriptionFeature {
   subscriptionId Int
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
-  featureKey FeatureKey // Tính năng là gì (vd: XP_MULTIPLIER)
-  value      String? // Giá trị của tính năng (vd: "1.2", "true")
+  featureId Int
+  feature   Feature @relation(fields: [featureId], references: [id], onDelete: Restrict) // Không cho xóa Feature nếu còn gói sử dụng
+
+  value String? // Giá trị của tính năng (vd: "1.2", "true")
 
   // --- Meta Fields ---
   createdById Int?
