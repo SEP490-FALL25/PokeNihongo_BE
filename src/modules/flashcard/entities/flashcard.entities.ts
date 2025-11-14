@@ -188,25 +188,12 @@ export const CreateFlashcardCardBodySchema = z
 
 export const UpdateFlashcardCardBodySchema = z
     .object({
+        deckId: z.coerce.number().int().min(1),
+        cardId: z.coerce.number().int().min(1),
         status: FlashcardCardStatusEnum.optional(),
-        customFront: z
-            .string()
-            .trim()
-            .max(2000)
-            .nullable()
-            .optional(),
-        customBack: z
-            .string()
-            .trim()
-            .max(4000)
-            .nullable()
-            .optional(),
-        notes: z
-            .string()
-            .trim()
-            .max(4000)
-            .nullable()
-            .optional(),
+        customFront: z.string().trim().max(2000).nullable().optional(),
+        customBack: z.string().trim() .max(4000) .nullable().optional(),
+        notes: z.string().trim().max(4000).nullable() .optional(),
         imageUrl: z.string().url().nullable().optional(),
         audioUrl: z.string().url().nullable().optional(),
         metadata: JsonRecordSchema
