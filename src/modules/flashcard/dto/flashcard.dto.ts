@@ -30,16 +30,6 @@ export class GetFlashcardDeckListQuerySwaggerDTO {
 
     @ApiPropertyOptional({ example: 10, description: 'Số bản ghi mỗi trang', minimum: 1, maximum: 100 })
     pageSize?: number
-
-    @ApiPropertyOptional({ example: 'JLPT', description: 'Từ khóa tìm kiếm theo tên/description' })
-    search?: string
-
-    @ApiPropertyOptional({
-        example: 'ACTIVE',
-        enum: ['ACTIVE', 'ARCHIVED'],
-        description: 'Trạng thái bộ flashcard'
-    })
-    status?: 'ACTIVE' | 'ARCHIVED'
 }
 
 export class CreateFlashcardCardSwaggerDTO {

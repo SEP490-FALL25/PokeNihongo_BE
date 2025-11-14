@@ -25,7 +25,6 @@ import {
   UpdateFlashcardDeckBody
 } from './entities/flashcard.entities'
 import { FlashcardService } from './flashcard.service'
-import { FlashcardSearchService } from './flashcard-search.service'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
@@ -51,7 +50,6 @@ import {
 export class FlashcardController {
   constructor(
     private readonly flashcardService: FlashcardService,
-    private readonly flashcardSearchService: FlashcardSearchService
   ) { }
 
   @Post('decks')
@@ -81,11 +79,7 @@ export class FlashcardController {
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.flashcardService.getDecks(
-      userId,
-      query as GetFlashcardDeckListQuery,
-      lang ?? undefined
-    )
+    return this.flashcardService.getDecks(userId, query, lang ?? undefined)
   }
 
   @Get('decks/:deckId')
@@ -93,11 +87,11 @@ export class FlashcardController {
   @ApiResponse({ status: 200, type: MessageResDTO })
   @ZodSerializerDto(MessageResDTO)
   async getDeckById(
-    @Param() params: FlashcardDeckParamsDTO,
+    @Param('deckId') id: number,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.flashcardService.getDeckById(params.deckId, userId, lang ?? undefined)
+    return this.flashcardService.getDeckById(Number(id), userId, lang ?? undefined)
   }
 
   @Get('decks/:deckId/export')
@@ -228,25 +222,6 @@ export class FlashcardController {
       params.deckId,
       userId,
       body as ImportFlashcardCardsBody,
-      lang ?? undefined
-    )
-  }
-
-  @Get('decks/:deckId/library')
-  @ApiOperation({ summary: 'Tra cứu nội dung Vocabulary/Kanji/Grammar để thêm vào flashcard' })
-  @ApiResponse({ status: 200, type: PaginationResponseDTO })
-  @ApiQuery({ type: FlashcardLibrarySearchQuerySwaggerDTO })
-  @ZodSerializerDto(PaginationResponseDTO)
-  async searchLibrary(
-    @Param() params: FlashcardDeckParamsDTO,
-    @Query() query: FlashcardLibrarySearchQueryDTO,
-    @ActiveUser('userId') userId: number,
-    @I18nLang() lang: string
-  ) {
-    return this.flashcardSearchService.searchLibrary(
-      params.deckId,
-      userId,
-      query as FlashcardLibrarySearchQuery,
       lang ?? undefined
     )
   }
