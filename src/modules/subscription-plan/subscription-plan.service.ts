@@ -249,4 +249,8 @@ export class SubscriptionPlanService {
       throw error
     }
   }
+
+  async getPlansForUser(lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+  }
 }

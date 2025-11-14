@@ -7,6 +7,7 @@ import { SubscriptionPlanService } from './subscription-plan.service'
 @Module({
   imports: [LanguagesModule],
   controllers: [SubscriptionPlanController],
-  providers: [SubscriptionPlanService, SubscriptionPlanRepo]
+  providers: [SubscriptionPlanService, SubscriptionPlanRepo],
+  exports: [SubscriptionPlanService, SubscriptionPlanRepo]
 })
 export class SubscriptionPlanModule {}

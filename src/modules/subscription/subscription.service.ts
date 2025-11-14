@@ -14,6 +14,7 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
+import { SubscriptionPlanRepo } from '../subscription-plan/subscription-plan.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import { TranslationRepository } from '../translation/translation.repo'
 import { SubscriptionAlreadyExistsException } from './dto/subscription.error'
@@ -29,6 +30,7 @@ import { SubscriptionRepo } from './subscription.repo'
 export class SubscriptionService {
   constructor(
     private subscriptionRepo: SubscriptionRepo,
+    private subscriptionPlanRepo: SubscriptionPlanRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
     private readonly translationRepo: TranslationRepository
@@ -464,6 +466,257 @@ export class SubscriptionService {
         throw new NotFoundRecordException()
       }
       throw error
+    }
+  }
+
+  async listForMarketplace(lang: string = 'vi', roleName: string, userId?: number) {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const isAdmin = roleName === RoleName.Admin
+
+    // Step 1: Get subscriptions with active plans, sorted by tagName
+    const subscriptions = await this.subscriptionRepo.getSubscriptionsWithActivePlans(
+      langId ?? undefined
+    )
+
+    // Step 2: Get user's active subscription plan IDs
+    const userActivePlanIds = userId
+      ? await this.subscriptionPlanRepo.getUserActivePlanIds(userId)
+      : []
+
+    // Step 3: Get purchase counts per subscription plan
+    const planPurchaseCounts =
+      await this.subscriptionPlanRepo.getSubscriptionPurchaseCounts()
+
+    // Calculate total purchase count per subscription (sum of all its plans)
+    const subscriptionPurchaseCounts: Record<number, number> = {}
+    subscriptions.forEach((sub: any) => {
+      const total = sub.plans.reduce((sum: number, plan: any) => {
+        return sum + (planPurchaseCounts[plan.id] || 0)
+      }, 0)
+      subscriptionPurchaseCounts[sub.id] = total
+    })
+
+    // Step 4: Find the subscription with the highest purchase count
+    const maxPurchases = Math.max(...Object.values(subscriptionPurchaseCounts), 0)
+
+    // Step 5: Map subscriptions and add canBuy and isPopular fields
+    const results = await Promise.all(
+      subscriptions.map(async (sub: any) => {
+        const {
+          nameTranslations,
+          descriptionTranslations,
+          features,
+          plans,
+          nameKey,
+          descriptionKey,
+          createdAt,
+          updatedAt,
+          createdById,
+          updatedById,
+          deletedAt,
+          deletedById,
+          ...rest
+        } = sub
+
+        // Check if user has any active plan in this subscription
+        const hasActivePlan = plans.some((plan: any) =>
+          userActivePlanIds.includes(plan.id)
+        )
+
+        // Clean plans - remove meta fields
+        const cleanedPlans = plans.map((plan: any) => {
+          const {
+            createdAt,
+            updatedAt,
+            createdById,
+            updatedById,
+            deletedAt,
+            deletedById,
+            ...planRest
+          } = plan
+          return planRest
+        })
+
+        // Process features for admin/non-admin
+        let processedFeatures = features
+        if (!isAdmin) {
+          // Remove nameTranslations for non-admin
+          processedFeatures = features.map((f: any) => {
+            const { feature, ...featureRest } = f
+            if (!feature) return f
+            const { nameTranslations, ...featureDetails } = feature
+            return {
+              ...featureRest,
+              feature: {
+                ...featureDetails
+              }
+            }
+          })
+        } else {
+          // Convert feature nameTranslations for admin
+          processedFeatures = await Promise.all(
+            features.map(async (f: any) => {
+              const { feature, ...featureRest } = f
+              if (!feature) return f
+              const { nameTranslations: featureNameTrans, ...featureDetails } = feature
+
+              const convertedNameTrans =
+                await this.convertTranslationsToLangCodes(featureNameTrans)
+
+              return {
+                ...featureRest,
+                feature: {
+                  ...featureDetails,
+                  nameTranslations: convertedNameTrans
+                }
+              }
+            })
+          )
+        }
+
+        const purchaseCount = subscriptionPurchaseCounts[sub.id] || 0
+        const isPopular = maxPurchases > 0 && purchaseCount === maxPurchases
+
+        const result: any = {
+          ...rest,
+          plans: cleanedPlans,
+          features: processedFeatures,
+          isPopular,
+          canBuy: !hasActivePlan
+        }
+
+        // Add translations based on admin role
+        if (isAdmin) {
+          const convertedNameTrans =
+            await this.convertTranslationsToLangCodes(nameTranslations)
+          const convertedDescTrans = await this.convertTranslationsToLangCodes(
+            descriptionTranslations
+          )
+
+          result.nameTranslations = convertedNameTrans
+          result.descriptionTranslations = convertedDescTrans
+        }
+
+        return result
+      })
+    )
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: results,
+      message: this.i18nService.translate(SubscriptionMessage.GET_LIST_SUCCESS, lang)
+    }
+  }
+
+  async getMarketplaceOptions(
+    subscriptionId: number,
+    lang: string = 'vi',
+    roleName: string
+  ) {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const isAdmin = roleName === RoleName.Admin
+
+    // Get subscription with active plans
+    const subscription = await this.subscriptionRepo.getSubscriptionsWithActivePlans(
+      langId ?? undefined
+    )
+
+    // Find the specific subscription
+    const sub = subscription.find((s: any) => s.id === subscriptionId)
+
+    if (!sub) {
+      throw new NotFoundRecordException()
+    }
+
+    const {
+      nameTranslations,
+      descriptionTranslations,
+      features,
+      plans,
+      nameKey,
+      descriptionKey,
+      createdAt,
+      updatedAt,
+      createdById,
+      updatedById,
+      deletedAt,
+      deletedById,
+      ...rest
+    } = sub
+
+    // Clean plans - remove meta fields
+    const cleanedPlans = plans.map((plan: any) => {
+      const {
+        createdAt,
+        updatedAt,
+        createdById,
+        updatedById,
+        deletedAt,
+        deletedById,
+        ...planRest
+      } = plan
+      return planRest
+    })
+
+    // Process features for admin/non-admin
+    let processedFeatures = features
+    if (!isAdmin) {
+      // Remove nameTranslations for non-admin
+      processedFeatures = features.map((f: any) => {
+        const { feature, ...featureRest } = f
+        if (!feature) return f
+        const { nameTranslations, ...featureDetails } = feature
+        return {
+          ...featureRest,
+          feature: {
+            ...featureDetails
+          }
+        }
+      })
+    } else {
+      // Convert feature nameTranslations for admin
+      processedFeatures = await Promise.all(
+        features.map(async (f: any) => {
+          const { feature, ...featureRest } = f
+          if (!feature) return f
+          const { nameTranslations: featureNameTrans, ...featureDetails } = feature
+
+          const convertedNameTrans =
+            await this.convertTranslationsToLangCodes(featureNameTrans)
+
+          return {
+            ...featureRest,
+            feature: {
+              ...featureDetails,
+              nameTranslations: convertedNameTrans
+            }
+          }
+        })
+      )
+    }
+
+    const result: any = {
+      ...rest,
+      plans: cleanedPlans,
+      features: processedFeatures
+    }
+
+    // Add translations based on admin role
+    if (isAdmin) {
+      const convertedNameTrans =
+        await this.convertTranslationsToLangCodes(nameTranslations)
+      const convertedDescTrans = await this.convertTranslationsToLangCodes(
+        descriptionTranslations
+      )
+
+      result.nameTranslations = convertedNameTrans
+      result.descriptionTranslations = convertedDescTrans
+    }
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: result,
+      message: this.i18nService.translate(SubscriptionMessage.GET_SUCCESS, lang)
     }
   }
 }

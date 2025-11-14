@@ -673,14 +673,15 @@ export const viMessages = {
     DUPLICATE: 'Tính năng bị trùng lặp'
   },
   subscription_plan: {
-    CREATE_SUCCESS: 'Tạo kế hoạch đăng ký thành công',
-    UPDATE_SUCCESS: 'Cập nhật kế hoạch đăng ký thành công',
-    DELETE_SUCCESS: 'Xóa kế hoạch đăng ký thành công',
-    GET_SUCCESS: 'Lấy thông tin kế hoạch đăng ký thành công',
-    GET_LIST_SUCCESS: 'Lấy danh sách kế hoạch đăng ký thành công',
-    NOT_FOUND: 'Không tìm thấy kế hoạch đăng ký',
+    CREATE_SUCCESS: 'Tạo gói đăng ký thành công',
+    UPDATE_SUCCESS: 'Cập nhật gói đăng ký thành công',
+    DELETE_SUCCESS: 'Xóa gói đăng ký thành công',
+    GET_SUCCESS: 'Lấy thông tin gói đăng ký thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách gói đăng ký thành công',
+    NOT_FOUND: 'Không tìm thấy gói đăng ký',
     ALREADY_EXISTS: 'Kế hoạch đăng ký đã tồn tại',
-    INVALID_DATA: 'Dữ liệu kế hoạch đăng ký không hợp lệ'
+    INVALID_DATA: 'Dữ liệu gói đăng ký không hợp lệ',
+    NOT_READY_TO_BUY: 'Kế hoạch đăng ký chưa sẵn sàng để mua'
   },
   feature: {
     CREATE_SUCCESS: 'Tạo tính năng thành công',
@@ -691,5 +692,45 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy tính năng',
     ALREADY_EXISTS: 'Tính năng đã tồn tại',
     INVALID_DATA: 'Dữ liệu tính năng không hợp lệ'
+  },
+  user_subscription: {
+    CREATE_SUCCESS: 'Tạo đăng ký người dùng thành công',
+    UPDATE_SUCCESS: 'Cập nhật đăng ký người dùng thành công',
+    DELETE_SUCCESS: 'Xóa đăng ký người dùng thành công',
+    GET_SUCCESS: 'Lấy thông tin đăng ký người dùng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách đăng ký người dùng thành công',
+    NOT_FOUND: 'Không tìm thấy đăng ký người dùng',
+    ALREADY_EXISTS: 'Đăng ký người dùng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu đăng ký người dùng không hợp lệ',
+    HAS_ACTIVE_SUBSCRIPTION: 'Người dùng đã có gói đăng ký đang hoạt động',
+    HAS_PAYMENT_PENDING_SUBSCRIPTION:
+      'Người dùng đã có gói đăng ký tương tự đang chờ thanh toán'
+  },
+  invoice: {
+    CREATE_SUCCESS: 'Tạo hóa đơn thành công',
+    UPDATE_SUCCESS: 'Cập nhật hóa đơn thành công',
+    DELETE_SUCCESS: 'Xóa hóa đơn thành công',
+    GET_SUCCESS: 'Lấy thông tin hóa đơn thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách hóa đơn thành công',
+    NOT_FOUND: 'Không tìm thấy hóa đơn',
+    ALREADY_EXISTS: 'Hóa đơn đã tồn tại',
+    INVALID_DATA: 'Dữ liệu hóa đơn không hợp lệ'
+  },
+  payment: {
+    CREATE_SUCCESS: 'Tạo giao dịch thanh toán thành công',
+    UPDATE_SUCCESS: 'Cập nhật giao dịch thanh toán thành công',
+
+    GET_SUCCESS: 'Lấy thông tin giao dịch thanh toán thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách giao dịch thanh toán thành công',
+    NOT_FOUND: 'Không tìm thấy giao dịch thanh toán',
+    ALREADY_EXISTS: 'Giao dịch thanh toán đã tồn tại',
+    INVALID_DATA: 'Dữ liệu giao dịch thanh toán không hợp lệ',
+    INVALID_STATUS_PENDING:
+      'Chỉ có thể cập nhật giao dịch thanh toán ở trạng thái PENDING',
+    ERROR_UNKNOWN_PAY: 'Lỗi không xác định trong quá trình thanh toán',
+    ALREADY_PAID: 'Giao dịch thanh toán đã được thanh toán',
+    PAY_SUCCESS: 'Thanh toán thành công',
+    PAY_FAILED: 'Thanh toán thất bại',
+    PAY_CANCELLED: 'Thanh toán bị hủy bỏ'
   }
 }

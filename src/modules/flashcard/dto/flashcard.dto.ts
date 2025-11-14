@@ -82,6 +82,12 @@ export class CreateFlashcardCardSwaggerDTO {
 }
 
 export class UpdateFlashcardCardSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID bộ flashcard' })
+    deckId: number
+
+    @ApiProperty({ example: 1, description: 'ID thẻ flashcard' })
+    cardId: number
+
     @ApiPropertyOptional({
         example: 'ACTIVE',
         enum: ['ACTIVE', 'ARCHIVED'],

@@ -3,6 +3,8 @@ import {
   CreateSubscriptionBodyInputSchema,
   CreateSubscriptionResSchema,
   GetLeaderboardWithRewardSeasonDetailResSchema,
+  GetMarketplaceListResSchema,
+  GetMarketplaceOptionsResSchema,
   GetSubscriptionDetailResSchema,
   GetSubscriptionDetailWithAllLangResSchema,
   GetSubscriptionParamsSchema,
@@ -34,4 +36,10 @@ export class GetSubscriptionDetailWithAllLangResDTO extends createZodDto(
 
 export class GetLeaderboardWithRewardSeasonDetailResDTO extends createZodDto(
   GetLeaderboardWithRewardSeasonDetailResSchema
+) {}
+
+export class GetMarketplaceListResDTO extends createZodDto(GetMarketplaceListResSchema) {}
+
+export class GetMarketplaceOptionsResDTO extends createZodDto(
+  GetMarketplaceOptionsResSchema
 ) {}

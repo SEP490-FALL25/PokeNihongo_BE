@@ -20,6 +20,8 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreatedSubscriptionBodyInputDTO,
   CreateSubscriptionResDTO,
+  GetMarketplaceListResDTO,
+  GetMarketplaceOptionsResDTO,
   GetSubscriptionDetailResDTO,
   GetSubscriptionParamsDTO,
   UpdateSubscriptionBodyInputDTO,
@@ -100,6 +102,29 @@ export class SubscriptionController {
         deletedById: userId
       },
       lang
+    )
+  }
+
+  @Get('marketplace/list')
+  @ZodSerializerDto(GetMarketplaceListResDTO)
+  listMarketplace(
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string,
+    @ActiveUser('userId') userId?: number
+  ) {
+    return this.subscriptionService.listForMarketplace(lang, roleName, userId)
+  }
+  @Get('marketplace/options/:subscriptionId')
+  @ZodSerializerDto(GetMarketplaceOptionsResDTO)
+  getListOption(
+    @I18nLang() lang: string,
+    @ActiveUser('roleName') roleName: string,
+    @Param() params: GetSubscriptionParamsDTO
+  ) {
+    return this.subscriptionService.getMarketplaceOptions(
+      params.subscriptionId,
+      lang,
+      roleName
     )
   }
 }
