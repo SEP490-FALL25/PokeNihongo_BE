@@ -724,7 +724,8 @@ export const SubscriptionPlanMessage = {
   GET_LIST_SUCCESS: 'subscription_plan.GET_LIST_SUCCESS',
   NOT_FOUND: 'subscription_plan.NOT_FOUND',
   ALREADY_EXISTS: 'subscription_plan.ALREADY_EXISTS',
-  INVALID_DATA: 'subscription_plan.INVALID_DATA'
+  INVALID_DATA: 'subscription_plan.INVALID_DATA',
+  NOT_READY_TO_BUY: 'subscription_plan.NOT_READY_TO_BUY'
 } as const
 
 export const FeatureMessage = {
@@ -736,4 +737,45 @@ export const FeatureMessage = {
   NOT_FOUND: 'feature.NOT_FOUND',
   ALREADY_EXISTS: 'feature.ALREADY_EXISTS',
   INVALID_DATA: 'feature.INVALID_DATA'
+} as const
+
+export const UserSubscriptionMessage = {
+  CREATE_SUCCESS: 'user_subscription.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'user_subscription.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'user_subscription.DELETE_SUCCESS',
+  GET_SUCCESS: 'user_subscription.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'user_subscription.GET_LIST_SUCCESS',
+  NOT_FOUND: 'user_subscription.NOT_FOUND',
+  ALREADY_EXISTS: 'user_subscription.ALREADY_EXISTS',
+  INVALID_DATA: 'user_subscription.INVALID_DATA',
+  HAS_ACTIVE_SUBSCRIPTION: 'user_subscription.HAS_ACTIVE_SUBSCRIPTION',
+  HAS_PAYMENT_PENDING_SUBSCRIPTION: 'user_subscription.HAS_PAYMENT_PENDING_SUBSCRIPTION'
+} as const
+
+export const InvoiceMessage = {
+  CREATE_SUCCESS: 'invoice.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'invoice.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'invoice.DELETE_SUCCESS',
+  GET_SUCCESS: 'invoice.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'invoice.GET_LIST_SUCCESS',
+  NOT_FOUND: 'invoice.NOT_FOUND',
+  ALREADY_EXISTS: 'invoice.ALREADY_EXISTS',
+  INVALID_DATA: 'invoice.INVALID_DATA'
+} as const
+
+export const PaymentMessage = {
+  CREATE_SUCCESS: 'payment.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'payment.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'payment.DELETE_SUCCESS',
+  GET_SUCCESS: 'payment.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'payment.GET_LIST_SUCCESS',
+  NOT_FOUND: 'payment.NOT_FOUND',
+  ALREADY_EXISTS: 'payment.ALREADY_EXISTS',
+  INVALID_DATA: 'payment.INVALID_DATA',
+  INVALID_STATUS_PENDING: 'payment.INVALID_STATUS_PENDING',
+  ERROR_UNKNOWN_PAY: 'payment.ERROR_UNKNOWN_PAY',
+  ALREADY_PAID: 'payment.ALREADY_PAID',
+  PAY_SUCCESS: 'payment.PAY_SUCCESS',
+  PAY_FAILED: 'payment.PAY_FAILED',
+  PAY_CANCELLED: 'payment.PAY_CANCELLED'
 } as const

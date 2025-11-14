@@ -1,12 +1,10 @@
 import { config } from 'dotenv'
 import { z } from 'zod'
 
-
 if (process.env.NODE_ENV !== 'production') {
-  console.log('Running in development mode, loading .env file...');
-  config({ path: '.env' });
+  console.log('Running in development mode, loading .env file...')
+  config({ path: '.env' })
 }
-
 
 const configSchema = z.object({
   //Application
@@ -51,8 +49,12 @@ const configSchema = z.object({
   MAIL_HOST: z.string().optional(),
   MAIL_PORT: z.coerce.number().optional(),
   MAIL_USER: z.string().optional(),
-  MAIL_PASSWORD: z.string().optional()
+  MAIL_PASSWORD: z.string().optional(),
 
+  //PAYOS
+  PAYOS_CLIENT_ID: z.string().optional(),
+  PAYOS_API_KEY: z.string().optional(),
+  PAYOS_CHECKSUM_KEY: z.string().optional()
 })
 
 const configServer = configSchema.safeParse(process.env)

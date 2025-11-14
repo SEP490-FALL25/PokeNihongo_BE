@@ -18,3 +18,12 @@ export class SubscriptionPlanAlreadyExistsException extends BadRequestException 
     })
   }
 }
+
+export class SubscriptionPlanNotReadyToBuyException extends NotFoundException {
+  constructor() {
+    super({
+      message: SubscriptionPlanMessage.NOT_READY_TO_BUY,
+      errorKey: SubscriptionPlanMessage.NOT_READY_TO_BUY
+    })
+  }
+}

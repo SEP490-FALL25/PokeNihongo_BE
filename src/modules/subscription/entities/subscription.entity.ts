@@ -140,3 +140,65 @@ export const LEADERBOARD_SEASON_FIELDS = [
   'nameTranslation',
   'descriptionTranslation'
 ] as SubscriptionFieldType[]
+
+// Marketplace Schemas
+const MarketplaceFeatureSchema = z.object({
+  id: z.number(),
+  featureId: z.number(),
+  value: z.string().nullable(),
+  feature: z.object({
+    id: z.number(),
+    featureKey: z.string(),
+    nameKey: z.string(),
+    nameTranslation: z.string()
+  })
+})
+
+const MarketplacePlanSchema = z.object({
+  id: z.number(),
+  subscriptionId: z.number(),
+  price: z.number(),
+  type: z.enum(['LIFETIME', 'RECURRING']),
+  durationInDays: z.number().nullable(),
+  isActive: z.boolean()
+})
+
+const MarketplaceSubscriptionSchema = z.object({
+  id: z.number(),
+  tagName: z.enum([
+    TagNameSubscription.COMBO,
+    TagNameSubscription.NORMAL,
+    TagNameSubscription.ULTRA
+  ]),
+  nameTranslation: z.string(),
+  descriptionTranslation: z.string(),
+  plans: z.array(MarketplacePlanSchema),
+  features: z.array(MarketplaceFeatureSchema),
+  isPopular: z.boolean(),
+  canBuy: z.boolean()
+})
+
+const MarketplaceSubscriptionOptionsSchema = z.object({
+  id: z.number(),
+  tagName: z.enum([
+    TagNameSubscription.COMBO,
+    TagNameSubscription.NORMAL,
+    TagNameSubscription.ULTRA
+  ]),
+  nameTranslation: z.string(),
+  descriptionTranslation: z.string(),
+  plans: z.array(MarketplacePlanSchema),
+  features: z.array(MarketplaceFeatureSchema)
+})
+
+export const GetMarketplaceListResSchema = z.object({
+  statusCode: z.number(),
+  data: z.array(MarketplaceSubscriptionSchema),
+  message: z.string()
+})
+
+export const GetMarketplaceOptionsResSchema = z.object({
+  statusCode: z.number(),
+  data: MarketplaceSubscriptionOptionsSchema,
+  message: z.string()
+})
