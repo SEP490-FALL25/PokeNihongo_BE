@@ -52,6 +52,7 @@ export class PaymentService {
   ) {
     try {
       const { invoiceId, buyerName, buyerEmail, buyerPhone } = paymentData
+      console.log('create -payment')
 
       // 1. Lấy invoice
       const invoice = await this.invoiceRepo.findById(invoiceId)
