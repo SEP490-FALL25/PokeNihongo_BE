@@ -13,7 +13,6 @@ import {
 } from '../leaderboard-season/dto/leaderboard-season.error'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import {
-  MissingSeasonRankRewardForAllInvalidException,
   MissingSeasonRankRewardOrderInvalidException,
   SeasonRankRewardNotFoundException,
   SeasonRnakRewardNameInvalidException,
@@ -150,12 +149,9 @@ export class SeasonRankRewardService {
 
         // 2. Validate items: rankName uniqueness + order uniqueness and continuity per rankName
         const seenRankNames = new Set<string>()
-        const createBuffer: Array<{
-          seasonId: number
+        const processedItems: Array<{
           rankName: any
-          order: number | null
-          createdById: number
-          updatedById: number
+          infoOrders: Array<{ order: number | null; rewards: number[] }>
         }> = []
 
         for (const rankGroup of items) {
@@ -173,12 +169,16 @@ export class SeasonRankRewardService {
             return a.order - b.order
           })
 
-          // Check that last item is null (reward for all)
+          // Check that last item is null (reward for all), auto-create if missing
           if (sortedInfoOrders.length > 0) {
             const lastItem = sortedInfoOrders[sortedInfoOrders.length - 1]
             if (lastItem.order !== null) {
-              throw new MissingSeasonRankRewardForAllInvalidException(rankName)
+              // Auto-create null-order reward with empty rewards array
+              sortedInfoOrders.push({ order: null, rewards: [] })
             }
+          } else {
+            // If no infoOrders at all, create one with null order
+            sortedInfoOrders.push({ order: null, rewards: [] })
           }
 
           // Validate non-null orders: uniqueness, start at 1, continuous
@@ -193,14 +193,6 @@ export class SeasonRankRewardService {
               seenOrders.add(info.order)
               nonNullOrders.push(info.order)
             }
-
-            createBuffer.push({
-              seasonId,
-              rankName: rankName as any,
-              order: info.order,
-              createdById: updatedById,
-              updatedById
-            })
           }
 
           // Enforce orders start at 1 and are continuous: 1,2,3,... without gaps
@@ -215,11 +207,17 @@ export class SeasonRankRewardService {
               }
             }
           }
+
+          // Store processed items with auto-added null orders
+          processedItems.push({
+            rankName,
+            infoOrders: sortedInfoOrders
+          })
         }
 
         // 3. Validate reward IDs and create rows with reward connections
         const allRewardIds = new Set<number>()
-        for (const group of items) {
+        for (const group of processedItems) {
           for (const info of group.infoOrders) {
             info.rewards.forEach((rid) => allRewardIds.add(rid))
           }
@@ -236,8 +234,8 @@ export class SeasonRankRewardService {
           }
         }
 
-        // Create each SeasonRankReward with nested reward connects
-        for (const rankGroup of items) {
+        // Create each SeasonRankReward with nested reward connects (including auto-added null orders)
+        for (const rankGroup of processedItems) {
           for (const info of rankGroup.infoOrders) {
             await tx.seasonRankReward.create({
               data: {
