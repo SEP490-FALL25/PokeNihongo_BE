@@ -712,7 +712,8 @@ export const SubscriptionFeatureMessage = {
   ALREADY_EXISTS: 'subscription_feature.ALREADY_EXISTS',
   INVALID_DATA: 'subscription_feature.INVALID_DATA',
   INVALID_XP_MULTIPLIER_VALUE: 'subscription_feature.INVALID_XP_MULTIPLIER_VALUE',
-  INVALID_COIN_MULTIPLIER_VALUE: 'subscription_feature.INVALID_COIN_MULTIPLIER_VALUE'
+  INVALID_COIN_MULTIPLIER_VALUE: 'subscription_feature.INVALID_COIN_MULTIPLIER_VALUE',
+  DUPLICATE: 'subscription_feature.DUPLICATE'
 } as const
 
 export const SubscriptionPlanMessage = {

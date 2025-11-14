@@ -61,8 +61,10 @@ export const GetSubscriptionPlanParamsSchema = z.object({
 
 export const GetSubscriptionPlanDetailSchema = SubscriptionPlanSchema.extend({
   subscription: SubscriptionSchema.extend({
-    nameTranslations: TranslationInputSchema,
-    descriptionTranslations: TranslationInputSchema
+    nameTranslation: z.string().nullable().optional(),
+    nameTranslations: TranslationInputSchema.nullable().optional(),
+    descriptionTranslation: z.string().nullable().optional(),
+    descriptionTranslations: TranslationInputSchema.nullable().optional()
   }).nullable()
 })
 

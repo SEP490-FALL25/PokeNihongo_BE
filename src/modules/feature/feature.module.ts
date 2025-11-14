@@ -8,6 +8,7 @@ import { FeatureService } from './feature.service'
 @Module({
   imports: [LanguagesModule, TranslationModule],
   controllers: [FeatureController],
-  providers: [FeatureService, FeatureRepo]
+  providers: [FeatureService, FeatureRepo],
+  exports: [FeatureService, FeatureRepo]
 })
 export class FeatureModule {}
