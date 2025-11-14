@@ -673,14 +673,15 @@ export const viMessages = {
     DUPLICATE: 'Tính năng bị trùng lặp'
   },
   subscription_plan: {
-    CREATE_SUCCESS: 'Tạo kế hoạch đăng ký thành công',
-    UPDATE_SUCCESS: 'Cập nhật kế hoạch đăng ký thành công',
-    DELETE_SUCCESS: 'Xóa kế hoạch đăng ký thành công',
-    GET_SUCCESS: 'Lấy thông tin kế hoạch đăng ký thành công',
-    GET_LIST_SUCCESS: 'Lấy danh sách kế hoạch đăng ký thành công',
-    NOT_FOUND: 'Không tìm thấy kế hoạch đăng ký',
+    CREATE_SUCCESS: 'Tạo gói đăng ký thành công',
+    UPDATE_SUCCESS: 'Cập nhật gói đăng ký thành công',
+    DELETE_SUCCESS: 'Xóa gói đăng ký thành công',
+    GET_SUCCESS: 'Lấy thông tin gói đăng ký thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách gói đăng ký thành công',
+    NOT_FOUND: 'Không tìm thấy gói đăng ký',
     ALREADY_EXISTS: 'Kế hoạch đăng ký đã tồn tại',
-    INVALID_DATA: 'Dữ liệu kế hoạch đăng ký không hợp lệ'
+    INVALID_DATA: 'Dữ liệu gói đăng ký không hợp lệ',
+    NOT_READY_TO_BUY: 'Kế hoạch đăng ký chưa sẵn sàng để mua'
   },
   feature: {
     CREATE_SUCCESS: 'Tạo tính năng thành công',
@@ -700,6 +701,9 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách đăng ký người dùng thành công',
     NOT_FOUND: 'Không tìm thấy đăng ký người dùng',
     ALREADY_EXISTS: 'Đăng ký người dùng đã tồn tại',
-    INVALID_DATA: 'Dữ liệu đăng ký người dùng không hợp lệ'
+    INVALID_DATA: 'Dữ liệu đăng ký người dùng không hợp lệ',
+    HAS_ACTIVE_SUBSCRIPTION: 'Người dùng đã có gói đăng ký đang hoạt động',
+    HAS_PAYMENT_PENDING_SUBSCRIPTION:
+      'Người dùng đã có gói đăng ký tương tự đang chờ thanh toán'
   }
 }

@@ -724,7 +724,8 @@ export const SubscriptionPlanMessage = {
   GET_LIST_SUCCESS: 'subscription_plan.GET_LIST_SUCCESS',
   NOT_FOUND: 'subscription_plan.NOT_FOUND',
   ALREADY_EXISTS: 'subscription_plan.ALREADY_EXISTS',
-  INVALID_DATA: 'subscription_plan.INVALID_DATA'
+  INVALID_DATA: 'subscription_plan.INVALID_DATA',
+  NOT_READY_TO_BUY: 'subscription_plan.NOT_READY_TO_BUY'
 } as const
 
 export const FeatureMessage = {
@@ -746,5 +747,7 @@ export const UserSubscriptionMessage = {
   GET_LIST_SUCCESS: 'user_subscription.GET_LIST_SUCCESS',
   NOT_FOUND: 'user_subscription.NOT_FOUND',
   ALREADY_EXISTS: 'user_subscription.ALREADY_EXISTS',
-  INVALID_DATA: 'user_subscription.INVALID_DATA'
+  INVALID_DATA: 'user_subscription.INVALID_DATA',
+  HAS_ACTIVE_SUBSCRIPTION: 'user_subscription.HAS_ACTIVE_SUBSCRIPTION',
+  HAS_PAYMENT_PENDING_SUBSCRIPTION: 'user_subscription.HAS_PAYMENT_PENDING_SUBSCRIPTION'
 } as const

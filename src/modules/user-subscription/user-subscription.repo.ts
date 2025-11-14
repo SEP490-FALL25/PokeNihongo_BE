@@ -1,3 +1,4 @@
+import { UserSubscriptionStatusType } from '@/common/constants/subscription.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
@@ -119,6 +120,21 @@ export class UserSubscriptionRepo {
     return this.prismaService.userSubscription.findUnique({
       where: {
         id,
+        deletedAt: null
+      }
+    })
+  }
+
+  findActiveByUserIdPlanIdAndStatus(
+    userId: number,
+    planId: number,
+    status: UserSubscriptionStatusType
+  ): Promise<UserSubscriptionType | null> {
+    return this.prismaService.userSubscription.findFirst({
+      where: {
+        userId,
+        subscriptionPlanId: planId,
+        status,
         deletedAt: null
       }
     })

@@ -667,7 +667,8 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'サブスクリプションプランリストの取得に成功しました',
     NOT_FOUND: 'サブスクリプションプランが見つかりません',
     ALREADY_EXISTS: 'サブスクリプションプランは既に存在します',
-    INVALID_DATA: '無効なサブスクリプションプランデータです'
+    INVALID_DATA: '無効なサブスクリプションプランデータです',
+    NOT_READY_TO_BUY: 'このサブスクリプションプランは現在購入できません'
   },
   feature: {
     CREATE_SUCCESS: '機能の作成に成功しました',
@@ -687,6 +688,9 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'ユーザーサブスクリプションリストの取得に成功しました',
     NOT_FOUND: 'ユーザーサブスクリプションが見つかりません',
     ALREADY_EXISTS: 'ユーザーサブスクリプションは既に存在します',
-    INVALID_DATA: '無効なユーザーサブスクリプションデータです'
+    INVALID_DATA: '無効なユーザーサブスクリプションデータです',
+    HAS_ACTIVE_SUBSCRIPTION: 'ユーザーは既にアクティブなサブスクリプションを持っています',
+    HAS_PAYMENT_PENDING_SUBSCRIPTION:
+      'ユーザーは保留中の支払いがあるサブスクリプションを持っています'
   }
 }

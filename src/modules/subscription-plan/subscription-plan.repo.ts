@@ -246,4 +246,13 @@ export class SubscriptionPlanRepo {
       }
     }
   }
+
+  getById(id: number): Promise<SubscriptionPlanType | null> {
+    return this.prismaService.subscriptionPlan.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      }
+    })
+  }
 }

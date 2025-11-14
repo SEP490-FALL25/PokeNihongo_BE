@@ -18,3 +18,21 @@ export class UserSubscriptionAlreadyExistsException extends ConflictException {
     })
   }
 }
+
+export class UserHasSubscriptionWithStatusActiveException extends ConflictException {
+  constructor() {
+    super({
+      message: UserSubscriptionMessage.HAS_ACTIVE_SUBSCRIPTION,
+      errorKey: UserSubscriptionMessage.HAS_ACTIVE_SUBSCRIPTION
+    })
+  }
+}
+
+export class UserHasSubscriptionWithStatusPendingPaymentException extends ConflictException {
+  constructor() {
+    super({
+      message: UserSubscriptionMessage.HAS_PAYMENT_PENDING_SUBSCRIPTION,
+      errorKey: UserSubscriptionMessage.HAS_PAYMENT_PENDING_SUBSCRIPTION
+    })
+  }
+}

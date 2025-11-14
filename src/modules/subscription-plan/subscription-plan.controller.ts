@@ -28,6 +28,12 @@ export class SubscriptionPlanController {
     return this.subscriptionPlanService.list(query, lang, roleName)
   }
 
+  @Get('user')
+  @ZodSerializerDto(GetSubscriptionPlanDetailResDTO)
+  getPlansForUser(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
+    return this.subscriptionPlanService.getPlansForUser(lang)
+  }
+
   @Get(':subscriptionPlanId')
   @ZodSerializerDto(GetSubscriptionPlanDetailResDTO)
   findById(

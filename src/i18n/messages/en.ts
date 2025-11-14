@@ -692,7 +692,8 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Subscription plan list retrieved successfully',
     NOT_FOUND: 'Subscription plan not found',
     ALREADY_EXISTS: 'Subscription plan already exists',
-    INVALID_DATA: 'Invalid subscription plan data'
+    INVALID_DATA: 'Invalid subscription plan data',
+    NOT_READY_TO_BUY: 'Subscription plan is not ready to buy'
   },
   feature: {
     CREATE_SUCCESS: 'Feature created successfully',
@@ -713,6 +714,8 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'User subscription list retrieved successfully',
     NOT_FOUND: 'User subscription not found',
     ALREADY_EXISTS: 'User subscription already exists',
-    INVALID_DATA: 'Invalid user subscription data'
+    INVALID_DATA: 'Invalid user subscription data',
+    HAS_ACTIVE_SUBSCRIPTION: 'User already has an active subscription',
+    HAS_PAYMENT_PENDING_SUBSCRIPTION: 'User has a same subscription with pending payment'
   }
 }

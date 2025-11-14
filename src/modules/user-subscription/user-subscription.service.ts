@@ -1,3 +1,4 @@
+import { UserSubscriptionStatus } from '@/common/constants/subscription.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserSubscriptionMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
@@ -7,7 +8,13 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
-import { UserSubscriptionNotFoundException } from './dto/user-subscription.error'
+import { SubscriptionPlanNotFoundException } from '../subscription-plan/dto/subscription-plan.error'
+import { SubscriptionPlanRepo } from '../subscription-plan/subscription-plan.repo'
+import {
+  UserHasSubscriptionWithStatusActiveException,
+  UserHasSubscriptionWithStatusPendingPaymentException,
+  UserSubscriptionNotFoundException
+} from './dto/user-subscription.error'
 import {
   CreateUserSubscriptionBodyType,
   UpdateUserSubscriptionBodyType
@@ -18,7 +25,7 @@ import { UserSubscriptionRepo } from './user-subscription.repo'
 export class UserSubscriptionService {
   constructor(
     private userSubscriptionRepo: UserSubscriptionRepo,
-
+    private readonly subscriptionPlanRepo: SubscriptionPlanRepo,
     private readonly i18nService: I18nService
   ) {}
 
@@ -49,6 +56,36 @@ export class UserSubscriptionService {
     lang: string = 'vi'
   ) {
     try {
+      // check xem goi plan co active ko
+      const isPlanExist = await this.subscriptionPlanRepo.getById(data.subscriptionPlanId)
+      if (!isPlanExist) {
+        throw new SubscriptionPlanNotFoundException()
+      }
+      if (isPlanExist.isActive === false) {
+        throw new SubscriptionPlanNotFoundException()
+      }
+
+      // xem user mua goi nay co dang active khong, neu co goi nay va dang active thi khong duoc mua nua
+      const isUserActivePlanExist =
+        await this.userSubscriptionRepo.findActiveByUserIdPlanIdAndStatus(
+          userId,
+          data.subscriptionPlanId,
+          UserSubscriptionStatus.ACTIVE
+        )
+      if (isUserActivePlanExist) {
+        throw new UserHasSubscriptionWithStatusActiveException()
+      }
+      // xem user co dang thanh toan goi nay khong
+      const isUserPayPlanExist =
+        await this.userSubscriptionRepo.findActiveByUserIdPlanIdAndStatus(
+          userId,
+          data.subscriptionPlanId,
+          UserSubscriptionStatus.PENDING_PAYMENT
+        )
+      if (isUserPayPlanExist) {
+        throw new UserHasSubscriptionWithStatusPendingPaymentException()
+      }
+
       const result = await this.userSubscriptionRepo.create({
         createdById: userId,
         data: {
