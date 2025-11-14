@@ -10,7 +10,9 @@ import {
   FlashcardReviewActionBodyDTO,
   FlashcardReviewQueryDTO,
   UpdateFlashcardCardBodyDTO,
-  UpdateFlashcardDeckBodyDTO
+  UpdateFlashcardDeckBodyDTO,
+  DeleteFlashcardCardsBodyDTO,
+  FlashcardReadBodyDTO
 } from './dto/flashcard.zod-dto'
 import {
   CreateFlashcardCardBody,
@@ -34,6 +36,7 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateFlashcardCardSwaggerDTO,
   CreateFlashcardDeckSwaggerDTO,
+  DeleteFlashcardCardsBodySwaggerDTO,
   FlashcardImportCardsBodySwaggerDTO,
   FlashcardLibrarySearchQuerySwaggerDTO,
   FlashcardReviewActionSwaggerDTO,
@@ -41,7 +44,8 @@ import {
   GetFlashcardCardListQuerySwaggerDTO,
   GetFlashcardDeckListQuerySwaggerDTO,
   UpdateFlashcardCardSwaggerDTO,
-  UpdateFlashcardDeckSwaggerDTO
+  UpdateFlashcardDeckSwaggerDTO,
+  FlashcardReadBodySwaggerDTO
 } from './dto/flashcard.dto'
 
 @ApiTags('Flashcards')
@@ -68,6 +72,39 @@ export class FlashcardController {
       lang ?? undefined
     )
   }
+
+  @Put('decks/cards')
+  @ApiOperation({ summary: 'Cập nhật thông tin thẻ flashcard' })
+  @ApiResponse({ status: 200, type: MessageResDTO })
+  @ApiBody({ type: UpdateFlashcardCardSwaggerDTO })
+  @ZodSerializerDto(MessageResDTO)
+  async updateCard(
+    @Body() body: UpdateFlashcardCardBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.flashcardService.updateCard(
+      body.deckId,
+      body.cardId,
+      userId,
+      body as UpdateFlashcardCardBody,
+      lang ?? undefined
+    )
+  }
+
+  @Put('read')
+  @ApiOperation({ summary: 'Đánh dấu đã đọc thẻ flashcard' })
+  @ApiResponse({ status: 200, type: MessageResDTO })
+  @ApiBody({ type: FlashcardReadBodySwaggerDTO })
+  @ZodSerializerDto(MessageResDTO)
+  async markRead(
+    @Body() body: FlashcardReadBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.flashcardService.markRead(body.deckId, body.cardId, body.read, userId, lang ?? undefined)
+  }
+
 
   @Get('decks')
   @ApiOperation({ summary: 'Lấy danh sách bộ flashcard của người dùng' })
@@ -117,19 +154,20 @@ export class FlashcardController {
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.flashcardService.updateDeck(Number(id),userId,body as UpdateFlashcardDeckBody,lang ?? undefined)
+    return this.flashcardService.updateDeck(Number(id), userId, body as UpdateFlashcardDeckBody, lang ?? undefined)
   }
 
-  @Delete('decks/:deckId')
-  @ApiOperation({ summary: 'Xóa (soft delete) bộ flashcard' })
+  @Delete('decks/cards')
+  @ApiOperation({ summary: 'Xóa cứng nhiều thẻ flashcard' })
+  @ApiBody({ type: DeleteFlashcardCardsBodySwaggerDTO })
   @ApiResponse({ status: 200, type: MessageResDTO })
   @ZodSerializerDto(MessageResDTO)
-  async deleteDeck(
-    @Param('deckId') id: string,
+  async deleteCards(
+    @Body() body: DeleteFlashcardCardsBodyDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
-    return this.flashcardService.deleteDeck(Number(id), userId, lang ?? undefined)
+    return this.flashcardService.deleteCards(body.deckId, body.cardIds, userId, lang ?? undefined)
   }
 
   @Get('decks/:deckId/cards')
@@ -138,13 +176,13 @@ export class FlashcardController {
   @ApiQuery({ type: GetFlashcardCardListQuerySwaggerDTO })
   @ZodSerializerDto(PaginationResponseDTO)
   async getDeckCards(
-    @Param() params: FlashcardDeckParamsDTO,
+    @Param('deckId') id: string,
     @Query() query: GetFlashcardCardListQueryDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
     return this.flashcardService.getDeckCards(
-      params.deckId,
+      Number(id),
       userId,
       query as GetFlashcardCardListQuery,
       lang ?? undefined
@@ -170,36 +208,7 @@ export class FlashcardController {
     )
   }
 
-  @Put('decks/cards')
-  @ApiOperation({ summary: 'Cập nhật thông tin thẻ flashcard' })
-  @ApiResponse({ status: 200, type: MessageResDTO })
-  @ApiBody({ type: UpdateFlashcardCardSwaggerDTO })
-  @ZodSerializerDto(MessageResDTO)
-  async updateCard(
-    @Body() body: UpdateFlashcardCardBodyDTO,
-    @ActiveUser('userId') userId: number,
-    @I18nLang() lang: string
-  ) {
-    return this.flashcardService.updateCard(
-      body.deckId,
-      body.cardId,
-      userId,
-      body as UpdateFlashcardCardBody,
-      lang ?? undefined
-    )
-  }
 
-  @Delete('decks/:deckId/cards/:cardId')
-  @ApiOperation({ summary: 'Xóa (soft delete) một thẻ flashcard' })
-  @ApiResponse({ status: 200, type: MessageResDTO })
-  @ZodSerializerDto(MessageResDTO)
-  async deleteCard(
-    @Param() params: FlashcardDeckCardParamsDTO,
-    @ActiveUser('userId') userId: number,
-    @I18nLang() lang: string
-  ) {
-    return this.flashcardService.deleteCard(params.deckId, params.cardId, userId, lang ?? undefined)
-  }
 
   @Post('decks/:deckId/cards/import')
   @ApiOperation({ summary: 'Import nhiều thẻ từ Vocabulary/Kanji/Grammar vào bộ flashcard' })
@@ -239,20 +248,21 @@ export class FlashcardController {
     )
   }
 
-  @Post('decks/:deckId/cards/:cardId/review')
+
+
+  @Post('review')
   @ApiOperation({ summary: 'Ghi nhận kết quả ôn tập của một thẻ flashcard' })
   @ApiResponse({ status: 200, type: MessageResDTO })
   @ApiBody({ type: FlashcardReviewActionSwaggerDTO })
   @ZodSerializerDto(MessageResDTO)
   async reviewCard(
-    @Param() params: FlashcardDeckCardParamsDTO,
     @Body() body: FlashcardReviewActionBodyDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
     return this.flashcardService.reviewCard(
-      params.deckId,
-      params.cardId,
+      body.deckId,
+      body.cardId,
       userId,
       body as FlashcardReviewActionBody,
       lang ?? undefined

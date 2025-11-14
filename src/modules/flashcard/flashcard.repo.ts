@@ -25,7 +25,17 @@ const CARD_RELATION_INCLUDE = {
       wordJp: true,
       reading: true,
       levelN: true,
-      audioUrl: true
+      audioUrl: true,
+      imageUrl: true,
+      meanings: {
+        select: {
+          id: true,
+          meaningKey: true,
+          exampleSentenceKey: true,
+          explanationKey: true,
+          exampleSentenceJp: true
+        }
+      }
     }
   },
   kanji: {
@@ -82,6 +92,9 @@ export class FlashcardRepository {
   }
 
   async findDeckById(deckId: number, userId: number) {
+    if (!deckId || !Number.isInteger(deckId) || deckId < 1) {
+      return null
+    }
     return this.prisma.flashcardDeck.findFirst({
       where: {
         id: deckId,
@@ -265,6 +278,20 @@ export class FlashcardRepository {
     })
   }
 
+  async findCardByIdForUpdate(cardId: number, deckId: number, userId: number) {
+    return this.prisma.flashcardCard.findFirst({
+      where: {
+        id: cardId,
+        deckId,
+        deck: {
+          userId,
+          deletedAt: null
+        }
+      },
+      include: CARD_RELATION_INCLUDE
+    })
+  }
+
   async findExistingContentCards(deckId: number, contentType: FlashcardContentType, ids: number[]) {
     if (!ids.length) {
       return []
@@ -301,6 +328,7 @@ export class FlashcardRepository {
     kanjiId?: number | null
     grammarId?: number | null
     notes?: string | null
+    metadata?: any
   }) {
     return this.prisma.flashcardCard.create({
       data: {
@@ -309,7 +337,8 @@ export class FlashcardRepository {
         vocabularyId: body.vocabularyId ?? null,
         kanjiId: body.kanjiId ?? null,
         grammarId: body.grammarId ?? null,
-        notes: body.notes ?? null
+        notes: body.notes ?? null,
+        metadata: body.metadata ?? undefined
       } as Prisma.FlashcardCardUncheckedCreateInput,
       include: CARD_RELATION_INCLUDE
     })
@@ -335,10 +364,20 @@ export class FlashcardRepository {
 
     if (data.status !== undefined) updateData.status = data.status as PrismaFlashcardCardStatus
     if (data.notes !== undefined) updateData.notes = data.notes ?? null
+    if (data.read !== undefined) updateData.read = data.read
+    if (data.metadata !== undefined) updateData.metadata = data.metadata ?? undefined
 
     return this.prisma.flashcardCard.update({
       where: { id: cardId },
       data: updateData,
+      include: CARD_RELATION_INCLUDE
+    })
+  }
+
+  async updateCardRead(cardId: number, read: boolean) {
+    return this.prisma.flashcardCard.update({
+      where: { id: cardId },
+      data: { read },
       include: CARD_RELATION_INCLUDE
     })
   }
@@ -384,6 +423,44 @@ export class FlashcardRepository {
       data: {
         deletedAt: new Date(),
         status: 'ARCHIVED' as PrismaFlashcardCardStatus
+      },
+      include: CARD_RELATION_INCLUDE
+    })
+  }
+
+  async deleteCards(deckId: number, cardIds: number[]) {
+    return this.prisma.flashcardCard.deleteMany({
+      where: {
+        id: { in: cardIds },
+        deckId
+      }
+    })
+  }
+
+  async findCardsByIds(deckId: number, cardIds: number[], userId: number) {
+    return this.prisma.flashcardCard.findMany({
+      where: {
+        id: { in: cardIds },
+        deckId,
+        deletedAt: null,
+        deck: {
+          userId,
+          deletedAt: null
+        }
+      },
+      include: CARD_RELATION_INCLUDE
+    })
+  }
+
+  async findCardsByIdsForDelete(deckId: number, cardIds: number[], userId: number) {
+    return this.prisma.flashcardCard.findMany({
+      where: {
+        id: { in: cardIds },
+        deckId,
+        deck: {
+          userId,
+          deletedAt: null
+        }
       },
       include: CARD_RELATION_INCLUDE
     })
