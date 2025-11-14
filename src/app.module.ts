@@ -105,10 +105,11 @@ import { WebsocketsModule } from './websockets/websockets.module'
     }),
     ScheduleModule.forRoot(),
     BullModule.forRoot({
-      redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379', 10)
-      }
+      url:
+        process.env.REDIS_URI ||
+        `redis://${process.env.REDIS_HOST || 'localhost'}:${
+          process.env.REDIS_PORT || '6379'
+        }`
     }),
     I18nModule, // Add I18n module
 

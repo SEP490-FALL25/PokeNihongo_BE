@@ -39,6 +39,8 @@ export class InvoiceController {
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
+    console.log('vao controller')
+
     return this.invoiceService.create(
       {
         userId,
