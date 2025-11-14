@@ -69,7 +69,7 @@ export class InvoiceService {
       if (isPlanExist.isActive === false) {
         throw new SubscriptionPlanNotFoundException()
       }
-
+      console.log('isPlanExist')
       // xem user mua goi nay co dang active khong, neu co goi nay va dang active thi khong duoc mua nua
       const isUserActivePlanExist =
         await this.userSubRepo.findActiveByUserIdPlanIdAndStatus(
@@ -80,6 +80,7 @@ export class InvoiceService {
       if (isUserActivePlanExist) {
         throw new UserHasSubscriptionWithStatusActiveException()
       }
+      console.log('isUserActivePlanExist')
       // xem user co dang thanh toan goi nay khong
       const isUserPayPlanExist = await this.userSubRepo.findActiveByUserIdPlanIdAndStatus(
         userId,
@@ -89,7 +90,7 @@ export class InvoiceService {
       if (isUserPayPlanExist) {
         throw new UserHasSubscriptionWithStatusPendingPaymentException()
       }
-
+      console.log('isUserPayPlanExist')
       // Tạo invoice trong transaction
       const invoice = await this.invoiceRepo.withTransaction(async (tx) => {
         // chuan bi them data co create invoice
@@ -111,18 +112,20 @@ export class InvoiceService {
           tx
         )
       })
-
+      console.log('xong create')
       // Schedule auto cancellation after 60 minutes if still PENDING
-      await this.invoiceExpirationQueue.add(
-        'expireInvoice',
-        { invoiceId: invoice.id },
-        {
-          delay: 60 * 60 * 1000,
-          jobId: `invoice-expire-${invoice.id}`,
-          removeOnComplete: true,
-          removeOnFail: true
-        }
-      )
+      // await this.invoiceExpirationQueue.add(
+      //   'expireInvoice',
+      //   { invoiceId: invoice.id },
+      //   {
+      //     delay: 60 * 60 * 1000,
+      //     jobId: `invoice-expire-${invoice.id}`,
+      //     removeOnComplete: true,
+      //     removeOnFail: true
+      //   }
+      // )
+      console.log('bull')
+      console.log('vao create payment')
 
       // Sau khi invoice đã commit vào DB, gọi createPayOSPayment
       const paymentResult = await this.paymentService.createPayOSPayment(
@@ -132,7 +135,7 @@ export class InvoiceService {
         userId,
         lang
       )
-
+      console.log('xong create - payment')
       return {
         statusCode: 201,
         data: {
