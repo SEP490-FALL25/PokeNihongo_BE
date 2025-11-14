@@ -669,7 +669,8 @@ export const viMessages = {
     INVALID_XP_MULTIPLIER_VALUE:
       'Giá trị hệ số nhân XP không hợp lệ (phải lớn hơn hoặc bằng 1)',
     INVALID_COIN_MULTIPLIER_VALUE:
-      'Giá trị hệ số nhân Coin không hợp lệ (phải lớn hơn hoặc bằng 1)'
+      'Giá trị hệ số nhân Coin không hợp lệ (phải lớn hơn hoặc bằng 1)',
+    DUPLICATE: 'Tính năng bị trùng lặp'
   },
   subscription_plan: {
     CREATE_SUCCESS: 'Tạo kế hoạch đăng ký thành công',

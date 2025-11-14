@@ -681,7 +681,8 @@ export const enMessages = {
     ALREADY_EXISTS: 'Subscription feature already exists',
     INVALID_DATA: 'Invalid subscription feature data',
     INVALID_XP_MULTIPLIER_VALUE: 'XP multiplier must be greater than or equal to 1',
-    INVALID_COIN_MULTIPLIER_VALUE: 'Coin multiplier must be greater than or equal to 1'
+    INVALID_COIN_MULTIPLIER_VALUE: 'Coin multiplier must be greater than or equal to 1',
+    DUPLICATE: 'Feature of Subscription has dupplicated'
   },
   subscription_plan: {
     CREATE_SUCCESS: 'Subscription plan created successfully',

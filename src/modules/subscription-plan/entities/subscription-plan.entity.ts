@@ -1,6 +1,8 @@
 import { SubscriptionType } from '@/common/constants/subscription.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
+import { FeatureSchema } from '@/modules/feature/entities/feature.entity'
+import { SubscriptionFeatureSchema } from '@/modules/subscription-feature/entities/subscription-feature.entity'
 import { SubscriptionSchema } from '@/modules/subscription/entities/subscription.entity'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
@@ -61,8 +63,26 @@ export const GetSubscriptionPlanParamsSchema = z.object({
 
 export const GetSubscriptionPlanDetailSchema = SubscriptionPlanSchema.extend({
   subscription: SubscriptionSchema.extend({
-    nameTranslations: TranslationInputSchema,
-    descriptionTranslations: TranslationInputSchema
+    nameTranslation: z.string().nullable().optional(),
+    nameTranslations: TranslationInputSchema.nullable().optional(),
+    descriptionTranslation: z.string().nullable().optional(),
+    descriptionTranslations: TranslationInputSchema.nullable().optional(),
+    features: z.array(
+      SubscriptionFeatureSchema.pick({
+        id: true,
+        featureId: true,
+        value: true
+      }).extend({
+        feature: FeatureSchema.pick({
+          id: true,
+          featureKey: true,
+          nameKey: true
+        }).extend({
+          nameTranslation: z.string().nullable().optional(),
+          nameTranslations: TranslationInputSchema.nullable().optional()
+        })
+      })
+    )
   }).nullable()
 })
 

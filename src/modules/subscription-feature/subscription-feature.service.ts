@@ -1,14 +1,22 @@
+import { FeatureKey } from '@/common/constants/subscription.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { SubscriptionFeatureMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   isForeignKeyConstraintPrismaError,
-  isNotFoundPrismaError
+  isNotFoundPrismaError,
+  isUniqueConstraintPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
+import { FeatureRepo } from '../feature/feature.repo'
 import { SubscriptionRepo } from '../subscription/subscription.repo'
-import { SubscriptionFeatureNotFoundException } from './dto/subscription-feature.error'
+import {
+  InvalidValueForCoinMultiplierExistsException,
+  InvalidValueForXPMultiplierExistsException,
+  SubscriptionFeatureIsDuplicateException,
+  SubscriptionFeatureNotFoundException
+} from './dto/subscription-feature.error'
 import {
   CreateSubscriptionFeatureBodyType,
   UpdateSubscriptionFeatureBodyType,
@@ -21,6 +29,7 @@ export class SubscriptionFeatureService {
   constructor(
     private subscriptionFeatureRepo: SubscriptionFeatureRepo,
     private readonly subRepo: SubscriptionRepo,
+    private readonly featureRepo: FeatureRepo,
     private readonly i18nService: I18nService
   ) {}
 
@@ -208,38 +217,62 @@ export class SubscriptionFeatureService {
           where: { subscriptionId }
         })
 
-        // 2. Prepare data for createMany
-        const createData = items.map((item) => ({
-          subscriptionId,
-          featureId: item.featureId,
-          value: item.value,
-          createdById: updatedById,
-          updatedById
-        }))
+        // 2. Get all featureIds to validate
+        const featureIds = items.map((item) => item.featureId)
+        const features = await tx.feature.findMany({
+          where: { id: { in: featureIds }, deletedAt: null },
+          select: { id: true, featureKey: true }
+        })
 
-        // Validate numeric multiplier features: must be a number >= 1 with specific error classes
-        // for (const item of createData) {
-        //   if (item.featureId === featureId.COIN_MULTIPLIER) {
-        //     const num = Number(item.value)
-        //     if (!item.value || !Number.isFinite(num) || num < 1) {
-        //       throw new InvalidValueForCoinMultiplierExistsException()
-        //     }
-        //     item.value = num.toString()
-        //   } else if (item.featureId === featureId.XP_MULTIPLIER) {
-        //     const num = Number(item.value)
-        //     if (!item.value || !Number.isFinite(num) || num < 1) {
-        //       throw new InvalidValueForXPMultiplierExistsException()
-        //     }
-        //     item.value = num.toString()
-        //   }
-        // }
+        // Build map for quick lookup
+        const featureMap = new Map(features.map((f) => [f.id, f.featureKey]))
 
-        // 3. Create all features at once
+        // 3. Prepare data for createMany with validation
+        const createData = items.map((item) => {
+          const featureKey = featureMap.get(item.featureId)
+
+          // Validate numeric multiplier features
+          if (featureKey === FeatureKey.COIN_MULTIPLIER) {
+            const num = Number(item.value)
+            if (!item.value || !Number.isFinite(num) || num < 1) {
+              throw new InvalidValueForCoinMultiplierExistsException()
+            }
+            return {
+              subscriptionId,
+              featureId: item.featureId,
+              value: num.toString(),
+              createdById: updatedById,
+              updatedById
+            }
+          } else if (featureKey === FeatureKey.XP_MULTIPLIER) {
+            const num = Number(item.value)
+            if (!item.value || !Number.isFinite(num) || num < 1) {
+              throw new InvalidValueForXPMultiplierExistsException()
+            }
+            return {
+              subscriptionId,
+              featureId: item.featureId,
+              value: num.toString(),
+              createdById: updatedById,
+              updatedById
+            }
+          }
+
+          return {
+            subscriptionId,
+            featureId: item.featureId,
+            value: item.value,
+            createdById: updatedById,
+            updatedById
+          }
+        })
+
+        // 4. Create all features at once
         await tx.subscriptionFeature.createMany({
           data: createData
         })
 
-        // 4. Re-fetch created data
+        // 5. Re-fetch created data
         return await tx.subscriptionFeature.findMany({
           where: { subscriptionId, deletedAt: null },
           orderBy: { id: 'asc' }
@@ -257,6 +290,9 @@ export class SubscriptionFeatureService {
     } catch (error) {
       if (isForeignKeyConstraintPrismaError(error)) {
         throw new NotFoundRecordException()
+      }
+      if (isUniqueConstraintPrismaError(error)) {
+        throw new SubscriptionFeatureIsDuplicateException()
       }
       throw error
     }

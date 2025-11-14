@@ -174,8 +174,18 @@ export class SubscriptionPlanRepo {
             features: {
               select: {
                 id: true,
-
-                value: true
+                featureId: true,
+                value: true,
+                feature: {
+                  select: {
+                    id: true,
+                    featureKey: true,
+                    nameKey: true,
+                    nameTranslations: {
+                      select: { value: true, languageId: true }
+                    }
+                  }
+                }
               }
             }
           }
@@ -188,7 +198,8 @@ export class SubscriptionPlanRepo {
     const { subscription, ...rest } = plan as any
     if (!subscription) return plan
 
-    const { nameTranslations, descriptionTranslations, ...subRest } = subscription
+    const { nameTranslations, descriptionTranslations, features, ...subRest } =
+      subscription
 
     // Find single translation for current langId if provided
     const nameTranslation = langId
@@ -201,6 +212,28 @@ export class SubscriptionPlanRepo {
         subscription.descriptionKey)
       : subscription.descriptionKey
 
+    // Process features to add nameTranslation for each feature
+    const processedFeatures = features?.map((f: any) => {
+      const { feature, ...featureRest } = f
+      if (!feature) return f
+
+      const { nameTranslations: featureNameTrans, ...featureDetails } = feature
+
+      const featureNameTranslation = langId
+        ? (featureNameTrans?.find((t: any) => t.languageId === langId)?.value ??
+          feature.nameKey)
+        : feature.nameKey
+
+      return {
+        ...featureRest,
+        feature: {
+          ...featureDetails,
+          nameTranslations: featureNameTrans, // keep for service conversion
+          nameTranslation: featureNameTranslation
+        }
+      }
+    })
+
     return {
       ...rest,
       subscription: {
@@ -208,7 +241,8 @@ export class SubscriptionPlanRepo {
         nameTranslations, // keep for service-level conversion
         descriptionTranslations, // keep for service-level conversion
         nameTranslation,
-        descriptionTranslation
+        descriptionTranslation,
+        features: processedFeatures
       }
     }
   }

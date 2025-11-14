@@ -656,7 +656,8 @@ export const jaMessages = {
     ALREADY_EXISTS: 'サブスクリプション機能は既に存在します',
     INVALID_DATA: '無効なサブスクリプション機能データです',
     INVALID_XP_MULTIPLIER_VALUE: 'XP倍率は1以上である必要があります',
-    INVALID_COIN_MULTIPLIER_VALUE: 'コイン倍率は1以上である必要があります'
+    INVALID_COIN_MULTIPLIER_VALUE: 'コイン倍率は1以上である必要があります',
+    DUPLICATE: '重複しています'
   },
   subscription_plan: {
     CREATE_SUCCESS: 'サブスクリプションプランの作成に成功しました',

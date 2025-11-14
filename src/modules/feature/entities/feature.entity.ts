@@ -29,7 +29,6 @@ export const FeatureSchema = z.object({
 })
 
 export const CreateFeatureBodyInputSchema = FeatureSchema.pick({
-  nameKey: true,
   featureKey: true
 })
   .strict()
@@ -71,14 +70,6 @@ export const GetFeatureDetailWithAllLangResSchema = z.object({
           value: z.string()
         })
       )
-      .optional(),
-    descriptionTranslations: z
-      .array(
-        z.object({
-          key: z.string(),
-          value: z.string()
-        })
-      )
       .optional()
   }),
   message: z.string()
@@ -88,9 +79,7 @@ export const GetFeatureDetailResSchema = z.object({
   statusCode: z.number(),
   data: FeatureSchema.extend({
     nameTranslation: z.string().nullable().optional(),
-    nameTranslations: TranslationInputSchema.nullable().optional(),
-    descriptionTranslation: z.string().nullable().optional(),
-    descriptionTranslations: TranslationInputSchema.nullable().optional()
+    nameTranslations: TranslationInputSchema.nullable().optional()
   }),
   message: z.string()
 })

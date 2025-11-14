@@ -19,6 +19,15 @@ export class SubscriptionFeatureAlreadyExistsException extends BadRequestExcepti
   }
 }
 
+export class SubscriptionFeatureIsDuplicateException extends BadRequestException {
+  constructor() {
+    super({
+      message: SubscriptionFeatureMessage.DUPLICATE,
+      errorKey: SubscriptionFeatureMessage.DUPLICATE
+    })
+  }
+}
+
 export class InvalidValueForCoinMultiplierExistsException extends BadRequestException {
   constructor() {
     super({
