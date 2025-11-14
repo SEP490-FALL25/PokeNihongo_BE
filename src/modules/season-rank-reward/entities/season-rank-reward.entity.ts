@@ -14,7 +14,7 @@ export const SeasonRankRewardSchema = z.object({
   seasonId: z.number(),
   // Align with Prisma enum RankName: N5 | N4 | N3 | N2 | N1
   rankName: z.enum([rankName.N5, rankName.N4, rankName.N3]).default(rankName.N5),
-  order: z.number().min(1).default(1),
+  order: z.number().min(1).nullable(),
 
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
@@ -51,7 +51,7 @@ export const UpdateSeasonRankRewardByRankTypeSchema = z.object({
   infoOrders: z
     .array(
       z.object({
-        order: z.number().min(1),
+        order: z.number().min(1).nullable(),
         rewards: z.array(z.number()).min(1)
       })
     )

@@ -113,7 +113,7 @@ export const GetSubscriptionDetailResSchema = z.object({
       .array(
         SubscriptionFeatureSchema.pick({
           id: true,
-          featureKey: true,
+
           value: true
         })
       )

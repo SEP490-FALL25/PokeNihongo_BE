@@ -174,7 +174,7 @@ export class SubscriptionPlanRepo {
             features: {
               select: {
                 id: true,
-                featureKey: true,
+
                 value: true
               }
             }

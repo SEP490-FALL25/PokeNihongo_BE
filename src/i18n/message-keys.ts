@@ -662,7 +662,8 @@ export const SeasonRankRewardMessage = {
   ALREADY_EXISTS: 'season_rank_reward.ALREADY_EXISTS',
   INVALID_DATA: 'season_rank_reward.INVALID_DATA',
   RANK_NAME_INVALID: 'season_rank_reward.RANK_NAME_INVALID',
-  RANK_ORDER_INVALID: 'season_rank_reward.RANK_ORDER_INVALID'
+  RANK_ORDER_INVALID: 'season_rank_reward.RANK_ORDER_INVALID',
+  MISSSING_REWARD_FOR_ALL: 'season_rank_reward.MISSSING_REWARD_FOR_ALL'
 } as const
 
 export const UserRewardHistoryMessage = {
@@ -723,4 +724,15 @@ export const SubscriptionPlanMessage = {
   NOT_FOUND: 'subscription_plan.NOT_FOUND',
   ALREADY_EXISTS: 'subscription_plan.ALREADY_EXISTS',
   INVALID_DATA: 'subscription_plan.INVALID_DATA'
+} as const
+
+export const FeatureMessage = {
+  CREATE_SUCCESS: 'feature.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'feature.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'feature.DELETE_SUCCESS',
+  GET_SUCCESS: 'feature.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'feature.GET_LIST_SUCCESS',
+  NOT_FOUND: 'feature.NOT_FOUND',
+  ALREADY_EXISTS: 'feature.ALREADY_EXISTS',
+  INVALID_DATA: 'feature.INVALID_DATA'
 } as const
