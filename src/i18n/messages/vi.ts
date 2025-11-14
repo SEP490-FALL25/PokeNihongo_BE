@@ -691,5 +691,15 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy tính năng',
     ALREADY_EXISTS: 'Tính năng đã tồn tại',
     INVALID_DATA: 'Dữ liệu tính năng không hợp lệ'
+  },
+  user_subscription: {
+    CREATE_SUCCESS: 'Tạo đăng ký người dùng thành công',
+    UPDATE_SUCCESS: 'Cập nhật đăng ký người dùng thành công',
+    DELETE_SUCCESS: 'Xóa đăng ký người dùng thành công',
+    GET_SUCCESS: 'Lấy thông tin đăng ký người dùng thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách đăng ký người dùng thành công',
+    NOT_FOUND: 'Không tìm thấy đăng ký người dùng',
+    ALREADY_EXISTS: 'Đăng ký người dùng đã tồn tại',
+    INVALID_DATA: 'Dữ liệu đăng ký người dùng không hợp lệ'
   }
 }

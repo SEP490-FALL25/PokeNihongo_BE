@@ -93,6 +93,7 @@ import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
 import { SubscriptionPlanModule } from './modules/subscription-plan/subscription-plan.module';
 import { FeatureModule } from './modules/feature/feature.module';
+import { UserSubscriptionModule } from './modules/user-subscription/user-subscription.module';
 
 @Module({
   imports: [
@@ -185,7 +186,8 @@ import { FeatureModule } from './modules/feature/feature.module';
     SubscriptionFeatureModule,
     FlashcardModule,
     SubscriptionPlanModule,
-    FeatureModule
+    FeatureModule,
+    UserSubscriptionModule
   ],
 
   controllers: [],

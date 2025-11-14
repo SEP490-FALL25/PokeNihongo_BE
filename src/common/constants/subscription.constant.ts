@@ -29,3 +29,5 @@ export const UserSubscriptionStatus = {
   PAYMENT_FAILED: 'PAYMENT_FAILED',
   CANCELED: 'CANCELED'
 } as const
+
+export type UserSubscriptionStatusType = keyof typeof UserSubscriptionStatus

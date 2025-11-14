@@ -2149,7 +2149,7 @@ model UserSubscription {
   subscriptionPlan   SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id], onDelete: Restrict) // Không cho xóa Plan nếu user đã mua
 
   // --- Thời hạn ---
-  startDate DateTime  @default(now())
+  startDate DateTime?
   expiresAt DateTime? // NULL nếu là gói LIFETIME
 
   // --- Trạng thái ---

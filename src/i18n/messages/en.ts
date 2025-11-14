@@ -704,5 +704,15 @@ export const enMessages = {
     NOT_FOUND: 'Feature not found',
     ALREADY_EXISTS: 'Feature already exists',
     INVALID_DATA: 'Invalid feature data'
+  },
+  user_subscription: {
+    CREATE_SUCCESS: 'User subscription created successfully',
+    UPDATE_SUCCESS: 'User subscription updated successfully',
+    DELETE_SUCCESS: 'User subscription deleted successfully',
+    GET_SUCCESS: 'User subscription retrieved successfully',
+    GET_LIST_SUCCESS: 'User subscription list retrieved successfully',
+    NOT_FOUND: 'User subscription not found',
+    ALREADY_EXISTS: 'User subscription already exists',
+    INVALID_DATA: 'Invalid user subscription data'
   }
 }
