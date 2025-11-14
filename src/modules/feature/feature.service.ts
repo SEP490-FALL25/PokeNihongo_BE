@@ -231,7 +231,6 @@ export class FeatureService {
 
         // Create translation records
         const nameTranslationRecords: CreateTranslationBodyType[] = []
-        const descriptionTranslationRecords: CreateTranslationBodyType[] = []
 
         // nameTranslations → key = fNameKey
         for (const item of data.nameTranslations) {
@@ -307,8 +306,6 @@ export class FeatureService {
 
     try {
       return await this.featureRepo.withTransaction(async (prismaTx) => {
-        let hasOpen = false
-        let translationRecords: CreateTranslationBodyType[] = []
         // Get current record
         existingFeature = await this.featureRepo.findById(id)
         if (!existingFeature) throw new NotFoundRecordException()
@@ -322,7 +319,6 @@ export class FeatureService {
 
         // Handle translations if provided
         let nameTranslationRecords: CreateTranslationBodyType[] = []
-        let descriptionTranslationRecords: CreateTranslationBodyType[] = []
 
         if (data.nameTranslations) {
           const nameList = data.nameTranslations?.map((t) => t.key) || []

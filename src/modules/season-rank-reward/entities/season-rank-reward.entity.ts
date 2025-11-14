@@ -52,7 +52,7 @@ export const UpdateSeasonRankRewardByRankTypeSchema = z.object({
     .array(
       z.object({
         order: z.number().min(1).nullable(),
-        rewards: z.array(z.number()).min(1)
+        rewards: z.array(z.number()) // Allow empty array for auto-created null-order rewards
       })
     )
     .min(1)
