@@ -195,8 +195,6 @@ export class FlashcardRepository {
       where.AND = [
         {
           OR: [
-            { customFront: { contains: search, mode: 'insensitive' } },
-            { customBack: { contains: search, mode: 'insensitive' } },
             { notes: { contains: search, mode: 'insensitive' } },
             {
               vocabulary: {
@@ -297,7 +295,13 @@ export class FlashcardRepository {
     })
   }
 
-  async createCard(deckId: number, body: CreateFlashcardCardBody) {
+  async createCard(deckId: number, body: {
+    contentType: string
+    vocabularyId?: number | null
+    kanjiId?: number | null
+    grammarId?: number | null
+    notes?: string | null
+  }) {
     return this.prisma.flashcardCard.create({
       data: {
         deckId,
@@ -305,12 +309,7 @@ export class FlashcardRepository {
         vocabularyId: body.vocabularyId ?? null,
         kanjiId: body.kanjiId ?? null,
         grammarId: body.grammarId ?? null,
-        customFront: body.customFront ?? null,
-        customBack: body.customBack ?? null,
-        notes: body.notes ?? null,
-        imageUrl: body.imageUrl ?? null,
-        audioUrl: body.audioUrl ?? null,
-        metadata: body.metadata ?? undefined
+        notes: body.notes ?? null
       } as Prisma.FlashcardCardUncheckedCreateInput,
       include: CARD_RELATION_INCLUDE
     })
@@ -335,12 +334,7 @@ export class FlashcardRepository {
     const updateData: Prisma.FlashcardCardUpdateInput = {}
 
     if (data.status !== undefined) updateData.status = data.status as PrismaFlashcardCardStatus
-    if (data.customFront !== undefined) updateData.customFront = data.customFront ?? null
-    if (data.customBack !== undefined) updateData.customBack = data.customBack ?? null
     if (data.notes !== undefined) updateData.notes = data.notes ?? null
-    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl ?? null
-    if (data.audioUrl !== undefined) updateData.audioUrl = data.audioUrl ?? null
-    if (data.metadata !== undefined) updateData.metadata = data.metadata ?? undefined
 
     return this.prisma.flashcardCard.update({
       where: { id: cardId },

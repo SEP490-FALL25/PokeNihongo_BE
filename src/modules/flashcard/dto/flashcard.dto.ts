@@ -35,50 +35,19 @@ export class GetFlashcardDeckListQuerySwaggerDTO {
 export class CreateFlashcardCardSwaggerDTO {
     @ApiProperty({
         example: 'VOCABULARY',
-        enum: ['VOCABULARY', 'KANJI', 'GRAMMAR', 'CUSTOM'],
+        enum: ['VOCABULARY', 'KANJI', 'GRAMMAR'],
         description: 'Loại nội dung của thẻ'
     })
-    contentType: 'VOCABULARY' | 'KANJI' | 'GRAMMAR' | 'CUSTOM'
+    contentType: 'VOCABULARY' | 'KANJI' | 'GRAMMAR'
 
-    @ApiPropertyOptional({ example: 123, description: 'ID Vocabulary khi contentType = VOCABULARY' })
-    vocabularyId?: number
-
-    @ApiPropertyOptional({ example: 456, description: 'ID Kanji khi contentType = KANJI' })
-    kanjiId?: number
-
-    @ApiPropertyOptional({ example: 789, description: 'ID Grammar khi contentType = GRAMMAR' })
-    grammarId?: number
-
-    @ApiPropertyOptional({
-        example: 'こんにちは',
-        description: 'Mặt trước của thẻ (bắt buộc khi contentType = CUSTOM)'
+    @ApiProperty({
+        example: 123,
+        description: 'ID nội dung tương ứng với contentType (vocabularyId/kanjiId/grammarId)'
     })
-    customFront?: string
-
-    @ApiPropertyOptional({ example: 'Xin chào', description: 'Mặt sau của thẻ' })
-    customBack?: string
+    id: number
 
     @ApiPropertyOptional({ example: 'Nhớ phát âm *ko-n-ni-chi-wa*', description: 'Ghi chú thêm' })
     notes?: string
-
-    @ApiPropertyOptional({
-        example: 'https://cdn.example.com/audio/hello.mp3',
-        description: 'URL audio nếu có'
-    })
-    audioUrl?: string
-
-    @ApiPropertyOptional({
-        example: 'https://cdn.example.com/image/hello.jpg',
-        description: 'URL hình ảnh nếu có'
-    })
-    imageUrl?: string
-
-    @ApiPropertyOptional({
-        type: 'object',
-        additionalProperties: true,
-        description: 'Metadata bổ sung'
-    })
-    metadata?: Record<string, any>
 }
 
 export class UpdateFlashcardCardSwaggerDTO {
@@ -95,36 +64,8 @@ export class UpdateFlashcardCardSwaggerDTO {
     })
     status?: 'ACTIVE' | 'ARCHIVED'
 
-    @ApiPropertyOptional({
-        example: 'こんにちは',
-        description: 'Mặt trước của thẻ (cho phép null để xóa giá trị)'
-    })
-    customFront?: string | null
-
-    @ApiPropertyOptional({ example: 'Xin chào', description: 'Mặt sau của thẻ (cho phép null)' })
-    customBack?: string | null
-
     @ApiPropertyOptional({ example: 'Ghi chú mới', description: 'Ghi chú (cho phép null)' })
     notes?: string | null
-
-    @ApiPropertyOptional({
-        example: 'https://cdn.example.com/audio/hello.mp3',
-        description: 'URL audio (cho phép null)'
-    })
-    audioUrl?: string | null
-
-    @ApiPropertyOptional({
-        example: 'https://cdn.example.com/image/hello.jpg',
-        description: 'URL hình ảnh (cho phép null)'
-    })
-    imageUrl?: string | null
-
-    @ApiPropertyOptional({
-        type: 'object',
-        additionalProperties: true,
-        description: 'Metadata bổ sung'
-    })
-    metadata?: Record<string, any>
 }
 
 export class GetFlashcardCardListQuerySwaggerDTO {

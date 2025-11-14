@@ -61,12 +61,7 @@ export const FlashcardCardSchema = z.object({
     vocabulary: FlashcardVocabularySummarySchema.nullable(),
     kanji: FlashcardKanjiSummarySchema.nullable(),
     grammar: FlashcardGrammarSummarySchema.nullable(),
-    customFront: z.string().nullable(),
-    customBack: z.string().nullable(),
     notes: z.string().nullable(),
-    imageUrl: z.string().nullable(),
-    audioUrl: z.string().nullable(),
-    metadata: JsonRecordSchema,
     deletedAt: z.date().nullable(),
     createdAt: z.date(),
     updatedAt: z.date()
@@ -110,78 +105,30 @@ export const FlashcardDeckCardParamsSchema = FlashcardDeckParamsSchema.extend({
 export const CreateFlashcardCardBodySchema = z
     .object({
         contentType: FlashcardContentTypeEnum,
-        vocabularyId: z.number().int().optional(),
-        kanjiId: z.number().int().optional(),
-        grammarId: z.number().int().optional(),
-        customFront: z
-            .string()
-            .trim()
-            .max(2000)
-            .optional(),
-        customBack: z
-            .string()
-            .trim()
-            .max(4000)
-            .optional(),
+        id: z.number().int().min(1),
         notes: z
             .string()
             .trim()
             .max(4000)
-            .optional(),
-        imageUrl: z.string().url().optional(),
-        audioUrl: z.string().url().optional(),
-        metadata: JsonRecordSchema
+            .optional()
     })
     .superRefine((data, ctx) => {
-        const { contentType, vocabularyId, kanjiId, grammarId, customFront } = data
-        const providedIds = [
-            { type: 'VOCABULARY', value: vocabularyId },
-            { type: 'KANJI', value: kanjiId },
-            { type: 'GRAMMAR', value: grammarId }
-        ].filter((item) => item.value !== undefined && item.value !== null)
+        const { contentType, id } = data
 
         if (contentType === 'CUSTOM') {
-            if (providedIds.length > 0) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: 'CUSTOM không được truyền kèm id từ điển',
-                    path: ['contentType']
-                })
-            }
-            if (!customFront || customFront.trim().length === 0) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: 'customFront là bắt buộc khi contentType = CUSTOM',
-                    path: ['customFront']
-                })
-            }
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'CUSTOM không được hỗ trợ',
+                path: ['contentType']
+            })
             return
         }
 
-        if (providedIds.length === 0) {
+        if (!id || id === null || id === undefined) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Cần cung cấp id tương ứng với contentType',
-                path: ['contentType']
-            })
-            return
-        }
-
-        if (providedIds.length > 1) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Chỉ được cung cấp một loại id nội dung',
-                path: ['contentType']
-            })
-            return
-        }
-
-        const matched = providedIds[0]
-        if (matched.type !== contentType) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `contentType phải khớp với id được cung cấp (${matched.type})`,
-                path: ['contentType']
+                path: ['id']
             })
         }
     })
@@ -191,12 +138,7 @@ export const UpdateFlashcardCardBodySchema = z
         deckId: z.coerce.number().int().min(1),
         cardId: z.coerce.number().int().min(1),
         status: FlashcardCardStatusEnum.optional(),
-        customFront: z.string().trim().max(2000).nullable().optional(),
-        customBack: z.string().trim() .max(4000) .nullable().optional(),
-        notes: z.string().trim().max(4000).nullable() .optional(),
-        imageUrl: z.string().url().nullable().optional(),
-        audioUrl: z.string().url().nullable().optional(),
-        metadata: JsonRecordSchema
+        notes: z.string().trim().max(4000).nullable().optional()
     })
     .refine((value) => Object.keys(value).length > 0, {
         message: 'Ít nhất phải cập nhật một trường'
