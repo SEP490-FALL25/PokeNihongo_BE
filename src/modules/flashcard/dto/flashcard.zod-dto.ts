@@ -11,7 +11,9 @@ import {
     FlashcardReviewActionBodySchema,
     FlashcardReviewQuerySchema,
     UpdateFlashcardCardBodySchema,
-    UpdateFlashcardDeckBodySchema
+    UpdateFlashcardDeckBodySchema,
+    DeleteFlashcardCardsBodySchema,
+    FlashcardReadBodySchema
 } from '../entities/flashcard.entities'
 
 export class CreateFlashcardDeckBodyDTO extends createZodDto(CreateFlashcardDeckBodySchema) { }
@@ -27,4 +29,6 @@ export class ImportFlashcardCardsBodyDTO extends createZodDto(ImportFlashcardCar
 export class FlashcardLibrarySearchQueryDTO extends createZodDto(FlashcardLibrarySearchQuerySchema) { }
 export class FlashcardReviewQueryDTO extends createZodDto(FlashcardReviewQuerySchema) { }
 export class FlashcardReviewActionBodyDTO extends createZodDto(FlashcardReviewActionBodySchema) { }
+export class DeleteFlashcardCardsBodyDTO extends createZodDto(DeleteFlashcardCardsBodySchema) { }
+export class FlashcardReadBodyDTO extends createZodDto(FlashcardReadBodySchema) { }
 
