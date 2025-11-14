@@ -55,9 +55,6 @@ export class FlashcardRepository {
       data: {
         userId,
         name: data.name,
-        description: data.description ?? null,
-        jlptLevel: data.jlptLevel ?? null,
-        coverImage: data.coverImage ?? null,
         metadata: data.metadata ?? undefined
       }
     })
@@ -67,9 +64,6 @@ export class FlashcardRepository {
     const updateData: Prisma.FlashcardDeckUpdateInput = {}
 
     if (data.name !== undefined) updateData.name = data.name
-    if (data.description !== undefined) updateData.description = data.description ?? null
-    if (data.jlptLevel !== undefined) updateData.jlptLevel = data.jlptLevel ?? null
-    if (data.coverImage !== undefined) updateData.coverImage = data.coverImage ?? null
     if (data.metadata !== undefined) updateData.metadata = data.metadata ?? undefined
 
     return this.prisma.flashcardDeck.update({
@@ -135,8 +129,7 @@ export class FlashcardRepository {
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { name: { contains: search, mode: 'insensitive' } }
       ]
     }
 

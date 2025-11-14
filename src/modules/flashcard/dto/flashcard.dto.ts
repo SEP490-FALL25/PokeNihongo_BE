@@ -5,26 +5,6 @@ export class CreateFlashcardDeckSwaggerDTO {
     name: string
 
     @ApiPropertyOptional({
-        example: 'Các thẻ cơ bản cho JLPT N5',
-        description: 'Mô tả ngắn về bộ flashcard'
-    })
-    description?: string
-
-    @ApiPropertyOptional({
-        example: 5,
-        minimum: 1,
-        maximum: 5,
-        description: 'Cấp độ JLPT'
-    })
-    jlptLevel?: number
-
-    @ApiPropertyOptional({
-        example: 'https://cdn.example.com/flashcard/n5.jpg',
-        description: 'Ảnh đại diện'
-    })
-    coverImage?: string
-
-    @ApiPropertyOptional({
         type: 'object',
         additionalProperties: true,
         description: 'Thông tin metadata tùy chọn'
@@ -35,26 +15,6 @@ export class CreateFlashcardDeckSwaggerDTO {
 export class UpdateFlashcardDeckSwaggerDTO {
     @ApiPropertyOptional({ example: 'JLPT N5 Core (Updated)', description: 'Tên bộ flashcard' })
     name?: string
-
-    @ApiPropertyOptional({
-        example: 'Cập nhật mô tả bộ flashcard JLPT N5',
-        description: 'Mô tả ngắn về bộ flashcard'
-    })
-    description?: string
-
-    @ApiPropertyOptional({
-        example: 4,
-        minimum: 1,
-        maximum: 5,
-        description: 'Cấp độ JLPT'
-    })
-    jlptLevel?: number
-
-    @ApiPropertyOptional({
-        example: 'https://cdn.example.com/flashcard/n5-new.jpg',
-        description: 'Ảnh đại diện'
-    })
-    coverImage?: string
 
     @ApiPropertyOptional({
         type: 'object',
@@ -70,16 +30,6 @@ export class GetFlashcardDeckListQuerySwaggerDTO {
 
     @ApiPropertyOptional({ example: 10, description: 'Số bản ghi mỗi trang', minimum: 1, maximum: 100 })
     pageSize?: number
-
-    @ApiPropertyOptional({ example: 'JLPT', description: 'Từ khóa tìm kiếm theo tên/description' })
-    search?: string
-
-    @ApiPropertyOptional({
-        example: 'ACTIVE',
-        enum: ['ACTIVE', 'ARCHIVED'],
-        description: 'Trạng thái bộ flashcard'
-    })
-    status?: 'ACTIVE' | 'ARCHIVED'
 }
 
 export class CreateFlashcardCardSwaggerDTO {
@@ -132,6 +82,12 @@ export class CreateFlashcardCardSwaggerDTO {
 }
 
 export class UpdateFlashcardCardSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID bộ flashcard' })
+    deckId: number
+
+    @ApiProperty({ example: 1, description: 'ID thẻ flashcard' })
+    cardId: number
+
     @ApiPropertyOptional({
         example: 'ACTIVE',
         enum: ['ACTIVE', 'ARCHIVED'],
