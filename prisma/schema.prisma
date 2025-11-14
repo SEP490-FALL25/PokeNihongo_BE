@@ -1013,6 +1013,8 @@ model FlashcardCard {
   grammarId    Int?
   grammar      Grammar?             @relation(fields: [grammarId], references: [id], onDelete: SetNull)
   notes        String?              @db.Text
+  metadata     Json?
+  read         Boolean              @default(false)
   status       FlashcardCardStatus  @default(ACTIVE)
   deletedAt    DateTime?
   createdAt    DateTime             @default(now())

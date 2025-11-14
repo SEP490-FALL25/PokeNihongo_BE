@@ -38,9 +38,12 @@ export class InvalidFlashcardContentTypeException extends BadRequestException {
 }
 
 export class InvalidFlashcardImportException extends BadRequestException {
-    constructor() {
+    constructor(contentType?: string, id?: number) {
+        const message = contentType && id !== undefined
+            ? `${contentType} với id ${id} không tồn tại trong hệ thống`
+            : FlashcardMessage.INVALID_IMPORT_IDS
         super({
-            message: FlashcardMessage.INVALID_IMPORT_IDS,
+            message,
             errorKey: FlashcardMessage.INVALID_IMPORT_IDS
         })
     }

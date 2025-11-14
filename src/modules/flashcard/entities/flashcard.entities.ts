@@ -33,7 +33,9 @@ export const FlashcardVocabularySummarySchema = z.object({
     wordJp: z.string(),
     reading: z.string().nullable(),
     levelN: z.number().nullable(),
-    audioUrl: z.string().nullable().optional()
+    audioUrl: z.string().nullable().optional(),
+    imageUrl: z.string().nullable().optional(),
+    meanings: z.string().nullable()
 })
 
 export const FlashcardKanjiSummarySchema = z.object({
@@ -62,6 +64,7 @@ export const FlashcardCardSchema = z.object({
     kanji: FlashcardKanjiSummarySchema.nullable(),
     grammar: FlashcardGrammarSummarySchema.nullable(),
     notes: z.string().nullable(),
+    read: z.boolean(),
     deletedAt: z.date().nullable(),
     createdAt: z.date(),
     updatedAt: z.date()
@@ -104,13 +107,14 @@ export const FlashcardDeckCardParamsSchema = FlashcardDeckParamsSchema.extend({
 
 export const CreateFlashcardCardBodySchema = z
     .object({
+        id: z.coerce.number().int().min(1),
         contentType: FlashcardContentTypeEnum,
-        id: z.number().int().min(1),
         notes: z
             .string()
             .trim()
             .max(4000)
-            .optional()
+            .optional(),
+        metadata: JsonRecordSchema
     })
     .superRefine((data, ctx) => {
         const { contentType, id } = data
@@ -124,10 +128,10 @@ export const CreateFlashcardCardBodySchema = z
             return
         }
 
-        if (!id || id === null || id === undefined) {
+        if (!id || id === null || id === undefined || !Number.isInteger(id) || id < 1) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: 'Cần cung cấp id tương ứng với contentType',
+                message: 'Cần cung cấp id hợp lệ (số nguyên dương) tương ứng với contentType',
                 path: ['id']
             })
         }
@@ -138,10 +142,15 @@ export const UpdateFlashcardCardBodySchema = z
         deckId: z.coerce.number().int().min(1),
         cardId: z.coerce.number().int().min(1),
         status: FlashcardCardStatusEnum.optional(),
-        notes: z.string().trim().max(4000).nullable().optional()
+        notes: z.string().trim().max(4000).nullable().optional(),
+        read: z.boolean().optional(),
+        metadata: JsonRecordSchema
     })
-    .refine((value) => Object.keys(value).length > 0, {
-        message: 'Ít nhất phải cập nhật một trường'
+    .refine((value) => {
+        const updateFields = ['status', 'notes', 'read', 'metadata']
+        return updateFields.some(field => value[field] !== undefined)
+    }, {
+        message: 'Ít nhất phải cập nhật một trường (status, notes, read, hoặc metadata)'
     })
 
 export const GetFlashcardCardListQuerySchema = z.object({
@@ -195,7 +204,15 @@ export const FlashcardReviewQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(100).default(20)
 })
 
+export const FlashcardReadBodySchema = z.object({
+    deckId: z.coerce.number().int().min(1),
+    cardId: z.coerce.number().int().min(1),
+    read: z.boolean()
+})
+
 export const FlashcardReviewActionBodySchema = z.object({
+    deckId: z.coerce.number().int().min(1),
+    cardId: z.coerce.number().int().min(1),
     result: z.enum(['correct', 'incorrect']),
     message: z
         .string()
@@ -216,6 +233,11 @@ export const FlashcardReviewItemSchema = FlashcardCardSchema.extend({
         })
         .nullable()
         .optional()
+})
+
+export const DeleteFlashcardCardsBodySchema = z.object({
+    deckId: z.coerce.number().int().min(1),
+    cardIds: z.array(z.coerce.number().int().min(1)).min(1)
 })
 
 export type FlashcardDeckStatus = z.infer<typeof FlashcardDeckStatusEnum>
@@ -240,4 +262,6 @@ export type FlashcardLibraryItem = z.infer<typeof FlashcardLibraryItemSchema>
 export type FlashcardReviewQuery = z.infer<typeof FlashcardReviewQuerySchema>
 export type FlashcardReviewActionBody = z.infer<typeof FlashcardReviewActionBodySchema>
 export type FlashcardReviewItem = z.infer<typeof FlashcardReviewItemSchema>
+export type DeleteFlashcardCardsBody = z.infer<typeof DeleteFlashcardCardsBodySchema>
+export type FlashcardReadBody = z.infer<typeof FlashcardReadBodySchema>
 

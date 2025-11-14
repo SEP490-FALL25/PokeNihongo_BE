@@ -28,6 +28,7 @@ import { I18nService } from '@/i18n/i18n.service'
 import { Injectable, Logger } from '@nestjs/common'
 import { Prisma, FlashcardContentType as PrismaFlashcardContentType } from '@prisma/client'
 import { SrsReviewService } from '@/modules/user-srs-review/srs-review.service'
+import { TranslationHelperService } from '@/modules/translation/translation.helper.service'
 
 const DEFAULT_LANG = 'vi'
 
@@ -38,11 +39,31 @@ export class FlashcardService {
     constructor(
         private readonly flashcardRepository: FlashcardRepository,
         private readonly srsReviewService: SrsReviewService,
-        private readonly i18n: I18nService
+        private readonly i18n: I18nService,
+        private readonly translationHelper: TranslationHelperService
     ) { }
 
     private translate(key: string, lang: string) {
         return this.i18n.translate(key, lang)
+    }
+
+    private async translateMeanings(meanings: any[], lang: string): Promise<string> {
+        if (!meanings || meanings.length === 0) {
+            return ''
+        }
+
+        const translatedMeanings = await Promise.all(
+            meanings.map(async (meaning: any) => {
+                if (meaning.meaningKey) {
+                    const translated = await this.translationHelper.getTranslation(meaning.meaningKey, lang)
+                    return translated || meaning.meaningKey
+                }
+                return null
+            })
+        )
+
+        // Filter out null values and join with comma
+        return translatedMeanings.filter((m): m is string => m !== null).join(', ')
     }
 
     private mapDeck(deck: any, totalCards: number): FlashcardDeckSummary {
@@ -60,7 +81,21 @@ export class FlashcardService {
         }
     }
 
-    private mapCard(card: any): FlashcardCard {
+    private async mapCard(card: any, lang: string = DEFAULT_LANG): Promise<FlashcardCard> {
+        const metadata = card.metadata as Record<string, any> | null
+
+        const vocabulary = card.vocabulary
+            ? {
+                id: card.vocabulary.id,
+                wordJp: metadata?.wordJp ?? card.vocabulary.wordJp,
+                reading: metadata?.reading ?? card.vocabulary.reading,
+                levelN: card.vocabulary.levelN,
+                audioUrl: metadata?.audioUrl ?? card.vocabulary.audioUrl ?? null,
+                imageUrl: metadata?.imageUrl ?? card.vocabulary.imageUrl ?? null,
+                meanings: metadata?.meanings ?? await this.translateMeanings(card.vocabulary.meanings || [], lang)
+            }
+            : null
+
         return {
             id: card.id,
             deckId: card.deckId,
@@ -69,15 +104,7 @@ export class FlashcardService {
             vocabularyId: card.vocabularyId,
             kanjiId: card.kanjiId,
             grammarId: card.grammarId,
-            vocabulary: card.vocabulary
-                ? {
-                    id: card.vocabulary.id,
-                    wordJp: card.vocabulary.wordJp,
-                    reading: card.vocabulary.reading,
-                    levelN: card.vocabulary.levelN,
-                    audioUrl: card.vocabulary.audioUrl ?? null
-                }
-                : null,
+            vocabulary,
             kanji: card.kanji
                 ? {
                     id: card.kanji.id,
@@ -95,6 +122,7 @@ export class FlashcardService {
                 }
                 : null,
             notes: card.notes,
+            read: card.read ?? false,
             deletedAt: card.deletedAt,
             createdAt: card.createdAt,
             updatedAt: card.updatedAt
@@ -168,7 +196,7 @@ export class FlashcardService {
         const totalCards = deckWithCards.cards?.length ?? 0
         const payload: FlashcardDeckDetail = {
             ...this.mapDeck(deckWithCards, totalCards),
-            cards: deckWithCards.cards?.map((card) => this.mapCard(card))
+            cards: await Promise.all(deckWithCards.cards?.map((card) => this.mapCard(card, lang)) || [])
         }
 
         return {
@@ -232,7 +260,7 @@ export class FlashcardService {
             statusCode: 200,
             message: this.translate(FlashcardMessage.GET_DECK_SUCCESS, lang),
             data: {
-                results: cards.map((card) => this.mapCard(card)),
+                results: await Promise.all(cards.map((card) => this.mapCard(card, lang))),
                 pagination: {
                     current: currentPage,
                     pageSize,
@@ -268,7 +296,7 @@ export class FlashcardService {
 
             const [record] = await this.flashcardRepository.findVocabularyByIds([contentId])
             if (!record) {
-                throw new InvalidFlashcardImportException()
+                throw new InvalidFlashcardImportException('Vocabulary', contentId)
             }
 
             return { vocabulary: record }
@@ -286,7 +314,7 @@ export class FlashcardService {
 
             const [record] = await this.flashcardRepository.findKanjiByIds([contentId])
             if (!record) {
-                throw new InvalidFlashcardImportException()
+                throw new InvalidFlashcardImportException('Kanji', contentId)
             }
 
             return { kanji: record }
@@ -304,7 +332,7 @@ export class FlashcardService {
 
             const [record] = await this.flashcardRepository.findGrammarByIds([contentId])
             if (!record) {
-                throw new InvalidFlashcardImportException()
+                throw new InvalidFlashcardImportException('Grammar', contentId)
             }
 
             return { grammar: record }
@@ -313,49 +341,72 @@ export class FlashcardService {
         throw new InvalidFlashcardImportException()
     }
 
-    async createCard(
-        deckId: number,
-        userId: number,
-        body: CreateFlashcardCardBody,
-        lang: string = DEFAULT_LANG
-    ) {
-        const deck = await this.flashcardRepository.findDeckById(deckId, userId)
-        if (!deck) {
-            throw new FlashcardDeckNotFoundException()
-        }
+    async createCard(deckId: number, userId: number, body: CreateFlashcardCardBody, lang: string = DEFAULT_LANG) {
+        try {
+            const deck = await this.flashcardRepository.findDeckById(deckId, userId)
+            if (!deck) {
+                throw new FlashcardDeckNotFoundException()
+            }
 
-        // Map id + contentType thành vocabularyId/kanjiId/grammarId
-        let contentRef: {
-            vocabulary?: { id: number; wordJp: string; reading: string | null; levelN: number | null }
-            kanji?: { id: number; character: string; meaningKey: string; jlptLevel: number | null }
-            grammar?: { id: number; structure: string; level: string | null }
-        } = {}
+            // Validate id là số nguyên hợp lệ trước khi sử dụng
+            if (body.contentType !== 'CUSTOM' && body.id) {
+                if (!Number.isInteger(body.id) || body.id < 1 || body.id > Number.MAX_SAFE_INTEGER) {
+                    throw new InvalidFlashcardImportException(body.contentType, body.id)
+                }
+            }
 
-        if (body.contentType !== 'CUSTOM' && body.id) {
-            contentRef = await this.ensureContentAvailability(deckId, body.contentType, body.id)
-        }
+            // Map id + contentType thành vocabularyId/kanjiId/grammarId
+            let contentRef: {
+                vocabulary?: { id: number; wordJp: string; reading: string | null; levelN: number | null }
+                kanji?: { id: number; character: string; meaningKey: string; jlptLevel: number | null }
+                grammar?: { id: number; structure: string; level: string | null }
+            } = {}
 
-        // Tạo payload với vocabularyId/kanjiId/grammarId được map từ id
-        const payload: any = {
-            contentType: body.contentType,
-            notes: body.notes
-        }
+            if (body.contentType !== 'CUSTOM' && body.id) {
+                contentRef = await this.ensureContentAvailability(deckId, body.contentType, body.id)
+            }
 
-        // Map id thành đúng field dựa vào contentType
-        if (body.contentType === 'VOCABULARY' && body.id) {
-            payload.vocabularyId = body.id
-        } else if (body.contentType === 'KANJI' && body.id) {
-            payload.kanjiId = body.id
-        } else if (body.contentType === 'GRAMMAR' && body.id) {
-            payload.grammarId = body.id
-        }
+            // Tạo payload với vocabularyId/kanjiId/grammarId được map từ id
+            const payload: any = {
+                contentType: body.contentType,
+                notes: body.notes,
+                metadata: body.metadata ?? undefined
+            }
 
-        const card = await this.flashcardRepository.createCard(deckId, payload)
+            // Map id thành đúng field dựa vào contentType
+            if (body.contentType === 'VOCABULARY' && body.id) {
+                payload.vocabularyId = body.id
+            } else if (body.contentType === 'KANJI' && body.id) {
+                payload.kanjiId = body.id
+            } else if (body.contentType === 'GRAMMAR' && body.id) {
+                payload.grammarId = body.id
+            }
 
-        return {
-            statusCode: 201,
-            message: this.translate(FlashcardMessage.CREATE_CARD_SUCCESS, lang),
-            data: this.mapCard(card)
+            const card = await this.flashcardRepository.createCard(deckId, payload)
+
+            return {
+                statusCode: 201,
+                message: this.translate(FlashcardMessage.CREATE_CARD_SUCCESS, lang),
+                data: await this.mapCard(card, lang)
+            }
+        } catch (error) {
+            // Re-throw các exception đã được định nghĩa
+            if (
+                error instanceof FlashcardDeckNotFoundException ||
+                error instanceof FlashcardContentAlreadyExistsException ||
+                error instanceof InvalidFlashcardImportException
+            ) {
+                throw error
+            }
+            // Catch Prisma validation errors và convert thành InvalidFlashcardImportException
+            if (error instanceof Prisma.PrismaClientValidationError) {
+                const contentType = body.contentType
+                const id = body.id
+                throw new InvalidFlashcardImportException(contentType, id)
+            }
+            // Log và throw lại các lỗi khác
+            this.logger.error(`Error creating flashcard card: ${error.message}`, error.stack)
+            throw error
         }
     }
 
@@ -366,7 +417,14 @@ export class FlashcardService {
         body: UpdateFlashcardCardBody,
         lang: string = DEFAULT_LANG
     ) {
-        const card = await this.flashcardRepository.findCardById(cardId, deckId, userId)
+        // Kiểm tra deck tồn tại và thuộc về user trước
+        const deck = await this.flashcardRepository.findDeckById(deckId, userId)
+        if (!deck) {
+            throw new FlashcardDeckNotFoundException()
+        }
+
+        // Kiểm tra card tồn tại và thuộc về deck (bao gồm cả cards đã bị soft delete)
+        const card = await this.flashcardRepository.findCardByIdForUpdate(cardId, deckId, userId)
         if (!card) {
             throw new FlashcardCardNotFoundException()
         }
@@ -376,7 +434,7 @@ export class FlashcardService {
         return {
             statusCode: 200,
             message: this.translate(FlashcardMessage.UPDATE_CARD_SUCCESS, lang),
-            data: this.mapCard(updated)
+            data: await this.mapCard(updated, lang)
         }
     }
 
@@ -387,6 +445,53 @@ export class FlashcardService {
         }
 
         await this.flashcardRepository.softDeleteCard(cardId)
+
+        return {
+            statusCode: 200,
+            message: this.translate(FlashcardMessage.DELETE_CARD_SUCCESS, lang),
+            data: null
+        }
+    }
+
+    async markRead(deckId: number, cardId: number, read: boolean, userId: number, lang: string = DEFAULT_LANG) {
+        // Kiểm tra deck tồn tại và thuộc về user trước
+        const deck = await this.flashcardRepository.findDeckById(deckId, userId)
+        if (!deck) {
+            throw new FlashcardDeckNotFoundException()
+        }
+
+        // Kiểm tra card tồn tại và thuộc về deck
+        const card = await this.flashcardRepository.findCardByIdForUpdate(cardId, deckId, userId)
+        if (!card) {
+            throw new FlashcardCardNotFoundException()
+        }
+
+        // Cập nhật read
+        const updated = await this.flashcardRepository.updateCardRead(cardId, read)
+
+        return {
+            statusCode: 200,
+            message: this.translate(FlashcardMessage.UPDATE_CARD_SUCCESS, lang),
+            data: await this.mapCard(updated, lang)
+        }
+    }
+
+    async deleteCards(deckId: number, cardIds: number[], userId: number, lang: string = DEFAULT_LANG) {
+        // Kiểm tra deck tồn tại và thuộc về user
+        const deck = await this.flashcardRepository.findDeckById(deckId, userId)
+        if (!deck) {
+            throw new FlashcardDeckNotFoundException()
+        }
+
+        // Kiểm tra các cards tồn tại và thuộc về deck (bao gồm cả cards đã bị soft delete)
+        const cards = await this.flashcardRepository.findCardsByIdsForDelete(deckId, cardIds, userId)
+        if (cards.length === 0) {
+            throw new FlashcardCardNotFoundException()
+        }
+
+        // Chỉ xóa các cards tồn tại (lấy id từ cards tìm được)
+        const validCardIds = cards.map(card => card.id)
+        await this.flashcardRepository.deleteCards(deckId, validCardIds)
 
         return {
             statusCode: 200,
@@ -495,7 +600,7 @@ export class FlashcardService {
             message: this.translate(FlashcardMessage.IMPORT_CARD_SUCCESS, lang),
             data: {
                 summary,
-                results: createdCards.map((card) => this.mapCard(card))
+                results: await Promise.all(createdCards.map((card) => this.mapCard(card, lang)))
             }
         }
     }
@@ -554,7 +659,7 @@ export class FlashcardService {
 
             if (card.contentType === 'CUSTOM') {
                 dueCards.push({
-                    ...this.mapCard(card),
+                    ...(await this.mapCard(card, lang)),
                     srs: null
                 })
                 continue
@@ -569,7 +674,7 @@ export class FlashcardService {
             if (!isDue) continue
 
             dueCards.push({
-                ...this.mapCard(card),
+                ...(await this.mapCard(card, lang)),
                 srs: this.mapSrsEntry(srsEntry)
             })
         }
@@ -625,7 +730,7 @@ export class FlashcardService {
             statusCode: 200,
             message: this.translate(FlashcardMessage.REVIEW_CARD_SUCCESS, lang),
             data: {
-                card: this.mapCard(card),
+                card: await this.mapCard(card, lang),
                 srs: this.mapSrsEntry(updatedEntry)
             }
         }
@@ -637,7 +742,7 @@ export class FlashcardService {
             throw new FlashcardDeckNotFoundException()
         }
 
-        const cards = deckWithCards.cards?.map((card) => this.mapCard(card)) ?? []
+        const cards = await Promise.all(deckWithCards.cards?.map((card) => this.mapCard(card, lang)) || [])
         const audioAssets = new Set<string>()
         const imageAssets = new Set<string>()
 
