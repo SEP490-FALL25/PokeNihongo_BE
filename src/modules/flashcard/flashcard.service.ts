@@ -94,12 +94,7 @@ export class FlashcardService {
                     level: card.grammar.level
                 }
                 : null,
-            customFront: card.customFront,
-            customBack: card.customBack,
             notes: card.notes,
-            imageUrl: card.imageUrl,
-            audioUrl: card.audioUrl,
-            metadata: card.metadata ?? null,
             deletedAt: card.deletedAt,
             createdAt: card.createdAt,
             updatedAt: card.updatedAt
@@ -250,27 +245,28 @@ export class FlashcardService {
 
     private async ensureContentAvailability(
         deckId: number,
-        body: CreateFlashcardCardBody
+        contentType: string,
+        contentId: number
     ): Promise<{
         vocabulary?: { id: number; wordJp: string; reading: string | null; levelN: number | null }
         kanji?: { id: number; character: string; meaningKey: string; jlptLevel: number | null }
         grammar?: { id: number; structure: string; level: string | null }
     }> {
-        if (body.contentType === 'CUSTOM') {
+        if (contentType === 'CUSTOM') {
             return {}
         }
 
-        if (body.contentType === 'VOCABULARY' && body.vocabularyId) {
+        if (contentType === 'VOCABULARY') {
             const duplicates = await this.flashcardRepository.findExistingContentCards(
                 deckId,
-                body.contentType,
-                [body.vocabularyId]
+                contentType,
+                [contentId]
             )
             if (duplicates.length > 0) {
                 throw new FlashcardContentAlreadyExistsException()
             }
 
-            const [record] = await this.flashcardRepository.findVocabularyByIds([body.vocabularyId])
+            const [record] = await this.flashcardRepository.findVocabularyByIds([contentId])
             if (!record) {
                 throw new InvalidFlashcardImportException()
             }
@@ -278,17 +274,17 @@ export class FlashcardService {
             return { vocabulary: record }
         }
 
-        if (body.contentType === 'KANJI' && body.kanjiId) {
+        if (contentType === 'KANJI') {
             const duplicates = await this.flashcardRepository.findExistingContentCards(
                 deckId,
-                body.contentType,
-                [body.kanjiId]
+                contentType,
+                [contentId]
             )
             if (duplicates.length > 0) {
                 throw new FlashcardContentAlreadyExistsException()
             }
 
-            const [record] = await this.flashcardRepository.findKanjiByIds([body.kanjiId])
+            const [record] = await this.flashcardRepository.findKanjiByIds([contentId])
             if (!record) {
                 throw new InvalidFlashcardImportException()
             }
@@ -296,17 +292,17 @@ export class FlashcardService {
             return { kanji: record }
         }
 
-        if (body.contentType === 'GRAMMAR' && body.grammarId) {
+        if (contentType === 'GRAMMAR') {
             const duplicates = await this.flashcardRepository.findExistingContentCards(
                 deckId,
-                body.contentType,
-                [body.grammarId]
+                contentType,
+                [contentId]
             )
             if (duplicates.length > 0) {
                 throw new FlashcardContentAlreadyExistsException()
             }
 
-            const [record] = await this.flashcardRepository.findGrammarByIds([body.grammarId])
+            const [record] = await this.flashcardRepository.findGrammarByIds([contentId])
             if (!record) {
                 throw new InvalidFlashcardImportException()
             }
@@ -328,25 +324,30 @@ export class FlashcardService {
             throw new FlashcardDeckNotFoundException()
         }
 
-        const contentRef = await this.ensureContentAvailability(deckId, body)
+        // Map id + contentType thành vocabularyId/kanjiId/grammarId
+        let contentRef: {
+            vocabulary?: { id: number; wordJp: string; reading: string | null; levelN: number | null }
+            kanji?: { id: number; character: string; meaningKey: string; jlptLevel: number | null }
+            grammar?: { id: number; structure: string; level: string | null }
+        } = {}
 
-        const payload: CreateFlashcardCardBody = {
-            ...body
+        if (body.contentType !== 'CUSTOM' && body.id) {
+            contentRef = await this.ensureContentAvailability(deckId, body.contentType, body.id)
         }
 
-        if (contentRef.vocabulary) {
-            payload.customFront = payload.customFront ?? contentRef.vocabulary.wordJp
-            payload.customBack = payload.customBack ?? contentRef.vocabulary.reading ?? undefined
+        // Tạo payload với vocabularyId/kanjiId/grammarId được map từ id
+        const payload: any = {
+            contentType: body.contentType,
+            notes: body.notes
         }
 
-        if (contentRef.kanji) {
-            payload.customFront = payload.customFront ?? contentRef.kanji.character
-            payload.customBack = payload.customBack ?? contentRef.kanji.meaningKey ?? undefined
-        }
-
-        if (contentRef.grammar) {
-            payload.customFront = payload.customFront ?? contentRef.grammar.structure
-            payload.customBack = payload.customBack ?? contentRef.grammar.level ?? undefined
+        // Map id thành đúng field dựa vào contentType
+        if (body.contentType === 'VOCABULARY' && body.id) {
+            payload.vocabularyId = body.id
+        } else if (body.contentType === 'KANJI' && body.id) {
+            payload.kanjiId = body.id
+        } else if (body.contentType === 'GRAMMAR' && body.id) {
+            payload.grammarId = body.id
         }
 
         const card = await this.flashcardRepository.createCard(deckId, payload)
@@ -473,31 +474,13 @@ export class FlashcardService {
             )
 
             creatableIds.forEach((contentId) => {
-                const record = availableMap.get(contentId)
                 const baseData: Prisma.FlashcardCardUncheckedCreateInput = {
                     deckId,
                     contentType: type as PrismaFlashcardContentType,
                     vocabularyId: type === 'VOCABULARY' ? contentId : null,
                     kanjiId: type === 'KANJI' ? contentId : null,
                     grammarId: type === 'GRAMMAR' ? contentId : null,
-                    customFront: null,
-                    customBack: null,
-                    notes: null,
-                    imageUrl: null,
-                    audioUrl: null
-                }
-
-                if (type === 'VOCABULARY') {
-                    baseData.customFront = record.wordJp ?? null
-                    baseData.customBack = record.reading ?? null
-                }
-                if (type === 'KANJI') {
-                    baseData.customFront = record.character ?? null
-                    baseData.customBack = record.meaningKey ?? null
-                }
-                if (type === 'GRAMMAR') {
-                    baseData.customFront = record.structure ?? null
-                    baseData.customBack = record.level ?? null
+                    notes: null
                 }
 
                 createPayloads.push(baseData)
@@ -659,8 +642,6 @@ export class FlashcardService {
         const imageAssets = new Set<string>()
 
         for (const card of cards) {
-            if (card.audioUrl) audioAssets.add(card.audioUrl)
-            if (card.imageUrl) imageAssets.add(card.imageUrl)
             if (card.vocabulary?.audioUrl) audioAssets.add(card.vocabulary.audioUrl)
             if (card.kanji?.img) imageAssets.add(card.kanji.img)
         }

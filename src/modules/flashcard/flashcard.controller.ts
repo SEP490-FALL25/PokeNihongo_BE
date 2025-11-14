@@ -157,13 +157,13 @@ export class FlashcardController {
   @ApiBody({ type: CreateFlashcardCardSwaggerDTO })
   @ZodSerializerDto(MessageResDTO)
   async createCard(
-    @Param() params: FlashcardDeckParamsDTO,
+    @Param('deckId') id: string,
     @Body() body: CreateFlashcardCardBodyDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
     return this.flashcardService.createCard(
-      params.deckId,
+      Number(id),
       userId,
       body as CreateFlashcardCardBody,
       lang ?? undefined
