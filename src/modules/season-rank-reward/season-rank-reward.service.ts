@@ -7,9 +7,14 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
-import { LeaderboardSeasonHasOpenedException } from '../leaderboard-season/dto/leaderboard-season.error'
+import {
+  LeaderboardSeasonHasActiveException,
+  LeaderboardSeasonHasOpenedException
+} from '../leaderboard-season/dto/leaderboard-season.error'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import {
+  MissingSeasonRankRewardForAllInvalidException,
+  MissingSeasonRankRewardOrderInvalidException,
   SeasonRankRewardNotFoundException,
   SeasonRnakRewardNameInvalidException,
   SeasonRnakRewardOrderInvalidException
@@ -133,7 +138,7 @@ export class SeasonRankRewardService {
         //season active chua ? ko dc update
         const season = await this.leaderboardRepo.findById(seasonId)
         if (!season || season.status === 'ACTIVE') {
-          throw new SeasonRankRewardNotFoundException()
+          throw new LeaderboardSeasonHasActiveException()
         }
 
         if (season.hasOpened === true) {
@@ -143,12 +148,12 @@ export class SeasonRankRewardService {
         // 1. Delete existing season rank rewards for seasonId
         await tx.seasonRankReward.deleteMany({ where: { seasonId } })
 
-        // 2. Validate items: rankName uniqueness + order uniqueness per rankName
+        // 2. Validate items: rankName uniqueness + order uniqueness and continuity per rankName
         const seenRankNames = new Set<string>()
         const createBuffer: Array<{
           seasonId: number
           rankName: any
-          order: number
+          order: number | null
           createdById: number
           updatedById: number
         }> = []
@@ -160,12 +165,34 @@ export class SeasonRankRewardService {
           }
           seenRankNames.add(rankName)
 
-          const seenOrders = new Set<number>()
-          for (const info of infoOrders) {
-            if (seenOrders.has(info.order)) {
-              throw new SeasonRnakRewardOrderInvalidException()
+          // Sort infoOrders: non-null orders ascending, null at the end
+          const sortedInfoOrders = [...infoOrders].sort((a, b) => {
+            if (a.order === null && b.order === null) return 0
+            if (a.order === null) return 1
+            if (b.order === null) return -1
+            return a.order - b.order
+          })
+
+          // Check that last item is null (reward for all)
+          if (sortedInfoOrders.length > 0) {
+            const lastItem = sortedInfoOrders[sortedInfoOrders.length - 1]
+            if (lastItem.order !== null) {
+              throw new MissingSeasonRankRewardForAllInvalidException(rankName)
             }
-            seenOrders.add(info.order)
+          }
+
+          // Validate non-null orders: uniqueness, start at 1, continuous
+          const nonNullOrders: number[] = []
+          const seenOrders = new Set<number>()
+
+          for (const info of sortedInfoOrders) {
+            if (info.order !== null) {
+              if (seenOrders.has(info.order)) {
+                throw new SeasonRnakRewardOrderInvalidException()
+              }
+              seenOrders.add(info.order)
+              nonNullOrders.push(info.order)
+            }
 
             createBuffer.push({
               seasonId,
@@ -174,6 +201,19 @@ export class SeasonRankRewardService {
               createdById: updatedById,
               updatedById
             })
+          }
+
+          // Enforce orders start at 1 and are continuous: 1,2,3,... without gaps
+          if (nonNullOrders.length > 0) {
+            const maxOrder = Math.max(...nonNullOrders)
+            // must contain exactly 1..maxOrder
+            for (let i = 1; i <= maxOrder; i++) {
+              if (!seenOrders.has(i)) {
+                throw new MissingSeasonRankRewardOrderInvalidException(
+                  `: ${rankName}-${i}`
+                )
+              }
+            }
           }
         }
 

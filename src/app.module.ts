@@ -92,6 +92,7 @@ import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
 import { SubscriptionPlanModule } from './modules/subscription-plan/subscription-plan.module';
+import { FeatureModule } from './modules/feature/feature.module';
 
 @Module({
   imports: [
@@ -183,7 +184,8 @@ import { SubscriptionPlanModule } from './modules/subscription-plan/subscription
     SubscriptionModule,
     SubscriptionFeatureModule,
     FlashcardModule,
-    SubscriptionPlanModule
+    SubscriptionPlanModule,
+    FeatureModule
   ],
 
   controllers: [],

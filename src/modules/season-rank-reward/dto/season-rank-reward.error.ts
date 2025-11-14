@@ -36,3 +36,23 @@ export class SeasonRnakRewardOrderInvalidException extends ConflictException {
     })
   }
 }
+
+export class MissingSeasonRankRewardOrderInvalidException extends ConflictException {
+  constructor(data?: string) {
+    super({
+      message: SeasonRankRewardMessage.RANK_ORDER_INVALID,
+      errorKey: SeasonRankRewardMessage.RANK_ORDER_INVALID,
+      data: data || null
+    })
+  }
+}
+
+export class MissingSeasonRankRewardForAllInvalidException extends ConflictException {
+  constructor(rankName?: string) {
+    super({
+      message: SeasonRankRewardMessage.MISSSING_REWARD_FOR_ALL,
+      errorKey: SeasonRankRewardMessage.MISSSING_REWARD_FOR_ALL,
+      data: rankName || null
+    })
+  }
+}

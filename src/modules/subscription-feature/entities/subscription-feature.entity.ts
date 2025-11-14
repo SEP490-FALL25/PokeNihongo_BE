@@ -1,4 +1,3 @@
-import { FeatureKey } from '@/common/constants/subscription.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
@@ -12,14 +11,8 @@ patchNestJsSwagger()
 export const SubscriptionFeatureSchema = z.object({
   id: z.number(),
   subscriptionId: z.number(),
-  featureKey: z.enum([
-    FeatureKey.COIN_MULTIPLIER,
-    FeatureKey.PERSONALIZATION,
-    FeatureKey.UNLIMITED_TESTS,
-    FeatureKey.UNLOCK_LISTENING,
-    FeatureKey.UNLOCK_READING,
-    FeatureKey.XP_MULTIPLIER
-  ]),
+  featureId: z.number(),
+
   value: z.string().nullable(),
 
   createdById: z.number().nullable(),
@@ -33,7 +26,7 @@ export const SubscriptionFeatureSchema = z.object({
 // Create Schema
 export const CreateSubscriptionFeatureBodySchema = SubscriptionFeatureSchema.pick({
   subscriptionId: true,
-  featureKey: true,
+  featureId: true,
   value: true
 }).strict()
 
@@ -54,7 +47,7 @@ export const UpdateWithListItemBodySchema = z.object({
   items: z
     .array(
       z.object({
-        featureKey: SubscriptionFeatureSchema.shape.featureKey,
+        featureId: SubscriptionFeatureSchema.shape.featureId,
         value: SubscriptionFeatureSchema.shape.value
       })
     )

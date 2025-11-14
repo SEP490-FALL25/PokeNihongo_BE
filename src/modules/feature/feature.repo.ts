@@ -6,18 +6,18 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
 import {
-  CreateSubscriptionBodyType,
+  CreateFeatureBodyType,
+  FeatureType,
   LEADERBOARD_SEASON_FIELDS,
-  SubscriptionType,
-  UpdateSubscriptionBodyType
-} from './entities/subscription.entity'
+  UpdateFeatureBodyType
+} from './entities/feature.entity'
 
-type SubscriptionPrismaType = Omit<SubscriptionType, 'nameKey'> & {
+type FeaturePrismaType = Omit<FeatureType, 'nameKey'> & {
   name: string
 }
 
 @Injectable()
-export class SubscriptionRepo {
+export class FeatureRepo {
   constructor(private prismaService: PrismaService) {}
 
   // Wrapper cho transaction
@@ -31,12 +31,12 @@ export class SubscriptionRepo {
       data
     }: {
       createdById: number | null
-      data: CreateSubscriptionBodyType
+      data: CreateFeatureBodyType
     },
     prismaTx?: PrismaClient
-  ): Promise<SubscriptionType> {
+  ): Promise<FeatureType> {
     const client = prismaTx || this.prismaService
-    return client.subscription.create({
+    return client.feature.create({
       data: {
         ...data,
         createdById
@@ -52,48 +52,45 @@ export class SubscriptionRepo {
     }: {
       id: number
       updatedById?: number
-      data: UpdateSubscriptionBodyType & {
+      data: UpdateFeatureBodyType & {
         nameTranslations?: CreateTranslationBodyType[]
-        subscriptionNameKey?: string
-        descriptionTranslations?: CreateTranslationBodyType[]
-        subscriptionDescriptionKey?: string
+        featureNameKey?: string
       }
     },
     prismaTx?: PrismaClient
-  ): Promise<SubscriptionType> {
+  ): Promise<FeatureType> {
     const client = prismaTx || this.prismaService
     const {
       nameTranslations,
-      subscriptionNameKey,
-      descriptionTranslations,
-      subscriptionDescriptionKey,
-      ...subscriptionData
+      featureNameKey,
+
+      ...featureData
     } = data
 
-    const updatedSubscription = await client.subscription.update({
+    const updatedFeature = await client.feature.update({
       where: { id, deletedAt: null },
       data: {
-        ...subscriptionData,
+        ...featureData,
         updatedById
       }
     })
 
     // Upsert nameTranslations if provided
-    if (nameTranslations && subscriptionNameKey) {
+    if (nameTranslations && featureNameKey) {
       await Promise.all(
         nameTranslations.map((tr) =>
           client.translation.upsert({
             where: {
               languageId_key: {
                 languageId: tr.languageId,
-                key: subscriptionNameKey
+                key: featureNameKey
               }
             },
             create: {
               languageId: tr.languageId,
-              key: subscriptionNameKey,
+              key: featureNameKey,
               value: tr.value,
-              subscriptionNameKey
+              featureNameKey
             },
             update: {
               value: tr.value
@@ -103,32 +100,7 @@ export class SubscriptionRepo {
       )
     }
 
-    // Upsert descriptionTranslations if provided
-    if (descriptionTranslations && subscriptionDescriptionKey) {
-      await Promise.all(
-        descriptionTranslations.map((tr) =>
-          client.translation.upsert({
-            where: {
-              languageId_key: {
-                languageId: tr.languageId,
-                key: subscriptionDescriptionKey
-              }
-            },
-            create: {
-              languageId: tr.languageId,
-              key: subscriptionDescriptionKey,
-              value: tr.value,
-              subscriptionDescriptionKey
-            },
-            update: {
-              value: tr.value
-            }
-          })
-        )
-      )
-    }
-
-    return updatedSubscription
+    return updatedFeature
   }
 
   async delete(
@@ -141,15 +113,15 @@ export class SubscriptionRepo {
     },
     isHard?: boolean,
     prismaTx?: PrismaClient
-  ): Promise<SubscriptionType> {
+  ): Promise<FeatureType> {
     const client = prismaTx || this.prismaService
     const result = isHard
-      ? await this.prismaService.subscription.delete({
+      ? await this.prismaService.feature.delete({
           where: {
             id
           }
         })
-      : await client.subscription.update({
+      : await client.feature.update({
           where: {
             id,
             deletedAt: null
@@ -202,23 +174,13 @@ export class SubscriptionRepo {
     }
 
     const [totalItems, data] = await Promise.all([
-      this.prismaService.subscription.count({ where }),
-      this.prismaService.subscription.findMany({
+      this.prismaService.feature.count({ where }),
+      this.prismaService.feature.findMany({
         where,
         include: {
           // Always include all translations with languageId for service-level mapping
           nameTranslations: {
             select: { value: true, languageId: true }
-          },
-          descriptionTranslations: {
-            select: { value: true, languageId: true }
-          },
-          features: {
-            select: {
-              id: true,
-
-              value: true
-            }
           }
         },
         orderBy,
@@ -258,8 +220,8 @@ export class SubscriptionRepo {
       }
     }
   }
-  findById(id: number): Promise<SubscriptionType | null> {
-    return this.prismaService.subscription.findUnique({
+  findById(id: number): Promise<FeatureType | null> {
+    return this.prismaService.feature.findUnique({
       where: {
         id,
         deletedAt: null
@@ -271,8 +233,8 @@ export class SubscriptionRepo {
     id: number,
     isAllLang: boolean,
     langId: number
-  ): Promise<SubscriptionType | null> {
-    return this.prismaService.subscription.findUnique({
+  ): Promise<FeatureType | null> {
+    return this.prismaService.feature.findUnique({
       where: {
         id,
         deletedAt: null
@@ -280,23 +242,13 @@ export class SubscriptionRepo {
       include: {
         nameTranslations: isAllLang
           ? { select: { value: true, languageId: true } }
-          : { where: { languageId: langId }, select: { value: true, languageId: true } },
-        descriptionTranslations: isAllLang
-          ? { select: { value: true, languageId: true } }
-          : { where: { languageId: langId }, select: { value: true, languageId: true } },
-        features: {
-          select: {
-            id: true,
-
-            value: true
-          }
-        }
+          : { where: { languageId: langId }, select: { value: true, languageId: true } }
       }
     })
   }
 
   findByIdWithAllLang(id: number) {
-    return this.prismaService.subscription.findUnique({
+    return this.prismaService.feature.findUnique({
       where: {
         id,
         deletedAt: null

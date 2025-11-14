@@ -619,7 +619,8 @@ export const enMessages = {
     ALREADY_EXISTS: 'Season rank reward already exists',
     INVALID_DATA: 'Invalid season rank reward data',
     RANK_NAME_INVALID: 'Invalid rank name',
-    RANK_ORDER_INVALID: 'Invalid rank order'
+    RANK_ORDER_INVALID: 'Invalid rank order',
+    MISSSING_REWARD_FOR_ALL: 'Missing reward non-order for rank'
   },
   leaderboard_season: {
     CREATE_SUCCESS: 'Leaderboard season created successfully',
@@ -691,5 +692,16 @@ export const enMessages = {
     NOT_FOUND: 'Subscription plan not found',
     ALREADY_EXISTS: 'Subscription plan already exists',
     INVALID_DATA: 'Invalid subscription plan data'
+  },
+  feature: {
+    CREATE_SUCCESS: 'Feature created successfully',
+    UPDATE_SUCCESS: 'Feature updated successfully',
+    DELETE_SUCCESS: 'Feature deleted successfully',
+    GET_SUCCESS: 'Feature retrieved successfully',
+    GET_LIST_SUCCESS: 'Feature list retrieved successfully',
+
+    NOT_FOUND: 'Feature not found',
+    ALREADY_EXISTS: 'Feature already exists',
+    INVALID_DATA: 'Invalid feature data'
   }
 }

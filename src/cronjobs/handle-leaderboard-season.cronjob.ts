@@ -236,13 +236,17 @@ export class HandleLeaderboardSeasonCronjob {
       include: { rewards: { select: { id: true } } }
     })
 
-    // Build map: rankName->order->SeasonRankReward
+    // Separate null-order rewards (for all users) from ranked rewards
+    const commonRewards = srrList.filter((srr) => srr.order === null)
+    const rankedRewards = srrList.filter((srr) => srr.order !== null)
+
+    // Build map: rankName->order->SeasonRankReward (only for ranked rewards)
     const rewardMap = new Map<string, Map<number, { id: number; rewardIds: number[] }>>()
-    for (const srr of srrList) {
+    for (const srr of rankedRewards) {
       if (!rewardMap.has(srr.rankName)) rewardMap.set(srr.rankName, new Map())
       rewardMap
         .get(srr.rankName)!
-        .set(srr.order, { id: srr.id, rewardIds: (srr.rewards || []).map((r) => r.id) })
+        .set(srr.order!, { id: srr.id, rewardIds: (srr.rewards || []).map((r) => r.id) })
     }
 
     // 3) Compute finalElo and finalRank from current user eloscore
@@ -289,13 +293,18 @@ export class HandleLeaderboardSeasonCronjob {
       let order = 1
       for (const p of list) {
         const found = rewardMap.get(rankName)?.get(order)
+        // Collect rewards from ranked position + common rewards for all
+        const allRewardIds = [
+          ...(found?.rewardIds || []),
+          ...commonRewards.flatMap((cr) => (cr.rewards || []).map((r) => r.id))
+        ]
         rankAssignments.push({
           ushId: p.ushId,
           userId: p.userId,
           rankName,
           order,
           seasonRankRewardId: found?.id,
-          rewardIds: found?.rewardIds || []
+          rewardIds: allRewardIds
         })
         order += 1
       }
