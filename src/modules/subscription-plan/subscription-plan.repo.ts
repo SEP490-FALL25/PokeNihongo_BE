@@ -255,4 +255,39 @@ export class SubscriptionPlanRepo {
       }
     })
   }
+
+  async getUserActivePlanIds(userId: number): Promise<number[]> {
+    const userSubscriptions = await this.prismaService.userSubscription.findMany({
+      where: {
+        userId,
+        status: 'ACTIVE',
+        deletedAt: null
+      },
+      select: {
+        subscriptionPlanId: true
+      }
+    })
+
+    return userSubscriptions.map((us) => us.subscriptionPlanId)
+  }
+
+  async getSubscriptionPurchaseCounts(): Promise<Record<number, number>> {
+    const counts = await this.prismaService.userSubscription.groupBy({
+      by: ['subscriptionPlanId'],
+      _count: {
+        id: true
+      },
+      where: {
+        deletedAt: null
+      }
+    })
+
+    // Build a map of subscriptionPlanId to count
+    const planCounts: Record<number, number> = {}
+    counts.forEach((c) => {
+      planCounts[c.subscriptionPlanId] = c._count.id
+    })
+
+    return planCounts
+  }
 }

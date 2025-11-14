@@ -308,4 +308,111 @@ export class SubscriptionRepo {
       }
     })
   }
+
+  async getSubscriptionsWithActivePlans(langId?: number) {
+    const subscriptions = await this.prismaService.subscription.findMany({
+      where: {
+        deletedAt: null,
+        plans: {
+          some: {
+            isActive: true,
+            deletedAt: null
+          }
+        }
+      },
+      include: {
+        nameTranslations: {
+          select: { value: true, languageId: true }
+        },
+        descriptionTranslations: {
+          select: { value: true, languageId: true }
+        },
+        features: {
+          select: {
+            id: true,
+            featureId: true,
+            value: true,
+            feature: {
+              select: {
+                id: true,
+                featureKey: true,
+                nameKey: true,
+                nameTranslations: {
+                  select: { value: true, languageId: true }
+                }
+              }
+            }
+          }
+        },
+        plans: {
+          where: {
+            isActive: true,
+            deletedAt: null
+          },
+          orderBy: {
+            durationInDays: 'asc'
+          },
+          select: {
+            id: true,
+            subscriptionId: true,
+            price: true,
+            type: true,
+            durationInDays: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        }
+      },
+      orderBy: {
+        tagName: 'asc'
+      }
+    })
+
+    // Map results to include single translations for langId
+    return subscriptions.map((sub: any) => {
+      const { nameTranslations, descriptionTranslations, features, ...rest } = sub
+
+      const nameTranslation = langId
+        ? (nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
+          sub.nameKey)
+        : sub.nameKey
+
+      const descriptionTranslation = langId
+        ? (descriptionTranslations?.find((t: any) => t.languageId === langId)?.value ??
+          sub.descriptionKey)
+        : sub.descriptionKey
+
+      // Process features to add nameTranslation for each feature
+      const processedFeatures = features?.map((f: any) => {
+        const { feature, ...featureRest } = f
+        if (!feature) return f
+
+        const { nameTranslations: featureNameTrans, ...featureDetails } = feature
+
+        const featureNameTranslation = langId
+          ? (featureNameTrans?.find((t: any) => t.languageId === langId)?.value ??
+            feature.nameKey)
+          : feature.nameKey
+
+        return {
+          ...featureRest,
+          feature: {
+            ...featureDetails,
+            nameTranslations: featureNameTrans,
+            nameTranslation: featureNameTranslation
+          }
+        }
+      })
+
+      return {
+        ...rest,
+        nameTranslations,
+        descriptionTranslations,
+        nameTranslation,
+        descriptionTranslation,
+        features: processedFeatures
+      }
+    })
+  }
 }
