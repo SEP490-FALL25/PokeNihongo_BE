@@ -20,6 +20,7 @@ import { APP_GUARD } from '@nestjs/core'
 import { JwtModule } from '@nestjs/jwt'
 import { WebsocketsModule } from 'src/websockets/websockets.module'
 import { PayOSService } from './services/payos.service'
+import { SharedUserSubscriptionService } from './services/user-subscription.service'
 import { InvoiceExpirationProcessor } from './workers/invoice-expiration.processor'
 import { MatchParticipantTimeoutProcessor } from './workers/match-participant-timeout.processor'
 import { MatchRoundParticipantTimeoutProcessor } from './workers/match-round-participant-timeout.processor'
@@ -30,6 +31,7 @@ const sharedServices = [
   PrismaService,
   HashingService,
   TokenService,
+  SharedUserSubscriptionService,
   LanguagesRepository,
   // EmailService,
   SharedUserRepository,

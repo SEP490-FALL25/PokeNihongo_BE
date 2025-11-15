@@ -19,9 +19,11 @@ import { UserDailyRequestService } from '../user-daily-request/user-daily-reques
 
 import { AttendancesStatus } from '@/common/constants/attendance.constant'
 import { WeekDayType } from '@/common/constants/attendence-config.constant'
+import { FeatureKey } from '@/common/constants/subscription.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { AttendanceMessage, ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
+import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
 import { AttendenceConfigRepo } from '../attendence-config/attendence-config.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { WalletTransactionRepo } from '../wallet-transaction/wallet-transaction.repo'
@@ -44,7 +46,8 @@ export class AttendanceService {
     private readonly languageRepo: LanguagesRepository,
     private readonly userDailyRequestService: UserDailyRequestService,
     private readonly walletRepo: WalletRepo,
-    private readonly walletTransactionRepo: WalletTransactionRepo
+    private readonly walletTransactionRepo: WalletTransactionRepo,
+    private readonly userSubService: SharedUserSubscriptionService
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -166,6 +169,12 @@ export class AttendanceService {
 
       // Update daily login requests
       const totalCoin = data.coin + data.bonusCoin
+      // xem có tăng không
+      const valueIncrease =
+        await this.userSubService.getValueConvertByfeatureKeyAndUserId(
+          FeatureKey.COIN_MULTIPLIER,
+          createdById
+        )
 
       const [attendance, , , wallet] = await Promise.all([
         this.attendanceRepo.create({
@@ -182,11 +191,12 @@ export class AttendanceService {
           dailyRequestType: dailyRequestType.STREAK_LOGIN,
           progressAdd: 1
         }),
+
         // Cộng coin vào ví SPARKLES
         this.walletRepo.addBalanceToWalletWithType({
           userId: createdById,
           type: walletType.SPARKLES,
-          amount: totalCoin
+          amount: totalCoin * valueIncrease
         })
       ])
 
@@ -199,7 +209,7 @@ export class AttendanceService {
             userId: createdById,
             purpose: walletPurposeType.DAILY_REQUEST,
             referenceId: null,
-            amount: totalCoin,
+            amount: totalCoin * valueIncrease,
             type: WalletTransactionType.INCREASE,
             source: WalletTransactionSourceType.DAILY_CHECKIN,
             description: `Daily attendance reward: ${data.coin} base + ${data.bonusCoin} bonus`
