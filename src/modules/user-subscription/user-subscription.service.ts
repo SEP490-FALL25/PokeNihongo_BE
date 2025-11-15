@@ -1,4 +1,7 @@
-import { UserSubscriptionStatus } from '@/common/constants/subscription.constant'
+import {
+  FeatureKeyType,
+  UserSubscriptionStatus
+} from '@/common/constants/subscription.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { UserSubscriptionMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
@@ -218,5 +221,60 @@ export class UserSubscriptionService {
       },
       message: this.i18nService.translate(UserSubscriptionMessage.GET_LIST_SUCCESS, lang)
     }
+  }
+  async getValueConvertByfeatureKeyAndUserId(featureKey: FeatureKeyType, userId: number) {
+    const userSubs = await this.userSubscriptionRepo.findActiveByUserIdWithfeatureKey(
+      userId,
+      featureKey
+    )
+
+    if (!userSubs || userSubs.length === 0) {
+      return 1
+    }
+
+    // Collect all feature values from all active subscriptions
+    const values: number[] = []
+    for (const us of userSubs) {
+      const plan = (us as any).subscriptionPlan
+      if (!plan || !plan.subscription || !plan.subscription.features) continue
+      for (const sf of plan.subscription.features) {
+        if (sf.value) {
+          const parsed = parseFloat(sf.value)
+          if (!isNaN(parsed)) {
+            values.push(parsed)
+          }
+        }
+      }
+    }
+
+    if (values.length === 0) {
+      return 1
+    }
+
+    // Compute average
+    const sum = values.reduce((acc, v) => acc + v, 0)
+    return sum / values.length
+  }
+
+  async getHasByfeatureKeyAndUserId(featureKey: FeatureKeyType, userId: number) {
+    const userSubs = await this.userSubscriptionRepo.findActiveByUserIdWithfeatureKey(
+      userId,
+      featureKey
+    )
+
+    if (!userSubs || userSubs.length === 0) {
+      return false
+    }
+
+    // Check if any subscription has this feature
+    for (const us of userSubs) {
+      const plan = (us as any).subscriptionPlan
+      if (!plan || !plan.subscription || !plan.subscription.features) continue
+      if (plan.subscription.features.length > 0) {
+        return true
+      }
+    }
+
+    return false
   }
 }
