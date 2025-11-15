@@ -24,6 +24,16 @@ export class UserSubscriptionController {
     return this.userSubscriptionService.list(query, lang)
   }
 
+  @Get('user')
+  @ZodSerializerDto(PaginationResponseDTO)
+  getUserSubWithSubPlan(
+    @Query() query: PaginationQueryDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.userSubscriptionService.getUserSubWithSubPlan(query, userId, lang)
+  }
+
   @Get(':userSubscriptionId')
   @ZodSerializerDto(GetUserSubscriptionDetailResDTO)
   findById(

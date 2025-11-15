@@ -4,9 +4,12 @@ import { AccessTokenGuard } from '@/common/guards/access-token.guard'
 import { APIKeyGuard } from '@/common/guards/api-key.guard'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
 import { InvoiceRepo } from '@/modules/invoice/invoice.repo'
+import { LanguagesRepository } from '@/modules/languages/languages.repo'
 import { PokemonRepo } from '@/modules/pokemon/pokemon.repo'
 import { QuestionBankRepository } from '@/modules/question-bank/question-bank.repo'
 import { UserSubscriptionRepo } from '@/modules/user-subscription/user-subscription.repo'
+import { WalletTransactionRepo } from '@/modules/wallet-transaction/wallet-transaction.repo'
+import { WalletRepo } from '@/modules/wallet/wallet.repo'
 import { SharedRoleRepository } from '@/shared/repositories/shared-role.repo'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { HashingService } from '@/shared/services/hashing.service'
@@ -27,6 +30,7 @@ const sharedServices = [
   PrismaService,
   HashingService,
   TokenService,
+  LanguagesRepository,
   // EmailService,
   SharedUserRepository,
   SharedRoleRepository,
@@ -34,7 +38,9 @@ const sharedServices = [
   PokemonRepo,
   PayOSService,
   InvoiceRepo,
-  UserSubscriptionRepo
+  UserSubscriptionRepo,
+  WalletRepo,
+  WalletTransactionRepo
 ]
 @Global()
 @Module({
