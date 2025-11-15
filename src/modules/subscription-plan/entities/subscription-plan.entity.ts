@@ -86,6 +86,15 @@ export const GetSubscriptionPlanDetailSchema = SubscriptionPlanSchema.extend({
   }).nullable()
 })
 
+export const GetDiscountBySubPlanResSchema = z.object({
+  statusCode: z.number(),
+  data: z.object({
+    availablePokeCoins: z.number(),
+    maxPokeCoinsCanUse: z.number(),
+    maxDiscountAllowed: z.number()
+  }),
+  message: z.string()
+})
 export const GetSubscriptionPlanDetailResSchema = z.object({
   statusCode: z.number(),
   data: GetSubscriptionPlanDetailSchema,

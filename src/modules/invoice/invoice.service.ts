@@ -1,14 +1,22 @@
+import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { UserSubscriptionStatus } from '@/common/constants/subscription.constant'
+import {
+  walletPurposeType,
+  WalletTransactionSourceType,
+  WalletTransactionType
+} from '@/common/constants/wallet-transaction.constant'
+import { walletType } from '@/common/constants/wallet.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { InvoiceMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
+  addTimeUTC,
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { InjectQueue } from '@nestjs/bull'
-import { forwardRef, Inject, Injectable } from '@nestjs/common'
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common'
 import { Queue } from 'bull'
 import { PaymentService } from '../payment/payment.service'
 import { SubscriptionPlanNotFoundException } from '../subscription-plan/dto/subscription-plan.error'
@@ -18,6 +26,8 @@ import {
   UserHasSubscriptionWithStatusPendingPaymentException
 } from '../user-subscription/dto/user-subscription.error'
 import { UserSubscriptionRepo } from '../user-subscription/user-subscription.repo'
+import { WalletTransactionRepo } from '../wallet-transaction/wallet-transaction.repo'
+import { WalletRepo } from '../wallet/wallet.repo'
 import { InvoiceNotFoundException } from './dto/invoice.error'
 import { CreateInvoiceBodyType, UpdateInvoiceBodyType } from './entities/invoice.entity'
 import { InvoiceRepo } from './invoice.repo'
@@ -31,7 +41,10 @@ export class InvoiceService {
     private readonly i18nService: I18nService,
     @Inject(forwardRef(() => PaymentService))
     private readonly paymentService: PaymentService,
-    @InjectQueue('invoice-expiration') private readonly invoiceExpirationQueue: Queue
+    @InjectQueue(BullQueue.INVOICE_EXPIRATION)
+    private readonly invoiceExpirationQueue: Queue,
+    private readonly walletRepo: WalletRepo,
+    private readonly walletTransactionRepo: WalletTransactionRepo
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -91,14 +104,28 @@ export class InvoiceService {
         throw new UserHasSubscriptionWithStatusPendingPaymentException()
       }
       console.log('isUserPayPlanExist')
-      // Tạo invoice trong transaction
+      const discountAmountInput = data.discountAmount || 0
+
+      // Nếu có discount > 0, kiểm tra ví có đủ PokeCoin không
+      if (discountAmountInput > 0) {
+        const enough = await this.walletRepo.checkEnoughBalance({
+          userId,
+          type: walletType.POKE_COINS,
+          amount: discountAmountInput
+        })
+        if (!enough) {
+          throw new BadRequestException('Số dư PokeCoin không đủ để giảm giá')
+        }
+      }
+
+      // Tạo invoice + user-subscription trong transaction
       const invoice = await this.invoiceRepo.withTransaction(async (tx) => {
         // chuan bi them data co create invoice
         const subtotalAmount = isPlanExist.price
-        const discountAmount = data.discountAmount || 0
+        const discountAmount = discountAmountInput
         const totalAmount = subtotalAmount - discountAmount
 
-        return await this.invoiceRepo.create(
+        const createdInvoice = await this.invoiceRepo.create(
           {
             createdById: userId,
             data: {
@@ -111,19 +138,64 @@ export class InvoiceService {
           },
           tx
         )
+
+        // Tạo UserSubscription ở trạng thái PENDING_PAYMENT, gắn với invoice vừa tạo
+        await this.userSubRepo.create(
+          {
+            createdById: userId,
+            data: {
+              subscriptionPlanId: isPlanExist.id,
+              invoiceId: createdInvoice.id,
+              userId
+            }
+          },
+          tx
+        )
+
+        // Nếu có discount > 0: trừ coin và tạo wallet transaction, cập nhật invoice.walletTransactionId
+        if (discountAmount > 0) {
+          const updatedWallet = await this.walletRepo.minusBalanceToWalletWithTypeUserId(
+            { userId, type: walletType.POKE_COINS, amount: discountAmount },
+            tx
+          )
+          if (!updatedWallet) {
+            throw new BadRequestException('Không thể trừ PokeCoin')
+          }
+
+          const wtx = await this.walletTransactionRepo.create(
+            {
+              createdById: userId,
+              data: {
+                walletId: updatedWallet.id,
+                userId,
+                purpose: walletPurposeType.SUBSCRIPTION,
+                referenceId: createdInvoice.id,
+                amount: discountAmount,
+                type: WalletTransactionType.DECREASE,
+                source: WalletTransactionSourceType.SUBSCRIPTION_DISCOUNT,
+                description: null
+              }
+            },
+            tx
+          )
+
+          await this.invoiceRepo.updateWalletTransaction(createdInvoice.id, wtx.id, tx)
+        }
+
+        return createdInvoice
       })
       console.log('xong create')
       // Schedule auto cancellation after 60 minutes if still PENDING
-      // await this.invoiceExpirationQueue.add(
-      //   'expireInvoice',
-      //   { invoiceId: invoice.id },
-      //   {
-      //     delay: 60 * 60 * 1000,
-      //     jobId: `invoice-expire-${invoice.id}`,
-      //     removeOnComplete: true,
-      //     removeOnFail: true
-      //   }
-      // )
+      await this.invoiceExpirationQueue.add(
+        BullAction.EXPIRE_INVOICE,
+        { invoiceId: invoice.id },
+        {
+          delay: 60 * 60 * 1000,
+          jobId: `invoice-expire-${invoice.id}`,
+          removeOnComplete: true,
+          removeOnFail: true
+        }
+      )
       console.log('bull')
       console.log('vao create payment')
 
@@ -245,9 +317,10 @@ export class InvoiceService {
       return
     }
     const now = new Date()
+    const startDate = addTimeUTC(now, 0)
     const expiresAt =
       plan.type === 'RECURRING' && plan.durationInDays
-        ? new Date(now.getTime() + plan.durationInDays * 86400000)
+        ? addTimeUTC(startDate, plan.durationInDays * 24 * 60 * 60 * 1000)
         : null
 
     if (!existingUserSub) {
@@ -261,14 +334,14 @@ export class InvoiceService {
       })
       await this.userSubRepo.update({
         id: created.id,
-        data: { startDate: now, expiresAt, status: UserSubscriptionStatus.ACTIVE }
+        data: { startDate, expiresAt, status: UserSubscriptionStatus.ACTIVE }
       })
     } else {
       // Update if not already ACTIVE
       if (existingUserSub.status !== UserSubscriptionStatus.ACTIVE) {
         await this.userSubRepo.update({
           id: existingUserSub.id,
-          data: { startDate: now, expiresAt, status: UserSubscriptionStatus.ACTIVE }
+          data: { startDate, expiresAt, status: UserSubscriptionStatus.ACTIVE }
         })
       }
     }

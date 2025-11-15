@@ -9,8 +9,11 @@ import envConfig from '@/config/env.config'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { PayOSService } from '../../shared/services/payos.service'
 
+import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { PaymentMessage } from '@/i18n/message-keys'
+import { NotFoundRecordException } from '@/shared/error'
+import { InjectQueue } from '@nestjs/bull'
 import {
   ConflictException,
   Inject,
@@ -18,6 +21,7 @@ import {
   NotFoundException,
   forwardRef
 } from '@nestjs/common'
+import { Queue } from 'bull'
 import { InvoiceRepo } from '../invoice/invoice.repo'
 import { InvoiceService } from '../invoice/invoice.service'
 import { SubscriptionPlanNotFoundException } from '../subscription-plan/dto/subscription-plan.error'
@@ -42,7 +46,9 @@ export class PaymentService {
     private readonly userService: SharedUserRepository,
     private readonly i18nService: I18nService,
     @Inject(forwardRef(() => InvoiceService))
-    private readonly invoiceService: InvoiceService
+    private readonly invoiceService: InvoiceService,
+    @InjectQueue(BullQueue.INVOICE_EXPIRATION)
+    private readonly invoiceExpirationQueue: Queue
   ) {}
   // Create PayOS payment
   async createPayOSPayment(
@@ -64,6 +70,41 @@ export class PaymentService {
         throw new InvalidStatusPendingInvoiceToPayException()
       }
 
+      // 1.1. Nếu đã có payment PENDING còn hạn cho invoice này thì trả về luôn
+      const existingPending = await this.paymentRepo.findLatestPendingByInvoice(
+        invoice.id
+      )
+      if (existingPending) {
+        const now = Date.now()
+        const expiredAtMs = existingPending.expiredAt
+          ? new Date(existingPending.expiredAt).getTime()
+          : undefined
+        if (expiredAtMs && expiredAtMs > now) {
+          return {
+            success: true,
+            message: this.i18nService.translate(PaymentMessage.CREATE_SUCCESS, lang),
+            data: {
+              payment: existingPending,
+              payosData: {
+                orderCode: existingPending.payosOrderId
+                  ? Number(existingPending.payosOrderId)
+                  : undefined,
+                checkoutUrl: existingPending.payosCheckoutUrl,
+                qrCode: existingPending.payosQrCode,
+                paymentLinkId: existingPending.payosPaymentLinkId,
+                expiredAt: expiredAtMs ? Math.floor(expiredAtMs / 1000) : undefined,
+                amount: existingPending.amount
+              }
+            }
+          }
+        } else if (expiredAtMs && expiredAtMs <= now) {
+          await this.paymentRepo.updatePayment(existingPending.id, {
+            status: PAYMENT_STATUS.EXPIRED,
+            failureReason: 'Payment link expired'
+          })
+        }
+      }
+
       // 2. Lấy subscription plan
       const plan = await this.subscriptionPlanRepo.getById(invoice.subscriptionPlanId)
       if (!plan) {
@@ -73,7 +114,7 @@ export class PaymentService {
       // 3. Lấy thông tin user để fallback cho buyer info
       const user = await this.userService.findUnique({ id: userId })
       if (!user) {
-        throw new NotFoundException('Không tìm thấy thông tin người dùng')
+        throw new NotFoundRecordException()
       }
 
       // Sử dụng thông tin từ paymentData hoặc fallback từ user
@@ -126,6 +167,32 @@ export class PaymentService {
         processedById: userId
       })
 
+      // 11. Kiểm tra và gia hạn Bull job nếu còn < 15 phút
+      const jobId = `invoice-expire-${invoice.id}`
+      const existingJob = await this.invoiceExpirationQueue.getJob(jobId)
+      if (existingJob) {
+        const now = Date.now()
+        const jobDelay = existingJob.opts.delay || 0
+        const jobCreatedAt = existingJob.timestamp
+        const timeRemaining = jobCreatedAt + jobDelay - now
+        const fifteenMinutes = 15 * 60 * 1000
+
+        if (timeRemaining < fifteenMinutes) {
+          // Xóa job cũ và tạo lại với delay 15 phút
+          await existingJob.remove()
+          await this.invoiceExpirationQueue.add(
+            BullAction.EXPIRE_INVOICE,
+            { invoiceId: invoice.id },
+            {
+              delay: fifteenMinutes,
+              jobId,
+              removeOnComplete: true,
+              removeOnFail: true
+            }
+          )
+        }
+      }
+
       return {
         success: true,
         message: this.i18nService.translate(PaymentMessage.CREATE_SUCCESS, lang),
@@ -164,6 +231,9 @@ export class PaymentService {
     const feUrl = envConfig.FE_URL || 'http://localhost:3000'
     try {
       const { paymentId, code, paymentLinkId, cancel, status, orderCode } = returnData
+
+      console.log('return: ', returnData)
+
       // Tìm payment theo orderCode
       const payment = (await this.paymentRepo.findPaymentByPayOSOrderId(
         orderCode.toString()
@@ -258,6 +328,12 @@ export class PaymentService {
     const feUrl = envConfig.FE_URL || 'http://localhost:3000'
     try {
       const { paymentId, orderCode } = cancelData
+      console.log(
+        'Handling PayOS cancel for paymentId:',
+        paymentId,
+        'orderCode:',
+        orderCode
+      )
 
       // Tìm payment theo orderCode
       const payment = await this.paymentRepo.findPaymentByPayOSOrderId(

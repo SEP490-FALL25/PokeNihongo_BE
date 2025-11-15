@@ -65,6 +65,23 @@ export class InvoiceRepo {
     })
   }
 
+  updateWalletTransaction(
+    id: number,
+    walletTransactionId: number,
+    prismaTx?: PrismaClient
+  ): Promise<InvoiceType> {
+    const client = prismaTx || this.prismaService
+    return client.invoice.update({
+      where: {
+        id,
+        deletedAt: null
+      },
+      data: {
+        walletTransactionId
+      }
+    })
+  }
+
   delete(id: number, isHard?: boolean, prismaTx?: PrismaClient): Promise<InvoiceType> {
     const client = prismaTx || this.prismaService
     return isHard
