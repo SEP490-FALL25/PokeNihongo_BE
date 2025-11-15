@@ -222,20 +222,12 @@ export class PayOSService {
    */
   generatePaymentUrls(invoiceId: number): { returnUrl: string; cancelUrl: string } {
     //todo chỉnh lại url sau khi test xong
-    // const baseUrl = envConfig.FE_URL || 'http://localhost:3000'
-    const baseUrl = 'http://localhost:4000'
-    console.log(`Base URL for PayOS payment URLs: ${baseUrl}`)
-    console.log(`Base URL for PayOS payment URLs: ${baseUrl}/payos/return`)
-    console.log(`Base URL for PayOS payment URLs: ${baseUrl}/payos/cancel`)
+    const baseUrl = envConfig.FE_URL || 'http://localhost:3000'
 
     return {
-      returnUrl: `${baseUrl}/payos/return`,
-      cancelUrl: `${baseUrl}/payos/cancel`
+      returnUrl: `${baseUrl}/payment/return`,
+      cancelUrl: `${baseUrl}/payment/cancel`
     }
-    // return {
-    //   returnUrl: `${baseUrl}/payment/return`,
-    //   cancelUrl: `${baseUrl}/payment/cancel`
-    // }
   }
 
   /**
