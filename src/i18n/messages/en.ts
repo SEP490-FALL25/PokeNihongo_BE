@@ -245,7 +245,8 @@ export const enMessages = {
     INVALID_DATA: 'Invalid data provided',
     UNAUTHORIZED: 'Unauthorized access',
     FORBIDDEN: 'Access forbidden',
-    LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'Language does not exist to translate'
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'Language does not exist to translate',
+    ERROR_UNKNOW_WITH_PAYOS_SYSTEM: 'Unknown error with PayOS system'
   },
   entity: {
     INVALID_DATA: 'Invalid data provided',

@@ -2,8 +2,9 @@ import envConfig from '@/config/env.config'
 
 import { InvoiceType } from '@/modules/invoice/entities/invoice.entity'
 import { SubscriptionPlanType } from '@/modules/subscription-plan/entities/subscription-plan.entity'
-import { BadRequestException, Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { PayOS } from '@payos/node'
+import { ErrorUnknowWithPayOSSystemException } from '../error'
 
 // PayOS Types từ documentation
 export interface PayOSItemData {
@@ -123,9 +124,7 @@ export class PayOSService {
       return response as PayOSCheckoutResponse
     } catch (error) {
       this.logger.error('Failed to create PayOS payment link:', error)
-      throw new BadRequestException(
-        `Lỗi tạo link thanh toán PayOS: ${error.message || 'Unknown error'}`
-      )
+      throw new ErrorUnknowWithPayOSSystemException()
     }
   }
 
@@ -142,9 +141,7 @@ export class PayOSService {
       return response as PayOSPaymentLinkInfo
     } catch (error) {
       this.logger.error('Failed to get PayOS payment info:', error)
-      throw new BadRequestException(
-        `Lỗi lấy thông tin thanh toán PayOS: ${error.message || 'Unknown error'}`
-      )
+      throw new ErrorUnknowWithPayOSSystemException()
     }
   }
 
@@ -171,9 +168,7 @@ export class PayOSService {
       return response as PayOSPaymentLinkInfo
     } catch (error) {
       this.logger.error('Failed to cancel PayOS payment:', error)
-      throw new BadRequestException(
-        `Lỗi hủy thanh toán PayOS: ${error.message || 'Unknown error'}`
-      )
+      throw new ErrorUnknowWithPayOSSystemException()
     }
   }
 
@@ -192,9 +187,7 @@ export class PayOSService {
       return response
     } catch (error) {
       this.logger.error('Failed to confirm PayOS webhook:', error)
-      throw new BadRequestException(
-        `Lỗi xác thực webhook PayOS: ${error.message || 'Unknown error'}`
-      )
+      throw new ErrorUnknowWithPayOSSystemException()
     }
   }
 
@@ -213,9 +206,7 @@ export class PayOSService {
       return webhookData as unknown as PayOSWebhookData
     } catch (error) {
       this.logger.error('Failed to verify PayOS webhook data:', error)
-      throw new BadRequestException(
-        `Lỗi xác minh webhook PayOS: ${error.message || 'Unknown error'}`
-      )
+      throw new ErrorUnknowWithPayOSSystemException()
     }
   }
 
@@ -230,7 +221,9 @@ export class PayOSService {
    * Tạo return & cancel URLs cho PayOS
    */
   generatePaymentUrls(invoiceId: number): { returnUrl: string; cancelUrl: string } {
+    //todo chỉnh lại url sau khi test xong
     const baseUrl = envConfig.FE_URL || 'http://localhost:3000'
+
     return {
       returnUrl: `${baseUrl}/payment/return`,
       cancelUrl: `${baseUrl}/payment/cancel`
@@ -249,7 +242,7 @@ export class PayOSService {
   }): PayOSItemData[] {
     return [
       {
-        name: `${plan.type === 'LIFETIME' ? 'Gói trọn đời' : `Gói ${plan.durationInDays || 0} ngày`}`,
+        name: `${plan.type === 'LIFETIME' ? 'Lifetime' : `Recurring`}`,
         quantity: 1,
         // Giá item phải khớp tổng invoice và là số nguyên VND
         price: Math.round(invoice.totalAmount)
