@@ -8,6 +8,7 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
+import { LanguagesRepository } from '../languages/languages.repo'
 import { SubscriptionPlanNotFoundException } from '../subscription-plan/dto/subscription-plan.error'
 import { SubscriptionPlanRepo } from '../subscription-plan/subscription-plan.repo'
 import {
@@ -26,8 +27,24 @@ export class UserSubscriptionService {
   constructor(
     private userSubscriptionRepo: UserSubscriptionRepo,
     private readonly subscriptionPlanRepo: SubscriptionPlanRepo,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly languageRepo: LanguagesRepository
   ) {}
+
+  private async convertTranslationsToLangCodes(
+    translations: Array<{ languageId: number; value: string }>
+  ): Promise<Array<{ key: string; value: string }>> {
+    if (!translations || translations.length === 0) return []
+
+    const allLangIds = Array.from(new Set(translations.map((t) => t.languageId)))
+    const langs = await this.languageRepo.getWithListId(allLangIds)
+    const idToCode = new Map(langs.map((l) => [l.id, l.code]))
+
+    return translations.map((t) => ({
+      key: idToCode.get(t.languageId) || String(t.languageId),
+      value: t.value
+    }))
+  }
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.userSubscriptionRepo.list(pagination)
@@ -162,6 +179,44 @@ export class UserSubscriptionService {
         throw new UserSubscriptionNotFoundException()
       }
       throw error
+    }
+  }
+
+  async getUserSubWithSubPlan(
+    pagination: PaginationQueryType,
+    userId: number,
+    lang: string = 'vi'
+  ) {
+    const langId = await this.languageRepo.getIdByCode(lang)
+    const data = await this.userSubscriptionRepo.getUserSubWithSubPlan(
+      pagination,
+      userId,
+      langId ?? undefined
+    )
+    // lượt bỏ nameTranslations, descriptionTranslations
+    const results = data.results.map((us: any) => {
+      const plan = us.subscriptionPlan
+      if (!plan || !plan.subscription) return us
+      const sub = plan.subscription
+      const { nameTranslations, descriptionTranslations, ...subRest } = sub
+
+      return {
+        ...us,
+        subscriptionPlan: {
+          ...plan,
+          subscription: {
+            ...subRest
+          }
+        }
+      }
+    })
+    return {
+      statusCode: 200,
+      data: {
+        ...data,
+        results
+      },
+      message: this.i18nService.translate(UserSubscriptionMessage.GET_LIST_SUCCESS, lang)
     }
   }
 }

@@ -7,6 +7,7 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateSubscriptionPlanBodyDTO,
   CreateSubscriptionPlanResDTO,
+  GetDiscountBySubPlanResDTO,
   GetSubscriptionPlanDetailResDTO,
   GetSubscriptionPlanParamsDTO,
   UpdateSubscriptionPlanBodyDTO,
@@ -26,6 +27,20 @@ export class SubscriptionPlanController {
     @ActiveUser('roleName') roleName: string
   ) {
     return this.subscriptionPlanService.list(query, lang, roleName)
+  }
+
+  @Get('discount/:subscriptionPlanId')
+  @ZodSerializerDto(GetDiscountBySubPlanResDTO)
+  getDiscountToSubPlan(
+    @Param() params: GetSubscriptionPlanParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.subscriptionPlanService.getDiscountToSubPlan(
+      params.subscriptionPlanId,
+      userId,
+      lang
+    )
   }
 
   @Get('user')

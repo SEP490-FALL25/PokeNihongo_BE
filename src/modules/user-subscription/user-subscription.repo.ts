@@ -116,6 +116,86 @@ export class UserSubscriptionRepo {
     }
   }
 
+  async getUserSubWithSubPlan(
+    pagination: PaginationQueryType,
+    userId: number,
+    langId?: number
+  ) {
+    const { where, orderBy } = parseQs(pagination.qs, USER_SEASON_HISTORY_FIELDS)
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    const filterWhere: any = {
+      deletedAt: null,
+      userId,
+      ...where
+    }
+
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.userSubscription.count({ where: filterWhere }),
+      this.prismaService.userSubscription.findMany({
+        where: filterWhere,
+        include: {
+          invoice: true,
+          subscriptionPlan: {
+            include: {
+              subscription: {
+                include: {
+                  nameTranslations: { select: { value: true, languageId: true } },
+                  descriptionTranslations: { select: { value: true, languageId: true } }
+                }
+              }
+            }
+          }
+        },
+        orderBy,
+        skip,
+        take
+      })
+    ])
+
+    const results = data.map((us: any) => {
+      const plan = us.subscriptionPlan
+      if (!plan || !plan.subscription) return us
+      const sub = plan.subscription
+      const { nameTranslations, descriptionTranslations, ...subRest } = sub
+
+      const nameTranslation = langId
+        ? (nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
+          sub.nameKey)
+        : sub.nameKey
+      const descriptionTranslation = langId
+        ? (descriptionTranslations?.find((t: any) => t.languageId === langId)?.value ??
+          sub.descriptionKey)
+        : sub.descriptionKey
+
+      return {
+        ...us,
+        subscriptionPlan: {
+          ...plan,
+          subscription: {
+            ...subRest,
+            nameTranslations,
+            descriptionTranslations,
+            nameTranslation,
+            descriptionTranslation
+          }
+        }
+      }
+    })
+
+    return {
+      results,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
+    }
+  }
+
   findById(id: number): Promise<UserSubscriptionType | null> {
     return this.prismaService.userSubscription.findUnique({
       where: {

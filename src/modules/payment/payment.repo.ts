@@ -30,6 +30,17 @@ export class PaymentRepo {
     })
   }
 
+  async findLatestPendingByInvoice(invoiceId: number): Promise<PaymentType | null> {
+    return this.prisma.payment.findFirst({
+      where: {
+        invoiceId,
+        status: 'PENDING',
+        deletedAt: null
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+  }
+
   async markInvoicePaid(paymentId: number, invoiceId: number): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       await tx.payment.update({

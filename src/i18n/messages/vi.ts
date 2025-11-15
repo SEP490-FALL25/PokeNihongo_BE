@@ -243,7 +243,8 @@ export const viMessages = {
     INVALID_DATA: 'Dữ liệu không hợp lệ',
     UNAUTHORIZED: 'Không có quyền truy cập',
     FORBIDDEN: 'Truy cập bị cấm',
-    LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'Ngôn ngữ không tồn tại để dịch'
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'Ngôn ngữ không tồn tại để dịch',
+    ERROR_UNKNOW_WITH_PAYOS_SYSTEM: 'Lỗi không xác định với hệ thống PayOS'
   },
   entity: {
     INVALID_DATA: 'Dữ liệu không hợp lệ',

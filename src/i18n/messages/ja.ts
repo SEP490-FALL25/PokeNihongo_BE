@@ -235,7 +235,8 @@ export const jaMessages = {
     INVALID_DATA: '無効なデータが提供されました',
     UNAUTHORIZED: '認証されていないアクセス',
     FORBIDDEN: 'アクセスが禁止されています',
-    LANGUAGE_NOT_EXIST_TO_TRANSLATE: '翻訳する言語が存在しません'
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: '翻訳する言語が存在しません',
+    ERROR_UNKNOW_WITH_PAYOS_SYSTEM: 'PayOSシステムで不明なエラーが発生しました'
   },
   entity: {
     INVALID_DATA: '無効なデータが提供されました',

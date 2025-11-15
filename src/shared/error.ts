@@ -1,6 +1,7 @@
 import { SYSTEM_MESSAGE } from '@/common/constants/message'
 import { AuthMessage, CommonMessage, SystemMessage } from '@/i18n/message-keys'
 import {
+  BadRequestException,
   NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException
@@ -56,6 +57,15 @@ export class LanguageNotExistToTranslateException extends UnprocessableEntityExc
     super({
       message: CommonMessage.LANGUAGE_NOT_EXIST_TO_TRANSLATE,
       errorKey: CommonMessage.LANGUAGE_NOT_EXIST_TO_TRANSLATE
+    })
+  }
+}
+
+export class ErrorUnknowWithPayOSSystemException extends BadRequestException {
+  constructor() {
+    super({
+      message: CommonMessage.ERROR_UNKNOW_WITH_PAYOS_SYSTEM,
+      errorKey: CommonMessage.ERROR_UNKNOW_WITH_PAYOS_SYSTEM
     })
   }
 }
