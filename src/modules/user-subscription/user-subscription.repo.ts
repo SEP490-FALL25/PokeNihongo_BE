@@ -1,4 +1,7 @@
-import { UserSubscriptionStatusType } from '@/common/constants/subscription.constant'
+import {
+  FeatureKeyType,
+  UserSubscriptionStatusType
+} from '@/common/constants/subscription.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
@@ -225,6 +228,36 @@ export class UserSubscriptionRepo {
       where: {
         invoiceId,
         deletedAt: null
+      }
+    })
+  }
+
+  async findActiveByUserIdWithfeatureKey(userId: number, featureKey: FeatureKeyType) {
+    return this.prismaService.userSubscription.findMany({
+      where: {
+        deletedAt: null,
+        userId,
+        status: 'ACTIVE'
+      },
+      include: {
+        subscriptionPlan: {
+          include: {
+            subscription: {
+              include: {
+                features: {
+                  where: {
+                    feature: {
+                      featureKey
+                    }
+                  },
+                  include: {
+                    feature: true
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     })
   }
