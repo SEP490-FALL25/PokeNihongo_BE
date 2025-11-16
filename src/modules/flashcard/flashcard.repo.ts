@@ -360,12 +360,25 @@ export class FlashcardRepository {
   }
 
   async updateCard(cardId: number, data: UpdateFlashcardCardBody) {
-    const updateData: Prisma.FlashcardCardUpdateInput = {}
+    const updateData: Prisma.FlashcardCardUncheckedUpdateInput = {}
 
+    if (data.contentType !== undefined) updateData.contentType = data.contentType as PrismaFlashcardContentType
     if (data.status !== undefined) updateData.status = data.status as PrismaFlashcardCardStatus
     if (data.notes !== undefined) updateData.notes = data.notes ?? null
     if (data.read !== undefined) updateData.read = data.read
     if (data.metadata !== undefined) updateData.metadata = data.metadata ?? undefined
+
+    // Nếu có vocabularyId, kanjiId, hoặc grammarId trong data (có thể là null để clear)
+    const dataAny = data as any
+    if ('vocabularyId' in dataAny) {
+      updateData.vocabularyId = dataAny.vocabularyId
+    }
+    if ('kanjiId' in dataAny) {
+      updateData.kanjiId = dataAny.kanjiId
+    }
+    if ('grammarId' in dataAny) {
+      updateData.grammarId = dataAny.grammarId
+    }
 
     return this.prisma.flashcardCard.update({
       where: { id: cardId },
