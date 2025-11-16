@@ -141,16 +141,17 @@ export const UpdateFlashcardCardBodySchema = z
     .object({
         deckId: z.coerce.number().int().min(1),
         cardId: z.coerce.number().int().min(1),
+        contentType: FlashcardContentTypeEnum.optional(),
         status: FlashcardCardStatusEnum.optional(),
         notes: z.string().trim().max(4000).nullable().optional(),
         read: z.boolean().optional(),
         metadata: JsonRecordSchema
     })
     .refine((value) => {
-        const updateFields = ['status', 'notes', 'read', 'metadata']
+        const updateFields = ['contentType', 'status', 'notes', 'read', 'metadata']
         return updateFields.some(field => value[field] !== undefined)
     }, {
-        message: 'Ít nhất phải cập nhật một trường (status, notes, read, hoặc metadata)'
+        message: 'Ít nhất phải cập nhật một trường (contentType, status, notes, read, hoặc metadata)'
     })
 
 export const GetFlashcardCardListQuerySchema = z.object({
