@@ -744,5 +744,8 @@ export const viMessages = {
     NOT_FOUND: 'Không tìm thấy thông báo',
     ALREADY_EXISTS: 'Thông báo đã tồn tại',
     INVALID_DATA: 'Dữ liệu thông báo không hợp lệ'
+  },
+  send_mail: {
+    REGISTER_SUBSCRIPTION_SUCCESS: 'Đăng ký gói thành công - PokeNihon Subscription'
   }
 }

@@ -98,6 +98,7 @@ import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
 import { NotificationModule } from './modules/notification/notification.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -201,7 +202,8 @@ import { NotificationModule } from './modules/notification/notification.module';
     UserSubscriptionModule,
     InvoiceModule,
     PaymentModule,
-    NotificationModule
+    NotificationModule,
+    DashboardModule
   ],
 
   controllers: [],

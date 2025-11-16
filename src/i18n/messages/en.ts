@@ -756,5 +756,7 @@ export const enMessages = {
     NOT_FOUND: 'Notification not found',
     ALREADY_EXISTS: 'Notification already exists',
     INVALID_DATA: 'Invalid notification data'
-  }
+  },
+  REGISTER_SUBSCRIPTION_SUCCESS:
+    'Subscription registration successful - PokeNihon Subscription'
 }
