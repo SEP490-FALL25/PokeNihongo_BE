@@ -47,7 +47,8 @@ export const jaMessages = {
     PASSWORD_MUST_BE_MATCH: 'パスワードは一致している必要があります',
     MISSING_TOKEN: '認証トークンが見つかりません',
     INVALID_TOKEN: '無効な認証トークンです',
-    UPDATE_LEVEL_JLPT_SUCCESS: 'JLPTレベルの更新が完了しました'
+    UPDATE_LEVEL_JLPT_SUCCESS: 'JLPTレベルの更新が完了しました',
+    UPDATE_SUCCESS: '更新が完了しました'
   },
   reward: {
     CREATE_SUCCESS: '報酬の作成が完了しました',
@@ -719,5 +720,15 @@ export const jaMessages = {
     PAY_SUCCESS: '支払いが正常に完了しました',
     PAY_FAILED: '支払いに失敗しました',
     PAY_CANCELLED: '支払いがキャンセルされました'
+  },
+  notification: {
+    CREATE_SUCCESS: '通知の作成に成功しました',
+    UPDATE_SUCCESS: '通知の更新に成功しました',
+    DELETE_SUCCESS: '通知の削除に成功しました',
+    GET_SUCCESS: '通知情報の取得に成功しました',
+    GET_LIST_SUCCESS: '通知リストの取得に成功しました',
+    NOT_FOUND: '通知が見つかりません',
+    ALREADY_EXISTS: '通知は既に存在します',
+    INVALID_DATA: '無効な通知データです'
   }
 }

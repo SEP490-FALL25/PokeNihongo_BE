@@ -693,4 +693,29 @@ export class AuthService {
       message: this.i18nService.translate(AuthMessage.VERIFY_OTP_FORGOT_PASSWORD_SUCCESS)
     }
   }
+
+  async updateFcmTokenDeviceWithDeviceId(
+    {
+      deviceId,
+      fcmToken
+    }: {
+      deviceId: number
+      fcmToken: string | null
+    },
+    lang: string = 'vi'
+  ) {
+    try {
+      await this.authRepository.updateFcmTokenDeviceWithDeviceId(fcmToken, deviceId)
+      return {
+        statusCode: HttpStatus.OK,
+        data: null,
+        message: this.i18nService.translate(AuthMessage.UPDATE_SUCCESS)
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to update FCM token for device ${deviceId}: ${error.message}`
+      )
+      throw error
+    }
+  }
 }

@@ -182,6 +182,7 @@ model User {
   vocabularySearchHistories VocabularySearchHistory[]
   invoices                  Invoice[]
   payments                  Payment[]
+  notifications             Notification[]
 
   @@index([deletedAt])
 }
@@ -192,6 +193,7 @@ model Device {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   userAgent     String
   ip            String
+  fcmToken      String? // Lưu FCM token từ client firebase
   lastActive    DateTime       @updatedAt // Thay updatedAt bằng lastActive cho ý nghĩa rõ hơn
   createdAt     DateTime       @default(now())
   isActive      Boolean        @default(true) // Trạng thái thiết bị (đang login hay đã logout)
@@ -2250,6 +2252,36 @@ model Payment {
   @@index([paymentMethod])
   @@index([payosOrderId])
   @@index([deletedAt])
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+
+  // Liên kết với User
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  titleKey String @db.VarChar(255)
+
+  bodyKey String @db.VarChar(255)
+
+  data Json?
+
+  // === CÁC TRƯỜNG TRẠNG THÁI ===
+
+  // Trạng thái đã đọc/chưa đọc
+  isRead Boolean @default(false)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // === INDEXES ===
+
+  // Tăng tốc độ query lấy lịch sử thông báo (sắp xếp theo ngày)
+  @@index([userId])
+  // Tăng tốc độ đếm số thông báo chưa đọc
+  @@index([userId, isRead])
 }
 
 enum PaymentMethod {

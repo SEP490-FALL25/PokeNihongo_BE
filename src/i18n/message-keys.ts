@@ -43,7 +43,8 @@ export const AuthMessage = {
   PASSWORD_MUST_BE_MATCH: 'auth.PASSWORD_MUST_BE_MATCH',
   MISSING_TOKEN: 'auth.MISSING_TOKEN',
   INVALID_TOKEN: 'auth.INVALID_TOKEN',
-  UPDATE_LEVEL_JLPT_SUCCESS: 'auth.UPDATE_LEVEL_JLPT_SUCCESS'
+  UPDATE_LEVEL_JLPT_SUCCESS: 'auth.UPDATE_LEVEL_JLPT_SUCCESS',
+  UPDATE_SUCCESS: 'auth.UPDATE_SUCCESS'
 } as const
 
 export const RewardMessage = {
@@ -779,4 +780,15 @@ export const PaymentMessage = {
   PAY_SUCCESS: 'payment.PAY_SUCCESS',
   PAY_FAILED: 'payment.PAY_FAILED',
   PAY_CANCELLED: 'payment.PAY_CANCELLED'
+} as const
+
+export const NotificationMessage = {
+  CREATE_SUCCESS: 'notification.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'notification.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'notification.DELETE_SUCCESS',
+  GET_SUCCESS: 'notification.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'notification.GET_LIST_SUCCESS',
+  NOT_FOUND: 'notification.NOT_FOUND',
+  ALREADY_EXISTS: 'notification.ALREADY_EXISTS',
+  INVALID_DATA: 'notification.INVALID_DATA'
 } as const

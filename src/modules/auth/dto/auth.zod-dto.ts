@@ -13,6 +13,7 @@ import {
   RegisterResSchema,
   ResetPasswordBodySchema,
   SendOTPBodySchema,
+  UpdateFcmTokenDeviceBodySchema,
   UpdateLevelJLPTBodySchema,
   UpdateLevelJLPTResSchema,
   UpdateMeBodySchema,
@@ -67,3 +68,7 @@ export class GetAccountProfileResDTO extends createZodDto(GetAccountProfileResSc
 export class UpdateLevelJLPTBodyDTO extends createZodDto(UpdateLevelJLPTBodySchema) {}
 
 export class UpdateLevelJLPTResDTO extends createZodDto(UpdateLevelJLPTResSchema) {}
+
+export class UpdateFcmTokenDeviceBodyDTO extends createZodDto(
+  UpdateFcmTokenDeviceBodySchema
+) {}

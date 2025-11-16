@@ -10,8 +10,8 @@ import { QuestionBankRepository } from '@/modules/question-bank/question-bank.re
 import { UserSubscriptionRepo } from '@/modules/user-subscription/user-subscription.repo'
 import { WalletTransactionRepo } from '@/modules/wallet-transaction/wallet-transaction.repo'
 import { WalletRepo } from '@/modules/wallet/wallet.repo'
-import { SharedRoleRepository } from '@/shared/repositories/shared-role.repo'
-import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
+
+import { FirebaseService } from '@/shared/services/firebase.service'
 import { HashingService } from '@/shared/services/hashing.service'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { TokenService } from '@/shared/services/token.service'
@@ -19,6 +19,8 @@ import { Global, Module, forwardRef } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { JwtModule } from '@nestjs/jwt'
 import { WebsocketsModule } from 'src/websockets/websockets.module'
+import { SharedRoleRepository } from './repositories/shared-role.repo'
+import { SharedUserRepository } from './repositories/shared-user.repo'
 import { PayOSService } from './services/payos.service'
 import { SharedUserSubscriptionService } from './services/user-subscription.service'
 import { InvoiceExpirationProcessor } from './workers/invoice-expiration.processor'
@@ -33,6 +35,7 @@ const sharedServices = [
   TokenService,
   SharedUserSubscriptionService,
   LanguagesRepository,
+  FirebaseService,
   // EmailService,
   SharedUserRepository,
   SharedRoleRepository,

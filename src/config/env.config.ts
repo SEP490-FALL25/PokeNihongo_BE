@@ -34,6 +34,7 @@ const configSchema = z.object({
   GOOGLE_REDIRECT_URI: z.string().optional(),
   GOOGLE_CLIENT_REDIRECT_URI: z.string().optional(),
   FE_URL: z.string().url().optional(),
+  MO_URL: z.string().optional(),
 
   //Google Cloud Text-to-Speech (Optional)
   GOOGLE_CLOUD_PROJECT_ID: z.string().optional(),
@@ -54,7 +55,13 @@ const configSchema = z.object({
   //PAYOS
   PAYOS_CLIENT_ID: z.string().optional(),
   PAYOS_API_KEY: z.string().optional(),
-  PAYOS_CHECKSUM_KEY: z.string().optional()
+  PAYOS_CHECKSUM_KEY: z.string().optional(),
+
+  //Firebase Cloud Messaging
+  FIREBASE_PROJECT_ID: z.string().optional(),
+  FIREBASE_CLIENT_EMAIL: z.string().optional(),
+  FIREBASE_PRIVATE_KEY: z.string().optional(), // Store with escaped newlines (\n)
+  FIREBASE_PRIVATE_KEY_ID: z.string().optional() // Optional (not required for initialization)
 })
 
 const configServer = configSchema.safeParse(process.env)
