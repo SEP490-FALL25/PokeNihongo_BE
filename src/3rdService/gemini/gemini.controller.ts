@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException, Patch } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException, Patch, Put } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger'
 import { FileInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express'
 import { GeminiService } from './gemini.service'
 import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto, ChatWithGeminiDto, ChatWithGeminiMultipartDto, RecommendationsMultipartDto, ListSavedRecommendationsQueryDto, UpdateRecommendationStatusDto, TestNativeAudioDialogDto } from './dto/gemini.dto'
 import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse, TestNativeAudioDialogResponse } from './dto/gemini.response.dto'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('Gemini')
 @Controller('gemini')
@@ -79,7 +80,8 @@ export class GeminiController {
     @ApiBody({ type: RecommendationsMultipartDto })
     async getSrsRecommendations(
         @ActiveUser('userId') userId: number,
-        @Body() body: RecommendationsMultipartDto
+        @Body() body: RecommendationsMultipartDto,
+        @I18nLang() lang: string
     ) {
         const limitNumber = body?.limit ? Number(body.limit) : 10
         if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 50) {
@@ -87,7 +89,8 @@ export class GeminiController {
         }
         const result = await this.geminiService.getPersonalizedRecommendations(userId, limitNumber, {
             createSrs: true,
-            allowedTypes: ['VOCABULARY', 'GRAMMAR', 'KANJI']
+            allowedTypes: ['VOCABULARY', 'GRAMMAR', 'KANJI'],
+            lang: lang || 'vi' // Mặc định tiếng Việt nếu không có lang
         })
         const rawItems = (result.recommendations || [])
         const filtered = rawItems.filter((r: any) => Number(r.targetId || r.contentId) > 0)
@@ -220,14 +223,26 @@ export class GeminiController {
     @ApiQuery({ name: 'limit', required: false, type: Number })
     async listSaved(
         @ActiveUser('userId') userId: number,
-        @Query() query: ListSavedRecommendationsQueryDto
+        @Query() query: ListSavedRecommendationsQueryDto,
+        @I18nLang() lang: string
     ) {
         const limit = query?.limit && Number(query.limit) > 0 ? Number(query.limit) : 50
-        const data = await this.geminiService.listSavedRecommendations(userId, query.status, limit)
+        const data = await this.geminiService.listSavedRecommendations(userId, query.status, limit, lang || 'vi')
         return { statusCode: 200, data, message: 'GET_SUCCESS' }
     }
 
-    @Patch('recommendations/:id/status')
+
+     // Saved recommendations
+     @Get('recommendations/my')
+     @ApiOperation({ summary: 'Danh sách recommendations của user' })
+     async listMyRecommendations(
+        @ActiveUser('userId') userId: number,
+    ) {
+        const data = await this.geminiService.listMyRecommendations(userId, 50, 'en')
+        return { statusCode: 200, data, message: 'GET_SUCCESS' }
+    }
+
+    @Put('recommendations/:id/status')
     @ApiOperation({ summary: 'Cập nhật trạng thái recommendation' })
     async updateRecStatus(
         @ActiveUser('userId') userId: number,

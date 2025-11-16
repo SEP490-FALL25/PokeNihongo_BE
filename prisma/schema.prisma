@@ -2455,7 +2455,7 @@ model UserSrsReview {
 
   // Lõi SRS
   srsLevel       Int      @default(0)
-  nextReviewDate DateTime @default(now())
+  nextReviewDate DateTime 
 
   // Phân tích điểm yếu
   incorrectStreak Int     @default(0)
