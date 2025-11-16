@@ -217,6 +217,12 @@ export const UpdateMeBodySchema = z
   })
   .strict()
 
+export const UpdateFcmTokenDeviceBodySchema = z
+  .object({
+    fcmToken: z.string().nullable()
+  })
+  .strict()
+
 export const AccountResSchema = z.object({
   data: UserSchema.omit({ password: true }),
   message: z.string()

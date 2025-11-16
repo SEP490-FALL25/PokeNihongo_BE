@@ -19,6 +19,7 @@ import {
   RegisterBodyDTO,
   RegisterResDTO,
   ResetPasswordBodyDTO,
+  UpdateFcmTokenDeviceBodyDTO,
   UpdateMeBodyDTO,
   VerifyOTPBodyDTO
 } from '@/modules/auth/dto/auth.zod-dto'
@@ -221,6 +222,24 @@ export class AuthController {
       {
         userId,
         data: body
+      },
+      lang
+    )
+  }
+
+  @Put('fcm-token')
+  @ZodSerializerDto(MessageResDTO)
+  @ApiBearerAuth()
+  @ApiBody({ type: UpdateFcmTokenDeviceBodyDTO })
+  updateFcmTokenDeviceWithDeviceId(
+    @Body() body: UpdateFcmTokenDeviceBodyDTO,
+    @ActiveUser('deviceId') deviceId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.authService.updateFcmTokenDeviceWithDeviceId(
+      {
+        deviceId,
+        fcmToken: body.fcmToken
       },
       lang
     )

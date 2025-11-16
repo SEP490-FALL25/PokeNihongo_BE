@@ -97,6 +97,7 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -199,7 +200,8 @@ import { WebsocketsModule } from './websockets/websockets.module'
     FeatureModule,
     UserSubscriptionModule,
     InvoiceModule,
-    PaymentModule
+    PaymentModule,
+    NotificationModule
   ],
 
   controllers: [],
