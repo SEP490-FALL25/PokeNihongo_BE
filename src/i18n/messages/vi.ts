@@ -734,5 +734,15 @@ export const viMessages = {
     PAY_SUCCESS: 'Thanh toán thành công',
     PAY_FAILED: 'Thanh toán thất bại',
     PAY_CANCELLED: 'Thanh toán bị hủy bỏ'
+  },
+  notification: {
+    CREATE_SUCCESS: 'Tạo thông báo thành công',
+    UPDATE_SUCCESS: 'Cập nhật thông báo thành công',
+    DELETE_SUCCESS: 'Xóa thông báo thành công',
+    GET_SUCCESS: 'Lấy thông tin thông báo thành công',
+    GET_LIST_SUCCESS: 'Lấy danh sách thông báo thành công',
+    NOT_FOUND: 'Không tìm thấy thông báo',
+    ALREADY_EXISTS: 'Thông báo đã tồn tại',
+    INVALID_DATA: 'Dữ liệu thông báo không hợp lệ'
   }
 }

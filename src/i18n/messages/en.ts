@@ -745,5 +745,16 @@ export const enMessages = {
     PAY_SUCCESS: 'Payment processed successfully',
     PAY_FAILED: 'Payment processing failed',
     PAY_CANCELLED: 'Payment was cancelled'
+  },
+  notification: {
+    CREATE_SUCCESS: 'Notification created successfully',
+    UPDATE_SUCCESS: 'Notification updated successfully',
+    DELETE_SUCCESS: 'Notification deleted successfully',
+
+    GET_SUCCESS: 'Notification retrieved successfully',
+    GET_LIST_SUCCESS: 'Notification list retrieved successfully',
+    NOT_FOUND: 'Notification not found',
+    ALREADY_EXISTS: 'Notification already exists',
+    INVALID_DATA: 'Invalid notification data'
   }
 }

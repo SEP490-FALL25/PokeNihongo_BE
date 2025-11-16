@@ -259,7 +259,7 @@ export class PaymentService {
         return {
           success: true,
           message: this.i18nService.translate(PaymentMessage.ALREADY_PAID, lang),
-          redirect: `${feUrl}/payment/success?orderId=${payment.payosOrderId}&amount=${payment.amount}&plan=${encodeURIComponent(plan ? (plan.type === 'LIFETIME' ? 'Trọn đời' : `${plan.durationInDays || 0} ngày`) : '')}`
+          redirect: `${feUrl}/payment/success?orderId=${payment.payosOrderId}&amount=${payment.amount}&plan=${encodeURIComponent(plan ? (plan.type === 'LIFETIME' ? 'Lifetime' : `Recurring`) : '')}`
         }
       }
 
@@ -283,7 +283,7 @@ export class PaymentService {
         return {
           success: true,
           message: this.i18nService.translate(PaymentMessage.PAY_SUCCESS, lang),
-          redirect: `${feUrl}/payment/success?orderId=${payment.payosOrderId}&amount=${payment.amount}&plan=${encodeURIComponent(plan ? (plan.type === 'LIFETIME' ? 'Trọn đời' : `${plan.durationInDays || 0} ngày`) : '')}`
+          redirect: `${feUrl}/payment/success?orderId=${payment.payosOrderId}&amount=${payment.amount}&plan=${encodeURIComponent(plan ? (plan.type === 'LIFETIME' ? 'Lifetime' : `Recurring`) : '')}`
         }
       } else {
         // Thanh toán thất bại hoặc bị hủy

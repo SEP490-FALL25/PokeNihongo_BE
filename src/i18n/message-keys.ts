@@ -781,3 +781,14 @@ export const PaymentMessage = {
   PAY_FAILED: 'payment.PAY_FAILED',
   PAY_CANCELLED: 'payment.PAY_CANCELLED'
 } as const
+
+export const NotificationMessage = {
+  CREATE_SUCCESS: 'notification.CREATE_SUCCESS',
+  UPDATE_SUCCESS: 'notification.UPDATE_SUCCESS',
+  DELETE_SUCCESS: 'notification.DELETE_SUCCESS',
+  GET_SUCCESS: 'notification.GET_SUCCESS',
+  GET_LIST_SUCCESS: 'notification.GET_LIST_SUCCESS',
+  NOT_FOUND: 'notification.NOT_FOUND',
+  ALREADY_EXISTS: 'notification.ALREADY_EXISTS',
+  INVALID_DATA: 'notification.INVALID_DATA'
+} as const

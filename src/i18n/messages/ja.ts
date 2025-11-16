@@ -720,5 +720,15 @@ export const jaMessages = {
     PAY_SUCCESS: '支払いが正常に完了しました',
     PAY_FAILED: '支払いに失敗しました',
     PAY_CANCELLED: '支払いがキャンセルされました'
+  },
+  notification: {
+    CREATE_SUCCESS: '通知の作成に成功しました',
+    UPDATE_SUCCESS: '通知の更新に成功しました',
+    DELETE_SUCCESS: '通知の削除に成功しました',
+    GET_SUCCESS: '通知情報の取得に成功しました',
+    GET_LIST_SUCCESS: '通知リストの取得に成功しました',
+    NOT_FOUND: '通知が見つかりません',
+    ALREADY_EXISTS: '通知は既に存在します',
+    INVALID_DATA: '無効な通知データです'
   }
 }
