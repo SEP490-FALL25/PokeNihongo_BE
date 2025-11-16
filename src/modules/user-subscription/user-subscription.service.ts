@@ -277,4 +277,56 @@ export class UserSubscriptionService {
 
     return false
   }
+
+  async getInforSubAndInvoiceWithUserSubId(invoiceOd: number, lang: string = 'vi') {
+    const us = await this.userSubscriptionRepo.findDetailByInvoiceId(invoiceOd)
+    if (!us) {
+      throw new UserSubscriptionNotFoundException()
+    }
+
+    const invoice = us.invoice
+    const paymentPaid = invoice?.payments?.find((p: any) => p.status === 'PAID')
+    const paymentAny = invoice?.payments?.[0]
+    const paymentMethod = paymentPaid?.paymentMethod || paymentAny?.paymentMethod || null
+
+    // Lấy tên gói (dịch theo lang nếu có)
+    let planName: string | null = null
+    let planDescription: string | null = null
+    if ((us as any).subscriptionPlan && (us as any).subscriptionPlan.subscription) {
+      const sub = (us as any).subscriptionPlan.subscription
+      const langId = await this.languageRepo.getIdByCode(lang)
+      if (langId && sub.nameTranslations) {
+        const match = sub.nameTranslations.find((t: any) => t.languageId === langId)
+        planName = match?.value || sub.nameKey
+      } else {
+        planName = sub.nameKey
+      }
+      if (langId && sub.descriptionTranslations) {
+        const matchDesc = sub.descriptionTranslations.find(
+          (t: any) => t.languageId === langId
+        )
+        planDescription = matchDesc?.value || sub.descriptionKey
+      } else {
+        planDescription = sub.descriptionKey
+      }
+    }
+
+    return {
+      statusCode: 200,
+      data: {
+        userSubscriptionId: us.id,
+        startDate: us.startDate,
+        expiresAt: us.expiresAt,
+        status: us.status,
+        subtotalAmount: invoice?.subtotalAmount ?? null,
+        discountAmount: invoice?.discountAmount ?? null,
+        totalAmount: invoice?.totalAmount ?? null,
+        paymentMethod,
+        planName,
+        planDescription,
+        user: us.user
+      },
+      message: this.i18nService.translate(UserSubscriptionMessage.GET_SUCCESS, lang)
+    }
+  }
 }

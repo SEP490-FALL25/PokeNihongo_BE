@@ -792,3 +792,7 @@ export const NotificationMessage = {
   ALREADY_EXISTS: 'notification.ALREADY_EXISTS',
   INVALID_DATA: 'notification.INVALID_DATA'
 } as const
+
+export const SendMailMessage = {
+  REGISTER_SUBSCRIPTION_SUCCESS: 'send_mail.REGISTER_SUBSCRIPTION_SUCCESS'
+} as const

@@ -9,9 +9,10 @@ import envConfig from '@/config/env.config'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { PayOSService } from '../../shared/services/payos.service'
 
+import { MailService } from '@/3rdService/mail/mail.service'
 import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { I18nService } from '@/i18n/i18n.service'
-import { PaymentMessage } from '@/i18n/message-keys'
+import { PaymentMessage, SendMailMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import { InjectQueue } from '@nestjs/bull'
 import {
@@ -26,7 +27,7 @@ import { InvoiceRepo } from '../invoice/invoice.repo'
 import { InvoiceService } from '../invoice/invoice.service'
 import { SubscriptionPlanNotFoundException } from '../subscription-plan/dto/subscription-plan.error'
 import { SubscriptionPlanRepo } from '../subscription-plan/subscription-plan.repo'
-import { UserSubscriptionRepo } from '../user-subscription/user-subscription.repo'
+import { UserSubscriptionService } from '../user-subscription/user-subscription.service'
 import {
   ErrorPaymentToPayException,
   InvalidStatusPendingInvoiceToPayException,
@@ -41,10 +42,11 @@ export class PaymentService {
     private readonly paymentRepo: PaymentRepo,
     private readonly invoiceRepo: InvoiceRepo,
     private readonly subscriptionPlanRepo: SubscriptionPlanRepo,
-    private readonly userSubscriptionRepo: UserSubscriptionRepo,
+    private readonly userSubscriptionSer: UserSubscriptionService,
     private readonly payosService: PayOSService,
     private readonly userService: SharedUserRepository,
     private readonly i18nService: I18nService,
+    private readonly mailService: MailService,
     @Inject(forwardRef(() => InvoiceService))
     private readonly invoiceService: InvoiceService,
     @InjectQueue(BullQueue.INVOICE_EXPIRATION)
@@ -278,7 +280,7 @@ export class PaymentService {
         await this.invoiceService.updateInvoiceWhenPaymentSuccess(payment.invoiceId)
         //todo mail
         // Gửi mail (tạm thời no-op)
-        this.sendMailPayment(payment)
+        this.sendMailPayment(payment.invoiceId)
 
         return {
           success: true,
@@ -365,8 +367,28 @@ export class PaymentService {
   }
 
   //todo mail
-  async sendMailPayment(_payment: PaymentType) {
+  async sendMailPayment(invoiceId: number) {
     // EmailService chưa được triển khai trong hệ thống hiện tại -> bỏ qua
+    // lấy ra thông tin userSubscription
+    const userSubscription =
+      await this.userSubscriptionSer.getInforSubAndInvoiceWithUserSubId(invoiceId, 'vi')
+
+    await this.mailService.sendSubscriptionSuccessVendorEmail(
+      userSubscription.data.user.email,
+      userSubscription.data.user.name,
+      {
+        subscriptionPlanId: userSubscription.data.userSubscriptionId.toString(),
+        planName: userSubscription.data.planName || 'Unknown',
+        startDate: userSubscription.data.startDate,
+        endDate: userSubscription.data.expiresAt,
+        status: userSubscription.data.status,
+        price: userSubscription.data.subtotalAmount,
+        paymentMethod: userSubscription.data.paymentMethod,
+        discountAmount: userSubscription.data.discountAmount,
+        totalAmount: userSubscription.data.totalAmount
+      },
+      SendMailMessage.REGISTER_SUBSCRIPTION_SUCCESS
+    )
     return { skipped: true }
   }
 
