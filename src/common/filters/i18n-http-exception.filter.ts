@@ -47,6 +47,7 @@ export class I18nHttpExceptionFilter implements ExceptionFilter {
     const exceptionResponse = exception.getResponse()
     let message = exception.message
     let details = {}
+    let dataToExpose: any | undefined
     // Check if exception has errorKey for translation
     if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
       const responseObj = exceptionResponse as any
@@ -60,13 +61,19 @@ export class I18nHttpExceptionFilter implements ExceptionFilter {
 
         message += `: ${responseObj.data.toString()}`
         // message += `: ${JSON.stringify(responseObj.data).toString()}`
+
+        // Only attach data when caller provided `dataRes` in the exception response
+        if (Object.prototype.hasOwnProperty.call(responseObj, 'dataRes')) {
+          dataToExpose = responseObj.dataRes
+        }
       }
     }
 
     const errorResponse = {
       statusCode: status,
       message: message,
-      error: HttpStatus[status]
+      error: HttpStatus[status],
+      ...(dataToExpose !== undefined ? { data: dataToExpose } : {})
     }
 
     response.status(status).json(errorResponse)
