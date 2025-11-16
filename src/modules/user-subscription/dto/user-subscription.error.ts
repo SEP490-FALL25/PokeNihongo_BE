@@ -29,10 +29,12 @@ export class UserHasSubscriptionWithStatusActiveException extends ConflictExcept
 }
 
 export class UserHasSubscriptionWithStatusPendingPaymentException extends ConflictException {
-  constructor() {
+  constructor(data?: any, dataRes?: any) {
     super({
       message: UserSubscriptionMessage.HAS_PAYMENT_PENDING_SUBSCRIPTION,
-      errorKey: UserSubscriptionMessage.HAS_PAYMENT_PENDING_SUBSCRIPTION
+      errorKey: UserSubscriptionMessage.HAS_PAYMENT_PENDING_SUBSCRIPTION,
+      data: data || null,
+      dataRes: dataRes || null
     })
   }
 }

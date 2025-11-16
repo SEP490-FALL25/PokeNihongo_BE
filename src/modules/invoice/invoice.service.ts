@@ -101,7 +101,10 @@ export class InvoiceService {
         UserSubscriptionStatus.PENDING_PAYMENT
       )
       if (isUserPayPlanExist) {
-        throw new UserHasSubscriptionWithStatusPendingPaymentException()
+        throw new UserHasSubscriptionWithStatusPendingPaymentException(
+          `Invoice ID: ${isUserPayPlanExist.invoiceId}`,
+          { invoiceId: isUserPayPlanExist.invoiceId }
+        )
       }
       console.log('isUserPayPlanExist')
       const discountAmountInput = data.discountAmount || 0
@@ -114,7 +117,7 @@ export class InvoiceService {
           amount: discountAmountInput
         })
         if (!enough) {
-          throw new BadRequestException('Số dư PokeCoin không đủ để giảm giá')
+          throw new BadRequestException()
         }
       }
 
@@ -159,7 +162,7 @@ export class InvoiceService {
             tx
           )
           if (!updatedWallet) {
-            throw new BadRequestException('Không thể trừ PokeCoin')
+            throw new BadRequestException()
           }
 
           const wtx = await this.walletTransactionRepo.create(
