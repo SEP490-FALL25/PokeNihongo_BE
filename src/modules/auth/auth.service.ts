@@ -48,6 +48,7 @@ import { Queue } from 'bull'
 import Redis from 'ioredis'
 import { LevelService } from '../level/level.service'
 import { UserProgressService } from '../user-progress/user-progress.service'
+import { UserSubscriptionRepo } from '../user-subscription/user-subscription.repo'
 import { UserTestService } from '../user-test/user-test.service'
 import { WalletService } from '../wallet/wallet.service'
 @Injectable()
@@ -68,7 +69,8 @@ export class AuthService {
     @InjectQueue(BullQueue.USER_DELETION) private readonly deletionQueue: Queue,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
     private readonly tokenService: TokenService,
-    private readonly walletSer: WalletService
+    private readonly walletSer: WalletService,
+    private readonly userSubscriptionRepo: UserSubscriptionRepo
   ) {}
 
   async login(
@@ -462,12 +464,17 @@ export class AuthService {
 
     const rankName = convertEloToRank(user.eloscore || 0)
 
+    // gọi checkActiveSubscriptionByUserId
+    const subscription =
+      await this.userSubscriptionRepo.checkActiveSubscriptionByUserId(userId)
+
     return {
       statusCode: 200,
       data: {
         ...user,
         rankName,
-        pokemonCount: user._count.userPokemons
+        pokemonCount: user._count.userPokemons,
+        subscription
       },
       message: this.i18nService.translate(AuthMessage.GET_PROFILE_SUCCESS, lang)
     }
@@ -691,6 +698,31 @@ export class AuthService {
       statusCode: HttpStatus.OK,
       data,
       message: this.i18nService.translate(AuthMessage.VERIFY_OTP_FORGOT_PASSWORD_SUCCESS)
+    }
+  }
+
+  async updateFcmTokenDeviceWithDeviceId(
+    {
+      deviceId,
+      fcmToken
+    }: {
+      deviceId: number
+      fcmToken: string | null
+    },
+    lang: string = 'vi'
+  ) {
+    try {
+      await this.authRepository.updateFcmTokenDeviceWithDeviceId(fcmToken, deviceId)
+      return {
+        statusCode: HttpStatus.OK,
+        data: null,
+        message: this.i18nService.translate(AuthMessage.UPDATE_SUCCESS)
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to update FCM token for device ${deviceId}: ${error.message}`
+      )
+      throw error
     }
   }
 }

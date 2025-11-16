@@ -1,4 +1,5 @@
 import { RoleName } from '@/common/constants/role.constant'
+import { walletType } from '@/common/constants/wallet.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { SubscriptionPlanMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
@@ -9,6 +10,7 @@ import {
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
+import { WalletRepo } from '../wallet/wallet.repo'
 import { SubscriptionPlanNotFoundException } from './dto/subscription-plan.error'
 import {
   CreateSubscriptionPlanBodyType,
@@ -21,7 +23,8 @@ export class SubscriptionPlanService {
   constructor(
     private subscriptionPlanRepo: SubscriptionPlanRepo,
     private readonly i18nService: I18nService,
-    private readonly languageRepo: LanguagesRepository
+    private readonly languageRepo: LanguagesRepository,
+    private readonly walletRepo: WalletRepo
   ) {}
 
   private async convertTranslationsToLangCodes(
@@ -247,6 +250,43 @@ export class SubscriptionPlanService {
         throw new SubscriptionPlanNotFoundException()
       }
       throw error
+    }
+  }
+
+  async getPlansForUser(lang: string = 'vi') {
+    const langId = await this.languageRepo.getIdByCode(lang)
+  }
+
+  async getDiscountToSubPlan(
+    subscriptionPlanId: number,
+    userId: number,
+    lang: string = 'vi'
+  ) {
+    const walletPokeCoin = await this.walletRepo.findByUserIdAndType(
+      userId,
+      walletType.POKE_COINS
+    )
+
+    const subscriptionPlan = await this.subscriptionPlanRepo.getById(subscriptionPlanId)
+
+    if (!subscriptionPlan || !walletPokeCoin) {
+      throw new NotFoundRecordException()
+    }
+
+    // Tính giá trị tối đa có thể giảm giá (50% giá gói)
+    const maxDiscountAllowed = Math.floor(subscriptionPlan.price * 0.5)
+
+    // Số PokeCoin user có thể sử dụng = min(số coin hiện có, 50% giá gói)
+    const maxPokeCoinsCanUse = Math.min(walletPokeCoin.balance, maxDiscountAllowed)
+
+    return {
+      statusCode: 200,
+      data: {
+        availablePokeCoins: walletPokeCoin.balance,
+        maxPokeCoinsCanUse,
+        maxDiscountAllowed
+      },
+      message: this.i18nService.translate(SubscriptionPlanMessage.GET_LIST_SUCCESS, lang)
     }
   }
 }

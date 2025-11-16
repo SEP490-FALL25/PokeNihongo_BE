@@ -127,6 +127,7 @@ model User {
   createdFeatures                     Feature[]             @relation("FeatureCreatedBy")
   updatedFeatures                     Feature[]             @relation("FeatureUpdatedBy")
   deletedFeatures                     Feature[]             @relation("FeatureDeletedBy")
+  processedPayments                   Payment[]             @relation("PaymentProcessedBy")
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
   // Tự quan hệ 1-n
@@ -179,6 +180,9 @@ model User {
   userSubscriptions         UserSubscription[]
   flashcardDecks            FlashcardDeck[]
   vocabularySearchHistories VocabularySearchHistory[]
+  invoices                  Invoice[]
+  payments                  Payment[]
+  notifications             Notification[]
 
   @@index([deletedAt])
 }
@@ -189,6 +193,7 @@ model Device {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   userAgent     String
   ip            String
+  fcmToken      String? // Lưu FCM token từ client firebase
   lastActive    DateTime       @updatedAt // Thay updatedAt bằng lastActive cho ý nghĩa rõ hơn
   createdAt     DateTime       @default(now())
   isActive      Boolean        @default(true) // Trạng thái thiết bị (đang login hay đã logout)
@@ -1421,6 +1426,7 @@ model WalletTransaction {
   updatedAt     DateTime        @updatedAt
   ShopPurchase  ShopPurchase[]
   GachaPurchase GachaPurchase[]
+  invoices      Invoice[]
 
   @@index([walletId])
   @@index([userId])
@@ -2126,6 +2132,7 @@ model SubscriptionPlan {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+  invoices  Invoice[]
 
   @@index([subscriptionId])
 }
@@ -2142,8 +2149,10 @@ model UserSubscription {
   subscriptionPlanId Int
   subscriptionPlan   SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id], onDelete: Restrict) // Không cho xóa Plan nếu user đã mua
 
+  invoiceId Int       @unique // 1-1, bắt buộc
+  invoice   Invoice   @relation(fields: [invoiceId], references: [id])
   // --- Thời hạn ---
-  startDate DateTime  @default(now())
+  startDate DateTime?
   expiresAt DateTime? // NULL nếu là gói LIFETIME
 
   // --- Trạng thái ---
@@ -2166,6 +2175,133 @@ model UserSubscription {
   @@index([userId])
   @@index([subscriptionPlanId])
   @@index([expiresAt])
+}
+
+model Invoice {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  subscriptionPlanId Int
+  subscriptionPlan   SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id])
+
+  walletTransactionId Int?
+  walletTransaction   WalletTransaction? @relation(fields: [walletTransactionId], references: [id], onDelete: SetNull)
+
+  userSubscription UserSubscription?
+
+  // --- CHI TIẾT TÀI CHÍNH ---
+  subtotalAmount Int // Giá gốc của gói (ví dụ: 99000)
+  discountAmount Int @default(0) // Số tiền giảm giá (ví dụ: 10000 từ coin)
+  totalAmount    Int // Số tiền cuối cùng cần trả (ví dụ: 89000)
+
+  status InvoiceStatus @default(PENDING)
+
+  // --- LIÊN KẾT NGƯỢC ---
+  // Một hóa đơn có thể có NHIỀU lần thử thanh toán (Payment)
+  payments Payment[]
+
+  // Một hóa đơn sẽ kích hoạt MỘT UserSubscription (khi thành công)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Payment {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  invoiceId     Int
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id])
+  paymentMethod PaymentMethod @default(BANK_TRANSFER)
+  amount        Float         @default(0.0) // Số tiền thanh toán
+  status        PaymentStatus @default(PENDING)
+
+  // PayOS specific fields
+  payosOrderId       String? @unique @db.VarChar(500) // PayOS order ID
+  payosPaymentLinkId String? @db.VarChar(500) // PayOS payment link ID
+  payosTransactionId String? @db.VarChar(500) // PayOS transaction ID
+  payosQrCode        String? @db.Text // PayOS QR code
+  payosCheckoutUrl   String? @db.VarChar(1000) // PayOS checkout URL
+
+  // Cash payment fields
+  receivedAmount Float? // Số tiền nhận được (cash)
+  changeAmount   Float? // Số tiền thối lại (cash)
+
+  // Payment gateway response
+  gatewayResponse Json? // Raw response từ PayOS
+  failureReason   String? @db.VarChar(1000) // Lý do thất bại
+
+  // Timestamps
+  paidAt    DateTime? // Thời gian thanh toán thành công
+  expiredAt DateTime? // Thời gian hết hạn (PayOS)
+
+  // Audit fields
+  processedById Int?
+  processedBy   User? @relation("PaymentProcessedBy", fields: [processedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([paymentMethod])
+  @@index([payosOrderId])
+  @@index([deletedAt])
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+
+  // Liên kết với User
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  titleKey String @db.VarChar(255)
+
+  bodyKey String @db.VarChar(255)
+
+  data Json?
+
+  // === CÁC TRƯỜNG TRẠNG THÁI ===
+
+  // Trạng thái đã đọc/chưa đọc
+  isRead Boolean @default(false)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // === INDEXES ===
+
+  // Tăng tốc độ query lấy lịch sử thông báo (sắp xếp theo ngày)
+  @@index([userId])
+  // Tăng tốc độ đếm số thông báo chưa đọc
+  @@index([userId, isRead])
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER // Chuyển khoản ngân hàng (PayOS)
+}
+
+enum PaymentStatus {
+  PENDING // Đang chờ thanh toán
+  PROCESSING // Đang xử lý
+  PAID // Đã thanh toán thành công
+  FAILED // Thanh toán thất bại
+  CANCELLED // Đã hủy
+  EXPIRED // Đã hết hạn
+  REFUNDED // Đã hoàn tiền
+}
+
+enum InvoiceStatus {
+  PENDING // Đang chờ (chưa thanh toán)
+  PAID // Đã thanh toán
+  CANCELLED // Đã hủy
 }
 
 enum UserSubscriptionStatus {

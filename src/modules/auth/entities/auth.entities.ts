@@ -217,6 +217,12 @@ export const UpdateMeBodySchema = z
   })
   .strict()
 
+export const UpdateFcmTokenDeviceBodySchema = z
+  .object({
+    fcmToken: z.string().nullable()
+  })
+  .strict()
+
 export const AccountResSchema = z.object({
   data: UserSchema.omit({ password: true }),
   message: z.string()
@@ -240,7 +246,13 @@ export const GetAccountProfileResSchema = z
         })
         .nullable(),
       pokemonCount: z.number(),
-      rankName: z.string()
+      rankName: z.string(),
+      subscription: z.object({
+        canRead: z.boolean(),
+        canListen: z.boolean(),
+        isUltra: z.boolean(),
+        ultraExpiresAt: z.date().nullable()
+      })
     }),
     message: z.string()
   })

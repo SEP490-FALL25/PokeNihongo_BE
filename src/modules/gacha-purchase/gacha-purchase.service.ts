@@ -1,5 +1,6 @@
 import { GachaPityType } from '@/common/constants/gacha.constant'
 import { GachaBannerStatus } from '@/common/constants/shop-banner.constant'
+import { FeatureKey } from '@/common/constants/subscription.constant'
 import {
   WalletTransactionSourceType,
   WalletTransactionType,
@@ -14,6 +15,7 @@ import {
   isNotFoundPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
 import { Injectable } from '@nestjs/common'
 import { GachaBannerRepo } from '../gacha-banner/gacha-banner.repo'
 import { GachaItemRateType } from '../gacha-item-rate/entities/gacha-item-rate.entity'
@@ -44,7 +46,8 @@ export class GachaPurchaseService {
     private readonly walletRepo: WalletRepo,
     private readonly walletTransRepo: WalletTransactionRepo,
     private readonly userPokemonRepo: UserPokemonRepo,
-    private readonly userPokemonService: UserPokemonService
+    private readonly userPokemonService: UserPokemonService,
+    private readonly userSubService: SharedUserSubscriptionService
     // private readonly pokemonRepo: PokemonRepo
   ) {}
 
@@ -137,7 +140,9 @@ export class GachaPurchaseService {
       // 4) transaction
       // 1. Create purchase and minus balance
       const result = await this.gachaPurchaseRepo.withTransaction(async (prismaTx) => {
-        const [purchase, updatedWallet] = await Promise.all([
+        // xem có tăng không
+
+        const [purchase, updatedWallet, valueIncrease] = await Promise.all([
           this.gachaPurchaseRepo.create(
             {
               createdById: userId,
@@ -154,6 +159,10 @@ export class GachaPurchaseService {
           this.walletRepo.minusBalanceToWalletWithTypeUserId(
             { userId, type: walletType.SPARKLES, amount: totalCost },
             prismaTx
+          ),
+          await this.userSubService.getValueConvertByfeatureKeyAndUserId(
+            FeatureKey.COIN_MULTIPLIER,
+            userId
           )
         ])
         if (!updatedWallet) throw new NotEnoughBalanceException()
@@ -306,11 +315,13 @@ export class GachaPurchaseService {
                   }
                 : null
           }
+
           if (!isOwned) {
             addPokemonList.push({ userId, data: { pokemonId: roll.id } })
             parseItem.parseItem = null
           } else {
-            const reward = Math.floor(starNum * gachaBanner.costRoll * 0.2)
+            const reward =
+              Math.floor(starNum * gachaBanner.costRoll * 0.2) * valueIncrease
             addSparklesList.push(reward)
             parseItem.parseItem = { sparkles: reward }
           }
@@ -318,6 +329,7 @@ export class GachaPurchaseService {
         }
 
         // 7. Bulk create userPokemon
+
         if (addPokemonList.length > 0) {
           await Promise.all(
             addPokemonList.map((item) =>
@@ -328,6 +340,7 @@ export class GachaPurchaseService {
         // 8. Bulk add SPARKLES
         if (addSparklesList.length > 0) {
           const totalSparkles = addSparklesList.reduce((a, b) => a + b, 0)
+
           await this.walletRepo.addBalanceToWalletWithType(
             {
               userId,

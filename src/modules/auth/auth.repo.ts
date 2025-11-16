@@ -217,4 +217,15 @@ export class AuthRepository {
       }
     })
   }
+
+  updateFcmTokenDeviceWithDeviceId(fcmToken: string | null, deviceId: number) {
+    return this.prismaService.device.update({
+      where: {
+        id: deviceId
+      },
+      data: {
+        fcmToken
+      }
+    })
+  }
 }

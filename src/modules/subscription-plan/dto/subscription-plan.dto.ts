@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod'
 import {
   CreateSubscriptionPlanBodySchema,
   CreateSubscriptionPlanResSchema,
+  GetDiscountBySubPlanResSchema,
   GetSubscriptionPlanDetailResSchema,
   GetSubscriptionPlanParamsSchema,
   UpdateSubscriptionPlanBodySchema,
@@ -32,4 +33,8 @@ export class UpdateSubscriptionPlanResDTO extends createZodDto(
 export class UpdateWithListItemResDTO extends createZodDto(UpdateWithListItemResSchema) {}
 export class GetSubscriptionPlanDetailResDTO extends createZodDto(
   GetSubscriptionPlanDetailResSchema
+) {}
+
+export class GetDiscountBySubPlanResDTO extends createZodDto(
+  GetDiscountBySubPlanResSchema
 ) {}

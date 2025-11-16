@@ -47,7 +47,8 @@ export const enMessages = {
     PASSWORD_MUST_BE_MATCH: 'Password must match',
     MISSING_TOKEN: 'Missing authentication token',
     INVALID_TOKEN: 'Invalid authentication token',
-    UPDATE_LEVEL_JLPT_SUCCESS: 'JLPT level updated successfully'
+    UPDATE_LEVEL_JLPT_SUCCESS: 'JLPT level updated successfully',
+    UPDATE_SUCCESS: 'Update successful'
   },
   reward: {
     CREATE_SUCCESS: 'Reward created successfully',
@@ -245,7 +246,8 @@ export const enMessages = {
     INVALID_DATA: 'Invalid data provided',
     UNAUTHORIZED: 'Unauthorized access',
     FORBIDDEN: 'Access forbidden',
-    LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'Language does not exist to translate'
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: 'Language does not exist to translate',
+    ERROR_UNKNOW_WITH_PAYOS_SYSTEM: 'Unknown error with PayOS system'
   },
   entity: {
     INVALID_DATA: 'Invalid data provided',
@@ -692,7 +694,8 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Subscription plan list retrieved successfully',
     NOT_FOUND: 'Subscription plan not found',
     ALREADY_EXISTS: 'Subscription plan already exists',
-    INVALID_DATA: 'Invalid subscription plan data'
+    INVALID_DATA: 'Invalid subscription plan data',
+    NOT_READY_TO_BUY: 'Subscription plan is not ready to buy'
   },
   feature: {
     CREATE_SUCCESS: 'Feature created successfully',
@@ -704,5 +707,56 @@ export const enMessages = {
     NOT_FOUND: 'Feature not found',
     ALREADY_EXISTS: 'Feature already exists',
     INVALID_DATA: 'Invalid feature data'
-  }
+  },
+  user_subscription: {
+    CREATE_SUCCESS: 'User subscription created successfully',
+    UPDATE_SUCCESS: 'User subscription updated successfully',
+    DELETE_SUCCESS: 'User subscription deleted successfully',
+    GET_SUCCESS: 'User subscription retrieved successfully',
+    GET_LIST_SUCCESS: 'User subscription list retrieved successfully',
+    NOT_FOUND: 'User subscription not found',
+    ALREADY_EXISTS: 'User subscription already exists',
+    INVALID_DATA: 'Invalid user subscription data',
+    HAS_ACTIVE_SUBSCRIPTION: 'User already has an active subscription',
+    HAS_PAYMENT_PENDING_SUBSCRIPTION: 'User has a same subscription with pending payment'
+  },
+  invoice: {
+    CREATE_SUCCESS: 'Invoice created successfully',
+    UPDATE_SUCCESS: 'Invoice updated successfully',
+    DELETE_SUCCESS: 'Invoice deleted successfully',
+    GET_SUCCESS: 'Invoice retrieved successfully',
+    GET_LIST_SUCCESS: 'Invoice list retrieved successfully',
+    NOT_FOUND: 'Invoice not found',
+    ALREADY_EXISTS: 'Invoice already exists',
+    INVALID_DATA: 'Invalid invoice data'
+  },
+  payment: {
+    CREATE_SUCCESS: 'Payment created successfully',
+    UPDATE_SUCCESS: 'Payment updated successfully',
+    DELETE_SUCCESS: 'Payment deleted successfully',
+    GET_SUCCESS: 'Payment retrieved successfully',
+    GET_LIST_SUCCESS: 'Payment list retrieved successfully',
+    NOT_FOUND: 'Payment not found',
+    ALREADY_EXISTS: 'Payment already exists',
+    INVALID_DATA: 'Invalid payment data',
+    INVALID_STATUS_PENDING: 'Payment status is not pending',
+    ERROR_UNKNOWN_PAY: 'An unknown error occurred during payment processing',
+    ALREADY_PAID: 'Invoice has already been paid',
+    PAY_SUCCESS: 'Payment processed successfully',
+    PAY_FAILED: 'Payment processing failed',
+    PAY_CANCELLED: 'Payment was cancelled'
+  },
+  notification: {
+    CREATE_SUCCESS: 'Notification created successfully',
+    UPDATE_SUCCESS: 'Notification updated successfully',
+    DELETE_SUCCESS: 'Notification deleted successfully',
+
+    GET_SUCCESS: 'Notification retrieved successfully',
+    GET_LIST_SUCCESS: 'Notification list retrieved successfully',
+    NOT_FOUND: 'Notification not found',
+    ALREADY_EXISTS: 'Notification already exists',
+    INVALID_DATA: 'Invalid notification data'
+  },
+  REGISTER_SUBSCRIPTION_SUCCESS:
+    'Subscription registration successful - PokeNihon Subscription'
 }

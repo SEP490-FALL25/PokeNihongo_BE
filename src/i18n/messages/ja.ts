@@ -47,7 +47,8 @@ export const jaMessages = {
     PASSWORD_MUST_BE_MATCH: 'パスワードは一致している必要があります',
     MISSING_TOKEN: '認証トークンが見つかりません',
     INVALID_TOKEN: '無効な認証トークンです',
-    UPDATE_LEVEL_JLPT_SUCCESS: 'JLPTレベルの更新が完了しました'
+    UPDATE_LEVEL_JLPT_SUCCESS: 'JLPTレベルの更新が完了しました',
+    UPDATE_SUCCESS: '更新が完了しました'
   },
   reward: {
     CREATE_SUCCESS: '報酬の作成が完了しました',
@@ -235,7 +236,8 @@ export const jaMessages = {
     INVALID_DATA: '無効なデータが提供されました',
     UNAUTHORIZED: '認証されていないアクセス',
     FORBIDDEN: 'アクセスが禁止されています',
-    LANGUAGE_NOT_EXIST_TO_TRANSLATE: '翻訳する言語が存在しません'
+    LANGUAGE_NOT_EXIST_TO_TRANSLATE: '翻訳する言語が存在しません',
+    ERROR_UNKNOW_WITH_PAYOS_SYSTEM: 'PayOSシステムで不明なエラーが発生しました'
   },
   entity: {
     INVALID_DATA: '無効なデータが提供されました',
@@ -667,7 +669,8 @@ export const jaMessages = {
     GET_LIST_SUCCESS: 'サブスクリプションプランリストの取得に成功しました',
     NOT_FOUND: 'サブスクリプションプランが見つかりません',
     ALREADY_EXISTS: 'サブスクリプションプランは既に存在します',
-    INVALID_DATA: '無効なサブスクリプションプランデータです'
+    INVALID_DATA: '無効なサブスクリプションプランデータです',
+    NOT_READY_TO_BUY: 'このサブスクリプションプランは現在購入できません'
   },
   feature: {
     CREATE_SUCCESS: '機能の作成に成功しました',
@@ -678,5 +681,57 @@ export const jaMessages = {
     NOT_FOUND: '機能が見つかりません',
     ALREADY_EXISTS: '機能は既に存在します',
     INVALID_DATA: '無効な機能データです'
+  },
+  user_subscription: {
+    CREATE_SUCCESS: 'ユーザーサブスクリプションの作成に成功しました',
+    UPDATE_SUCCESS: 'ユーザーサブスクリプションの更新に成功しました',
+    DELETE_SUCCESS: 'ユーザーサブスクリプションの削除に成功しました',
+    GET_SUCCESS: 'ユーザーサブスクリプション情報の取得に成功しました',
+    GET_LIST_SUCCESS: 'ユーザーサブスクリプションリストの取得に成功しました',
+    NOT_FOUND: 'ユーザーサブスクリプションが見つかりません',
+    ALREADY_EXISTS: 'ユーザーサブスクリプションは既に存在します',
+    INVALID_DATA: '無効なユーザーサブスクリプションデータです',
+    HAS_ACTIVE_SUBSCRIPTION: 'ユーザーは既にアクティブなサブスクリプションを持っています',
+    HAS_PAYMENT_PENDING_SUBSCRIPTION:
+      'ユーザーは保留中の支払いがあるサブスクリプションを持っています'
+  },
+  invoice: {
+    CREATE_SUCCESS: '請求書の作成に成功しました',
+    UPDATE_SUCCESS: '請求書の更新に成功しました',
+    DELETE_SUCCESS: '請求書の削除に成功しました',
+    GET_SUCCESS: '請求書情報の取得に成功しました',
+    GET_LIST_SUCCESS: '請求書リストの取得に成功しました',
+    NOT_FOUND: '請求書が見つかりません',
+    ALREADY_EXISTS: '請求書は既に存在します',
+    INVALID_DATA: '無効な請求書データです'
+  },
+  payment: {
+    CREATE_SUCCESS: '支払いの作成に成功しました',
+    UPDATE_SUCCESS: '支払いの更新に成功しました',
+    DELETE_SUCCESS: '支払いの削除に成功しました',
+    GET_SUCCESS: '支払い情報の取得に成功しました',
+    GET_LIST_SUCCESS: '支払いリストの取得に成功しました',
+    NOT_FOUND: '支払いが見つかりません',
+    ALREADY_EXISTS: '支払いは既に存在します',
+    INVALID_DATA: '無効な支払いデータです',
+    INVALID_STATUS_PENDING: '支払いは保留中のステータスである必要があります',
+    ERROR_UNKNOWN_PAY: '不明な支払いエラーが発生しました',
+    ALREADY_PAID: 'この請求書は既に支払われています',
+    PAY_SUCCESS: '支払いが正常に完了しました',
+    PAY_FAILED: '支払いに失敗しました',
+    PAY_CANCELLED: '支払いがキャンセルされました'
+  },
+  notification: {
+    CREATE_SUCCESS: '通知の作成に成功しました',
+    UPDATE_SUCCESS: '通知の更新に成功しました',
+    DELETE_SUCCESS: '通知の削除に成功しました',
+    GET_SUCCESS: '通知情報の取得に成功しました',
+    GET_LIST_SUCCESS: '通知リストの取得に成功しました',
+    NOT_FOUND: '通知が見つかりません',
+    ALREADY_EXISTS: '通知は既に存在します',
+    INVALID_DATA: '無効な通知データです'
+  },
+  send_mail: {
+    REGISTER_SUBSCRIPTION_SUCCESS: 'サブスクリプション登録の確認メールを送信しました'
   }
 }

@@ -2,6 +2,7 @@ import { I18nHttpExceptionFilter } from '@/common/filters/i18n-http-exception.fi
 import { RequestContextMiddleware } from '@/common/middleware/request-context.middleware'
 import CustomZodValidationPipe from '@/common/pipes/custom-zod-validation.pipe'
 import { I18nModule } from '@/i18n/i18n.module'
+import { BullModule } from '@nestjs/bull'
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
@@ -42,18 +43,21 @@ import { HandleMatchmakingCronjob } from './cronjobs/handle-matchmaking.cronjob'
 import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
 import { AIConversationRoomModule } from './modules/ai-conversation-room/ai-conversation-room.module'
 import { DebuffRoundModule } from './modules/debuff-round/debuff-round.module'
+import { FeatureModule } from './modules/feature/feature.module'
 import { FlashcardModule } from './modules/flashcard/flashcard.module'
 import { GachaBannerModule } from './modules/gacha-banner/gacha-banner.module'
 import { GachaItemRateModule } from './modules/gacha-item-rate/gacha-item-rate.module'
 import { GachaItemModule } from './modules/gacha-item/gacha-item.module'
 import { GachaPurchaseModule } from './modules/gacha-purchase/gacha-purchase.module'
 import { GachaRollHistoryModule } from './modules/gacha-roll-history/gacha-roll-history.module'
+import { InvoiceModule } from './modules/invoice/invoice.module'
 import { LeaderboardSeasonModule } from './modules/leaderboard-season/leaderboard-season.module'
 import { MatchParticipantModule } from './modules/match-participant/match-participant.module'
 import { MatchQueueModule } from './modules/match-queue/match-queue.module'
 import { MatchRoundParticipantModule } from './modules/match-round-participant/match-round-participant.module'
 import { MatchRoundModule } from './modules/match-round/match-round.module'
 import { MatchModule } from './modules/match/match.module'
+import { PaymentModule } from './modules/payment/payment.module'
 import { QuestionBankModule } from './modules/question-bank/question-bank.module'
 import { RewardModule } from './modules/reward/reward.module'
 import { RoundQuestionAnswerlogModule } from './modules/round-question-answerlog/round-question-answerlog.module'
@@ -65,6 +69,7 @@ import { ShopPurchaseModule } from './modules/shop-purchase/shop-purchase.module
 import { ShopRarityPriceModule } from './modules/shop-rarity-price/shop-rarity-price.module'
 import { SpeakingModule } from './modules/speaking/speaking.module'
 import { SubscriptionFeatureModule } from './modules/subscription-feature/subscription-feature.module'
+import { SubscriptionPlanModule } from './modules/subscription-plan/subscription-plan.module'
 import { SubscriptionModule } from './modules/subscription/subscription.module'
 import { TestModule } from './modules/test/test.module'
 import { TestSetQuestionBankModule } from './modules/testset-questionbank/testset-questionbank.module'
@@ -82,6 +87,7 @@ import { UserProgressModule } from './modules/user-progress/user-progress.module
 import { UserRewardHistoryModule } from './modules/user-reward-history/user-reward-history.module'
 import { UserSeasonHistoryModule } from './modules/user-season-history/user-season-history.module'
 import { SrsReviewModule } from './modules/user-srs-review/srs-review.module'
+import { UserSubscriptionModule } from './modules/user-subscription/user-subscription.module'
 import { UserTestAnswerLogModule } from './modules/user-test-answer-log/user-test-answer-log.module'
 import { UserTestAttemptModule } from './modules/user-test-attempt/user-test-attempt.module'
 import { UserTestModule } from './modules/user-test/user-test.module'
@@ -91,8 +97,8 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
-import { SubscriptionPlanModule } from './modules/subscription-plan/subscription-plan.module';
-import { FeatureModule } from './modules/feature/feature.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -100,6 +106,13 @@ import { FeatureModule } from './modules/feature/feature.module';
       isGlobal: true // Cho phép dùng process.env ở mọi nơi
     }),
     ScheduleModule.forRoot(),
+    BullModule.forRoot({
+      url:
+        process.env.REDIS_URI ||
+        `redis://${process.env.REDIS_HOST || 'localhost'}:${
+          process.env.REDIS_PORT || '6379'
+        }`
+    }),
     I18nModule, // Add I18n module
 
     SharedModule, // Import SharedModule trước (Global module)
@@ -185,7 +198,12 @@ import { FeatureModule } from './modules/feature/feature.module';
     SubscriptionFeatureModule,
     FlashcardModule,
     SubscriptionPlanModule,
-    FeatureModule
+    FeatureModule,
+    UserSubscriptionModule,
+    InvoiceModule,
+    PaymentModule,
+    NotificationModule,
+    DashboardModule
   ],
 
   controllers: [],

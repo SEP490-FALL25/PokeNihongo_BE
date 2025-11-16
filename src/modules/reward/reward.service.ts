@@ -1,3 +1,4 @@
+import { FeatureKey } from '@/common/constants/subscription.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { RewardMessage } from '@/i18n/message-keys'
 import {
@@ -10,6 +11,7 @@ import {
   isUniqueConstraintPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import {
   RarityPokemon,
@@ -46,7 +48,8 @@ export class RewardService {
     private readonly walletRepo: WalletRepo,
     private readonly pokemonRepo: PokemonRepo,
     private readonly userPokemonRepo: UserPokemonRepo,
-    private readonly userRewardHistoryService: UserRewardHistoryService
+    private readonly userRewardHistoryService: UserRewardHistoryService,
+    private readonly userSubService: SharedUserSubscriptionService
   ) {}
 
   private readonly logger = new Logger(RewardService.name)
@@ -442,6 +445,16 @@ export class RewardService {
     if (rewards.length !== rewardIds.length) {
       throw new NotFoundRecordException()
     }
+    // xem có tăng không
+    const valueIncrease = await this.userSubService.getValueConvertByfeatureKeyAndUserId(
+      FeatureKey.COIN_MULTIPLIER,
+      userId
+    )
+    const valueIncreaseExp =
+      await this.userSubService.getValueConvertByfeatureKeyAndUserId(
+        FeatureKey.XP_MULTIPLIER,
+        userId
+      )
 
     // 2. Group rewards by target type
     const rewardsByType: Record<RewardTarget, typeof rewards> = {
@@ -470,7 +483,7 @@ export class RewardService {
         (sum, r) => sum + r.rewardItem,
         0
       )
-      results.exp = await this.userService.userAddExp(userId, totalExp)
+      results.exp = await this.userService.userAddExp(userId, totalExp * valueIncreaseExp)
       this.userRewardHistoryService.appendEntriesFromRewards(
         historyEntries,
         rewardsByType[RewardTarget.EXP],
@@ -489,7 +502,7 @@ export class RewardService {
       results.pokeCoins = await this.walletRepo.addBalanceToWalletWithType({
         userId,
         type: WalletType.POKE_COINS,
-        amount: totalCoins
+        amount: totalCoins * valueIncrease
       })
       this.userRewardHistoryService.appendEntriesFromRewards(
         historyEntries,
@@ -510,7 +523,7 @@ export class RewardService {
       results.sparkles = await this.walletRepo.addBalanceToWalletWithType({
         userId,
         type: WalletType.SPARKLES,
-        amount: totalSparkles
+        amount: totalSparkles * valueIncrease
       })
 
       this.userRewardHistoryService.appendEntriesFromRewards(
@@ -578,20 +591,20 @@ export class RewardService {
         const updatedWallet = await this.walletRepo.addBalanceToWalletWithType({
           userId,
           type: WalletType.SPARKLES,
-          amount: coinValue
+          amount: coinValue * valueIncrease
         })
 
         results.pokemons.push({
           action: 'converted_to_coins',
           pokemon: pokemon,
-          coinValue,
+          coinValue: coinValue * valueIncrease,
           wallet: updatedWallet
         })
         this.pushHistoryEntry(historyEntries, {
           userId,
           rewardId: pokemonReward.id,
           target: RewardTarget.SPARKLES,
-          amount: coinValue,
+          amount: coinValue * valueIncrease,
           note: `Converted pokemon ${pokemonId} reward to coins`,
           meta: {
             pokemonId,

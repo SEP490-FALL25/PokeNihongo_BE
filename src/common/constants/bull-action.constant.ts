@@ -12,7 +12,10 @@ export const BullAction = {
   START_ROUND: 'start-round',
 
   // User actions
-  DELETE_INACTIVE_USER: 'delete-inactive-user'
+  DELETE_INACTIVE_USER: 'delete-inactive-user',
+
+  // Invoice actions
+  EXPIRE_INVOICE: 'expire-invoice'
 } as const
 
 export const BullQueue = {
@@ -21,5 +24,6 @@ export const BullQueue = {
   USER_DELETION: 'user-deletion',
   KAIWA_PROCESSOR: 'kaiwa-processor',
   PROCESS_AUDIO: 'process-audio',
-  ROUND_QUESTION_TIMEOUT: 'round-question-timeout'
+  ROUND_QUESTION_TIMEOUT: 'round-question-timeout',
+  INVOICE_EXPIRATION: 'invoice-expiration'
 } as const
