@@ -730,5 +730,8 @@ export const jaMessages = {
     NOT_FOUND: '通知が見つかりません',
     ALREADY_EXISTS: '通知は既に存在します',
     INVALID_DATA: '無効な通知データです'
+  },
+  send_mail: {
+    REGISTER_SUBSCRIPTION_SUCCESS: 'サブスクリプション登録の確認メールを送信しました'
   }
 }

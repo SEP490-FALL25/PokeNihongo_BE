@@ -1,3 +1,4 @@
+import { MailModule } from '@/3rdService/mail/mail.module'
 import { Module, forwardRef } from '@nestjs/common'
 import { InvoiceModule } from '../invoice/invoice.module'
 import { SubscriptionPlanModule } from '../subscription-plan/subscription-plan.module'
@@ -10,7 +11,8 @@ import { PaymentService } from './payment.service'
   imports: [
     forwardRef(() => InvoiceModule),
     SubscriptionPlanModule,
-    UserSubscriptionModule
+    UserSubscriptionModule,
+    MailModule
   ],
   controllers: [PaymentController],
   providers: [PaymentService, PaymentRepo],

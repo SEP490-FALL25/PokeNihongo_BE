@@ -1,3 +1,4 @@
+import { I18nService } from '@/i18n/i18n.service'
 import { MailerService } from '@nestjs-modules/mailer'
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common'
 import { Redis } from 'ioredis' // Dùng Redis từ ioredis thay vì RedisClientType
@@ -8,6 +9,7 @@ export class MailService {
 
   constructor(
     private readonly mailerService: MailerService,
+    private readonly i18n: I18nService,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis
   ) {}
 
@@ -179,42 +181,45 @@ export class MailService {
     email: string,
     vendorName: string,
     subscriptionData: {
-      subscriptionId: string
+      subscriptionPlanId: string
       planName: string
-      startDate: Date
-      endDate: Date
-      billingCycle: string
+      startDate: Date | null
+      endDate: Date | null
       status: string
       price: number
       paymentMethod: string
-      nextBillingDate?: Date
-    }
+      discountAmount: number
+      totalAmount: number
+    },
+    keySubject: string
   ): Promise<void> {
-    const subject = 'Đăng ký Subscription cho Nhà cung cấp thành công - PhotoGo'
+    const subject = await this.i18n.translate(keySubject)
     // Format dates
-    const startDate = this.formatDate(subscriptionData.startDate)
-    const endDate = this.formatDate(subscriptionData.endDate)
-    const nextBillingDate = subscriptionData.nextBillingDate
-      ? this.formatDate(subscriptionData.nextBillingDate)
-      : null
+    const startDate = subscriptionData.startDate
+      ? this.formatDate(subscriptionData.startDate)
+      : ''
+    const endDate = subscriptionData.endDate
+      ? this.formatDate(subscriptionData.endDate)
+      : ''
     // Format price
+
     const price = subscriptionData.price.toLocaleString('vi-VN') + ' VNĐ'
     // Determine status class for styling
-    const statusClass = subscriptionData.status === 'hoạt động' ? 'active' : 'pending'
+    const statusClass = subscriptionData.status
     const context = {
       vendorName,
       vendorEmail: email,
-      subscriptionId: subscriptionData.subscriptionId,
+      subscriptionPlanId: subscriptionData.subscriptionPlanId,
       planName: subscriptionData.planName,
       startDate,
       endDate,
-      billingCycle: subscriptionData.billingCycle,
       status: subscriptionData.status,
       statusClass,
       price,
+      discountAmount: subscriptionData.discountAmount.toLocaleString('vi-VN') + ' VNĐ',
+      totalAmount: subscriptionData.totalAmount.toLocaleString('vi-VN') + ' VNĐ',
       paymentMethod: subscriptionData.paymentMethod,
-      nextBillingDate,
-      supportEmail: 'support@photogo.id.vn'
+      supportEmail: 'support@pokenihongo.com'
     }
     await this.sendMail(email, subject, 'subscription-success-vendor', context)
   }

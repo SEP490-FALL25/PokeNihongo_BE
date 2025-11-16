@@ -208,6 +208,75 @@ export class UserSubscriptionRepo {
     })
   }
 
+  /**
+   * Lấy chi tiết user subscription kèm invoice (payments) và user (email, name)
+   */
+  findDetailById(id: number) {
+    return this.prismaService.userSubscription.findUnique({
+      where: {
+        id,
+        deletedAt: null
+      },
+      include: {
+        invoice: {
+          include: {
+            payments: true
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        },
+        subscriptionPlan: {
+          include: {
+            subscription: {
+              include: {
+                nameTranslations: { select: { value: true, languageId: true } },
+                descriptionTranslations: { select: { value: true, languageId: true } }
+              }
+            }
+          }
+        }
+      }
+    })
+  }
+
+  findDetailByInvoiceId(invoiceId: number) {
+    return this.prismaService.userSubscription.findUnique({
+      where: {
+        invoiceId,
+        deletedAt: null
+      },
+      include: {
+        invoice: {
+          include: {
+            payments: true
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        },
+        subscriptionPlan: {
+          include: {
+            subscription: {
+              include: {
+                nameTranslations: { select: { value: true, languageId: true } },
+                descriptionTranslations: { select: { value: true, languageId: true } }
+              }
+            }
+          }
+        }
+      }
+    })
+  }
+
   findActiveByUserIdPlanIdAndStatus(
     userId: number,
     planId: number,
@@ -260,5 +329,62 @@ export class UserSubscriptionRepo {
         }
       }
     })
+  }
+
+  async checkActiveSubscriptionByUserId(userId: number) {
+    const activeSubs = await this.prismaService.userSubscription.findMany({
+      where: {
+        userId,
+        status: 'ACTIVE',
+        deletedAt: null
+      },
+      include: {
+        subscriptionPlan: {
+          include: {
+            subscription: {
+              include: {
+                features: {
+                  include: { feature: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    let canRead = false
+    let canListen = false
+    let isUltra = false
+    let ultraExpiresAt: Date | null = null
+
+    for (const us of activeSubs as any[]) {
+      const subscription = us?.subscriptionPlan?.subscription
+      if (!subscription) continue
+
+      // Check ULTRA tag
+      if (subscription.tagName === 'ULTRA') {
+        isUltra = true
+        const exp = us.expiresAt || null
+        if (exp && (!ultraExpiresAt || new Date(exp) > new Date(ultraExpiresAt))) {
+          ultraExpiresAt = exp
+        }
+      }
+
+      // Check features
+      const features = subscription.features || []
+      for (const sf of features) {
+        const key = sf?.feature?.featureKey
+        if (key === 'UNLOCK_READING') canRead = true
+        if (key === 'UNLOCK_LISTENING') canListen = true
+      }
+    }
+
+    return {
+      canRead,
+      canListen,
+      isUltra,
+      ultraExpiresAt
+    }
   }
 }

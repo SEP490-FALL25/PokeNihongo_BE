@@ -11,7 +11,6 @@ import { UserSubscriptionRepo } from '@/modules/user-subscription/user-subscript
 import { WalletTransactionRepo } from '@/modules/wallet-transaction/wallet-transaction.repo'
 import { WalletRepo } from '@/modules/wallet/wallet.repo'
 
-import { FirebaseService } from '@/shared/services/firebase.service'
 import { HashingService } from '@/shared/services/hashing.service'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { TokenService } from '@/shared/services/token.service'
@@ -35,7 +34,6 @@ const sharedServices = [
   TokenService,
   SharedUserSubscriptionService,
   LanguagesRepository,
-  FirebaseService,
   // EmailService,
   SharedUserRepository,
   SharedRoleRepository,
