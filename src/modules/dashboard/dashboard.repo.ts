@@ -1,6 +1,9 @@
+import { parseQs } from '@/common/utils/qs-parser'
+import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 import { InvoiceStatus, PrismaClient, UserSubscriptionStatus } from '@prisma/client'
 import { PrismaService } from 'src/shared/services/prisma.service'
+import { USER_SEASON_HISTORY_FIELDS } from '../user-subscription/entities/user-subscription.entity'
 
 @Injectable()
 export class DashboardRepo {
@@ -30,7 +33,56 @@ export class DashboardRepo {
             id: true,
             nameKey: true,
             descriptionKey: true,
-            tagName: true
+            tagName: true,
+            nameTranslations: {
+              select: {
+                id: true,
+                languageId: true,
+                value: true,
+                language: {
+                  select: {
+                    code: true
+                  }
+                }
+              }
+            },
+            descriptionTranslations: {
+              select: {
+                id: true,
+                languageId: true,
+                value: true,
+                language: {
+                  select: {
+                    code: true
+                  }
+                }
+              }
+            },
+            features: {
+              select: {
+                id: true,
+                value: true,
+                feature: {
+                  select: {
+                    id: true,
+                    nameKey: true,
+                    featureKey: true,
+                    nameTranslations: {
+                      select: {
+                        id: true,
+                        languageId: true,
+                        value: true,
+                        language: {
+                          select: {
+                            code: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -195,6 +247,93 @@ export class DashboardRepo {
         year: totalYearRevenue
       },
       plans: revenueByPlan
+    }
+  }
+
+  // Lấy danh sách user đăng ký gần đây
+
+  async getUsersSubWithSubPlan(pagination: PaginationQueryType, langId?: number) {
+    const { where, orderBy } = parseQs(pagination.qs, USER_SEASON_HISTORY_FIELDS)
+
+    const skip = (pagination.currentPage - 1) * pagination.pageSize
+    const take = pagination.pageSize
+
+    const filterWhere: any = {
+      deletedAt: null,
+      ...where
+    }
+
+    const [totalItems, data] = await Promise.all([
+      this.prismaService.userSubscription.count({ where: filterWhere }),
+      this.prismaService.userSubscription.findMany({
+        where: filterWhere,
+        include: {
+          // invoice: true,
+          subscriptionPlan: {
+            include: {
+              subscription: {
+                include: {
+                  nameTranslations: { select: { value: true, languageId: true } },
+                  descriptionTranslations: { select: { value: true, languageId: true } }
+                }
+              }
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc',
+          ...orderBy
+        },
+        skip,
+        take
+      })
+    ])
+
+    const results = data.map((us: any) => {
+      const plan = us.subscriptionPlan
+      if (!plan || !plan.subscription) return us
+      const sub = plan.subscription
+      const { nameTranslations, descriptionTranslations, ...subRest } = sub
+
+      const nameTranslation = langId
+        ? (nameTranslations?.find((t: any) => t.languageId === langId)?.value ??
+          sub.nameKey)
+        : sub.nameKey
+      const descriptionTranslation = langId
+        ? (descriptionTranslations?.find((t: any) => t.languageId === langId)?.value ??
+          sub.descriptionKey)
+        : sub.descriptionKey
+
+      return {
+        ...us,
+        subscriptionPlan: {
+          ...plan,
+          subscription: {
+            ...subRest,
+            nameTranslations,
+            descriptionTranslations,
+            nameTranslation,
+            descriptionTranslation
+          }
+        }
+      }
+    })
+
+    return {
+      results,
+      pagination: {
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        totalPage: Math.ceil(totalItems / pagination.pageSize),
+        totalItem: totalItems
+      }
     }
   }
 }
