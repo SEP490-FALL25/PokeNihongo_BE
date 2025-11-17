@@ -79,7 +79,8 @@ export const enMessages = {
     INVALID_PASSWORD: 'Invalid password',
     INVALID_OLD_PASSWORD: 'Old password is incorrect',
     SESSION_EXPIRED: 'Session expired, please login again',
-    UNAUTHORIZED: 'Unauthorized access'
+    UNAUTHORIZED: 'Unauthorized access',
+    CONFLICT_FOREIGN_KEY: 'Foreign key conflict occurred'
   },
   level: {
     CREATE_SUCCESS: 'Level created successfully',
