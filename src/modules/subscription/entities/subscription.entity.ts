@@ -1,6 +1,7 @@
 import { TagNameSubscription } from '@/common/constants/subscription.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { SubscriptionMessage } from '@/i18n/message-keys'
+import { InvoiceSchema } from '@/modules/invoice/entities/invoice.entity'
 import { SubscriptionFeatureSchema } from '@/modules/subscription-feature/entities/subscription-feature.entity'
 import { TranslationInputSchema } from '@/shared/models/translation-input.model'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
@@ -160,7 +161,14 @@ const MarketplacePlanSchema = z.object({
   price: z.number(),
   type: z.enum(['LIFETIME', 'RECURRING']),
   durationInDays: z.number().nullable(),
-  isActive: z.boolean()
+  isActive: z.boolean(),
+  pendingInvoice: InvoiceSchema.pick({
+    id: true,
+    subtotalAmount: true,
+    discountAmount: true,
+    totalAmount: true,
+    status: true
+  }).optional()
 })
 
 const MarketplaceSubscriptionSchema = z.object({
