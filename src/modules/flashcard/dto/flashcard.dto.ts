@@ -97,7 +97,7 @@ export class GetFlashcardCardListQuerySwaggerDTO {
     @ApiPropertyOptional({ example: 1, minimum: 1, description: 'Trang hiện tại' })
     currentPage?: number
 
-    @ApiPropertyOptional({ example: 10, minimum: 1, maximum: 100, description: 'Số bản ghi mỗi trang' })
+    @ApiPropertyOptional({ example: 10, minimum: 1, description: 'Số bản ghi mỗi trang' })
     pageSize?: number
 
     @ApiPropertyOptional({
