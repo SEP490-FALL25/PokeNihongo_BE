@@ -17,6 +17,7 @@ import { SpeechToTextService } from '@/3rdService/speech/speech-to-text.service'
 import { TextToSpeechService } from '@/3rdService/speech/text-to-speech.service'
 import { KAIWA_EVENTS, SOCKET_ROOM } from '@/common/constants/socket.constant'
 import { Error as ErrorMessage } from '@/common/constants/message'
+import { FeatureKey } from '@/common/constants/subscription.constant'
 import { UserAIConversationService } from '@/modules/user-ai-conversation/user-ai-conversation.service'
 import { AIConversationRoomService } from '@/modules/ai-conversation-room/ai-conversation-room.service'
 import { I18nService } from '@/i18n/i18n.service'
@@ -25,6 +26,7 @@ import { GeminiConfigRepo } from '@/modules/gemini-config/gemini-config.repo'
 import { GeminiConfigType } from '@prisma/client'
 import { getRoomTitlePrompt, getRoomTitleLabels, getDefaultGenerationConfig, buildSystemPromptWithLevel, DEFAULT_KAIWA_SYSTEM_PROMPT } from '@/common/constants/promt.constant'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
+import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
 
 /**
  * KaiwaGateway - WebSocket Gateway for real-time audio conversation
@@ -79,7 +81,8 @@ export class KaiwaGateway implements OnGatewayDisconnect {
         private readonly uploadService: UploadService,
         private readonly geminiConfigRepo: GeminiConfigRepo,
         private readonly configService: ConfigService,
-        private readonly sharedUserRepo: SharedUserRepository
+        private readonly sharedUserRepo: SharedUserRepository,
+        private readonly sharedUserSubscriptionService: SharedUserSubscriptionService
     ) {
         // Initialize Gemini API với API Key
         const geminiConfig = this.configService.get('gemini')
@@ -1649,17 +1652,34 @@ export class KaiwaGateway implements OnGatewayDisconnect {
      * Join kaiwa room
      */
     @SubscribeMessage(KAIWA_EVENTS.JOIN_KAIWA_ROOM)
-    handleJoinSearchingRoom(
+    async handleJoinSearchingRoom(
         @ConnectedSocket() client: Socket,
         @MessageBody() data?: { conversationId?: string }
-    ): void {
+    ): Promise<void> {
         const userId = client.data?.userId
+
 
         if (!userId) {
             this.logger.warn(
                 `[KaiwaGateway] Client ${client.id} missing userId in socket.data; unauthorized`
             )
             client.emit(KAIWA_EVENTS.ERROR, { message: ErrorMessage.MISSING_USER_ID })
+            return
+        }
+
+        // Kiểm tra xem user có feature AI_KAIWA không
+        const hasKaiwaFeature = await this.sharedUserSubscriptionService.getHasByfeatureKeyAndUserId(
+            FeatureKey.AI_KAIWA,
+            userId
+        )
+
+        // Nếu user không có feature AI_KAIWA, emit error và disconnect
+        if (!hasKaiwaFeature) {
+            this.logger.warn(
+                `[KaiwaGateway] User ${userId} attempted to join Kaiwa room without AI_KAIWA feature`
+            )
+            client.emit(KAIWA_EVENTS.ERROR, { message: ErrorMessage.AI_KAIWA_FEATURE_REQUIRED })
+            client.disconnect(true)
             return
         }
 
