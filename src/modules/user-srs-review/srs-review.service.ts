@@ -11,6 +11,8 @@ import { ListSrsTodayQuery } from './entities/srs-review.entities'
 @Injectable()
 export class SrsReviewService {
     private readonly logger = new Logger(SrsReviewService.name)
+    private static readonly HCM_TIMEZONE = 'Asia/Ho_Chi_Minh'
+    private static readonly HCM_TIMEZONE_OFFSET = '+07:00'
     constructor(private readonly prisma: PrismaService, private readonly repo: SrsReviewRepository, private readonly translationHelper: TranslationHelperService) { }
 
     async list(userId: number, query: ListSrsQueryDto) {
@@ -65,13 +67,16 @@ export class SrsReviewService {
             const requestedPageSize = query?.pageSize ?? 20
             const pageSize = Math.min(200, Math.max(1, requestedPageSize))
             const skip = (currentPage - 1) * pageSize
-            const { rows, total } = await this.repo.listForDate(userId, new Date(), { skip, take: pageSize })
+            const targetDate = new Date()
+            const { start, end } = this.getHcmDayRange(targetDate)
+            const { rows, total } = await this.repo.listForDate(userId, targetDate, { skip, take: pageSize, start, end })
+            const results = rows.map(row => this.appendHcmTimezone(row))
             const totalPage = Math.max(1, Math.ceil(total / pageSize))
             return {
                 statusCode: 200,
                 message: SRS_REVIEW_MESSAGE.GET_LIST_SUCCESS,
                 data: {
-                    results: rows,
+                    results,
                     pagination: {
                         current: currentPage,
                         pageSize,
@@ -107,6 +112,30 @@ export class SrsReviewService {
             if (error instanceof HttpException) throw error
             throw InvalidSrsDataException
         }
+    }
+
+    private appendHcmTimezone(row: any) {
+        if (!row?.nextReviewDate) return row
+        const nextReviewDateHcm = this.toHcmDate(row.nextReviewDate)
+        return { ...row, nextReviewDateHcm }
+    }
+
+    private toHcmDate(date: Date) {
+        const hcmTime = new Date(date.getTime() + 7 * 60 * 60 * 1000)
+        return hcmTime
+    }
+
+    private getHcmDayRange(date: Date) {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: SrsReviewService.HCM_TIMEZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        })
+        const hcmDate = formatter.format(date)
+        const start = new Date(`${hcmDate}T00:00:00${SrsReviewService.HCM_TIMEZONE_OFFSET}`)
+        const end = new Date(`${hcmDate}T23:59:59.999${SrsReviewService.HCM_TIMEZONE_OFFSET}`)
+        return { start, end, date: hcmDate }
     }
 
     async getContentDetail(userId: number, type: string, id: number, languageCode: string) {
