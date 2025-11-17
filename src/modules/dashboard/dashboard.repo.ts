@@ -36,46 +36,34 @@ export class DashboardRepo {
       }
     })
 
+    // Lấy tổng số user trong hệ thống
+    const totalUsers = await this.prismaService.user.count({
+      where: {
+        deletedAt: null
+      }
+    })
+
     // Lấy thống kê cho từng gói
     const stats = await Promise.all(
       activePlans.map(async (plan) => {
-        const [totalPurchases, activePurchases, canceledPurchases, otherPurchases] =
-          await Promise.all([
-            // Tổng lượt mua (ACTIVE + CANCELED)
-            this.prismaService.userSubscription.count({
-              where: {
-                subscriptionPlanId: plan.id,
-                deletedAt: null,
-                status: {
-                  in: [UserSubscriptionStatus.ACTIVE, UserSubscriptionStatus.CANCELED]
-                }
-              }
-            }),
-            // Số người đang có gói (ACTIVE)
-            this.prismaService.userSubscription.count({
-              where: {
-                subscriptionPlanId: plan.id,
-                deletedAt: null,
-                status: UserSubscriptionStatus.ACTIVE
-              }
-            }),
-            // Số người đã hủy (CANCELED)
-            this.prismaService.userSubscription.count({
-              where: {
-                subscriptionPlanId: plan.id,
-                deletedAt: null,
-                status: UserSubscriptionStatus.CANCELED
-              }
-            }),
-            // Số người chưa có (status khác ACTIVE)
-            this.prismaService.userSubscription.count({
-              where: {
-                subscriptionPlanId: plan.id,
-                deletedAt: null,
-                status: { not: UserSubscriptionStatus.ACTIVE }
-              }
-            })
-          ])
+        const [totalPurchases, activeUsers] = await Promise.all([
+          // Tổng lượt mua thành công (đếm invoice PAID)
+          this.prismaService.invoice.count({
+            where: {
+              subscriptionPlanId: plan.id,
+              deletedAt: null,
+              status: InvoiceStatus.PAID
+            }
+          }),
+          // Số người đang có gói (ACTIVE)
+          this.prismaService.userSubscription.count({
+            where: {
+              subscriptionPlanId: plan.id,
+              deletedAt: null,
+              status: UserSubscriptionStatus.ACTIVE
+            }
+          })
+        ])
 
         return {
           planId: plan.id,
@@ -85,10 +73,9 @@ export class DashboardRepo {
           price: plan.price,
           type: plan.type,
           stats: {
-            totalPurchases, // ACTIVE + CANCELED
-            activeUsers: activePurchases,
-            canceledUsers: canceledPurchases,
-            inactiveUsers: otherPurchases
+            totalPurchases,
+            activeUsers,
+            inactiveUsers: totalUsers - activeUsers
           }
         }
       })
