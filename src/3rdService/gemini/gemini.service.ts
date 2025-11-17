@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common'
+import { Injectable, Logger, BadRequestException, Inject } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { PrismaService } from '@/shared/services/prisma.service'
@@ -15,6 +15,8 @@ import { v4 as uuidv4 } from 'uuid'
 import axios from 'axios'
 import { GEMINI_DEFAULT_CONFIGS } from './config/gemini-default-configs'
 import { GeminiConfigType, RecommendationTargetType } from '@prisma/client'
+import * as crypto from 'crypto'
+import { Redis } from 'ioredis'
 
 @Injectable()
 export class GeminiService {
@@ -22,8 +24,75 @@ export class GeminiService {
     private genAI: GoogleGenerativeAI | null = null // Cho Pro models
     private genAIFlash: GoogleGenerativeAI | null = null // Cho Flash models
     private readonly geminiConfig: any
-    // In-memory short TTL cache for recommendations
-    private readonly shortCache = new Map<string, { value: PersonalizedRecommendationsResponse; expireAt: number }>()
+    private readonly CACHE_PREFIX = 'rec:' // Prefix cho Redis keys
+
+    /**
+     * Lấy ngày hôm nay dạng string (YYYY-MM-DD) theo timezone HCM (UTC+7)
+     */
+    private getHcmTodayString(): string {
+        const now = new Date()
+        // Lấy UTC time và cộng thêm 7 giờ để có HCM time
+        const hcmTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+        // Lấy ngày theo HCM timezone
+        return hcmTime.toISOString().split('T')[0]
+    }
+
+    /**
+     * Lấy start và end của ngày hôm nay theo timezone HCM (UTC+7)
+     * Trả về Date objects ở UTC để lưu vào DB
+     * @returns { start: Date, end: Date } - UTC dates
+     */
+    private getHcmTodayRange(): { start: Date; end: Date } {
+        const now = new Date()
+        // Lấy HCM time (UTC+7)
+        const hcmTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+
+        // Lấy ngày hôm nay theo HCM
+        const hcmYear = hcmTime.getUTCFullYear()
+        const hcmMonth = hcmTime.getUTCMonth()
+        const hcmDate = hcmTime.getUTCDate()
+
+        // Tạo start của ngày hôm nay (00:00:00 HCM) -> convert về UTC
+        const start = new Date(Date.UTC(hcmYear, hcmMonth, hcmDate, 0, 0, 0, 0))
+        start.setTime(start.getTime() - 7 * 60 * 60 * 1000) // Trừ 7 giờ để về UTC
+
+        // Tạo end của ngày hôm nay (23:59:59.999 HCM) -> convert về UTC
+        const end = new Date(Date.UTC(hcmYear, hcmMonth, hcmDate, 23, 59, 59, 999))
+        end.setTime(end.getTime() - 7 * 60 * 60 * 1000) // Trừ 7 giờ để về UTC
+
+        return { start, end }
+    }
+
+    /**
+     * Lấy Date object cho hôm nay 00:00:00 theo timezone HCM, convert về UTC
+     */
+    private getHcmTodayStartUTC(): Date {
+        const { start } = this.getHcmTodayRange()
+        return start
+    }
+
+    /**
+     * Lấy Date object cho ngày mai 00:00:00 theo timezone HCM, convert về UTC
+     */
+    private getHcmTomorrowStartUTC(): Date {
+        const now = new Date()
+        // Lấy HCM time (UTC+7)
+        const hcmTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+
+        // Lấy ngày mai theo HCM
+        const tomorrowHcm = new Date(hcmTime)
+        tomorrowHcm.setUTCDate(tomorrowHcm.getUTCDate() + 1)
+
+        const hcmYear = tomorrowHcm.getUTCFullYear()
+        const hcmMonth = tomorrowHcm.getUTCMonth()
+        const hcmDate = tomorrowHcm.getUTCDate()
+
+        // Tạo start của ngày mai (00:00:00 HCM) -> convert về UTC
+        const tomorrowStart = new Date(Date.UTC(hcmYear, hcmMonth, hcmDate, 0, 0, 0, 0))
+        tomorrowStart.setTime(tomorrowStart.getTime() - 7 * 60 * 60 * 1000) // Trừ 7 giờ để về UTC
+
+        return tomorrowStart
+    }
 
     constructor(
         private readonly configService: ConfigService,
@@ -33,7 +102,8 @@ export class GeminiService {
         private readonly speechToTextService: SpeechToTextService,
         private readonly uploadService: UploadService,
         private readonly speakingService: SpeakingService,
-        private readonly dataAccessService: DataAccessService
+        private readonly dataAccessService: DataAccessService,
+        @Inject('REDIS_CLIENT') private readonly redisClient: Redis
     ) {
         this.geminiConfig = this.configService.get('gemini')
         this.logger.log('Gemini AI will use API keys (lazy initialization per model)')
@@ -264,35 +334,40 @@ export class GeminiService {
     async getPersonalizedRecommendations(
         userId: number,
         limit: number = 10,
-        options?: { createSrs?: boolean; allowedTypes?: string[] }
+        options?: { createSrs?: boolean; allowedTypes?: string[]; lang?: string }
     ): Promise<PersonalizedRecommendationsResponse> {
         try {
             this.logger.log(`Getting personalized recommendations for user ${userId}`)
-            // Cache key (policy-independent best-effort). If policy changes often, TTL is short.
-            const cacheKey = `rec:${userId}:${limit}`
-            const cached = this.shortCache.get(cacheKey)
-            const now = Date.now()
-            if (cached && cached.expireAt > now) {
-                return cached.value
-            }
-            // Lấy config default theo mapping service ↔ config
-            const svcCfg = await this.geminiConfigRepo.getDefaultConfigForService('PERSONALIZED_RECOMMENDATIONS' as any)
+            // Cache key: mỗi ngày reset một lần (thêm ngày vào key)
+            const today = new Date().toISOString().split('T')[0] // Format: YYYY-MM-DD
+            const cacheKey = `rec:${userId}:${limit}:${today}`
 
-            this.logger.log(`[RECOMMEND] SvcCfg: ${JSON.stringify(svcCfg)}`)
+            // Lấy config default theo mapping service ↔ config
+            const svcCfg = await this.geminiConfigRepo.getDefaultConfigForService(GeminiConfigType.PERSONALIZED_RECOMMENDATIONS as any)
+
+            // this.logger.log(`[RECOMMEND] SvcCfg: ${JSON.stringify(svcCfg)}`)
             const config: any = svcCfg?.geminiConfig || null
             const policy = (config?.geminiConfigModel?.extraParams as any)?.policy
 
             let analysis: any
-            this.logger.log(`[RECOMMEND] Policy: ${JSON.stringify(policy)}`)
+            // this.logger.log(`[RECOMMEND] Policy: ${JSON.stringify(policy)}`)
             if (policy) {
                 // Lấy dữ liệu theo policy (scope + whitelist + masking)
                 const safeData = await this.dataAccessService.getAiSafeData(userId, policy)
                 analysis = this.buildSummaryFromSafeData(safeData, limit)
+
+                // Tạo hash từ analysis để kiểm tra dữ liệu có thay đổi không
+                const currentDataHash = this.createDataHash(analysis)
+
+                // Kiểm tra cache và trả về nếu có (cùng ngày hoặc ngày hôm trước nếu dữ liệu không đổi)
+                const cachedResult = await this.getCachedRecommendations(userId, limit, cacheKey, currentDataHash, today)
+                if (cachedResult) {
+                    return cachedResult
+                }
                 // this.logger.log(`[RECOMMEND] Analysis: ${JSON.stringify(analysis)}`)
                 // this.logger.log(`[RECOMMEND] SafeData: ${JSON.stringify(safeData)}`)
                 // this.logger.log(`[RECOMMEND] Limit: ${limit}`)
                 // this.logger.log(`[RECOMMEND] Config: ${JSON.stringify(config)}`)
-                // this.logger.log(`[RECOMMEND] SvcCfg: ${JSON.stringify(svcCfg)}`)
                 // this.logger.log(`[RECOMMEND] UserId: ${userId}`)
                 // this.logger.log(`[RECOMMEND] Options: ${JSON.stringify(options)}`)
             } else {
@@ -300,17 +375,25 @@ export class GeminiService {
                 throw new BadRequestException('PERSONALIZED_RECOMMENDATIONS policy is required but not configured')
             }
 
+            // Xác định ngôn ngữ cho reason (vi: tiếng Việt, en: tiếng Anh)
+            const lang = options?.lang || 'vi'
+            const languageInstruction = lang === 'en'
+                ? 'Write all "reason" and "message" fields in English.'
+                : 'Viết tất cả các trường "reason" và "message" bằng tiếng Việt.'
+
             const prompt = config
-                ? this.replacePlaceholders(String(config.prompt || ''), { analysis: JSON.stringify(analysis), limit: limit.toString() })
-                : this.buildRecommendationPrompt(analysis, limit)
+                ? this.replacePlaceholders(String(config.prompt || ''), {
+                    analysis: JSON.stringify(analysis),
+                    limit: limit.toString(),
+                    languageInstruction: languageInstruction
+                })
+                : this.buildRecommendationPrompt(analysis, limit, lang)
             // Chỉ dùng model từ config, không cho override từ request
             const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-2.5-pro'
 
             // Gọi Gemini API - chọn API key dựa trên model
             const genAI = this.getGenAIForModel(modelName)
             const model = genAI.getGenerativeModel({ model: modelName })
-
-            this.logger.warn(`[RECOMMEND] Prompt: ${prompt}`)
             const result = await model.generateContent(prompt)
 
             const response = await result.response
@@ -325,173 +408,36 @@ export class GeminiService {
                 throw new Error('Empty text in Gemini API response')
             }
 
-            // Parse response từ Gemini
-            let recommendations = this.parseRecommendationsResponse(text, analysis)
-            this.logger.warn(`[RECOMMEND] Invalid items (contentId<=0): ${JSON.stringify(recommendations)}`)
-            try {
-                const invalid = (recommendations || []).filter((r: any) => !(r?.targetId || r?.contentId) || Number(r.targetId || r.contentId) <= 0)
-                const valid = (recommendations || []).filter((r: any) => (r?.targetId || r?.contentId) && Number(r.targetId || r.contentId) > 0)
-                this.logger.log(`[RECOMMEND] Parsed items: total=${recommendations?.length || 0}, valid=${valid.length}, invalid=${invalid.length}`)
-                if (invalid.length > 0) {
-                    this.logger.warn(`[RECOMMEND] Invalid items (contentId<=0): ${JSON.stringify(invalid).slice(0, 500)}`)
-                }
-                for (const it of recommendations || []) {
-                    try {
-                        const qb = it.sourceQuestionBankId || it.questionBankId || 0
-                        const tt = (it.targetType || it.contentType || '').toString()
-                        const tid = Number(it.targetId || it.contentId) || 0
-                        this.logger.debug(`[RECOMMEND][ITEM] qbId=${qb} -> ${tt}#${tid} reason="${String(it.reason || '').slice(0, 80)}" priority=${it.priority}`)
-                    } catch { }
-                }
-            } catch { }
-            if (options?.allowedTypes && options.allowedTypes.length > 0) {
-                const allow = new Set(options.allowedTypes.map(t => String(t).toUpperCase()))
-                recommendations = recommendations.filter((r: any) => allow.has(String(r.contentType || '').toUpperCase()))
-            }
+            // Parse và validate recommendations từ Gemini response
+            let recommendations = this.parseAndValidateRecommendations(text, analysis, options)
+
             const payload: PersonalizedRecommendationsResponse = {
                 recommendations: recommendations.slice(0, limit),
                 summary: analysis
             }
-            // Tạo SRS reviews từ recommendations
-            try {
-                // SRS types: VOCABULARY, GRAMMAR, KANJI, TEST, EXERCISE
-                const validSrsTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI', 'TEST', 'EXERCISE']
-                const priorityToLevel: Record<string, number> = {
-                    high: 2,
-                    medium: 1,
-                    low: 0
-                }
-                const srsRows = (options?.createSrs ? (payload.recommendations || []) : []).map((r: any) => {
-                    const contentType = String(r.targetType || r.contentType || 'VOCABULARY').toUpperCase()
-                    const contentId = Number(r.targetId || r.contentId) || 0
-                    const priority = String(r.priority || '').toLowerCase()
-                    const srsLevel = priorityToLevel[priority] ?? 0
 
-                    // Validate contentType và contentId
-                    if (!contentId || !validSrsTypes.includes(contentType)) {
-                        if (contentType && !validSrsTypes.includes(contentType)) {
-                            this.logger.warn(`Skipping invalid contentType: ${contentType} (contentId: ${contentId})`)
-                        }
-                        return null
-                    }
+            // Xử lý SRS và lưu recommendations vào DB
+            await this.processSrsAndSaveRecommendations(userId, payload, options, modelName)
 
-                    return {
-                        userId,
-                        contentType,
-                        contentId,
-                        message: r.message || r.reason || '',
-                        srsLevel,
-                        nextReviewDate: new Date(), // Ôn ngay
-                        incorrectStreak: 0,
-                        isLeech: false
-                    }
-                }).filter(Boolean)
+            // Cache kết quả trong 1 ngày (86400000 milliseconds = 24 giờ)
+            // Mục đích: Chỉ cho phép gọi Gemini API 1 lần mỗi ngày cho mỗi user (nếu dữ liệu không đổi)
+            // Cache key bao gồm ngày (YYYY-MM-DD) nên sẽ tự động reset vào ngày mới
+            // Tính expireAt đến cuối ngày hôm nay (23:59:59.999)
+            // Lưu kèm dataHash để kiểm tra dữ liệu có thay đổi không
+            const endOfDay = new Date()
+            endOfDay.setHours(23, 59, 59, 999)
+            const expireAt = endOfDay.getTime()
+            const dataHash = this.createDataHash(analysis)
 
-                if (srsRows.length > 0) {
-                    for (const srs of srsRows as any[]) {
-                        if (!srs) continue
-                        const existing = await (this.prisma as any).userSrsReview.findUnique({
-                            where: {
-                                userId_contentType_contentId: {
-                                    userId: srs.userId,
-                                    contentType: srs.contentType as any,
-                                    contentId: srs.contentId
-                                }
-                            }
-                        })
-                        if (!existing) {
-                            await (this.prisma as any).userSrsReview.create({ data: { ...srs, isRead: false } })
-                            this.logger.debug(`[SRS][CREATE] ${srs.contentType}#${srs.contentId} message="${String(srs.message || '').slice(0, 80)}"`)
-                            continue
-                        }
-                        const now = new Date()
-                        const nextReviewDate = new Date(now)
-                        nextReviewDate.setDate(nextReviewDate.getDate() + 1)
-                        let incorrectStreak = existing.incorrectStreak
-                        if (!existing.isRead) incorrectStreak += 1
-                        const isLeech = incorrectStreak >= 5
-                        await (this.prisma as any).userSrsReview.update({
-                            where: {
-                                userId_contentType_contentId: {
-                                    userId: srs.userId,
-                                    contentType: srs.contentType as any,
-                                    contentId: srs.contentId
-                                }
-                            },
-                            data: {
-                                nextReviewDate,
-                                incorrectStreak,
-                                isLeech,
-                                message: srs.message || undefined
-                            }
-                        })
-                        this.logger.debug(`[SRS][UPDATE] ${srs.contentType}#${srs.contentId} incorrectStreak=${incorrectStreak} isLeech=${isLeech}`)
-                        if (existing.isRead) {
-                            await (this.prisma as any).userAIRecommendation.create({
-                                data: {
-                                    userId: srs.userId,
-                                    targetType: srs.contentType as any,
-                                    targetId: srs.contentId,
-                                    reason: srs.message || 'Ôn lại để củng cố',
-                                    source: 'SRS',
-                                    modelUsed: modelName
-                                }
-                            }).catch(() => { })
-                            this.logger.debug(`[RECOMMEND][FROM_SRS] ${srs.contentType}#${srs.contentId}`)
-                        }
-                    }
-                    this.logger.log(`Processed ${srsRows.length} SRS reviews (create/update)`)
-                }
+            // Tính TTL (seconds) từ bây giờ đến cuối ngày
+            const ttlSeconds = Math.ceil((expireAt - Date.now()) / 1000)
 
-                // Lưu recommendations vào DB để FE có thể hiển thị lại/ghi nhận hành động
-                const recRows = (payload.recommendations || []).map((r: any) => {
-                    // Nếu có questionBankId hợp lệ, tag Recommendation tới QUESTION_BANK trước
-                    const qbId = Number(r.sourceQuestionBankId || r.questionBankId) || 0
-                    if (qbId > 0) {
-                        const row = {
-                            userId,
-                            targetType: 'QUESTION_BANK' as any,
-                            targetId: qbId,
-                            reason: String(r.reason || ''),
-                            source: 'PERSONALIZED',
-                            modelUsed: modelName
-                        }
-                        this.logger.debug(`[RECOMMEND][SAVE] QUESTION_BANK#${qbId} reason="${String(r.reason || '').slice(0, 80)}"`)
-                        return row
-                    }
+            // Lưu vào Redis với TTL tự động
+            const redisKey = `${this.CACHE_PREFIX}${cacheKey}`
+            const cacheData = JSON.stringify({ value: payload, expireAt, dataHash })
+            await this.redisClient.setex(redisKey, ttlSeconds, cacheData)
 
-                    // Fallback: Map theo contentType
-                    const contentTypeUpper = String(r.targetType || r.contentType || 'VOCABULARY').toUpperCase()
-                    let targetType: RecommendationTargetType = RecommendationTargetType.VOCABULARY
-                    if (contentTypeUpper === 'VOCABULARY') targetType = RecommendationTargetType.VOCABULARY
-                    else if (contentTypeUpper === 'GRAMMAR') targetType = RecommendationTargetType.GRAMMAR
-                    else if (contentTypeUpper === 'KANJI') targetType = RecommendationTargetType.KANJI
-                    else if (contentTypeUpper === 'EXERCISE') targetType = RecommendationTargetType.EXERCISE
-                    else if (contentTypeUpper === 'TEST') targetType = RecommendationTargetType.TEST
-                    else if (contentTypeUpper === 'LESSON') targetType = RecommendationTargetType.LESSON
-
-                    const row = {
-                        userId,
-                        targetType,
-                        targetId: Number(r.targetId || r.contentId) || 0,
-                        reason: String(r.reason || ''),
-                        source: 'PERSONALIZED',
-                        modelUsed: modelName
-                    }
-                    this.logger.debug(`[RECOMMEND][SAVE] ${String(targetType)}#${row.targetId} reason="${String(r.reason || '').slice(0, 80)}"`)
-                    return row
-                }).filter((r: any) => r.targetId > 0)
-
-                if (recRows.length > 0) {
-                    await (this.prisma as any).userAIRecommendation.createMany({ data: recRows, skipDuplicates: true })
-                    this.logger.log(`[RECOMMEND] Saved ${recRows.length} recommendations`)
-                }
-            } catch (e) {
-                this.logger.warn('Failed to persist SRS/recommendations', e as any)
-            }
-
-            // Cache 120s
-            this.shortCache.set(cacheKey, { value: payload, expireAt: now + 120_000 })
+            this.logger.log(`[RECOMMEND] Cached result in Redis for user ${userId} until end of day (${today}) with dataHash: ${dataHash.substring(0, 8)}... (TTL: ${ttlSeconds}s)`)
             return payload
         } catch (error) {
             this.logger.error('Error getting personalized recommendations:', error)
@@ -505,10 +451,95 @@ export class GeminiService {
         }
     }
 
+    // === Saved recommendations (DB) ===
+    async listSavedRecommendations(userId: number, status?: 'PENDING' | 'DONE' | 'DISMISSED', limit: number = 50, lang: string = 'vi') {
+        const where: any = { userId }
+        if (status) where.status = status
+        const rows = await (this.prisma as any).userAIRecommendation.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            take: limit
+        })
+
+        // Lấy thông tin question cho các item có targetType = QUESTION_BANK
+        const questionBankMap = await this.getQuestionBankMapForRecommendations(rows)
+
+        // Chuẩn hoá UI với hỗ trợ đa ngôn ngữ
+        const title = lang === 'en' ? 'Review to improve' : 'Làm lại để cải thiện'
+        return {
+            title,
+            items: rows.map((r: any) => {
+                const item: any = {
+                    type: (r.targetType).toLowerCase(),
+                    id: r.targetId,
+                    reason: r.reason,
+                    status: r.status,
+                    createdAt: r.createdAt
+                }
+
+                // Thêm thông tin question nếu là QUESTION_BANK
+                if (r.targetType === 'QUESTION_BANK' && questionBankMap[r.targetId]) {
+                    const question = questionBankMap[r.targetId]
+                    item.question = {
+                        questionJp: question.questionJp,
+                        questionType: question.questionType,
+                        levelN: question.levelN,
+                        audioUrl: question.audioUrl
+                    }
+                }
+
+                return item
+            })
+        }
+    }
+
+
+    async listMyRecommendations(userId: number, limit: number = 50, lang: string = 'vi') {
+        const where: any = { userId }
+        if (status) where.status = status
+        const rows = await (this.prisma as any).userAIRecommendation.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            take: limit
+        })
+
+        // Lấy thông tin question cho các item có targetType = QUESTION_BANK
+        const questionBankMap = await this.getQuestionBankMapForRecommendations(rows)
+
+        // Chuẩn hoá UI với hỗ trợ đa ngôn ngữ
+        const title = lang === 'en' ? 'Review to improve' : 'Làm lại để cải thiện'
+        return {
+            title,
+            items: rows.map((r: any) => {
+                const item: any = {
+                    type: (r.targetType).toLowerCase(),
+                    id: r.targetId,
+                    reason: r.reason,
+                    status: r.status,
+                    createdAt: r.createdAt
+                }
+
+                // Thêm thông tin question nếu là QUESTION_BANK
+                if (r.targetType === 'QUESTION_BANK' && questionBankMap[r.targetId]) {
+                    const question = questionBankMap[r.targetId]
+                    item.question = {
+                        questionJp: question.questionJp,
+                        questionType: question.questionType,
+                        levelN: question.levelN,
+                        audioUrl: question.audioUrl
+                    }
+                }
+
+                return item
+            })
+        }
+    }
+
+
     /**
-     * Build compact analysis from safeData (policy result) to minimize tokens
-     * Focus on incorrect answers for SRS mapping
-     */
+    * Build compact analysis from safeData (policy result) to minimize tokens
+    * Focus on incorrect answers for SRS mapping
+    */
     private buildSummaryFromSafeData(safeData: Record<string, any[]>, limit: number) {
         // Data đã được limit ở DataAccessService theo policy config, không cần slice nữa
         const answerLogs = safeData['UserAnswerLog'] || []
@@ -660,26 +691,35 @@ export class GeminiService {
         }
     }
 
-    // === Saved recommendations (DB) ===
-    async listSavedRecommendations(userId: number, status?: 'PENDING' | 'DONE' | 'DISMISSED', limit: number = 50) {
-        const where: any = { userId }
-        if (status) where.status = status
-        const rows = await (this.prisma as any).userAIRecommendation.findMany({
-            where,
-            orderBy: { createdAt: 'desc' },
-            take: limit
-        })
-        // Chuẩn hoá UI
-        return {
-            title: 'Làm lại để cải thiện',
-            items: rows.map((r: any) => ({
-                type: (r.targetType || 'EXERCISE').toLowerCase(),
-                id: r.targetId,
-                reason: r.reason,
-                status: r.status,
-                createdAt: r.createdAt
-            }))
+    /**
+     * Lấy map thông tin QuestionBank cho các recommendations có targetType = QUESTION_BANK
+     * @param recommendations Danh sách recommendations
+     * @returns Map với key là questionBankId, value là thông tin question
+     */
+    private async getQuestionBankMapForRecommendations(recommendations: any[]): Promise<Record<number, any>> {
+        const questionBankIds = recommendations
+            .filter((r: any) => r.targetType === 'QUESTION_BANK')
+            .map((r: any) => r.targetId)
+
+        if (questionBankIds.length === 0) {
+            return {}
         }
+
+        const questions = await (this.prisma as any).questionBank.findMany({
+            where: { id: { in: questionBankIds } },
+            select: {
+                id: true,
+                questionJp: true,
+                questionType: true,
+                levelN: true,
+                audioUrl: true
+            }
+        })
+
+        return questions.reduce((acc: any, q: any) => {
+            acc[q.id] = q
+            return acc
+        }, {})
     }
 
     async updateRecommendationStatus(userId: number, id: number, status: 'DONE' | 'DISMISSED') {
@@ -1221,6 +1261,109 @@ export class GeminiService {
     }
 
     /**
+     * Kiểm tra cache recommendations từ Redis
+     * Kiểm tra cache của ngày hôm nay, nếu không có thì kiểm tra ngày hôm trước
+     * @param userId ID của user
+     * @param limit Số lượng recommendations
+     * @param cacheKey Cache key cho ngày hôm nay
+     * @param currentDataHash Hash của dữ liệu hiện tại
+     * @param today Ngày hôm nay (YYYY-MM-DD)
+     * @returns Cached recommendations nếu tìm thấy và dataHash khớp, null nếu không
+     */
+    private async getCachedRecommendations(
+        userId: number,
+        limit: number,
+        cacheKey: string,
+        currentDataHash: string,
+        today: string
+    ): Promise<PersonalizedRecommendationsResponse | null> {
+        // Kiểm tra cache từ Redis cho ngày hôm nay
+        const redisKey = `${this.CACHE_PREFIX}${cacheKey}`
+        const cachedData = await this.redisClient.get(redisKey)
+
+        if (cachedData) {
+            try {
+                const cached = JSON.parse(cachedData)
+                const now = Date.now()
+                if (cached.expireAt > now && cached.dataHash === currentDataHash) {
+                    // Cache còn hiệu lực và dữ liệu không đổi -> trả về cache
+                    this.logger.debug(`[RECOMMEND] Returning cached result from Redis for user ${userId} (data unchanged)`)
+                    return cached.value
+                } else if (cached.dataHash !== currentDataHash) {
+                    // Dữ liệu đã thay đổi -> xóa cache cũ và tiếp tục gọi API
+                    await this.redisClient.del(redisKey)
+                    this.logger.log(`[RECOMMEND] Data changed for user ${userId}, invalidating cache and fetching new recommendations`)
+                }
+            } catch (error) {
+                this.logger.warn(`[RECOMMEND] Failed to parse cached data, will fetch new recommendations: ${error}`)
+            }
+        } else {
+            // Không có cache cho ngày hôm nay -> kiểm tra cache của ngày hôm trước
+            // Nếu dữ liệu không đổi, có thể tái sử dụng cache cũ
+            const yesterday = new Date()
+            yesterday.setDate(yesterday.getDate() - 1)
+            const yesterdayStr = yesterday.toISOString().split('T')[0]
+            const yesterdayCacheKey = `rec:${userId}:${limit}:${yesterdayStr}`
+            const yesterdayRedisKey = `${this.CACHE_PREFIX}${yesterdayCacheKey}`
+            const yesterdayCachedData = await this.redisClient.get(yesterdayRedisKey)
+
+            if (yesterdayCachedData) {
+                try {
+                    const yesterdayCached = JSON.parse(yesterdayCachedData)
+                    if (yesterdayCached.dataHash === currentDataHash) {
+                        // Dữ liệu không đổi so với ngày hôm trước -> tái sử dụng cache
+                        this.logger.log(`[RECOMMEND] Data unchanged from yesterday for user ${userId}, reusing previous cache`)
+
+                        // Cập nhật cache cho ngày hôm nay với dữ liệu cũ
+                        const endOfDay = new Date()
+                        endOfDay.setHours(23, 59, 59, 999)
+                        const expireAt = endOfDay.getTime()
+                        const ttlSeconds = Math.ceil((expireAt - Date.now()) / 1000)
+                        const cacheData = JSON.stringify({
+                            value: yesterdayCached.value,
+                            expireAt,
+                            dataHash: currentDataHash
+                        })
+                        await this.redisClient.setex(redisKey, ttlSeconds, cacheData)
+
+                        return yesterdayCached.value
+                    }
+                } catch (error) {
+                    this.logger.warn(`[RECOMMEND] Failed to parse yesterday's cached data: ${error}`)
+                }
+            }
+        }
+
+        return null
+    }
+
+    /**
+     * Tạo hash từ dữ liệu analysis để kiểm tra dữ liệu có thay đổi không
+     * @param analysis Dữ liệu analysis từ buildSummaryFromSafeData
+     * @returns Hash string (SHA256) của dữ liệu
+     */
+    private createDataHash(analysis: any): string {
+        // Tạo JSON string từ analysis, loại bỏ các field không quan trọng (như createdAt nếu có)
+        // Chỉ lấy các field quan trọng ảnh hưởng đến recommendations
+        const relevantData = {
+            recentIncorrect: analysis.recentIncorrect?.map((item: any) => ({
+                questionBankId: item.questionBankId,
+                questionType: item.questionType,
+                levelN: item.levelN
+            })),
+            srs: analysis.srs,
+            vocabularies: analysis.vocabularies?.map((v: any) => ({ id: v.id, wordJp: v.wordJp, reading: v.reading })),
+            kanji: analysis.kanji?.map((k: any) => ({ id: k.id, character: k.character })),
+            grammar: analysis.grammar?.map((g: any) => ({ id: g.id, structure: g.structure })),
+            failedTests: analysis.failedTests,
+            failedExercises: analysis.failedExercises
+        }
+
+        const jsonString = JSON.stringify(relevantData)
+        return crypto.createHash('sha256').update(jsonString).digest('hex')
+    }
+
+    /**
      * Build prompt cho đánh giá SPEAKING (default)
      */
     private buildSpeakingEvaluationPrompt(text: string, transcription: string): string {
@@ -1251,8 +1394,11 @@ Chỉ trả về JSON, không có text thừa.`
     /**
      * Build prompt cho gợi ý cá nhân hóa
      */
-    private buildRecommendationPrompt(analysis: any, limit: number): string {
+    private buildRecommendationPrompt(analysis: any, limit: number, lang: string = 'vi'): string {
         const { totalExerciseAttempts, totalTestAttempts, averageScore, weakAreas, strongAreas } = analysis
+        const languageInstruction = lang === 'en'
+            ? 'Write all "reason" and "message" fields in English.'
+            : 'Viết tất cả các trường "reason" và "message" bằng tiếng Việt.'
 
         return `Bạn là trợ lý AI chuyên về giáo dục tiếng Nhật. Dựa trên dữ liệu học tập của học viên, hãy đưa ra ${limit} gợi ý cá nhân hóa.
 
@@ -1267,6 +1413,8 @@ Hãy đưa ra gợi ý với các loại:
 - exercise: Bài tập cần làm
 - test: Bài test cần thử
 - lesson: Bài học cần xem lại
+
+${languageInstruction}
 
 Trả về JSON array với format:
 [
@@ -1319,8 +1467,300 @@ Chỉ trả về JSON array, không có text thừa. Sắp xếp theo priority t
     }
 
     /**
-     * Parse response từ Gemini cho gợi ý
+     * Parse và validate recommendations từ Gemini response
+     * @param text Text response từ Gemini API
+     * @param analysis Dữ liệu analysis
+     * @param options Options từ request
+     * @returns Danh sách recommendations đã được validate và filter
      */
+    private parseAndValidateRecommendations(
+        text: string,
+        analysis: any,
+        options?: { createSrs?: boolean; allowedTypes?: string[]; lang?: string }
+    ): any[] {
+        // Parse response từ Gemini
+        let recommendations = this.parseRecommendationsResponse(text, analysis)
+
+        // Validate và log recommendations
+        try {
+            const invalid = (recommendations || []).filter((r: any) => !(r?.targetId || r?.contentId) || Number(r.targetId || r.contentId) <= 0)
+            const valid = (recommendations || []).filter((r: any) => (r?.targetId || r?.contentId) && Number(r.targetId || r.contentId) > 0)
+            this.logger.log(`[RECOMMEND] Parsed items: total=${recommendations?.length || 0}, valid=${valid.length}, invalid=${invalid.length}`)
+            if (invalid.length > 0) {
+                this.logger.warn(`[RECOMMEND] Invalid items (contentId<=0): ${JSON.stringify(invalid).slice(0, 500)}`)
+            }
+            for (const it of recommendations || []) {
+                try {
+                    const qb = it.sourceQuestionBankId || it.questionBankId || 0
+                    const tt = (it.targetType || it.contentType || '').toString()
+                    const tid = Number(it.targetId || it.contentId) || 0
+                    this.logger.debug(`[RECOMMEND][ITEM] qbId=${qb} -> ${tt}#${tid} reason="${String(it.reason || '').slice(0, 80)}" priority=${it.priority}`)
+                } catch { }
+            }
+        } catch { }
+
+        // Filter theo allowedTypes nếu có
+        if (options?.allowedTypes && options.allowedTypes.length > 0) {
+            const allow = new Set(options.allowedTypes.map(t => String(t).toUpperCase()))
+            recommendations = recommendations.filter((r: any) => allow.has(String(r.contentType || '').toUpperCase()))
+        }
+
+        return recommendations
+    }
+
+    /**
+     * Xử lý SRS reviews và lưu recommendations vào DB
+     * @param userId ID của user
+     * @param payload Payload chứa recommendations
+     * @param options Options từ request
+     * @param modelName Tên model Gemini đã sử dụng
+     */
+    private async processSrsAndSaveRecommendations(
+        userId: number,
+        payload: PersonalizedRecommendationsResponse,
+        options?: { createSrs?: boolean; allowedTypes?: string[]; lang?: string },
+        modelName?: string
+    ): Promise<void> {
+        try {
+            // SRS types: VOCABULARY, GRAMMAR, KANJI, TEST, EXERCISE
+            const validSrsTypes = ['VOCABULARY', 'GRAMMAR', 'KANJI', 'TEST', 'EXERCISE']
+            const priorityToLevel: Record<string, number> = {
+                high: 2,
+                medium: 1,
+                low: 0
+            }
+            const totalRecommendations = payload.recommendations?.length || 0
+            const createSrsEnabled = options?.createSrs ?? false
+            this.logger.log(`[SRS] Total recommendations: ${totalRecommendations}, createSrs: ${createSrsEnabled}`)
+
+            const srsRows = (options?.createSrs ? (payload.recommendations || []) : []).map((r: any) => {
+                const contentType = String(r.targetType || r.contentType || 'VOCABULARY').toUpperCase()
+                const contentId = Number(r.targetId || r.contentId) || 0
+                const priority = String(r.priority || '').toLowerCase()
+                const srsLevel = priorityToLevel[priority] ?? 0
+
+                // Validate contentType và contentId
+                if (!contentId || !validSrsTypes.includes(contentType)) {
+                    if (contentType && !validSrsTypes.includes(contentType)) {
+                        this.logger.warn(`[SRS][SKIP] Invalid contentType: ${contentType} (contentId: ${contentId})`)
+                    } else if (!contentId) {
+                        this.logger.warn(`[SRS][SKIP] Invalid contentId: ${contentId} (contentType: ${contentType})`)
+                    }
+                    return null
+                }
+
+                return {
+                    userId,
+                    contentType,
+                    contentId,
+                    message: r.message || r.reason || '',
+                    srsLevel,
+                    nextReviewDate: new Date(), // Ôn ngay
+                    incorrectStreak: 0,
+                    isLeech: false
+                }
+            }).filter(Boolean)
+
+            this.logger.log(`[SRS] Valid SRS rows after validation: ${srsRows.length} / ${totalRecommendations}`)
+
+            // Xử lý SRS reviews: Tạo hoặc cập nhật các bài ôn tập theo hệ thống Spaced Repetition
+            // SRS giúp người dùng ôn lại nội dung đúng thời điểm để ghi nhớ lâu dài
+            if (srsRows.length > 0) {
+                let createCount = 0
+                let updateCount = 0
+                const today = this.getHcmTodayString() // Dùng timezone HCM
+
+                // Loại bỏ duplicate trong cùng batch: giữ lại item đầu tiên cho mỗi cặp (contentType, contentId)
+                const seen = new Map<string, any>()
+                const uniqueSrsRows: any[] = []
+                for (const srs of srsRows as any[]) {
+                    if (!srs) continue
+                    const key = `${srs.contentType}-${srs.contentId}`
+                    if (!seen.has(key)) {
+                        seen.set(key, srs)
+                        uniqueSrsRows.push(srs)
+                    } else {
+                        this.logger.debug(`[SRS][SKIP_DUPLICATE] ${srs.contentType}#${srs.contentId} (already processed in this batch)`)
+                    }
+                }
+
+                if (uniqueSrsRows.length < srsRows.length) {
+                    this.logger.log(`[SRS] Deduplicated: ${uniqueSrsRows.length} unique items from ${srsRows.length} total`)
+                }
+
+                // Track các item đã được xử lý trong batch này để tránh query DB nhiều lần
+                const processedInBatch = new Map<string, boolean>()
+
+                // Duyệt qua từng SRS review được tạo từ recommendations
+                for (const srs of uniqueSrsRows) {
+                    if (!srs) continue
+
+                    const key = `${srs.contentType}-${srs.contentId}`
+
+                    // Kiểm tra xem đã được xử lý trong batch này chưa
+                    if (processedInBatch.has(key)) {
+                        this.logger.debug(`[SRS][SKIP] ${srs.contentType}#${srs.contentId} (already processed in this batch)`)
+                        continue
+                    }
+
+                    // Kiểm tra xem đã tồn tại SRS review cho nội dung này chưa
+                    // Sử dụng composite key: userId + contentType + contentId
+                    const existing = await (this.prisma as any).userSrsReview.findUnique({
+                        where: {
+                            userId_contentType_contentId: {
+                                userId: srs.userId,
+                                contentType: srs.contentType as any,
+                                contentId: srs.contentId
+                            }
+                        }
+                    })
+
+                    // Đánh dấu đã xử lý
+                    processedInBatch.set(key, true)
+
+                    // Trường hợp 1: Chưa có SRS review -> Tạo mới
+                    if (!existing) {
+                        // Tạo SRS review mới với trạng thái chưa đọc (isRead: false)
+                        // Người dùng sẽ cần ôn lại nội dung này
+                        // Set nextReviewDate = hôm nay 00:00:00 theo timezone HCM (convert về UTC)
+                        const todayStartUTC = this.getHcmTodayStartUTC()
+                        // Convert về HCM để log cho dễ đọc
+                        const todayStartHcmStr = new Date(todayStartUTC.getTime() + 7 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+                        await (this.prisma as any).userSrsReview.create({
+                            data: {
+                                ...srs,
+                                isRead: false,
+                                nextReviewDate: todayStartUTC
+                            }
+                        })
+                        createCount++
+                        this.logger.log(`[SRS][CREATE] ${srs.contentType}#${srs.contentId} nextReviewDate=${todayStartHcmStr} (UTC: ${todayStartUTC.toISOString()}) message="${String(srs.message || '').slice(0, 80)}"`)
+                        continue
+                    }
+
+                    // Trường hợp 2: Đã có SRS review -> Cập nhật thông tin
+                    // Convert existing.nextReviewDate từ UTC sang HCM để so sánh
+                    const existingDate = existing.nextReviewDate
+                        ? new Date(existing.nextReviewDate.getTime() + 7 * 60 * 60 * 1000).toISOString().split('T')[0]
+                        : 'N/A'
+                    const todayDate = today
+
+                    // Kiểm tra xem existing.nextReviewDate có phải là hôm nay không (theo HCM)
+                    const isExistingToday = existingDate === todayDate
+
+                    // Đặt ngày ôn tiếp theo là ngày mai 00:00:00 theo timezone HCM (convert về UTC)
+                    const tomorrowStartUTC = this.getHcmTomorrowStartUTC()
+                    const tomorrowDate = new Date(tomorrowStartUTC.getTime() + 7 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+                    // Tính toán incorrectStreak: số lần liên tiếp trả lời sai
+                    let incorrectStreak = existing.incorrectStreak
+                    // Nếu chưa đọc (chưa ôn) thì tăng streak lên 1
+                    if (!existing.isRead) incorrectStreak += 1
+
+                    // Đánh dấu "leech" nếu sai quá nhiều lần (>= 5 lần)
+                    // Leech là những nội dung khó, cần chú ý đặc biệt
+                    const isLeech = incorrectStreak >= 5
+
+                    // Cập nhật SRS review với thông tin mới
+                    await (this.prisma as any).userSrsReview.update({
+                        where: {
+                            userId_contentType_contentId: {
+                                userId: srs.userId,
+                                contentType: srs.contentType as any,
+                                contentId: srs.contentId
+                            }
+                        },
+                        data: {
+                            nextReviewDate: tomorrowStartUTC,        // Ngày ôn tiếp theo (ngày mai theo HCM, UTC)
+                            incorrectStreak,       // Số lần sai liên tiếp
+                            isLeech,               // Có phải leech không
+                            message: srs.message || undefined  // Lý do cần ôn lại
+                        }
+                    })
+                    updateCount++
+                    this.logger.log(`[SRS][UPDATE] ${srs.contentType}#${srs.contentId} nextReviewDate=${tomorrowDate} (was: ${existingDate}${isExistingToday ? ' [TODAY]' : ''}) isRead=${existing.isRead} incorrectStreak=${incorrectStreak} isLeech=${isLeech}`)
+
+                    // Nếu SRS review đã được đọc (đã ôn) trước đó
+                    // Tạo AI recommendation để gợi ý người dùng ôn lại
+                    if (existing.isRead) {
+                        await (this.prisma as any).userAIRecommendation.create({
+                            data: {
+                                userId: srs.userId,
+                                targetType: srs.contentType as any,
+                                targetId: srs.contentId,
+                                reason: srs.message || 'Ôn lại để củng cố',
+                                source: 'SRS',  // Nguồn từ hệ thống SRS
+                                modelUsed: modelName
+                            }
+                        }).catch(() => { })  // Bỏ qua lỗi nếu đã tồn tại recommendation
+                        this.logger.log(`[RECOMMEND][FROM_SRS] ${srs.contentType}#${srs.contentId}`)
+                    }
+                }
+                // Đếm số SRS với nextReviewDate = hôm nay sau khi xử lý (theo timezone HCM)
+                const { start: todayStart, end: todayEnd } = this.getHcmTodayRange()
+                const todayCount = await (this.prisma as any).userSrsReview.count({
+                    where: {
+                        userId,
+                        nextReviewDate: {
+                            gte: todayStart,
+                            lte: todayEnd
+                        }
+                    }
+                })
+
+                this.logger.log(`[SRS][SUMMARY] Total: ${srsRows.length}, Unique: ${uniqueSrsRows.length}, CREATE: ${createCount} (nextReviewDate=${today}), UPDATE: ${updateCount} (nextReviewDate=tomorrow)`)
+                this.logger.log(`[SRS][SUMMARY] Total SRS with nextReviewDate=${today} for user ${userId}: ${todayCount}`)
+            }
+
+            // Lưu recommendations vào DB để FE có thể hiển thị lại/ghi nhận hành động
+            const recRows = (payload.recommendations || []).map((r: any) => {
+                // Nếu có questionBankId hợp lệ, tag Recommendation tới QUESTION_BANK trước
+                const qbId = Number(r.sourceQuestionBankId || r.questionBankId) || 0
+                if (qbId > 0) {
+                    const row = {
+                        userId,
+                        targetType: 'QUESTION_BANK' as any,
+                        targetId: qbId,
+                        reason: String(r.reason || ''),
+                        source: 'PERSONALIZED',
+                        modelUsed: modelName
+                    }
+                    this.logger.debug(`[RECOMMEND][SAVE] QUESTION_BANK#${qbId} reason="${String(r.reason || '').slice(0, 80)}"`)
+                    return row
+                }
+
+                // Fallback: Map theo contentType
+                const contentTypeUpper = String(r.targetType || r.contentType || 'VOCABULARY').toUpperCase()
+                let targetType: RecommendationTargetType = RecommendationTargetType.VOCABULARY
+                if (contentTypeUpper === 'VOCABULARY') targetType = RecommendationTargetType.VOCABULARY
+                else if (contentTypeUpper === 'GRAMMAR') targetType = RecommendationTargetType.GRAMMAR
+                else if (contentTypeUpper === 'KANJI') targetType = RecommendationTargetType.KANJI
+                else if (contentTypeUpper === 'EXERCISE') targetType = RecommendationTargetType.EXERCISE
+                else if (contentTypeUpper === 'TEST') targetType = RecommendationTargetType.TEST
+                else if (contentTypeUpper === 'LESSON') targetType = RecommendationTargetType.LESSON
+
+                const row = {
+                    userId,
+                    targetType,
+                    targetId: Number(r.targetId || r.contentId) || 0,
+                    reason: String(r.reason || ''),
+                    source: 'PERSONALIZED',
+                    modelUsed: modelName
+                }
+                this.logger.debug(`[RECOMMEND][SAVE] ${String(targetType)}#${row.targetId} reason="${String(r.reason || '').slice(0, 80)}"`)
+                return row
+            }).filter((r: any) => r.targetId > 0)
+
+            if (recRows.length > 0) {
+                await (this.prisma as any).userAIRecommendation.createMany({ data: recRows, skipDuplicates: true })
+                this.logger.log(`[RECOMMEND] Saved ${recRows.length} recommendations`)
+            }
+        } catch (e) {
+            this.logger.warn('Failed to persist SRS/recommendations', e as any)
+        }
+    }
+
     private parseRecommendationsResponse(text: string, analysis: any): any[] {
         try {
             // Tìm JSON array trong response

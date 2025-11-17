@@ -11,6 +11,7 @@ import { SpeechModule } from '../speech/speech.module'
 import { SpeakingModule } from '@/modules/speaking/speaking.module'
 import { UploadModule } from '../upload/upload.module'
 import { DataAccessService } from '@/shared/services/data-access.service'
+import { RedisModule } from '../redis/redis.module'
 
 @Module({
     imports: [
@@ -18,7 +19,8 @@ import { DataAccessService } from '@/shared/services/data-access.service'
         GeminiConfigModule,
         SpeechModule,
         SpeakingModule,
-        UploadModule // Thêm UploadModule để GeminiService có thể sử dụng UploadService
+        UploadModule, // Thêm UploadModule để GeminiService có thể sử dụng UploadService
+        RedisModule // Thêm RedisModule để sử dụng Redis cache
     ],
     controllers: [GeminiController, VertexAIController],
     providers: [

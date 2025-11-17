@@ -429,6 +429,30 @@ export class FlashcardService {
             throw new FlashcardCardNotFoundException()
         }
 
+        // Nếu contentType thay đổi, set null TẤT CẢ các id không phải của type mới
+        if (body.contentType !== undefined && body.contentType !== card.contentType) {
+            const newContentType = body.contentType
+
+            // Set null TẤT CẢ các id không phải của type mới (kể cả các id hiện tại là null)
+            if (newContentType !== 'VOCABULARY') {
+                (body as any).vocabularyId = null
+            }
+            if (newContentType !== 'KANJI') {
+                (body as any).kanjiId = null
+            }
+            if (newContentType !== 'GRAMMAR') {
+                (body as any).grammarId = null
+            }
+        }
+
+        // Nếu có metadata trong body (được update), set tất cả các id thành null
+        const bodyAny = body as any
+        if (bodyAny.metadata !== undefined) {
+            bodyAny.vocabularyId = null
+            bodyAny.kanjiId = null
+            bodyAny.grammarId = null
+        }
+
         const updated = await this.flashcardRepository.updateCard(cardId, body)
 
         return {
