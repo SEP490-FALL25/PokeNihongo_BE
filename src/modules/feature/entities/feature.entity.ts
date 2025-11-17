@@ -13,11 +13,12 @@ export const FeatureSchema = z.object({
   nameKey: z.string(),
   featureKey: z.enum([
     FeatureKey.COIN_MULTIPLIER,
-    FeatureKey.PERSONALIZATION,
     FeatureKey.UNLIMITED_TESTS,
     FeatureKey.UNLOCK_LISTENING,
     FeatureKey.UNLOCK_READING,
-    FeatureKey.XP_MULTIPLIER
+    FeatureKey.XP_MULTIPLIER,
+    FeatureKey.AI_KAIWA,
+    FeatureKey.PERSONALIZED_RECOMMENDATIONS
   ]),
 
   createdById: z.number().nullable(),
