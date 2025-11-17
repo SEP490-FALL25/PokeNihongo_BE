@@ -504,7 +504,7 @@ model UserRewardHistory {
   userId               Int
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   rewardId             Int?
-  reward               Reward?              @relation(fields: [rewardId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reward               Reward?              @relation(fields: [rewardId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   rewardTargetSnapshot RewardTarget?
   amount               Int?
   sourceType           UserRewardSourceType
@@ -702,7 +702,7 @@ model Lesson {
 
   // Quan hệ với Reward
   rewardId Int?
-  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: Restrict, onUpdate: NoAction)
 
   // Quan hệ với Test (Bài test ôn tập)
   testId Int?
@@ -1250,7 +1250,7 @@ model Achievement {
   conditionValue      Int? // Giá trị cần đạt, VD: 3 (cho 3 ngày)
   conditionElementId  Int? // Yếu tố liên quan (nếu có)  // Phần thưởng (nếu có) // hoac bai nao do
   rewardId            Int? // Liên kết tới bảng Reward
-  reward              Reward?              @relation(fields: [rewardId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  reward              Reward?              @relation(fields: [rewardId], references: [id], onDelete: Restrict, onUpdate: NoAction)
 
   groupId Int
   group   AchievementGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -2591,7 +2591,7 @@ model UserSrsReview {
 
   // Lõi SRS
   srsLevel       Int      @default(0)
-  nextReviewDate DateTime 
+  nextReviewDate DateTime
 
   // Phân tích điểm yếu
   incorrectStreak Int     @default(0)
