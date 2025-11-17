@@ -1,3 +1,4 @@
+import { InvoiceStatus } from '@/common/constants/invoice.constant'
 import { RoleName } from '@/common/constants/role.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { SubscriptionMessage } from '@/i18n/message-keys'
@@ -13,6 +14,7 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { HttpStatus, Injectable } from '@nestjs/common'
+import { InvoiceRepo } from '../invoice/invoice.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { SubscriptionPlanRepo } from '../subscription-plan/subscription-plan.repo'
 import { CreateTranslationBodyType } from '../translation/entities/translation.entities'
@@ -33,7 +35,8 @@ export class SubscriptionService {
     private subscriptionPlanRepo: SubscriptionPlanRepo,
     private readonly i18nService: I18nService,
     private readonly languageRepo: LanguagesRepository,
-    private readonly translationRepo: TranslationRepository
+    private readonly translationRepo: TranslationRepository,
+    private readonly invoiceRepo: InvoiceRepo
   ) {}
 
   private async convertTranslationsToLangCodes(
@@ -487,6 +490,28 @@ export class SubscriptionService {
     const planPurchaseCounts =
       await this.subscriptionPlanRepo.getSubscriptionPurchaseCounts()
 
+    // Step 3.5: Get user's pending invoices if userId provided
+    const userPendingInvoices: Record<number, any> = {}
+    if (userId) {
+      const allPlanIds = subscriptions.flatMap((sub: any) =>
+        sub.plans.map((plan: any) => plan.id)
+      )
+      const pendingInvoicesData = await Promise.all(
+        allPlanIds.map((planId) =>
+          this.invoiceRepo.findActiveByUserIdPlanIdAndStatus(
+            userId,
+            planId,
+            InvoiceStatus.PENDING
+          )
+        )
+      )
+      pendingInvoicesData.forEach((invoice, idx) => {
+        if (invoice) {
+          userPendingInvoices[allPlanIds[idx]] = invoice
+        }
+      })
+    }
+
     // Calculate total purchase count per subscription (sum of all its plans)
     const subscriptionPurchaseCounts: Record<number, number> = {}
     subscriptions.forEach((sub: any) => {
@@ -523,7 +548,7 @@ export class SubscriptionService {
           userActivePlanIds.includes(plan.id)
         )
 
-        // Clean plans - remove meta fields
+        // Clean plans - remove meta fields and add pending invoice if exists
         const cleanedPlans = plans.map((plan: any) => {
           const {
             createdAt,
@@ -534,7 +559,21 @@ export class SubscriptionService {
             deletedById,
             ...planRest
           } = plan
-          return planRest
+          const pendingInvoice = userPendingInvoices[plan.id]
+          return {
+            ...planRest,
+            ...(pendingInvoice
+              ? {
+                  pendingInvoice: {
+                    id: pendingInvoice.id,
+                    subtotalAmount: pendingInvoice.subtotalAmount,
+                    discountAmount: pendingInvoice.discountAmount,
+                    totalAmount: pendingInvoice.totalAmount,
+                    status: pendingInvoice.status
+                  }
+                }
+              : {})
+          }
         })
 
         // Process features for admin/non-admin
