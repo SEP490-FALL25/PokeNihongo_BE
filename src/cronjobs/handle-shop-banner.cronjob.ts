@@ -97,7 +97,7 @@ export class HandleShopBannerCronjob {
     }
   }
 
-  // Chạy mỗi ngày lúc 01:00 để tự động tạo banner mới
+  // // Chạy mỗi ngày lúc 01:00 để tự động tạo banner mới
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async handlePrecreateShopBanner() {
     const now = todayUTCWith0000()
@@ -241,9 +241,9 @@ export class HandleShopBannerCronjob {
               'vi'
             )
 
-            // Filter bỏ thuộc tính pokemon
+            // Filter bỏ thuộc tính pokemon và isHas (không có trong schema)
             const itemsToCreate = randomResult.data.map((item: any) => {
-              const { pokemon, ...rest } = item
+              const { pokemon, isHas, ...rest } = item
               return rest
             })
 
