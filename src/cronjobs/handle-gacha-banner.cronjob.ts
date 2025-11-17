@@ -17,91 +17,91 @@ export class HandleGachaBannerCronjob {
   ) {}
 
   // Chạy mỗi ngày lúc 00:00
-  // @Cron(CronExpression.EVERY_10_SECONDS)
-  // async handleGachaBannerStatus() {
-  //   const now = todayUTCWith0000()
-  //   this.logger.log(`[GachaBanner Cronjob Status] Running at ${now.toISOString()}`)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleGachaBannerStatus() {
+    const now = todayUTCWith0000()
+    this.logger.log(`[GachaBanner Cronjob Status] Running at ${now.toISOString()}`)
 
-  //   try {
-  //     // 1. Chuyển các banner ACTIVE có endDate < today sang EXPIRED
-  //     const expiredResult = await this.prismaService.gachaBanner.updateMany({
-  //       where: {
-  //         status: GachaBannerStatus.ACTIVE,
-  //         endDate: {
-  //           lt: now
-  //         },
-  //         deletedAt: null
-  //       },
-  //       data: {
-  //         status: GachaBannerStatus.EXPIRED
-  //       }
-  //     })
-  //     this.logger.verbose(
-  //       `[GachaBanner Cronjob] Expired ${expiredResult.count} ACTIVE banners`
-  //     )
+    try {
+      // 1. Chuyển các banner ACTIVE có endDate < today sang EXPIRED
+      const expiredResult = await this.prismaService.gachaBanner.updateMany({
+        where: {
+          status: GachaBannerStatus.ACTIVE,
+          endDate: {
+            lt: now
+          },
+          deletedAt: null
+        },
+        data: {
+          status: GachaBannerStatus.EXPIRED
+        }
+      })
+      this.logger.verbose(
+        `[GachaBanner Cronjob] Expired ${expiredResult.count} ACTIVE banners`
+      )
 
-  //     // 2. Lấy danh sách banner có status PREVIEW, hợp lệ về thời gian
-  //     // Điều kiện: startDate <= today AND endDate >= today
-  //     const previewBanners = await this.prismaService.gachaBanner.findMany({
-  //       where: {
-  //         status: GachaBannerStatus.PREVIEW,
-  //         deletedAt: null,
-  //         AND: [
-  //           {
-  //             OR: [{ startDate: null }, { startDate: { lte: now } }]
-  //           },
-  //           {
-  //             OR: [{ endDate: null }, { endDate: { gte: now } }]
-  //           }
-  //         ]
-  //       },
-  //       orderBy: {
-  //         startDate: 'asc' // Sort theo startDate tăng dần
-  //       }
-  //     })
+      // 2. Lấy danh sách banner có status PREVIEW, hợp lệ về thời gian
+      // Điều kiện: startDate <= today AND endDate >= today
+      const previewBanners = await this.prismaService.gachaBanner.findMany({
+        where: {
+          status: GachaBannerStatus.PREVIEW,
+          deletedAt: null,
+          AND: [
+            {
+              OR: [{ startDate: null }, { startDate: { lte: now } }]
+            },
+            {
+              OR: [{ endDate: null }, { endDate: { gte: now } }]
+            }
+          ]
+        },
+        orderBy: {
+          startDate: 'asc' // Sort theo startDate tăng dần
+        }
+      })
 
-  //     // 3. Nếu có ít nhất 1 banner PREVIEW hợp lệ, chỉ activate khi có ít hơn 2 banner ACTIVE
-  //     if (previewBanners.length > 0) {
-  //       const activeCount = await this.prismaService.gachaBanner.count({
-  //         where: {
-  //           status: GachaBannerStatus.ACTIVE,
-  //           deletedAt: null
-  //         }
-  //       })
+      // 3. Nếu có ít nhất 1 banner PREVIEW hợp lệ, chỉ activate khi có ít hơn 2 banner ACTIVE
+      if (previewBanners.length > 0) {
+        const activeCount = await this.prismaService.gachaBanner.count({
+          where: {
+            status: GachaBannerStatus.ACTIVE,
+            deletedAt: null
+          }
+        })
 
-  //       const MAX_ACTIVE_BANNERS = 2
+        const MAX_ACTIVE_BANNERS = 2
 
-  //       if (activeCount >= MAX_ACTIVE_BANNERS) {
-  //         this.logger.log(
-  //           `[GachaBanner Cronjob] Skipped activation: already ${activeCount} ACTIVE banners (max=${MAX_ACTIVE_BANNERS})`
-  //         )
-  //       } else {
-  //         const bannerToActivate = previewBanners[0]
-  //         await this.prismaService.gachaBanner.update({
-  //           where: {
-  //             id: bannerToActivate.id
-  //           },
-  //           data: {
-  //             status: GachaBannerStatus.ACTIVE
-  //           }
-  //         })
-  //         this.logger.log(
-  //           `[GachaBanner Cronjob] Activated PREVIEW banner: ID=${bannerToActivate.id}, nameKey=${bannerToActivate.nameKey}`
-  //         )
-  //       }
-  //     } else {
-  //       this.logger.log('[GachaBanner Cronjob] No eligible PREVIEW banner to activate')
-  //     }
+        if (activeCount >= MAX_ACTIVE_BANNERS) {
+          this.logger.log(
+            `[GachaBanner Cronjob] Skipped activation: already ${activeCount} ACTIVE banners (max=${MAX_ACTIVE_BANNERS})`
+          )
+        } else {
+          const bannerToActivate = previewBanners[0]
+          await this.prismaService.gachaBanner.update({
+            where: {
+              id: bannerToActivate.id
+            },
+            data: {
+              status: GachaBannerStatus.ACTIVE
+            }
+          })
+          this.logger.log(
+            `[GachaBanner Cronjob] Activated PREVIEW banner: ID=${bannerToActivate.id}, nameKey=${bannerToActivate.nameKey}`
+          )
+        }
+      } else {
+        this.logger.log('[GachaBanner Cronjob] No eligible PREVIEW banner to activate')
+      }
 
-  //     this.logger.log('[GachaBanner Cronjob] Completed successfully')
-  //   } catch (error) {
-  //     this.logger.error('[GachaBanner Cronjob] Error:', error)
-  //     throw error
-  //   }
-  // }
+      this.logger.log('[GachaBanner Cronjob] Completed successfully')
+    } catch (error) {
+      this.logger.error('[GachaBanner Cronjob] Error:', error)
+      throw error
+    }
+  }
 
   // Chạy mỗi ngày lúc 01:00 để tự động tạo banner mới
-  @Cron(CronExpression.EVERY_5_SECONDS)
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async handlePrecreateGachaBanner() {
     const now = todayUTCWith0000()
     this.logger.log(`[GachaBanner Precreate] Running at ${now.toISOString()}`)
