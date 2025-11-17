@@ -77,7 +77,8 @@ export const SystemMessage = {
   INVALID_PASSWORD: 'system.INVALID_PASSWORD',
   INVALID_OLD_PASSWORD: 'system.INVALID_OLD_PASSWORD',
   SESSION_EXPIRED: 'system.SESSION_EXPIRED',
-  UNAUTHORIZED: 'system.UNAUTHORIZED'
+  UNAUTHORIZED: 'system.UNAUTHORIZED',
+  CONFLICT_FOREIGN_KEY: 'system.CONFLICT_FOREIGN_KEY'
 } as const
 
 export const LevelMessage = {
