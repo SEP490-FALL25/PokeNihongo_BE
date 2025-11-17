@@ -309,8 +309,7 @@ export class RewardRepo {
   findByIdWithAllLang(id: number) {
     return this.prismaService.reward.findUnique({
       where: {
-        id,
-        deletedAt: null
+        id
       },
       include: {
         nameTranslations: {
