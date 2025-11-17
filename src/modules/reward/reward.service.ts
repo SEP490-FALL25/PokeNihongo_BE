@@ -413,7 +413,9 @@ export class RewardService {
           },
           existingReward.deletedAt ? true : false
         ),
-        this.translationRepo.deleteByKey(existingReward.nameKey)
+        ...(existingReward.deletedAt
+          ? [this.translationRepo.deleteByKey(existingReward.nameKey)]
+          : [])
       ])
 
       return {
