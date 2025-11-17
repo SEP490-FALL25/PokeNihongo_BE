@@ -156,7 +156,7 @@ export const UpdateFlashcardCardBodySchema = z
 
 export const GetFlashcardCardListQuerySchema = z.object({
     currentPage: z.coerce.number().int().min(1).default(1),
-    pageSize: z.coerce.number().int().min(1).max(100).default(10),
+    pageSize: z.coerce.number().int().min(1).default(10),
     contentType: FlashcardContentTypeEnum.optional(),
     search: z.string().trim().optional()
 })

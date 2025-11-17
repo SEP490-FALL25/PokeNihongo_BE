@@ -282,7 +282,7 @@ export class UserExerciseAttemptService {
             this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userExerciseAttemptId}`)
             const totalQuestions = allQuestions.length
             const correctAnswers = userAnswers.filter((log: any) => log.isCorrect).length
-            const correctPercentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
+            const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
 
             // 5. Kiểm tra xem đã trả lời hết chưa
             const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
@@ -313,7 +313,7 @@ export class UserExerciseAttemptService {
                         unansweredQuestionIds: allQuestions.map(q => q.id),
                         allCorrect: false,
                         status: newStatus,
-                        correctPercentage
+                        score
                     }
                 }
             }
@@ -343,7 +343,7 @@ export class UserExerciseAttemptService {
                         unansweredQuestionIds: unansweredQuestions.map(q => q.id),
                         allCorrect: false,
                         status: newStatus,
-                        correctPercentage
+                        score
                     }
                 }
             }
@@ -389,7 +389,7 @@ export class UserExerciseAttemptService {
                     unansweredQuestions: 0,
                     allCorrect: allCorrect,
                     status: newStatus,
-                    correctPercentage
+                    score
                 }
             }
 
