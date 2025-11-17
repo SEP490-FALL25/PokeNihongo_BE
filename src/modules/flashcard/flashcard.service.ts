@@ -81,12 +81,38 @@ export class FlashcardService {
         }
     }
 
+    private normalizeMetadataMeaning(value: any): string | null {
+        if (!value) return null
+        if (typeof value === 'string') return value
+        if (Array.isArray(value)) {
+            return value
+                .map(v => {
+                    if (typeof v === 'string') return v
+                    if (typeof v === 'object' && v !== null) {
+                        return v.meaning || v.text || v.value || null
+                    }
+                    return null
+                })
+                .filter((v): v is string => !!v)
+                .join(', ') || null
+        }
+        if (typeof value === 'object') {
+            if (Array.isArray(value.values)) {
+                return value.values.filter((v: any) => typeof v === 'string').join(', ') || null
+            }
+            if (typeof value.meaning === 'string') return value.meaning
+        }
+        return null
+    }
+
     private async mapCard(card: any, lang: string = DEFAULT_LANG): Promise<FlashcardCard> {
         const metadata = card.metadata as Record<string, any> | null
 
+        const vocabularyId = card.vocabularyId ?? null
+
         const vocabulary = card.vocabulary
             ? {
-                id: card.vocabulary.id,
+                id: vocabularyId ?? card.vocabulary.id,
                 wordJp: metadata?.wordJp ?? card.vocabulary.wordJp,
                 reading: metadata?.reading ?? card.vocabulary.reading,
                 levelN: card.vocabulary.levelN,
@@ -94,7 +120,17 @@ export class FlashcardService {
                 imageUrl: metadata?.imageUrl ?? card.vocabulary.imageUrl ?? null,
                 meanings: metadata?.meanings ?? await this.translateMeanings(card.vocabulary.meanings || [], lang)
             }
-            : null
+            : (card.contentType === 'VOCABULARY' && metadata
+                ? {
+                    id: vocabularyId,
+                    wordJp: metadata.wordJp ?? metadata.word ?? '',
+                    reading: metadata.reading ?? metadata.kana ?? null,
+                    levelN: metadata.levelN ?? null,
+                    audioUrl: metadata.audioUrl ?? null,
+                    imageUrl: metadata.imageUrl ?? null,
+                    meanings: this.normalizeMetadataMeaning(metadata.meanings)
+                }
+                : null)
 
         return {
             id: card.id,

@@ -19,8 +19,8 @@ import { RedisModule } from '../redis/redis.module'
         GeminiConfigModule,
         SpeechModule,
         SpeakingModule,
-        UploadModule, // Thêm UploadModule để GeminiService có thể sử dụng UploadService
-        RedisModule // Thêm RedisModule để sử dụng Redis cache
+        UploadModule,
+        RedisModule 
     ],
     controllers: [GeminiController, VertexAIController],
     providers: [
@@ -29,6 +29,6 @@ import { RedisModule } from '../redis/redis.module'
         PrismaService,
         DataAccessService
     ],
-    exports: [GeminiService, VertexAIService] // Export để SharedModule và các module khác có thể sử dụng
+    exports: [GeminiService, VertexAIService] 
 })
 export class GeminiModule { }

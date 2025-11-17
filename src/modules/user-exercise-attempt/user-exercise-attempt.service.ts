@@ -202,6 +202,9 @@ export class UserExerciseAttemptService {
             const answerLogsResult = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
             const userAnswers = answerLogsResult.data.results
             this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userExerciseAttemptId}`)
+            const totalQuestions = allQuestions.length
+            const correctAnswers = userAnswers.filter((log: any) => log.isCorrect).length
+            const correctPercentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
 
             // 5. Kiểm tra xem đã trả lời hết chưa
             const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
@@ -277,6 +280,9 @@ export class UserExerciseAttemptService {
             const answerLogsResult = await this.userAnswerLogService.findByUserExerciseAttemptId(userExerciseAttemptId)
             const userAnswers = answerLogsResult.data.results
             this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userExerciseAttemptId}`)
+            const totalQuestions = allQuestions.length
+            const correctAnswers = userAnswers.filter((log: any) => log.isCorrect).length
+            const correctPercentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
 
             // 5. Kiểm tra xem đã trả lời hết chưa
             const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
@@ -306,7 +312,8 @@ export class UserExerciseAttemptService {
                         unansweredQuestions: allQuestions.length,
                         unansweredQuestionIds: allQuestions.map(q => q.id),
                         allCorrect: false,
-                        status: newStatus
+                        status: newStatus,
+                        correctPercentage
                     }
                 }
             }
@@ -335,7 +342,8 @@ export class UserExerciseAttemptService {
                         unansweredQuestions: unansweredQuestions.length,
                         unansweredQuestionIds: unansweredQuestions.map(q => q.id),
                         allCorrect: false,
-                        status: newStatus
+                        status: newStatus,
+                        correctPercentage
                     }
                 }
             }
@@ -380,7 +388,8 @@ export class UserExerciseAttemptService {
                     answeredQuestions: userAnswers.length,
                     unansweredQuestions: 0,
                     allCorrect: allCorrect,
-                    status: newStatus
+                    status: newStatus,
+                    correctPercentage
                 }
             }
 
