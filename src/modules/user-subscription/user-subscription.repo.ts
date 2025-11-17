@@ -387,4 +387,39 @@ export class UserSubscriptionRepo {
       ultraExpiresAt
     }
   }
+
+  async getListFeatureOfUser(userId: number): Promise<{ featureKey: FeatureKeyType }[]> {
+    const activeSubs = await this.prismaService.userSubscription.findMany({
+      where: {
+        userId,
+        status: 'ACTIVE',
+        deletedAt: null
+      },
+      include: {
+        subscriptionPlan: {
+          include: {
+            subscription: {
+              include: {
+                features: {
+                  include: { feature: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+    const featureKeySet = new Set<FeatureKeyType>()
+
+    for (const us of activeSubs as any[]) {
+      const subscription = us?.subscriptionPlan?.subscription
+      if (!subscription) continue
+      const features = subscription.features || []
+      for (const sf of features) {
+        const key = sf?.feature?.featureKey
+        if (key) featureKeySet.add(key)
+      }
+    }
+    return Array.from(featureKeySet).map((key) => ({ featureKey: key }))
+  }
 }
