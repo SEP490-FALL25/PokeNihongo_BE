@@ -2330,7 +2330,8 @@ enum FeatureKey {
   XP_MULTIPLIER
   COIN_MULTIPLIER
   UNLIMITED_TESTS
-  PERSONALIZATION
+  AI_KAIWA
+  PERSONALIZED_RECOMMENDATIONS
   // Bạn có thể thêm các key khác ở đây
 }
 
