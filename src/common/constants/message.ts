@@ -386,7 +386,7 @@ export const USER_EXERCISE_ATTEMPT_MESSAGE = {
   ALREADY_EXISTS: 'Lần thử bài tập đã tồn tại',
   INVALID_DATA: 'Dữ liệu lần thử bài tập không hợp lệ',
   EXERCISE_NOT_FOUND: 'Không tìm thấy bài tập',
-  LESSON_BLOCKED:'Bạn đang học lesson khác. Chỉ có thể làm bài tập trong lesson hiện tại',
+  LESSON_BLOCKED: 'Bạn đang học lesson khác. Chỉ có thể làm bài tập trong lesson hiện tại',
   EXERCISE_COMPLETED: 'Bài tập đã hoàn thành',
   EXERCISE_ABANDONED: 'Bài tập đã bị bỏ dở',
   CHECK_COMPLETION_SUCCESS: 'Kiểm tra trạng thái hoàn thành thành công',
@@ -475,5 +475,6 @@ export const Error = {
   AUDIO_RESPONSE_FAILED: 'Không thể tạo audio response',
   AUDIO_NOT_AVAILABLE_SUGGESTION: 'Text response đã được gửi, nhưng audio không khả dụng',
   PROCESS_AUDIO_FAILED: 'Failed to process audio',
-  LEAVE_ROOM_FAILED: 'Failed to leave room'
+  LEAVE_ROOM_FAILED: 'Failed to leave room',
+  AI_KAIWA_FEATURE_REQUIRED: 'Vui lòng nâng cấp gói để sử dụng AI Kaiwa'
 }

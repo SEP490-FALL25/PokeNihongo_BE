@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException, Patch, Put } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException, Patch, Put, ForbiddenException } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth, ApiResponse, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger'
 import { FileInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express'
 import { GeminiService } from './gemini.service'
@@ -6,12 +6,17 @@ import { EvaluateSpeakingDto, GetPersonalizedRecommendationsDto, AIKaiwaDto, Cha
 import { SpeakingEvaluationResponse, PersonalizedRecommendationsResponse, AIKaiwaResponse, ChatWithGeminiResponse, TestNativeAudioDialogResponse } from './dto/gemini.response.dto'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
+import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
+import { FeatureKey } from '@/common/constants/subscription.constant'
 
 @ApiTags('Gemini')
 @Controller('gemini')
 @ApiBearerAuth()
 export class GeminiController {
-    constructor(private readonly geminiService: GeminiService) { }
+    constructor(
+        private readonly geminiService: GeminiService,
+        private readonly userSubscriptionService: SharedUserSubscriptionService
+    ) { }
 
     @Post('speaking/evaluate/:questionBankId')
     @ApiOperation({ summary: 'Đánh giá phát âm SPEAKING cho user' })
@@ -82,7 +87,17 @@ export class GeminiController {
         @ActiveUser('userId') userId: number,
         @Body() body: RecommendationsMultipartDto,
         @I18nLang() lang: string
-    ) {
+    ) { 
+        // Kiểm tra xem user có feature PERSONALIZED_RECOMMENDATIONS không
+        const hasPersonalizedFeature = await this.userSubscriptionService.getHasByfeatureKeyAndUserId(
+            FeatureKey.PERSONALIZED_RECOMMENDATIONS,
+            userId
+        )
+
+        if (!hasPersonalizedFeature) {
+            throw new ForbiddenException('Bạn cần nâng cấp gói để sử dụng tính năng này')
+        }
+
         const limitNumber = body?.limit ? Number(body.limit) : 10
         if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 50) {
             throw new BadRequestException('Limit phải là số từ 1 đến 50')
@@ -232,10 +247,10 @@ export class GeminiController {
     }
 
 
-     // Saved recommendations
-     @Get('recommendations/my')
-     @ApiOperation({ summary: 'Danh sách recommendations của user' })
-     async listMyRecommendations(
+    // Saved recommendations
+    @Get('recommendations/my')
+    @ApiOperation({ summary: 'Danh sách recommendations của user' })
+    async listMyRecommendations(
         @ActiveUser('userId') userId: number,
     ) {
         const data = await this.geminiService.listMyRecommendations(userId, 50, 'en')
