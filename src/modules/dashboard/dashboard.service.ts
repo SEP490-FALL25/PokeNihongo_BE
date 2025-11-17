@@ -1,9 +1,14 @@
+import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
+import { LanguagesRepository } from '../languages/languages.repo'
 import { DashboardRepo } from './dashboard.repo'
 
 @Injectable()
 export class DashboardService {
-  constructor(private dashboardRepo: DashboardRepo) {}
+  constructor(
+    private dashboardRepo: DashboardRepo,
+    private readonly langRepo: LanguagesRepository
+  ) {}
 
   /**
    * Thống kê các gói subscription
@@ -19,13 +24,15 @@ export class DashboardService {
       const nameTranslation =
         subscription.nameTranslations.find((t) => t.language.code === lang)?.value || ''
       const descriptionTranslation =
-        subscription.descriptionTranslations.find((t) => t.language.code === lang)?.value ||
-        ''
+        subscription.descriptionTranslations.find((t) => t.language.code === lang)
+          ?.value || ''
 
       // Format nameTranslations theo thứ tự en, ja, vi
       const sortedNameTranslations = ['en', 'ja', 'vi']
         .map((code) => {
-          const trans = subscription.nameTranslations.find((t) => t.language.code === code)
+          const trans = subscription.nameTranslations.find(
+            (t) => t.language.code === code
+          )
           return trans ? { key: trans.language.code, value: trans.value } : null
         })
         .filter((t) => t !== null)
@@ -44,7 +51,9 @@ export class DashboardService {
       const formattedFeatures = subscription.features.map((sf) => {
         const sortedFeatureNameTranslations = ['en', 'ja', 'vi']
           .map((code) => {
-            const trans = sf.feature.nameTranslations.find((t) => t.language.code === code)
+            const trans = sf.feature.nameTranslations.find(
+              (t) => t.language.code === code
+            )
             return trans ? { key: trans.language.code, value: trans.value } : null
           })
           .filter((t) => t !== null)
@@ -57,7 +66,8 @@ export class DashboardService {
             nameKey: sf.feature.nameKey,
             featureKey: sf.feature.featureKey,
             nameTranslation:
-              sf.feature.nameTranslations.find((t) => t.language.code === lang)?.value || '',
+              sf.feature.nameTranslations.find((t) => t.language.code === lang)?.value ||
+              '',
             nameTranslations: sortedFeatureNameTranslations
           }
         }
@@ -95,5 +105,13 @@ export class DashboardService {
    */
   async getSubStatsRevenue(lang: string = 'vi', month?: number, year?: number) {
     return this.dashboardRepo.getRevenueStats(month, year)
+  }
+
+  async getListUserRegister(query: PaginationQueryType, lang: string = 'vi') {
+    const langId = await this.langRepo.getIdByCode(lang)
+    if (!langId) {
+      return this.dashboardRepo.getUsersSubWithSubPlan(query)
+    }
+    return this.dashboardRepo.getUsersSubWithSubPlan(query, langId)
   }
 }
