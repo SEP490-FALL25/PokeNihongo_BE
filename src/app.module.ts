@@ -42,6 +42,7 @@ import { PokemonModule } from './modules/pokemon/pokemon.module'
 import { HandleMatchmakingCronjob } from './cronjobs/handle-matchmaking.cronjob'
 import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
 import { AIConversationRoomModule } from './modules/ai-conversation-room/ai-conversation-room.module'
+import { DashboardModule } from './modules/dashboard/dashboard.module'
 import { DebuffRoundModule } from './modules/debuff-round/debuff-round.module'
 import { FeatureModule } from './modules/feature/feature.module'
 import { FlashcardModule } from './modules/flashcard/flashcard.module'
@@ -57,6 +58,7 @@ import { MatchQueueModule } from './modules/match-queue/match-queue.module'
 import { MatchRoundParticipantModule } from './modules/match-round-participant/match-round-participant.module'
 import { MatchRoundModule } from './modules/match-round/match-round.module'
 import { MatchModule } from './modules/match/match.module'
+import { NotificationModule } from './modules/notification/notification.module'
 import { PaymentModule } from './modules/payment/payment.module'
 import { QuestionBankModule } from './modules/question-bank/question-bank.module'
 import { RewardModule } from './modules/reward/reward.module'
@@ -97,8 +99,6 @@ import { WalletModule } from './modules/wallet/wallet.module'
 import { WordTypeModule } from './modules/wordtype/wordtype.module'
 import { SharedModule } from './shared/shared.module'
 import { WebsocketsModule } from './websockets/websockets.module'
-import { NotificationModule } from './modules/notification/notification.module';
-import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -209,6 +209,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
   controllers: [],
   providers: [
     HandleShopBannerCronjob,
+    // HandleGachaBannerCronjob,
     // HandleLeaderboardSeasonCronjob,
     HandleMatchmakingCronjob, // Cronjob chạy mỗi 5s để xử lý matchmaking
     {
