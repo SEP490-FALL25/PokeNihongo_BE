@@ -30,7 +30,56 @@ export class DashboardRepo {
             id: true,
             nameKey: true,
             descriptionKey: true,
-            tagName: true
+            tagName: true,
+            nameTranslations: {
+              select: {
+                id: true,
+                languageId: true,
+                value: true,
+                language: {
+                  select: {
+                    code: true
+                  }
+                }
+              }
+            },
+            descriptionTranslations: {
+              select: {
+                id: true,
+                languageId: true,
+                value: true,
+                language: {
+                  select: {
+                    code: true
+                  }
+                }
+              }
+            },
+            features: {
+              select: {
+                id: true,
+                value: true,
+                feature: {
+                  select: {
+                    id: true,
+                    nameKey: true,
+                    featureKey: true,
+                    nameTranslations: {
+                      select: {
+                        id: true,
+                        languageId: true,
+                        value: true,
+                        language: {
+                          select: {
+                            code: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
