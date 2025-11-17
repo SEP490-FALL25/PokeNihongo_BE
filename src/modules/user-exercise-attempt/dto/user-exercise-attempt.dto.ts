@@ -148,6 +148,12 @@ export class ExerciseCompletionStatusSwaggerDTO {
         enum: ['IN_PROGRESS', 'COMPLETED', 'FAILED', 'ABANDONED']
     })
     status: string
+
+    @ApiProperty({
+        example: 80,
+        description: 'Phần trăm câu trả lời đúng (0-100)'
+    })
+    correctPercentage: number
 }
 
 export class ExerciseCompletionResponseSwaggerDTO {

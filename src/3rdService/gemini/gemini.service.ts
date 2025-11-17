@@ -26,74 +26,6 @@ export class GeminiService {
     private readonly geminiConfig: any
     private readonly CACHE_PREFIX = 'rec:' // Prefix cho Redis keys
 
-    /**
-     * Lấy ngày hôm nay dạng string (YYYY-MM-DD) theo timezone HCM (UTC+7)
-     */
-    private getHcmTodayString(): string {
-        const now = new Date()
-        // Lấy UTC time và cộng thêm 7 giờ để có HCM time
-        const hcmTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
-        // Lấy ngày theo HCM timezone
-        return hcmTime.toISOString().split('T')[0]
-    }
-
-    /**
-     * Lấy start và end của ngày hôm nay theo timezone HCM (UTC+7)
-     * Trả về Date objects ở UTC để lưu vào DB
-     * @returns { start: Date, end: Date } - UTC dates
-     */
-    private getHcmTodayRange(): { start: Date; end: Date } {
-        const now = new Date()
-        // Lấy HCM time (UTC+7)
-        const hcmTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
-
-        // Lấy ngày hôm nay theo HCM
-        const hcmYear = hcmTime.getUTCFullYear()
-        const hcmMonth = hcmTime.getUTCMonth()
-        const hcmDate = hcmTime.getUTCDate()
-
-        // Tạo start của ngày hôm nay (00:00:00 HCM) -> convert về UTC
-        const start = new Date(Date.UTC(hcmYear, hcmMonth, hcmDate, 0, 0, 0, 0))
-        start.setTime(start.getTime() - 7 * 60 * 60 * 1000) // Trừ 7 giờ để về UTC
-
-        // Tạo end của ngày hôm nay (23:59:59.999 HCM) -> convert về UTC
-        const end = new Date(Date.UTC(hcmYear, hcmMonth, hcmDate, 23, 59, 59, 999))
-        end.setTime(end.getTime() - 7 * 60 * 60 * 1000) // Trừ 7 giờ để về UTC
-
-        return { start, end }
-    }
-
-    /**
-     * Lấy Date object cho hôm nay 00:00:00 theo timezone HCM, convert về UTC
-     */
-    private getHcmTodayStartUTC(): Date {
-        const { start } = this.getHcmTodayRange()
-        return start
-    }
-
-    /**
-     * Lấy Date object cho ngày mai 00:00:00 theo timezone HCM, convert về UTC
-     */
-    private getHcmTomorrowStartUTC(): Date {
-        const now = new Date()
-        // Lấy HCM time (UTC+7)
-        const hcmTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
-
-        // Lấy ngày mai theo HCM
-        const tomorrowHcm = new Date(hcmTime)
-        tomorrowHcm.setUTCDate(tomorrowHcm.getUTCDate() + 1)
-
-        const hcmYear = tomorrowHcm.getUTCFullYear()
-        const hcmMonth = tomorrowHcm.getUTCMonth()
-        const hcmDate = tomorrowHcm.getUTCDate()
-
-        // Tạo start của ngày mai (00:00:00 HCM) -> convert về UTC
-        const tomorrowStart = new Date(Date.UTC(hcmYear, hcmMonth, hcmDate, 0, 0, 0, 0))
-        tomorrowStart.setTime(tomorrowStart.getTime() - 7 * 60 * 60 * 1000) // Trừ 7 giờ để về UTC
-
-        return tomorrowStart
-    }
-
     constructor(
         private readonly configService: ConfigService,
         private readonly prisma: PrismaService,
@@ -108,6 +40,73 @@ export class GeminiService {
         this.geminiConfig = this.configService.get('gemini')
         this.logger.log('Gemini AI will use API keys (lazy initialization per model)')
     }
+
+    //#region Helper methods
+    /**
+     * Lấy ngày hôm nay dạng string (YYYY-MM-DD) theo timezone HCM (UTC+7)
+     */
+    private getHcmTodayString(): string {
+        const now = new Date()
+        // Lấy UTC time và cộng thêm 7 giờ để có HCM time
+        const hcmTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+        // Lấy ngày theo HCM timezone
+        return hcmTime.toISOString().split('T')[0]
+    }
+
+    /**
+     * Lấy start và end của ngày hôm nay theo timezone HCM (UTC+7)
+     * Trả về Date objects ở UTC để lưu vào DB
+     * @returns { start: Date; end: Date } - UTC dates
+     */
+    private getHcmTodayRange(): { start: Date; end: Date } {
+        const now = new Date()
+        // Lấy HCM time (UTC+7)
+        const hcmTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+
+        // Lấy ngày hôm nay theo HCM
+        const hcmYear = hcmTime.getUTCFullYear()
+        const hcmMonth = hcmTime.getUTCMonth()
+        const hcmDate = hcmTime.getUTCDate()
+
+        // Tạo start của ngày hôm nay (00:00:00 HCM) -> convert về UTC
+        const start = new Date(Date.UTC(hcmYear, hcmMonth, hcmDate, 0, 0, 0, 0))
+        start.setTime(start.getTime() - 7 * 60 * 60 * 1000)
+
+        // Tạo end của ngày hôm nay (23:59:59.999 HCM) -> convert về UTC
+        const end = new Date(Date.UTC(hcmYear, hcmMonth, hcmDate, 23, 59, 59, 999))
+        end.setTime(end.getTime() - 7 * 60 * 60 * 1000)
+
+        return { start, end }
+    }
+
+    private getUtcTodayStart(): Date {
+        const now = new Date()
+        const hcmTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+        return new Date(Date.UTC(
+            hcmTime.getUTCFullYear(),
+            hcmTime.getUTCMonth(),
+            hcmTime.getUTCDate(),
+            0, 0, 0, 0
+        ))
+    }
+
+    private getUtcTomorrowStart(): Date {
+        const now = new Date()
+        const hcmTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+
+        // Lấy ngày mai theo HCM
+        const tomorrowHcm = new Date(hcmTime)
+        tomorrowHcm.setUTCDate(tomorrowHcm.getUTCDate() + 1)
+
+        return new Date(Date.UTC(
+            tomorrowHcm.getUTCFullYear(),
+            tomorrowHcm.getUTCMonth(),
+            tomorrowHcm.getUTCDate(),
+            0, 0, 0, 0
+        ))
+    }
+
+    //#endregion
 
     /**
      * Lấy GoogleGenerativeAI instance dựa trên model name
@@ -246,7 +245,7 @@ export class GeminiService {
      */
     private getGenAI(): GoogleGenerativeAI {
         // Default dùng Pro model
-        return this.getGenAIForModel('gemini-1.5-pro')
+        return this.getGenAIForModel('gemini-2.5-pro')
     }
 
     /**
@@ -389,7 +388,7 @@ export class GeminiService {
                 })
                 : this.buildRecommendationPrompt(analysis, limit, lang)
             // Chỉ dùng model từ config, không cho override từ request
-            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-2.5-pro'
+            const modelName = (config?.geminiConfigModel?.geminiModel?.key as string) || 'gemini-2.5-flash'
 
             // Gọi Gemini API - chọn API key dựa trên model
             const genAI = this.getGenAIForModel(modelName)
@@ -1623,9 +1622,8 @@ Chỉ trả về JSON array, không có text thừa. Sắp xếp theo priority t
                         // Tạo SRS review mới với trạng thái chưa đọc (isRead: false)
                         // Người dùng sẽ cần ôn lại nội dung này
                         // Set nextReviewDate = hôm nay 00:00:00 theo timezone HCM (convert về UTC)
-                        const todayStartUTC = this.getHcmTodayStartUTC()
-                        // Convert về HCM để log cho dễ đọc
-                        const todayStartHcmStr = new Date(todayStartUTC.getTime() + 7 * 60 * 60 * 1000).toISOString().split('T')[0]
+                        const todayStartUTC = this.getUtcTodayStart()
+                        const todayStartHcmStr = this.getHcmTodayString()
 
                         await (this.prisma as any).userSrsReview.create({
                             data: {
@@ -1650,7 +1648,7 @@ Chỉ trả về JSON array, không có text thừa. Sắp xếp theo priority t
                     const isExistingToday = existingDate === todayDate
 
                     // Đặt ngày ôn tiếp theo là ngày mai 00:00:00 theo timezone HCM (convert về UTC)
-                    const tomorrowStartUTC = this.getHcmTomorrowStartUTC()
+                    const tomorrowStartUTC = this.getUtcTomorrowStart()
                     const tomorrowDate = new Date(tomorrowStartUTC.getTime() + 7 * 60 * 60 * 1000).toISOString().split('T')[0]
 
                     // Tính toán incorrectStreak: số lần liên tiếp trả lời sai

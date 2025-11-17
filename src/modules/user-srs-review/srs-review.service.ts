@@ -11,6 +11,8 @@ import { ListSrsTodayQuery } from './entities/srs-review.entities'
 @Injectable()
 export class SrsReviewService {
     private readonly logger = new Logger(SrsReviewService.name)
+    private static readonly HCM_TIMEZONE = 'Asia/Ho_Chi_Minh'
+    private static readonly HCM_TIMEZONE_OFFSET = '+07:00'
     constructor(private readonly prisma: PrismaService, private readonly repo: SrsReviewRepository, private readonly translationHelper: TranslationHelperService) { }
 
     async list(userId: number, query: ListSrsQueryDto) {
@@ -59,19 +61,27 @@ export class SrsReviewService {
         }
     }
 
-    async listToday(userId: number, query?: ListSrsTodayQuery) {
+    async listToday(userId: number, query?: ListSrsTodayQuery, languageCode?: string) {
         try {
             const currentPage = Math.max(1, query?.currentPage ?? 1)
             const requestedPageSize = query?.pageSize ?? 20
             const pageSize = Math.min(200, Math.max(1, requestedPageSize))
             const skip = (currentPage - 1) * pageSize
-            const { rows, total } = await this.repo.listForDate(userId, new Date(), { skip, take: pageSize })
+            const targetDate = new Date()
+            const { start, end } = this.getHcmDayRange(targetDate)
+            const { rows, total } = await this.repo.listForDate(userId, targetDate, { skip, take: pageSize, start, end })
+            const enrichedRows = await Promise.all(
+                rows.map(async row => {
+                    const content = await this.getContentDetail(userId, row.contentType, row.contentId, languageCode || 'vi')
+                    return this.sanitizeSrsRow(row, content)
+                })
+            )
             const totalPage = Math.max(1, Math.ceil(total / pageSize))
             return {
                 statusCode: 200,
                 message: SRS_REVIEW_MESSAGE.GET_LIST_SUCCESS,
                 data: {
-                    results: rows,
+                    results: enrichedRows,
                     pagination: {
                         current: currentPage,
                         pageSize,
@@ -109,6 +119,25 @@ export class SrsReviewService {
         }
     }
 
+    private sanitizeSrsRow(row: any, content: any) {
+        if (!row) return null
+        const { id, userId, message, contentType, contentId, isRead } = row
+        return { id, userId, message, contentType, contentId, isRead, content }
+    }
+
+    private getHcmDayRange(date: Date) {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: SrsReviewService.HCM_TIMEZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        })
+        const hcmDate = formatter.format(date)
+        const start = new Date(`${hcmDate}T00:00:00${SrsReviewService.HCM_TIMEZONE_OFFSET}`)
+        const end = new Date(`${hcmDate}T23:59:59.999${SrsReviewService.HCM_TIMEZONE_OFFSET}`)
+        return { start, end, date: hcmDate }
+    }
+
     async getContentDetail(userId: number, type: string, id: number, languageCode: string) {
         const t = String(type).toUpperCase()
         const lang = (languageCode || 'vi').toLowerCase()
@@ -128,8 +157,6 @@ export class SrsReviewService {
                     : null
                 mappedUsages.push({
                     id: u.id,
-                    explanationKey: u.explanationKey,
-                    exampleSentenceKey: u.exampleSentenceKey,
                     explanation,
                     exampleSentence: example
                 })
@@ -143,19 +170,65 @@ export class SrsReviewService {
             }
         }
         if (t === 'KANJI') {
-            const kanji = await (this.prisma as any).kanji.findUnique({ where: { id } })
+            const kanji = await (this.prisma as any).kanji.findUnique({
+                where: { id },
+                include: {
+                    readings: true
+                }
+            })
             if (!kanji) return null
             let meaning: string | null = null
             if (kanji.meaningKey) {
                 meaning = (await this.translationHelper.getTranslation(kanji.meaningKey, lang))
                     || (await this.translationHelper.getTranslation(kanji.meaningKey, 'vi'))
             }
+            if (meaning) {
+                const firstDotIndex = meaning.indexOf('.')
+                if (firstDotIndex > -1) {
+                    meaning = meaning.substring(0, firstDotIndex).trim()
+                }
+            }
+            const onReadings = kanji.readings?.filter((r: any) => r.readingType?.toLowerCase() === 'onyomi').map((r: any) => r.reading) || []
+            const kunReadings = kanji.readings?.filter((r: any) => r.readingType?.toLowerCase() === 'kunyomi').map((r: any) => r.reading) || []
             return {
                 type: 'kanji',
                 id: kanji.id,
                 character: kanji.character,
                 meaning,
-                jlptLevel: kanji.jlptLevel
+                jlptLevel: kanji.jlptLevel,
+                onReading: onReadings.join(', '),
+                kunReading: kunReadings.join(', ')
+            }
+        }
+        if (t === 'VOCABULARY') {
+            const vocabulary = await (this.prisma as any).vocabulary.findUnique({
+                where: { id },
+                include: { meanings: true }
+            })
+            if (!vocabulary) return null
+            let meaning: string | null = null
+            if (vocabulary.meanings?.length) {
+                const meaningTexts: string[] = []
+                for (const m of vocabulary.meanings) {
+                    if (m.meaningKey) {
+                        const translated =
+                            (await this.translationHelper.getTranslation(m.meaningKey, lang)) ||
+                            (await this.translationHelper.getTranslation(m.meaningKey, 'vi'))
+                        if (translated) {
+                            meaningTexts.push(translated)
+                        }
+                    }
+                }
+                meaning = meaningTexts.join(', ') || null
+            }
+            return {
+                type: 'vocabulary',
+                id: vocabulary.id,
+                wordJp: vocabulary.wordJp,
+                reading: vocabulary.reading,
+                meaning,
+                audioUrl: vocabulary.audioUrl,
+                imageUrl: vocabulary.imageUrl
             }
         }
         return { type: t.toLowerCase(), id }

@@ -36,15 +36,21 @@ export class SrsReviewRepository {
         })
     }
 
-    async listForDate(userId: number, date: Date, options?: { skip?: number; take?: number }) {
-        const start = new Date(date)
-        start.setHours(0, 0, 0, 0)
-        const end = new Date(date)
-        end.setHours(23, 59, 59, 999)
+    async listForDate(userId: number, date: Date, options?: { skip?: number; take?: number; start?: Date; end?: Date }) {
+        let start = options?.start ?? null
+        let end = options?.end ?? null
+        if (!start || !end) {
+            start = new Date(date)
+            start.setHours(0, 0, 0, 0)
+            end = new Date(date)
+            end.setHours(23, 59, 59, 999)
+        }
         const where = {
             userId,
             nextReviewDate: { gte: start, lte: end }
         }
+        const skip = options?.skip ?? 0
+        const take = options?.take
         const [rows, total] = await Promise.all([
             (this.prisma as any).userSrsReview.findMany({
                 where,
@@ -53,8 +59,8 @@ export class SrsReviewRepository {
                     { incorrectStreak: 'desc' },
                     { nextReviewDate: 'asc' }
                 ],
-                skip: options?.skip ?? 0,
-                take: options?.take ?? undefined
+                skip,
+                take
             }),
             (this.prisma as any).userSrsReview.count({ where })
         ])
