@@ -1,4 +1,5 @@
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
+import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { Controller, Get, Query } from '@nestjs/common'
 import { DashboardService } from './dashboard.service'
 
@@ -20,5 +21,10 @@ export class DashboardController {
     const monthNum = month ? parseInt(month, 10) : undefined
     const yearNum = year ? parseInt(year, 10) : undefined
     return this.dashboardService.getSubStatsRevenue(lang, monthNum, yearNum)
+  }
+
+  @Get('subscription-stats/register-recently')
+  getListUserRegister(@I18nLang() lang: string, @Query() query: PaginationQueryDTO) {
+    return this.dashboardService.getListUserRegister(query, lang)
   }
 }
