@@ -61,7 +61,7 @@ export class SrsReviewService {
         }
     }
 
-    async listToday(userId: number, query?: ListSrsTodayQuery) {
+    async listToday(userId: number, query?: ListSrsTodayQuery, languageCode?: string) {
         try {
             const currentPage = Math.max(1, query?.currentPage ?? 1)
             const requestedPageSize = query?.pageSize ?? 20
@@ -70,13 +70,18 @@ export class SrsReviewService {
             const targetDate = new Date()
             const { start, end } = this.getHcmDayRange(targetDate)
             const { rows, total } = await this.repo.listForDate(userId, targetDate, { skip, take: pageSize, start, end })
-            const results = rows.map(row => this.appendHcmTimezone(row))
+            const enrichedRows = await Promise.all(
+                rows.map(async row => {
+                    const content = await this.getContentDetail(userId, row.contentType, row.contentId, languageCode || 'vi')
+                    return this.sanitizeSrsRow(row, content)
+                })
+            )
             const totalPage = Math.max(1, Math.ceil(total / pageSize))
             return {
                 statusCode: 200,
                 message: SRS_REVIEW_MESSAGE.GET_LIST_SUCCESS,
                 data: {
-                    results,
+                    results: enrichedRows,
                     pagination: {
                         current: currentPage,
                         pageSize,
@@ -114,15 +119,10 @@ export class SrsReviewService {
         }
     }
 
-    private appendHcmTimezone(row: any) {
-        if (!row?.nextReviewDate) return row
-        const nextReviewDateHcm = this.toHcmDate(row.nextReviewDate)
-        return { ...row, nextReviewDateHcm }
-    }
-
-    private toHcmDate(date: Date) {
-        const hcmTime = new Date(date.getTime() + 7 * 60 * 60 * 1000)
-        return hcmTime
+    private sanitizeSrsRow(row: any, content: any) {
+        if (!row) return null
+        const { id, userId, message, contentType, contentId, isRead } = row
+        return { id, userId, message, contentType, contentId, isRead, content }
     }
 
     private getHcmDayRange(date: Date) {
@@ -157,8 +157,6 @@ export class SrsReviewService {
                     : null
                 mappedUsages.push({
                     id: u.id,
-                    explanationKey: u.explanationKey,
-                    exampleSentenceKey: u.exampleSentenceKey,
                     explanation,
                     exampleSentence: example
                 })
@@ -172,19 +170,65 @@ export class SrsReviewService {
             }
         }
         if (t === 'KANJI') {
-            const kanji = await (this.prisma as any).kanji.findUnique({ where: { id } })
+            const kanji = await (this.prisma as any).kanji.findUnique({
+                where: { id },
+                include: {
+                    readings: true
+                }
+            })
             if (!kanji) return null
             let meaning: string | null = null
             if (kanji.meaningKey) {
                 meaning = (await this.translationHelper.getTranslation(kanji.meaningKey, lang))
                     || (await this.translationHelper.getTranslation(kanji.meaningKey, 'vi'))
             }
+            if (meaning) {
+                const firstDotIndex = meaning.indexOf('.')
+                if (firstDotIndex > -1) {
+                    meaning = meaning.substring(0, firstDotIndex).trim()
+                }
+            }
+            const onReadings = kanji.readings?.filter((r: any) => r.readingType?.toLowerCase() === 'onyomi').map((r: any) => r.reading) || []
+            const kunReadings = kanji.readings?.filter((r: any) => r.readingType?.toLowerCase() === 'kunyomi').map((r: any) => r.reading) || []
             return {
                 type: 'kanji',
                 id: kanji.id,
                 character: kanji.character,
                 meaning,
-                jlptLevel: kanji.jlptLevel
+                jlptLevel: kanji.jlptLevel,
+                onReading: onReadings.join(', '),
+                kunReading: kunReadings.join(', ')
+            }
+        }
+        if (t === 'VOCABULARY') {
+            const vocabulary = await (this.prisma as any).vocabulary.findUnique({
+                where: { id },
+                include: { meanings: true }
+            })
+            if (!vocabulary) return null
+            let meaning: string | null = null
+            if (vocabulary.meanings?.length) {
+                const meaningTexts: string[] = []
+                for (const m of vocabulary.meanings) {
+                    if (m.meaningKey) {
+                        const translated =
+                            (await this.translationHelper.getTranslation(m.meaningKey, lang)) ||
+                            (await this.translationHelper.getTranslation(m.meaningKey, 'vi'))
+                        if (translated) {
+                            meaningTexts.push(translated)
+                        }
+                    }
+                }
+                meaning = meaningTexts.join(', ') || null
+            }
+            return {
+                type: 'vocabulary',
+                id: vocabulary.id,
+                wordJp: vocabulary.wordJp,
+                reading: vocabulary.reading,
+                meaning,
+                audioUrl: vocabulary.audioUrl,
+                imageUrl: vocabulary.imageUrl
             }
         }
         return { type: t.toLowerCase(), id }

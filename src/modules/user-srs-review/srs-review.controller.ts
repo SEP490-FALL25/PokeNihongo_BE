@@ -31,9 +31,10 @@ export class SrsReviewController {
     @ApiResponse({ status: 200, type: SrsReviewSwaggerDTO, isArray: true })
     async listMyToday(
         @ActiveUser('userId') userId: number,
-        @Query() query: ListSrsTodayQueryDto
+        @Query() query: ListSrsTodayQueryDto,
+        @I18nLang() languageCode: string
     ) {
-        const data = await this.srsService.listToday(userId, query)
+        const data = await this.srsService.listToday(userId, query, languageCode)
         return { statusCode: 200, data, message: 'GET_SUCCESS' }
     }
 
