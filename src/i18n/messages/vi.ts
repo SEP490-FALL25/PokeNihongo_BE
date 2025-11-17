@@ -77,7 +77,8 @@ export const viMessages = {
     INVALID_PASSWORD: 'Sai mật khẩu',
     INVALID_OLD_PASSWORD: 'Mật khẩu cũ không đúng',
     SESSION_EXPIRED: 'Phiên đã hết hạn, vui lòng đăng nhập lại',
-    UNAUTHORIZED: 'Không có quyền truy cập'
+    UNAUTHORIZED: 'Không có quyền truy cập',
+    CONFLICT_FOREIGN_KEY: 'Xung đột khóa ngoại'
   },
   level: {
     CREATE_SUCCESS: 'Tạo cấp độ thành công',

@@ -70,7 +70,8 @@ export const jaMessages = {
     INVALID_PASSWORD: 'パスワードが間違っています',
     INVALID_OLD_PASSWORD: '古いパスワードが正しくありません',
     SESSION_EXPIRED: 'セッションの有効期限が切れました。再度ログインしてください',
-    UNAUTHORIZED: '認証されていないアクセスです'
+    UNAUTHORIZED: '認証されていないアクセスです',
+    CONFLICT_FOREIGN_KEY: '外部キーの競合が発生しました'
   },
   level: {
     CREATE_SUCCESS: 'レベルの作成が完了しました',

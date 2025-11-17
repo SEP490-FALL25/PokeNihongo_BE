@@ -2,6 +2,7 @@ import { FeatureKey } from '@/common/constants/subscription.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { RewardMessage } from '@/i18n/message-keys'
 import {
+  InvalidForeignKeyConstraintException,
   LanguageNotExistToTranslateException,
   NotFoundRecordException
 } from '@/shared/error'
@@ -399,16 +400,19 @@ export class RewardService {
     lang: string = 'vi'
   ) {
     try {
-      const existingReward = await this.rewardRepo.findById(id)
+      const existingReward = await this.rewardRepo.findDelId(id)
       if (!existingReward) {
         throw new NotFoundRecordException()
       }
 
       await Promise.all([
-        this.rewardRepo.delete({
-          id,
-          deletedById
-        }),
+        this.rewardRepo.delete(
+          {
+            id,
+            deletedById
+          },
+          existingReward.deletedAt ? true : false
+        ),
         this.translationRepo.deleteByKey(existingReward.nameKey)
       ])
 
@@ -421,6 +425,11 @@ export class RewardService {
       if (isNotFoundPrismaError(error)) {
         throw new NotFoundRecordException()
       }
+      if (isForeignKeyConstraintPrismaError(error))
+        throw new InvalidForeignKeyConstraintException(
+          (error.meta?.constraint as string) ?? ''
+        )
+
       throw error
     }
   }

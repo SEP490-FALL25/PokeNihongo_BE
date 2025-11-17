@@ -1,7 +1,7 @@
-import { SYSTEM_MESSAGE } from '@/common/constants/message'
 import { AuthMessage, CommonMessage, SystemMessage } from '@/i18n/message-keys'
 import {
   BadRequestException,
+  ConflictException,
   NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException
@@ -16,10 +16,20 @@ export class NotFoundRecordException extends NotFoundException {
   }
 }
 
+export class InvalidForeignKeyConstraintException extends ConflictException {
+  constructor(data?: string) {
+    super({
+      message: SystemMessage.CONFLICT_FOREIGN_KEY,
+      errorKey: SystemMessage.CONFLICT_FOREIGN_KEY,
+      data: data || null
+    })
+  }
+}
+
 export class InvalidPasswordException extends UnauthorizedException {
   constructor() {
     super({
-      message: SYSTEM_MESSAGE.INVALID_PASSWORD,
+      message: SystemMessage.INVALID_PASSWORD,
       errorKey: SystemMessage.INVALID_PASSWORD
     })
   }

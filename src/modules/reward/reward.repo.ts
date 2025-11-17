@@ -132,7 +132,7 @@ export class RewardRepo {
     const take = pagination.pageSize
 
     // Build base where
-    const where: any = { deletedAt: null, ...rawWhere }
+    const where: any = { ...rawWhere }
 
     // Support filtering by nameTranslation/nameTranslations via relational filter
     const nameFilterRaw =
@@ -206,7 +206,7 @@ export class RewardRepo {
     const take = pagination.pageSize
 
     // Build base where
-    const where: any = { deletedAt: null, ...rawWhere }
+    const where: any = { ...rawWhere }
 
     // Support filtering by name value in a specific language (if provided)
     const nameFilterRaw =
@@ -269,6 +269,14 @@ export class RewardRepo {
       where: {
         id,
         deletedAt: null
+      }
+    })
+  }
+
+  findDelId(id: number): Promise<RewardType | null> {
+    return this.prismaService.reward.findUnique({
+      where: {
+        id
       }
     })
   }
