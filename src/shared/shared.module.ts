@@ -1,5 +1,4 @@
 import { BullQueueModule } from '@/3rdService/bull/bull-queue.module'
-import { BullQueue } from '@/common/constants/bull-action.constant'
 import { AccessTokenGuard } from '@/common/guards/access-token.guard'
 import { APIKeyGuard } from '@/common/guards/api-key.guard'
 import { AuthenticationGuard } from '@/common/guards/authentication.guard'
@@ -23,10 +22,6 @@ import { SharedUserRepository } from './repositories/shared-user.repo'
 import { PayOSService } from './services/payos.service'
 import { SharedUserSubscriptionService } from './services/user-subscription.service'
 import { InvoiceExpirationProcessor } from './workers/invoice-expiration.processor'
-import { MatchParticipantTimeoutProcessor } from './workers/match-participant-timeout.processor'
-import { MatchRoundParticipantTimeoutProcessor } from './workers/match-round-participant-timeout.processor'
-import { RoundQuestionTimeoutProcessor } from './workers/round-question-timeout.processor'
-import { SharedUserDeletionProcessor } from './workers/user-deletion.processor'
 
 const sharedServices = [
   PrismaService,
@@ -49,37 +44,20 @@ const sharedServices = [
 @Module({
   imports: [
     JwtModule,
-    BullQueueModule.forRoot(),
-    BullQueueModule.registerQueue(BullQueue.USER_DELETION),
-    BullQueueModule.registerQueue(BullQueue.MATCH_PARTICIPANT_TIMEOUT),
-    BullQueueModule.registerQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT),
-    BullQueueModule.registerQueue(BullQueue.ROUND_QUESTION_TIMEOUT),
-    BullQueueModule.registerQueue(BullQueue.INVOICE_EXPIRATION),
+    BullQueueModule.forRoot(), // Only keep forRoot() here - queues registered in domain modules
     forwardRef(() => WebsocketsModule)
-
-    // Không import GeminiModule ở đây để tránh circular dependency
-    // GeminiModule sẽ được import trong AppModule và export GeminiService
   ],
   controllers: [],
   providers: [
     ...sharedServices,
     AccessTokenGuard,
     APIKeyGuard,
-    SharedUserDeletionProcessor,
-    MatchParticipantTimeoutProcessor,
-    MatchRoundParticipantTimeoutProcessor,
-    RoundQuestionTimeoutProcessor,
-    InvoiceExpirationProcessor,
+    InvoiceExpirationProcessor, // Keep this if Invoice module doesn't exist yet
     {
       provide: APP_GUARD,
       useClass: AuthenticationGuard
     }
   ],
-  exports: [
-    ...sharedServices,
-    AccessTokenGuard,
-    APIKeyGuard
-    // GeminiService sẽ được export từ GeminiModule, không cần export ở đây
-  ]
+  exports: [...sharedServices, AccessTokenGuard, APIKeyGuard]
 })
 export class SharedModule {}

@@ -1,3 +1,6 @@
+import { BullQueueModule } from '@/3rdService/bull/bull-queue.module'
+import { BullQueue } from '@/common/constants/bull-action.constant'
+import { RoundQuestionTimeoutProcessor } from '@/shared/workers/round-question-timeout.processor'
 import { WebsocketsModule } from '@/websockets/websockets.module'
 import { Module } from '@nestjs/common'
 import { RoundQuestionController } from './round-question.controller'
@@ -5,9 +8,12 @@ import { RoundQuestionRepo } from './round-question.repo'
 import { RoundQuestionService } from './round-question.service'
 
 @Module({
-  imports: [WebsocketsModule],
+  imports: [
+    BullQueueModule.registerQueue(BullQueue.ROUND_QUESTION_TIMEOUT),
+    WebsocketsModule
+  ],
   controllers: [RoundQuestionController],
-  providers: [RoundQuestionService, RoundQuestionRepo],
-  exports: [RoundQuestionService, RoundQuestionRepo]
+  providers: [RoundQuestionService, RoundQuestionRepo, RoundQuestionTimeoutProcessor],
+  exports: [RoundQuestionService, RoundQuestionRepo, RoundQuestionTimeoutProcessor]
 })
 export class RoundQuestionModule {}

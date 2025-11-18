@@ -33,6 +33,26 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     this.logger.log('RoundQuestionTimeoutProcessor initialized')
     try {
       await this.roundQuestionTimeoutQueue.isReady()
+
+      // Listen to removed event
+      this.roundQuestionTimeoutQueue.on('removed', (job: Job) => {
+        this.logger.error(
+          `[RoundQuestion Timeout] 🗑️🗑️🗑️ JOB REMOVED: jobId=${job.id}, roundQuestionId=${job.data?.roundQuestionId}, matchRoundParticipantId=${job.data?.matchRoundParticipantId}, state=${job.returnvalue}`
+        )
+      })
+
+      // Listen to cleaned event
+      this.roundQuestionTimeoutQueue.on('cleaned', (jobs: Job[], type: string) => {
+        this.logger.error(
+          `[RoundQuestion Timeout] 🧹🧹🧹 QUEUE CLEANED: ${jobs.length} jobs of type ${type} removed`
+        )
+        jobs.forEach((job) => {
+          this.logger.error(
+            `[RoundQuestion Timeout] 🧹 Cleaned job: jobId=${job.id}, roundQuestionId=${job.data?.roundQuestionId}`
+          )
+        })
+      })
+
       try {
         await this.roundQuestionTimeoutQueue.resume(true)
         this.logger.log('[RoundQuestion Timeout] Queue resumed (global=true)')
@@ -45,6 +65,54 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           .map(([k, v]) => `${k}=${v}`)
           .join(', ')}`
       )
+
+      // Periodic check for stuck jobs every 10s
+      setInterval(async () => {
+        try {
+          const counts = await this.roundQuestionTimeoutQueue.getJobCounts()
+          if (counts.waiting > 0 || counts.delayed > 0) {
+            this.logger.debug(
+              `[RoundQuestion Timeout] 🔍 Periodic check: waiting=${counts.waiting}, delayed=${counts.delayed}, active=${counts.active}`
+            )
+
+            // Check specific waiting jobs
+            if (counts.waiting > 0 && counts.active === 0) {
+              const isPaused = await this.roundQuestionTimeoutQueue.isPaused()
+              this.logger.error(
+                `[RoundQuestion Timeout] 🚨 CRITICAL: Queue has ${counts.waiting} WAITING jobs but NO ACTIVE jobs! isPaused=${isPaused}`
+              )
+
+              const waitingJobs = await this.roundQuestionTimeoutQueue.getWaiting()
+              this.logger.error(
+                `[RoundQuestion Timeout] 🔍 Total waiting jobs: ${waitingJobs.length}`
+              )
+
+              for (const job of waitingJobs.slice(0, 5)) {
+                const state = await job.getState()
+                this.logger.error(
+                  `[RoundQuestion Timeout] 🚨 Stuck job: jobId=${job.id}, roundQuestionId=${job.data?.roundQuestionId}, matchRoundParticipantId=${job.data?.matchRoundParticipantId}, state=${state}, attemptsMade=${job.attemptsMade}, timestamp=${job.timestamp}, processedOn=${job.processedOn}`
+                )
+
+                // FORCE RETRY: Try to manually moveToCompleted then retry
+                if (state === 'waiting' && job.attemptsMade === 0) {
+                  try {
+                    this.logger.warn(
+                      `[RoundQuestion Timeout] 🔧 FORCE RETRYING stuck job ${job.id} by calling retry()...`
+                    )
+                    await job.retry()
+                  } catch (e) {
+                    this.logger.error(
+                      `[RoundQuestion Timeout] ❌ Failed to retry job ${job.id}: ${e.message}`
+                    )
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          // Silent fail
+        }
+      }, 10000)
     } catch (e) {
       this.logger.error(
         '[RoundQuestion Timeout] Error during onModuleInit diagnostics',
@@ -59,10 +127,30 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
   }
 
   @OnQueueActive()
-  onActive(job: Job) {
+  async onActive(job: Job) {
     this.logger.log(
       `[RoundQuestion Timeout] ▶️ (jobId=${job.id}) ACTIVE - Processing roundQuestionId=${job.data?.roundQuestionId}`
     )
+    
+    // CRITICAL: Force Bull to pick waiting jobs (Bull v4 bug workaround)
+    try {
+      const waitingJobs = await this.roundQuestionTimeoutQueue.getWaiting()
+      if (waitingJobs.length > 0) {
+        this.logger.warn(
+          `[RoundQuestion Timeout] 🚀 Found ${waitingJobs.length} WAITING jobs while job ${job.id} is ACTIVE, promoting them...`
+        )
+        for (const waitingJob of waitingJobs) {
+          try {
+            await waitingJob.promote()
+            this.logger.warn(`[RoundQuestion Timeout] ✅ Promoted job ${waitingJob.id}`)
+          } catch (e) {
+            // Ignore promotion errors
+          }
+        }
+      }
+    } catch (e) {
+      // Silent fail
+    }
   }
 
   @OnQueueCompleted()
@@ -75,8 +163,12 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
   @OnQueueFailed()
   onFailed(job: Job, err: any) {
     this.logger.error(
-      `[RoundQuestion Timeout] ❌ (jobId=${job?.id}) FAILED for roundQuestionId=${job?.data?.roundQuestionId}: ${err?.message}`,
+      `[RoundQuestion Timeout] ❌❌❌ (jobId=${job?.id}) FAILED for roundQuestionId=${job?.data?.roundQuestionId}, matchRoundParticipantId=${job?.data?.matchRoundParticipantId}: ${err?.message}`,
       err?.stack
+    )
+    // Log additional job info
+    this.logger.error(
+      `[RoundQuestion Timeout] ❌ Failed job details: attemptsMade=${job?.attemptsMade}, timestamp=${job?.timestamp}, processedOn=${job?.processedOn}, finishedOn=${job?.finishedOn}`
     )
   }
 
@@ -122,6 +214,10 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     const { roundQuestionId, matchRoundParticipantId } = job.data
 
     this.logger.log(
+      `[RoundQuestion Timeout] 🔵 PROCESSOR CALLED - roundQuestionId: ${roundQuestionId}, jobId=${job.id}, matchRoundParticipantId=${matchRoundParticipantId}`
+    )
+
+    this.logger.log(
       `[RoundQuestion Timeout] Processing question timeout for roundQuestionId: ${roundQuestionId}, jobId=${job.id}`
     )
 
@@ -140,10 +236,10 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
       })
 
       if (!roundQuestion) {
-        this.logger.warn(
-          `[RoundQuestion Timeout] RoundQuestion ${roundQuestionId} not found`
+        this.logger.error(
+          `[RoundQuestion Timeout] ❌ RoundQuestion ${roundQuestionId} NOT FOUND in database! jobId=${job.id}, matchRoundParticipantId=${matchRoundParticipantId}`
         )
-        return
+        throw new Error(`RoundQuestion ${roundQuestionId} not found`)
       }
 
       // Check if answer already submitted
@@ -284,25 +380,36 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             data: { endTimeQuestion }
           })
 
-          // Enqueue timeout job for next question now that we have the endTime persisted
-          await this.roundQuestionTimeoutQueue.add(
-            BullAction.CHECK_QUESTION_TIMEOUT,
-            {
-              roundQuestionId: nextQuestion.id,
-              matchRoundParticipantId
-            },
-            {
-              delay: nextQuestion.timeLimitMs
-            }
+          // Small offset + priority for concurrent processing
+          const delayOffset = (matchRoundParticipantId % 2) * 250
+          const priority = matchRoundParticipantId % 2 === 0 ? 1 : 2
+
+          // DEBUG: Log current queue state BEFORE adding new job
+          const queueCountsBefore = await this.roundQuestionTimeoutQueue.getJobCounts()
+          this.logger.debug(
+            `[RoundQuestion Timeout] 📊 Queue state BEFORE scheduling next: waiting=${queueCountsBefore.waiting}, delayed=${queueCountsBefore.delayed}, active=${queueCountsBefore.active}`
           )
 
-          // Attach computed endTime to the formatted payload
-          if (nextQuestionForNotify) {
-            nextQuestionForNotify.endTimeQuestion = endTimeQuestion
-          }
+          // CRITICAL: Use setTimeout instead of Bull queue to avoid race condition
+          // Bull v4 has bug where concurrent delayed jobs get auto-deleted
+          setTimeout(async () => {
+            try {
+              await this.handleQuestionTimeout({
+                id: `timeout-${nextQuestion.id}`,
+                data: {
+                  roundQuestionId: nextQuestion.id,
+                  matchRoundParticipantId
+                }
+              } as any)
+            } catch (err) {
+              this.logger.error(
+                `[RoundQuestion Timeout] setTimeout error for question ${nextQuestion.id}: ${err.message}`
+              )
+            }
+          }, nextQuestion.timeLimitMs + delayOffset)
 
           this.logger.log(
-            `[RoundQuestion Timeout] Scheduled next question ${nextQuestion.id} with delay ${nextQuestion.timeLimitMs}ms`
+            `[RoundQuestion Timeout] Scheduled next question ${nextQuestion.id} with setTimeout delay ${nextQuestion.timeLimitMs + delayOffset}ms`
           )
         } catch (err) {
           this.logger.warn(

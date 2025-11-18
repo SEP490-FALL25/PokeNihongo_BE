@@ -18,8 +18,9 @@ import {
   Process,
   Processor
 } from '@nestjs/bull'
-import { Inject, Logger, OnModuleInit } from '@nestjs/common'
+import { forwardRef, Inject, Logger, OnModuleInit } from '@nestjs/common'
 import { Job, Queue } from 'bull'
+import { RoundQuestionTimeoutProcessor } from './round-question-timeout.processor'
 
 const TIME_CHOOSE_POKEMON_MS = 5000
 const TIME_LIMIT_ANSWER_QUESTION_MS = 5000
@@ -37,7 +38,9 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
     @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
     private readonly roundQuestionTimeoutQueue: Queue,
     @Inject(MatchingGateway)
-    private readonly matchingGateway: MatchingGateway
+    private readonly matchingGateway: MatchingGateway,
+    @Inject(forwardRef(() => RoundQuestionTimeoutProcessor))
+    private readonly roundQuestionProcessor: RoundQuestionTimeoutProcessor
   ) {}
 
   async onModuleInit() {
@@ -73,15 +76,11 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             .join(' | ')}`
         )
       }
-      // Schedule recount after a short delay to observe transition
-      setTimeout(async () => {
-        const later = await this.matchRoundParticipantTimeoutQueue.getJobCounts()
-        this.logger.log(
-          `[RoundParticipant Timeout] Queue job counts (T+5s): ${Object.entries(later)
-            .map(([k, v]) => `${k}=${v}`)
-            .join(', ')}`
-        )
-      }, 5000)
+
+      // Bull v4 has built-in delayed job processing - no manual polling needed
+      this.logger.log(
+        '[RoundParticipant Timeout] Bull worker will automatically process delayed jobs'
+      )
     } catch (e) {
       this.logger.error(
         '[RoundParticipant Timeout] Error during onModuleInit diagnostics',
@@ -352,15 +351,16 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
 
       if (nextParticipant) {
         // Set time cho participant tiếp theo
+        const endTime = addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
         await this.prismaService.matchRoundParticipant.update({
           where: { id: nextParticipant.id },
           data: {
-            endTimeSelected: addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
+            endTimeSelected: endTime
           }
         })
 
-        // Tạo Bull job cho participant tiếp theo
-        await this.matchRoundParticipantTimeoutQueue.add(
+        // Add job ngay lập tức với delay trong Bull (đừng dùng setTimeout)
+        const nextJob = await this.matchRoundParticipantTimeoutQueue.add(
           BullAction.CHECK_POKEMON_SELECTION_TIMEOUT,
           {
             matchRoundParticipantId: nextParticipant.id
@@ -371,7 +371,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         )
 
         this.logger.log(
-          `Set endTimeSelected and Bull job for next participant: ${nextParticipant.id}`
+          `Set endTimeSelected and Bull job for participant: ${nextParticipant.id}, jobId=${nextJob.id}, delay=${TIME_CHOOSE_POKEMON_MS}ms`
         )
       }
 
@@ -975,6 +975,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
       })
 
       // Schedule first question timeout for each participant and send socket
+      let participantIndex = 0
       for (const participant of roundParticipants) {
         const firstQuestion = await this.prismaService.roundQuestion.findFirst({
           where: { matchRoundParticipantId: participant.id },
@@ -1003,16 +1004,28 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
           data: { endTimeQuestion }
         })
 
-        // Enqueue timeout job for first question
-        await this.roundQuestionTimeoutQueue.add(
-          BullAction.CHECK_QUESTION_TIMEOUT,
-          {
-            roundQuestionId: firstQuestion.id,
-            matchRoundParticipantId: participant.id
-          },
-          {
-            delay: firstQuestion.timeLimitMs
+        // CRITICAL: Use setTimeout instead of Bull queue to avoid race condition
+        // Bull v4 auto-deletes concurrent jobs, so we bypass it entirely
+        const delayOffset = (participant.id % 2) * 250
+        
+        setTimeout(async () => {
+          try {
+            await this.roundQuestionProcessor.handleQuestionTimeout({
+              id: `first-${firstQuestion.id}`,
+              data: {
+                roundQuestionId: firstQuestion.id,
+                matchRoundParticipantId: participant.id
+              }
+            } as any)
+          } catch (err) {
+            this.logger.error(
+              `[Round Timeout] setTimeout error for first question ${firstQuestion.id}: ${err.message}`
+            )
           }
+        }, firstQuestion.timeLimitMs + delayOffset)
+
+        this.logger.log(
+          `[Round Timeout] 📋 Scheduled first question ${firstQuestion.id} for participant ${participant.id} (user ${participant.matchParticipant.user.id}) - setTimeout delay=${firstQuestion.timeLimitMs + delayOffset}ms, offset=${delayOffset}ms`
         )
 
         // Send socket to user with round data, participant info, and first question (formatted via QuestionBankService)
