@@ -1,3 +1,6 @@
+import { BullQueueModule } from '@/3rdService/bull/bull-queue.module'
+import { BullQueue } from '@/common/constants/bull-action.constant'
+import { MatchRoundParticipantTimeoutProcessor } from '@/shared/workers/match-round-participant-timeout.processor'
 import { WebsocketsModule } from '@/websockets/websockets.module'
 import { forwardRef, Module } from '@nestjs/common'
 import { MatchRoundModule } from '../match-round/match-round.module'
@@ -11,6 +14,7 @@ import { MatchRoundParticipantService } from './match-round-participant.service'
 
 @Module({
   imports: [
+    BullQueueModule.registerQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT),
     MatchModule,
     forwardRef(() => MatchRoundModule),
     WebsocketsModule,
@@ -19,7 +23,11 @@ import { MatchRoundParticipantService } from './match-round-participant.service'
     QuestionBankModule
   ],
   controllers: [MatchRoundParticipantController],
-  providers: [MatchRoundParticipantService, MatchRoundParticipantRepo],
+  providers: [
+    MatchRoundParticipantService,
+    MatchRoundParticipantRepo,
+    MatchRoundParticipantTimeoutProcessor
+  ],
   exports: [MatchRoundParticipantService, MatchRoundParticipantRepo]
 })
 export class MatchRoundParticipantModule {}

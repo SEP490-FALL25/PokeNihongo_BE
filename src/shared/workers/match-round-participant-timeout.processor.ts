@@ -73,15 +73,11 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             .join(' | ')}`
         )
       }
-      // Schedule recount after a short delay to observe transition
-      setTimeout(async () => {
-        const later = await this.matchRoundParticipantTimeoutQueue.getJobCounts()
-        this.logger.log(
-          `[RoundParticipant Timeout] Queue job counts (T+5s): ${Object.entries(later)
-            .map(([k, v]) => `${k}=${v}`)
-            .join(', ')}`
-        )
-      }, 5000)
+
+      // Bull v4 has built-in delayed job processing - no manual polling needed
+      this.logger.log(
+        '[RoundParticipant Timeout] Bull worker will automatically process delayed jobs'
+      )
     } catch (e) {
       this.logger.error(
         '[RoundParticipant Timeout] Error during onModuleInit diagnostics',
@@ -352,15 +348,16 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
 
       if (nextParticipant) {
         // Set time cho participant tiếp theo
+        const endTime = addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
         await this.prismaService.matchRoundParticipant.update({
           where: { id: nextParticipant.id },
           data: {
-            endTimeSelected: addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
+            endTimeSelected: endTime
           }
         })
 
-        // Tạo Bull job cho participant tiếp theo
-        await this.matchRoundParticipantTimeoutQueue.add(
+        // Add job ngay lập tức với delay trong Bull (đừng dùng setTimeout)
+        const nextJob = await this.matchRoundParticipantTimeoutQueue.add(
           BullAction.CHECK_POKEMON_SELECTION_TIMEOUT,
           {
             matchRoundParticipantId: nextParticipant.id
@@ -371,7 +368,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         )
 
         this.logger.log(
-          `Set endTimeSelected and Bull job for next participant: ${nextParticipant.id}`
+          `Set endTimeSelected and Bull job for participant: ${nextParticipant.id}, jobId=${nextJob.id}, delay=${TIME_CHOOSE_POKEMON_MS}ms`
         )
       }
 

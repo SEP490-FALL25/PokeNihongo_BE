@@ -39,6 +39,13 @@ export class BullQueueModule {
                 port: parseInt(new URL(redisUri).port),
                 password: new URL(redisUri).password
               },
+              settings: {
+                stalledInterval: 30000,
+                maxStalledCount: 1,
+                lockDuration: 30000,
+                // CRITICAL: Enable automatic delayed job polling every 1s
+                drainDelay: 1000
+              },
               ...options
             }
           }

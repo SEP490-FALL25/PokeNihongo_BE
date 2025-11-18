@@ -27,7 +27,7 @@ import {
 } from './entities/match-participant.entity'
 import { MatchParticipantRepo } from './match-participant.repo'
 
-const TIME_CHOOSE_POKEMON_MS = 30000
+const TIME_CHOOSE_POKEMON_MS = 5000
 @Injectable()
 export class MatchParticipantService {
   private readonly logger = new Logger(MatchParticipantService.name)
@@ -393,7 +393,7 @@ export class MatchParticipantService {
             `[MatchParticipant] Set endTime and Bull job for first participant of Round ONE (id: ${firstParticipant.id}), jobId=${job.id}, state=${state}`
           )
           this.logger.log(
-            `[MatchParticipant] Enqueued CHECK_POKEMON_SELECTION_TIMEOUT for participant ${firstParticipant.id} delay=30000ms (jobId=${job.id})`
+            `[MatchParticipant] Enqueued CHECK_POKEMON_SELECTION_TIMEOUT for participant ${firstParticipant.id} delay=${TIME_CHOOSE_POKEMON_MS} (jobId=${job.id})`
           )
         }
       }

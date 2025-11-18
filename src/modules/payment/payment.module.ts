@@ -1,4 +1,6 @@
+import { BullQueueModule } from '@/3rdService/bull/bull-queue.module'
 import { MailModule } from '@/3rdService/mail/mail.module'
+import { BullQueue } from '@/common/constants/bull-action.constant'
 import { Module, forwardRef } from '@nestjs/common'
 import { InvoiceModule } from '../invoice/invoice.module'
 import { SubscriptionPlanModule } from '../subscription-plan/subscription-plan.module'
@@ -12,7 +14,8 @@ import { PaymentService } from './payment.service'
     forwardRef(() => InvoiceModule),
     SubscriptionPlanModule,
     UserSubscriptionModule,
-    MailModule
+    MailModule,
+    BullQueueModule.registerQueue(BullQueue.INVOICE_EXPIRATION)
   ],
   controllers: [PaymentController],
   providers: [PaymentService, PaymentRepo],
