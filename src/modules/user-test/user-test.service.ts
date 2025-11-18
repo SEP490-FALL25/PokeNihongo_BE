@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { UserTestRepository } from './user-test.repo'
-import { CreateUserTestBodyType, UpdateUserTestBodyType, GetUserTestListQueryType } from './entities/user-test.entities'
+import { CreateUserTestBodyType, UpdateUserTestBodyType, GetUserTestListQueryType, UserTestType } from './entities/user-test.entities'
 import { USER_TEST_MESSAGE } from '@/common/constants/message'
 import { UserTestStatus, TestStatus } from '@prisma/client'
 import { PrismaService } from '@/shared/services/prisma.service'
+import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
+import { FeatureKey, FeatureKeyType } from '@/common/constants/subscription.constant'
 
 @Injectable()
 export class UserTestService {
@@ -12,8 +14,30 @@ export class UserTestService {
 
     constructor(
         private readonly userTestRepo: UserTestRepository,
-        private readonly prisma: PrismaService
+        private readonly prisma: PrismaService,
+        private readonly sharedUserSubscriptionService: SharedUserSubscriptionService
     ) { }
+
+    private getDefaultUserTestStatus(test: { testType: TestStatus; price?: number | null }): UserTestStatus {
+        const priceValue = test.price !== undefined && test.price !== null ? Number(test.price) : 0
+        if (test.testType === TestStatus.SUBSCRIPTION_TEST || priceValue > 0) {
+            return UserTestStatus.NOT_STARTED
+        }
+        return UserTestStatus.ACTIVE
+    }
+
+    private getFeatureKeyByTestType(testType: TestStatus | string): FeatureKeyType | null {
+        switch (testType) {
+            case TestStatus.READING_TEST:
+            case 'READING_TEST':
+                return FeatureKey.UNLOCK_READING
+            case TestStatus.LISTENING_TEST:
+            case 'LISTENING_TEST':
+                return FeatureKey.UNLOCK_LISTENING
+            default:
+                return null
+        }
+    }
 
     async create(body: CreateUserTestBodyType) {
         try {
@@ -37,13 +61,32 @@ export class UserTestService {
     }
 
     async findAll(query: GetUserTestListQueryType, language?: string) {
-        const result = await this.userTestRepo.findMany(query)
+        const normalizedQuery: GetUserTestListQueryType = {
+            ...query,
+            order: query.order ?? 'asc'
+        }
+        const result = await this.userTestRepo.findMany(normalizedQuery)
+
+        let processedItems = result.items
+        let testCache = new Map<number, any>()
+
+        if (typeof normalizedQuery.userId === 'number' && result.items.length > 0) {
+            const unlockResult = await this.unlockUserTestsBySubscription(result.items, normalizedQuery.userId, language)
+            processedItems = unlockResult.userTests
+            testCache = unlockResult.testCache
+        }
 
         // Nếu có language, lấy thông tin Test với translations cho mỗi UserTest
-        if (language && result.items.length > 0) {
+        if (language && processedItems.length > 0) {
             const userTestsWithTestInfo = await Promise.all(
-                result.items.map(async (userTest) => {
-                    const test = await this.userTestRepo.getTestById(userTest.testId, language)
+                processedItems.map(async (userTest) => {
+                    let test = testCache.get(userTest.testId)
+                    if (!test) {
+                        test = await this.userTestRepo.getTestById(userTest.testId, language)
+                        if (test) {
+                            testCache.set(userTest.testId, test)
+                        }
+                    }
                     // Loại bỏ testId, createdAt, updatedAt và thêm thông tin test
                     const { testId, createdAt, updatedAt, ...userTestWithoutIdAndDates } = userTest
                     return {
@@ -61,7 +104,6 @@ export class UserTestService {
                     }
                 })
             )
-
             return {
                 statusCode: 200,
                 message: USER_TEST_MESSAGE.GET_LIST_SUCCESS,
@@ -81,7 +123,7 @@ export class UserTestService {
             statusCode: 200,
             message: USER_TEST_MESSAGE.GET_LIST_SUCCESS,
             data: {
-                results: result.items,
+                results: processedItems,
                 pagination: {
                     current: result.page,
                     pageSize: result.limit,
@@ -90,6 +132,63 @@ export class UserTestService {
                 }
             }
         }
+    }
+    
+    private async unlockUserTestsBySubscription(
+        userTests: UserTestType[],
+        userId: number,
+        language?: string
+    ): Promise<{ userTests: UserTestType[]; testCache: Map<number, any> }> {
+        const featureAccessCache = new Map<FeatureKeyType, boolean>()
+        const testCache = new Map<number, any>()
+        const updatedUserTests: UserTestType[] = []
+
+        for (const userTest of userTests) {
+            let test = testCache.get(userTest.testId)
+            if (!test) {
+                test = await this.userTestRepo.getTestById(userTest.testId, language)
+                if (test) {
+                    testCache.set(userTest.testId, test)
+                }
+            }
+
+            if (!test) {
+                updatedUserTests.push(userTest)
+                continue
+            }
+
+            const featureKey = this.getFeatureKeyByTestType(test.testType)
+            if (!featureKey) {
+                updatedUserTests.push(userTest)
+                continue
+            }
+
+            let hasFeature: boolean
+            if (featureAccessCache.has(featureKey)) {
+                hasFeature = featureAccessCache.get(featureKey)!
+            } else {
+                hasFeature = await this.sharedUserSubscriptionService.getHasByfeatureKeyAndUserId(featureKey, userId)
+                featureAccessCache.set(featureKey, hasFeature)
+            }
+
+            if (hasFeature) {
+                if (userTest.status !== UserTestStatus.ACTIVE) {
+                    const updated = await this.userTestRepo.update(userTest.id, { status: UserTestStatus.ACTIVE })
+                    updatedUserTests.push(updated)
+                } else {
+                    updatedUserTests.push(userTest)
+                }
+            } else {
+                if (userTest.status !== UserTestStatus.NOT_STARTED) {
+                    const updated = await this.userTestRepo.update(userTest.id, { status: UserTestStatus.NOT_STARTED })
+                    updatedUserTests.push(updated)
+                } else {
+                    updatedUserTests.push(userTest)
+                }
+            }
+        }
+
+        return { userTests: updatedUserTests, testCache }
     }
 
     async findOne(id: number) {
@@ -164,9 +263,7 @@ export class UserTestService {
             const userTestData = tests.map(test => ({
                 userId,
                 testId: test.id,
-                status: test.testType === TestStatus.SUBSCRIPTION_TEST
-                    ? UserTestStatus.NOT_STARTED
-                    : UserTestStatus.ACTIVE,
+                status: this.getDefaultUserTestStatus(test),
                 limit: test.limit
             }))
 
@@ -235,9 +332,7 @@ export class UserTestService {
                     userTestData.push({
                         userId: user.id,
                         testId: test.id,
-                        status: test.testType === TestStatus.SUBSCRIPTION_TEST
-                            ? UserTestStatus.NOT_STARTED
-                            : UserTestStatus.ACTIVE,
+                        status: this.getDefaultUserTestStatus(test),
                         limit: test.limit
                     })
                 }

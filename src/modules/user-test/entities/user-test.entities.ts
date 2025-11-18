@@ -103,6 +103,8 @@ export const GetUserTestByIdParamsSchema = z
     })
     .strict()
 
+const OrderSchema = z.enum(['asc', 'desc'])
+
 export const GetUserTestListQuerySchema = z
     .object({
         currentPage: z.string().transform((val) => parseInt(val, 10)).optional().default('1'),
@@ -110,7 +112,8 @@ export const GetUserTestListQuerySchema = z
         userId: z.string().transform((val) => parseInt(val, 10)).optional(),
         testId: z.string().transform((val) => parseInt(val, 10)).optional(),
         status: UserTestStatusSchema.optional(),
-        testType: z.nativeEnum(TestStatus).optional()
+        testType: z.nativeEnum(TestStatus).optional(),
+        order: OrderSchema.optional().default('asc')
     })
     .strict()
 
