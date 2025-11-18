@@ -321,10 +321,10 @@ export class TestService {
                     const updatedCount = await this.userTestService.updateStatusByTestId(id, UserTestStatus.NOT_STARTED)
                     this.logger.log(`Updated ${updatedCount} user-tests to NOT_STARTED for testId ${id} (test is now INACTIVE)`)
                 } else if (newStatus === 'ACTIVE') {
-                    // Nếu test được đổi thành ACTIVE, cập nhật user-test status dựa trên testType
-                    // SUBSCRIPTION_TEST -> NOT_STARTED, các test khác -> ACTIVE
-                    const testType = data.testType || test.testType
-                    const userTestStatus = testType === 'SUBSCRIPTION_TEST' ? UserTestStatus.NOT_STARTED : UserTestStatus.ACTIVE
+                    // Nếu test được đổi thành ACTIVE, cập nhật user-test status dựa trên testType và price
+                    const targetTestType = data.testType || test.testType
+                    const updatedPrice = data.price !== undefined ? data.price : test.price
+                    const userTestStatus = this.getUserTestStatusForTest(targetTestType, updatedPrice)
                     const updatedCount = await this.userTestService.updateStatusByTestId(id, userTestStatus)
                     this.logger.log(`Updated ${updatedCount} user-tests to ${userTestStatus} for testId ${id}`)
                 }
@@ -470,6 +470,14 @@ export class TestService {
         }
     }
 
+    private getUserTestStatusForTest(testType: TestStatus | string, price?: number | null): UserTestStatus {
+        const normalizedPrice = price !== undefined && price !== null ? Number(price) : 0
+        if (testType === TestStatus.SUBSCRIPTION_TEST || testType === 'SUBSCRIPTION_TEST' || normalizedPrice > 0) {
+            return UserTestStatus.NOT_STARTED
+        }
+        return UserTestStatus.ACTIVE
+    }
+
     async createTestWithMeanings(data: CreateTestWithMeaningsBodyType, userId: number): Promise<MessageResDTO> {
         try {
             // Validation
@@ -575,9 +583,10 @@ export class TestService {
                     const updatedCount = await this.userTestService.updateStatusByTestId(id, UserTestStatus.NOT_STARTED)
                     this.logger.log(`Updated ${updatedCount} user-tests to NOT_STARTED for testId ${id} (test is now INACTIVE)`)
                 } else if (newStatus === 'ACTIVE') {
-                    // Nếu test được đổi thành ACTIVE, cập nhật user-test status dựa trên testType
-                    // SUBSCRIPTION_TEST -> NOT_STARTED, các test khác -> ACTIVE
-                    const userTestStatus = test.testType === 'SUBSCRIPTION_TEST' ? UserTestStatus.NOT_STARTED : UserTestStatus.ACTIVE
+                    // Nếu test được đổi thành ACTIVE, cập nhật user-test status dựa trên testType và price
+                    const targetTestType = data.testType || test.testType
+                    const updatedPrice = data.price !== undefined ? data.price : test.price
+                    const userTestStatus = this.getUserTestStatusForTest(targetTestType, updatedPrice)
                     const updatedCount = await this.userTestService.updateStatusByTestId(id, userTestStatus)
                     this.logger.log(`Updated ${updatedCount} user-tests to ${userTestStatus} for testId ${id}`)
                 }
