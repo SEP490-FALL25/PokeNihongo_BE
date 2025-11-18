@@ -10,6 +10,7 @@ import {
   isNotFoundPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { SubscriptionPlanNotFoundException } from '../subscription-plan/dto/subscription-plan.error'
@@ -31,7 +32,8 @@ export class UserSubscriptionService {
     private userSubscriptionRepo: UserSubscriptionRepo,
     private readonly subscriptionPlanRepo: SubscriptionPlanRepo,
     private readonly i18nService: I18nService,
-    private readonly languageRepo: LanguagesRepository
+    private readonly languageRepo: LanguagesRepository,
+    private readonly prismaService: PrismaService
   ) {}
 
   private async convertTranslationsToLangCodes(
@@ -328,6 +330,19 @@ export class UserSubscriptionService {
         user: us.user
       },
       message: this.i18nService.translate(UserSubscriptionMessage.GET_SUCCESS, lang)
+    }
+  }
+
+  async getListFeatureOfUser(userId: number, lang: string = 'vi') {
+    // Lấy tất cả subscription đang active của user
+    const result = await this.userSubscriptionRepo.getListFeatureOfUser(userId)
+
+    return {
+      statusCode: 200,
+      data: {
+        result
+      },
+      message: this.i18nService.translate(UserSubscriptionMessage.GET_LIST_SUCCESS, lang)
     }
   }
 }

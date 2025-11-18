@@ -132,7 +132,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
               err
             )
           }
-        }, 3000)
+        }, 0)
       }
     })
   }
@@ -928,7 +928,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
   /**
    * Handler to start a round after delay
    */
-  @Process(BullAction.START_ROUND)
+  @Process({ name: BullAction.START_ROUND, concurrency: 10 })
   async handleStartRound(
     job: Job<{ matchId: number; matchRoundId: number }>
   ): Promise<void> {
