@@ -40,8 +40,9 @@ export class UserTestRepository {
     }
 
     async findMany(query: GetUserTestListQueryType): Promise<{ items: UserTestType[]; total: number; page: number; limit: number }> {
-        const { currentPage = 1, pageSize = 10, userId, testId, status, testType } = query
+        const { currentPage = 1, pageSize = 10, userId, testId, status, testType, order } = query
         const skip = (Number(currentPage) - 1) * Number(pageSize)
+        const orderDirection = order === 'asc' ? 'asc' : 'desc'
 
         const where: any = {}
 
@@ -69,7 +70,10 @@ export class UserTestRepository {
                 where,
                 skip,
                 take: Number(pageSize),
-                orderBy: { createdAt: 'desc' }
+                orderBy: [
+                    { status: 'desc' }, // ACTIVE trước (A) rồi đến NOT_STARTED (N)
+                    { createdAt: orderDirection }
+                ]
             }),
             this.prisma.userTest.count({ where })
         ])
@@ -146,8 +150,8 @@ export class UserTestRepository {
     /**
      * Lấy tất cả Test có status = ACTIVE và KHÔNG phải MATCH_TEST
      */
-    async getActiveTests(): Promise<{ id: number; testType: TestStatus; limit: number | null }[]> {
-        return await this.prisma.test.findMany({
+    async getActiveTests(): Promise<{ id: number; testType: TestStatus; limit: number | null; price: number | null }[]> {
+        const tests = await this.prisma.test.findMany({
             where: {
                 status: TestSetStatus.ACTIVE,
                 testType: {
@@ -157,12 +161,18 @@ export class UserTestRepository {
             select: {
                 id: true,
                 testType: true,
-                limit: true
+                limit: true,
+                price: true
             },
             orderBy: {
                 id: 'asc'
             }
         })
+
+        return tests.map(test => ({
+            ...test,
+            price: test.price ? Number(test.price) : null
+        }))
     }
 
     /**
