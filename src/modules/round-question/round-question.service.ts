@@ -182,23 +182,7 @@ export class RoundQuestionService {
     },
     lang: string = 'vi'
   ) {
-    // Remove any scheduled timeout job for this roundQuestion
-    try {
-      const jobs = await this.roundQuestionTimeoutQueue.getJobs(['delayed', 'waiting'])
-      await Promise.all(
-        jobs
-          .filter(
-            (j) =>
-              j.name === BullAction.CHECK_QUESTION_TIMEOUT &&
-              j.data?.roundQuestionId === id
-          )
-          .map((j) => j.remove())
-      )
-    } catch (e) {
-      console.warn('[RoundQuestion] Failed to remove timeout job', e)
-    }
-
-    // Fetch roundQuestion with answers and debuff
+    // Fetch roundQuestion first to get matchRoundParticipantId
     const roundQuestion = await this.prismaService.roundQuestion.findUnique({
       where: { id },
       include: {
@@ -208,6 +192,27 @@ export class RoundQuestionService {
     })
 
     if (!roundQuestion) throw new RoundQuestionNotFoundException()
+
+    // Remove any scheduled timeout job for this SPECIFIC participant's roundQuestion
+    try {
+      const jobs = await this.roundQuestionTimeoutQueue.getJobs(['delayed', 'waiting'])
+      const jobsToRemove = jobs.filter(
+        (j) =>
+          j.name === BullAction.CHECK_QUESTION_TIMEOUT &&
+          j.data?.roundQuestionId === id &&
+          j.data?.matchRoundParticipantId === roundQuestion.matchRoundParticipantId // CRITICAL: Match exact participant!
+      )
+      
+      if (jobsToRemove.length > 0) {
+        console.log(
+          `[RoundQuestion] 🗑️ Removing ${jobsToRemove.length} timeout job(s) for roundQuestionId=${id}, participantId=${roundQuestion.matchRoundParticipantId}: jobIds=[${jobsToRemove.map(j => j.id).join(', ')}]`
+        )
+      }
+      
+      await Promise.all(jobsToRemove.map((j) => j.remove()))
+    } catch (e) {
+      console.warn('[RoundQuestion] Failed to remove timeout job', e)
+    }
 
     // Check provided answer
     const providedAnswer = roundQuestion.questionBank.answers.find(
@@ -287,13 +292,17 @@ export class RoundQuestionService {
             data: { endTimeQuestion }
           })
 
+          // Offset + priority for concurrent processing
+          const delayOffset = (roundQuestion.matchRoundParticipantId % 2) * 250
+          const priority = roundQuestion.matchRoundParticipantId % 2 === 0 ? 1 : 2
+
           await this.roundQuestionTimeoutQueue.add(
             BullAction.CHECK_QUESTION_TIMEOUT,
             {
               roundQuestionId: nextQuestion.id,
               matchRoundParticipantId: roundQuestion.matchRoundParticipantId
             },
-            { delay: nextQuestion.timeLimitMs }
+            { delay: nextQuestion.timeLimitMs + delayOffset, priority, removeOnComplete: false, removeOnFail: false }
           )
         }
       }
@@ -378,13 +387,17 @@ export class RoundQuestionService {
             data: { endTimeQuestion }
           })
 
+          // Offset + priority for concurrent processing
+          const delayOffset = (roundQuestion.matchRoundParticipantId % 2) * 250
+          const priority = roundQuestion.matchRoundParticipantId % 2 === 0 ? 1 : 2
+
           await this.roundQuestionTimeoutQueue.add(
             BullAction.CHECK_QUESTION_TIMEOUT,
             {
               roundQuestionId: nextQuestion.id,
               matchRoundParticipantId: roundQuestion.matchRoundParticipantId
             },
-            { delay: nextQuestion.timeLimitMs }
+            { delay: nextQuestion.timeLimitMs + delayOffset, priority, removeOnComplete: false, removeOnFail: false }
           )
         }
       } catch (e) {

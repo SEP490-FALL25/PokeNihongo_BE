@@ -6,7 +6,6 @@ import {
 } from '@/common/constants/match.constant'
 import { I18nService } from '@/i18n/i18n.service'
 import { MatchRoundParticipantMessage } from '@/i18n/message-keys'
-import { QuestionBankService } from '@/modules/question-bank/question-bank.service'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   addTimeUTC,
@@ -22,10 +21,8 @@ import { Queue } from 'bull'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { MatchingGateway } from 'src/websockets/matching.gateway'
 import { MatchRoundRepo } from '../match-round/match-round.repo'
-import { MatchRepo } from '../match/match.repo'
 import { PokemonRepo } from '../pokemon/pokemon.repo'
 import { QuestionBankRepository } from '../question-bank/question-bank.repo'
-import { RoundQuestionRepo } from '../round-question/round-question.repo'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import { MatchRoundParticipantNotFoundException } from './dto/match-round-participant.error'
 import {
@@ -44,7 +41,6 @@ export class MatchRoundParticipantService {
 
   constructor(
     private matchRoundParticipantRepo: MatchRoundParticipantRepo,
-    private readonly matchRepo: MatchRepo,
     private readonly matchRoundRepo: MatchRoundRepo,
     private readonly userPokemonRepo: UserPokemonRepo,
     private readonly questionBankRepo: QuestionBankRepository,
@@ -52,12 +48,8 @@ export class MatchRoundParticipantService {
     private readonly i18nService: I18nService,
     private readonly prismaService: PrismaService,
     private readonly matchingGateway: MatchingGateway,
-    private readonly questionBankService: QuestionBankService,
-    private readonly roundQuestionRepo: RoundQuestionRepo,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
-    private readonly matchRoundParticipantTimeoutQueue: Queue,
-    @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
-    private readonly roundQuestionTimeoutQueue: Queue
+    private readonly matchRoundParticipantTimeoutQueue: Queue
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
