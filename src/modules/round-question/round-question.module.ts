@@ -14,6 +14,6 @@ import { RoundQuestionService } from './round-question.service'
   ],
   controllers: [RoundQuestionController],
   providers: [RoundQuestionService, RoundQuestionRepo, RoundQuestionTimeoutProcessor],
-  exports: [RoundQuestionService, RoundQuestionRepo]
+  exports: [RoundQuestionService, RoundQuestionRepo, RoundQuestionTimeoutProcessor]
 })
 export class RoundQuestionModule {}
