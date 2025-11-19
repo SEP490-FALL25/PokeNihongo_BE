@@ -29,7 +29,8 @@ import { I18nService } from '@/i18n/i18n.service'
 import { UserExerciseAttemptMessage } from '@/i18n/message-keys'
 import { pickLabelFromComposite } from '@/common/utils/prase.utils'
 import { calculateScore } from '@/common/utils/algorithm'
-import { ProgressStatus } from '@prisma/client'
+import { ProgressStatus, UserRewardSourceType } from '@prisma/client'
+import { RewardService } from '../reward/reward.service'
 
 @Injectable()
 export class UserExerciseAttemptService {
@@ -44,8 +45,29 @@ export class UserExerciseAttemptService {
         private readonly exercisesRepository: ExercisesRepository,
         private readonly sharedUserRepository: SharedUserRepository,
         private readonly translationHelper: TranslationHelperService,
-        private readonly i18nService: I18nService
+        private readonly i18nService: I18nService,
+        private readonly rewardService: RewardService
     ) { }
+
+    private async grantExerciseRewards(
+        rewardIds: number[] | undefined | null,
+        userId: number,
+        options?: { reduceReward?: boolean }
+    ) {
+        if (!Array.isArray(rewardIds) || rewardIds.length === 0) {
+            return null
+        }
+
+        const uniqueRewardIds = Array.from(new Set(rewardIds))
+        return this.rewardService.convertRewardsWithUser(
+            uniqueRewardIds,
+            userId,
+            UserRewardSourceType.EXERCISE,
+            {
+                reduceReward: options?.reduceReward ?? false
+            }
+        )
+    }
 
     async create(userId: number, exerciseId: number) {
         try {
@@ -313,7 +335,8 @@ export class UserExerciseAttemptService {
                         unansweredQuestionIds: allQuestions.map(q => q.id),
                         allCorrect: false,
                         status: newStatus,
-                        score
+                        score,
+                        rewards: null
                     }
                 }
             }
@@ -330,7 +353,7 @@ export class UserExerciseAttemptService {
                 this.logger.log(`Updated attempt ${userExerciseAttemptId} to ${newStatus} - incomplete answers`)
 
                 // Cập nhật UserProgress status thành FAILED
-                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'FAILED')
+                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, ProgressStatus.FAILED)
 
                 return {
                     statusCode: 200,
@@ -343,7 +366,8 @@ export class UserExerciseAttemptService {
                         unansweredQuestionIds: unansweredQuestions.map(q => q.id),
                         allCorrect: false,
                         status: newStatus,
-                        score
+                        score,
+                        rewards: null
                     }
                 }
             }
@@ -363,6 +387,14 @@ export class UserExerciseAttemptService {
                 message = 'Bạn đã hoàn thành bài tập nhưng có một số câu trả lời sai'
             }
 
+            let hasCompletedBefore = false
+            if (newStatus === 'COMPLETED') {
+                hasCompletedBefore = await this.userExerciseAttemptRepository.hasCompletedAttempt(
+                    attempt.userId,
+                    attempt.exerciseId
+                )
+            }
+
             // Update status trong database
             await this.userExerciseAttemptRepository.update(
                 { id: userExerciseAttemptId },
@@ -370,13 +402,18 @@ export class UserExerciseAttemptService {
             )
             this.logger.log(`Updated attempt ${userExerciseAttemptId} to ${newStatus}`)
 
+            let rewardResults: any = null
+
             // Cập nhật UserProgress dựa trên kết quả
             if (newStatus === 'COMPLETED') {
                 // Nếu hoàn thành (không fail), update status thành IN_PROGRESS
-                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'IN_PROGRESS')
+                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, ProgressStatus.IN_PROGRESS)
+                rewardResults = await this.grantExerciseRewards(exercise.rewardId, attempt.userId, {
+                    reduceReward: hasCompletedBefore
+                })
             } else if (newStatus === 'FAILED') {
                 // Nếu fail, update status thành FAILED
-                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'FAILED')
+                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, ProgressStatus.FAILED)
             }
 
             return {
@@ -389,7 +426,8 @@ export class UserExerciseAttemptService {
                     unansweredQuestions: 0,
                     allCorrect: allCorrect,
                     status: newStatus,
-                    score
+                    score,
+                    rewards: rewardResults
                 }
             }
 

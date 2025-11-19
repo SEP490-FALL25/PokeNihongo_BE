@@ -1,5 +1,4 @@
 import { LessonSortField, SortOrder } from '@/common/enum/enum'
-import { RewardSchema } from '@/modules/reward/entities/reward.entity'
 import { z } from 'zod'
 
 // Lesson Entity Types
@@ -21,7 +20,7 @@ export const LessonType = z.object({
   publishedAt: z.date().nullable(),
   version: z.string(),
   lessonCategoryId: z.number(),
-  rewardId: z.number().nullable(),
+  rewardId: z.array(z.number()).optional().default([]),
   createdById: z.number(),
   createdAt: z.date(),
   updatedAt: z.date()
@@ -35,7 +34,6 @@ export const LessonWithRelationsType = LessonType.extend({
       slug: z.string()
     })
     .optional(),
-  reward: RewardSchema.nullable(),
   createdBy: z
     .object({
       id: z.number(),
@@ -58,7 +56,7 @@ export const CreateLessonBodyType = z.object({
   isPublished: z.boolean().default(false),
   version: z.string().default('1.0.0'),
   lessonCategoryId: z.number(),
-  rewardId: z.number().optional(),
+  rewardId: z.array(z.number().min(1, 'ID phần thưởng không hợp lệ')).optional(),
   translations: z
     .object({
       meaning: z.array(
@@ -81,7 +79,7 @@ export const MinnaNoNihongoLesson1Data = {
   isPublished: false,
   version: '1.0.0',
   lessonCategoryId: 1,
-  rewardId: 1,
+  rewardId: [1],
   translations: {
     meaning: [
       {
