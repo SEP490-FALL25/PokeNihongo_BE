@@ -20,6 +20,9 @@ export class CreateExercisesSwaggerDTO {
 
     @ApiProperty({ example: 1, description: 'ID bộ đề' })
     testSetId?: number
+
+    @ApiProperty({ example: [1, 2], description: 'Danh sách ID phần thưởng', required: false })
+    rewardId?: number[]
 }
 
 export class UpdateExercisesSwaggerDTO {
@@ -40,6 +43,9 @@ export class UpdateExercisesSwaggerDTO {
 
     @ApiProperty({ example: 1, description: 'ID bộ đề', required: false })
     testSetId?: number
+
+    @ApiProperty({ example: [1, 2], description: 'Danh sách ID phần thưởng', required: false })
+    rewardId?: number[]
 }
 
 export class GetExercisesListQuerySwaggerDTO {
