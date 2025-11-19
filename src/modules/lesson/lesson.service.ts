@@ -23,6 +23,14 @@ import { LanguagesService } from '../languages/languages.service'
 import { LESSON_MESSAGE } from '@/common/constants/message'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 
+type RewardLessonSummary = {
+    id: number
+    name: string
+    rewardType: string
+    rewardItem: number
+    rewardTarget: string
+}
+
 @Injectable()
 export class LessonService {
     private readonly logger = new Logger(LessonService.name)
@@ -34,6 +42,81 @@ export class LessonService {
         private readonly languagesService: LanguagesService
     ) { }
 
+    private async resolveLanguageId(languageCode?: string): Promise<number | undefined> {
+        if (!languageCode) {
+            return undefined
+        }
+        try {
+            const language = await this.languagesService.findByCode({ code: languageCode })
+            return language?.data?.id ?? undefined
+        } catch {
+            this.logger.warn(`Language ${languageCode} not found, using all languages`)
+            return undefined
+        }
+    }
+
+    private async buildRewardMap(
+        rewardIds: number[],
+        languageId?: number
+    ): Promise<Map<number, RewardLessonSummary>> {
+        const map = new Map<number, RewardLessonSummary>()
+        if (!Array.isArray(rewardIds) || rewardIds.length === 0) {
+            return map
+        }
+
+        const rewardRecords = await this.lessonRepository.getRewardsByIds(rewardIds)
+        if (!rewardRecords.length) {
+            return map
+        }
+
+        let translationMap = new Map<string, string | null>()
+        if (languageId !== undefined) {
+            const uniqueKeys = Array.from(new Set(rewardRecords.map(reward => reward.nameKey).filter(Boolean)))
+            if (uniqueKeys.length > 0) {
+                const translations = await Promise.all(
+                    uniqueKeys.map(key => this.translationService.findByKeyAndLanguage(key, languageId))
+                )
+                translationMap = new Map(
+                    uniqueKeys.map((key, index) => [key, translations[index]?.value ?? null])
+                )
+            }
+        }
+
+        for (const reward of rewardRecords) {
+            const translatedName =
+                (languageId !== undefined ? translationMap.get(reward.nameKey) : null) ?? reward.nameKey
+            map.set(reward.id, {
+                id: reward.id,
+                name: translatedName,
+                rewardType: reward.rewardType,
+                rewardItem: reward.rewardItem,
+                rewardTarget: reward.rewardTarget
+            })
+        }
+
+        return map
+    }
+
+    private mapRewardsFromIds(
+        rewardIds: number[],
+        rewardMap: Map<number, RewardLessonSummary>
+    ): RewardLessonSummary[] {
+        if (!Array.isArray(rewardIds) || rewardIds.length === 0) {
+            return []
+        }
+        return rewardIds
+            .map(id => rewardMap.get(id))
+            .filter((reward): reward is RewardLessonSummary => Boolean(reward))
+    }
+
+    private async buildRewardLessonList(rewardIds: number[], languageId?: number) {
+        if (!Array.isArray(rewardIds) || rewardIds.length === 0) {
+            return []
+        }
+        const rewardMap = await this.buildRewardMap(rewardIds, languageId)
+        return this.mapRewardsFromIds(rewardIds, rewardMap)
+    }
+
     //#region get
     async getLessonList(params: GetLessonListQueryType, languageCode?: string) {
         try {
@@ -41,16 +124,9 @@ export class LessonService {
 
             const result = await this.lessonRepository.findMany(params)
 
-            // Lấy language ID (chỉ khi có languageCode)
-            let languageId: number | undefined
-            if (languageCode) {
-                try {
-                    const language = await this.languagesService.findByCode({ code: languageCode })
-                    languageId = language?.data?.id
-                } catch {
-                    this.logger.warn(`Language ${languageCode} not found, using all languages`)
-                }
-            }
+            const languageId = await this.resolveLanguageId(languageCode)
+            const allRewardIds = result.data.flatMap(lesson => lesson.rewardId ?? [])
+            const rewardMap = await this.buildRewardMap(allRewardIds, languageId)
 
             // Lấy translations cho từng lesson
             const lessonsWithTranslations = await Promise.all(
@@ -78,7 +154,8 @@ export class LessonService {
 
                     return {
                         ...lesson,
-                        title
+                        title,
+                        rewardLesson: this.mapRewardsFromIds(lesson.rewardId ?? [], rewardMap)
                     }
                 })
             )
@@ -114,15 +191,7 @@ export class LessonService {
             }
 
             // Lấy language ID (chỉ khi có languageCode)
-            let languageId: number | undefined
-            if (languageCode) {
-                try {
-                    const language = await this.languagesService.findByCode({ code: languageCode })
-                    languageId = language?.data?.id
-                } catch {
-                    this.logger.warn(`Language ${languageCode} not found, using all languages`)
-                }
-            }
+            const languageId = await this.resolveLanguageId(languageCode)
 
             // Lấy translations cho lesson
             let title: string | Array<{ language: string; value: string }> = ''
@@ -148,7 +217,8 @@ export class LessonService {
 
             const lessonWithTranslations = {
                 ...lesson,
-                title
+                title,
+                rewardLesson: await this.buildRewardLessonList(lesson.rewardId ?? [], languageId)
             }
 
             this.logger.log(`Found lesson: ${lesson.slug}`)
@@ -178,15 +248,7 @@ export class LessonService {
             }
 
             // Lấy language ID (chỉ khi có languageCode)
-            let languageId: number | undefined
-            if (languageCode) {
-                try {
-                    const language = await this.languagesService.findByCode({ code: languageCode })
-                    languageId = language?.data?.id
-                } catch {
-                    this.logger.warn(`Language ${languageCode} not found, using all languages`)
-                }
-            }
+            const languageId = await this.resolveLanguageId(languageCode)
 
             // Lấy translations cho lesson
             let title: string | Array<{ language: string; value: string }> = ''
@@ -212,7 +274,8 @@ export class LessonService {
 
             const lessonWithTranslations = {
                 ...lesson,
-                title
+                title,
+                rewardLesson: await this.buildRewardLessonList(lesson.rewardId ?? [], languageId)
             }
 
             this.logger.log(`Found lesson: ${lesson.slug}`)
@@ -244,10 +307,14 @@ export class LessonService {
                 throw new LessonCategoryNotFoundException()
             }
 
+            const normalizedRewardIds = Array.isArray(data.rewardId)
+                ? Array.from(new Set(data.rewardId))
+                : []
+
             // Validate reward exists if provided
-            if (data.rewardId) {
-                const rewardExists = await this.lessonRepository.checkRewardExists(data.rewardId)
-                if (!rewardExists) {
+            if (normalizedRewardIds.length > 0) {
+                const rewardsExist = await this.lessonRepository.checkRewardsExist(normalizedRewardIds)
+                if (!rewardsExist) {
                     throw new RewardNotFoundException()
                 }
             }
@@ -265,10 +332,11 @@ export class LessonService {
 
             // Remove translations, slug, and lessonOrder from data before passing to Prisma
             // lessonOrder sẽ được set riêng (tự động tính hoặc từ request)
-            const { translations, slug, lessonOrder: _, ...lessonData } = data
+            const { translations, slug, lessonOrder: _, rewardId: __, ...lessonData } = data
 
             const lesson = await this.lessonRepository.create({
                 ...lessonData,
+                rewardId: normalizedRewardIds,
                 lessonOrder, // Sử dụng lessonOrder đã được tính tự động hoặc từ request
                 titleKey, // Use the generated/validated titleKey
                 slug: `lesson-temp-${Date.now()}`, // Temporary slug
@@ -340,16 +408,25 @@ export class LessonService {
                 }
             }
 
-            // Validate reward exists if provided
-            if (data.rewardId) {
-                const rewardExists = await this.lessonRepository.checkRewardExists(data.rewardId)
-                if (!rewardExists) {
-                    throw new RewardNotFoundException()
+            let normalizedRewardIds: number[] | undefined
+            if (data.rewardId !== undefined) {
+                normalizedRewardIds = Array.isArray(data.rewardId)
+                    ? Array.from(new Set(data.rewardId))
+                    : []
+                if (normalizedRewardIds.length > 0) {
+                    const rewardsExist = await this.lessonRepository.checkRewardsExist(normalizedRewardIds)
+                    if (!rewardsExist) {
+                        throw new RewardNotFoundException()
+                    }
                 }
             }
 
             // Remove slug from update data since slug is auto-generated as lesson-{id}
-            const { slug, ...updateData } = data
+            const { slug, rewardId, ...rest } = data
+            const updateData: UpdateLessonBodyType = {
+                ...rest,
+                ...(normalizedRewardIds !== undefined ? { rewardId: normalizedRewardIds } : {})
+            }
 
             const lesson = await this.lessonRepository.update(id, updateData)
 

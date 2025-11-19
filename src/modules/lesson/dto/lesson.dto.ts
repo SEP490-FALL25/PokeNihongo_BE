@@ -77,12 +77,12 @@ export class LessonResponseSwaggerDTO {
     })
     lessonCategoryId: number
 
-    @ApiProperty({
-        example: 1,
-        description: 'ID phần thưởng',
-        required: false
+    @ApiPropertyOptional({
+        type: [Number],
+        example: [1, 2],
+        description: 'Danh sách ID phần thưởng'
     })
-    rewardId?: number
+    rewardId?: number[]
 
     @ApiProperty({
         example: 1,
@@ -179,12 +179,12 @@ export class CreateLessonSwaggerDTO {
     })
     lessonCategoryId: number
 
-    @ApiProperty({
-        example: 1,
-        description: 'ID phần thưởng',
-        required: false
+    @ApiPropertyOptional({
+        type: [Number],
+        example: [1, 2],
+        description: 'Danh sách ID phần thưởng'
     })
-    rewardId?: number
+    rewardId?: number[]
 
     @ApiPropertyOptional({
         description: 'Bản dịch cho tiêu đề bài học (Minna no Nihongo Lesson 1)',
@@ -257,12 +257,13 @@ export class UpdateLessonSwaggerDTO {
     })
     lessonCategoryId?: number
 
-    @ApiProperty({
-        example: 2,
-        description: 'ID phần thưởng',
+    @ApiPropertyOptional({
+        type: [Number],
+        example: [2, 3],
+        description: 'Danh sách ID phần thưởng',
         required: false
     })
-    rewardId?: number
+    rewardId?: number[]
 }
 
 export class GetLessonListQuerySwaggerDTO {

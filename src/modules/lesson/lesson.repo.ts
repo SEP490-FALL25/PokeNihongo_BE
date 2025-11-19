@@ -48,7 +48,6 @@ export class LessonRepository {
                             slug: true,
                         }
                     },
-                    reward: true,
                     createdBy: {
                         select: {
                             id: true,
@@ -84,7 +83,6 @@ export class LessonRepository {
                         slug: true,
                     }
                 },
-                reward: true,
                 createdBy: {
                     select: {
                         id: true,
@@ -107,7 +105,6 @@ export class LessonRepository {
                         slug: true,
                     }
                 },
-                reward: true,
                 createdBy: {
                     select: {
                         id: true,
@@ -120,9 +117,11 @@ export class LessonRepository {
     }
 
     async create(data: CreateLessonBodyType & { createdById: number, slug: string, titleKey: string }) {
+        const { rewardId, ...restData } = data
         return this.prismaService.lesson.create({
             data: {
-                ...data,
+                ...restData,
+                rewardId: (rewardId ?? []) as any,
                 publishedAt: data.isPublished ? new Date() : null,
             },
             include: {
@@ -133,7 +132,6 @@ export class LessonRepository {
                         slug: true,
                     }
                 },
-                reward: true,
                 createdBy: {
                     select: {
                         id: true,
@@ -146,7 +144,12 @@ export class LessonRepository {
     }
 
     async update(id: number, data: UpdateLessonBodyType) {
-        const updateData: any = { ...data }
+        const { rewardId, ...rest } = data
+        const updateData: any = { ...rest }
+
+        if (rewardId !== undefined) {
+            updateData.rewardId = rewardId as any
+        }
 
         // Xử lý publishedAt dựa trên isPublished
         if (data.isPublished !== undefined) {
@@ -177,7 +180,6 @@ export class LessonRepository {
                         slug: true,
                     }
                 },
-                reward: true,
                 createdBy: {
                     select: {
                         id: true,
@@ -198,11 +200,15 @@ export class LessonRepository {
 
     // Helper methods
 
-    async checkRewardExists(id: number) {
+    async checkRewardsExist(rewardIds: number[]) {
+        if (!Array.isArray(rewardIds) || rewardIds.length === 0) {
+            return true
+        }
+        const uniqueIds = Array.from(new Set(rewardIds))
         const count = await this.prismaService.reward.count({
-            where: { id }
+            where: { id: { in: uniqueIds } }
         })
-        return count > 0
+        return count === uniqueIds.length
     }
 
     async checkLessonExists(id: number) {
@@ -229,5 +235,22 @@ export class LessonRepository {
             select: { lessonOrder: true }
         })
         return result?.lessonOrder ?? 0
+    }
+
+    async getRewardsByIds(rewardIds: number[]) {
+        if (!Array.isArray(rewardIds) || rewardIds.length === 0) {
+            return []
+        }
+        const uniqueIds = Array.from(new Set(rewardIds))
+        return this.prismaService.reward.findMany({
+            where: { id: { in: uniqueIds } },
+            select: {
+                id: true,
+                nameKey: true,
+                rewardType: true,
+                rewardItem: true,
+                rewardTarget: true
+            }
+        })
     }
 }

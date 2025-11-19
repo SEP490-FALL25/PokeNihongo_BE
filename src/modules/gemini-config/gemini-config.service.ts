@@ -276,7 +276,7 @@ export class GeminiConfigService {
     }
   }
 
-  async listServiceConfigs(serviceType: PrismaGeminiConfigType) {
+  async listServiceConfigs(serviceType?: PrismaGeminiConfigType) {
     return this.geminiConfigRepo.listServiceConfigs(serviceType as any)
   }
 

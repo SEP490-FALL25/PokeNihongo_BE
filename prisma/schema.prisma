@@ -479,7 +479,6 @@ model Reward {
   levels Level[]
 
   // Quan hệ với Lesson
-  lessons           Lesson[]
   seasonRankRewards SeasonRankReward[]
 
   // Audit fields
@@ -701,9 +700,8 @@ model Lesson {
   lessonCategory   LessonCategory @relation(fields: [lessonCategoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   // Quan hệ với Reward
-  rewardId Int?
-  reward   Reward? @relation(fields: [rewardId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-
+  rewardId Int[]
+  
   // Quan hệ với Test (Bài test ôn tập)
   testId Int?
   test   Test? @relation("LessonTest", fields: [testId], references: [id], onDelete: SetNull, onUpdate: NoAction)

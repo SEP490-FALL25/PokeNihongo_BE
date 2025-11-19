@@ -49,7 +49,11 @@ export class UserExerciseAttemptService {
         private readonly rewardService: RewardService
     ) { }
 
-    private async grantExerciseRewards(rewardIds: number[] | undefined | null, userId: number) {
+    private async grantExerciseRewards(
+        rewardIds: number[] | undefined | null,
+        userId: number,
+        options?: { reduceReward?: boolean }
+    ) {
         if (!Array.isArray(rewardIds) || rewardIds.length === 0) {
             return null
         }
@@ -58,7 +62,10 @@ export class UserExerciseAttemptService {
         return this.rewardService.convertRewardsWithUser(
             uniqueRewardIds,
             userId,
-            UserRewardSourceType.EXERCISE // KUMO đổi sang EXERCISE sau
+            UserRewardSourceType.EXERCISE,
+            {
+                reduceReward: options?.reduceReward ?? false
+            }
         )
     }
 
@@ -380,6 +387,14 @@ export class UserExerciseAttemptService {
                 message = 'Bạn đã hoàn thành bài tập nhưng có một số câu trả lời sai'
             }
 
+            let hasCompletedBefore = false
+            if (newStatus === 'COMPLETED') {
+                hasCompletedBefore = await this.userExerciseAttemptRepository.hasCompletedAttempt(
+                    attempt.userId,
+                    attempt.exerciseId
+                )
+            }
+
             // Update status trong database
             await this.userExerciseAttemptRepository.update(
                 { id: userExerciseAttemptId },
@@ -392,8 +407,10 @@ export class UserExerciseAttemptService {
             // Cập nhật UserProgress dựa trên kết quả
             if (newStatus === 'COMPLETED') {
                 // Nếu hoàn thành (không fail), update status thành IN_PROGRESS
-                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, 'IN_PROGRESS')
-                rewardResults = await this.grantExerciseRewards(exercise.rewardId, attempt.userId)
+                await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, ProgressStatus.IN_PROGRESS)
+                rewardResults = await this.grantExerciseRewards(exercise.rewardId, attempt.userId, {
+                    reduceReward: hasCompletedBefore
+                })
             } else if (newStatus === 'FAILED') {
                 // Nếu fail, update status thành FAILED
                 await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, ProgressStatus.FAILED)
@@ -957,7 +974,6 @@ export class UserExerciseAttemptService {
             // Không throw error để không ảnh hưởng đến flow chính
         }
     }
-
 
     private async updateUserProgressOnStart(userId: number, exerciseId: number) {
         try {
