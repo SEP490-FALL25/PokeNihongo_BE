@@ -51,7 +51,7 @@ export class RewardService {
     private readonly userPokemonRepo: UserPokemonRepo,
     private readonly userRewardHistoryService: UserRewardHistoryService,
     private readonly userSubService: SharedUserSubscriptionService
-  ) {}
+  ) { }
 
   private readonly logger = new Logger(RewardService.name)
 
@@ -280,7 +280,7 @@ export class RewardService {
             },
             true
           )
-        } catch (rollbackError) {}
+        } catch (rollbackError) { }
       }
 
       if (isUniqueConstraintPrismaError(error)) {
@@ -449,7 +449,10 @@ export class RewardService {
   async convertRewardsWithUser(
     rewardIds: number[],
     userId: number,
-    sourceType: UserRewardSourceType
+    sourceType: UserRewardSourceType,
+    options?: {
+      reduceReward?: boolean
+    }
   ) {
     // 1. Fetch all rewards by IDs using findManyByIds
     const rewards = await this.rewardRepo.findManyByIds(rewardIds)
@@ -479,11 +482,16 @@ export class RewardService {
       rewardsByType[reward.rewardTarget].push(reward)
     }
 
+    // giảm phần thưởng nếu đã hoàn thành bài tập trước đó
+    const isReducedReward = options?.reduceReward ?? false
+    const reductionMultiplier = isReducedReward ? 0.1 : 1
+
     const results: any = {
       exp: null,
       pokeCoins: null,
       sparkles: null,
-      pokemons: []
+      pokemons: [],
+      isReducedReward
     }
 
     const historyEntries: CreateUserRewardHistoryBodyType[] = []
@@ -494,13 +502,15 @@ export class RewardService {
         (sum, r) => sum + r.rewardItem,
         0
       )
-      results.exp = await this.userService.userAddExp(userId, totalExp * valueIncreaseExp)
+      const finalExpReward = totalExp * valueIncreaseExp * reductionMultiplier
+      results.exp = await this.userService.userAddExp(userId, finalExpReward)
       this.userRewardHistoryService.appendEntriesFromRewards(
         historyEntries,
         rewardsByType[RewardTarget.EXP],
         userId,
         RewardTarget.EXP,
-        sourceType
+        sourceType,
+        reductionMultiplier
       )
     }
 
@@ -510,17 +520,19 @@ export class RewardService {
         (sum, r) => sum + r.rewardItem,
         0
       )
+      const finalCoinReward = totalCoins * valueIncrease * reductionMultiplier
       results.pokeCoins = await this.walletRepo.addBalanceToWalletWithType({
         userId,
         type: WalletType.POKE_COINS,
-        amount: totalCoins * valueIncrease
+        amount: finalCoinReward
       })
       this.userRewardHistoryService.appendEntriesFromRewards(
         historyEntries,
         rewardsByType[RewardTarget.POKE_COINS],
         userId,
         RewardTarget.POKE_COINS,
-        sourceType
+        sourceType,
+        reductionMultiplier
       )
     }
 
@@ -531,10 +543,11 @@ export class RewardService {
         0
       )
 
+      const finalSparkleReward = totalSparkles * valueIncrease * reductionMultiplier
       results.sparkles = await this.walletRepo.addBalanceToWalletWithType({
         userId,
         type: WalletType.SPARKLES,
-        amount: totalSparkles * valueIncrease
+        amount: finalSparkleReward
       })
 
       this.userRewardHistoryService.appendEntriesFromRewards(
@@ -542,7 +555,8 @@ export class RewardService {
         rewardsByType[RewardTarget.SPARKLES],
         userId,
         RewardTarget.SPARKLES,
-        sourceType
+        sourceType,
+        reductionMultiplier
       )
     }
 
@@ -599,23 +613,24 @@ export class RewardService {
         const coinValue = Math.floor(200 * rarityLevel * 0.5)
 
         // Add coins to user wallet
+        const finalConvertedCoinReward = coinValue * valueIncrease * reductionMultiplier
         const updatedWallet = await this.walletRepo.addBalanceToWalletWithType({
           userId,
           type: WalletType.SPARKLES,
-          amount: coinValue * valueIncrease
+          amount: finalConvertedCoinReward
         })
 
         results.pokemons.push({
           action: 'converted_to_coins',
           pokemon: pokemon,
-          coinValue: coinValue * valueIncrease,
+          coinValue: finalConvertedCoinReward,
           wallet: updatedWallet
         })
         this.pushHistoryEntry(historyEntries, {
           userId,
           rewardId: pokemonReward.id,
           target: RewardTarget.SPARKLES,
-          amount: coinValue * valueIncrease,
+          amount: finalConvertedCoinReward,
           note: `Converted pokemon ${pokemonId} reward to coins`,
           meta: {
             pokemonId,
