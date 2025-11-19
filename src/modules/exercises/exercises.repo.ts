@@ -376,4 +376,21 @@ export class ExercisesRepository {
         return count === uniqueIds.length
     }
 
+    async getRewardsByIds(rewardIds: number[]) {
+        if (!rewardIds.length) {
+            return []
+        }
+        const uniqueIds = Array.from(new Set(rewardIds))
+        return this.prismaService.reward.findMany({
+            where: { id: { in: uniqueIds } },
+            select: {
+                id: true,
+                nameKey: true,
+                rewardType: true,
+                rewardItem: true,
+                rewardTarget: true
+            }
+        })
+    }
+
 }
