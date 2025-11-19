@@ -340,11 +340,15 @@ export class MeaningDTO {
 // Import DTOs
 export class ImportVocabularyXlsxSwaggerDTO {
     @ApiProperty({
-        type: 'string',
-        format: 'binary',
-        description: 'File Excel với các cột: word, phonetic, mean'
+        type: 'array',
+        items: {
+            type: 'string',
+            format: 'binary'
+        },
+        description: 'Danh sách file Excel với các cột: word, phonetic, mean (tối thiểu 1 file)',
+        minItems: 1
     })
-    file: any
+    files: any[]
 }
 
 export class ImportVocabularyTxtSwaggerDTO {

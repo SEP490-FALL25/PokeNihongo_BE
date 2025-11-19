@@ -309,12 +309,11 @@ export class VocabularyHelperService {
     /**
      * Kiểm tra vocabulary có tồn tại không (theo wordJp và reading)
      */
-    async checkVocabularyExists(wordJp: string, reading: string): Promise<{ exists: boolean; vocabularyId?: number }> {
+    async checkVocabularyExists(wordJp: string): Promise<{ exists: boolean; vocabularyId?: number }> {
         try {
             const vocabulary = await this.prismaService.vocabulary.findFirst({
                 where: {
-                    wordJp,
-                    reading
+                    wordJp
                 },
                 select: {
                     id: true
