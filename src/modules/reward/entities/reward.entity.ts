@@ -17,7 +17,8 @@ export const RewardSchema = z.object({
     RewardType.DAILY_REQUEST,
     RewardType.EVENT,
     RewardType.ACHIEVEMENT,
-    RewardType.LEVEL
+    RewardType.LEVEL,
+    RewardType.EXERCISE
   ]),
   rewardItem: z.number().min(0),
   rewardTarget: z.enum([
