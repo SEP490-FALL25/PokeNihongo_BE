@@ -12,7 +12,7 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
-import { HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { UserStatus } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
 import { LanguagesRepository } from '../languages/languages.repo'
@@ -33,6 +33,8 @@ import { UserRepo } from './user.repo'
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name)
+
   constructor(
     private userRepo: UserRepo,
     private mailService: MailService,
@@ -320,7 +322,11 @@ export class UserService {
 
       return {
         statusCode: HttpStatus.OK,
-        data: levelUpResult,
+        data: {
+          ...levelUpResult,
+          levelRewardIds: levelUpResult.levelRewardIds || [],
+          levelUpDetails: levelUpResult.levelUpDetails || []
+        },
         message: this.i18nService.translate(UserMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
@@ -340,14 +346,24 @@ export class UserService {
    * @returns Level up result with progression details
    */
   private async handleUserLevelUp(user: any, newExp: number) {
+    this.logger.log(`[handleUserLevelUp] START - UserId: ${user.id}, CurrentLevel: ${(user as any).level?.levelNumber}, CurrentExp: ${user.exp}, NewExp: ${newExp}`)
+    
     let currentLevel = (user as any).level
     let currentExp = newExp
     let leveledUp = false
     let levelsGained = 0
     let expUpdated = false
+    const levelRewardIds: number[] = [] // Collect reward IDs from level-ups
+    const levelUpDetails: Array<{
+      fromLevel: number
+      toLevel: number
+      rewardId: number | null
+    }> = [] // Track each level transition
 
     // Keep checking for level ups while EXP is sufficient
     while (currentLevel && currentExp >= currentLevel.requiredExp) {
+      this.logger.log(`[handleUserLevelUp] Checking level up - CurrentLevel: ${currentLevel.levelNumber}, RequiredExp: ${currentLevel.requiredExp}, CurrentExp: ${currentExp}`)
+      
       // Find next level
       const nextLevel = await this.levelRepo.findByLevelAndType(
         currentLevel.levelNumber + 1,
@@ -355,6 +371,7 @@ export class UserService {
       )
 
       if (!nextLevel) {
+        this.logger.log(`[handleUserLevelUp] No more levels available after level ${currentLevel.levelNumber}`)
         // No more levels available, keep remaining EXP
         await this.userRepo.update({
           id: user.id,
@@ -367,6 +384,24 @@ export class UserService {
 
       // Level up! Calculate remaining EXP after leveling up
       const remainingExp = currentExp - currentLevel.requiredExp
+
+      this.logger.log(`[handleUserLevelUp] LEVEL UP! ${currentLevel.levelNumber} -> ${nextLevel.levelNumber}, NextLevel RewardId: ${nextLevel.rewardId}, RemainingExp: ${remainingExp}`)
+
+      // Track this level transition
+      const levelTransition = {
+        fromLevel: currentLevel.levelNumber,
+        toLevel: nextLevel.levelNumber,
+        rewardId: nextLevel.rewardId || null
+      }
+      levelUpDetails.push(levelTransition)
+
+      // Collect reward ID if this level has one
+      if (nextLevel.rewardId) {
+        this.logger.log(`[handleUserLevelUp] Adding rewardId ${nextLevel.rewardId} for level ${nextLevel.levelNumber}`)
+        levelRewardIds.push(nextLevel.rewardId)
+      } else {
+        this.logger.warn(`[handleUserLevelUp] No reward for level ${nextLevel.levelNumber}`)
+      }
 
       // Update user level and continue with remaining EXP
       await this.userRepo.update({
@@ -405,11 +440,17 @@ export class UserService {
     // Get updated user data
     const updatedUser = await this.userRepo.findById(user.id)
 
+    this.logger.log(`[handleUserLevelUp] COMPLETED - UserId: ${user.id}, LeveledUp: ${leveledUp}, LevelsGained: ${levelsGained}, FinalLevel: ${currentLevel?.levelNumber}, FinalExp: ${currentExp}`)
+    this.logger.log(`[handleUserLevelUp] RewardIds collected: [${levelRewardIds.join(', ')}]`)
+    this.logger.log(`[handleUserLevelUp] LevelUpDetails: ${JSON.stringify(levelUpDetails)}`)
+
     return {
       ...updatedUser,
       leveledUp,
       levelsGained,
-      finalExp: currentExp
+      finalExp: currentExp,
+      levelRewardIds, // Return collected reward IDs
+      levelUpDetails // Return level transition details
     }
   }
 
