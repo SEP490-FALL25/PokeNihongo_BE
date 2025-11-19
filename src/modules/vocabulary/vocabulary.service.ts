@@ -129,77 +129,143 @@ export class VocabularyService {
      * - Nếu phonetic có nhiều cách đọc (có dấu '・'), lấy cách đọc đầu tiên
      * - Tách cột mean bằng dấu ';' thành nhiều meanings riêng biệt
      */
-    async importFromXlsx(file: Express.Multer.File, createdById?: number) {
+    async importFromXlsxFiles(
+        files: Express.Multer.File[],
+        createdById?: number,
+        languageCode: string = 'vi',
+        allowUpdateLevelN: boolean = false,
+        forcedLevelN?: number
+    ) {
         try {
-            if (!file || !file.buffer) {
-                throw new Error('File không hợp lệ')
+            if (!files || files.length === 0) {
+                throw new Error('Cần upload ít nhất 1 file')
             }
 
-            const workbook = XLSX.read(file.buffer, { type: 'buffer' })
-            const sheetName = workbook.SheetNames[0]
-            const sheet = workbook.Sheets[sheetName]
-            const rows: Array<Record<string, any>> = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+            const normalizedLanguage = (languageCode || 'vi').toLowerCase()
 
             const created: any[] = []
             const skipped: Array<{ word: string; reason: string }> = []
 
-            for (const row of rows) {
-                const wordJp = (row.word || '').toString().trim()
-                const phonetic = (row.phonetic || '').toString().trim()
-                const meanEn = (row.mean || '').toString().trim()
-
-                // Bỏ qua các dòng trống hoặc không có word
-                if (!wordJp || wordJp === '-') {
+            for (const file of files) {
+                if (!file || !file.buffer) {
                     continue
                 }
 
-                if (!meanEn) {
-                    skipped.push({ word: wordJp, reason: 'Thiếu nghĩa tiếng Anh' })
-                    continue
-                }
+                const workbook = XLSX.read(file.buffer, { type: 'buffer' })
+                const sheetName = workbook.SheetNames[0]
+                const sheet = workbook.Sheets[sheetName]
+                const rows: Array<Record<string, any>> = XLSX.utils.sheet_to_json(sheet, { defval: '' })
 
-                try {
-                    // Tạo danh sách nghĩa từ cột mean - tách các nghĩa khác nhau
-                    const meanings: Array<{ language_code: string; value: string }> = []
+                for (const row of rows) {
+                    const wordJp = (row.word || '').toString().trim()
+                    const phonetic = (row.phonetic || '').toString().trim()
+                    const meanEn = (row.mean || '').toString().trim()
+                    const levelNFromRow = row.level_n !== undefined && row.level_n !== null && row.level_n !== ''
+                        ? Number(row.level_n)
+                        : undefined
+                    const targetLevelN = forcedLevelN !== undefined ? forcedLevelN : levelNFromRow
 
-                    if (meanEn) {
-                        // Tách các nghĩa bằng dấu chấm phẩy
-                        const meaningParts = meanEn.split(';').map(part => part.trim()).filter(part => part.length > 0)
-
-                        // Nếu có nhiều nghĩa, tạo từng nghĩa riêng biệt
-                        if (meaningParts.length > 1) {
-                            meaningParts.forEach(meaning => {
-                                meanings.push({ language_code: 'en', value: meaning })
-                            })
-                        } else {
-                            // Nếu chỉ có một nghĩa, lưu nguyên
-                            meanings.push({ language_code: 'en', value: meanEn })
-                        }
+                    // Bỏ qua các dòng trống hoặc không có word
+                    if (!wordJp || wordJp === '-') {
+                        continue
                     }
 
-                    // Xử lý reading: nếu có phonetic thì dùng, nếu không thì dùng wordJp
-                    let reading = phonetic || wordJp
-
-                    // Nếu phonetic có nhiều cách đọc, lấy cách đọc đầu tiên
-                    if (phonetic && phonetic.includes('・')) {
-                        reading = phonetic.split('・')[0]
+                    if (!meanEn) {
+                        skipped.push({ word: wordJp, reason: 'Thiếu nghĩa tiếng Anh' })
+                        continue
                     }
 
-                    const result = await this.createFullVocabularyWithFiles(
-                        {
-                            word_jp: wordJp,
-                            reading: reading,
-                            translations: {
-                                meaning: meanings
+                    try {
+                        // Tạo danh sách nghĩa từ cột mean - tách các nghĩa khác nhau
+                        const meanings: Array<{ language_code: string; value: string }> = []
+
+                        if (meanEn) {
+                            // Tách các nghĩa bằng dấu chấm phẩy
+                            const meaningParts = meanEn.split(';').map(part => part.trim()).filter(part => part.length > 0)
+
+                            // Nếu có nhiều nghĩa, tạo từng nghĩa riêng biệt
+                            if (meaningParts.length > 1) {
+                                meaningParts.forEach(meaning => {
+                                    meanings.push({ language_code: normalizedLanguage, value: meaning })
+                                })
+                            } else {
+                                // Nếu chỉ có một nghĩa, lưu nguyên
+                                meanings.push({ language_code: normalizedLanguage, value: meanEn })
                             }
-                        },
-                        undefined,
-                        undefined,
-                        createdById
-                    )
-                    created.push(result.data)
-                } catch (err: any) {
-                    skipped.push({ word: wordJp, reason: err?.message || 'Lỗi không xác định' })
+                        }
+
+                        // Xử lý reading: nếu có phonetic thì dùng, nếu không thì dùng wordJp
+                        let reading = phonetic || wordJp
+
+                        // Nếu phonetic có nhiều cách đọc, lấy cách đọc đầu tiên
+                        if (phonetic && phonetic.includes('・')) {
+                            reading = phonetic.split('・')[0]
+                        }
+
+                        const existing = await this.vocabularyHelperService.checkVocabularyExists(wordJp)
+                        let vocabId = existing.vocabularyId
+
+                        if (!existing.exists || !vocabId) {
+                            const fallback = await this.vocabularyRepository.findFirst({ wordJp })
+                            if (fallback) {
+                                vocabId = fallback.id
+                            }
+                        }
+
+                        if (vocabId) {
+                            if (targetLevelN !== undefined && (allowUpdateLevelN || forcedLevelN !== undefined)) {
+                                await this.vocabularyRepository.update({ id: vocabId }, { levelN: targetLevelN })
+                            }
+
+                            if (meanings.length === 0) {
+                                skipped.push({ word: wordJp, reason: 'Không có nghĩa để thêm' })
+                                continue
+                            }
+
+                            for (const meaningEntry of meanings) {
+                                try {
+                                    const result = await this.vocabularyHelperService.addMeaningWithTranslations(
+                                        vocabId,
+                                        { meaning: [meaningEntry] }
+                                    )
+                                    created.push({
+                                        vocabulary: { id: vocabId, wordJp },
+                                        meaning: meaningEntry,
+                                        translationsCreated: result.translationsCreated,
+                                        isNew: false
+                                    })
+                                } catch (meaningError: any) {
+                                    if (meaningError === MeaningAlreadyExistsException) {
+                                        skipped.push({
+                                            word: wordJp,
+                                            reason: `Meaning already exists (${meaningEntry.value})`
+                                        })
+                                    } else {
+                                        skipped.push({ word: wordJp, reason: meaningError?.message || 'Lỗi không xác định' })
+                                    }
+                                }
+                            }
+                            continue
+                        }
+
+                        const result = await this.createFullVocabularyWithFiles(
+                            {
+                                word_jp: wordJp,
+                                reading: reading,
+                                translations: {
+                                    meaning: meanings
+                                },
+                                level_n: targetLevelN
+                            },
+                            undefined,
+                            undefined,
+                            createdById,
+                            allowUpdateLevelN || forcedLevelN !== undefined
+                        )
+                        created.push(result.data)
+                    } catch (err: any) {
+                        skipped.push({ word: wordJp, reason: err?.message || 'Lỗi không xác định' })
+                    }
                 }
             }
 
@@ -223,11 +289,13 @@ export class VocabularyService {
      * Import vocabularies from a tab-separated TXT file with columns:
      * Category	word	reading	meaning	example_jp	example_vi
      */
-    async importFromTxt(file: Express.Multer.File, createdById?: number) {
+    async importFromTxt(file: Express.Multer.File, createdById?: number, languageCode: string = 'vi') {
         try {
             if (!file || !file.buffer) {
                 throw new Error('File không hợp lệ')
             }
+
+            const normalizedLanguage = (languageCode || 'vi').toLowerCase()
 
             const content = file.buffer.toString('utf8')
             const linesAll = content.split(/\r?\n/)
@@ -329,8 +397,8 @@ export class VocabularyService {
                 }
 
                 try {
-                    // Check if vocabulary exists (same word_jp + reading)
-                    const existingCheck2 = await this.vocabularyHelperService.checkVocabularyExists(word, reading)
+                    // Check if vocabulary exists (same word_jp )
+                    const existingCheck2 = await this.vocabularyHelperService.checkVocabularyExists(word)
 
                     if (existingCheck2.exists && existingCheck2.vocabularyId) {
                         const existing = await this.vocabularyRepository.findUnique({ id: existingCheck2.vocabularyId })
@@ -391,8 +459,8 @@ export class VocabularyService {
                                 await this.vocabularyHelperService.addMeaningWithTranslations(
                                     existing.id,
                                     {
-                                        meaning: [{ language_code: 'vi', value: meaningVi }],
-                                        examples: exampleVi ? [{ language_code: 'vi', sentence: exampleVi, original_sentence: exampleJp || '' }] : undefined
+                                        meaning: [{ language_code: normalizedLanguage, value: meaningVi }],
+                                        examples: exampleVi ? [{ language_code: normalizedLanguage, sentence: exampleVi, original_sentence: exampleJp || '' }] : undefined
                                     },
                                     wordTypeId
                                 )
@@ -422,10 +490,10 @@ export class VocabularyService {
                             word_type_id: wordTypeId,
                             translations: {
                                 meaning: [
-                                    { language_code: 'vi', value: meaningVi }
+                                    { language_code: normalizedLanguage, value: meaningVi }
                                 ],
                                 examples: exampleVi ? [
-                                    { language_code: 'vi', sentence: exampleVi, original_sentence: exampleJp || '' }
+                                    { language_code: normalizedLanguage, sentence: exampleVi, original_sentence: exampleJp || '' }
                                 ] : undefined
                             }
                         },
@@ -1119,7 +1187,8 @@ export class VocabularyService {
         },
         audioFile?: Express.Multer.File,
         imageFile?: Express.Multer.File,
-        createdById?: number
+        createdById?: number,
+        allowUpdateExistingLevel?: boolean
     ) {
         try {
             // Validate word_jp must be Japanese (Hiragana/Katakana/Kanji)
@@ -1167,10 +1236,7 @@ export class VocabularyService {
             }
 
             // 2. Check vocabulary exists
-            const existingCheck = await this.vocabularyHelperService.checkVocabularyExists(
-                data.word_jp,
-                data.reading
-            )
+            const existingCheck = await this.vocabularyHelperService.checkVocabularyExists(data.word_jp)
 
             if (existingCheck.exists && existingCheck.vocabularyId) {
                 // Vocabulary exists → Add new meaning with translations
@@ -1186,6 +1252,16 @@ export class VocabularyService {
                 const vocabulary = await this.vocabularyRepository.findUnique({ id: existingCheck.vocabularyId })
                 if (!vocabulary) {
                     throw VocabularyNotFoundException
+                }
+
+                if (allowUpdateExistingLevel && data.level_n !== undefined && data.level_n !== null) {
+                    if (vocabulary.levelN !== data.level_n) {
+                        await this.vocabularyRepository.update(
+                            { id: vocabulary.id },
+                            { levelN: data.level_n }
+                        )
+                        vocabulary.levelN = data.level_n
+                    }
                 }
 
                 // Tạo response với meaning và examples cho trường hợp vocabulary đã tồn tại
