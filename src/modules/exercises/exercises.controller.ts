@@ -5,6 +5,7 @@ import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { ExercisesService } from './exercises.service'
 import { CreateExercisesSwaggerDTO, UpdateExercisesSwaggerDTO, GetExercisesListQuerySwaggerDTO, ExercisesResponseSwaggerDTO, ExercisesListResponseSwaggerDTO } from './dto/exercises.dto'
 import { CreateExercisesBodyType, UpdateExercisesBodyType, GetExercisesListQueryType } from './entities/exercises.entities'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('Exercises')
 @Controller('exercises')
@@ -90,8 +91,8 @@ export class ExercisesController {
         description: 'Lấy danh sách bài tập theo bài học thành công',
         type: [ExercisesResponseSwaggerDTO]
     })
-    async getExercisesByLessonId(@Param('lessonId', ParseIntPipe) lessonId: number) {
-        return await this.exercisesService.getExercisesByLessonId(lessonId)
+    async getExercisesByLessonId(@Param('lessonId', ParseIntPipe) lessonId: number, @I18nLang() lang: string) {
+        return await this.exercisesService.getExercisesByLessonId(lessonId, lang)
     }
 
     @Put(':id')

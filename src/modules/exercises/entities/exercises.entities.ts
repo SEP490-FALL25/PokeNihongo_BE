@@ -7,6 +7,14 @@ import { LessonContentsType } from '@prisma/client'
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
 
+const RewardSummarySchema = z.object({
+    id: z.number(),
+    name: z.string(),
+    rewardType: z.string(),
+    rewardItem: z.number(),
+    rewardTarget: z.string()
+})
+
 // Exercises Entity Types
 export const ExercisesType = z.object({
     id: z.number(),
@@ -15,6 +23,7 @@ export const ExercisesType = z.object({
     lessonId: z.number(),
     testSetId: z.number().nullable(),
     rewardId: z.array(z.number()).default([]),
+    rewards: z.array(RewardSummarySchema).optional(),
     createdAt: z.date(),
     updatedAt: z.date(),
 })
@@ -73,6 +82,7 @@ export const ExercisesListResSchema = z
 
 // Type exports
 export type ExercisesType = z.infer<typeof ExercisesType>
+export type RewardSummaryType = z.infer<typeof RewardSummarySchema>
 export type CreateExercisesBodyType = z.infer<typeof CreateExercisesBodyType>
 export type UpdateExercisesBodyType = z.infer<typeof UpdateExercisesBodyType>
 export type GetExercisesByIdParamsType = z.infer<typeof GetExercisesByIdParamsType>
