@@ -360,6 +360,35 @@ export class MatchingGateway {
   }
 
   /**
+   * Notify user when they try to select Pokemon after timeout (already auto-selected)
+   */
+  notifyPokemonSelectionExpired(
+    matchId: number,
+    matchRoundId: number,
+    userId: number,
+    message: string
+  ): void {
+    const userMatchRoom = `match_${matchId}_user_${userId}`
+    if (!userMatchRoom) {
+      this.logger.warn(`[MatchingGateway] Cannot notify user ${userId} - not connected`)
+      return
+    }
+
+    const payload = {
+      type: 'POKEMON_SELECTION_EXPIRED',
+      matchId,
+      matchRoundId,
+      message
+    }
+
+    this.server.to(userMatchRoom).emit(MATCHING_EVENTS.POKEMON_SELECTION_EXPIRED, payload)
+
+    this.logger.log(
+      `[MatchingGateway] Notified user ${userId} about expired Pokemon selection in match ${matchId}, round ${matchRoundId}`
+    )
+  }
+
+  /**
    * Join match room
    * Both users in the match join the same room using matchId
    * This allows real-time updates for Pokemon selection to both players across all rounds

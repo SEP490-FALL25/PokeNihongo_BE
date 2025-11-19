@@ -2419,6 +2419,7 @@ enum RewardType {
   EVENT
   ACHIEVEMENT
   LEVEL
+  EXERCISE
 }
 
 enum RewardTarget {

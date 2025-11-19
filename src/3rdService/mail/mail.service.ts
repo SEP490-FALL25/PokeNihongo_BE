@@ -224,6 +224,26 @@ export class MailService {
     await this.sendMail(email, subject, 'subscription-success-vendor', context)
   }
 
+  async sendSubscriptionExpiringSoonEmail(
+    email: string,
+    userName: string,
+    subscriptionData: {
+      planName: string
+      expiresAt: Date
+      daysLeft: number
+    }
+  ): Promise<void> {
+    const subject = `⚠️ Thông báo: Gói Subscription sắp hết hạn trong ${subscriptionData.daysLeft} ngày`
+    const context = {
+      userName,
+      planName: subscriptionData.planName,
+      expiresAt: this.formatDate(subscriptionData.expiresAt),
+      daysLeft: subscriptionData.daysLeft,
+      supportEmail: 'support@pokenihongo.com'
+    }
+    await this.sendMail(email, subject, 'subscription-expiring-soon', context)
+  }
+
   async sendEmailPasswordAccount(
     to: string,
     template: string,

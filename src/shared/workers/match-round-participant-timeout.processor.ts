@@ -77,10 +77,38 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         )
       }
 
-      // Bull v4 has built-in delayed job processing - no manual polling needed
+      // Bull v4 delayed job processing with aggressive promotion
       this.logger.log(
-        '[RoundParticipant Timeout] Bull worker will automatically process delayed jobs'
+        '[RoundParticipant Timeout] Setting up aggressive delayed job promotion'
       )
+
+      // Check every 100ms for delayed jobs that should be promoted
+      setInterval(async () => {
+        try {
+          const delayed = await this.matchRoundParticipantTimeoutQueue.getDelayed(0, 100)
+          const now = Date.now()
+
+          for (const job of delayed) {
+            // Check if job delay has expired
+            const jobDelay = job.opts?.delay || 0
+            const jobTimestamp = job.timestamp || 0
+            const shouldRun = now >= jobTimestamp + jobDelay
+
+            if (shouldRun) {
+              try {
+                await job.promote()
+                this.logger.log(
+                  `[RoundParticipant Timeout] 🚀 Force promoted delayed job ${job.id} (mrp=${job.data?.matchRoundParticipantId})`
+                )
+              } catch (e) {
+                // Job might already be promoted, ignore error
+              }
+            }
+          }
+        } catch (e) {
+          // Silent fail - queue might be empty
+        }
+      }, 100)
     } catch (e) {
       this.logger.error(
         '[RoundParticipant Timeout] Error during onModuleInit diagnostics',
@@ -194,14 +222,16 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         return
       }
 
-      // Kiểm tra xem đã chọn Pokemon chưa
+      // ✅ CRITICAL FIX: Hard check - if already selected, SKIP entirely to prevent duplicate question generation
       if (currentParticipant.selectedUserPokemonId !== null) {
-        // Đã chọn rồi, có thể user đã chọn trước khi timeout
-        // Vẫn cần kiểm tra xem có cần chuyển sang participant tiếp theo không
-        this.logger.log(
-          `Match-round-participant ${matchRoundParticipantId} already selected Pokemon, checking next participant`
+        this.logger.warn(
+          `[RoundParticipant Timeout] ⏭️ Participant ${matchRoundParticipantId} already selected Pokemon ${currentParticipant.selectedUserPokemonId}, skipping timeout processing (jobId=${job.id})`
         )
-      } else {
+        return
+      }
+
+      // Only reach here if Pokemon NOT selected yet
+      if (currentParticipant.selectedUserPokemonId === null) {
         // Chưa chọn Pokemon trong thời gian cho phép
         // Auto-select random Pokemon
         const matchParticipant = await this.prismaService.matchParticipant.findUnique({
@@ -928,7 +958,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
   /**
    * Handler to start a round after delay
    */
-  @Process({ name: BullAction.START_ROUND, concurrency: 10 })
+  @Process({ name: BullAction.START_ROUND, concurrency: 1 })
   async handleStartRound(
     job: Job<{ matchId: number; matchRoundId: number }>
   ): Promise<void> {
@@ -939,6 +969,19 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
     )
 
     try {
+      // ✅ FIX BUG 2: Check if round already IN_PROGRESS to prevent duplicate ROUND_STARTED
+      const currentRound = await this.prismaService.matchRound.findUnique({
+        where: { id: matchRoundId },
+        select: { status: true }
+      })
+
+      if (currentRound?.status === 'IN_PROGRESS') {
+        this.logger.warn(
+          `[Round Timeout] Round ${matchRoundId} already IN_PROGRESS, skipping duplicate START_ROUND (jobId=${job.id})`
+        )
+        return
+      }
+
       // Update MatchRound to IN_PROGRESS
       await this.prismaService.matchRound.update({
         where: { id: matchRoundId },
@@ -1007,7 +1050,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         // CRITICAL: Use setTimeout instead of Bull queue to avoid race condition
         // Bull v4 auto-deletes concurrent jobs, so we bypass it entirely
         const delayOffset = (participant.id % 2) * 250
-        
+
         setTimeout(async () => {
           try {
             await this.roundQuestionProcessor.handleQuestionTimeout({
