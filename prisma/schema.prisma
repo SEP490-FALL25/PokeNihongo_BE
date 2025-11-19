@@ -479,7 +479,6 @@ model Reward {
   levels Level[]
 
   // Quan hệ với Lesson
-  lessons           Lesson[]
   seasonRankRewards SeasonRankReward[]
 
   // Audit fields

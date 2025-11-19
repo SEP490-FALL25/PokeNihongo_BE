@@ -244,10 +244,14 @@ export class LessonService {
                 throw new LessonCategoryNotFoundException()
             }
 
+            const normalizedRewardIds = Array.isArray(data.rewardId)
+                ? Array.from(new Set(data.rewardId))
+                : []
+
             // Validate reward exists if provided
-            if (data.rewardId) {
-                const rewardExists = await this.lessonRepository.checkRewardExists(data.rewardId)
-                if (!rewardExists) {
+            if (normalizedRewardIds.length > 0) {
+                const rewardsExist = await this.lessonRepository.checkRewardsExist(normalizedRewardIds)
+                if (!rewardsExist) {
                     throw new RewardNotFoundException()
                 }
             }
@@ -265,10 +269,11 @@ export class LessonService {
 
             // Remove translations, slug, and lessonOrder from data before passing to Prisma
             // lessonOrder sẽ được set riêng (tự động tính hoặc từ request)
-            const { translations, slug, lessonOrder: _, ...lessonData } = data
+            const { translations, slug, lessonOrder: _, rewardId: __, ...lessonData } = data
 
             const lesson = await this.lessonRepository.create({
                 ...lessonData,
+                rewardId: normalizedRewardIds,
                 lessonOrder, // Sử dụng lessonOrder đã được tính tự động hoặc từ request
                 titleKey, // Use the generated/validated titleKey
                 slug: `lesson-temp-${Date.now()}`, // Temporary slug
@@ -340,16 +345,25 @@ export class LessonService {
                 }
             }
 
-            // Validate reward exists if provided
-            if (data.rewardId) {
-                const rewardExists = await this.lessonRepository.checkRewardExists(data.rewardId)
-                if (!rewardExists) {
-                    throw new RewardNotFoundException()
+            let normalizedRewardIds: number[] | undefined
+            if (data.rewardId !== undefined) {
+                normalizedRewardIds = Array.isArray(data.rewardId)
+                    ? Array.from(new Set(data.rewardId))
+                    : []
+                if (normalizedRewardIds.length > 0) {
+                    const rewardsExist = await this.lessonRepository.checkRewardsExist(normalizedRewardIds)
+                    if (!rewardsExist) {
+                        throw new RewardNotFoundException()
+                    }
                 }
             }
 
             // Remove slug from update data since slug is auto-generated as lesson-{id}
-            const { slug, ...updateData } = data
+            const { slug, rewardId, ...rest } = data
+            const updateData: UpdateLessonBodyType = {
+                ...rest,
+                ...(normalizedRewardIds !== undefined ? { rewardId: normalizedRewardIds } : {})
+            }
 
             const lesson = await this.lessonRepository.update(id, updateData)
 
