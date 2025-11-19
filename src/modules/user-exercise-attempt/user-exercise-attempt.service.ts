@@ -975,7 +975,6 @@ export class UserExerciseAttemptService {
         }
     }
 
-
     private async updateUserProgressOnStart(userId: number, exerciseId: number) {
         try {
             this.logger.log(`Updating user progress on start for exercise: ${exerciseId} for user: ${userId}`)

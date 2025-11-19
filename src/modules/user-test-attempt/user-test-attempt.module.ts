@@ -13,6 +13,8 @@ import { UserTestRepository } from '../user-test/user-test.repo'
 import { UserModule } from '../user/user.module'
 import { LevelModule } from '../level/level.module'
 import { UserProgressModule } from '../user-progress/user-progress.module'
+import { RewardModule } from '../reward/reward.module'
+import { LessonModule } from '../lesson/lesson.module'
 
 @Module({
     imports: [
@@ -24,7 +26,9 @@ import { UserProgressModule } from '../user-progress/user-progress.module'
         TranslationModule,
         UserModule,
         LevelModule,
-        UserProgressModule
+        UserProgressModule,
+        RewardModule,
+        LessonModule
     ],
     controllers: [UserTestAttemptController],
     providers: [UserTestAttemptService, UserTestAttemptRepository, UserTestRepository, PrismaService],

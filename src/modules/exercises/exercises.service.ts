@@ -414,13 +414,17 @@ export class ExercisesService {
             const result = await this.exercisesRepository.findByLessonId(lessonId)
             this.logger.log(`Found ${result.length} exercises for lesson ${lessonId}`)
 
+            const lessonRewardIds = await this.exercisesRepository.getLessonRewardIds(lessonId)
             const allRewardIds = result.flatMap(item => item.rewardId ?? [])
-            const rewardMap = await this.buildRewardSummary(allRewardIds, lang)
+            const combinedRewardIds = [...allRewardIds, ...(lessonRewardIds ?? [])]
+            const rewardMap = await this.buildRewardSummary(combinedRewardIds, lang)
+            const rewardLesson = (lessonRewardIds ?? []).map(id => rewardMap.get(id)).filter(Boolean)
 
             const enrichedResult = result.map(item => ({
                 ...item,
                 rewardId: item.rewardId ?? [],
-                rewards: (item.rewardId ?? []).map(id => rewardMap.get(id)).filter(Boolean)
+                rewards: (item.rewardId ?? []).map(id => rewardMap.get(id)).filter(Boolean),
+                rewardLesson
             }))
 
             return {
