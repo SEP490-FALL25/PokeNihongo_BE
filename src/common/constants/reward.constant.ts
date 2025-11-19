@@ -3,7 +3,8 @@ export const RewardType = {
   DAILY_REQUEST: 'DAILY_REQUEST',
   EVENT: 'EVENT',
   ACHIEVEMENT: 'ACHIEVEMENT',
-  LEVEL: 'LEVEL'
+  LEVEL: 'LEVEL',
+  EXERCISE: 'EXERCISE'
 } as const
 
 export const RewardItem = {
