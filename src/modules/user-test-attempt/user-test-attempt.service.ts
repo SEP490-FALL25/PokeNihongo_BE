@@ -32,7 +32,9 @@ import { UserRepo } from '@/modules/user/user.repo'
 import { LevelRepo } from '@/modules/level/level.repo'
 import { LEVEL_TYPE } from '@/common/constants/level.constant'
 import { UserProgressRepository } from '@/modules/user-progress/user-progress.repo'
-import { ProgressStatus } from '@prisma/client'
+import { ProgressStatus, UserRewardSourceType } from '@prisma/client'
+import { RewardService } from '../reward/reward.service'
+import { LessonRepository } from '../lesson/lesson.repo'
 
 @Injectable()
 export class UserTestAttemptService {
@@ -52,7 +54,9 @@ export class UserTestAttemptService {
         private readonly prisma: PrismaService,
         private readonly userRepo: UserRepo,
         private readonly levelRepo: LevelRepo,
-        private readonly userProgressRepository: UserProgressRepository
+        private readonly userProgressRepository: UserProgressRepository,
+        private readonly rewardService: RewardService,
+        private readonly lessonRepository: LessonRepository
     ) { }
 
     async create(userId: number, testId: number) {
@@ -306,7 +310,7 @@ export class UserTestAttemptService {
                     )
                     this.logger.log(`Updated attempt ${userTestAttemptId} to ${newStatus} - no answers provided`)
 
-                    // Cập nhật UserProgress status thành TESTING_LAST_FAILED
+                    // Cập nhật UserProgress status thành TESTING_LAST_FAILED 
                     await this.updateUserProgressOnLessonReviewFailure(userId, attempt.testId)
 
                     return {
@@ -349,9 +353,14 @@ export class UserTestAttemptService {
                 )
                 this.logger.log(`Updated attempt ${userTestAttemptId} to ${newStatus} with score ${score}`)
 
+                let rewardResults: any = null
+
                 // Cập nhật UserProgress dựa trên kết quả
                 if (newStatus === 'COMPLETED') {
-                    // Nếu hoàn thành (score >= 80%), update status thành COMPLETED
+                    // Nếu hoàn thành (score >= 80%), trao phần thưởng từ lesson trước khi update status
+                    // (cần check status trước khi update để biết có phải lần đầu hoàn thành không)
+                    rewardResults = await this.grantTestRewards(attempt.testId, userId)
+                    // Sau đó update status thành COMPLETED
                     await this.updateUserProgressOnLessonReviewCompletion(userId, attempt.testId)
                 } else if (newStatus === 'FAILED') {
                     // Nếu fail (score < 80%), update status thành TESTING_LAST_FAILED
@@ -368,7 +377,8 @@ export class UserTestAttemptService {
                         unansweredQuestions: 0,
                         allCorrect: allCorrect,
                         status: newStatus,
-                        score: score
+                        score: score,
+                        rewards: rewardResults
                     }
                 }
             }
@@ -1407,6 +1417,54 @@ export class UserTestAttemptService {
                 throw error
             }
             throw error
+        }
+    }
+
+    /**
+     * Trao phần thưởng từ lesson khi hoàn thành test cuối
+     * Lấy rewardId từ lesson dựa vào testId
+     */
+    private async grantTestRewards(testId: number, userId: number) {
+        try {
+            // 1. Tìm lesson có testId = testId của attempt
+            const lesson = await this.prisma.lesson.findFirst({
+                where: { testId: testId },
+                select: { id: true, rewardId: true }
+            })
+
+            if (!lesson) {
+                this.logger.warn(`No lesson found with testId ${testId}, skipping reward grant`)
+                return null
+            }
+
+            // 2. Kiểm tra xem đã hoàn thành lesson này trước đó chưa
+            const userProgress = await this.userProgressRepository.findByUserAndLesson(userId, lesson.id)
+            const hasCompletedBefore = userProgress?.status === ProgressStatus.COMPLETED
+
+            // 3. Lấy rewardId từ lesson
+            const rewardIds = lesson.rewardId ?? []
+            if (rewardIds.length === 0) {
+                this.logger.log(`Lesson ${lesson.id} has no rewards, skipping reward grant`)
+                return null
+            }
+
+            // 4. Trao phần thưởng với sourceType LESSON
+            // Nếu đã hoàn thành trước đó thì chỉ nhận 10% (reduceReward = true)
+            const rewardResults = await this.rewardService.convertRewardsWithUser(
+                rewardIds,
+                userId,
+                UserRewardSourceType.LESSON,
+                {
+                    reduceReward: hasCompletedBefore
+                }
+            )
+
+            this.logger.log(`Granted lesson rewards for user ${userId}, lesson ${lesson.id}, reduceReward: ${hasCompletedBefore}`)
+            return rewardResults
+        } catch (error) {
+            this.logger.error(`Error granting test rewards for user ${userId}, testId ${testId}:`, error)
+            // Không throw error để không ảnh hưởng đến flow chính
+            return null
         }
     }
 
