@@ -451,8 +451,10 @@ export class RewardService {
     userId: number,
     sourceType: UserRewardSourceType
   ) {
-    this.logger.log(`[convertRewardsWithUser] START - UserId: ${userId}, Initial RewardIds: [${rewardIds.join(', ')}], SourceType: ${sourceType}`)
-    
+    this.logger.log(
+      `[convertRewardsWithUser] START - UserId: ${userId}, Initial RewardIds: [${rewardIds.join(', ')}], SourceType: ${sourceType}`
+    )
+
     // Queue-based approach to handle level-up rewards without circular dependency
     const rewardQueue: number[] = [...rewardIds]
     const processedRewardIds = new Set<number>() // Track processed rewards to avoid duplicates
@@ -481,30 +483,42 @@ export class RewardService {
     // Process rewards in queue until empty
     while (rewardQueue.length > 0) {
       const currentBatchIds = rewardQueue.splice(0, rewardQueue.length)
-      this.logger.log(`[convertRewardsWithUser] Processing batch - RewardIds: [${currentBatchIds.join(', ')}]`)
+      this.logger.log(
+        `[convertRewardsWithUser] Processing batch - RewardIds: [${currentBatchIds.join(', ')}]`
+      )
 
       // Filter out already processed rewards
       const newRewardIds = currentBatchIds.filter((id) => !processedRewardIds.has(id))
       if (newRewardIds.length === 0) {
-        this.logger.warn(`[convertRewardsWithUser] All rewards in batch already processed, skipping`)
+        this.logger.warn(
+          `[convertRewardsWithUser] All rewards in batch already processed, skipping`
+        )
         continue
       }
-      
-      this.logger.log(`[convertRewardsWithUser] New rewards to process: [${newRewardIds.join(', ')}], Already processed: [${Array.from(processedRewardIds).join(', ')}]`)
+
+      this.logger.log(
+        `[convertRewardsWithUser] New rewards to process: [${newRewardIds.join(', ')}], Already processed: [${Array.from(processedRewardIds).join(', ')}]`
+      )
 
       // 1. Fetch all rewards by IDs using findManyByIds
       const rewards = await this.rewardRepo.findManyByIds(newRewardIds)
-      
-      this.logger.log(`[convertRewardsWithUser] Fetched ${rewards.length} rewards from DB for ${newRewardIds.length} requested IDs`)
-      
+
+      this.logger.log(
+        `[convertRewardsWithUser] Fetched ${rewards.length} rewards from DB for ${newRewardIds.length} requested IDs`
+      )
+
       if (rewards.length !== newRewardIds.length) {
-        const foundIds = rewards.map(r => r.id)
-        const missingIds = newRewardIds.filter(id => !foundIds.includes(id))
-        this.logger.error(`[convertRewardsWithUser] REWARD NOT FOUND - Requested: [${newRewardIds.join(', ')}], Found: [${foundIds.join(', ')}], Missing: [${missingIds.join(', ')}]`)
+        const foundIds = rewards.map((r) => r.id)
+        const missingIds = newRewardIds.filter((id) => !foundIds.includes(id))
+        this.logger.error(
+          `[convertRewardsWithUser] REWARD NOT FOUND - Requested: [${newRewardIds.join(', ')}], Found: [${foundIds.join(', ')}], Missing: [${missingIds.join(', ')}]`
+        )
         throw new NotFoundRecordException()
       }
-      
-      this.logger.log(`[convertRewardsWithUser] Reward details: ${JSON.stringify(rewards.map(r => ({ id: r.id, target: r.rewardTarget, item: r.rewardItem })))}`)
+
+      this.logger.log(
+        `[convertRewardsWithUser] Reward details: ${JSON.stringify(rewards.map((r) => ({ id: r.id, target: r.rewardTarget, item: r.rewardItem })))}`
+      )
 
       // Mark as processed
       newRewardIds.forEach((id) => processedRewardIds.add(id))
@@ -545,19 +559,27 @@ export class RewardService {
           this.logger.log(
             `[convertRewardsWithUser] Level up details: ${JSON.stringify(expResult.data.levelUpDetails)}`
           )
-          
+
           // Fetch level reward details to include in response
-          this.logger.log(`[convertRewardsWithUser] Fetching level reward details for IDs: [${expResult.data.levelRewardIds.join(', ')}]`)
+          this.logger.log(
+            `[convertRewardsWithUser] Fetching level reward details for IDs: [${expResult.data.levelRewardIds.join(', ')}]`
+          )
           const levelRewardDetails = await this.rewardRepo.findManyByIds(
             expResult.data.levelRewardIds
           )
-          
-          this.logger.log(`[convertRewardsWithUser] Level rewards fetched: ${levelRewardDetails.length} out of ${expResult.data.levelRewardIds.length}`)
-          
+
+          this.logger.log(
+            `[convertRewardsWithUser] Level rewards fetched: ${levelRewardDetails.length} out of ${expResult.data.levelRewardIds.length}`
+          )
+
           if (levelRewardDetails.length !== expResult.data.levelRewardIds.length) {
-            const foundIds = levelRewardDetails.map(r => r.id)
-            const missingIds = expResult.data.levelRewardIds.filter(id => !foundIds.includes(id))
-            this.logger.error(`[convertRewardsWithUser] LEVEL REWARD NOT FOUND - Requested: [${expResult.data.levelRewardIds.join(', ')}], Found: [${foundIds.join(', ')}], Missing: [${missingIds.join(', ')}]`)
+            const foundIds = levelRewardDetails.map((r) => r.id)
+            const missingIds = expResult.data.levelRewardIds.filter(
+              (id) => !foundIds.includes(id)
+            )
+            this.logger.error(
+              `[convertRewardsWithUser] LEVEL REWARD NOT FOUND - Requested: [${expResult.data.levelRewardIds.join(', ')}], Found: [${foundIds.join(', ')}], Missing: [${missingIds.join(', ')}]`
+            )
           }
 
           // Map rewards with level progression info
@@ -572,7 +594,9 @@ export class RewardService {
           })
 
           rewardQueue.push(...expResult.data.levelRewardIds)
-          this.logger.log(`[convertRewardsWithUser] Added level rewards to queue. New queue: [${rewardQueue.join(', ')}]`)
+          this.logger.log(
+            `[convertRewardsWithUser] Added level rewards to queue. New queue: [${rewardQueue.join(', ')}]`
+          )
         }
 
         this.userRewardHistoryService.appendEntriesFromRewards(
@@ -713,14 +737,18 @@ export class RewardService {
       }
     } // End of while loop
 
-    this.logger.log(`[convertRewardsWithUser] COMPLETED - UserId: ${userId}, Total processed rewards: ${processedRewardIds.size}, Levels gained: ${results.levelsGained}, Level rewards: ${results.levelRewards.length}`)
-    this.logger.log(`[convertRewardsWithUser] Final results: ${JSON.stringify({
-      pokeCoinsUpdated: !!results.pokeCoins,
-      sparklesUpdated: !!results.sparkles,
-      pokemonsCount: results.pokemons.length,
-      levelsGained: results.levelsGained,
-      levelRewardsCount: results.levelRewards.length
-    })}`)
+    this.logger.log(
+      `[convertRewardsWithUser] COMPLETED - UserId: ${userId}, Total processed rewards: ${processedRewardIds.size}, Levels gained: ${results.levelsGained}, Level rewards: ${results.levelRewards.length}`
+    )
+    this.logger.log(
+      `[convertRewardsWithUser] Final results: ${JSON.stringify({
+        pokeCoinsUpdated: !!results.pokeCoins,
+        sparklesUpdated: !!results.sparkles,
+        pokemonsCount: results.pokemons.length,
+        levelsGained: results.levelsGained,
+        levelRewardsCount: results.levelRewards.length
+      })}`
+    )
 
     if (historyEntries.length > 0) {
       for (const entry of historyEntries) {
