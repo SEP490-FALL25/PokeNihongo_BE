@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpException, BadRequestException } from '@nestjs/common'
+import { Injectable, Logger, HttpException } from '@nestjs/common'
 import { ExercisesRepository } from './exercises.repo'
 import { CreateExercisesBodyType, UpdateExercisesBodyType, GetExercisesListQueryType, ExercisesType } from './entities/exercises.entities'
 import { EXERCISES_MESSAGE } from '@/common/constants/message'
@@ -15,12 +15,54 @@ import {
     TestSetTypeMismatchException,
     TestSetAlreadyHasExerciseException
 } from './dto/exercises.error'
+import { LanguagesRepository } from '@/modules/languages/languages.repo'
+import { TranslationRepository } from '@/modules/translation/translation.repo'
 
 @Injectable()
 export class ExercisesService {
     private readonly logger = new Logger(ExercisesService.name)
 
-    constructor(private readonly exercisesRepository: ExercisesRepository) { }
+    private async resolveLanguageId(languageCode?: string): Promise<number | null> {
+        if (!languageCode) {
+            return null
+        }
+        let langId = await this.languagesRepository.getIdByCode(languageCode)
+        if (!langId && languageCode !== 'vi') {
+            langId = await this.languagesRepository.getIdByCode('vi')
+        }
+        return langId ?? null
+    }
+
+    private async buildRewardSummary(rewardIds: number[], lang?: string) {
+        const rewardRecords = await this.exercisesRepository.getRewardsByIds(rewardIds)
+        const uniqueKeys = Array.from(new Set(rewardRecords.map((reward: any) => reward.nameKey)))
+        const languageId = await this.resolveLanguageId(lang)
+        let translationMap = new Map<string, string>()
+
+        if (languageId && uniqueKeys.length > 0) {
+            const translations = await this.translationRepository.findByKeysAndLanguage(uniqueKeys, languageId)
+            translationMap = new Map(translations.map((item: any) => [item.key, item.value]))
+        }
+
+        return new Map(
+            rewardRecords.map((reward: any) => [
+                reward.id,
+                {
+                    id: reward.id,
+                    name: translationMap.get(reward.nameKey) ?? reward.nameKey,
+                    rewardType: reward.rewardType,
+                    rewardItem: reward.rewardItem,
+                    rewardTarget: reward.rewardTarget
+                }
+            ])
+        )
+    }
+
+    constructor(
+        private readonly exercisesRepository: ExercisesRepository,
+        private readonly languagesRepository: LanguagesRepository,
+        private readonly translationRepository: TranslationRepository
+    ) { }
 
     async create(data: CreateExercisesBodyType, userId: number): Promise<MessageResDTO> {
         try {
@@ -365,16 +407,25 @@ export class ExercisesService {
         }
     }
 
-    async getExercisesByLessonId(lessonId: number): Promise<MessageResDTO> {
+    async getExercisesByLessonId(lessonId: number, lang?: string): Promise<MessageResDTO> {
         try {
             this.logger.log(`Getting exercises by lesson ID: ${lessonId}`)
 
             const result = await this.exercisesRepository.findByLessonId(lessonId)
             this.logger.log(`Found ${result.length} exercises for lesson ${lessonId}`)
 
+            const allRewardIds = result.flatMap(item => item.rewardId ?? [])
+            const rewardMap = await this.buildRewardSummary(allRewardIds, lang)
+
+            const enrichedResult = result.map(item => ({
+                ...item,
+                rewardId: item.rewardId ?? [],
+                rewards: (item.rewardId ?? []).map(id => rewardMap.get(id)).filter(Boolean)
+            }))
+
             return {
                 statusCode: 200,
-                data: result,
+                data: enrichedResult,
                 message: EXERCISES_MESSAGE.GET_LIST_SUCCESS
             }
         } catch (error) {
