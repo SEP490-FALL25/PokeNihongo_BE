@@ -14,6 +14,7 @@ export const ExercisesType = z.object({
     isBlocked: z.boolean(),
     lessonId: z.number(),
     testSetId: z.number().nullable(),
+    rewardId: z.array(z.number()).default([]),
     createdAt: z.date(),
     updatedAt: z.date(),
 })
@@ -27,6 +28,7 @@ export const CreateExercisesBodyType = z.object({
     isBlocked: z.boolean().default(false),
     lessonId: z.number().min(1, 'ID bài học không hợp lệ'),
     testSetId: z.number().min(1, 'ID bộ đề không hợp lệ').optional(),
+    rewardId: z.array(z.number().min(1, 'ID phần thưởng không hợp lệ')).optional().default([]),
 })
 
 export const UpdateExercisesBodyType = z.object({
@@ -34,6 +36,7 @@ export const UpdateExercisesBodyType = z.object({
     isBlocked: z.boolean().optional(),
     lessonId: z.number().min(1, 'ID bài học không hợp lệ').optional(),
     testSetId: z.number().min(1, 'ID bộ đề không hợp lệ').optional(),
+    rewardId: z.array(z.number().min(1, 'ID phần thưởng không hợp lệ')).optional(),
 })
 
 export const GetExercisesByIdParamsType = z.object({

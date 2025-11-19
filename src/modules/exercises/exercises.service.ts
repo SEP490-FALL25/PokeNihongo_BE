@@ -3,7 +3,18 @@ import { ExercisesRepository } from './exercises.repo'
 import { CreateExercisesBodyType, UpdateExercisesBodyType, GetExercisesListQueryType, ExercisesType } from './entities/exercises.entities'
 import { EXERCISES_MESSAGE } from '@/common/constants/message'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
-import { ExercisesNotFoundException, InvalidExercisesDataException, LessonNotFoundException, ExercisesAlreadyExistsException } from './dto/exercises.error'
+import {
+    ExercisesNotFoundException,
+    InvalidExercisesDataException,
+    LessonNotFoundException,
+    ExercisesAlreadyExistsException,
+    RewardNotFoundException,
+    LevelIncompatibleException,
+    ExerciseLimitPerLessonException,
+    ExerciseTypePerLessonExistsException,
+    TestSetTypeMismatchException,
+    TestSetAlreadyHasExerciseException
+} from './dto/exercises.error'
 
 @Injectable()
 export class ExercisesService {
@@ -40,14 +51,7 @@ export class ExercisesService {
             // Validate level compatibility: lesson levelJlpt must match testSet levelN
             if (lessonLevelJlpt !== null && testSetLevelN !== null) {
                 if (lessonLevelJlpt !== testSetLevelN) {
-                    throw new HttpException(
-                        {
-                            statusCode: 400,
-                            message: `Level không tương thích: Lesson có level JLPT ${lessonLevelJlpt} nhưng TestSet có level ${testSetLevelN}. Chỉ có thể tạo Exercise khi level của Lesson và TestSet khớp nhau`,
-                            error: 'LEVEL_INCOMPATIBLE'
-                        },
-                        400
-                    )
+                    throw LevelIncompatibleException(lessonLevelJlpt, testSetLevelN)
                 }
             }
 
@@ -55,26 +59,12 @@ export class ExercisesService {
             if (data.lessonId) {
                 const totalInLesson = await this.exercisesRepository.countByLesson(data.lessonId)
                 if (totalInLesson >= 3) {
-                    throw new HttpException(
-                        {
-                            statusCode: 400,
-                            message: 'Mỗi bài học chỉ được phép có tối đa 3 bài tập: VOCABULARY, GRAMMAR, KANJI',
-                            error: 'EXERCISE_LIMIT_PER_LESSON'
-                        },
-                        400
-                    )
+                    throw ExerciseLimitPerLessonException
                 }
 
                 const existedSameType = await this.exercisesRepository.findByLessonAndType(data.lessonId, data.exerciseType as unknown as string)
                 if (existedSameType) {
-                    throw new HttpException(
-                        {
-                            statusCode: 409,
-                            message: 'Mỗi loại bài tập chỉ được tạo 1 lần trong mỗi bài học',
-                            error: 'EXERCISE_TYPE_ALREADY_EXISTS'
-                        },
-                        409
-                    )
+                    throw ExerciseTypePerLessonExistsException
                 }
             }
 
@@ -82,15 +72,17 @@ export class ExercisesService {
             if (data.testSetId) {
                 const testSetType = await this.exercisesRepository.getTestSetType(data.testSetId)
                 if (testSetType && String(testSetType) !== String(data.exerciseType)) {
-                    throw new HttpException(
-                        {
-                            statusCode: 400,
-                            message: 'Loại TestSet không khớp với loại bài tập. Chỉ có thể gắn TestSet cùng loại (VOCABULARY/GRAMMAR/KANJI)',
-                            error: 'TESTSET_TYPE_MISMATCH'
-                        },
-                        400
-                    )
+                    throw TestSetTypeMismatchException
                 }
+            }
+
+            // Validate reward existence when provided
+            if (Array.isArray(data.rewardId) && data.rewardId.length > 0) {
+                const rewardExists = await this.exercisesRepository.checkRewardsExist(data.rewardId)
+                if (!rewardExists) {
+                    throw RewardNotFoundException
+                }
+                data.rewardId = Array.from(new Set(data.rewardId))
             }
 
             const result = await this.exercisesRepository.create(data)
@@ -108,11 +100,7 @@ export class ExercisesService {
             }
             // Handle Prisma unique constraint error
             if (error.code === 'P2002' && error.meta?.target?.includes('testSetId')) {
-                throw new BadRequestException({
-                    statusCode: 400,
-                    message: 'TestSet này đã có exercise được gán. Mỗi testSet chỉ có thể có một exercise.',
-                    error: 'TESTSET_ALREADY_HAS_EXERCISE'
-                })
+                throw TestSetAlreadyHasExerciseException
             }
             throw InvalidExercisesDataException
         }
@@ -144,6 +132,19 @@ export class ExercisesService {
                 }
             }
 
+            // Check reward existence when updating rewardId
+            if (data.rewardId !== undefined) {
+                if (Array.isArray(data.rewardId) && data.rewardId.length > 0) {
+                    const rewardExists = await this.exercisesRepository.checkRewardsExist(data.rewardId)
+                    if (!rewardExists) {
+                        throw RewardNotFoundException
+                    }
+                    data.rewardId = Array.from(new Set(data.rewardId))
+                } else if (Array.isArray(data.rewardId) && data.rewardId.length === 0) {
+                    data.rewardId = []
+                }
+            }
+
             // Compute target lesson and type for uniqueness checks
             const targetLessonId = data.lessonId ?? (existingExercise as any).lessonId
             const targetExerciseType = data.exerciseType ?? (existingExercise as any).exerciseType
@@ -156,14 +157,7 @@ export class ExercisesService {
                     id
                 )
                 if (existsSameType) {
-                    throw new HttpException(
-                        {
-                            statusCode: 409,
-                            message: 'Mỗi loại bài tập chỉ được tạo 1 lần trong mỗi bài học',
-                            error: 'EXERCISE_TYPE_ALREADY_EXISTS'
-                        },
-                        409
-                    )
+                    throw ExerciseTypePerLessonExistsException
                 }
             }
 
@@ -174,14 +168,7 @@ export class ExercisesService {
                     const testSetType = await this.exercisesRepository.getTestSetType(testSetIdToCheck)
                     const exerciseTypeToCheck = data.exerciseType ?? (existingExercise as any).exerciseType
                     if (testSetType && String(testSetType) !== String(exerciseTypeToCheck)) {
-                        throw new HttpException(
-                            {
-                                statusCode: 400,
-                                message: 'Loại TestSet không khớp với loại bài tập. Chỉ có thể gắn TestSet cùng loại (VOCABULARY/GRAMMAR/KANJI)',
-                                error: 'TESTSET_TYPE_MISMATCH'
-                            },
-                            400
-                        )
+                        throw TestSetTypeMismatchException
                     }
                 }
             }
@@ -202,11 +189,7 @@ export class ExercisesService {
 
             // Xử lý lỗi unique constraint violation cho testSetId
             if (error.code === 'P2002' && error.meta?.target?.includes('testSetId')) {
-                throw new BadRequestException({
-                    statusCode: 400,
-                    message: 'TestSet này đã có exercise được gán. Mỗi testSet chỉ có thể có một exercise.',
-                    error: 'TESTSET_ALREADY_HAS_EXERCISE'
-                })
+                throw TestSetAlreadyHasExerciseException
             }
 
             throw InvalidExercisesDataException
@@ -260,6 +243,7 @@ export class ExercisesService {
                 exerciseType: (repoResult as any).exerciseType,
                 isBlocked: (repoResult as any).isBlocked,
                 testSetId: (repoResult as any).testSetId ?? null,
+                rewardId: (repoResult as any).rewardId ?? [],
             }
 
             return mapped
@@ -288,6 +272,7 @@ export class ExercisesService {
                 exerciseType: item.exerciseType,
                 isBlocked: item.isBlocked,
                 testSetId: item.testSetId ?? null,
+                rewardId: item.rewardId ?? [],
             })) as ExercisesType[]
 
             return mapped
