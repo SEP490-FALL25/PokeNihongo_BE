@@ -701,7 +701,7 @@ model Lesson {
 
   // Quan hệ với Reward
   rewardId Int[]
-  
+
   // Quan hệ với Test (Bài test ôn tập)
   testId Int?
   test   Test? @relation("LessonTest", fields: [testId], references: [id], onDelete: SetNull, onUpdate: NoAction)
