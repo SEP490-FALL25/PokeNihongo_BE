@@ -40,11 +40,11 @@ export class BullQueueModule {
                 password: new URL(redisUri).password
               },
               settings: {
-                stalledInterval: 60000, // Check stalled jobs every 60s (increased from 30s)
-                maxStalledCount: 5, // Allow up to 5 stall attempts (increased from 1)
-                lockDuration: 60000, // Increase lock duration to 60s
-                // CRITICAL: Poll delayed jobs every 5ms for VERY fast response (prevent race condition)
-                drainDelay: 100
+                stalledInterval: 30000,
+                maxStalledCount: 3,
+                lockDuration: 30000,
+                // CRITICAL: Poll delayed jobs every 5ms (Bull v4 requires this for delayed jobs)
+                drainDelay: 5
               },
               ...options
             }

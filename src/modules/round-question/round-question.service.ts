@@ -12,9 +12,10 @@ import {
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { PrismaService } from '@/shared/services/prisma.service'
+import { RoundQuestionTimeoutProcessor } from '@/shared/workers/round-question-timeout.processor'
 import { MatchingGateway } from '@/websockets/matching.gateway'
 import { InjectQueue } from '@nestjs/bull'
-import { Injectable } from '@nestjs/common'
+import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import { Queue } from 'bull'
 import { RoundQuestionNotFoundException } from './dto/round-question.error'
 import {
@@ -35,7 +36,9 @@ export class RoundQuestionService {
     @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
     private readonly roundQuestionTimeoutQueue: Queue,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
-    private readonly matchRoundParticipantTimeoutQueue: Queue
+    private readonly matchRoundParticipantTimeoutQueue: Queue,
+    @Inject(forwardRef(() => RoundQuestionTimeoutProcessor))
+    private readonly roundQuestionProcessor: RoundQuestionTimeoutProcessor
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -193,22 +196,32 @@ export class RoundQuestionService {
 
     if (!roundQuestion) throw new RoundQuestionNotFoundException()
 
-    // Remove any scheduled timeout job for this SPECIFIC participant's roundQuestion
+    // ✅ CRITICAL: Clear setTimeout FIRST (processor might be about to fire)
+    this.roundQuestionProcessor.clearQuestionTimeout(
+      id,
+      roundQuestion.matchRoundParticipantId
+    )
+
+    // ✅ CRITICAL: Remove ALL Bull jobs (including active ones) for current question
     try {
-      const jobs = await this.roundQuestionTimeoutQueue.getJobs(['delayed', 'waiting'])
+      const jobs = await this.roundQuestionTimeoutQueue.getJobs([
+        'delayed',
+        'waiting',
+        'active'
+      ])
       const jobsToRemove = jobs.filter(
         (j) =>
           j.name === BullAction.CHECK_QUESTION_TIMEOUT &&
           j.data?.roundQuestionId === id &&
-          j.data?.matchRoundParticipantId === roundQuestion.matchRoundParticipantId // CRITICAL: Match exact participant!
+          j.data?.matchRoundParticipantId === roundQuestion.matchRoundParticipantId
       )
-      
+
       if (jobsToRemove.length > 0) {
         console.log(
-          `[RoundQuestion] 🗑️ Removing ${jobsToRemove.length} timeout job(s) for roundQuestionId=${id}, participantId=${roundQuestion.matchRoundParticipantId}: jobIds=[${jobsToRemove.map(j => j.id).join(', ')}]`
+          `[RoundQuestion] 🗑️ Removing ${jobsToRemove.length} timeout job(s) for roundQuestionId=${id}, participantId=${roundQuestion.matchRoundParticipantId}: jobIds=[${jobsToRemove.map((j) => j.id).join(', ')}]`
         )
       }
-      
+
       await Promise.all(jobsToRemove.map((j) => j.remove()))
     } catch (e) {
       console.warn('[RoundQuestion] Failed to remove timeout job', e)
@@ -286,6 +299,13 @@ export class RoundQuestionService {
         })
 
         if (nextQuestion) {
+          // CRITICAL: Clear any pending setTimeout for next question
+          // This prevents double-firing when user answers current question early
+          this.roundQuestionProcessor.clearQuestionTimeout(
+            nextQuestion.id,
+            roundQuestion.matchRoundParticipantId
+          )
+
           endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
           await this.prismaService.roundQuestion.update({
             where: { id: nextQuestion.id },
@@ -302,7 +322,12 @@ export class RoundQuestionService {
               roundQuestionId: nextQuestion.id,
               matchRoundParticipantId: roundQuestion.matchRoundParticipantId
             },
-            { delay: nextQuestion.timeLimitMs + delayOffset, priority, removeOnComplete: false, removeOnFail: false }
+            {
+              delay: nextQuestion.timeLimitMs + delayOffset,
+              priority,
+              removeOnComplete: false,
+              removeOnFail: false
+            }
           )
         }
       }
@@ -381,6 +406,32 @@ export class RoundQuestionService {
         })
 
         if (nextQuestion) {
+          // ✅ CRITICAL: Clear any pending setTimeout from processor to prevent double-firing
+          this.roundQuestionProcessor.clearQuestionTimeout(
+            nextQuestion.id,
+            roundQuestion.matchRoundParticipantId
+          )
+
+          // ✅ CRITICAL: Remove any existing Bull jobs for next question to prevent duplicates
+          const existingJobs = await this.roundQuestionTimeoutQueue.getJobs([
+            'waiting',
+            'delayed',
+            'active'
+          ])
+          const duplicateJobs = existingJobs.filter(
+            (j) =>
+              j.name === BullAction.CHECK_QUESTION_TIMEOUT &&
+              j.data?.roundQuestionId === nextQuestion.id &&
+              j.data?.matchRoundParticipantId === roundQuestion.matchRoundParticipantId
+          )
+
+          if (duplicateJobs.length > 0) {
+            console.log(
+              `[RoundQuestion] 🗑️ Found ${duplicateJobs.length} existing job(s) for next question ${nextQuestion.id}, removing them`
+            )
+            await Promise.all(duplicateJobs.map((j) => j.remove()))
+          }
+
           const endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
           await this.prismaService.roundQuestion.update({
             where: { id: nextQuestion.id },
@@ -397,7 +448,12 @@ export class RoundQuestionService {
               roundQuestionId: nextQuestion.id,
               matchRoundParticipantId: roundQuestion.matchRoundParticipantId
             },
-            { delay: nextQuestion.timeLimitMs + delayOffset, priority, removeOnComplete: false, removeOnFail: false }
+            {
+              delay: nextQuestion.timeLimitMs + delayOffset,
+              priority,
+              removeOnComplete: false,
+              removeOnFail: false
+            }
           )
         }
       } catch (e) {
