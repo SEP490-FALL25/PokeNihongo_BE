@@ -2862,6 +2862,7 @@ enum RewardClaimStatus {
 enum UserRewardSourceType {
   REWARD_SERVICE // Qua RewardService.convertRewardsWithUser
   LESSON // Hoàn thành bài học / lesson-based reward
+  EXERCISE // Hoàn thành bài tập / exercise-based reward
   DAILY_REQUEST // Hoàn thành Daily Request / Streak
   ATTENDANCE // Điểm danh (Attendance)
   SEASON_REWARD // Thưởng mùa giải (Leaderboard Season)
