@@ -330,6 +330,7 @@ export class ExercisesRepository {
             exerciseType: item.exerciseType,
             isBlocked: item.isBlocked,
             testSetId: item.testSetId,
+            rewardId: item.rewardId,
             createdAt: item.createdAt,
             updatedAt: item.updatedAt
         }))
@@ -362,6 +363,17 @@ export class ExercisesRepository {
             select: { testType: true }
         })
         return testSet?.testType ?? null
+    }
+
+    async checkRewardsExist(rewardIds: number[]) {
+        if (!rewardIds.length) {
+            return true
+        }
+        const uniqueIds = Array.from(new Set(rewardIds))
+        const count = await this.prismaService.reward.count({
+            where: { id: { in: uniqueIds } }
+        })
+        return count === uniqueIds.length
     }
 
 }
