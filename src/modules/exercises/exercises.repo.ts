@@ -310,6 +310,14 @@ export class ExercisesRepository {
         return lesson?.levelJlpt || null
     }
 
+    async getLessonRewardIds(lessonId: number): Promise<number[]> {
+        const lesson = await this.prismaService.lesson.findUnique({
+            where: { id: lessonId },
+            select: { rewardId: true }
+        })
+        return lesson?.rewardId ?? []
+    }
+
     async getTestSetLevelN(testSetId: number): Promise<number | null> {
         const testSet = await this.prismaService.testSet.findUnique({
             where: { id: testSetId },

@@ -155,9 +155,9 @@ export class GeminiConfigRepo {
         })
     }
 
-    async listServiceConfigs(serviceType: PrismaGeminiConfigTypeEnum) {
+    async listServiceConfigs(serviceType?: PrismaGeminiConfigTypeEnum) {
         return this.prismaService.geminiServiceConfig.findMany({
-            where: { serviceType: serviceType as any },
+            where: serviceType ? { serviceType: serviceType as any } : undefined,
             include: {
                 geminiConfig: {
                     include: { geminiConfigModel: { include: { geminiModel: true } } }

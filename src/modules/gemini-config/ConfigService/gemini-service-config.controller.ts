@@ -24,11 +24,10 @@ export class GeminiServiceConfigController {
         return this.geminiConfigService.createServiceConfig(body as any)
     }
 
-    @Get(':serviceType')
-    @ApiOperation({ summary: 'Danh sách cấu hình theo serviceType (kèm chi tiết GeminiConfigModel/GeminiModel)' })
-    @ApiParam({ name: 'serviceType', description: 'SPEAKING_EVALUATION | AI_KAIWA | PERSONALIZED_RECOMMENDATIONS', example: 'SPEAKING_EVALUATION' })
-    list(@Param('serviceType') serviceType: any, @I18nLang() _lang: string) {
-        return this.geminiConfigService.listServiceConfigs(serviceType)
+    @Get()
+    @ApiOperation({ summary: 'Danh sách tất cả cấu hình GeminiServiceConfig (kèm chi tiết GeminiConfigModel/GeminiModel)' })
+    list(@I18nLang() _lang: string) {
+        return this.geminiConfigService.listServiceConfigs()
     }
 
     @Patch(':id/set-default')
