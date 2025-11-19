@@ -196,6 +196,27 @@ export class MatchRoundParticipantService {
         throw new MatchRoundParticipantNotFoundException()
       }
 
+      // CRITICAL: Check if participant already selected Pokemon (auto-selected by timeout)
+      if (existMatchRoundParticipant.selectedUserPokemonId !== null) {
+        this.logger.warn(
+          `[MatchRoundParticipant] User ${userId} tried to select Pokemon after timeout (already selected: ${existMatchRoundParticipant.selectedUserPokemonId})`
+        )
+
+        // Notify user via socket that selection expired
+        this.matchingGateway.notifyPokemonSelectionExpired(
+          existMatchRound.match.id,
+          matchRoundId,
+          userId,
+          'Đã quá hạn chọn Pokemon. Hệ thống đã tự động chọn Pokemon cho bạn.'
+        )
+
+        return {
+          statusCode: 400,
+          data: null,
+          message: 'Đã quá hạn chọn Pokemon'
+        }
+      }
+
       // Tìm userPokemon dựa vào pokemonId và userId
       const userPokemon = await this.userPokemonRepo.findByUserAndPokemon(
         userId,
@@ -205,15 +226,33 @@ export class MatchRoundParticipantService {
         throw new NotFoundRecordException()
       }
 
-      // Xóa Bull job của participant hiện tại
+      // ✅ CRITICAL FIX: Remove ALL timeout jobs for this participant (including active ones)
+      // Must remove ALL instances, not just first match, to prevent duplicate question generation
       const jobs = await this.matchRoundParticipantTimeoutQueue.getJobs([
         'waiting',
-        'delayed'
+        'delayed',
+        'active' // ← Include active jobs to catch jobs currently being processed
       ])
-      for (const job of jobs) {
-        if (job.data.matchRoundParticipantId === existMatchRoundParticipant.id) {
-          await job.remove()
-        }
+
+      // Get all participant IDs in this round
+      const roundParticipantIds = existMatchRound.participants.map((p) => p.id)
+
+      // Filter for CHECK_POKEMON_SELECTION_TIMEOUT jobs only
+      const jobsToRemove = jobs.filter(
+        (job) =>
+          roundParticipantIds.includes(job.data?.matchRoundParticipantId) &&
+          job.name === BullAction.CHECK_POKEMON_SELECTION_TIMEOUT
+      )
+
+      if (jobsToRemove.length > 0) {
+        this.logger.log(
+          `[MatchRoundParticipant] ✂️ Removing ${jobsToRemove.length} timeout jobs for round ${matchRoundId} (user ${userId} selected manually)`
+        )
+        await Promise.all(jobsToRemove.map((job) => job.remove()))
+      } else {
+        this.logger.log(
+          `[MatchRoundParticipant] No timeout jobs found to remove for round ${matchRoundId}`
+        )
       }
 
       // Update selectedUserPokemonId với userPokemon.id
@@ -226,18 +265,25 @@ export class MatchRoundParticipantService {
         updatedById: userId
       })
 
-      // Tìm participant tiếp theo và kiểm tra all selected trước khi gửi socket
-      const allParticipants = existMatchRound.participants.sort(
-        (a, b) => a.orderSelected - b.orderSelected
-      )
-      const currentIndex = allParticipants.findIndex(
-        (p) => p.id === existMatchRoundParticipant.id
-      )
-      allParticipants[currentIndex].selectedUserPokemonId = userPokemon.id
-      const nextParticipant = allParticipants[currentIndex + 1]
-      const allSelectedNow = allParticipants.every(
+      // ✅ CRITICAL FIX: Re-fetch participants from DB to ensure accurate allSelected check
+      // Do NOT rely on stale in-memory data from existMatchRound.participants
+      const freshParticipants = await this.prismaService.matchRoundParticipant.findMany({
+        where: { matchRoundId, deletedAt: null },
+        orderBy: { orderSelected: 'asc' }
+      })
+
+      const allSelectedNow = freshParticipants.every(
         (p) => p.selectedUserPokemonId !== null
       )
+
+      this.logger.log(
+        `[MatchRoundParticipant] After user ${userId} selected: allSelected=${allSelectedNow}, participants=${freshParticipants.map((p) => `${p.id}:${p.selectedUserPokemonId ? '✅' : '❌'}`).join(', ')}`
+      )
+
+      const currentIndex = freshParticipants.findIndex(
+        (p) => p.id === existMatchRoundParticipant.id
+      )
+      const nextParticipant = freshParticipants[currentIndex + 1]
       const nextEndTime = addTimeUTC(new Date(), TIME_CHOOSE_POKEMON_MS)
       if (allSelectedNow) {
         this.logger.log(
@@ -280,11 +326,72 @@ export class MatchRoundParticipantService {
       if (allSelectedNow) {
         await this.handleQuestionsAndDebuffForCompletedSelection(
           existMatchRound,
-          allParticipants.map((p) => p.id)
+          freshParticipants.map((p) => p.id)
         )
+
+        // CRITICAL: Only check allPending when BOTH users have selected
+        // This prevents premature round starting when only one user selected
+        const allRounds = await this.prismaService.matchRound.findMany({
+          where: { matchId: existMatchRound.match.id, deletedAt: null },
+          include: { participants: true }
+        })
+        const allPending = allRounds.every((r) => r.status === RoundStatus.PENDING)
+
+        this.logger.log(
+          `[MatchRoundParticipant] AllPending check (after both selected): ${allPending}, Total rounds: ${allRounds.length}`
+        )
+
+        if (allPending) {
+          const roundOne = allRounds.find((r) => r.roundNumber === MatchRoundNumber.ONE)
+          if (roundOne) {
+            // ✅ FIX BUG 1: Check if START_ROUND job already exists to prevent duplicate ROUND_STARTING
+            const existingJobs = await this.matchRoundParticipantTimeoutQueue.getJobs([
+              'waiting',
+              'delayed'
+            ])
+            const hasStartRoundJob = existingJobs.some(
+              (job) =>
+                job.name === BullAction.START_ROUND &&
+                job.data?.matchId === existMatchRound.match.id &&
+                job.data?.matchRoundId === roundOne.id
+            )
+
+            if (!hasStartRoundJob) {
+              const roundOneParticipants =
+                await this.prismaService.matchRoundParticipant.findMany({
+                  where: { matchRoundId: roundOne.id, deletedAt: null },
+                  include: { matchParticipant: { include: { user: true } } },
+                  orderBy: { orderSelected: 'asc' }
+                })
+              if (roundOneParticipants.length === 2) {
+                const userId1 = roundOneParticipants[0].matchParticipant.userId
+                const userId2 = roundOneParticipants[1].matchParticipant.userId
+                this.matchingGateway.notifyRoundStarting(
+                  existMatchRound.match.id,
+                  userId1,
+                  userId2,
+                  'ONE',
+                  5
+                )
+                await this.matchRoundParticipantTimeoutQueue.add(
+                  BullAction.START_ROUND,
+                  { matchId: existMatchRound.match.id, matchRoundId: roundOne.id },
+                  { delay: 5000 }
+                )
+                this.logger.log(
+                  `[MatchRoundParticipant] Scheduled Round ONE to start in 5 seconds for match ${existMatchRound.match.id}`
+                )
+              }
+            } else {
+              this.logger.warn(
+                `[MatchRoundParticipant] START_ROUND job already exists for match ${existMatchRound.match.id}, round ${roundOne.id} - skipping duplicate`
+              )
+            }
+          }
+        }
       }
 
-      // Fetch data và gửi socket 1 lần duy nhất SAU khi tất cả hàm chạy xong (bao gồm moveToNextRound)
+      // Fetch data và gửi socket 1 lần duy nhất SAU khi tất cả hàm chạy xong
       const match: any = await this.prismaService.match.findUnique({
         where: { id: existMatchRound.match.id },
         include: { participants: { include: { user: true } } }

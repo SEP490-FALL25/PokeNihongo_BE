@@ -454,11 +454,14 @@ export class RewardService {
       reduceReward?: boolean
     }
   ) {
-    // 1. Fetch all rewards by IDs using findManyByIds
-    const rewards = await this.rewardRepo.findManyByIds(rewardIds)
-    if (rewards.length !== rewardIds.length) {
-      throw new NotFoundRecordException()
-    }
+    this.logger.log(
+      `[convertRewardsWithUser] START - UserId: ${userId}, Initial RewardIds: [${rewardIds.join(', ')}], SourceType: ${sourceType}`
+    )
+
+    // Queue-based approach to handle level-up rewards without circular dependency
+    const rewardQueue: number[] = [...rewardIds]
+    const processedRewardIds = new Set<number>() // Track processed rewards to avoid duplicates
+
     // xem có tăng không
     const valueIncrease = await this.userSubService.getValueConvertByfeatureKeyAndUserId(
       FeatureKey.COIN_MULTIPLIER,
@@ -470,14 +473,70 @@ export class RewardService {
         userId
       )
 
-    // 2. Group rewards by target type
-    const rewardsByType: Record<RewardTarget, typeof rewards> = {
-      [RewardTarget.EXP]: [],
-      [RewardTarget.POKEMON]: [],
-      [RewardTarget.POKE_COINS]: [],
-      [RewardTarget.SPARKLES]: []
+    const results: any = {
+      pokeCoins: null,
+      sparkles: null,
+      pokemons: [],
+      levelsGained: 0,
+      levelRewards: [] // Track rewards from level-ups
     }
 
+    const historyEntries: CreateUserRewardHistoryBodyType[] = []
+
+    // Process rewards in queue until empty
+    while (rewardQueue.length > 0) {
+      const currentBatchIds = rewardQueue.splice(0, rewardQueue.length)
+      this.logger.log(
+        `[convertRewardsWithUser] Processing batch - RewardIds: [${currentBatchIds.join(', ')}]`
+      )
+
+      // Filter out already processed rewards
+      const newRewardIds = currentBatchIds.filter((id) => !processedRewardIds.has(id))
+      if (newRewardIds.length === 0) {
+        this.logger.warn(
+          `[convertRewardsWithUser] All rewards in batch already processed, skipping`
+        )
+        continue
+      }
+
+      this.logger.log(
+        `[convertRewardsWithUser] New rewards to process: [${newRewardIds.join(', ')}], Already processed: [${Array.from(processedRewardIds).join(', ')}]`
+      )
+
+      // 1. Fetch all rewards by IDs using findManyByIds
+      const rewards = await this.rewardRepo.findManyByIds(newRewardIds)
+
+      this.logger.log(
+        `[convertRewardsWithUser] Fetched ${rewards.length} rewards from DB for ${newRewardIds.length} requested IDs`
+      )
+
+      if (rewards.length !== newRewardIds.length) {
+        const foundIds = rewards.map((r) => r.id)
+        const missingIds = newRewardIds.filter((id) => !foundIds.includes(id))
+        this.logger.error(
+          `[convertRewardsWithUser] REWARD NOT FOUND - Requested: [${newRewardIds.join(', ')}], Found: [${foundIds.join(', ')}], Missing: [${missingIds.join(', ')}]`
+        )
+        throw new NotFoundRecordException()
+      }
+
+      this.logger.log(
+        `[convertRewardsWithUser] Reward details: ${JSON.stringify(rewards.map((r) => ({ id: r.id, target: r.rewardTarget, item: r.rewardItem })))}`
+      )
+
+      // Mark as processed
+      newRewardIds.forEach((id) => processedRewardIds.add(id))
+
+      // 2. Group rewards by target type
+      const rewardsByType: Record<RewardTarget, typeof rewards> = {
+        [RewardTarget.EXP]: [],
+        [RewardTarget.POKEMON]: [],
+        [RewardTarget.POKE_COINS]: [],
+        [RewardTarget.SPARKLES]: []
+      }
+
+      for (const reward of rewards) {
+        rewardsByType[reward.rewardTarget].push(reward)
+      }
     for (const reward of rewards) {
       rewardsByType[reward.rewardTarget].push(reward)
     }
@@ -486,6 +545,78 @@ export class RewardService {
     const isReducedReward = options?.reduceReward ?? false
     const reductionMultiplier = isReducedReward ? 0.1 : 1
 
+      // 3. Process EXP rewards (may trigger level-ups with more rewards)
+      if (rewardsByType[RewardTarget.EXP].length > 0) {
+        const totalExp = rewardsByType[RewardTarget.EXP].reduce(
+          (sum, r) => sum + r.rewardItem,
+          0
+        )
+        const expResult = await this.userService.userAddExp(
+          userId,
+          totalExp * valueIncreaseExp
+        )
+
+        // Accumulate level gains (don't store full user data)
+        if (expResult.data.levelsGained) {
+          results.levelsGained += expResult.data.levelsGained
+        }
+
+        // Add level-up rewards to queue if any
+        if (expResult.data.levelRewardIds && expResult.data.levelRewardIds.length > 0) {
+          this.logger.log(
+            `[convertRewardsWithUser] User ${userId} leveled up ${expResult.data.levelsGained} times, levelRewardIds from userAddExp: [${expResult.data.levelRewardIds.join(', ')}]`
+          )
+          this.logger.log(
+            `[convertRewardsWithUser] Level up details: ${JSON.stringify(expResult.data.levelUpDetails)}`
+          )
+
+          // Fetch level reward details to include in response
+          this.logger.log(
+            `[convertRewardsWithUser] Fetching level reward details for IDs: [${expResult.data.levelRewardIds.join(', ')}]`
+          )
+          const levelRewardDetails = await this.rewardRepo.findManyByIds(
+            expResult.data.levelRewardIds
+          )
+
+          this.logger.log(
+            `[convertRewardsWithUser] Level rewards fetched: ${levelRewardDetails.length} out of ${expResult.data.levelRewardIds.length}`
+          )
+
+          if (levelRewardDetails.length !== expResult.data.levelRewardIds.length) {
+            const foundIds = levelRewardDetails.map((r) => r.id)
+            const missingIds = expResult.data.levelRewardIds.filter(
+              (id) => !foundIds.includes(id)
+            )
+            this.logger.error(
+              `[convertRewardsWithUser] LEVEL REWARD NOT FOUND - Requested: [${expResult.data.levelRewardIds.join(', ')}], Found: [${foundIds.join(', ')}], Missing: [${missingIds.join(', ')}]`
+            )
+          }
+
+          // Map rewards with level progression info
+          const levelUpDetails = expResult.data.levelUpDetails || []
+          levelRewardDetails.forEach((reward, index) => {
+            const levelDetail = levelUpDetails[index]
+            results.levelRewards.push({
+              ...reward,
+              fromLevel: levelDetail?.fromLevel,
+              toLevel: levelDetail?.toLevel
+            })
+          })
+
+          rewardQueue.push(...expResult.data.levelRewardIds)
+          this.logger.log(
+            `[convertRewardsWithUser] Added level rewards to queue. New queue: [${rewardQueue.join(', ')}]`
+          )
+        }
+
+        this.userRewardHistoryService.appendEntriesFromRewards(
+          historyEntries,
+          rewardsByType[RewardTarget.EXP],
+          userId,
+          RewardTarget.EXP,
+          sourceType
+        )
+      }
     const results: any = {
       exp: null,
       pokeCoins: null,
@@ -514,6 +645,29 @@ export class RewardService {
       )
     }
 
+      // 4. Process POKE_COINS rewards
+      if (rewardsByType[RewardTarget.POKE_COINS].length > 0) {
+        const totalCoins = rewardsByType[RewardTarget.POKE_COINS].reduce(
+          (sum, r) => sum + r.rewardItem,
+          0
+        )
+        const coinsResult = await this.walletRepo.addBalanceToWalletWithType({
+          userId,
+          type: WalletType.POKE_COINS,
+          amount: totalCoins * valueIncrease
+        })
+
+        // Accumulate or set result
+        results.pokeCoins = coinsResult
+
+        this.userRewardHistoryService.appendEntriesFromRewards(
+          historyEntries,
+          rewardsByType[RewardTarget.POKE_COINS],
+          userId,
+          RewardTarget.POKE_COINS,
+          sourceType
+        )
+      }
     // 4. Process POKE_COINS rewards
     if (rewardsByType[RewardTarget.POKE_COINS].length > 0) {
       const totalCoins = rewardsByType[RewardTarget.POKE_COINS].reduce(
@@ -536,13 +690,21 @@ export class RewardService {
       )
     }
 
-    // 5. Process SPARKLES rewards
-    if (rewardsByType[RewardTarget.SPARKLES].length > 0) {
-      const totalSparkles = rewardsByType[RewardTarget.SPARKLES].reduce(
-        (sum, r) => sum + r.rewardItem,
-        0
-      )
+      // 5. Process SPARKLES rewards
+      if (rewardsByType[RewardTarget.SPARKLES].length > 0) {
+        const totalSparkles = rewardsByType[RewardTarget.SPARKLES].reduce(
+          (sum, r) => sum + r.rewardItem,
+          0
+        )
 
+        const sparklesResult = await this.walletRepo.addBalanceToWalletWithType({
+          userId,
+          type: WalletType.SPARKLES,
+          amount: totalSparkles * valueIncrease
+        })
+
+        // Accumulate or set result
+        results.sparkles = sparklesResult
       const finalSparkleReward = totalSparkles * valueIncrease * reductionMultiplier
       results.sparkles = await this.walletRepo.addBalanceToWalletWithType({
         userId,
@@ -550,6 +712,14 @@ export class RewardService {
         amount: finalSparkleReward
       })
 
+        this.userRewardHistoryService.appendEntriesFromRewards(
+          historyEntries,
+          rewardsByType[RewardTarget.SPARKLES],
+          userId,
+          RewardTarget.SPARKLES,
+          sourceType
+        )
+      }
       this.userRewardHistoryService.appendEntriesFromRewards(
         historyEntries,
         rewardsByType[RewardTarget.SPARKLES],
@@ -560,58 +730,64 @@ export class RewardService {
       )
     }
 
-    // 6. Process POKEMON rewards (most complex)
-    for (const pokemonReward of rewardsByType[RewardTarget.POKEMON]) {
-      const pokemonId = pokemonReward.rewardItem
+      // 6. Process POKEMON rewards (most complex)
+      for (const pokemonReward of rewardsByType[RewardTarget.POKEMON]) {
+        const pokemonId = pokemonReward.rewardItem
 
-      // Check if user already has this pokemon
-      const existingUserPokemon = await this.userPokemonRepo.findByUserAndPokemon(
-        userId,
-        pokemonId
-      )
-
-      if (!existingUserPokemon) {
-        // User doesn't have this pokemon -> add it
-        const newUserPokemon = await this.userPokemonRepo.create({
+        // Check if user already has this pokemon
+        const existingUserPokemon = await this.userPokemonRepo.findByUserAndPokemon(
           userId,
-          data: {
-            pokemonId,
-            isMain: false
+          pokemonId
+        )
+
+        if (!existingUserPokemon) {
+          // User doesn't have this pokemon -> add it
+          const newUserPokemon = await this.userPokemonRepo.create({
+            userId,
+            data: {
+              pokemonId,
+              isMain: false
+            }
+          })
+          results.pokemons.push({
+            action: 'added',
+            pokemon: newUserPokemon
+          })
+          this.pushHistoryEntry(historyEntries, {
+            userId,
+            rewardId: pokemonReward.id,
+            target: RewardTarget.POKEMON,
+            amount: 1,
+            meta: {
+              pokemonId
+            }
+          })
+        } else {
+          // User already has this pokemon -> convert to coins based on rarity
+          const pokemon = await this.pokemonRepo.findById(pokemonId)
+          if (!pokemon) {
+            throw new NotFoundRecordException()
           }
-        })
-        results.pokemons.push({
-          action: 'added',
-          pokemon: newUserPokemon
-        })
-        this.pushHistoryEntry(historyEntries, {
-          userId,
-          rewardId: pokemonReward.id,
-          target: RewardTarget.POKEMON,
-          amount: 1,
-          meta: {
-            pokemonId
+
+          // Calculate value: 200 * rarity_level * 0.5
+          // Rarity levels: COMMON=1, UNCOMMON=2, RARE=3, EPIC=4, LEGENDARY=5
+          const rarityLevels: Record<RarityPokemon, number> = {
+            [RarityPokemon.COMMON]: 1,
+            [RarityPokemon.UNCOMMON]: 2,
+            [RarityPokemon.RARE]: 3,
+            [RarityPokemon.EPIC]: 4,
+            [RarityPokemon.LEGENDARY]: 5
           }
-        })
-      } else {
-        // User already has this pokemon -> convert to coins based on rarity
-        const pokemon = await this.pokemonRepo.findById(pokemonId)
-        if (!pokemon) {
-          throw new NotFoundRecordException()
-        }
 
-        // Calculate value: 200 * rarity_level * 0.5
-        // Rarity levels: COMMON=1, UNCOMMON=2, RARE=3, EPIC=4, LEGENDARY=5
-        const rarityLevels: Record<RarityPokemon, number> = {
-          [RarityPokemon.COMMON]: 1,
-          [RarityPokemon.UNCOMMON]: 2,
-          [RarityPokemon.RARE]: 3,
-          [RarityPokemon.EPIC]: 4,
-          [RarityPokemon.LEGENDARY]: 5
-        }
+          const rarityLevel = rarityLevels[pokemon.rarity as RarityPokemon] || 1
+          const coinValue = Math.floor(200 * rarityLevel * 0.5)
 
-        const rarityLevel = rarityLevels[pokemon.rarity as RarityPokemon] || 1
-        const coinValue = Math.floor(200 * rarityLevel * 0.5)
-
+          // Add coins to user wallet
+          const updatedWallet = await this.walletRepo.addBalanceToWalletWithType({
+            userId,
+            type: WalletType.SPARKLES,
+            amount: coinValue * valueIncrease
+          })
         // Add coins to user wallet
         const finalConvertedCoinReward = coinValue * valueIncrease * reductionMultiplier
         const updatedWallet = await this.walletRepo.addBalanceToWalletWithType({
@@ -620,6 +796,39 @@ export class RewardService {
           amount: finalConvertedCoinReward
         })
 
+          results.pokemons.push({
+            action: 'converted_to_coins',
+            pokemon: pokemon,
+            coinValue: coinValue * valueIncrease,
+            wallet: updatedWallet
+          })
+          this.pushHistoryEntry(historyEntries, {
+            userId,
+            rewardId: pokemonReward.id,
+            target: RewardTarget.SPARKLES,
+            amount: coinValue * valueIncrease,
+            note: `Converted pokemon ${pokemonId} reward to coins`,
+            meta: {
+              pokemonId,
+              coinValue
+            }
+          })
+        }
+      }
+    } // End of while loop
+
+    this.logger.log(
+      `[convertRewardsWithUser] COMPLETED - UserId: ${userId}, Total processed rewards: ${processedRewardIds.size}, Levels gained: ${results.levelsGained}, Level rewards: ${results.levelRewards.length}`
+    )
+    this.logger.log(
+      `[convertRewardsWithUser] Final results: ${JSON.stringify({
+        pokeCoinsUpdated: !!results.pokeCoins,
+        sparklesUpdated: !!results.sparkles,
+        pokemonsCount: results.pokemons.length,
+        levelsGained: results.levelsGained,
+        levelRewardsCount: results.levelRewards.length
+      })}`
+    )
         results.pokemons.push({
           action: 'converted_to_coins',
           pokemon: pokemon,

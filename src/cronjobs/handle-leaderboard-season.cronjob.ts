@@ -325,14 +325,17 @@ export class HandleLeaderboardSeasonCronjob {
     // Note: We only link to SeasonRankReward and mark CLAIMED. Actual delivery of rewards
     // (EXP/Coins/Sparkles/Pokemon) can be handled elsewhere by a worker if needed.
 
-    // 7) Reset user eloscore: new = max(0, old - 1000)
-    const uniqueUserIds = Array.from(new Set(participants.map((p) => p.userId)))
-    const userRows = await this.prisma.user.findMany({
-      where: { id: { in: uniqueUserIds } },
+    // 7) Reset eloscore for ALL users in the system (not just participants): new = max(0, old - 1000)
+    const allUsers = await this.prisma.user.findMany({
+      where: { deletedAt: null },
       select: { id: true, eloscore: true }
     })
 
-    const userUpdateTx = userRows.map((u) => {
+    this.logger.log(
+      `[FinalizeSeason] Resetting elo for ${allUsers.length} total users (${participants.length} were participants)`
+    )
+
+    const userUpdateTx = allUsers.map((u) => {
       const current = u.eloscore || 0
       const next = Math.max(0, current - 1000)
       return this.prisma.user.update({ where: { id: u.id }, data: { eloscore: next } })
@@ -340,7 +343,7 @@ export class HandleLeaderboardSeasonCronjob {
     await this.prisma.$transaction(userUpdateTx)
 
     this.logger.log(
-      `[FinalizeSeason] Season ${seasonId} finalized: participants=${participants.length}, rewardsAssigned=${rankAssignments.filter((a) => a.seasonRankRewardId).length}`
+      `[FinalizeSeason] Season ${seasonId} finalized: totalUsers=${allUsers.length}, participants=${participants.length}, rewardsAssigned=${rankAssignments.filter((a) => a.seasonRankRewardId).length}`
     )
   }
 
