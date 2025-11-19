@@ -2,6 +2,23 @@ import { ApiProperty } from '@nestjs/swagger'
 import { LessonContentsType } from '@prisma/client'
 import { ExercisesSortField, SortOrder } from '@/common/enum/enum'
 
+class RewardSummarySwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID phần thưởng' })
+    id: number
+
+    @ApiProperty({ example: 'Phần thưởng bài học', description: 'Tên phần thưởng theo ngôn ngữ người dùng' })
+    name: string
+
+    @ApiProperty({ example: 'LESSON', description: 'Loại phần thưởng' })
+    rewardType: string
+
+    @ApiProperty({ example: 100, description: 'Giá trị phần thưởng' })
+    rewardItem: number
+
+    @ApiProperty({ example: 'EXP', description: 'Mục tiêu phần thưởng' })
+    rewardTarget: string
+}
+
 // Swagger DTOs - for API documentation only
 export class CreateExercisesSwaggerDTO {
 
@@ -20,6 +37,9 @@ export class CreateExercisesSwaggerDTO {
 
     @ApiProperty({ example: 1, description: 'ID bộ đề' })
     testSetId?: number
+
+    @ApiProperty({ example: [1, 2], description: 'Danh sách ID phần thưởng', required: false })
+    rewardId?: number[]
 }
 
 export class UpdateExercisesSwaggerDTO {
@@ -40,6 +60,9 @@ export class UpdateExercisesSwaggerDTO {
 
     @ApiProperty({ example: 1, description: 'ID bộ đề', required: false })
     testSetId?: number
+
+    @ApiProperty({ example: [1, 2], description: 'Danh sách ID phần thưởng', required: false })
+    rewardId?: number[]
 }
 
 export class GetExercisesListQuerySwaggerDTO {
@@ -106,6 +129,9 @@ export class ExercisesResponseSwaggerDTO {
 
     @ApiProperty({ example: 1, description: 'ID bài học' })
     lessonId: number
+
+    @ApiProperty({ type: [RewardSummarySwaggerDTO], required: false, description: 'Thông tin phần thưởng đầy đủ' })
+    rewards?: RewardSummarySwaggerDTO[]
 
     @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Ngày tạo' })
     createdAt: Date

@@ -118,17 +118,42 @@ export class VocabularyController {
     }
 
     @Post('import')
-    @UseInterceptors(FileInterceptor('file'))
+    @UseInterceptors(FilesInterceptor('files'))
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Import từ vựng từ file Excel (.xlsx)' })
     @ApiConsumes('multipart/form-data')
     @ApiBody({ type: ImportVocabularyXlsxSwaggerDTO as any })
+    @ApiQuery({
+        name: 'language',
+        required: false,
+        description: 'Mã ngôn ngữ cho nghĩa trong file (ví dụ: vi, en)',
+        example: 'vi'
+    })
+    @ApiQuery({
+        name: 'updateLevelN',
+        required: false,
+        description: 'Cho phép cập nhật levelN nếu file có giá trị mới (default: false)',
+        example: false,
+        type: Boolean
+    })
+    @ApiQuery({
+        name: 'levelN',
+        required: false,
+        description: 'Áp dụng levelN cho tất cả từ trong file (tạo mới hoặc cập nhật)',
+        example: 5,
+        type: Number
+    })
     @ApiResponse({ status: 201, description: 'Import thành công' })
     async importVocabulary(
-        @UploadedFile() file: Express.Multer.File,
-        @ActiveUser('userId') userId?: number
+        @UploadedFiles() files: Express.Multer.File[],
+        @ActiveUser('userId') userId?: number,
+        @Query('language') language?: string,
+        @Query('updateLevelN') updateLevelN?: string,
+        @Query('levelN') levelN?: string
     ) {
-        return this.vocabularyService.importFromXlsx(file, userId)
+        const parsedLevelN = levelN !== undefined && levelN !== null && levelN !== '' ? Number(levelN) : undefined
+        const allowUpdateLevelN = parsedLevelN !== undefined || updateLevelN === 'true' || updateLevelN === '1'
+        return this.vocabularyService.importFromXlsxFiles(files, userId, language, allowUpdateLevelN, parsedLevelN)
     }
 
     @Post('import-txt')
@@ -137,12 +162,19 @@ export class VocabularyController {
     @ApiOperation({ summary: 'Import từ vựng từ file TXT (tab-separated)' })
     @ApiConsumes('multipart/form-data')
     @ApiBody({ type: ImportVocabularyTxtSwaggerDTO as any })
+    @ApiQuery({
+        name: 'language',
+        required: false,
+        description: 'Mã ngôn ngữ cho nghĩa và ví dụ (mặc định: vi)',
+        example: 'vi'
+    })
     @ApiResponse({ status: 201, description: 'Import TXT thành công' })
     async importVocabularyTxt(
         @UploadedFile() file: Express.Multer.File,
-        @ActiveUser('userId') userId?: number
+        @ActiveUser('userId') userId?: number,
+        @Query('language') language?: string
     ) {
-        return this.vocabularyService.importFromTxt(file, userId)
+        return this.vocabularyService.importFromTxt(file, userId, language)
     }
 
     @Get()

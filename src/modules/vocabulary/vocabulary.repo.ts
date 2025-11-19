@@ -153,6 +153,7 @@ export class VocabularyRepository {
             reading?: string
             imageUrl?: string
             audioUrl?: string
+            levelN?: number | null
         }
     ): Promise<VocabularyType> {
         const result = await this.prismaService.vocabulary.update({
