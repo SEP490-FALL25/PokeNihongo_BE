@@ -743,127 +743,130 @@ export class RoundQuestionService {
 
     // Wrap entire flow in atomic transaction to prevent race conditions
     try {
-      const result = await this.prismaService.$transaction(async (tx) => {
-        // First, update match status to COMPLETED to claim ownership
-        const completedMatch = await tx.match.update({
-          where: { id: matchId },
-          data: { status: 'COMPLETED', winnerId: winnerParticipant?.userId || null },
-          include: {
-            winner: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                avatar: true,
-                eloscore: true
-              }
-            },
-            participants: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    avatar: true,
-                    eloscore: true
-                  }
+      const result = await this.prismaService.$transaction(
+        async (tx) => {
+          // First, update match status to COMPLETED to claim ownership
+          const completedMatch = await tx.match.update({
+            where: { id: matchId },
+            data: { status: 'COMPLETED', winnerId: winnerParticipant?.userId || null },
+            include: {
+              winner: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatar: true,
+                  eloscore: true
                 }
-              }
-            },
-            rounds: {
-              include: {
-                roundWinner: {
-                  include: {
-                    user: {
-                      select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        avatar: true,
-                        eloscore: true
-                      }
+              },
+              participants: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      avatar: true,
+                      eloscore: true
                     }
                   }
-                },
-                participants: {
-                  include: {
-                    matchParticipant: { include: { user: true } },
-                    selectedUserPokemon: {
-                      include: {
-                        pokemon: {
-                          select: {
-                            id: true,
-                            pokedex_number: true,
-                            nameJp: true,
-                            nameTranslations: true,
-                            rarity: true,
-                            imageUrl: true
+                }
+              },
+              rounds: {
+                include: {
+                  roundWinner: {
+                    include: {
+                      user: {
+                        select: {
+                          id: true,
+                          name: true,
+                          email: true,
+                          avatar: true,
+                          eloscore: true
+                        }
+                      }
+                    }
+                  },
+                  participants: {
+                    include: {
+                      matchParticipant: { include: { user: true } },
+                      selectedUserPokemon: {
+                        include: {
+                          pokemon: {
+                            select: {
+                              id: true,
+                              pokedex_number: true,
+                              nameJp: true,
+                              nameTranslations: true,
+                              rarity: true,
+                              imageUrl: true
+                            }
                           }
                         }
                       }
                     }
                   }
-                }
-              },
-              orderBy: { roundNumber: 'asc' }
+                },
+                orderBy: { roundNumber: 'asc' }
+              }
             }
+          })
+
+          // Calculate and update ELO within same transaction
+          const participants = completedMatch.participants || []
+          const winnerUserId = completedMatch.winnerId
+          const loserUserId = participants.find((p) => p.userId !== winnerUserId)?.userId
+
+          let eloGained = 0
+          let eloLost = 0
+
+          if (winnerUserId && loserUserId) {
+            const winnerUser = participants.find((p) => p.userId === winnerUserId)?.user
+            const loserUser = participants.find((p) => p.userId === loserUserId)?.user
+
+            const winnerElo = (winnerUser && winnerUser.eloscore) || 0
+            const loserElo = (loserUser && loserUser.eloscore) || 0
+
+            console.log(
+              `[RoundQuestion Service] ELO before: winner=${winnerElo}, loser=${loserElo}`
+            )
+
+            eloGained = calculateEloGain(winnerElo, loserElo)
+            eloLost = calculateEloLoss(loserElo, winnerElo)
+
+            console.log(
+              `[RoundQuestion Service] ELO delta: gained=${eloGained}, lost=${eloLost}`
+            )
+
+            const newLoserElo = Math.max(0, loserElo - eloLost)
+
+            // Update Match with ELO deltas
+            await tx.match.update({
+              where: { id: matchId },
+              data: { eloGained, eloLost }
+            })
+
+            // Update winner ELO
+            await tx.user.update({
+              where: { id: winnerUserId },
+              data: { eloscore: { increment: eloGained } as any }
+            })
+
+            // Update loser ELO
+            await tx.user.update({
+              where: { id: loserUserId },
+              data: { eloscore: newLoserElo }
+            })
+
+            console.log(
+              `[RoundQuestion Service] ELO after: winner=${winnerElo + eloGained}, loser=${newLoserElo}`
+            )
           }
-        })
 
-        // Calculate and update ELO within same transaction
-        const participants = completedMatch.participants || []
-        const winnerUserId = completedMatch.winnerId
-        const loserUserId = participants.find((p) => p.userId !== winnerUserId)?.userId
-
-        let eloGained = 0
-        let eloLost = 0
-
-        if (winnerUserId && loserUserId) {
-          const winnerUser = participants.find((p) => p.userId === winnerUserId)?.user
-          const loserUser = participants.find((p) => p.userId === loserUserId)?.user
-
-          const winnerElo = (winnerUser && winnerUser.eloscore) || 0
-          const loserElo = (loserUser && loserUser.eloscore) || 0
-
-          console.log(
-            `[RoundQuestion Service] ELO before: winner=${winnerElo}, loser=${loserElo}`
-          )
-
-          eloGained = calculateEloGain(winnerElo, loserElo)
-          eloLost = calculateEloLoss(loserElo, winnerElo)
-
-          console.log(
-            `[RoundQuestion Service] ELO delta: gained=${eloGained}, lost=${eloLost}`
-          )
-
-          const newLoserElo = Math.max(0, loserElo - eloLost)
-
-          // Update Match with ELO deltas
-          await tx.match.update({
-            where: { id: matchId },
-            data: { eloGained, eloLost }
-          })
-
-          // Update winner ELO
-          await tx.user.update({
-            where: { id: winnerUserId },
-            data: { eloscore: { increment: eloGained } as any }
-          })
-
-          // Update loser ELO
-          await tx.user.update({
-            where: { id: loserUserId },
-            data: { eloscore: newLoserElo }
-          })
-
-          console.log(
-            `[RoundQuestion Service] ELO after: winner=${winnerElo + eloGained}, loser=${newLoserElo}`
-          )
-        }
-
-        return { completedMatch, eloGained, eloLost }
-      })
+          return { completedMatch, eloGained, eloLost }
+        },
+        { timeout: 10000 }
+      ) // 10 seconds timeout for entire transaction)
 
       console.log(
         `[RoundQuestion Service] Transaction completed successfully for match ${matchId}`
