@@ -20,6 +20,8 @@ import { LessonRepository } from './lesson.repo'
 import { LessonCategoryService } from '../lesson-category/lesson-category.service'
 import { TranslationService } from '../translation/translation.service'
 import { LanguagesService } from '../languages/languages.service'
+import { TestService } from '../test/test.service'
+import { TestNotFoundException } from '../test/dto/test.error'
 import { LESSON_MESSAGE } from '@/common/constants/message'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from '@/shared/helpers'
 
@@ -39,7 +41,8 @@ export class LessonService {
         private readonly lessonRepository: LessonRepository,
         private readonly lessonCategoryService: LessonCategoryService,
         private readonly translationService: TranslationService,
-        private readonly languagesService: LanguagesService
+        private readonly languagesService: LanguagesService,
+        private readonly testService: TestService
     ) { }
 
     private async resolveLanguageId(languageCode?: string): Promise<number | undefined> {
@@ -319,6 +322,18 @@ export class LessonService {
                 }
             }
 
+            // Validate test exists if provided
+            if (data.testId !== undefined && data.testId !== null) {
+                try {
+                    await this.testService.findOne(data.testId, 'vi')
+                } catch (error) {
+                    if (error instanceof TestNotFoundException) {
+                        throw new TestNotFoundException()
+                    }
+                    throw error
+                }
+            }
+
             // Tự động tính lessonOrder nếu không được truyền vào
             let lessonOrder = data.lessonOrder
             if (lessonOrder === undefined || lessonOrder === null) {
@@ -421,6 +436,18 @@ export class LessonService {
                 }
             }
 
+            // Validate test exists if provided
+            if (data.testId !== undefined && data.testId !== null) {
+                try {
+                    await this.testService.findOne(data.testId, 'vi')
+                } catch (error) {
+                    if (error instanceof TestNotFoundException) {
+                        throw new TestNotFoundException()
+                    }
+                    throw error
+                }
+            }
+
             // Remove slug from update data since slug is auto-generated as lesson-{id}
             const { slug, rewardId, ...rest } = data
             const updateData: UpdateLessonBodyType = {
@@ -441,6 +468,7 @@ export class LessonService {
             if (error instanceof LessonNotFoundException ||
                 error instanceof LessonCategoryNotFoundException ||
                 error instanceof RewardNotFoundException ||
+                error instanceof TestNotFoundException ||
                 error instanceof LessonAlreadyExistsException) {
                 throw error
             }
