@@ -52,7 +52,8 @@ export class UserExerciseAttemptService {
     private async grantExerciseRewards(
         rewardIds: number[] | undefined | null,
         userId: number,
-        options?: { reduceReward?: boolean }
+        options?: { reduceReward?: boolean },
+        exerciseId?: number | null
     ) {
         if (!Array.isArray(rewardIds) || rewardIds.length === 0) {
             return null
@@ -65,7 +66,8 @@ export class UserExerciseAttemptService {
             UserRewardSourceType.EXERCISE,
             {
                 reduceReward: options?.reduceReward ?? false
-            }
+            },
+            exerciseId
         )
     }
 
@@ -410,7 +412,7 @@ export class UserExerciseAttemptService {
                 await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, ProgressStatus.IN_PROGRESS)
                 rewardResults = await this.grantExerciseRewards(exercise.rewardId, attempt.userId, {
                     reduceReward: hasCompletedBefore
-                })
+                }, attempt.exerciseId)
             } else if (newStatus === 'FAILED') {
                 // Nếu fail, update status thành FAILED
                 await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, ProgressStatus.FAILED)
