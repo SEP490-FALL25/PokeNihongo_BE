@@ -937,6 +937,8 @@ export class UserExerciseAttemptService {
         }
     }
 
+    // Update UserProgress khi hoàn thành exercise 
+    // Cập nhật UserProgress dựa trên kết quả tính toán progressPercentage và status
     private async updateUserProgressOnExerciseCompletion(userId: number, exerciseId: number, progressStatus: ProgressStatus) {
         try {
             this.logger.log(`Updating user progress for exercise: ${exerciseId} for user: ${userId} with status: ${progressStatus}`)

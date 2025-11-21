@@ -418,9 +418,9 @@ export class UserProgressService {
             }
 
             // Xác định status
-            let finalStatus = status
-            if (!finalStatus) {
-                finalStatus = progressPercentage === 100 ? ProgressStatus.TESTING_LAST : ProgressStatus.IN_PROGRESS
+            let finalStatus = status ?? ProgressStatus.IN_PROGRESS
+            if (progressPercentage === 100) {
+                finalStatus = ProgressStatus.TESTING_LAST
             }
 
             // Cập nhật progress percentage
