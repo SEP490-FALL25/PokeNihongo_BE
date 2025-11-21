@@ -797,3 +797,19 @@ export const NotificationMessage = {
 export const SendMailMessage = {
   REGISTER_SUBSCRIPTION_SUCCESS: 'send_mail.REGISTER_SUBSCRIPTION_SUCCESS'
 } as const
+
+export const MatchingSocketMessage = {
+  DO_NOT_HAVE_OPONENT: 'matching_socket.DO_NOT_HAVE_OPONENT',
+  MATCH_FOUND: 'matching_socket.MATCH_FOUND',
+  ERROR_UNKNOW: 'matching_socket.ERROR_UNKNOW',
+  TIMOUT_SELECTED_POKEMON: 'matching_socket.TIMOUT_SELECTED_POKEMON',
+  HAVE_PLAYER_CANCELLED: 'matching_socket.HAVE_PLAYER_CANCELLED',
+  MATCH_READY_START: 'matching_socket.MATCH_READY_START',
+  ALL_ACCEPT_MATCH: 'matching_socket.ALL_ACCEPT_MATCH',
+  OPPONENT_COMMPLETED_ANSWER: 'matching_socket.OPPONENT_COMMIT_ANSWER',
+  WAITING_OPPONENT_COMMPLETED_ANSWER: 'matching_socket.WAITING_OPPONENT_COMMIT_ANSWER',
+  ROUND: 'matching_socket.ROUND',
+  WILL_START_IN: 'matching_socket.WILL_START_IN',
+  SECONDS: 'matching_socket.SECONDS',
+  MATCH_COMPLETED_WITH_WINNER: 'matching_socket.MATCH_COMPLETED_WITH_WINNER'
+} as const
