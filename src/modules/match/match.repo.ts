@@ -235,7 +235,7 @@ export class MatchRepo {
   findActiveMatchByUserId(userId: number): Promise<MatchType | null> {
     return this.prismaService.match.findFirst({
       where: {
-        status: 'IN_PROGRESS',
+        status: { in: ['IN_PROGRESS', 'PENDING'] },
         deletedAt: null,
         participants: {
           some: {
@@ -368,5 +368,16 @@ export class MatchRepo {
         totalItem: totalItems
       }
     }
+  }
+  async checkUserHasJoinedSeason(userId: number, seasonId: number): Promise<boolean> {
+    return (await this.prismaService.userSeasonHistory.count({
+      where: {
+        userId,
+        seasonId,
+        deletedAt: null
+      }
+    })) > 0
+      ? true
+      : false
   }
 }

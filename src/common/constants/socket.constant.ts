@@ -52,6 +52,7 @@ export const MATCHING_EVENTS = {
   // Server -> Client events
   MATCHING_EVENT: 'matching-event',
   SELECT_POKEMON: 'select-pokemon',
+  POKEMON_SELECTION_EXPIRED: 'pokemon-selection-expired',
   ROUND_STARTED: 'round-started',
   ROUND_STARTING: 'round-starting',
   ROUND_POKES_SELECTED: 'round-pokes-selected',
@@ -70,7 +71,6 @@ export const MATCHING_EVENTS = {
   // Add more events as needed
 } as const
 
-
 export const KAIWA_EVENTS = {
   // Server -> Client events
   USER_AUDIO_CHUNK: 'user-audio-chunk',
@@ -87,7 +87,7 @@ export const KAIWA_EVENTS = {
   MESSAGE_AUDIO_UPDATED: 'message-audio-updated', // Emit khi audioUrl được update cho message
   // Client -> Server events
   JOIN_KAIWA_ROOM: 'join-kaiwa-room',
-  LEAVE_KAIWA_ROOM: 'leave-kaiwa-room',
+  LEAVE_KAIWA_ROOM: 'leave-kaiwa-room'
   // Add more events as needed
 } as const
 
@@ -122,7 +122,7 @@ export const SOCKET_ROOM = {
    * Get kaiwa room name
    * Pattern: kaiwa_{conversationId}
    */
-  getKaiwaRoom: (conversationId: string): string => `kaiwa_${conversationId}`,
+  getKaiwaRoom: (conversationId: string): string => `kaiwa_${conversationId}`
 } as const
 
 export const SOCKET_EVENT = {}

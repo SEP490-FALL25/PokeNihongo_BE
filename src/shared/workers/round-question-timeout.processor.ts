@@ -19,6 +19,9 @@ import { Job, Queue } from 'bull'
 export class RoundQuestionTimeoutProcessor implements OnModuleInit {
   private readonly logger = new Logger(RoundQuestionTimeoutProcessor.name)
 
+  // Track setTimeout references to allow cancellation when user answers early
+  private timeoutRefs = new Map<string, NodeJS.Timeout>()
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly matchingGateway: MatchingGateway,
@@ -28,6 +31,26 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
     private readonly matchRoundParticipantTimeoutQueue: Queue
   ) {}
+
+  /**
+   * Clear pending timeout for a specific question
+   * Called by service when user answers before timeout
+   */
+  public clearQuestionTimeout(
+    roundQuestionId: number,
+    matchRoundParticipantId: number
+  ): void {
+    const key = `${roundQuestionId}-${matchRoundParticipantId}`
+    const timeoutRef = this.timeoutRefs.get(key)
+
+    if (timeoutRef) {
+      clearTimeout(timeoutRef)
+      this.timeoutRefs.delete(key)
+      this.logger.log(
+        `[RoundQuestion Timeout] ⏹️ Cleared timeout for roundQuestionId=${roundQuestionId}, participantId=${matchRoundParticipantId}`
+      )
+    }
+  }
 
   async onModuleInit() {
     this.logger.log('RoundQuestionTimeoutProcessor initialized')
@@ -131,7 +154,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     this.logger.log(
       `[RoundQuestion Timeout] ▶️ (jobId=${job.id}) ACTIVE - Processing roundQuestionId=${job.data?.roundQuestionId}`
     )
-    
+
     // CRITICAL: Force Bull to pick waiting jobs (Bull v4 bug workaround)
     try {
       const waitingJobs = await this.roundQuestionTimeoutQueue.getWaiting()
@@ -242,66 +265,67 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         throw new Error(`RoundQuestion ${roundQuestionId} not found`)
       }
 
-      // Check if answer already submitted
+      // ✅ CRITICAL: Check if answer already submitted - if yes, SKIP ENTIRELY
       const existingAnswerLog =
         await this.prismaService.roundQuestionsAnswerLog.findFirst({
           where: { roundQuestionId }
         })
 
-      let finalAnswerLog: any = existingAnswerLog
-
       if (existingAnswerLog && existingAnswerLog.answerId !== null) {
         this.logger.log(
-          `[RoundQuestion Timeout] RoundQuestion ${roundQuestionId} already answered, skipping auto-select`
+          `[RoundQuestion Timeout] ⏭️ RoundQuestion ${roundQuestionId} already answered (answerId=${existingAnswerLog.answerId}), skipping timeout processing completely (jobId=${job.id})`
+        )
+        return // ✅ CRITICAL: Exit immediately, don't process anything
+      }
+
+      let finalAnswerLog: any = existingAnswerLog
+
+      // Auto-select random answer (timeout scenario only if NOT answered)
+      const answers = roundQuestion.questionBank.answers
+      if (answers.length === 0) {
+        this.logger.warn(
+          `[RoundQuestion Timeout] No answers available for question ${roundQuestion.questionBankId}`
         )
       } else {
-        // Auto-select random answer (timeout scenario)
-        const answers = roundQuestion.questionBank.answers
-        if (answers.length === 0) {
-          this.logger.warn(
-            `[RoundQuestion Timeout] No answers available for question ${roundQuestion.questionBankId}`
+        const randomAnswer = answers[Math.floor(Math.random() * answers.length)]
+
+        // Calculate points: timeout = full time, so 50% of base if correct (or 0 if wrong)
+        const pointsEarned = this.calculatePointsEarned(
+          randomAnswer.isCorrect,
+          roundQuestion.basePoints,
+          roundQuestion.timeLimitMs, // Timeout = full time
+          roundQuestion.timeLimitMs,
+          roundQuestion.debuff
+        )
+
+        if (existingAnswerLog) {
+          // Update existing log
+          finalAnswerLog = await this.prismaService.roundQuestionsAnswerLog.update({
+            where: { id: existingAnswerLog.id },
+            data: {
+              answerId: randomAnswer.id,
+              timeAnswerMs: roundQuestion.timeLimitMs,
+              isCorrect: randomAnswer.isCorrect,
+              pointsEarned
+            }
+          })
+          this.logger.log(
+            `[RoundQuestion Timeout] Updated answerlog ${existingAnswerLog.id} with random answer ${randomAnswer.id} (timeout), pointsEarned=${pointsEarned}`
           )
         } else {
-          const randomAnswer = answers[Math.floor(Math.random() * answers.length)]
-
-          // Calculate points: timeout = full time, so 50% of base if correct (or 0 if wrong)
-          const pointsEarned = this.calculatePointsEarned(
-            randomAnswer.isCorrect,
-            roundQuestion.basePoints,
-            roundQuestion.timeLimitMs, // Timeout = full time
-            roundQuestion.timeLimitMs,
-            roundQuestion.debuff
+          // Create new log
+          finalAnswerLog = await this.prismaService.roundQuestionsAnswerLog.create({
+            data: {
+              roundQuestionId,
+              answerId: randomAnswer.id,
+              timeAnswerMs: roundQuestion.timeLimitMs,
+              isCorrect: randomAnswer.isCorrect,
+              pointsEarned
+            }
+          })
+          this.logger.log(
+            `[RoundQuestion Timeout] Created answerlog with random answer ${randomAnswer.id} (timeout), pointsEarned=${pointsEarned}`
           )
-
-          if (existingAnswerLog) {
-            // Update existing log
-            finalAnswerLog = await this.prismaService.roundQuestionsAnswerLog.update({
-              where: { id: existingAnswerLog.id },
-              data: {
-                answerId: randomAnswer.id,
-                timeAnswerMs: roundQuestion.timeLimitMs,
-                isCorrect: randomAnswer.isCorrect,
-                pointsEarned
-              }
-            })
-            this.logger.log(
-              `[RoundQuestion Timeout] Updated answerlog ${existingAnswerLog.id} with random answer ${randomAnswer.id} (timeout), pointsEarned=${pointsEarned}`
-            )
-          } else {
-            // Create new log
-            finalAnswerLog = await this.prismaService.roundQuestionsAnswerLog.create({
-              data: {
-                roundQuestionId,
-                answerId: randomAnswer.id,
-                timeAnswerMs: roundQuestion.timeLimitMs,
-                isCorrect: randomAnswer.isCorrect,
-                pointsEarned
-              }
-            })
-            this.logger.log(
-              `[RoundQuestion Timeout] Created answerlog with random answer ${randomAnswer.id} (timeout), pointsEarned=${pointsEarned}`
-            )
-          }
         }
       }
 
@@ -392,7 +416,11 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
 
           // CRITICAL: Use setTimeout instead of Bull queue to avoid race condition
           // Bull v4 has bug where concurrent delayed jobs get auto-deleted
-          setTimeout(async () => {
+          const timeoutKey = `${nextQuestion.id}-${matchRoundParticipantId}`
+          const timeoutRef = setTimeout(async () => {
+            // Auto-cleanup reference after execution
+            this.timeoutRefs.delete(timeoutKey)
+
             try {
               await this.handleQuestionTimeout({
                 id: `timeout-${nextQuestion.id}`,
@@ -408,8 +436,11 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             }
           }, nextQuestion.timeLimitMs + delayOffset)
 
+          // Store reference to allow cancellation
+          this.timeoutRefs.set(timeoutKey, timeoutRef)
+
           this.logger.log(
-            `[RoundQuestion Timeout] Scheduled next question ${nextQuestion.id} with setTimeout delay ${nextQuestion.timeLimitMs + delayOffset}ms`
+            `[RoundQuestion Timeout] Scheduled next question ${nextQuestion.id} with setTimeout delay ${nextQuestion.timeLimitMs + delayOffset}ms, stored ref key=${timeoutKey}`
           )
         } catch (err) {
           this.logger.warn(

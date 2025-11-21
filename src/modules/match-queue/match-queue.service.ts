@@ -17,7 +17,10 @@ import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.
 import { MatchParticipantRepo } from '../match-participant/match-participant.repo'
 import { MatchRepo } from '../match/match.repo'
 import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
-import { UserNotFoundException } from '../user/dto/user.error'
+import {
+  UserHasNotBeenJoinedSeasonException,
+  UserNotFoundException
+} from '../user/dto/user.error'
 import {
   MatchQueueAlreadyExistsException,
   UserNotEnoughConditionException,
@@ -271,20 +274,34 @@ export class MatchQueueService implements OnModuleInit {
     lang: string = 'vi'
   ) {
     try {
-      const user = await this.sharedUserRepo.findUniqueWithLevel({
-        id: createdById
-      })
+      const activeSeasonNow = await this.leaderboardSeasonRepo.findActiveSeason()
+      if (!activeSeasonNow) {
+        throw new NotFoundRecordException()
+      }
+      const [user, existingMatching, hasJoinedSeason, userPokemons] = await Promise.all([
+        this.sharedUserRepo.findUniqueWithLevel({
+          id: createdById
+        }),
+        this.matchRepo.findActiveMatchByUserId(createdById),
+        this.matchRepo.checkUserHasJoinedSeason(createdById, activeSeasonNow.id),
+        this.userPokeRepo.countPokemonByUser(createdById)
+      ])
+
       if (!user) {
         throw new UserNotFoundException()
       }
-
       // kiem tra xem user co dang trong tran khong
-      const existingMatching = await this.matchRepo.findActiveMatchByUserId(createdById)
+
       if (existingMatching) {
         throw new YouHasMatchException()
       }
+      // user da join mua chua ?
+
+      if (!hasJoinedSeason) {
+        throw new UserHasNotBeenJoinedSeasonException()
+      }
+
       // user du level 5 chua ?, du 6 pokemon chua?
-      const userPokemons = await this.userPokeRepo.countPokemonByUser(createdById)
 
       if ((user.level?.levelNumber || 0) < 1 || userPokemons < 5) {
         throw new UserNotEnoughConditionException()
