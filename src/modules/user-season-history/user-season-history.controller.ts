@@ -5,7 +5,6 @@ import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
-  CreateUserSeasonHistoryResDTO,
   GetUserSeasonHistoryDetailResDTO,
   GetUserSeasonHistoryParamsDTO,
   UpdateUserSeasonHistoryBodyDTO,
@@ -39,7 +38,7 @@ export class UserSeasonHistoryController {
     return this.userSeasonHistoryService.findById(params.userSeasonHistoryId, lang)
   }
   @Post('join')
-  @ZodSerializerDto(CreateUserSeasonHistoryResDTO)
+  // @ZodSerializerDto(CreateUserSeasonHistoryResDTO)
   joinSeason(@ActiveUser('userId') userId: number, @I18nLang() lang: string) {
     return this.userSeasonHistoryService.joinSeason(
       {

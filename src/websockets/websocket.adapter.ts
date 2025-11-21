@@ -30,11 +30,15 @@ export class WebsocketAdapter extends IoAdapter {
     this.ioServer = server
     this.socketServerService.server = server
     const authMiddleware = (socket: Socket, next: (err?: any) => void): void => {
-      ; (async () => {
+      ;(async () => {
         try {
-          const { authorization } = socket.handshake.auth
+          const { authorization, 'Accept-Language': acceptLanguage } =
+            socket.handshake.auth
           if (!authorization) throw MissingTokenException
-
+          this.logger.debug(`[WebsocketAdapter] Authorization header: ${authorization}`)
+          this.logger.debug(
+            `[WebsocketAdapter] Accept-Language header: ${acceptLanguage}`
+          )
           // Handle both "Bearer token" and "token" formats
           let token: string
           if (authorization.startsWith('Bearer ')) {
@@ -59,6 +63,7 @@ export class WebsocketAdapter extends IoAdapter {
             socket.data.userId = user.userId
             socket.data.roleId = user.roleId
             socket.data.deviceId = user.deviceId
+            socket.data.lang = acceptLanguage || 'vi'
 
             // cho vao homepage room
             const homePageRoom = ROOM_SOCKET.HOME_PAGE
@@ -77,9 +82,9 @@ export class WebsocketAdapter extends IoAdapter {
       })()
     }
 
-      ;['/', '/matching', '/kaiwa'].forEach((namespace) => {
-        server.of(namespace).use(authMiddleware)
-      })
+    ;['/', '/matching', '/kaiwa'].forEach((namespace) => {
+      server.of(namespace).use(authMiddleware)
+    })
     return server
   }
 }
