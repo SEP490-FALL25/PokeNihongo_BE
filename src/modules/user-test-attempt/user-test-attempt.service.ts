@@ -357,7 +357,7 @@ export class UserTestAttemptService {
 
                 // Cập nhật UserProgress dựa trên kết quả
                 if (newStatus === 'COMPLETED') {
-
+                    // Lấy lessonId từ testId
                     const lessonId = await this.lessonRepository.findByTestId(attempt.testId)
                     // Nếu hoàn thành (score >= 80%), trao phần thưởng từ lesson trước khi update status
                     // (cần check status trước khi update để biết có phải lần đầu hoàn thành không)
