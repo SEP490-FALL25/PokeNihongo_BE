@@ -605,7 +605,7 @@ export class RewardService {
             `[convertRewardsWithUser] Added level rewards to queue. New queue: [${rewardQueue.join(', ')}]`
           )
         }
-
+        this.logger.log(`Appending history entries for EXP rewards for user: ${userId} with sourceId: ${sourceId}`)
         this.userRewardHistoryService.appendEntriesFromRewards(
           historyEntries,
           rewardsByType[RewardTarget.EXP],
@@ -631,6 +631,7 @@ export class RewardService {
         // Accumulate or set result
         results.pokeCoins = coinsResult
 
+        this.logger.log(`Appending history entries for POKE_COINS rewards for user: ${userId} with sourceId: ${sourceId}`)
         this.userRewardHistoryService.appendEntriesFromRewards(
           historyEntries,
           rewardsByType[RewardTarget.POKE_COINS],
@@ -657,6 +658,7 @@ export class RewardService {
         // Accumulate or set result
         results.sparkles = sparklesResult
 
+        this.logger.log(`Appending history entries for SPARKLES rewards for user: ${userId} with sourceId: ${sourceId}`)
         this.userRewardHistoryService.appendEntriesFromRewards(
           historyEntries,
           rewardsByType[RewardTarget.SPARKLES],

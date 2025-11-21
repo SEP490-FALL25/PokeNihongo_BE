@@ -60,6 +60,7 @@ export class UserExerciseAttemptService {
         }
 
         const uniqueRewardIds = Array.from(new Set(rewardIds))
+        this.logger.log(`Granting rewards for exercise: ${exerciseId} for user: ${userId} with rewardIds: ${uniqueRewardIds}`)
         return this.rewardService.convertRewardsWithUser(
             uniqueRewardIds,
             userId,
