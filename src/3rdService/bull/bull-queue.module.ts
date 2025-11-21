@@ -16,7 +16,11 @@ export class BullQueueModule {
     }
   }
 
-  static registerQueue(queueName: string, options: any = {}): DynamicModule {
+  static registerQueue(
+    queueName: string,
+    options: any = {},
+    useMatchRedis: boolean = false
+  ): DynamicModule {
     return {
       module: BullQueueModule,
       global: true,
@@ -27,10 +31,22 @@ export class BullQueueModule {
           imports: [RedisModule],
           inject: [ConfigService],
           useFactory: async (configService: ConfigService) => {
-            const redisUri = configService.get<string>('REDIS_URI')
+            // Nếu useMatchRedis = true, ưu tiên dùng REDIS_MATCH_URI, fallback về REDIS_URI
+            let redisUri: string | undefined
+            if (useMatchRedis) {
+              redisUri =
+                configService.get<string>('REDIS_MATCH_URI') ||
+                configService.get<string>('REDIS_URI')
+            } else {
+              redisUri = configService.get<string>('REDIS_URI')
+            }
 
             if (!redisUri) {
-              throw new Error('REDIS_URI is not defined in environment variables')
+              throw new Error(
+                useMatchRedis
+                  ? 'REDIS_MATCH_URI or REDIS_URI is not defined in environment variables'
+                  : 'REDIS_URI is not defined in environment variables'
+              )
             }
 
             return {

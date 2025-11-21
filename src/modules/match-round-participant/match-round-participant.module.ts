@@ -14,7 +14,11 @@ import { MatchRoundParticipantService } from './match-round-participant.service'
 
 @Module({
   imports: [
-    BullQueueModule.registerQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT),
+    BullQueueModule.registerQueue(
+      BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT,
+      {},
+      true // Sử dụng Redis riêng cho match
+    ),
     MatchModule,
     forwardRef(() => MatchRoundModule),
     WebsocketsModule,
@@ -30,4 +34,4 @@ import { MatchRoundParticipantService } from './match-round-participant.service'
   ],
   exports: [MatchRoundParticipantService, MatchRoundParticipantRepo]
 })
-export class MatchRoundParticipantModule {}
+export class MatchRoundParticipantModule { }
