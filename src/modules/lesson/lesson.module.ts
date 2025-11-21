@@ -6,9 +6,10 @@ import { SharedModule } from '@/shared/shared.module'
 import { LessonCategoryModule } from '../lesson-category/lesson-category.module'
 import { TranslationModule } from '../translation/translation.module'
 import { LanguagesModule } from '../languages/languages.module'
+import { TestModule } from '../test/test.module'
 
 @Module({
-    imports: [SharedModule, LessonCategoryModule, TranslationModule, LanguagesModule],
+    imports: [SharedModule, LessonCategoryModule, TranslationModule, LanguagesModule, TestModule],
     controllers: [LessonController],
     providers: [LessonService, LessonRepository],
     exports: [LessonService, LessonRepository]

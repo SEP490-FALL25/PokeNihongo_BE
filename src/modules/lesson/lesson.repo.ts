@@ -55,6 +55,11 @@ export class LessonRepository {
                             email: true,
                         }
                     },
+                    test: {
+                        select: {
+                            id: true,
+                        }
+                    },
                 },
                 orderBy: { [sortBy]: sort },
                 skip,
@@ -90,6 +95,11 @@ export class LessonRepository {
                         email: true,
                     }
                 },
+                test: {
+                    select: {
+                        id: true,
+                    }
+                },
             }
         })
     }
@@ -118,6 +128,11 @@ export class LessonRepository {
                         email: true,
                     }
                 },
+                test: {
+                    select: {
+                        id: true,
+                    }
+                },
             }
         })
     }
@@ -143,6 +158,11 @@ export class LessonRepository {
                         id: true,
                         name: true,
                         email: true,
+                    }
+                },
+                test: {
+                    select: {
+                        id: true,
                     }
                 },
             }
@@ -191,6 +211,11 @@ export class LessonRepository {
                         id: true,
                         name: true,
                         email: true,
+                    }
+                },
+                test: {
+                    select: {
+                        id: true,
                     }
                 },
             }
