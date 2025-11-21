@@ -1,5 +1,3 @@
-import { BullQueueModule } from '@/3rdService/bull/bull-queue.module'
-import { BullQueue } from '@/common/constants/bull-action.constant'
 import { Module } from '@nestjs/common'
 import { WebsocketsModule } from 'src/websockets/websockets.module'
 import { LeaderboardSeasonModule } from '../leaderboard-season/leaderboard-season.module'
@@ -13,11 +11,7 @@ import { MatchQueueService } from './match-queue.service'
 @Module({
   imports: [
     UserPokemonModule,
-    BullQueueModule.registerQueue(
-      BullQueue.MATCH_PARTICIPANT_TIMEOUT,
-      {},
-      true // Sử dụng Redis riêng cho match
-    ),
+
     MatchModule,
     MatchParticipantModule,
     LeaderboardSeasonModule,

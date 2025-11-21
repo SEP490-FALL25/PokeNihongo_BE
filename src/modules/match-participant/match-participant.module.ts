@@ -17,11 +17,6 @@ import { MatchParticipantService } from './match-participant.service'
       {},
       true // Sử dụng Redis riêng cho match
     ),
-    BullQueueModule.registerQueue(
-      BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT,
-      {},
-      true // Sử dụng Redis riêng cho match
-    ),
     WebsocketsModule,
     MatchModule,
     forwardRef(() => MatchRoundModule),

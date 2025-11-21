@@ -14,11 +14,7 @@ import { RoundQuestionService } from './round-question.service'
       {},
       true // Sử dụng Redis riêng cho match
     ),
-    BullQueueModule.registerQueue(
-      BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT,
-      {},
-      true // Sử dụng Redis riêng cho match
-    ),
+
     WebsocketsModule
   ],
   controllers: [RoundQuestionController],
