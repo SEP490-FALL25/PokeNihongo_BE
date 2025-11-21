@@ -1,6 +1,6 @@
 import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { I18nService } from '@/i18n/i18n.service'
-import { MatchQueueMessage } from '@/i18n/message-keys'
+import { MatchingSocketMessage, MatchQueueMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   addTimeUTC,
@@ -92,7 +92,7 @@ export class MatchQueueService implements OnModuleInit {
       // 2. Kick users đã timeout (đạt max range > 10s)
       const usersToKick = this.queueManager.getUsersToKick()
       for (const userId of usersToKick) {
-        await this.kickUserFromQueue(userId, 'Không tìm thấy đối thủ phù hợp')
+        await this.kickUserFromQueue(userId, MatchingSocketMessage.DO_NOT_HAVE_OPONENT)
       }
 
       // 3. Tìm match

@@ -1,5 +1,6 @@
 import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { MatchStatus, MatchStatusType } from '@/common/constants/match.constant'
+import { MatchingSocketMessage } from '@/i18n/message-keys'
 import { PrismaService } from '@/shared/services/prisma.service'
 import {
   InjectQueue,
@@ -188,8 +189,8 @@ export class MatchParticipantTimeoutProcessor {
           const userIds = allParticipants.map((p) => p.userId)
           const message =
             newStatus === MatchStatus.IN_PROGRESS
-              ? 'Tất cả đã chấp nhận. Trận đấu bắt đầu!'
-              : 'Có người từ chối. Trận đấu đã bị hủy.'
+              ? MatchingSocketMessage.ALL_ACCEPT_MATCH
+              : MatchingSocketMessage.HAVE_PLAYER_CANCELLED
 
           this.matchingGateway.notifyMatchStatusUpdate(
             userIds,

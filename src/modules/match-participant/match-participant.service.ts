@@ -1,7 +1,7 @@
 import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { MatchRoundNumber, MatchStatus } from '@/common/constants/match.constant'
 import { I18nService } from '@/i18n/i18n.service'
-import { MatchParticipantMessage } from '@/i18n/message-keys'
+import { MatchingSocketMessage, MatchParticipantMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   addTimeUTC,
@@ -216,7 +216,7 @@ export class MatchParticipantService {
           userIds,
           matchId,
           updateMatch.status,
-          'Match cancelled - A player rejected the match'
+          MatchingSocketMessage.HAVE_PLAYER_CANCELLED
         )
       } else {
         // Cả 2 accept → IN_PROGRESS
@@ -239,7 +239,7 @@ export class MatchParticipantService {
           userIds,
           matchId,
           updateMatch.status,
-          'Both players accepted. Match is ready to start!'
+          MatchingSocketMessage.MATCH_READY_START
         )
       }
     } catch (error) {
