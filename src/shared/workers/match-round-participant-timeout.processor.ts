@@ -83,32 +83,32 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
       )
 
       // Check every 100ms for delayed jobs that should be promoted
-      setInterval(async () => {
-        try {
-          const delayed = await this.matchRoundParticipantTimeoutQueue.getDelayed(0, 100)
-          const now = Date.now()
+      // setInterval(async () => {
+      //   try {
+      //     const delayed = await this.matchRoundParticipantTimeoutQueue.getDelayed(0, 100)
+      //     const now = Date.now()
 
-          for (const job of delayed) {
-            // Check if job delay has expired
-            const jobDelay = job.opts?.delay || 0
-            const jobTimestamp = job.timestamp || 0
-            const shouldRun = now >= jobTimestamp + jobDelay
+      //     for (const job of delayed) {
+      //       // Check if job delay has expired
+      //       const jobDelay = job.opts?.delay || 0
+      //       const jobTimestamp = job.timestamp || 0
+      //       const shouldRun = now >= jobTimestamp + jobDelay
 
-            if (shouldRun) {
-              try {
-                await job.promote()
-                this.logger.log(
-                  `[RoundParticipant Timeout] 🚀 Force promoted delayed job ${job.id} (mrp=${job.data?.matchRoundParticipantId})`
-                )
-              } catch (e) {
-                // Job might already be promoted, ignore error
-              }
-            }
-          }
-        } catch (e) {
-          // Silent fail - queue might be empty
-        }
-      }, 100)
+      //       if (shouldRun) {
+      //         try {
+      //           await job.promote()
+      //           this.logger.log(
+      //             `[RoundParticipant Timeout] 🚀 Force promoted delayed job ${job.id} (mrp=${job.data?.matchRoundParticipantId})`
+      //           )
+      //         } catch (e) {
+      //           // Job might already be promoted, ignore error
+      //         }
+      //       }
+      //     }
+      //   } catch (e) {
+      //     // Silent fail - queue might be empty
+      //   }
+      // }, 100)
     } catch (e) {
       this.logger.error(
         '[RoundParticipant Timeout] Error during onModuleInit diagnostics',
