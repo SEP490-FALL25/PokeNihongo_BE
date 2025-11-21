@@ -8,11 +8,14 @@ import {
   isNotFoundPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { UserRewardSourceType } from '@prisma/client'
+import { LanguagesRepository } from '../languages/languages.repo'
 import { NotStartedLeaderboardSeasonException } from '../leaderboard-season/dto/leaderboard-season.error'
 import { LeaderboardSeasonRepo } from '../leaderboard-season/leaderboard-season.repo'
 import { RewardService } from '../reward/reward.service'
+import { UserNotFoundException } from '../user/dto/user.error'
 import {
   UserCanNotClaimRewardsException,
   UserNotHaveRewardsToClaimException,
@@ -30,7 +33,9 @@ export class UserSeasonHistoryService {
     private userSeasonHistoryRepo: UserSeasonHistoryRepo,
     private readonly leaderboardSeasonRepo: LeaderboardSeasonRepo,
     private readonly rewardService: RewardService,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly languageRepo: LanguagesRepository,
+    private readonly sharedUserRepo: SharedUserRepository
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -57,11 +62,32 @@ export class UserSeasonHistoryService {
   }
   async joinSeason({ userId }: { userId: number }, lang: string = 'vi') {
     try {
+      const langId = await this.languageRepo.getIdByCode(lang)
+      if (!langId) {
+        throw new NotFoundRecordException()
+      }
       // lay season hien tai
       const currentSeason = await this.leaderboardSeasonRepo.findActiveSeason()
       if (!currentSeason) {
         throw new NotStartedLeaderboardSeasonException()
       }
+
+      const preSeason =
+        await this.userSeasonHistoryRepo.getInfoPreSeaonUserSeasonHistory(userId)
+      const infoSeasonNow = await this.leaderboardSeasonRepo.findByIdWithLangId(
+        currentSeason.id,
+        false,
+        langId
+      )
+      if (!infoSeasonNow) {
+        throw new NotFoundRecordException()
+      }
+
+      const userInfo = await this.sharedUserRepo.findUnique({ id: userId })
+      if (!userInfo) {
+        throw new UserNotFoundException()
+      }
+      // create current season history entry
       const result = await this.userSeasonHistoryRepo.create({
         createdById: userId,
         data: {
@@ -71,9 +97,27 @@ export class UserSeasonHistoryService {
           finalRank: ''
         }
       })
+
+      const dataPreSeason = preSeason
+        ? {
+            finalElo: preSeason.finalElo,
+            finalRank: preSeason.finalRank
+          }
+        : null
+      const currentTranslation = ((infoSeasonNow as any).nameTranslations || []).find(
+        (t: any) => t.languageId === langId
+      )
+      const dataSeasonNow = {
+        seasonId: infoSeasonNow.id,
+        startDate: infoSeasonNow.startDate,
+        endDate: infoSeasonNow.endDate,
+        nameTranslation: currentTranslation?.value ?? null,
+        newElo: userInfo.eloscore || 0,
+        newRank: convertEloToRank(userInfo.eloscore || 0)
+      }
       return {
         statusCode: 201,
-        data: result,
+        data: { preSeasonInfo: dataPreSeason, seasonNowInfo: dataSeasonNow },
         message: this.i18nService.translate(UserSeasonHistoryMessage.CREATE_SUCCESS, lang)
       }
     } catch (error) {

@@ -192,4 +192,16 @@ export class UserSeasonHistoryRepo {
       }
     })
   }
+
+  async getInfoPreSeaonUserSeasonHistory(
+    userId: number
+  ): Promise<UserSeasonHistoryType | null> {
+    return this.prismaService.userSeasonHistory.findFirst({
+      where: {
+        userId,
+        deletedAt: null
+      },
+      orderBy: { season: { endDate: 'desc' } }
+    })
+  }
 }
