@@ -452,14 +452,15 @@ export class RewardService {
     sourceType: UserRewardSourceType,
     options?: {
       reduceReward?: boolean
-    }
+    },
+    sourceId?: number | null
   ) {
     // 1. Fetch all rewards by IDs using findManyByIds
     const rewards = await this.rewardRepo.findManyByIds(rewardIds)
     if (rewards.length !== rewardIds.length) {
       throw new NotFoundRecordException()
     }
-    // xem có tăng không
+    // xem có tăng không từ subscription của user
     const valueIncrease = await this.userSubService.getValueConvertByfeatureKeyAndUserId(
       FeatureKey.COIN_MULTIPLIER,
       userId
@@ -510,7 +511,8 @@ export class RewardService {
         userId,
         RewardTarget.EXP,
         sourceType,
-        reductionMultiplier
+        reductionMultiplier,
+        sourceId
       )
     }
 
@@ -532,7 +534,8 @@ export class RewardService {
         userId,
         RewardTarget.POKE_COINS,
         sourceType,
-        reductionMultiplier
+        reductionMultiplier,
+        sourceId
       )
     }
 
@@ -556,7 +559,8 @@ export class RewardService {
         userId,
         RewardTarget.SPARKLES,
         sourceType,
-        reductionMultiplier
+        reductionMultiplier,
+        sourceId
       )
     }
 
