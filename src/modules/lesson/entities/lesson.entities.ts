@@ -21,6 +21,7 @@ export const LessonType = z.object({
   version: z.string(),
   lessonCategoryId: z.number(),
   rewardId: z.array(z.number()).optional().default([]),
+  testId: z.number().nullable().optional(),
   createdById: z.number(),
   createdAt: z.date(),
   updatedAt: z.date()
@@ -57,6 +58,7 @@ export const CreateLessonBodyType = z.object({
   version: z.string().default('1.0.0'),
   lessonCategoryId: z.number(),
   rewardId: z.array(z.number().min(1, 'ID phần thưởng không hợp lệ')).optional(),
+  testId: z.number().min(1, 'ID bài test không hợp lệ').nullable().optional(),
   translations: z
     .object({
       meaning: z.array(

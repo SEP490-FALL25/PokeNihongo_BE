@@ -84,6 +84,13 @@ export class LessonResponseSwaggerDTO {
     })
     rewardId?: number[]
 
+    @ApiPropertyOptional({
+        example: 1,
+        description: 'ID bài test ôn tập',
+        required: false
+    })
+    testId?: number | null
+
     @ApiProperty({
         example: 1,
         description: 'ID người tạo'
@@ -187,6 +194,13 @@ export class CreateLessonSwaggerDTO {
     rewardId?: number[]
 
     @ApiPropertyOptional({
+        example: 1,
+        description: 'ID bài test ôn tập',
+        required: false
+    })
+    testId?: number | null
+
+    @ApiPropertyOptional({
         description: 'Bản dịch cho tiêu đề bài học (Minna no Nihongo Lesson 1)',
         example: {
             meaning: [
@@ -264,6 +278,13 @@ export class UpdateLessonSwaggerDTO {
         required: false
     })
     rewardId?: number[]
+
+    @ApiPropertyOptional({
+        example: 1,
+        description: 'ID bài test ôn tập',
+        required: false
+    })
+    testId?: number | null
 }
 
 export class GetLessonListQuerySwaggerDTO {
