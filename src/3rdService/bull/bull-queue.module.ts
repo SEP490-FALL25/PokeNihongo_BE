@@ -31,7 +31,6 @@ export class BullQueueModule {
           imports: [RedisModule],
           inject: [ConfigService],
           useFactory: async (configService: ConfigService) => {
-            // Nếu useMatchRedis = true, ưu tiên dùng REDIS_MATCH_URI, fallback về REDIS_URI
             let redisUri: string | undefined
             if (useMatchRedis) {
               redisUri =
@@ -42,25 +41,44 @@ export class BullQueueModule {
             }
 
             if (!redisUri) {
-              throw new Error(
-                useMatchRedis
-                  ? 'REDIS_MATCH_URI or REDIS_URI is not defined in environment variables'
-                  : 'REDIS_URI is not defined in environment variables'
-              )
+              throw new Error('REDIS_URI is not defined')
             }
+
+            // --- PHẦN QUAN TRỌNG BẠN ĐANG THIẾU ---
+            const url = new URL(redisUri)
+            const isTls = url.protocol === 'rediss:' // Kiểm tra xem có dùng SSL không
+            // ---------------------------------------
 
             return {
               redis: {
-                host: new URL(redisUri).hostname,
-                port: parseInt(new URL(redisUri).port),
-                password: new URL(redisUri).password
+                host: url.hostname,
+                port: parseInt(url.port),
+                password: url.password,
+
+                // Cấu hình mạng
+                keepAlive: 10000, // Bạn đã có
+                maxRetriesPerRequest: null, // Bạn đã có
+                retryStrategy: (times) => Math.min(times * 50, 2000), // Bạn đã có
+                connectTimeout: 20000, // Bạn đã có
+
+                // --- BẮT ĐẦU PHẦN CẦN BỔ SUNG ---
+                // 1. Cấu hình TLS: AWS Redis public thường bắt buộc dùng cái này
+                // Nếu không có, kết nối sẽ chập chờn hoặc bị từ chối ngầm
+                tls: isTls ? { rejectUnauthorized: false } : undefined
+                // --- KẾT THÚC PHẦN CẦN BỔ SUNG ---
               },
+
+              // --- BẮT ĐẦU PHẦN CẦN BỔ SUNG ---
+              // 2. Prefix: QUAN TRỌNG NHẤT để tránh xung đột Local/VPS
+              // Nếu không có dòng này, máy Local của bạn sẽ cướp Job của VPS
+              prefix: configService.get<string>('QUEUE_PREFIX') || 'bull_production',
+              // --- KẾT THÚC PHẦN CẦN BỔ SUNG ---
+
               settings: {
-                stalledInterval: 30000,
+                stalledInterval: 60000, // Tăng lên 60s cho mạng chậm
                 maxStalledCount: 3,
-                lockDuration: 30000,
-                // CRITICAL: Poll delayed jobs every 5ms (Bull v4 requires this for delayed jobs)
-                drainDelay: 5
+                lockDuration: 60000, // Tăng lên 60s
+                drainDelay: 20 // Tăng nhẹ lên 20ms để đỡ spam CPU
               },
               ...options
             }

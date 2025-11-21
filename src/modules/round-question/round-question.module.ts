@@ -9,7 +9,13 @@ import { RoundQuestionService } from './round-question.service'
 
 @Module({
   imports: [
-    BullQueueModule.registerQueue(BullQueue.ROUND_QUESTION_TIMEOUT,
+    BullQueueModule.registerQueue(
+      BullQueue.ROUND_QUESTION_TIMEOUT,
+      {},
+      true // Sử dụng Redis riêng cho match
+    ),
+    BullQueueModule.registerQueue(
+      BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT,
       {},
       true // Sử dụng Redis riêng cho match
     ),
