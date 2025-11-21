@@ -452,7 +452,8 @@ export class RewardService {
     sourceType: UserRewardSourceType,
     options?: {
       reduceReward?: boolean
-    }
+    },
+    sourceId?: number | null
   ) {
     this.logger.log(
       `[convertRewardsWithUser] START - UserId: ${userId}, Initial RewardIds: [${rewardIds.join(', ')}], SourceType: ${sourceType}`
@@ -610,7 +611,8 @@ export class RewardService {
           rewardsByType[RewardTarget.EXP],
           userId,
           RewardTarget.EXP,
-          sourceType
+          sourceType,
+          sourceId ?? undefined
         )
       }
 
@@ -634,7 +636,8 @@ export class RewardService {
           rewardsByType[RewardTarget.POKE_COINS],
           userId,
           RewardTarget.POKE_COINS,
-          sourceType
+          sourceType,
+          sourceId ?? undefined
         )
       }
 
@@ -659,7 +662,8 @@ export class RewardService {
           rewardsByType[RewardTarget.SPARKLES],
           userId,
           RewardTarget.SPARKLES,
-          sourceType
+          sourceType,
+          sourceId ?? undefined
         )
       }
 

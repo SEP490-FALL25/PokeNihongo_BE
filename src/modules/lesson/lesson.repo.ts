@@ -93,6 +93,12 @@ export class LessonRepository {
             }
         })
     }
+    async findByTestId(testId: number) {
+        return this.prismaService.lesson.findFirst({
+            where: { testId },
+            select: { id: true }
+        })
+    }
 
     async findBySlug(slug: string) {
         return this.prismaService.lesson.findUnique({
