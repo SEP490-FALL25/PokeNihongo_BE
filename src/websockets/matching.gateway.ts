@@ -1,3 +1,5 @@
+import { I18nService } from '@/i18n/i18n.service'
+import { MatchingSocketMessage } from '@/i18n/message-keys'
 import { addTimeUTC } from '@/shared/helpers'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { TokenService } from '@/shared/services/token.service'
@@ -17,6 +19,7 @@ import {
   MatchStatusUpdatePayload,
   SOCKET_ROOM
 } from '../common/constants/socket.constant'
+import { SocketServerService } from './socket-server.service'
 
 interface MatchData {
   id: number
@@ -44,7 +47,10 @@ export class MatchingGateway {
 
   constructor(
     private readonly sharedUserRepo: SharedUserRepository,
-    private readonly tokenService: TokenService
+    private readonly tokenService: TokenService,
+    private readonly i18nService: I18nService,
+    private readonly socketServerService: SocketServerService
+
     // private readonly matchRoundService: MatchRoundService
   ) {}
 
@@ -97,9 +103,18 @@ export class MatchingGateway {
    * Gửi notification cho 1 user cụ thể
    */
   notifyUser(userId: number, payload: MatchingEventPayload): void {
+    const lang = this.socketServerService.getLangByUserId(userId)
     const roomName = SOCKET_ROOM.getMatchingRoomByUserId(userId)
     console.log('roomName: ', roomName)
-
+    if (payload.type && payload.type === 'MATCHMAKING_FAILED') {
+      payload.reason = this.i18nService.translate(payload.reason, lang)
+    } else if (
+      payload.type &&
+      payload.type === 'MATCH_STATUS_UPDATE' &&
+      payload.message
+    ) {
+      payload.message = this.i18nService.translate(payload.message, lang)
+    }
     this.server.to(roomName).emit(MATCHING_EVENTS.MATCHING_EVENT, payload)
 
     this.logger.debug(
@@ -373,14 +388,14 @@ export class MatchingGateway {
       this.logger.warn(`[MatchingGateway] Cannot notify user ${userId} - not connected`)
       return
     }
-
+    const lang = this.socketServerService.getLangByUserId(userId)
     const payload = {
       type: 'POKEMON_SELECTION_EXPIRED',
       matchId,
       matchRoundId,
       message
     }
-
+    payload.message = this.i18nService.translate(payload.message, lang)
     this.server.to(userMatchRoom).emit(MATCHING_EVENTS.POKEMON_SELECTION_EXPIRED, payload)
 
     this.logger.log(
@@ -513,11 +528,14 @@ export class MatchingGateway {
    */
   notifyOpponentCompleted(matchId: number, opponentUserId: number): void {
     const userMatchRoom = `match_${matchId}_user_${opponentUserId}`
-
+    const lang = this.socketServerService.getLangByUserId(opponentUserId)
     this.server.to(userMatchRoom).emit(MATCHING_EVENTS.OPPONENT_COMPLETED, {
       type: 'OPPONENT_COMPLETED',
       matchId,
-      message: 'Your opponent has completed all questions'
+      message: this.i18nService.translate(
+        MatchingSocketMessage.OPPONENT_COMMPLETED_ANSWER,
+        lang
+      )
     })
 
     this.logger.log(
@@ -533,12 +551,15 @@ export class MatchingGateway {
    */
   notifyWaitingForOpponent(matchId: number, userId: number, roundNumber: string): void {
     const userMatchRoom = `match_${matchId}_user_${userId}`
-
+    const lang = this.socketServerService.getLangByUserId(userId)
     this.server.to(userMatchRoom).emit(MATCHING_EVENTS.WAITING_FOR_OPPONENT, {
       type: 'WAITING_FOR_OPPONENT',
       matchId,
       roundNumber,
-      message: `You completed Round ${roundNumber}. Waiting for opponent to finish...`
+      message: this.i18nService.translate(
+        MatchingSocketMessage.WAITING_OPPONENT_COMMPLETED_ANSWER,
+        lang
+      )
     })
 
     this.logger.log(
@@ -626,17 +647,26 @@ export class MatchingGateway {
   ): void {
     const userMatchRoom1 = `match_${matchId}_user_${userId1}`
     const userMatchRoom2 = `match_${matchId}_user_${userId2}`
-
+    const lang = this.socketServerService.getLangByUserId(userId1)
     // Calculate start time based on delay
     const startTime = addTimeUTC(new Date(), delaySeconds * 1000)
-
+    const message =
+      this.i18nService.translate(MatchingSocketMessage.ROUND, lang) +
+      ' ' +
+      roundNumber +
+      ' ' +
+      this.i18nService.translate(MatchingSocketMessage.WILL_START_IN, lang) +
+      ' ' +
+      delaySeconds +
+      ' ' +
+      this.i18nService.translate(MatchingSocketMessage.SECONDS, lang)
     const payload = {
       type: 'ROUND_STARTING',
       matchId,
       roundNumber,
       delaySeconds,
       startTime: startTime,
-      message: `Round ${roundNumber} will start in ${delaySeconds} seconds`
+      message: message
     }
 
     this.server.to(userMatchRoom1).emit(MATCHING_EVENTS.ROUND_STARTING, payload)
@@ -689,12 +719,12 @@ export class MatchingGateway {
   ): void {
     const userMatchRoom1 = `match_${matchId}_user_${userId1}`
     const userMatchRoom2 = `match_${matchId}_user_${userId2}`
-
+    const lang = this.socketServerService.getLangByUserId(userId1)
     const payload = {
       type: 'MATCH_COMPLETED',
       matchId,
       match: matchData,
-      message: `Match completed! Winner: ${matchData.winner?.name || 'Unknown'}`
+      message: `${this.i18nService.translate(MatchingSocketMessage.MATCH_COMPLETED_WITH_WINNER, lang)} ${matchData.winner?.name || 'Unknown'}`
     }
 
     this.server.to(userMatchRoom1).emit(MATCHING_EVENTS.MATCH_COMPLETED, payload)

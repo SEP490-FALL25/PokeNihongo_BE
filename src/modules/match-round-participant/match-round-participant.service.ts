@@ -5,7 +5,7 @@ import {
   RoundStatus
 } from '@/common/constants/match.constant'
 import { I18nService } from '@/i18n/i18n.service'
-import { MatchRoundParticipantMessage } from '@/i18n/message-keys'
+import { MatchingSocketMessage, MatchRoundParticipantMessage } from '@/i18n/message-keys'
 import { NotFoundRecordException } from '@/shared/error'
 import {
   addTimeUTC,
@@ -207,13 +207,16 @@ export class MatchRoundParticipantService {
           existMatchRound.match.id,
           matchRoundId,
           userId,
-          'Đã quá hạn chọn Pokemon. Hệ thống đã tự động chọn Pokemon cho bạn.'
+          MatchingSocketMessage.TIMOUT_SELECTED_POKEMON
         )
 
         return {
           statusCode: 400,
           data: null,
-          message: 'Đã quá hạn chọn Pokemon'
+          message: this.i18nService.translate(
+            MatchingSocketMessage.TIMOUT_SELECTED_POKEMON,
+            lang
+          )
         }
       }
 
