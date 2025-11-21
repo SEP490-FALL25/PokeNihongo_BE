@@ -27,6 +27,7 @@ const configSchema = z.object({
   OTP_EXPIRES_IN: z.string(),
   //Redis
   REDIS_URI: z.string(),
+  REDIS_MATCH_URI: z.string().optional(), // Redis riêng cho match (fallback về REDIS_URI nếu không có)
   // RESEND_API_KEY: z.string(),
 
   GOOGLE_CLIENT_ID: z.string().optional(),
