@@ -48,7 +48,8 @@ export class UserRewardHistoryService {
         userId: number,
         rewardTarget: RewardTarget,
         sourceType: UserRewardSourceType,
-        amountMultiplier: number = 1
+        amountMultiplier: number = 1,
+        sourceId?: number | null
     ) {
         for (const reward of rewards) {
             entries.push(
@@ -57,7 +58,8 @@ export class UserRewardHistoryService {
                     rewardId: reward.id,
                     rewardTargetSnapshot: rewardTarget,
                     amount: reward.rewardItem * amountMultiplier,
-                    sourceType
+                    sourceType,
+                    sourceId: sourceId ?? undefined
                 })
             )
         }

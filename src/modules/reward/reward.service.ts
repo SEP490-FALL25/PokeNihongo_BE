@@ -452,7 +452,8 @@ export class RewardService {
     sourceType: UserRewardSourceType,
     options?: {
       reduceReward?: boolean
-    }
+    },
+    sourceId?: number | null
   ) {
     this.logger.log(
       `[convertRewardsWithUser] START - UserId: ${userId}, Initial RewardIds: [${rewardIds.join(', ')}], SourceType: ${sourceType}`
@@ -604,13 +605,14 @@ export class RewardService {
             `[convertRewardsWithUser] Added level rewards to queue. New queue: [${rewardQueue.join(', ')}]`
           )
         }
-
+        this.logger.log(`Appending history entries for EXP rewards for user: ${userId} with sourceId: ${sourceId}`)
         this.userRewardHistoryService.appendEntriesFromRewards(
           historyEntries,
           rewardsByType[RewardTarget.EXP],
           userId,
           RewardTarget.EXP,
-          sourceType
+          sourceType,
+          sourceId ?? undefined
         )
       }
 
@@ -629,12 +631,14 @@ export class RewardService {
         // Accumulate or set result
         results.pokeCoins = coinsResult
 
+        this.logger.log(`Appending history entries for POKE_COINS rewards for user: ${userId} with sourceId: ${sourceId}`)
         this.userRewardHistoryService.appendEntriesFromRewards(
           historyEntries,
           rewardsByType[RewardTarget.POKE_COINS],
           userId,
           RewardTarget.POKE_COINS,
-          sourceType
+          sourceType,
+          sourceId ?? undefined
         )
       }
 
@@ -654,12 +658,14 @@ export class RewardService {
         // Accumulate or set result
         results.sparkles = sparklesResult
 
+        this.logger.log(`Appending history entries for SPARKLES rewards for user: ${userId} with sourceId: ${sourceId}`)
         this.userRewardHistoryService.appendEntriesFromRewards(
           historyEntries,
           rewardsByType[RewardTarget.SPARKLES],
           userId,
           RewardTarget.SPARKLES,
-          sourceType
+          sourceType,
+          sourceId ?? undefined
         )
       }
 

@@ -52,20 +52,23 @@ export class UserExerciseAttemptService {
     private async grantExerciseRewards(
         rewardIds: number[] | undefined | null,
         userId: number,
-        options?: { reduceReward?: boolean }
+        options?: { reduceReward?: boolean },
+        exerciseId?: number | null
     ) {
         if (!Array.isArray(rewardIds) || rewardIds.length === 0) {
             return null
         }
 
         const uniqueRewardIds = Array.from(new Set(rewardIds))
+        this.logger.log(`Granting rewards for exercise: ${exerciseId} for user: ${userId} with rewardIds: ${uniqueRewardIds}`)
         return this.rewardService.convertRewardsWithUser(
             uniqueRewardIds,
             userId,
             UserRewardSourceType.EXERCISE,
             {
                 reduceReward: options?.reduceReward ?? false
-            }
+            },
+            exerciseId
         )
     }
 
@@ -410,7 +413,7 @@ export class UserExerciseAttemptService {
                 await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, ProgressStatus.IN_PROGRESS)
                 rewardResults = await this.grantExerciseRewards(exercise.rewardId, attempt.userId, {
                     reduceReward: hasCompletedBefore
-                })
+                }, attempt.exerciseId)
             } else if (newStatus === 'FAILED') {
                 // Nếu fail, update status thành FAILED
                 await this.updateUserProgressOnExerciseCompletion(attempt.userId, attempt.exerciseId, ProgressStatus.FAILED)
@@ -935,6 +938,8 @@ export class UserExerciseAttemptService {
         }
     }
 
+    // Update UserProgress khi hoàn thành exercise 
+    // Cập nhật UserProgress dựa trên kết quả tính toán progressPercentage và status
     private async updateUserProgressOnExerciseCompletion(userId: number, exerciseId: number, progressStatus: ProgressStatus) {
         try {
             this.logger.log(`Updating user progress for exercise: ${exerciseId} for user: ${userId} with status: ${progressStatus}`)
