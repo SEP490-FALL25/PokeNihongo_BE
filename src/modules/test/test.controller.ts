@@ -246,6 +246,23 @@ export class TestController {
         return this.testService.deleteTest(Number(id), userId)
     }
 
+    @Post('lesson/:lessonId/testSets')
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Thêm nhiều TestSet vào Test' })
+    @ApiBody({ type: AddTestSetsToTestSwaggerDTO })
+    @ApiResponse({
+        status: 200,
+        description: 'Thêm TestSet vào Test thành công',
+        type: MessageResDTO
+    })
+    async addTestSetsToLessonReviewTest(
+        @Param('lessonId') lessonId: string,
+        @Body() body: AddTestSetsToTestBodyDTO
+    ): Promise<MessageResDTO> {
+        return this.testService.addTestSetsToLessonReviewTest(Number(lessonId), body)
+    }
+
     @Post(':id/testSets')
     @ApiBearerAuth()
     @HttpCode(HttpStatus.OK)

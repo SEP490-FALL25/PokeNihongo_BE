@@ -174,6 +174,18 @@ export class GeminiConfigRepo {
         return this.prismaService.geminiServiceConfig.update({ where: { id }, data: { isDefault: true, isActive: true } })
     }
 
+    async updateServiceConfig(id: number, geminiConfigId: number) {
+        return this.prismaService.geminiServiceConfig.update({
+            where: { id },
+            data: { geminiConfigId },
+            include: {
+                geminiConfig: {
+                    include: { geminiConfigModel: { include: { geminiModel: true } } }
+                }
+            }
+        })
+    }
+
     async toggleServiceConfig(id: number, isActive: boolean) {
         return this.prismaService.geminiServiceConfig.update({ where: { id }, data: { isActive } })
     }
