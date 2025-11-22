@@ -94,8 +94,9 @@ export class TestSetQuestionBankController {
             '\n• Nếu testsetType = GENERAL → Cho phép mọi questionType' +
             '\n• Nếu testsetType ≠ GENERAL → testsetType phải khớp với questionType' +
             '\n\nQuy tắc Level:' +
-            '\n• Nếu testsetType = GENERAL → QuestionBank levelN ≤ TestSet levelN' +
-            '\n• Nếu testsetType ≠ GENERAL → QuestionBank levelN = TestSet levelN' +
+            '\n• Nếu TestSet có levelN = 0 → Cho phép mọi levelN' +
+            '\n• Nếu testsetType = GENERAL và levelN ≠ 0 → QuestionBank levelN ≤ TestSet levelN' +
+            '\n• Nếu testsetType ≠ GENERAL và levelN ≠ 0 → QuestionBank levelN = TestSet levelN' +
             '\n\nAuto-calculation:' +
             '\n• questionOrder sẽ tự động tăng lên dựa trên số câu hỏi hiện có trong TestSet' +
             '\n• Các QuestionBank sẽ được thêm theo thứ tự trong mảng' +

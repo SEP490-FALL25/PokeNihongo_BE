@@ -737,6 +737,34 @@ export class TestService {
                 }
             }
 
+            // Kiểm tra các TestSet đang thuộc test khác, nếu có thì xóa khỏi test cũ
+            const existingTestTestSets = await (this.prisma as any).testTestSet.findMany({
+                where: {
+                    testSetId: { in: data.testSetIds },
+                    testId: { not: testId } // Chỉ lấy những testSet thuộc test khác
+                }
+            })
+
+            if (existingTestTestSets.length > 0) {
+                // Xóa các testSet khỏi test cũ
+                const oldTestIds = [...new Set(existingTestTestSets.map((tts: any) => tts.testId))]
+                const testSetIdsToRemove = existingTestTestSets.map((tts: any) => tts.testSetId)
+
+                for (const oldTestId of oldTestIds) {
+                    await (this.prisma as any).testTestSet.deleteMany({
+                        where: {
+                            testId: oldTestId,
+                            testSetId: { in: testSetIdsToRemove }
+                        }
+                    })
+                }
+
+                this.logger.log(
+                    `Đã xóa ${existingTestTestSets.length} TestSet khỏi test cũ (testId: ${oldTestIds.join(', ')}) ` +
+                    `và sẽ thêm vào test mới (testId: ${testId})`
+                )
+            }
+
             // Tạo các bản ghi trong bảng TestTestSet (nhiều-nhiều)
             await (this.prisma as any).testTestSet.createMany({
                 data: data.testSetIds.map(testSetId => ({
@@ -761,6 +789,53 @@ export class TestService {
                 throw error
             }
             throw new BadRequestException('Không thể thêm TestSet vào Test')
+        }
+    }
+
+    async addTestSetsToLessonReviewTest(lessonId: number, data: AddTestSetsToTestBodyType): Promise<MessageResDTO> {
+        try {
+            // Tìm lesson theo lessonId
+            const lesson = await this.prisma.lesson.findUnique({
+                where: { id: lessonId },
+                select: { id: true, testId: true }
+            })
+
+            if (!lesson) {
+                throw new BadRequestException(`Không tìm thấy Lesson với ID: ${lessonId}`)
+            }
+
+            if (!lesson.testId) {
+                throw new BadRequestException(`Lesson với ID ${lessonId} chưa có Test. Vui lòng tạo Test cho Lesson trước.`)
+            }
+
+            // Lấy danh sách testSet hiện có trong test
+            const existingTestTestSets = await (this.prisma as any).testTestSet.findMany({
+                where: { testId: lesson.testId },
+                select: { testSetId: true }
+            })
+            const existingTestSetIds = existingTestTestSets.map((tts: any) => tts.testSetId)
+
+            // Tìm những testSet không có trong mảng mới (cần xóa)
+            const testSetIdsToRemove = existingTestSetIds.filter(
+                (id: number) => !data.testSetIds.includes(id)
+            )
+
+            // Xóa các testSet cũ không có trong mảng mới
+            if (testSetIdsToRemove.length > 0) {
+                await this.removeTestSetsFromTest(lesson.testId, { testSetIds: testSetIdsToRemove })
+                this.logger.log(
+                    `Đã xóa ${testSetIdsToRemove.length} TestSet cũ khỏi test (testId: ${lesson.testId}): ${testSetIdsToRemove.join(', ')}`
+                )
+            }
+
+            // Gọi addTestSetsToTest với testId từ lesson để thêm các testSet mới
+            return this.addTestSetsToTest(lesson.testId, data)
+        } catch (error) {
+            this.logger.error('Error adding testSets to lesson review test:', error)
+            if (error instanceof BadRequestException) {
+                throw error
+            }
+            throw new BadRequestException('Không thể thêm TestSet vào Lesson Review Test')
         }
     }
 

@@ -189,7 +189,10 @@ export class TestSetQuestionBankService {
                     const testSetLevelN = testSet.data.levelN
                     const questionBankLevelN = questionBank.data.levelN
 
-                    if (testsetType === 'GENERAL') {
+                    // Nếu TestSet có levelN = 0, cho phép mọi levelN
+                    if (testSetLevelN === 0 || testSetLevelN === null) {
+                        // Bỏ qua validation levelN, cho phép mọi levelN
+                    } else if (testsetType === 'GENERAL') {
                         // For GENERAL TestSet: QuestionBank levelN should be <= TestSet levelN
                         if (questionBankLevelN && testSetLevelN && questionBankLevelN > testSetLevelN) {
                             failedItems.push({
