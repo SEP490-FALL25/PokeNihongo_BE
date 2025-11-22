@@ -734,5 +734,20 @@ export const jaMessages = {
   },
   send_mail: {
     REGISTER_SUBSCRIPTION_SUCCESS: 'サブスクリプション登録の確認メールを送信しました'
+  },
+  matching_socket: {
+    DO_NOT_HAVE_OPONENT: '適切な相手がいません',
+    MATCH_FOUND: '対戦相手が見つかりました',
+    ERROR_UNKNOW: '不明なエラー',
+    TIMOUT_SELECTED_POKEMON: 'ポケモン選択の時間切れ',
+    HAVE_PLAYER_CANCELLED: '相手が対戦をキャンセルしました',
+    MATCH_READY_START: '対戦がまもなく開始されます',
+    ALL_ACCEPT_MATCH: '全員が対戦を承諾しました',
+    OPPONENT_COMMPLETED_ANSWER: '相手がすべての回答を完了しました',
+    WAITING_OPPONENT_COMMPLETED_ANSWER: '相手の回答完了を待っています',
+    ROUND: 'ラウンド',
+    WILL_START_IN: '開始まであと',
+    SECONDS: '秒',
+    MATCH_COMPLETED_WITH_WINNER: '勝者が決まり、対戦が終了しました '
   }
 }

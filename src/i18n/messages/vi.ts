@@ -748,5 +748,20 @@ export const viMessages = {
   },
   send_mail: {
     REGISTER_SUBSCRIPTION_SUCCESS: 'Đăng ký gói thành công - PokeNihon Subscription'
+  },
+  matching_socket: {
+    DO_NOT_HAVE_OPONENT: 'Không có đối thủ phù hợp',
+    MATCH_FOUND: 'Tìm thấy đối thủ',
+    ERROR_UNKNOW: 'Lỗi không xác định',
+    TIMOUT_SELECTED_POKEMON: 'Hết thời gian chọn Pokémon',
+    HAVE_PLAYER_CANCELLED: 'Đối thủ đã hủy trận đấu',
+    MATCH_READY_START: 'Trận đấu sắp bắt đầu',
+    ALL_ACCEPT_MATCH: 'Tất cả đã chấp nhận trận đấu',
+    OPPONENT_COMMPLETED_ANSWER: 'Đối thủ đã hoàn thành toàn bộ câu trả lời',
+    WAITING_OPPONENT_COMMPLETED_ANSWER: 'Đang chờ đối thủ hoàn thành trả lời',
+    ROUND: 'Vòng',
+    WILL_START_IN: 'Sẽ bắt đầu trong',
+    SECONDS: 'Giây',
+    MATCH_COMPLETED_WITH_WINNER: 'Trận đấu kết thúc với người chiến thắng '
   }
 }
