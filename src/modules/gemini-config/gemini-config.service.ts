@@ -284,6 +284,27 @@ export class GeminiConfigService {
     return this.geminiConfigRepo.setDefaultServiceConfig(id)
   }
 
+  async updateServiceConfig(id: number, geminiConfigId: number) {
+    try {
+      const updated = await this.geminiConfigRepo.updateServiceConfig(id, geminiConfigId)
+      return {
+        statusCode: HttpStatus.OK,
+        data: updated,
+        message: this.i18nService.translate('UPDATE_SUCCESS', 'vi')
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      if (isUniqueConstraintPrismaError(error)) {
+        throw new (require('@nestjs/common').BadRequestException)(
+          'Mapping serviceType + geminiConfigId đã tồn tại'
+        )
+      }
+      throw error
+    }
+  }
+
   async toggleServiceConfig(id: number, isActive: boolean) {
     return this.geminiConfigRepo.toggleServiceConfig(id, isActive)
   }

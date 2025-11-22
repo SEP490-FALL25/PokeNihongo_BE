@@ -1,10 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { GeminiConfigService } from '../gemini-config.service'
-import { CreateGeminiServiceConfigSwaggerDTO, GeminiServiceConfigSwaggerDTO, UpdateGeminiServiceConfigToggleSwaggerDTO } from './gemini-service-config.dto'
+import { CreateGeminiServiceConfigSwaggerDTO, GeminiServiceConfigSwaggerDTO, UpdateGeminiServiceConfigSwaggerDTO, UpdateGeminiServiceConfigToggleSwaggerDTO } from './gemini-service-config.dto'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 
 @ApiTags('Gemini Service Config')
@@ -36,6 +36,15 @@ export class GeminiServiceConfigController {
     @ZodSerializerDto(GeminiServiceConfigSwaggerDTO as any)
     setDefault(@Param('id') id: number) {
         return this.geminiConfigService.setDefaultServiceConfig(Number(id))
+    }
+
+    @Put(':id')
+    @ApiOperation({ summary: 'Cập nhật geminiConfigId cho một cấu hình service' })
+    @ApiParam({ name: 'id', type: Number, example: 1 })
+    @ApiBody({ type: UpdateGeminiServiceConfigSwaggerDTO, description: 'Thay đổi geminiConfigId cho service config' })
+    @ZodSerializerDto(GeminiServiceConfigSwaggerDTO as any)
+    update(@Param('id') id: number, @Body() body: { geminiConfigId: number }) {
+        return this.geminiConfigService.updateServiceConfig(Number(id), body.geminiConfigId)
     }
 
     @Patch(':id/toggle')

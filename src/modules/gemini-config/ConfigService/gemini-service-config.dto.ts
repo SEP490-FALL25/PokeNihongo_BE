@@ -20,6 +20,11 @@ export class UpdateGeminiServiceConfigToggleSwaggerDTO {
     isActive: boolean
 }
 
+export class UpdateGeminiServiceConfigSwaggerDTO {
+    @ApiProperty({ example: 1, description: 'ID của GeminiConfig mới để thay thế' })
+    geminiConfigId: number
+}
+
 export class GeminiServiceConfigSwaggerDTO {
     @ApiProperty({ example: 1 })
     id: number
