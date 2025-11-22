@@ -382,10 +382,12 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
       const currentUserId = matchRoundParticipant.matchParticipant.userId
       const matchId = matchRoundParticipant.matchRound.match.id
       let endTimeQuestion: Date | null = null
+
       // Prepare formatted nextQuestion via QuestionBankService so socket uses consistent shape
       let nextQuestionForNotify: any | null = null
       if (nextQuestion) {
         try {
+          endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
           const qbList = await this.questionBankRepo.findByIds(
             [nextQuestion.questionBankId],
             'vi'
@@ -396,9 +398,10 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             nextQuestionForNotify.debuff = nextQuestion.debuff || null
             // Include roundQuestionId so FE can reference it
             nextQuestionForNotify.roundQuestionId = nextQuestion.id
+            nextQuestionForNotify.endTimeQuestion = endTimeQuestion.toISOString()
           }
           // Compute and persist server-side endTime for the next question BEFORE notifying FE
-          endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
+
           await this.prismaService.roundQuestion.update({
             where: { id: nextQuestion.id },
             data: { endTimeQuestion }
