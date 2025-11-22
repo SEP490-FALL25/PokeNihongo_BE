@@ -758,6 +758,23 @@ export const enMessages = {
     ALREADY_EXISTS: 'Notification already exists',
     INVALID_DATA: 'Invalid notification data'
   },
-  REGISTER_SUBSCRIPTION_SUCCESS:
-    'Subscription registration successful - PokeNihon Subscription'
+  send_mail: {
+    REGISTER_SUBSCRIPTION_SUCCESS:
+      'Subscription registration successful - PokeNihon Subscription'
+  },
+  matching_socket: {
+    DO_NOT_HAVE_OPONENT: 'No suitable opponent available',
+    MATCH_FOUND: 'Match found',
+    ERROR_UNKNOW: 'Unknown error',
+    TIMOUT_SELECTED_POKEMON: 'Time’s up for selecting a Pokémon',
+    HAVE_PLAYER_CANCELLED: 'Your opponent has canceled the match',
+    MATCH_READY_START: 'The match is about to begin',
+    ALL_ACCEPT_MATCH: 'All players have accepted the match',
+    OPPONENT_COMMPLETED_ANSWER: 'Your opponent has completed all answers',
+    WAITING_OPPONENT_COMMPLETED_ANSWER: 'Waiting for your opponent to finish answering',
+    ROUND: 'Round',
+    WILL_START_IN: 'Starts in',
+    SECONDS: 'seconds',
+    MATCH_COMPLETED_WITH_WINNER: 'The match has ended. Winner: '
+  }
 }
