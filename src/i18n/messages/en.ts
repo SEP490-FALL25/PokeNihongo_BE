@@ -493,7 +493,10 @@ export const enMessages = {
       'You need to score at least 80% correct to view the answer review',
     REVIEW_SUCCESS: 'Test review retrieved successfully',
     OUT_OF_LIMIT: 'You have run out of attempts for this test',
-    USER_TEST_NOT_FOUND: 'UserTest not found'
+    USER_TEST_NOT_FOUND: 'UserTest not found',
+    TEST_COMPLETED_ALL_CORRECT: 'Congratulations! You have completed the test and answered all questions correctly',
+    TEST_COMPLETED_SOME_WRONG: 'You have completed the test but some answers are incorrect',
+    NOT_ENOUGH_ANSWERS: 'You have not answered enough questions'
   },
   user_history: {
     GET_LIST_SUCCESS: 'User history retrieved successfully'

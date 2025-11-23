@@ -151,8 +151,8 @@ export class UserTestAttemptController {
         description: 'Kiểm tra trạng thái hoàn thành thành công',
         type: TestCompletionResponseSwaggerDTO
     })
-    checkCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number) {
-        return this.userTestAttemptService.checkTestCompletion(Number(id), userId)
+    checkCompletion(@Param('id') id: string, @ActiveUser('userId') userId: number, @I18nLang() languageCode: string) {
+        return this.userTestAttemptService.checkTestCompletion(Number(id), userId, languageCode)
     }
 
     @Put(':id/abandon')

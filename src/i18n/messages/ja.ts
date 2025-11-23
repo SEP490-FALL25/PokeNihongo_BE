@@ -627,6 +627,16 @@ export const jaMessages = {
     ALREADY_EXISTS: 'ユーザー報酬履歴は既に存在します',
     INVALID_DATA: '無効なユーザー報酬履歴データです'
   },
+  user_test_attempt: {
+    REVIEW_NOT_COMPLETED: 'テストがまだ完了していません',
+    REVIEW_INSUFFICIENT_SCORE: '回答レビューを表示するには、少なくとも80%の正解率が必要です',
+    REVIEW_SUCCESS: 'テスト回答情報の取得に成功しました',
+    OUT_OF_LIMIT: 'このテストの試行回数を使い切りました',
+    USER_TEST_NOT_FOUND: 'UserTestが見つかりません',
+    TEST_COMPLETED_ALL_CORRECT: 'おめでとうございます！テストを完了し、すべての質問に正しく答えました',
+    TEST_COMPLETED_SOME_WRONG: 'テストを完了しましたが、いくつかの回答が間違っていました',
+    NOT_ENOUGH_ANSWERS: '十分な質問に答えていません'
+  },
   user_achievement: {
     CREATE_SUCCESS: 'ユーザー実績の作成に成功しました',
     UPDATE_SUCCESS: 'ユーザー実績の更新に成功しました',

@@ -16,7 +16,7 @@ export const UserRewardSourceTypeSchema = z.enum([
 
 export const RewardInfoSchema = z.object({
   id: z.number(),
-  nameKey: z.string(),
+  name: z.string().nullable().optional(),
   rewardType: z.string(),
   rewardItem: z.number(),
   rewardTarget: RewardTargetSchema

@@ -29,6 +29,7 @@ import {
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
+import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 
 @ApiTags('User Reward History')
 @Controller('user-reward-history')
@@ -73,8 +74,8 @@ export class UserRewardHistoryController {
         type: UserRewardHistoryListResponseSwaggerDTO
     })
     @ZodSerializerDto(UserRewardHistoryListResDTO)
-    getMy(@Query() query: GetMyRewardHistoryQueryDTO, @ActiveUser('userId') userId: number) {
-        return this.userRewardHistoryService.getMy(userId, query)
+    getMy(@Query() query: GetMyRewardHistoryQueryDTO, @ActiveUser('userId') userId: number, @I18nLang() languageCode: string) {
+        return this.userRewardHistoryService.getMy(userId, query, languageCode)
     }
 
     @Get(':id')

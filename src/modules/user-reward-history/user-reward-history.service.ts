@@ -10,6 +10,9 @@ import {
   UpdateUserRewardHistoryBodyType
 } from '@/modules/user-reward-history/entities/user-reward-history.entities'
 import { UserRewardHistoryRepository } from '@/modules/user-reward-history/user-reward-history.repo'
+import { RewardRepo } from '@/modules/reward/reward.repo'
+import { TranslationService } from '@/modules/translation/translation.service'
+import { LanguagesService } from '@/modules/languages/languages.service'
 import { HttpException, Injectable, Logger } from '@nestjs/common'
 import { RewardTarget, UserRewardSourceType } from '@prisma/client'
 
@@ -18,8 +21,11 @@ export class UserRewardHistoryService {
   private readonly logger = new Logger(UserRewardHistoryService.name)
 
   constructor(
-    private readonly userRewardHistoryRepository: UserRewardHistoryRepository
-  ) {}
+    private readonly userRewardHistoryRepository: UserRewardHistoryRepository,
+    private readonly rewardRepo: RewardRepo,
+    private readonly translationService: TranslationService,
+    private readonly languagesService: LanguagesService
+  ) { }
 
   // Reusable builder for history payload
   createEntryPayload(params: {
@@ -72,7 +78,30 @@ export class UserRewardHistoryService {
 
   async create(body: CreateUserRewardHistoryBodyType) {
     try {
-      const history = await this.userRewardHistoryRepository.create(body)
+      // Nếu có rewardId, lấy thông tin reward và lưu vào meta
+      let meta = body.meta
+      if (body.rewardId) {
+        const reward = await this.rewardRepo.findById(body.rewardId)
+        if (reward) {
+          const rewardInfo = {
+            id: reward.id,
+            nameKey: reward.nameKey,
+            rewardType: reward.rewardType,
+            rewardItem: reward.rewardItem,
+            rewardTarget: reward.rewardTarget
+          }
+          // Merge với meta hiện tại nếu có
+          meta = {
+            ...(meta || {}),
+            reward: rewardInfo
+          }
+        }
+      }
+
+      const history = await this.userRewardHistoryRepository.create({
+        ...body,
+        meta
+      })
       return {
         statusCode: 201,
         data: history,
@@ -106,7 +135,7 @@ export class UserRewardHistoryService {
     }
   }
 
-  async getMy(userId: number, query: GetMyRewardHistoryQueryType) {
+  async getMy(userId: number, query: GetMyRewardHistoryQueryType, languageCode: string = 'vi') {
     if (!userId) {
       throw InvalidUserRewardHistoryDataException
     }
@@ -115,11 +144,84 @@ export class UserRewardHistoryService {
       userId
     })
 
+    // Lấy languageId từ languageCode
+    const normalizedLang = (languageCode || 'vi').toLowerCase().split('-')[0]
+    let languageId: number | undefined
+    try {
+      const language = await this.languagesService.findByCode({ code: normalizedLang })
+      languageId = language?.data?.id
+    } catch {
+      this.logger.warn(`Language ${normalizedLang} not found, using default`)
+    }
+
+    // Thêm nameTranslation cho mỗi item
+    const resultsWithTranslation = await Promise.all(
+      result.items.map(async (item: any) => {
+        let nameTranslation: string | null = null
+        let nameKey: string | null = null
+
+        // Ưu tiên lấy từ meta.reward.nameKey, nếu không có thì query từ rewardId
+        if (item.meta?.reward?.nameKey) {
+          nameKey = item.meta.reward.nameKey
+          this.logger.debug(`Using nameKey from meta.reward: ${nameKey}`)
+        } else if (item.rewardId) {
+          // Query lại reward để lấy nameKey
+          try {
+            const reward = await this.rewardRepo.findById(item.rewardId)
+            if (reward?.nameKey) {
+              nameKey = reward.nameKey
+              this.logger.debug(`Using nameKey from reward query: ${nameKey}`)
+            }
+          } catch (error) {
+            this.logger.warn(`Failed to get reward ${item.rewardId} for nameKey:`, error)
+          }
+        }
+
+        // Lấy translation nếu có nameKey và languageId
+        if (nameKey && languageId) {
+          try {
+            this.logger.debug(`Looking for translation: key=${nameKey}, languageId=${languageId}`)
+            const translation = await this.translationService.findByKeyAndLanguage(nameKey, languageId)
+            nameTranslation = translation?.value || null
+            if (nameTranslation) {
+              this.logger.debug(`Found translation: ${nameTranslation}`)
+            } else {
+              this.logger.warn(`Translation not found for key ${nameKey} with languageId ${languageId}`)
+            }
+          } catch (error) {
+            this.logger.warn(`Failed to get translation for key ${nameKey} with languageId ${languageId}:`, error)
+          }
+        } else {
+          if (!nameKey) {
+            this.logger.debug(`No nameKey found for item ${item.id}`)
+          }
+          if (!languageId) {
+            this.logger.debug(`No languageId found for languageCode ${normalizedLang}`)
+          }
+        }
+
+        const resultItem = {
+          ...item,
+          reward: item.reward ? {
+            id: item.reward.id,
+            name: nameTranslation ?? null,
+            rewardType: item.reward.rewardType,
+            rewardItem: item.reward.rewardItem,
+            rewardTarget: item.reward.rewardTarget
+          } : undefined
+        }
+
+        this.logger.debug(`Item ${item.id} - name: ${nameTranslation}, reward exists: ${!!item.reward}`)
+
+        return resultItem
+      })
+    )
+
     return {
       statusCode: 200,
       message: USER_REWARD_HISTORY_MESSAGE.GET_LIST_SUCCESS,
       data: {
-        results: result.items,
+        results: resultsWithTranslation,
         pagination: {
           current: result.page,
           pageSize: result.limit,

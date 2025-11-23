@@ -4,8 +4,12 @@ export class RewardInfoSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của reward' })
     id: number
 
-    @ApiProperty({ example: 'reward.daily_login', description: 'Key tên reward' })
-    nameKey: string
+    @ApiProperty({
+        example: 'Đăng nhập hàng ngày',
+        description: 'Tên reward đã được dịch theo ngôn ngữ từ header (Accept-Language)',
+        required: false
+    })
+    name?: string | null
 
     @ApiProperty({ example: 'LESSON', description: 'Loại reward' })
     rewardType: string
