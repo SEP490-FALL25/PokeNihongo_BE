@@ -242,7 +242,8 @@ export class MatchQueueService implements OnModuleInit {
           id: matchData.id,
           status: matchData.status,
           createdAt: matchData.createdAt,
-          endTime: addTimeUTC(new Date(), TIME_OUT_USER_MS)
+          endTime: addTimeUTC(new Date(), TIME_OUT_USER_MS),
+          timeLimitMs: TIME_OUT_USER_MS
         },
         {
           id: participant1Data.id,

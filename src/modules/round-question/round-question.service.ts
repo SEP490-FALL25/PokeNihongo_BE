@@ -350,6 +350,9 @@ export class RoundQuestionService {
           nextQuestionForNotify.debuff = nextQuestion.debuff || null
           // Include roundQuestionId so FE can reference it
           nextQuestionForNotify.roundQuestionId = nextQuestion.id
+          // ✅ THÊM: timeLimitMs và endTimeQuestion
+          nextQuestionForNotify.timeLimitMs = nextQuestion.timeLimitMs
+          nextQuestionForNotify.endTimeQuestion = endTimeQuestion?.toISOString() || null
         }
       } catch (err) {
         console.warn(
@@ -379,6 +382,7 @@ export class RoundQuestionService {
             ? {
                 nextQuestion: {
                   ...nextQuestionForNotify,
+                  timeLimitMs: nextQuestionForNotify.timeLimitMs,
                   endTimeQuestion: endTimeQuestion
                 }
               }
@@ -657,7 +661,7 @@ export class RoundQuestionService {
       userId1,
       userId2,
       nextRoundNumber,
-      5
+      5000
     )
 
     await this.matchRoundParticipantTimeoutQueue.add(
