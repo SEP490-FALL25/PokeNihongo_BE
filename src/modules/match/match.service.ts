@@ -209,7 +209,7 @@ export class MatchService {
             }
           }
         },
-        orderBy: { roundNumber: 'asc' }
+        orderBy: { id: 'asc' } // Ensure rounds are sorted by id (creation order)
       }
     } as const
 
@@ -286,9 +286,10 @@ export class MatchService {
 
     // 3) IN_PROGRESS -> determine current round and state
     if (match.status === 'IN_PROGRESS') {
-      const currentRound: any = (match.rounds || [])
-        .filter((r: any) => r.status !== 'COMPLETED')
-        .sort((a: any, b: any) => `${a.roundNumber}`.localeCompare(`${b.roundNumber}`))[0]
+      // Sort rounds by id (creation order) to ensure correct round sequence
+      const rounds = (match.rounds || []).filter((r: any) => r.status !== 'COMPLETED')
+      // Find the first round that is not COMPLETED and whose status is not null
+      const currentRound: any = rounds.length > 0 ? rounds[0] : null
 
       if (!currentRound) {
         return {
@@ -318,6 +319,8 @@ export class MatchService {
         currentRound.status === 'SELECTING_POKEMON' ||
         myRoundP?.status === 'SELECTING_POKEMON'
       ) {
+        // Add timeLimitMs for selecting pokemon
+        const TIME_CHOOSE_POKEMON_MS = 5000
         return {
           type: 'ROUND_SELECTING_POKEMON',
           matchId: match.id,
@@ -345,7 +348,8 @@ export class MatchService {
           },
           selectionEndTime: myRoundP?.endTimeSelected
             ? new Date(myRoundP.endTimeSelected as any).toISOString()
-            : null
+            : null,
+          timeLimitMs: TIME_CHOOSE_POKEMON_MS
         }
       }
 
