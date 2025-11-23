@@ -530,7 +530,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
               rounds: formattedRounds as any
             },
             matchForSocket.participants[0] as any,
-            matchForSocket.participants[1] as any
+            matchForSocket.participants[1] as any,
+            TIME_CHOOSE_POKEMON_MS
           )
           this.logger.log(
             `Socket notification sent after all updates for match ${matchForSocket.id}`

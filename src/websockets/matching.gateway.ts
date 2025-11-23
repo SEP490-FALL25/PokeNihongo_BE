@@ -26,6 +26,7 @@ interface MatchData {
   status: string
   createdAt: Date
   endTime: Date
+  timeLimitMs?: number
 }
 
 interface ParticipantData {
@@ -160,7 +161,8 @@ export class MatchingGateway {
           id: match.id,
           status: match.status,
           createdAt: match.createdAt,
-          endTime: match.endTime
+          endTime: match.endTime,
+          timeLimitMs: match.timeLimitMs
         },
         opponent: {
           id: user2.id,
@@ -183,7 +185,8 @@ export class MatchingGateway {
           id: match.id,
           status: match.status,
           createdAt: match.createdAt,
-          endTime: match.endTime
+          endTime: match.endTime,
+          timeLimitMs: match.timeLimitMs
         },
         opponent: {
           id: user1.id,
@@ -356,7 +359,8 @@ export class MatchingGateway {
       }>
     },
     participant: any,
-    opponent: any
+    opponent: any,
+    timeLimitMs?: number
   ): void {
     const room = SOCKET_ROOM.getMatchRoom(matchId)
 
@@ -364,7 +368,8 @@ export class MatchingGateway {
       type: 'POKEMON_SELECTED',
       matchId,
       matchRoundId,
-      data
+      data,
+      timeLimitMs
     }
 
     this.server.to(room).emit(MATCHING_EVENTS.SELECT_POKEMON, payload)

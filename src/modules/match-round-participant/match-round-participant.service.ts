@@ -462,7 +462,8 @@ export class MatchRoundParticipantService {
         matchRoundId,
         { match: matchFormatted, rounds: roundsFormatted },
         null,
-        null
+        null,
+        TIME_CHOOSE_POKEMON_MS
       )
 
       return {
