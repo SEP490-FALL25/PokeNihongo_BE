@@ -5,6 +5,7 @@ import { z } from 'zod'
 export const LessonType = z.object({
   id: z.number(),
   slug: z.string(),
+  titleJp: z.string(),
   titleKey: z.string(),
   title: z.union([
     z.string(),
