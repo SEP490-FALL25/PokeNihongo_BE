@@ -18,10 +18,10 @@ import { RewardService } from './reward.service'
     forwardRef(() => WalletModule),
     PokemonModule,
     UserPokemonModule,
-    UserRewardHistoryModule
+    forwardRef(() => UserRewardHistoryModule)
   ],
   controllers: [RewardController],
   providers: [RewardService, RewardRepo],
   exports: [RewardService, RewardRepo]
 })
-export class RewardModule {}
+export class RewardModule { }

@@ -35,6 +35,7 @@ import { UserProgressRepository } from '@/modules/user-progress/user-progress.re
 import { ProgressStatus, UserRewardSourceType } from '@prisma/client'
 import { RewardService } from '../reward/reward.service'
 import { LessonRepository } from '../lesson/lesson.repo'
+import { REQUIRED_ANSWERS_FOR_LESSON_REVIEW } from './dto/variable'
 
 @Injectable()
 export class UserTestAttemptService {
@@ -166,7 +167,7 @@ export class UserTestAttemptService {
         }
     }
 
-    async checkTestCompletion(userTestAttemptId: number, userId: number) {
+    async checkTestCompletion(userTestAttemptId: number, userId: number, languageCode: string = 'vi') {
         try {
             this.logger.log(`Checking completion for user test attempt: ${userTestAttemptId}`)
 
@@ -181,6 +182,9 @@ export class UserTestAttemptService {
             if (!testRes || !testRes.data) {
                 throw TestNotFoundException
             }
+
+            // Lấy testType từ testRes
+            const testType = (testRes.data as any).testType
 
             // 3. Lấy tất cả TestSets của Test
             const test = await this.prisma.test.findUnique({
@@ -218,22 +222,53 @@ export class UserTestAttemptService {
             const userAnswers = answerLogsResult.data.results
             this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userTestAttemptId}`)
 
-            // 6. Kiểm tra xem đã trả lời hết chưa
+            // 6. Kiểm tra xem đã trả lời đủ chưa
             const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
             const unansweredQuestions = allQuestionBanks.filter(q => !answeredQuestionIds.has(q.questionBankId))
-            if (unansweredQuestions.length > 0) {
-                this.logger.log(`Still ${unansweredQuestions.length} unanswered questions`)
-                return {
-                    statusCode: 200,
-                    message: 'Bạn chưa trả lời đủ câu hỏi',
-                    data: {
-                        isCompleted: false,
-                        totalQuestions: allQuestionBanks.length,
-                        answeredQuestions: userAnswers.length,
-                        unansweredQuestions: unansweredQuestions.length,
-                        unansweredQuestionIds: unansweredQuestions.map(q => q.questionBankId),
-                        allCorrect: false,
-                        status: 'IN_PROGRESS'
+
+            // Xử lý riêng cho LESSON_REVIEW: chỉ cần 10 câu
+            const isLessonReview = testType === 'LESSON_REVIEW'
+
+            if (isLessonReview) {
+                const answeredCount = userAnswers.length
+
+                if (answeredCount < REQUIRED_ANSWERS_FOR_LESSON_REVIEW) {
+                    this.logger.log(`LESSON_REVIEW: Still need ${REQUIRED_ANSWERS_FOR_LESSON_REVIEW - answeredCount} more answers (answered: ${answeredCount}/${REQUIRED_ANSWERS_FOR_LESSON_REVIEW})`)
+                    const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
+                    const message = this.i18nService.translate(UserTestAttemptMessage.NOT_ENOUGH_ANSWERS, normalizedLang)
+                    return {
+                        statusCode: 200,
+                        message: message,
+                        data: {
+                            isCompleted: false,
+                            totalQuestions: REQUIRED_ANSWERS_FOR_LESSON_REVIEW,
+                            answeredQuestions: answeredCount,
+                            unansweredQuestions: REQUIRED_ANSWERS_FOR_LESSON_REVIEW - answeredCount,
+                            unansweredQuestionIds: unansweredQuestions.map(q => q.questionBankId),
+                            allCorrect: false,
+                            status: 'IN_PROGRESS'
+                        }
+                    }
+                }
+                // Nếu đã trả lời đủ 10 câu, tiếp tục kiểm tra đúng/sai
+            } else {
+                // Với các test type khác: phải trả lời hết tất cả câu hỏi
+                if (unansweredQuestions.length > 0) {
+                    this.logger.log(`Still ${unansweredQuestions.length} unanswered questions`)
+                    const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
+                    const message = this.i18nService.translate(UserTestAttemptMessage.NOT_ENOUGH_ANSWERS, normalizedLang)
+                    return {
+                        statusCode: 200,
+                        message: message,
+                        data: {
+                            isCompleted: false,
+                            totalQuestions: allQuestionBanks.length,
+                            answeredQuestions: userAnswers.length,
+                            unansweredQuestions: unansweredQuestions.length,
+                            unansweredQuestionIds: unansweredQuestions.map(q => q.questionBankId),
+                            allCorrect: false,
+                            status: 'IN_PROGRESS'
+                        }
                     }
                 }
             }
@@ -243,16 +278,20 @@ export class UserTestAttemptService {
 
             // 8. Chỉ trả kết quả, KHÔNG cập nhật DB trong hàm check
             const finalStatus = allCorrect ? 'COMPLETED' : 'FAILED'
+            const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
             const message = allCorrect
-                ? 'Chúc mừng! Bạn đã hoàn thành bài test và trả lời đúng hết'
-                : 'Bạn đã hoàn thành bài test nhưng có một số câu trả lời sai'
+                ? this.i18nService.translate(UserTestAttemptMessage.TEST_COMPLETED_ALL_CORRECT, normalizedLang)
+                : this.i18nService.translate(UserTestAttemptMessage.TEST_COMPLETED_SOME_WRONG, normalizedLang)
+
+            // Với LESSON_REVIEW, totalQuestions luôn là 10
+            const totalQuestions = isLessonReview ? REQUIRED_ANSWERS_FOR_LESSON_REVIEW : allQuestionBanks.length
 
             return {
                 statusCode: 200,
                 message: message,
                 data: {
                     isCompleted: true,
-                    totalQuestions: allQuestionBanks.length,
+                    totalQuestions: totalQuestions,
                     answeredQuestions: userAnswers.length,
                     unansweredQuestions: 0,
                     allCorrect: allCorrect,

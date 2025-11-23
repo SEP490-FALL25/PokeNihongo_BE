@@ -4,8 +4,12 @@ export class RewardInfoSwaggerDTO {
     @ApiProperty({ example: 1, description: 'ID của reward' })
     id: number
 
-    @ApiProperty({ example: 'reward.daily_login', description: 'Key tên reward' })
-    nameKey: string
+    @ApiProperty({
+        example: 'Đăng nhập hàng ngày',
+        description: 'Tên reward đã được dịch theo ngôn ngữ từ header (Accept-Language)',
+        required: false
+    })
+    name?: string | null
 
     @ApiProperty({ example: 'LESSON', description: 'Loại reward' })
     rewardType: string
@@ -41,7 +45,7 @@ export class UserRewardHistorySwaggerDTO {
     @ApiProperty({
         example: 'DAILY_REQUEST',
         description: 'Nguồn thưởng',
-        enum: ['REWARD_SERVICE', 'LESSON', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER']
+        enum: ['REWARD_SERVICE', 'LESSON', 'EXERCISE', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER', 'ACHIEVEMENT_REWARD']
     })
     sourceType: string
 
@@ -87,7 +91,7 @@ export class CreateUserRewardHistorySwaggerDTO {
     @ApiProperty({
         example: 'DAILY_REQUEST',
         description: 'Nguồn thưởng',
-        enum: ['REWARD_SERVICE', 'LESSON', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER']
+        enum: ['REWARD_SERVICE', 'LESSON', 'EXERCISE', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER', 'ACHIEVEMENT_REWARD']
     })
     sourceType: string
 
@@ -124,7 +128,7 @@ export class UpdateUserRewardHistorySwaggerDTO {
     @ApiProperty({
         example: 'REWARD_SERVICE',
         description: 'Nguồn thưởng',
-        enum: ['REWARD_SERVICE', 'LESSON', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER'],
+        enum: ['REWARD_SERVICE', 'LESSON', 'EXERCISE', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER', 'ACHIEVEMENT_REWARD'],
         required: false
     })
     sourceType?: string
@@ -204,7 +208,7 @@ export class GetUserRewardHistoryListQuerySwaggerDTO {
     @ApiProperty({
         example: 'DAILY_REQUEST',
         description: 'Nguồn thưởng',
-        enum: ['REWARD_SERVICE', 'LESSON', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER'],
+        enum: ['REWARD_SERVICE', 'LESSON', 'EXERCISE', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER', 'ACHIEVEMENT_REWARD'],
         required: false
     })
     sourceType?: string
@@ -234,7 +238,7 @@ export class GetMyRewardHistoryQuerySwaggerDTO {
     @ApiProperty({
         example: 'DAILY_REQUEST',
         description: 'Nguồn thưởng',
-        enum: ['REWARD_SERVICE', 'LESSON', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER'],
+        enum: ['REWARD_SERVICE', 'LESSON', 'EXERCISE', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER', 'ACHIEVEMENT_REWARD'],
         required: false
     })
     sourceType?: string
