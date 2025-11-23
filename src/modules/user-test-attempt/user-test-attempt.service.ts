@@ -167,7 +167,7 @@ export class UserTestAttemptService {
         }
     }
 
-    async checkTestCompletion(userTestAttemptId: number, userId: number) {
+    async checkTestCompletion(userTestAttemptId: number, userId: number, languageCode: string = 'vi') {
         try {
             this.logger.log(`Checking completion for user test attempt: ${userTestAttemptId}`)
 
@@ -234,9 +234,11 @@ export class UserTestAttemptService {
 
                 if (answeredCount < REQUIRED_ANSWERS_FOR_LESSON_REVIEW) {
                     this.logger.log(`LESSON_REVIEW: Still need ${REQUIRED_ANSWERS_FOR_LESSON_REVIEW - answeredCount} more answers (answered: ${answeredCount}/${REQUIRED_ANSWERS_FOR_LESSON_REVIEW})`)
+                    const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
+                    const message = this.i18nService.translate(UserTestAttemptMessage.NOT_ENOUGH_ANSWERS, normalizedLang)
                     return {
                         statusCode: 200,
-                        message: 'Bạn chưa trả lời đủ câu hỏi',
+                        message: message,
                         data: {
                             isCompleted: false,
                             totalQuestions: REQUIRED_ANSWERS_FOR_LESSON_REVIEW,
@@ -253,9 +255,11 @@ export class UserTestAttemptService {
                 // Với các test type khác: phải trả lời hết tất cả câu hỏi
                 if (unansweredQuestions.length > 0) {
                     this.logger.log(`Still ${unansweredQuestions.length} unanswered questions`)
+                    const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
+                    const message = this.i18nService.translate(UserTestAttemptMessage.NOT_ENOUGH_ANSWERS, normalizedLang)
                     return {
                         statusCode: 200,
-                        message: 'Bạn chưa trả lời đủ câu hỏi',
+                        message: message,
                         data: {
                             isCompleted: false,
                             totalQuestions: allQuestionBanks.length,
@@ -274,9 +278,10 @@ export class UserTestAttemptService {
 
             // 8. Chỉ trả kết quả, KHÔNG cập nhật DB trong hàm check
             const finalStatus = allCorrect ? 'COMPLETED' : 'FAILED'
+            const normalizedLang = (languageCode || '').toLowerCase().split('-')[0] || 'vi'
             const message = allCorrect
-                ? 'Chúc mừng! Bạn đã hoàn thành bài test và trả lời đúng hết'
-                : 'Bạn đã hoàn thành bài test nhưng có một số câu trả lời sai'
+                ? this.i18nService.translate(UserTestAttemptMessage.TEST_COMPLETED_ALL_CORRECT, normalizedLang)
+                : this.i18nService.translate(UserTestAttemptMessage.TEST_COMPLETED_SOME_WRONG, normalizedLang)
 
             // Với LESSON_REVIEW, totalQuestions luôn là 10
             const totalQuestions = isLessonReview ? REQUIRED_ANSWERS_FOR_LESSON_REVIEW : allQuestionBanks.length

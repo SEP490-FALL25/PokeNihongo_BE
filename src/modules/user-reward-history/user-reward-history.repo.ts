@@ -31,7 +31,6 @@ export class UserRewardHistoryRepository {
             reward: record.reward
                 ? {
                     id: record.reward.id,
-                    nameKey: record.reward.nameKey,
                     rewardType: record.reward.rewardType,
                     rewardItem: record.reward.rewardItem,
                     rewardTarget: record.reward.rewardTarget

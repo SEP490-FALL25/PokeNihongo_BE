@@ -492,7 +492,10 @@ export const viMessages = {
       'Bạn cần đạt ít nhất 80% số câu trả lời đúng để xem đáp án',
     REVIEW_SUCCESS: 'Lấy thông tin đáp án bài test thành công',
     OUT_OF_LIMIT: 'Bạn đã hết lượt làm bài test này',
-    USER_TEST_NOT_FOUND: 'Không tìm thấy UserTest'
+    USER_TEST_NOT_FOUND: 'Không tìm thấy UserTest',
+    TEST_COMPLETED_ALL_CORRECT: 'Chúc mừng! Bạn đã hoàn thành bài test và trả lời đúng hết',
+    TEST_COMPLETED_SOME_WRONG: 'Bạn đã hoàn thành bài test nhưng có một số câu trả lời sai',
+    NOT_ENOUGH_ANSWERS: 'Bạn chưa trả lời đủ câu hỏi'
   },
   user_history: {
     GET_LIST_SUCCESS: 'Lấy danh sách lịch sử làm bài thành công'

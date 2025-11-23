@@ -522,7 +522,10 @@ export const UserTestAttemptMessage = {
   REVIEW_INSUFFICIENT_SCORE: 'user_test_attempt.REVIEW_INSUFFICIENT_SCORE',
   REVIEW_SUCCESS: 'user_test_attempt.REVIEW_SUCCESS',
   OUT_OF_LIMIT: 'user_test_attempt.OUT_OF_LIMIT',
-  USER_TEST_NOT_FOUND: 'user_test_attempt.USER_TEST_NOT_FOUND'
+  USER_TEST_NOT_FOUND: 'user_test_attempt.USER_TEST_NOT_FOUND',
+  TEST_COMPLETED_ALL_CORRECT: 'user_test_attempt.TEST_COMPLETED_ALL_CORRECT',
+  TEST_COMPLETED_SOME_WRONG: 'user_test_attempt.TEST_COMPLETED_SOME_WRONG',
+  NOT_ENOUGH_ANSWERS: 'user_test_attempt.NOT_ENOUGH_ANSWERS'
 } as const
 
 export const UserHistoryMessage = {
