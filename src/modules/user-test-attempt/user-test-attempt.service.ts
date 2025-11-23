@@ -35,6 +35,7 @@ import { UserProgressRepository } from '@/modules/user-progress/user-progress.re
 import { ProgressStatus, UserRewardSourceType } from '@prisma/client'
 import { RewardService } from '../reward/reward.service'
 import { LessonRepository } from '../lesson/lesson.repo'
+import { REQUIRED_ANSWERS_FOR_LESSON_REVIEW } from './dto/variable'
 
 @Injectable()
 export class UserTestAttemptService {
@@ -182,6 +183,9 @@ export class UserTestAttemptService {
                 throw TestNotFoundException
             }
 
+            // Lấy testType từ testRes
+            const testType = (testRes.data as any).testType
+
             // 3. Lấy tất cả TestSets của Test
             const test = await this.prisma.test.findUnique({
                 where: { id: attempt.testId },
@@ -218,22 +222,49 @@ export class UserTestAttemptService {
             const userAnswers = answerLogsResult.data.results
             this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userTestAttemptId}`)
 
-            // 6. Kiểm tra xem đã trả lời hết chưa
+            // 6. Kiểm tra xem đã trả lời đủ chưa
             const answeredQuestionIds = new Set(userAnswers.map(log => (log as any).questionBankId))
             const unansweredQuestions = allQuestionBanks.filter(q => !answeredQuestionIds.has(q.questionBankId))
-            if (unansweredQuestions.length > 0) {
-                this.logger.log(`Still ${unansweredQuestions.length} unanswered questions`)
-                return {
-                    statusCode: 200,
-                    message: 'Bạn chưa trả lời đủ câu hỏi',
-                    data: {
-                        isCompleted: false,
-                        totalQuestions: allQuestionBanks.length,
-                        answeredQuestions: userAnswers.length,
-                        unansweredQuestions: unansweredQuestions.length,
-                        unansweredQuestionIds: unansweredQuestions.map(q => q.questionBankId),
-                        allCorrect: false,
-                        status: 'IN_PROGRESS'
+
+            // Xử lý riêng cho LESSON_REVIEW: chỉ cần 10 câu
+            const isLessonReview = testType === 'LESSON_REVIEW'
+
+            if (isLessonReview) {
+                const answeredCount = userAnswers.length
+
+                if (answeredCount < REQUIRED_ANSWERS_FOR_LESSON_REVIEW) {
+                    this.logger.log(`LESSON_REVIEW: Still need ${REQUIRED_ANSWERS_FOR_LESSON_REVIEW - answeredCount} more answers (answered: ${answeredCount}/${REQUIRED_ANSWERS_FOR_LESSON_REVIEW})`)
+                    return {
+                        statusCode: 200,
+                        message: 'Bạn chưa trả lời đủ câu hỏi',
+                        data: {
+                            isCompleted: false,
+                            totalQuestions: REQUIRED_ANSWERS_FOR_LESSON_REVIEW,
+                            answeredQuestions: answeredCount,
+                            unansweredQuestions: REQUIRED_ANSWERS_FOR_LESSON_REVIEW - answeredCount,
+                            unansweredQuestionIds: unansweredQuestions.map(q => q.questionBankId),
+                            allCorrect: false,
+                            status: 'IN_PROGRESS'
+                        }
+                    }
+                }
+                // Nếu đã trả lời đủ 10 câu, tiếp tục kiểm tra đúng/sai
+            } else {
+                // Với các test type khác: phải trả lời hết tất cả câu hỏi
+                if (unansweredQuestions.length > 0) {
+                    this.logger.log(`Still ${unansweredQuestions.length} unanswered questions`)
+                    return {
+                        statusCode: 200,
+                        message: 'Bạn chưa trả lời đủ câu hỏi',
+                        data: {
+                            isCompleted: false,
+                            totalQuestions: allQuestionBanks.length,
+                            answeredQuestions: userAnswers.length,
+                            unansweredQuestions: unansweredQuestions.length,
+                            unansweredQuestionIds: unansweredQuestions.map(q => q.questionBankId),
+                            allCorrect: false,
+                            status: 'IN_PROGRESS'
+                        }
                     }
                 }
             }
@@ -247,12 +278,15 @@ export class UserTestAttemptService {
                 ? 'Chúc mừng! Bạn đã hoàn thành bài test và trả lời đúng hết'
                 : 'Bạn đã hoàn thành bài test nhưng có một số câu trả lời sai'
 
+            // Với LESSON_REVIEW, totalQuestions luôn là 10
+            const totalQuestions = isLessonReview ? REQUIRED_ANSWERS_FOR_LESSON_REVIEW : allQuestionBanks.length
+
             return {
                 statusCode: 200,
                 message: message,
                 data: {
                     isCompleted: true,
-                    totalQuestions: allQuestionBanks.length,
+                    totalQuestions: totalQuestions,
                     answeredQuestions: userAnswers.length,
                     unansweredQuestions: 0,
                     allCorrect: allCorrect,
