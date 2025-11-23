@@ -530,7 +530,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
               rounds: formattedRounds as any
             },
             matchForSocket.participants[0] as any,
-            matchForSocket.participants[1] as any
+            matchForSocket.participants[1] as any,
+            TIME_CHOOSE_POKEMON_MS
           )
           this.logger.log(
             `Socket notification sent after all updates for match ${matchForSocket.id}`
@@ -1085,6 +1086,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             firstQuestionForNotify.debuff = firstQuestion.debuff || null
             // Include roundQuestionId so FE can reference it
             firstQuestionForNotify.roundQuestionId = firstQuestion.id
+            // ✅ THÊM: timeLimitMs
+            firstQuestionForNotify.timeLimitMs = firstQuestion.timeLimitMs
           }
         } catch (err) {
           this.logger.warn(
@@ -1127,7 +1130,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
           },
           {
             ...firstQuestionForNotify,
-            endTimeQuestion
+            endTimeQuestion,
+            timeLimitMs: firstQuestion.timeLimitMs
           }
         )
 

@@ -25,6 +25,7 @@ export class MatchmakingQueueManager {
   private readonly MAX_ELO = 3000
   private readonly MIN_ELO = 0
   private readonly TIMEOUT_AFTER_MAX_RANGE = 50000 // 10 giây sau khi đạt max
+  private readonly BASE_RANGE_INCREASE = 65
 
   /**
    * Thêm user vào queue
@@ -77,7 +78,9 @@ export class MatchmakingQueueManager {
       // Tính range hiện tại
       const currentRangePercent =
         this.INITIAL_RANGE_PERCENT + intervals * this.RANGE_INCREASE_PERCENT
-      const range = entry.baseElo * currentRangePercent
+      const percentRange = entry.baseElo * currentRangePercent
+      const absoluteRange = intervals * this.BASE_RANGE_INCREASE
+      const range = Math.max(percentRange, absoluteRange)
 
       const newMin = Math.max(this.MIN_ELO, entry.baseElo - range)
       const newMax = Math.min(this.MAX_ELO, entry.baseElo + range)
