@@ -41,7 +41,7 @@ export class UserRewardHistorySwaggerDTO {
     @ApiProperty({
         example: 'DAILY_REQUEST',
         description: 'Nguồn thưởng',
-        enum: ['REWARD_SERVICE', 'LESSON', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER']
+        enum: ['REWARD_SERVICE', 'LESSON', 'EXERCISE', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER', 'ACHIEVEMENT_REWARD']
     })
     sourceType: string
 
@@ -87,7 +87,7 @@ export class CreateUserRewardHistorySwaggerDTO {
     @ApiProperty({
         example: 'DAILY_REQUEST',
         description: 'Nguồn thưởng',
-        enum: ['REWARD_SERVICE', 'LESSON', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER']
+        enum: ['REWARD_SERVICE', 'LESSON', 'EXERCISE', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER', 'ACHIEVEMENT_REWARD']
     })
     sourceType: string
 
@@ -124,7 +124,7 @@ export class UpdateUserRewardHistorySwaggerDTO {
     @ApiProperty({
         example: 'REWARD_SERVICE',
         description: 'Nguồn thưởng',
-        enum: ['REWARD_SERVICE', 'LESSON', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER'],
+        enum: ['REWARD_SERVICE', 'LESSON', 'EXERCISE', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER', 'ACHIEVEMENT_REWARD'],
         required: false
     })
     sourceType?: string
@@ -204,7 +204,7 @@ export class GetUserRewardHistoryListQuerySwaggerDTO {
     @ApiProperty({
         example: 'DAILY_REQUEST',
         description: 'Nguồn thưởng',
-        enum: ['REWARD_SERVICE', 'LESSON', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER'],
+        enum: ['REWARD_SERVICE', 'LESSON', 'EXERCISE', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER', 'ACHIEVEMENT_REWARD'],
         required: false
     })
     sourceType?: string
@@ -234,7 +234,7 @@ export class GetMyRewardHistoryQuerySwaggerDTO {
     @ApiProperty({
         example: 'DAILY_REQUEST',
         description: 'Nguồn thưởng',
-        enum: ['REWARD_SERVICE', 'LESSON', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER'],
+        enum: ['REWARD_SERVICE', 'LESSON', 'EXERCISE', 'DAILY_REQUEST', 'ATTENDANCE', 'SEASON_REWARD', 'ADMIN_ADJUST', 'OTHER', 'ACHIEVEMENT_REWARD'],
         required: false
     })
     sourceType?: string
