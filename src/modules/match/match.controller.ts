@@ -25,7 +25,7 @@ import {
   UpdateMatchResDTO
 } from './dto/match.zod-dto'
 import { MatchService } from './match.service'
-
+const TIME_CHOOSE_POKEMON_MS = 5000
 @Controller('match')
 @UseGuards(AuthenticationGuard)
 @ApiBearerAuth()
