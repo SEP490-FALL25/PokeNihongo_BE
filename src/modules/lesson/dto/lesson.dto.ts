@@ -9,6 +9,12 @@ export class LessonResponseSwaggerDTO {
     id: number
 
     @ApiProperty({
+        example: '挨拶の基本',
+        description: 'Tiêu đề bài học bằng tiếng Nhật'
+    })
+    titleJp: string
+
+    @ApiProperty({
         example: 'lesson.1.title',
         description: 'Key để dịch tiêu đề bài học'
     })

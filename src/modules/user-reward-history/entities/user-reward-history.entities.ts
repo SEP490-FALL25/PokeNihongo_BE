@@ -10,12 +10,13 @@ export const UserRewardSourceTypeSchema = z.enum([
   'SEASON_REWARD',
   'ADMIN_ADJUST',
   'OTHER',
-  'ACHIEVEMENT_REWARD'
+  'ACHIEVEMENT_REWARD',
+  'EXERCISE'
 ])
 
 export const RewardInfoSchema = z.object({
   id: z.number(),
-  nameKey: z.string(),
+  name: z.string().nullable().optional(),
   rewardType: z.string(),
   rewardItem: z.number(),
   rewardTarget: RewardTargetSchema
