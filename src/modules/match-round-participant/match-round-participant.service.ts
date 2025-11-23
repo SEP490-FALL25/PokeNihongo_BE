@@ -374,7 +374,7 @@ export class MatchRoundParticipantService {
                   userId1,
                   userId2,
                   'ONE',
-                  5
+                  5000
                 )
                 await this.matchRoundParticipantTimeoutQueue.add(
                   BullAction.START_ROUND,
@@ -866,7 +866,13 @@ export class MatchRoundParticipantService {
             const userId1 = roundOneParticipants[0].matchParticipant.userId
             const userId2 = roundOneParticipants[1].matchParticipant.userId
             // Countdown socket
-            this.matchingGateway.notifyRoundStarting(matchId, userId1, userId2, 'ONE', 5)
+            this.matchingGateway.notifyRoundStarting(
+              matchId,
+              userId1,
+              userId2,
+              'ONE',
+              5000
+            )
             // Enqueue START_ROUND job
             await this.matchRoundParticipantTimeoutQueue.add(
               BullAction.START_ROUND,

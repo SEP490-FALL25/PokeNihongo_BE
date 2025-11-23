@@ -399,6 +399,8 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             // Include roundQuestionId so FE can reference it
             nextQuestionForNotify.roundQuestionId = nextQuestion.id
             nextQuestionForNotify.endTimeQuestion = endTimeQuestion.toISOString()
+            // ✅ THÊM: timeLimitMs
+            nextQuestionForNotify.timeLimitMs = nextQuestion.timeLimitMs
           }
           // Compute and persist server-side endTime for the next question BEFORE notifying FE
 
@@ -469,6 +471,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             ? {
                 nextQuestion: {
                   ...nextQuestionForNotify,
+                  timeLimitMs: nextQuestionForNotify.timeLimitMs,
                   // ensure we send the computed endTime (fallback to existing DB value if available)
                   endTimeQuestion:
                     nextQuestionForNotify.endTimeQuestion || nextQuestion?.endTimeQuestion

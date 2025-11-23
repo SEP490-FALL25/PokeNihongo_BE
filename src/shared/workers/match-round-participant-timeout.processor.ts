@@ -1085,6 +1085,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             firstQuestionForNotify.debuff = firstQuestion.debuff || null
             // Include roundQuestionId so FE can reference it
             firstQuestionForNotify.roundQuestionId = firstQuestion.id
+            // ✅ THÊM: timeLimitMs
+            firstQuestionForNotify.timeLimitMs = firstQuestion.timeLimitMs
           }
         } catch (err) {
           this.logger.warn(
@@ -1127,7 +1129,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
           },
           {
             ...firstQuestionForNotify,
-            endTimeQuestion
+            endTimeQuestion,
+            timeLimitMs: firstQuestion.timeLimitMs
           }
         )
 
