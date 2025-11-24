@@ -305,7 +305,17 @@ export class MatchQueueService implements OnModuleInit {
       // user du level 5 chua ?, du 6 pokemon chua?
 
       if ((user.level?.levelNumber || 0) < 1 || userPokemons < 5) {
-        throw new UserNotEnoughConditionException()
+        const requiredLevel = 1
+        const requiredPokemons = 5
+
+        const msg =
+          this.i18nService.translate(MatchQueueMessage.LEVEL_NEED, lang) +
+          ` ${requiredLevel} ` +
+          this.i18nService.translate(MatchQueueMessage.AMOUNT_POKEMON_NEED, lang) +
+          ` ${requiredPokemons}`
+
+        console.log(msg)
+        throw new UserNotEnoughConditionException(msg)
       }
 
       const userElo = user?.eloscore || 0

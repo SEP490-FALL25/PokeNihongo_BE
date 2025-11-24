@@ -558,7 +558,9 @@ export const MatchQueueMessage = {
   ALREADY_EXISTS: 'match_queue.ALREADY_EXISTS',
   INVALID_DATA: 'match_queue.INVALID_DATA',
   USER_NOT_ENOUGH_CONDITION: 'match_queue.USER_NOT_ENOUGH_CONDITION',
-  YOU_HAS_MATCH: 'match_queue.YOU_HAS_MATCH'
+  YOU_HAS_MATCH: 'match_queue.YOU_HAS_MATCH',
+  LEVEL_NEED: 'match_queue.LEVEL_NEED',
+  AMOUNT_POKEMON_NEED: 'match_queue.AMOUNT_POKEMON_NEED'
 } as const
 
 export const MatchMessage = {

@@ -493,8 +493,10 @@ export const viMessages = {
     REVIEW_SUCCESS: 'Lấy thông tin đáp án bài test thành công',
     OUT_OF_LIMIT: 'Bạn đã hết lượt làm bài test này',
     USER_TEST_NOT_FOUND: 'Không tìm thấy UserTest',
-    TEST_COMPLETED_ALL_CORRECT: 'Chúc mừng! Bạn đã hoàn thành bài test và trả lời đúng hết',
-    TEST_COMPLETED_SOME_WRONG: 'Bạn đã hoàn thành bài test nhưng có một số câu trả lời sai',
+    TEST_COMPLETED_ALL_CORRECT:
+      'Chúc mừng! Bạn đã hoàn thành bài test và trả lời đúng hết',
+    TEST_COMPLETED_SOME_WRONG:
+      'Bạn đã hoàn thành bài test nhưng có một số câu trả lời sai',
     NOT_ENOUGH_ANSWERS: 'Bạn chưa trả lời đủ câu hỏi'
   },
   user_history: {
@@ -520,7 +522,9 @@ export const viMessages = {
     ALREADY_EXISTS: 'Hàng đợi trận đấu đã tồn tại',
     INVALID_DATA: 'Dữ liệu hàng đợi trận đấu không hợp lệ',
     USER_NOT_ENOUGH_CONDITION: ' Bạn không đủ điều kiện để tham gia hàng đợi trận đấu',
-    YOU_HAS_MATCH: 'Bạn đang trong một trận đấu khác'
+    YOU_HAS_MATCH: 'Bạn đang trong một trận đấu khác',
+    LEVEL_NEED: 'Cấp độ cần có ',
+    AMOUNT_POKEMON_NEED: 'Số lượng Pokémon cần có '
   },
   match: {
     CREATE_SUCCESS: 'Tạo trận đấu thành công',

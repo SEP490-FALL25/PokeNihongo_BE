@@ -11,10 +11,11 @@ export class MatchQueueAlreadyExistsException extends ConflictException {
 }
 
 export class UserNotEnoughConditionException extends ConflictException {
-  constructor() {
+  constructor(data?: string) {
     super({
       message: MatchQueueMessage.USER_NOT_ENOUGH_CONDITION,
-      errorKey: MatchQueueMessage.USER_NOT_ENOUGH_CONDITION
+      errorKey: MatchQueueMessage.USER_NOT_ENOUGH_CONDITION,
+      data: data || null
     })
   }
 }
