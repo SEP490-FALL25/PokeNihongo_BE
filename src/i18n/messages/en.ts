@@ -494,8 +494,10 @@ export const enMessages = {
     REVIEW_SUCCESS: 'Test review retrieved successfully',
     OUT_OF_LIMIT: 'You have run out of attempts for this test',
     USER_TEST_NOT_FOUND: 'UserTest not found',
-    TEST_COMPLETED_ALL_CORRECT: 'Congratulations! You have completed the test and answered all questions correctly',
-    TEST_COMPLETED_SOME_WRONG: 'You have completed the test but some answers are incorrect',
+    TEST_COMPLETED_ALL_CORRECT:
+      'Congratulations! You have completed the test and answered all questions correctly',
+    TEST_COMPLETED_SOME_WRONG:
+      'You have completed the test but some answers are incorrect',
     NOT_ENOUGH_ANSWERS: 'You have not answered enough questions'
   },
   user_history: {
@@ -522,7 +524,9 @@ export const enMessages = {
     INVALID_DATA: 'Invalid match queue data',
     USER_NOT_ENOUGH_CONDITION:
       'User does not meet the conditions to join the match queue',
-    YOU_HAS_MATCH: 'You are already in an active match'
+    YOU_HAS_MATCH: 'You are already in an active match',
+    LEVEL_NEED: 'Required level ',
+    AMOUNT_POKEMON_NEED: 'Required number of Pokémon '
   },
   match: {
     CREATE_SUCCESS: 'Match created successfully',

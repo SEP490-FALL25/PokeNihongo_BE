@@ -498,7 +498,9 @@ export const jaMessages = {
 
     INVALID_DATA: '無効なマッチキューデータです',
     USER_NOT_ENOUGH_CONDITION: 'ユーザーがマッチキューの条件を満たしていません',
-    YOU_HAS_MATCH: 'あなたは既にアクティブなマッチに参加しています'
+    YOU_HAS_MATCH: 'あなたは既にアクティブなマッチに参加しています',
+    LEVEL_NEED: 'レベルが必要です ',
+    AMOUNT_POKEMON_NEED: 'ポケモンの必要な数 '
   },
   match: {
     CREATE_SUCCESS: 'マッチの作成に成功しました',
@@ -629,11 +631,13 @@ export const jaMessages = {
   },
   user_test_attempt: {
     REVIEW_NOT_COMPLETED: 'テストがまだ完了していません',
-    REVIEW_INSUFFICIENT_SCORE: '回答レビューを表示するには、少なくとも80%の正解率が必要です',
+    REVIEW_INSUFFICIENT_SCORE:
+      '回答レビューを表示するには、少なくとも80%の正解率が必要です',
     REVIEW_SUCCESS: 'テスト回答情報の取得に成功しました',
     OUT_OF_LIMIT: 'このテストの試行回数を使い切りました',
     USER_TEST_NOT_FOUND: 'UserTestが見つかりません',
-    TEST_COMPLETED_ALL_CORRECT: 'おめでとうございます！テストを完了し、すべての質問に正しく答えました',
+    TEST_COMPLETED_ALL_CORRECT:
+      'おめでとうございます！テストを完了し、すべての質問に正しく答えました',
     TEST_COMPLETED_SOME_WRONG: 'テストを完了しましたが、いくつかの回答が間違っていました',
     NOT_ENOUGH_ANSWERS: '十分な質問に答えていません'
   },
