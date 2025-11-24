@@ -8,11 +8,16 @@ const TranslationItemSchema = z.object({
     value: z.string().min(1, 'Nội dung dịch không được để trống')
 })
 
-// Schema cho example translation
-const ExampleTranslationSchema = z.object({
+// Schema cho example translation item (sentence trong một ngôn ngữ)
+const ExampleTranslationItemSchema = z.object({
     language_code: z.string().min(2, 'Mã ngôn ngữ phải có ít nhất 2 ký tự'),
-    sentence: z.string().min(1, 'Câu dịch không được để trống'),
-    original_sentence: z.string().min(1, 'Câu gốc không được để trống')
+    sentence: z.string().min(1, 'Câu dịch không được để trống')
+})
+
+// Schema cho example (có original_sentence và translations)
+const ExampleTranslationSchema = z.object({
+    original_sentence: z.string().min(1, 'Câu gốc không được để trống'),
+    translations: z.array(ExampleTranslationItemSchema).min(1, 'Phải có ít nhất 1 bản dịch')
 })
 
 // Schema cho translations object
@@ -64,11 +69,11 @@ export class TranslationItemSwaggerDTO {
     value: string
 }
 
-export class ExampleTranslationSwaggerDTO {
+export class ExampleTranslationItemSwaggerDTO {
     @ApiProperty({
         example: 'vi',
         description: 'Mã ngôn ngữ (ISO 639-1)',
-        enum: ['vi', 'en', 'ja']
+        enum: ['vi', 'en']
     })
     language_code: string
 
@@ -77,12 +82,24 @@ export class ExampleTranslationSwaggerDTO {
         description: 'Câu dịch'
     })
     sentence: string
+}
 
+export class ExampleTranslationSwaggerDTO {
     @ApiProperty({
         example: '私は日本語を勉強しています。',
         description: 'Câu gốc tiếng Nhật'
     })
     original_sentence: string
+
+    @ApiProperty({
+        type: [ExampleTranslationItemSwaggerDTO],
+        description: 'Danh sách bản dịch theo ngôn ngữ (vi, en)',
+        example: [
+            { language_code: 'vi', sentence: 'Tôi đang học tiếng Nhật.' },
+            { language_code: 'en', sentence: 'I am studying Japanese.' }
+        ]
+    })
+    translations: ExampleTranslationItemSwaggerDTO[]
 }
 
 export class TranslationsSwaggerDTO {
@@ -146,7 +163,7 @@ export class CreateVocabularyFullSwaggerDTO {
         oneOf: [
             {
                 type: 'string',
-                example: '{"meaning":[{"language_code":"vi","value":"Tiếng Nhật"},{"language_code":"en","value":"Japanese language"}],"examples":[{"language_code":"vi","sentence":"Tôi đang học tiếng Nhật","original_sentence":"私は日本語を勉強しています"},{"language_code":"en","sentence":"I am studying Japanese","original_sentence":"私は日本語を勉強しています"}]}'
+                example: '{"meaning":[{"language_code":"vi","value":"Tiếng Nhật"},{"language_code":"en","value":"Japanese language"}],"examples":[{"original_sentence":"私は日本語を勉強しています","translations":[{"language_code":"vi","sentence":"Tôi đang học tiếng Nhật"},{"language_code":"en","sentence":"I am studying Japanese"}]}]}'
             },
             { type: 'object', $ref: '#/components/schemas/TranslationsSwaggerDTO' }
         ],
@@ -204,7 +221,7 @@ export class CreateVocabularyFullMultipartSwaggerDTO {
         oneOf: [
             {
                 type: 'string',
-                example: '{"meaning":[{"language_code":"vi","value":"Tiếng Nhật"},{"language_code":"en","value":"Japanese language"}],"examples":[{"language_code":"vi","sentence":"Tôi đang học tiếng Nhật","original_sentence":"私は日本語を勉強しています"},{"language_code":"en","sentence":"I am studying Japanese","original_sentence":"私は日本語を勉強しています"}]}'
+                example: '{"meaning":[{"language_code":"vi","value":"Tiếng Nhật"},{"language_code":"en","value":"Japanese language"}],"examples":[{"original_sentence":"私は日本語を勉強しています","translations":[{"language_code":"vi","sentence":"Tôi đang học tiếng Nhật"},{"language_code":"en","sentence":"I am studying Japanese"}]}]}'
             },
             { type: 'object', $ref: '#/components/schemas/TranslationsSwaggerDTO' }
         ],
