@@ -331,12 +331,6 @@ export class VocabularyController {
         type: CreateVocabularyFullMultipartSwaggerDTO,
         description: 'Form data với audio/image files'
     })
-    @ApiResponse({
-        status: 201,
-        description: 'Tạo từ vựng thành công',
-        type: CreateVocabularyFullResponseSwaggerDTO
-    })
-    @ZodSerializerDto(CreateVocabularyFullResponseDTO)
     createFull(
         @Body() body: CreateVocabularyFullMultipartDTO,
         @UploadedFiles() files: { audioFile?: Express.Multer.File[], imageFile?: Express.Multer.File[] },
