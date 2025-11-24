@@ -228,7 +228,6 @@ export class GachaItemService {
     lang: string = 'vi'
   ) {
     try {
-      // Use service-controlled transaction: delete → validate → create
       const created = await this.gachaItemRepo.withTransaction(async (prismaTx) => {
         const { bannerId, items } = data
         const banner = await this.validateGachaBannerForCreate(bannerId)
@@ -259,17 +258,17 @@ export class GachaItemService {
         )
         const pokemonMap = new Map(pokemons.filter((p) => p).map((p) => [p!.id, p!]))
 
-        // 2. Validate and prepare items (after delete, before create)
+        // 2. Validate and prepare items
         const itemsToCreate: Array<{
           bannerId: number
           pokemonId: number
           gachaItemRateId: number
+          starType: GachaStarType // ✅ THÊM: Track starType
         }> = []
 
         const seenStarTypes = new Set<GachaStarType>()
 
         for (const item of items) {
-          // Validate: Each starType should appear only once
           if (seenStarTypes.has(item.starType)) {
             throw new DuplicateStarTypeInListException()
           }
@@ -278,7 +277,6 @@ export class GachaItemService {
           const rateId = rateMap.get(item.starType)
           if (!rateId) throw new NotFoundRecordException()
 
-          // Validate: No duplicate pokemonIds within the same starType
           const pokemonIdsInThisStarType = new Set<number>()
           for (const pokemonId of item.pokemons) {
             if (pokemonIdsInThisStarType.has(pokemonId)) {
@@ -289,7 +287,6 @@ export class GachaItemService {
             const pokemon = pokemonMap.get(pokemonId)
             if (!pokemon) throw new NotFoundRecordException()
 
-            // Validate rarity matches star type
             if (RARITY_TO_STAR_TYPE[pokemon.rarity] !== item.starType)
               throw new PokemonInvalidRarityWithStarTypeToAddException(
                 `pokedex_number: ${pokemon.pokedex_number}`
@@ -298,7 +295,8 @@ export class GachaItemService {
             itemsToCreate.push({
               bannerId,
               pokemonId,
-              gachaItemRateId: rateId
+              gachaItemRateId: rateId,
+              starType: item.starType // ✅ LƯU starType
             })
           }
         }
@@ -311,7 +309,8 @@ export class GachaItemService {
           [GachaStarType.FOUR]: 0,
           [GachaStarType.FIVE]: 0
         }
-        itemsToCreate.forEach((i) => counts[i.gachaItemRateId]++)
+        // ✅ SỬA: Đếm theo starType thay vì gachaItemRateId
+        itemsToCreate.forEach((i) => counts[i.starType]++)
 
         const limitMap = {
           [GachaStarType.ONE]: banner.amount1Star,
@@ -334,7 +333,9 @@ export class GachaItemService {
         if (itemsToCreate.length > 0) {
           await prismaTx.gachaItem.createMany({
             data: itemsToCreate.map((item) => ({
-              ...item,
+              bannerId: item.bannerId,
+              pokemonId: item.pokemonId,
+              gachaItemRateId: item.gachaItemRateId,
               createdById: updatedById,
               updatedById
             }))
