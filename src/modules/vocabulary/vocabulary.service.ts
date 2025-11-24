@@ -460,7 +460,7 @@ export class VocabularyService {
                                     existing.id,
                                     {
                                         meaning: [{ language_code: normalizedLanguage, value: meaningVi }],
-                                        examples: exampleVi ? [{ language_code: normalizedLanguage, sentence: exampleVi, original_sentence: exampleJp || '' }] : undefined
+                                        examples: exampleVi ? [{ original_sentence: exampleJp || '', translations: [{ language_code: normalizedLanguage, sentence: exampleVi }] }] : undefined
                                     },
                                     wordTypeId
                                 )
@@ -493,7 +493,7 @@ export class VocabularyService {
                                     { language_code: normalizedLanguage, value: meaningVi }
                                 ],
                                 examples: exampleVi ? [
-                                    { language_code: normalizedLanguage, sentence: exampleVi, original_sentence: exampleJp || '' }
+                                    { original_sentence: exampleJp || '', translations: [{ language_code: normalizedLanguage, sentence: exampleVi }] }
                                 ] : undefined
                             }
                         },
@@ -1182,7 +1182,7 @@ export class VocabularyService {
             word_type_id?: number
             translations: string | {
                 meaning: Array<{ language_code: string; value: string }>
-                examples?: Array<{ language_code: string; sentence: string; original_sentence: string }>
+                examples?: Array<{ original_sentence: string; translations: Array<{ language_code: string; sentence: string }> }>
             }
         },
         audioFile?: Express.Multer.File,
@@ -1200,7 +1200,7 @@ export class VocabularyService {
             // Parse translations if it's a string (from multipart/form-data)
             let parsedTranslations: {
                 meaning: Array<{ language_code: string; value: string }>
-                examples?: Array<{ language_code: string; sentence: string; original_sentence: string }>
+                examples?: Array<{ original_sentence: string; translations: Array<{ language_code: string; sentence: string }> }>
             }
 
             if (typeof data.translations === 'string') {
@@ -1270,11 +1270,7 @@ export class VocabularyService {
                     value: m.value
                 }))
 
-                const examples = parsedTranslations.examples ? parsedTranslations.examples.map(e => ({
-                    language_code: e.language_code,
-                    sentence: e.sentence,
-                    original_sentence: e.original_sentence
-                })) : []
+                const examples = parsedTranslations.examples || []
 
                 return {
                     data: {
@@ -1316,11 +1312,7 @@ export class VocabularyService {
                     value: m.value
                 }))
 
-                const examples = parsedTranslations.examples ? parsedTranslations.examples.map(e => ({
-                    language_code: e.language_code,
-                    sentence: e.sentence,
-                    original_sentence: e.original_sentence
-                })) : []
+                const examples = parsedTranslations.examples || []
 
                 return {
                     data: {
