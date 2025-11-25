@@ -384,39 +384,45 @@ export class FlashcardService {
                 throw new FlashcardDeckNotFoundException()
             }
 
-            // Validate id là số nguyên hợp lệ trước khi sử dụng
-            if (body.contentType !== 'CUSTOM' && body.id) {
-                if (!Number.isInteger(body.id) || body.id < 1 || body.id > Number.MAX_SAFE_INTEGER) {
-                    throw new InvalidFlashcardImportException(body.contentType, body.id)
+            // Nếu có id, validate và kiểm tra content availability
+            if (body.id && body.id !== null && body.id !== undefined) {
+                // Validate id là số nguyên hợp lệ
+                if (body.contentType !== 'CUSTOM') {
+                    if (!Number.isInteger(body.id) || body.id < 1 || body.id > Number.MAX_SAFE_INTEGER) {
+                        throw new InvalidFlashcardImportException(body.contentType, body.id)
+                    }
+                }
+
+                // Map id + contentType thành vocabularyId/kanjiId/grammarId
+                let contentRef: {
+                    vocabulary?: { id: number; wordJp: string; reading: string | null; levelN: number | null }
+                    kanji?: { id: number; character: string; meaningKey: string; jlptLevel: number | null }
+                    grammar?: { id: number; structure: string; level: string | null }
+                } = {}
+
+                if (body.contentType !== 'CUSTOM') {
+                    contentRef = await this.ensureContentAvailability(deckId, body.contentType, body.id)
                 }
             }
 
-            // Map id + contentType thành vocabularyId/kanjiId/grammarId
-            let contentRef: {
-                vocabulary?: { id: number; wordJp: string; reading: string | null; levelN: number | null }
-                kanji?: { id: number; character: string; meaningKey: string; jlptLevel: number | null }
-                grammar?: { id: number; structure: string; level: string | null }
-            } = {}
-
-            if (body.contentType !== 'CUSTOM' && body.id) {
-                contentRef = await this.ensureContentAvailability(deckId, body.contentType, body.id)
-            }
-
-            // Tạo payload với vocabularyId/kanjiId/grammarId được map từ id
+            // Tạo payload với vocabularyId/kanjiId/grammarId được map từ id (nếu có)
             const payload: any = {
                 contentType: body.contentType,
                 notes: body.notes,
                 metadata: body.metadata ?? undefined
             }
 
-            // Map id thành đúng field dựa vào contentType
-            if (body.contentType === 'VOCABULARY' && body.id) {
-                payload.vocabularyId = body.id
-            } else if (body.contentType === 'KANJI' && body.id) {
-                payload.kanjiId = body.id
-            } else if (body.contentType === 'GRAMMAR' && body.id) {
-                payload.grammarId = body.id
+            // Map id thành đúng field dựa vào contentType (chỉ khi có id)
+            if (body.id && body.id !== null && body.id !== undefined) {
+                if (body.contentType === 'VOCABULARY') {
+                    payload.vocabularyId = body.id
+                } else if (body.contentType === 'KANJI') {
+                    payload.kanjiId = body.id
+                } else if (body.contentType === 'GRAMMAR') {
+                    payload.grammarId = body.id
+                }
             }
+            // Nếu không có id, tạo card tùy chỉnh với metadata (vocabularyId/kanjiId/grammarId sẽ là null)
 
             const card = await this.flashcardRepository.createCard(deckId, payload)
 
@@ -437,7 +443,7 @@ export class FlashcardService {
             // Catch Prisma validation errors và convert thành InvalidFlashcardImportException
             if (error instanceof Prisma.PrismaClientValidationError) {
                 const contentType = body.contentType
-                const id = body.id
+                const id = body.id ?? undefined
                 throw new InvalidFlashcardImportException(contentType, id)
             }
             // Log và throw lại các lỗi khác
