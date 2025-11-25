@@ -157,10 +157,10 @@ export class UserTestService {
                 continue
             }
 
-            // Chỉ xử lý unlock cho những test không có trả phí (price = 0 hoặc null)
+            // Chỉ xử lý unlock cho những test có trả phí (price > 0)
             const testPrice = test.price !== undefined && test.price !== null ? Number(test.price) : 0
-            if (testPrice > 0) {
-                // Bỏ qua những test có trả phí, giữ nguyên status
+            if (testPrice === 0 || testPrice === null) {
+                // Bỏ qua những test miễn phí, giữ nguyên status
                 updatedUserTests.push(userTest)
                 continue
             }
