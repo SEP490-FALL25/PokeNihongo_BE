@@ -1551,13 +1551,21 @@ export class UserTestAttemptService {
             // Cập nhật UserProgress cho lesson tiếp theo
             const nextLessonId = await this.userProgressRepository.getNextLessonId(lesson.id)
             if (nextLessonId) {
-                // Sử dụng upsert để tự động tạo hoặc update UserProgress cho lesson tiếp theo
-                // Upsert sẽ tự động lấy testId từ lesson nếu chưa có
-                await this.userProgressRepository.upsert(userId, nextLessonId, {
-                    status: ProgressStatus.IN_PROGRESS,
-                    progressPercentage: 0
-                })
-                this.logger.log(`Updated/Created UserProgress for user ${userId}, lesson ${nextLessonId} with status IN_PROGRESS`)
+                // Kiểm tra status hiện tại của lesson tiếp theo
+                const nextLessonProgress = await this.userProgressRepository.findByUserAndLesson(userId, nextLessonId)
+
+                // Chỉ update nếu status là NOT_STARTED
+                if (!nextLessonProgress || nextLessonProgress.status === ProgressStatus.NOT_STARTED) {
+                    // Sử dụng upsert để tự động tạo hoặc update UserProgress cho lesson tiếp theo
+                    // Upsert sẽ tự động lấy testId từ lesson nếu chưa có
+                    await this.userProgressRepository.upsert(userId, nextLessonId, {
+                        status: ProgressStatus.IN_PROGRESS,
+                        progressPercentage: 0
+                    })
+                    this.logger.log(`Updated/Created UserProgress for user ${userId}, lesson ${nextLessonId} with status IN_PROGRESS`)
+                } else {
+                    this.logger.log(`Skipping update for user ${userId}, lesson ${nextLessonId} - current status is ${nextLessonProgress.status}, not NOT_STARTED`)
+                }
             } else {
                 this.logger.log(`No next lesson found for user ${userId} after completing lesson ${lesson.id}`)
             }
