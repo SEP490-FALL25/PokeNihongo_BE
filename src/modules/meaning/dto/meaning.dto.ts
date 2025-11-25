@@ -76,6 +76,14 @@ export class UpdateMeaningSwaggerDTO {
     exampleSentenceJp?: string
 }
 
+export class TranslationItemSwaggerDTO {
+    @ApiProperty({ example: 'vi', description: 'Mã ngôn ngữ' })
+    language_code: string
+
+    @ApiProperty({ example: 'Tiếng Nhật', description: 'Giá trị dịch' })
+    value: string
+}
+
 export class MeaningSwaggerResponseDTO {
     @ApiProperty({ example: 1, description: 'ID của nghĩa' })
     id: number
@@ -109,6 +117,20 @@ export class MeaningSwaggerResponseDTO {
         description: 'Câu ví dụ tiếng Nhật'
     })
     exampleSentenceJp?: string
+
+    @ApiProperty({
+        type: [TranslationItemSwaggerDTO],
+        description: 'Danh sách bản dịch nghĩa',
+        required: false
+    })
+    meaningTranslations?: TranslationItemSwaggerDTO[]
+
+    @ApiProperty({
+        type: [TranslationItemSwaggerDTO],
+        description: 'Danh sách bản dịch câu ví dụ',
+        required: false
+    })
+    exampleTranslations?: TranslationItemSwaggerDTO[]
 
     @ApiProperty({
         example: '2024-01-01T00:00:00.000Z',

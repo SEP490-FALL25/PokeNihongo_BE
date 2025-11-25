@@ -509,14 +509,19 @@ export class VocabularyHelperService {
                 )
 
                 // 5. Tạo translations cho examples (nếu có)
+                // Cấu trúc mới: examples có original_sentence và translations array
                 const exampleTranslations = translations.examples && exampleSentenceKey
-                    ? await Promise.all(
-                        translations.examples.map(async item => ({
-                            languageId: await this.getLanguageId(item.language_code),
-                            key: exampleSentenceKey,
-                            value: item.sentence
-                        }))
-                    )
+                    ? (await Promise.all(
+                        translations.examples.map(async example =>
+                            await Promise.all(
+                                example.translations.map(async translation => ({
+                                    languageId: await this.getLanguageId(translation.language_code),
+                                    key: exampleSentenceKey,
+                                    value: translation.sentence
+                                }))
+                            )
+                        )
+                    )).flat()
                     : []
 
                 // 6. Bulk create tất cả translations
@@ -628,14 +633,19 @@ export class VocabularyHelperService {
                 )
 
                 // Tạo translations cho examples (nếu có)
+                // Cấu trúc mới: examples có original_sentence và translations array
                 const exampleTranslations = translations.examples && exampleSentenceKey
-                    ? await Promise.all(
-                        translations.examples.map(async item => ({
-                            languageId: await this.getLanguageId(item.language_code),
-                            key: exampleSentenceKey,
-                            value: item.sentence
-                        }))
-                    )
+                    ? (await Promise.all(
+                        translations.examples.map(async example =>
+                            await Promise.all(
+                                example.translations.map(async translation => ({
+                                    languageId: await this.getLanguageId(translation.language_code),
+                                    key: exampleSentenceKey,
+                                    value: translation.sentence
+                                }))
+                            )
+                        )
+                    )).flat()
                     : []
 
                 // Bulk create translations
