@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { TestStatus } from '@prisma/client'
 
 export enum HistoryType {
     TEST = 'TEST',
@@ -240,6 +241,13 @@ export class HistoryTestItemSwaggerDTO {
 
     @ApiProperty({ example: 5, description: 'ID của bài test' })
     testId: number
+
+    @ApiPropertyOptional({ 
+        enum: TestStatus, 
+        example: TestStatus.REVIEW_TEST, 
+        description: 'Loại bài test' 
+    })
+    testType?: TestStatus | null
 
     @ApiPropertyOptional({ example: 'Kiểm tra từ vựng N3', description: 'Tên bài test' })
     testName?: string | null
