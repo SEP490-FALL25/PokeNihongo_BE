@@ -1,6 +1,7 @@
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
+import { TestStatus } from '@prisma/client'
 
 extendZodWithOpenApi(z)
 patchNestJsSwagger()
@@ -139,6 +140,7 @@ export const HistoryExercisesResSchema = z
 export const HistoryTestItemSchema = z.object({
     attemptId: z.number(),
     testId: z.number(),
+    testType: z.nativeEnum(TestStatus).optional().nullable(),
     testName: z.string().optional().nullable(),
     status: z.string(),
     score: z.number().optional().nullable(),

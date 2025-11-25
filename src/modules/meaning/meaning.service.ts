@@ -13,12 +13,16 @@ import {
     MeaningAlreadyExistsException,
     InvalidMeaningDataException
 } from './dto/meaning.error'
+import { TranslationHelperService } from '@/modules/translation/translation.helper.service'
 
 @Injectable()
 export class MeaningService {
     private readonly logger = new Logger(MeaningService.name)
 
-    constructor(private readonly meaningRepository: MeaningRepository) { }
+    constructor(
+        private readonly meaningRepository: MeaningRepository,
+        private readonly translationHelper: TranslationHelperService
+    ) { }
 
     async findMany(params: GetMeaningListQueryType) {
         try {
@@ -63,7 +67,50 @@ export class MeaningService {
     async findByVocabularyId(vocabularyId: number) {
         try {
             this.logger.log(`Finding meanings by vocabulary id: ${vocabularyId}`)
-            return await this.meaningRepository.findByVocabularyId(vocabularyId)
+            const meanings = await this.meaningRepository.findByVocabularyId(vocabularyId)
+
+            // Lấy translations cho mỗi meaning
+            const meaningsWithTranslations = await Promise.all(
+                meanings.map(async (meaning) => {
+                    const result: any = { ...meaning }
+
+                    // Lấy translations cho meaningKey
+                    if (meaning.meaningKey) {
+                        try {
+                            const meaningTranslations = await this.translationHelper.getTranslationsByKey(meaning.meaningKey)
+                            result.meaningTranslations = Object.entries(meaningTranslations).map(([language_code, value]) => ({
+                                language_code,
+                                value
+                            }))
+                        } catch (error) {
+                            this.logger.warn(`Failed to get translations for meaningKey ${meaning.meaningKey}:`, error)
+                            result.meaningTranslations = []
+                        }
+                    } else {
+                        result.meaningTranslations = []
+                    }
+
+                    // Lấy translations cho exampleSentenceKey
+                    if (meaning.exampleSentenceKey) {
+                        try {
+                            const exampleTranslations = await this.translationHelper.getTranslationsByKey(meaning.exampleSentenceKey)
+                            result.exampleTranslations = Object.entries(exampleTranslations).map(([language_code, value]) => ({
+                                language_code,
+                                value
+                            }))
+                        } catch (error) {
+                            this.logger.warn(`Failed to get translations for exampleSentenceKey ${meaning.exampleSentenceKey}:`, error)
+                            result.exampleTranslations = []
+                        }
+                    } else {
+                        result.exampleTranslations = []
+                    }
+
+                    return result
+                })
+            )
+
+            return meaningsWithTranslations
         } catch (error) {
             this.logger.error('Error finding meanings by vocabulary id:', error)
             throw error

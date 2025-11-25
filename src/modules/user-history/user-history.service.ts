@@ -847,6 +847,7 @@ export class UserHistoryService {
                     return {
                         attemptId: attempt.id,
                         testId: attempt.testId,
+                        testType: attempt.test?.testType,
                         testName,
                         status: attempt.status,
                         score,

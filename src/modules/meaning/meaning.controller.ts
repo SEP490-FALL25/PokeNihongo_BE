@@ -86,11 +86,11 @@ export class MeaningController {
         return this.meaningService.findMany(query)
     }
 
-    @Get('by-vocabulary/:vocabularyId')
+    @Get(':vocabularyId')
     @ApiBearerAuth()
     @ApiOperation({
-        summary: 'Lấy nghĩa theo từ vựng',
-        description: 'Lấy tất cả nghĩa của một từ vựng cụ thể'
+        summary: 'Lấy tất cả nghĩa theo từ vựng',
+        description: 'Lấy toàn bộ nghĩa của một từ vựng theo vocabularyId'
     })
     @ApiParam({
         name: 'vocabularyId',
@@ -99,32 +99,11 @@ export class MeaningController {
     })
     @ApiResponse({
         status: 200,
-        description: 'Lấy nghĩa theo từ vựng thành công',
+        description: 'Lấy tất cả nghĩa theo từ vựng thành công',
         type: [MeaningSwaggerResponseDTO]
     })
     findByVocabularyId(@Param('vocabularyId') vocabularyId: string) {
         return this.meaningService.findByVocabularyId(Number(vocabularyId))
-    }
-
-    @Get(':id')
-    @ApiBearerAuth()
-    @ApiOperation({
-        summary: 'Lấy nghĩa theo ID',
-        description: 'Lấy thông tin chi tiết của một nghĩa'
-    })
-    @ApiParam({
-        name: 'id',
-        description: 'ID của nghĩa',
-        example: 1
-    })
-    @ApiResponse({
-        status: 200,
-        description: 'Lấy nghĩa thành công',
-        type: MeaningSwaggerResponseDTO
-    })
-    @ZodSerializerDto(MeaningResponseDTO)
-    findById(@Param() params: GetMeaningByIdParamsDTO) {
-        return this.meaningService.findById(params.id)
     }
 
     @Post()
