@@ -59,7 +59,7 @@ export const GetUserGachaPityParamsSchema = z.object({
   userGachaPityId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
 
-export const GetUserGachaPityDetailSchema = UserGachaPitySchema
+export const GetUserGachaPityDetailSchema = UserGachaPitySchema.nullable()
 
 export const GetUserGachaPityDetailResSchema = z.object({
   statusCode: z.number(),

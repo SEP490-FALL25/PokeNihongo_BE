@@ -166,6 +166,24 @@ export class UserGachaPityService {
       userId,
       GachaPityType.PENDING
     )
+
+    if (!userGachaPity) {
+      // tao moi
+      const created = await this.userGachaPityRepo.create({
+        createdById: userId,
+        data: {
+          userId,
+          pityCount: 0,
+          status: GachaPityType.PENDING
+        }
+      })
+      return {
+        statusCode: 201,
+        data: created,
+        message: this.i18nService.translate(UserGachaPityMessage.CREATE_SUCCESS, lang)
+      }
+    }
+
     return {
       statusCode: 200,
       data: userGachaPity,
