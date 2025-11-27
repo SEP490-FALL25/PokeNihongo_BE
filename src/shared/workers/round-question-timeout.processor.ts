@@ -281,53 +281,53 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
       let finalAnswerLog: any = existingAnswerLog
 
       // Auto-select random answer (timeout scenario only if NOT answered)
-      const answers = roundQuestion.questionBank.answers
-      if (answers.length === 0) {
-        this.logger.warn(
-          `[RoundQuestion Timeout] No answers available for question ${roundQuestion.questionBankId}`
-        )
-      } else {
-        const randomAnswer = answers[Math.floor(Math.random() * answers.length)]
+      // const answers = roundQuestion.questionBank.answers
+      // if (answers.length === 0) {
+      //   this.logger.warn(
+      //     `[RoundQuestion Timeout] No answers available for question ${roundQuestion.questionBankId}`
+      //   )
+      // } else {
+      //   const randomAnswer = answers[Math.floor(Math.random() * answers.length)]
 
-        // Calculate points: timeout = full time, so 50% of base if correct (or 0 if wrong)
-        const pointsEarned = this.calculatePointsEarned(
-          randomAnswer.isCorrect,
-          roundQuestion.basePoints,
-          roundQuestion.timeLimitMs, // Timeout = full time
-          roundQuestion.timeLimitMs,
-          roundQuestion.debuff
-        )
+      //   // Calculate points: timeout = full time, so 50% of base if correct (or 0 if wrong)
+      //   const pointsEarned = this.calculatePointsEarned(
+      //     randomAnswer.isCorrect,
+      //     roundQuestion.basePoints,
+      //     roundQuestion.timeLimitMs, // Timeout = full time
+      //     roundQuestion.timeLimitMs,
+      //     roundQuestion.debuff
+      //   )
 
-        if (existingAnswerLog) {
-          // Update existing log
-          finalAnswerLog = await this.prismaService.roundQuestionsAnswerLog.update({
-            where: { id: existingAnswerLog.id },
-            data: {
-              answerId: randomAnswer.id,
-              timeAnswerMs: roundQuestion.timeLimitMs,
-              isCorrect: randomAnswer.isCorrect,
-              pointsEarned
-            }
-          })
-          this.logger.log(
-            `[RoundQuestion Timeout] Updated answerlog ${existingAnswerLog.id} with random answer ${randomAnswer.id} (timeout), pointsEarned=${pointsEarned}`
-          )
-        } else {
-          // Create new log
-          finalAnswerLog = await this.prismaService.roundQuestionsAnswerLog.create({
-            data: {
-              roundQuestionId,
-              answerId: randomAnswer.id,
-              timeAnswerMs: roundQuestion.timeLimitMs,
-              isCorrect: randomAnswer.isCorrect,
-              pointsEarned
-            }
-          })
-          this.logger.log(
-            `[RoundQuestion Timeout] Created answerlog with random answer ${randomAnswer.id} (timeout), pointsEarned=${pointsEarned}`
-          )
-        }
-      }
+      //   if (existingAnswerLog) {
+      //     // Update existing log
+      //     finalAnswerLog = await this.prismaService.roundQuestionsAnswerLog.update({
+      //       where: { id: existingAnswerLog.id },
+      //       data: {
+      //         answerId: randomAnswer.id,
+      //         timeAnswerMs: roundQuestion.timeLimitMs,
+      //         isCorrect: randomAnswer.isCorrect,
+      //         pointsEarned
+      //       }
+      //     })
+      //     this.logger.log(
+      //       `[RoundQuestion Timeout] Updated answerlog ${existingAnswerLog.id} with random answer ${randomAnswer.id} (timeout), pointsEarned=${pointsEarned}`
+      //     )
+      //   } else {
+      //     // Create new log
+      //     finalAnswerLog = await this.prismaService.roundQuestionsAnswerLog.create({
+      //       data: {
+      //         roundQuestionId,
+      //         answerId: randomAnswer.id,
+      //         timeAnswerMs: roundQuestion.timeLimitMs,
+      //         isCorrect: randomAnswer.isCorrect,
+      //         pointsEarned
+      //       }
+      //     })
+      //     this.logger.log(
+      //       `[RoundQuestion Timeout] Created answerlog with random answer ${randomAnswer.id} (timeout), pointsEarned=${pointsEarned}`
+      //     )
+      //   }
+      // }
 
       // Find next question in order
       const nextQuestion = await this.prismaService.roundQuestion.findFirst({
@@ -460,13 +460,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         this.matchingGateway.notifyQuestionAnswered(
           matchId,
           currentUserId,
-          {
-            roundQuestionId,
-            answerId: finalAnswerLog.answerId,
-            isCorrect: finalAnswerLog.isCorrect,
-            pointsEarned: finalAnswerLog.pointsEarned || 0,
-            timeAnswerMs: finalAnswerLog.timeAnswerMs
-          },
+          null,
           nextQuestionForNotify
             ? {
                 nextQuestion: {

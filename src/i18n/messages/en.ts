@@ -763,7 +763,25 @@ export const enMessages = {
     GET_LIST_SUCCESS: 'Notification list retrieved successfully',
     NOT_FOUND: 'Notification not found',
     ALREADY_EXISTS: 'Notification already exists',
-    INVALID_DATA: 'Invalid notification data'
+    INVALID_DATA: 'Invalid notification data',
+    // title
+    NOTI_ACHIEVEMENT: 'Achievement',
+    NOTI_DAILY_REQUEST: 'Daily Request',
+    NOTI_LEVEL_UP: 'Level Up',
+    NOTI_LESSON: 'Lesson',
+    NOTI_EXCERCISE: 'Exercise',
+    NOTI_REWARD: 'Reward',
+    NOTI_SYSTEM: 'System',
+    NOTI_OTHER: 'Other',
+
+    //body
+    YOU_HAVE_NEW_ACHIEVEMENT: 'You have a new achievement',
+    YOU_HAVE_COMPLETED_ATTENDENCED: 'You have completed attendance',
+    YOU_HAVE_LEVELED_UP: 'You have leveled up',
+    YOU_HAVE_NEW_DAILY_REQUEST: 'You have a new daily request',
+    YOU_HAVE_COMPLETED_LESSON: 'You have completed a lesson',
+    YOU_HAVE_COMPLETED_EXCERCISE: 'You have completed an exercise',
+    YOU_HAVE_NEW_REWARD: 'You have a new reward'
   },
   send_mail: {
     REGISTER_SUBSCRIPTION_SUCCESS:

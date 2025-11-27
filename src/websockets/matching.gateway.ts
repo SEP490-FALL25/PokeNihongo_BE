@@ -588,7 +588,7 @@ export class MatchingGateway {
       isCorrect: boolean
       pointsEarned: number
       timeAnswerMs: number
-    },
+    } | null,
     nextQuestion: any | null
   ): void {
     const userMatchRoom = `match_${matchId}_user_${userId}`
@@ -599,10 +599,6 @@ export class MatchingGateway {
       answerResult,
       nextQuestion
     })
-
-    this.logger.log(
-      `[MatchingGateway] Notified user ${userId} in match ${matchId} about answer result (roundQuestionId=${answerResult.roundQuestionId}, nextQuestion=${nextQuestion?.nextQuestion ? `id: ${nextQuestion.nextQuestion.id}, roundQuestionId: ${nextQuestion.nextQuestion.roundQuestionId}` : 'null'})`
-    )
   }
 
   /**

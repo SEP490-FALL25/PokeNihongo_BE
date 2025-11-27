@@ -13,13 +13,16 @@ import { WalletRepo } from '@/modules/wallet/wallet.repo'
 import { HashingService } from '@/shared/services/hashing.service'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { TokenService } from '@/shared/services/token.service'
+import { UserGateway } from '@/websockets/user.gateway'
 import { Global, Module, forwardRef } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { JwtModule } from '@nestjs/jwt'
 import { WebsocketsModule } from 'src/websockets/websockets.module'
+import { SharedNotificationRepo } from './repositories/shared-notification.repo'
 import { SharedRoleRepository } from './repositories/shared-role.repo'
 import { SharedUserRepository } from './repositories/shared-user.repo'
 import { PayOSService } from './services/payos.service'
+import { SharedNotificationService } from './services/shared-notification.service'
 import { SharedUserSubscriptionService } from './services/user-subscription.service'
 import { InvoiceExpirationProcessor } from './workers/invoice-expiration.processor'
 
@@ -28,17 +31,20 @@ const sharedServices = [
   HashingService,
   TokenService,
   SharedUserSubscriptionService,
+  SharedNotificationService,
   LanguagesRepository,
   // EmailService,
   SharedUserRepository,
   SharedRoleRepository,
+  SharedNotificationRepo,
   QuestionBankRepository,
   PokemonRepo,
   PayOSService,
   InvoiceRepo,
   UserSubscriptionRepo,
   WalletRepo,
-  WalletTransactionRepo
+  WalletTransactionRepo,
+  UserGateway
 ]
 @Global()
 @Module({
