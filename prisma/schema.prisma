@@ -2263,15 +2263,13 @@ model Notification {
 
   titleKey String @db.VarChar(255)
 
-  bodyKey String @db.VarChar(255)
-
-  data Json?
-
+  bodyKey String           @db.VarChar(255)
+  data    Json?
+  type    NotificationType @default(OTHER)
   // === CÁC TRƯỜNG TRẠNG THÁI ===
 
   // Trạng thái đã đọc/chưa đọc
-  isRead Boolean @default(false)
-
+  isRead    Boolean   @default(false)
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -2282,6 +2280,17 @@ model Notification {
   @@index([userId])
   // Tăng tốc độ đếm số thông báo chưa đọc
   @@index([userId, isRead])
+}
+
+enum NotificationType {
+  REWARD // Nhận thưởng
+  LESSON // Bài học mới/nhắc nhở học
+  EXERCISE // Bài tập
+  ACHIEVEMENT // Thành tựu đạt được
+  SEASON // Mùa giải xếp hạng
+  LEVEL // Lên cấp
+  SYSTEM // (Khuyên dùng) Thông báo chung từ hệ thống
+  OTHER
 }
 
 enum PaymentMethod {

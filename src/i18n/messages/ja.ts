@@ -744,7 +744,25 @@ export const jaMessages = {
     GET_LIST_SUCCESS: '通知リストの取得に成功しました',
     NOT_FOUND: '通知が見つかりません',
     ALREADY_EXISTS: '通知は既に存在します',
-    INVALID_DATA: '無効な通知データです'
+    INVALID_DATA: '無効な通知データです',
+    // title
+    NOTI_ACHIEVEMENT: '実績',
+    NOTI_DAILY_REQUEST: '毎日のリクエスト',
+    NOTI_LEVEL_UP: 'レベルアップ',
+    NOTI_LESSON: 'レッスン',
+    NOTI_EXCERCISE: 'エクササイズ',
+    NOTI_REWARD: '報酬',
+    NOTI_SYSTEM: 'システム',
+    NOTI_OTHER: 'その他',
+
+    //body
+    YOU_HAVE_NEW_ACHIEVEMENT: '新しい実績があります',
+    YOU_HAVE_COMPLETED_ATTENDENCED: '出席が完了しました',
+    YOU_HAVE_LEVELED_UP: 'レベルアップしました',
+    YOU_HAVE_NEW_DAILY_REQUEST: '新しい毎日のリクエストがあります',
+    YOU_HAVE_COMPLETED_LESSON: 'レッスンが完了しました',
+    YOU_HAVE_COMPLETED_EXCERCISE: 'エクササイズが完了しました',
+    YOU_HAVE_NEW_REWARD: '新しい報酬があります'
   },
   send_mail: {
     REGISTER_SUBSCRIPTION_SUCCESS: 'サブスクリプション登録の確認メールを送信しました'

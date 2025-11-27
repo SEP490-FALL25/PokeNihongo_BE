@@ -1,0 +1,112 @@
+import { I18nService } from '@/i18n/i18n.service'
+import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
+import { Injectable, Logger } from '@nestjs/common'
+import {
+  ConnectedSocket,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer
+} from '@nestjs/websockets'
+import { Server, Socket } from 'socket.io'
+import { MATCHING_EVENTS, SOCKET_ROOM } from '../common/constants/socket.constant'
+import { SocketServerService } from './socket-server.service'
+
+interface MatchData {
+  id: number
+  status: string
+  createdAt: Date
+  endTime: Date
+  timeLimitMs?: number
+}
+
+interface ParticipantData {
+  id: number
+  hasAccepted: boolean
+  userId: number
+  matchId: number
+}
+
+@WebSocketGateway({
+  namespace: '/matching'
+})
+@Injectable()
+export class UserGateway {
+  @WebSocketServer()
+  server: Server
+
+  private readonly logger = new Logger(UserGateway.name)
+
+  constructor(
+    private readonly sharedUserRepo: SharedUserRepository,
+    private readonly i18nService: I18nService,
+    private readonly socketServerService: SocketServerService
+
+    // private readonly matchRoundService: MatchRoundService
+  ) {}
+
+  /**
+   * Handle user joining matching room
+   * userId is extracted from verified token in socket.data (set by adapter)
+   */
+  @SubscribeMessage(MATCHING_EVENTS.JOIN_USER_ROOM)
+  handleJoinUserRoom(@ConnectedSocket() client: Socket): void {
+    const userId = client.data?.userId
+
+    if (!userId) {
+      this.logger.warn(
+        `[MatchingGateway] Client ${client.id} missing userId in socket.data; unauthorized`
+      )
+      return
+    }
+
+    const roomName = SOCKET_ROOM.getUserRoom(userId)
+    client.join(roomName)
+
+    this.logger.debug(
+      `[MatchingGateway] Client ${client.id} joined room ${roomName} for user ${userId}`
+    )
+  }
+
+  /**
+   * Handle user leaving matching room
+   */
+  @SubscribeMessage(MATCHING_EVENTS.LEAVE_USER_ROOM)
+  handleLeaveUserRoom(@ConnectedSocket() client: Socket): void {
+    const userId = client.data?.userId
+
+    if (!userId) {
+      this.logger.warn(
+        `[MatchingGateway] Client ${client.id} missing userId in socket.data; unauthorized`
+      )
+      return
+    }
+
+    const roomName = SOCKET_ROOM.getUserRoom(userId)
+    client.leave(roomName)
+
+    this.logger.debug(
+      `[MatchingGateway] Client ${client.id} left room ${roomName} for user ${userId}`
+    )
+  }
+
+  /**
+   * Gửi notification cho 1 user cụ thể
+   */
+  notifyUser(userId: number, payload: any): void {
+    const lang = this.socketServerService.getLangByUserId(userId)
+    const roomName = SOCKET_ROOM.getUserRoom(userId)
+
+    this.server.to(roomName).emit(MATCHING_EVENTS.MATCHING_EVENT, payload)
+
+    this.logger.debug(
+      `[MatchingGateway] Sent ${payload.type} to user ${userId} in room ${roomName}`
+    )
+  }
+
+  /**
+   * Gửi notification cho nhiều users
+   */
+  notifyUsers(userIds: number[], payload: any): void {
+    userIds.forEach((userId) => this.notifyUser(userId, payload))
+  }
+}

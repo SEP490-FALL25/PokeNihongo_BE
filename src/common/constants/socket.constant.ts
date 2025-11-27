@@ -68,7 +68,9 @@ export const MATCHING_EVENTS = {
   LEAVE_MATCHING_ROOM: 'leave-matching-room',
   JOIN_USER_MATCH_ROOM: 'join-user-match-room',
   JOIN_SEARCHING_ROOM: 'join-searching-room',
-  LEAVE_SEARCHING_ROOM: 'leave-searching-room'
+  LEAVE_SEARCHING_ROOM: 'leave-searching-room',
+  JOIN_USER_ROOM: 'join-user-room',
+  LEAVE_USER_ROOM: 'leave-user-room'
   // Add more events as needed
 } as const
 
@@ -117,7 +119,7 @@ export const SOCKET_ROOM = {
    * Get user room name (legacy pattern)
    * Pattern: user:{userId}
    */
-  getUserRoom: (userId: number): string => `user:${userId}`,
+  getUserRoom: (userId: number): string => `user_${userId}`,
 
   /**
    * Get kaiwa room name

@@ -1,4 +1,5 @@
 import { ROOM_SOCKET } from '@/common/constants/event-socket.constant'
+import { SOCKET_ROOM } from '@/common/constants/socket.constant'
 import { TokenService } from '@/shared/services/token.service'
 import { AccessTokenPayload } from '@/shared/types/jwt.type'
 import { INestApplicationContext, Logger, UnauthorizedException } from '@nestjs/common'
@@ -69,6 +70,8 @@ export class WebsocketAdapter extends IoAdapter {
             // cho vao homepage room
             const homePageRoom = ROOM_SOCKET.HOME_PAGE
             socket.join(homePageRoom)
+            const userRoom = SOCKET_ROOM.getUserRoom(user.userId)
+            socket.join(userRoom)
           } else {
             this.logger.warn(
               `[WebsocketAdapter] Invalid user payload - missing userId or roleId: ${JSON.stringify(user)}`
