@@ -13,6 +13,7 @@ import { WalletRepo } from '@/modules/wallet/wallet.repo'
 import { HashingService } from '@/shared/services/hashing.service'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { TokenService } from '@/shared/services/token.service'
+import { UserGateway } from '@/websockets/user.gateway'
 import { Global, Module, forwardRef } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { JwtModule } from '@nestjs/jwt'
@@ -42,7 +43,8 @@ const sharedServices = [
   InvoiceRepo,
   UserSubscriptionRepo,
   WalletRepo,
-  WalletTransactionRepo
+  WalletTransactionRepo,
+  UserGateway
 ]
 @Global()
 @Module({

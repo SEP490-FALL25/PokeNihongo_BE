@@ -6,6 +6,7 @@ import {
   CreateNotificationBodyType,
   UpdateNotificationBodyType
 } from '@/modules/notification/entities/notification.entity'
+import { UserGateway } from '@/websockets/user.gateway'
 import { Injectable } from '@nestjs/common'
 import { NotFoundRecordException } from '../error'
 import { isForeignKeyConstraintPrismaError, isNotFoundPrismaError } from '../helpers'
@@ -17,7 +18,8 @@ export class SharedNotificationService {
   constructor(
     private notificationRepo: SharedNotificationRepo,
     private readonly i18nService: I18nService,
-    private readonly languageRepo: LanguagesRepository
+    private readonly languageRepo: LanguagesRepository,
+    private readonly userGateway: UserGateway
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -189,5 +191,9 @@ export class SharedNotificationService {
       },
       message: this.i18nService.translate(NotificationMessage.GET_LIST_SUCCESS, lang)
     }
+  }
+
+  async sendNotiToUserBySocket({ userId, payload }: { userId: number; payload: any }) {
+    this.userGateway.notifyUser(userId, payload)
   }
 }

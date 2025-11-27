@@ -96,7 +96,7 @@ export class UserGateway {
     const lang = this.socketServerService.getLangByUserId(userId)
     const roomName = SOCKET_ROOM.getUserRoom(userId)
 
-    this.server.to(roomName).emit(MATCHING_EVENTS.MATCHING_EVENT, payload)
+    this.server.to(roomName).emit('notification', payload)
 
     this.logger.debug(
       `[MatchingGateway] Sent ${payload.type} to user ${userId} in room ${roomName}`
