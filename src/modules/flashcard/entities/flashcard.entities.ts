@@ -107,7 +107,15 @@ export const FlashcardDeckCardParamsSchema = FlashcardDeckParamsSchema.extend({
 
 export const CreateFlashcardCardBodySchema = z
     .object({
-        id: z.coerce.number().int().min(1),
+        id: z.preprocess(
+            (val) => {
+                // Nếu không truyền field hoặc rỗng, return null
+                if (val === undefined || val === '' || val === null) return null
+                const num = Number(val)
+                return isNaN(num) ? null : num
+            },
+            z.union([z.number().int().min(1), z.null()]).default(null)
+        ),
         contentType: FlashcardContentTypeEnum,
         notes: z
             .string()
@@ -117,7 +125,7 @@ export const CreateFlashcardCardBodySchema = z
         metadata: JsonRecordSchema
     })
     .superRefine((data, ctx) => {
-        const { contentType, id } = data
+        const { contentType, id, metadata } = data
 
         if (contentType === 'CUSTOM') {
             ctx.addIssue({
@@ -128,12 +136,24 @@ export const CreateFlashcardCardBodySchema = z
             return
         }
 
-        if (!id || id === null || id === undefined || !Number.isInteger(id) || id < 1) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Cần cung cấp id hợp lệ (số nguyên dương) tương ứng với contentType',
-                path: ['id']
-            })
+        // Nếu không có id, phải có metadata để user tự tạo card riêng
+        if (!id || id === null || id === undefined) {
+            if (!metadata || metadata === null || metadata === undefined || Object.keys(metadata).length === 0) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'Khi không có id, phải cung cấp metadata để tạo card tùy chỉnh',
+                    path: ['metadata']
+                })
+            }
+        } else {
+            // Nếu có id, validate id phải là số nguyên dương hợp lệ
+            if (!Number.isInteger(id) || id < 1) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'Cần cung cấp id hợp lệ (số nguyên dương) tương ứng với contentType',
+                    path: ['id']
+                })
+            }
         }
     })
 

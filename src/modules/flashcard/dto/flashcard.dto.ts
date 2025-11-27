@@ -35,9 +35,10 @@ export class GetFlashcardDeckListQuerySwaggerDTO {
 export class CreateFlashcardCardSwaggerDTO {
     @ApiProperty({
         example: 123,
-        description: 'ID nội dung tương ứng với contentType (vocabularyId/kanjiId/grammarId)'
+        description: 'ID nội dung tương ứng với contentType (vocabularyId/kanjiId/grammarId)',
+        nullable: true
     })
-    id: number
+    id?: number | null
 
     @ApiProperty({
         example: 'VOCABULARY',
