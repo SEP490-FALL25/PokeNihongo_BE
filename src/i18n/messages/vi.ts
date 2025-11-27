@@ -751,7 +751,25 @@ export const viMessages = {
     GET_LIST_SUCCESS: 'Lấy danh sách thông báo thành công',
     NOT_FOUND: 'Không tìm thấy thông báo',
     ALREADY_EXISTS: 'Thông báo đã tồn tại',
-    INVALID_DATA: 'Dữ liệu thông báo không hợp lệ'
+    INVALID_DATA: 'Dữ liệu thông báo không hợp lệ',
+    // title
+    NOTI_ACHIEVEMENT: 'Thành tựu',
+    NOTI_DAILY_REQUEST: 'Yêu cầu hàng ngày',
+    NOTI_LEVEL_UP: 'Tăng cấp',
+    NOTI_LESSON: 'Bài học',
+    NOTI_EXCERCISE: 'Bài tập',
+    NOTI_REWARD: 'Phần thưởng',
+    NOTI_SYSTEM: 'Hệ thống',
+    NOTI_OTHER: 'Khác',
+
+    //body
+    YOU_HAVE_NEW_ACHIEVEMENT: 'Bạn có thành tựu mới',
+    YOU_HAVE_COMPLETED_ATTENDENCED: 'Bạn đã hoàn thành điểm danh',
+    YOU_HAVE_LEVELED_UP: 'Bạn đã tăng cấp',
+    YOU_HAVE_NEW_DAILY_REQUEST: 'Bạn có yêu cầu hàng ngày mới',
+    YOU_HAVE_COMPLETED_LESSON: 'Bạn đã hoàn thành bài học',
+    YOU_HAVE_COMPLETED_EXCERCISE: 'Bạn đã hoàn thành bài tập',
+    YOU_HAVE_NEW_REWARD: 'Bạn có phần thưởng mới'
   },
   send_mail: {
     REGISTER_SUBSCRIPTION_SUCCESS: 'Đăng ký gói thành công - PokeNihon Subscription'

@@ -2,6 +2,7 @@ import { ActiveUser } from '@/common/decorators/active-user.decorator'
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
 import { MessageResDTO, PaginationResponseDTO } from '@/shared/dtos/response.dto'
+import { SharedNotificationService } from '@/shared/services/shared-notification.service'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
@@ -12,11 +13,10 @@ import {
   UpdateNotificationBodyDTO,
   UpdateNotificationResDTO
 } from './dto/notification.dto'
-import { NotificationService } from './notification.service'
 
 @Controller('notification')
 export class NotificationController {
-  constructor(private readonly notificationService: NotificationService) {}
+  constructor(private readonly notificationService: SharedNotificationService) {}
 
   @Get()
   @ZodSerializerDto(PaginationResponseDTO)
@@ -54,6 +54,24 @@ export class NotificationController {
       {
         userId,
         data: body
+      },
+      lang
+    )
+  }
+
+  @Put('read/:notificationId')
+  @ZodSerializerDto(UpdateNotificationResDTO)
+  updateRead(
+    @Body() body: UpdateNotificationBodyDTO,
+    @Param() params: GetNotificationParamsDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.notificationService.updateRead(
+      {
+        data: body,
+        id: params.notificationId,
+        userId
       },
       lang
     )

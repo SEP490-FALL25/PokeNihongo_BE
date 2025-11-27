@@ -796,7 +796,25 @@ export const NotificationMessage = {
   GET_LIST_SUCCESS: 'notification.GET_LIST_SUCCESS',
   NOT_FOUND: 'notification.NOT_FOUND',
   ALREADY_EXISTS: 'notification.ALREADY_EXISTS',
-  INVALID_DATA: 'notification.INVALID_DATA'
+  INVALID_DATA: 'notification.INVALID_DATA',
+  // title
+  NOTI_ACHIEVEMENT: 'notification.NOTI_ACHIEVEMENT',
+  NOTI_DAILY_REQUEST: 'notification.NOTI_DAILY_REQUEST',
+  NOTI_LEVEL_UP: 'notification.NOTI_LEVEL_UP',
+  NOTI_LESSON: 'notification.NOTI_LESSON',
+  NOTI_EXCERCISE: 'notification.NOTI_EXERCISE',
+  NOTI_REWARD: 'notification.NOTI_REWARD',
+  NOTI_SYSTEM: 'notification.NOTI_SYSTEM',
+  NOTI_OTHER: 'notification.NOTI_OTHER',
+
+  //body
+  YOU_HAVE_NEW_ACHIEVEMENT: 'notification.YOU_HAVE_NEW_ACHIEVEMENT',
+  YOU_HAVE_COMPLETED_ATTENDENCED: 'notification.YOU_HAVE_COMPLETED_ATTENDENCED',
+  YOU_HAVE_LEVELED_UP: 'notification.YOU_HAVE_LEVELED_UP',
+  YOU_HAVE_NEW_DAILY_REQUEST: 'notification.YOU_HAVE_NEW_DAILY_REQUEST',
+  YOU_HAVE_COMPLETED_LESSON: 'notification.YOU_HAVE_COMPLETED_LESSON',
+  YOU_HAVE_COMPLETED_EXCERCISE: 'notification.YOU_HAVE_COMPLETED_EXCERCISE',
+  YOU_HAVE_NEW_REWARD: 'notification.YOU_HAVE_NEW_REWARD'
 } as const
 
 export const SendMailMessage = {

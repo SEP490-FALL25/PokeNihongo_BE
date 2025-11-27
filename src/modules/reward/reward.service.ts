@@ -12,6 +12,7 @@ import {
   isUniqueConstraintPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { SharedNotificationService } from '@/shared/services/shared-notification.service'
 import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import {
@@ -28,6 +29,7 @@ import { UserPokemonRepo } from '../user-pokemon/user-pokemon.repo'
 import { CreateUserRewardHistoryBodyType } from '../user-reward-history/entities/user-reward-history.entities'
 import { UserRewardHistoryService } from '../user-reward-history/user-reward-history.service'
 import { UserService } from '../user/user.service'
+import { WalletTransactionRepo } from '../wallet-transaction/wallet-transaction.repo'
 import { WalletRepo } from '../wallet/wallet.repo'
 import { RewardAlreadyExistsException } from './dto/reward.error'
 import {
@@ -50,10 +52,30 @@ export class RewardService {
     private readonly pokemonRepo: PokemonRepo,
     private readonly userPokemonRepo: UserPokemonRepo,
     private readonly userRewardHistoryService: UserRewardHistoryService,
-    private readonly userSubService: SharedUserSubscriptionService
+    private readonly userSubService: SharedUserSubscriptionService,
+    private readonly walletTransactionRepo: WalletTransactionRepo,
+    private readonly sharedNotificationService: SharedNotificationService
   ) {}
 
   private readonly logger = new Logger(RewardService.name)
+
+  /**
+   * Map UserRewardSourceType to WalletSourceType
+   */
+  private mapToWalletSourceType(sourceType: UserRewardSourceType): any {
+    const mapping: Record<UserRewardSourceType, string> = {
+      REWARD_SERVICE: 'ADMIN_ADJUST',
+      LESSON: 'LESSON_PURCHASE',
+      EXERCISE: 'EVENT_REWARD',
+      DAILY_REQUEST: 'DAILY_CHECKIN',
+      ATTENDANCE: 'DAILY_CHECKIN',
+      SEASON_REWARD: 'RANK_REWARD',
+      ADMIN_ADJUST: 'ADMIN_ADJUST',
+      OTHER: 'ADMIN_ADJUST',
+      ACHIEVEMENT_REWARD: 'EVENT_REWARD'
+    }
+    return mapping[sourceType] || 'ADMIN_ADJUST'
+  }
 
   private pushHistoryEntry(
     entries: CreateUserRewardHistoryBodyType[],
@@ -486,6 +508,12 @@ export class RewardService {
     }
 
     const historyEntries: CreateUserRewardHistoryBodyType[] = []
+    const notificationsToCreate: Array<{
+      titleKey: string
+      bodyKey: string
+      type: 'REWARD' | 'LEVEL'
+      metadata: any
+    }> = []
 
     // Process rewards in queue until empty
     while (rewardQueue.length > 0) {
@@ -617,6 +645,17 @@ export class RewardService {
           valueIncreaseExp,
           sourceId ?? undefined
         )
+
+        // Prepare EXP notification
+        const finalExpAmount = totalExp * valueIncreaseExp
+        notificationsToCreate.push({
+          titleKey: 'notification.reward.received.title',
+          bodyKey: 'notification.reward.received.body',
+          type: 'REWARD',
+          metadata: {
+            exp: { amount: finalExpAmount }
+          }
+        })
       }
 
       // 4. Process POKE_COINS rewards
@@ -625,14 +664,38 @@ export class RewardService {
           (sum, r) => sum + r.rewardItem,
           0
         )
+        const finalAmount = totalCoins * valueIncrease
         const coinsResult = await this.walletRepo.addBalanceToWalletWithType({
           userId,
           type: WalletType.POKE_COINS,
-          amount: totalCoins * valueIncrease
+          amount: finalAmount
         })
 
         // Accumulate or set result
         results.pokeCoins = coinsResult
+
+        // ✅ Create wallet transaction
+        if (coinsResult) {
+          try {
+            await this.walletTransactionRepo.create({
+              createdById: userId,
+              data: {
+                walletId: coinsResult.id,
+                userId,
+                purpose: 'REWARD',
+                referenceId: sourceId ?? null,
+                amount: finalAmount,
+                type: 'INCREASE',
+                source: this.mapToWalletSourceType(sourceType) as any,
+                description: `Received ${finalAmount} POKE_COINS from ${sourceType}`
+              }
+            })
+          } catch (error) {
+            this.logger.warn(
+              `Failed to create wallet transaction for POKE_COINS: ${error?.message ?? error}`
+            )
+          }
+        }
 
         this.logger.log(
           `Appending history entries for POKE_COINS rewards for user: ${userId} with sourceId: ${sourceId}`
@@ -646,6 +709,16 @@ export class RewardService {
           valueIncrease,
           sourceId ?? undefined
         )
+
+        // Prepare POKE_COINS notification
+        notificationsToCreate.push({
+          titleKey: 'notification.reward.received.title',
+          bodyKey: 'notification.reward.received.body',
+          type: 'REWARD',
+          metadata: {
+            poke_coins: { amount: finalAmount }
+          }
+        })
       }
 
       // 5. Process SPARKLES rewards
@@ -654,15 +727,39 @@ export class RewardService {
           (sum, r) => sum + r.rewardItem,
           0
         )
+        const finalAmount = totalSparkles * valueIncrease
 
         const sparklesResult = await this.walletRepo.addBalanceToWalletWithType({
           userId,
           type: WalletType.SPARKLES,
-          amount: totalSparkles * valueIncrease
+          amount: finalAmount
         })
 
         // Accumulate or set result
         results.sparkles = sparklesResult
+
+        // ✅ Create wallet transaction
+        if (sparklesResult) {
+          try {
+            await this.walletTransactionRepo.create({
+              createdById: userId,
+              data: {
+                walletId: sparklesResult.id,
+                userId,
+                purpose: 'REWARD',
+                referenceId: sourceId ?? null,
+                amount: finalAmount,
+                type: 'INCREASE',
+                source: this.mapToWalletSourceType(sourceType) as any,
+                description: `Received ${finalAmount} SPARKLES from ${sourceType}`
+              }
+            })
+          } catch (error) {
+            this.logger.warn(
+              `Failed to create wallet transaction for SPARKLES: ${error?.message ?? error}`
+            )
+          }
+        }
 
         this.logger.log(
           `Appending history entries for SPARKLES rewards for user: ${userId} with sourceId: ${sourceId}`
@@ -676,6 +773,16 @@ export class RewardService {
           valueIncrease,
           sourceId ?? undefined
         )
+
+        // Prepare SPARKLES notification
+        notificationsToCreate.push({
+          titleKey: 'notification.reward.received.title',
+          bodyKey: 'notification.reward.received.body',
+          type: 'REWARD',
+          metadata: {
+            sparkles: { amount: finalAmount }
+          }
+        })
       }
 
       // 6. Process POKEMON rewards (most complex)
@@ -697,6 +804,10 @@ export class RewardService {
               isMain: false
             }
           })
+
+          // Fetch pokemon details for notification
+          const pokemonDetails = await this.pokemonRepo.findById(pokemonId)
+
           results.pokemons.push({
             action: 'added',
             pokemon: newUserPokemon
@@ -710,6 +821,22 @@ export class RewardService {
               pokemonId
             }
           })
+
+          // Prepare POKEMON notification (new pokemon)
+          if (pokemonDetails) {
+            notificationsToCreate.push({
+              titleKey: 'notification.reward.received.title',
+              bodyKey: 'notification.reward.received.body',
+              type: 'REWARD',
+              metadata: {
+                pokemon: {
+                  id: pokemonDetails.id,
+                  name: pokemonDetails.nameJp,
+                  rarity: pokemonDetails.rarity
+                }
+              }
+            })
+          }
         } else {
           // User already has this pokemon -> convert to coins based on rarity
           const pokemon = await this.pokemonRepo.findById(pokemonId)
@@ -731,27 +858,66 @@ export class RewardService {
           const coinValue = Math.floor(200 * rarityLevel * 0.5)
 
           // Add coins to user wallet
+          const finalCoinValue = coinValue * valueIncrease
           const updatedWallet = await this.walletRepo.addBalanceToWalletWithType({
             userId,
             type: WalletType.SPARKLES,
-            amount: coinValue * valueIncrease
+            amount: finalCoinValue
           })
+
+          // ✅ Create wallet transaction for converted pokemon
+          if (updatedWallet) {
+            try {
+              await this.walletTransactionRepo.create({
+                createdById: userId,
+                data: {
+                  walletId: updatedWallet.id,
+                  userId,
+                  purpose: 'REWARD',
+                  referenceId: sourceId ?? null,
+                  amount: finalCoinValue,
+                  type: 'INCREASE',
+                  source: this.mapToWalletSourceType(sourceType) as any,
+                  description: `Converted duplicate Pokemon #${pokemonId} (${pokemon.nameJp}) to ${finalCoinValue} SPARKLES`
+                }
+              })
+            } catch (error) {
+              this.logger.warn(
+                `Failed to create wallet transaction for converted pokemon: ${error?.message ?? error}`
+              )
+            }
+          }
 
           results.pokemons.push({
             action: 'converted_to_coins',
             pokemon: pokemon,
-            coinValue: coinValue * valueIncrease,
+            coinValue: finalCoinValue,
             wallet: updatedWallet
           })
           this.pushHistoryEntry(historyEntries, {
             userId,
             rewardId: pokemonReward.id,
             target: RewardTarget.SPARKLES,
-            amount: coinValue * valueIncrease,
+            amount: finalCoinValue,
             note: `Converted pokemon ${pokemonId} reward to coins`,
             meta: {
               pokemonId,
-              coinValue
+              coinValue: finalCoinValue
+            }
+          })
+
+          // Prepare POKEMON notification (converted to sparkles)
+          notificationsToCreate.push({
+            titleKey: 'notification.reward.received.title',
+            bodyKey: 'notification.reward.received.body',
+            type: 'REWARD',
+            metadata: {
+              pokemon: {
+                id: pokemon.id,
+                name: pokemon.nameJp,
+                rarity: pokemon.rarity,
+                converted_sparkles: { amount: finalCoinValue }
+              }
             }
           })
         }
@@ -780,6 +946,105 @@ export class RewardService {
             `Failed to record user reward history for user ${userId}: ${error?.message ?? error}`
           )
         }
+      }
+    }
+
+    // Add level-up notifications (one per level)
+    if (results.levelsGained > 0 && results.levelRewards.length > 0) {
+      for (const levelReward of results.levelRewards) {
+        const levelData: any = {
+          level: {
+            from: levelReward.fromLevel,
+            to: levelReward.toLevel,
+            reward: {}
+          }
+        }
+
+        // Determine reward type and structure data accordingly
+        switch (levelReward.rewardTarget) {
+          case RewardTarget.SPARKLES:
+            levelData.level.reward.sparkles = { amount: levelReward.rewardItem }
+            break
+          case RewardTarget.POKE_COINS:
+            levelData.level.reward.poke_coins = { amount: levelReward.rewardItem }
+            break
+          case RewardTarget.EXP:
+            levelData.level.reward.exp = { amount: levelReward.rewardItem }
+            break
+          case RewardTarget.POKEMON:
+            levelData.level.reward.pokemon = { id: levelReward.rewardItem }
+            break
+        }
+
+        notificationsToCreate.push({
+          titleKey: 'notification.level.up.title',
+          bodyKey: 'notification.level.up.body',
+          type: 'LEVEL',
+          metadata: levelData
+        })
+      }
+    }
+
+    // Create all notifications
+    if (notificationsToCreate.length > 0) {
+      try {
+        const notificationResults = await Promise.allSettled(
+          notificationsToCreate.map((notiData) =>
+            this.sharedNotificationService.create(
+              {
+                userId,
+                data: {
+                  userId,
+                  titleKey: notiData.titleKey,
+                  bodyKey: notiData.bodyKey,
+                  type: notiData.type,
+                  data: notiData.metadata
+                }
+              },
+              'vi'
+            )
+          )
+        )
+
+        const createdNotifications: any[] = []
+        notificationResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            createdNotifications.push(result.value.data)
+          } else {
+            this.logger.warn(
+              `Failed to create ${notificationsToCreate[index].type} notification for user ${userId}: ${result.reason?.message ?? result.reason}`
+            )
+          }
+        })
+
+        // Send socket notifications
+        if (createdNotifications.length > 0) {
+          for (const notification of createdNotifications) {
+            try {
+              await this.sharedNotificationService.sendNotiToUserBySocket({
+                userId,
+                payload: {
+                  type: notification.type === 'LEVEL' ? 'LEVEL_UP' : 'REWARDS_RECEIVED',
+                  notificationId: notification.id,
+                  userId,
+                  data: notification.data,
+                  timestamp: new Date().toISOString()
+                }
+              })
+              this.logger.log(
+                `[convertRewardsWithUser] Sent ${notification.type} notification to user ${userId}`
+              )
+            } catch (error) {
+              this.logger.warn(
+                `Failed to send socket notification to user ${userId}: ${error?.message ?? error}`
+              )
+            }
+          }
+        }
+      } catch (error) {
+        this.logger.error(
+          `Error creating notifications for user ${userId}: ${error?.message ?? error}`
+        )
       }
     }
 

@@ -1,42 +1,26 @@
 import { I18nService } from '@/i18n/i18n.service'
 import { NotificationMessage } from '@/i18n/message-keys'
-import { NotFoundRecordException } from '@/shared/error'
-import {
-  isForeignKeyConstraintPrismaError,
-  isNotFoundPrismaError
-} from '@/shared/helpers'
-import { PaginationQueryType } from '@/shared/models/request.model'
-import { Injectable } from '@nestjs/common'
-import { LanguagesRepository } from '../languages/languages.repo'
-import { NotificationNotFoundException } from './dto/notification.error'
+import { LanguagesRepository } from '@/modules/languages/languages.repo'
+import { NotificationNotFoundException } from '@/modules/notification/dto/notification.error'
 import {
   CreateNotificationBodyType,
   UpdateNotificationBodyType
-} from './entities/notification.entity'
-import { NotificationRepo } from './notification.repo'
+} from '@/modules/notification/entities/notification.entity'
+import { UserGateway } from '@/websockets/user.gateway'
+import { Injectable } from '@nestjs/common'
+import { NotFoundRecordException } from '../error'
+import { isForeignKeyConstraintPrismaError, isNotFoundPrismaError } from '../helpers'
+import { PaginationQueryType } from '../models/request.model'
+import { SharedNotificationRepo } from '../repositories/shared-notification.repo'
 
 @Injectable()
-export class NotificationService {
+export class SharedNotificationService {
   constructor(
-    private notificationRepo: NotificationRepo,
+    private notificationRepo: SharedNotificationRepo,
     private readonly i18nService: I18nService,
-    private readonly languageRepo: LanguagesRepository
+    private readonly languageRepo: LanguagesRepository,
+    private readonly userGateway: UserGateway
   ) {}
-
-  private async convertTranslationsToLangCodes(
-    translations: Array<{ languageId: number; value: string }>
-  ): Promise<Array<{ key: string; value: string }>> {
-    if (!translations || translations.length === 0) return []
-
-    const allLangIds = Array.from(new Set(translations.map((t) => t.languageId)))
-    const langs = await this.languageRepo.getWithListId(allLangIds)
-    const idToCode = new Map(langs.map((l) => [l.id, l.code]))
-
-    return translations.map((t) => ({
-      key: idToCode.get(t.languageId) || String(t.languageId),
-      value: t.value
-    }))
-  }
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
     const data = await this.notificationRepo.list(pagination)
@@ -53,10 +37,15 @@ export class NotificationService {
     if (!notification) {
       throw new NotificationNotFoundException()
     }
-
+    const title = this.i18nService.translate(notification.titleKey, lang)
+    const body = this.i18nService.translate(notification.bodyKey, lang)
     return {
       statusCode: 200,
-      data: notification,
+      data: {
+        ...notification,
+        title: title,
+        body: body
+      },
       message: this.i18nService.translate(NotificationMessage.GET_LIST_SUCCESS, lang)
     }
   }
@@ -105,6 +94,39 @@ export class NotificationService {
         id,
         data: data,
         updatedById: userId
+      })
+      return {
+        statusCode: 200,
+        data: notification,
+        message: this.i18nService.translate(NotificationMessage.UPDATE_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new NotificationNotFoundException()
+      }
+
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      throw error
+    }
+  }
+  async updateRead(
+    {
+      id,
+      data,
+      userId
+    }: {
+      id: number
+      data: UpdateNotificationBodyType
+      userId?: number
+    },
+    lang: string = 'vi'
+  ) {
+    try {
+      const notification = await this.notificationRepo.update({
+        id,
+        data: data
       })
       return {
         statusCode: 200,
@@ -174,5 +196,9 @@ export class NotificationService {
       },
       message: this.i18nService.translate(NotificationMessage.GET_LIST_SUCCESS, lang)
     }
+  }
+
+  async sendNotiToUserBySocket({ userId, payload }: { userId: number; payload: any }) {
+    this.userGateway.notifyUser(userId, payload)
   }
 }

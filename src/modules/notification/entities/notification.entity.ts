@@ -1,3 +1,4 @@
+import { NotificationType } from '@/common/constants/notification.constant'
 import { checkIdSchema } from '@/common/utils/id.validation'
 import { ENTITY_MESSAGE } from '@/i18n/message-keys'
 import { extendZodWithOpenApi } from '@anatine/zod-openapi'
@@ -13,8 +14,21 @@ export const NotificationSchema = z.object({
   userId: z.number(),
   titleKey: z.string(),
   bodyKey: z.string(),
+  type: z
+    .enum([
+      NotificationType.REWARD,
+      NotificationType.LESSON,
+      NotificationType.EXERCISE,
+      NotificationType.ACHIEVEMENT,
+      NotificationType.SEASON,
+      NotificationType.LEVEL,
+      NotificationType.SYSTEM,
+      NotificationType.OTHER
+    ])
+    .default(NotificationType.OTHER),
   isRead: z.boolean().default(false),
   data: z.any().nullable(),
+
   deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
@@ -25,7 +39,8 @@ export const CreateNotificationBodySchema = NotificationSchema.pick({
   userId: true,
   titleKey: true,
   bodyKey: true,
-  data: true
+  data: true,
+  type: true
 })
 
   .strict()
@@ -57,7 +72,10 @@ export const GetRewardByLeaderboardParamsSchema = z.object({
   leaderboardSeasonId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
 
-export const GetNotificationDetailSchema = NotificationSchema
+export const GetNotificationDetailSchema = NotificationSchema.extend({
+  title: z.string().nullable(),
+  body: z.string().nullable()
+})
 
 export const GetNotificationDetailResSchema = z.object({
   statusCode: z.number(),
