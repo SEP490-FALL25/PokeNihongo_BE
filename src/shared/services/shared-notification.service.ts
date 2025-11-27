@@ -37,10 +37,15 @@ export class SharedNotificationService {
     if (!notification) {
       throw new NotificationNotFoundException()
     }
-
+    const title = this.i18nService.translate(notification.titleKey, lang)
+    const body = this.i18nService.translate(notification.bodyKey, lang)
     return {
       statusCode: 200,
-      data: notification,
+      data: {
+        ...notification,
+        title: title,
+        body: body
+      },
       message: this.i18nService.translate(NotificationMessage.GET_LIST_SUCCESS, lang)
     }
   }

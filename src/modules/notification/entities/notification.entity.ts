@@ -72,7 +72,10 @@ export const GetRewardByLeaderboardParamsSchema = z.object({
   leaderboardSeasonId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
 
-export const GetNotificationDetailSchema = NotificationSchema
+export const GetNotificationDetailSchema = NotificationSchema.extend({
+  title: z.string().nullable(),
+  body: z.string().nullable()
+})
 
 export const GetNotificationDetailResSchema = z.object({
   statusCode: z.number(),

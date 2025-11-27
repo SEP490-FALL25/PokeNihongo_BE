@@ -1,3 +1,4 @@
+import { SharedModule } from '@/shared/shared.module'
 import { Module, forwardRef } from '@nestjs/common'
 import { LanguagesModule } from '../languages/languages.module'
 import { PokemonModule } from '../pokemon/pokemon.module'
@@ -13,6 +14,7 @@ import { RewardService } from './reward.service'
 
 @Module({
   imports: [
+    SharedModule,
     LanguagesModule,
     TranslationModule,
     forwardRef(() => UserModule),

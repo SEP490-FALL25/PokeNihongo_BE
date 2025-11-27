@@ -27,7 +27,7 @@ interface ParticipantData {
 }
 
 @WebSocketGateway({
-  namespace: '/matching'
+  namespace: '/user'
 })
 @Injectable()
 export class UserGateway {

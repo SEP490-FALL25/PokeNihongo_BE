@@ -12,6 +12,7 @@ import {
   isUniqueConstraintPrismaError
 } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { SharedNotificationService } from '@/shared/services/shared-notification.service'
 import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import {
@@ -52,7 +53,8 @@ export class RewardService {
     private readonly userPokemonRepo: UserPokemonRepo,
     private readonly userRewardHistoryService: UserRewardHistoryService,
     private readonly userSubService: SharedUserSubscriptionService,
-    private readonly walletTransactionRepo: WalletTransactionRepo
+    private readonly walletTransactionRepo: WalletTransactionRepo,
+    private readonly sharedNotificationService: SharedNotificationService
   ) {}
 
   private readonly logger = new Logger(RewardService.name)
@@ -506,6 +508,12 @@ export class RewardService {
     }
 
     const historyEntries: CreateUserRewardHistoryBodyType[] = []
+    const notificationsToCreate: Array<{
+      titleKey: string
+      bodyKey: string
+      type: 'REWARD' | 'LEVEL'
+      metadata: any
+    }> = []
 
     // Process rewards in queue until empty
     while (rewardQueue.length > 0) {
@@ -637,6 +645,17 @@ export class RewardService {
           valueIncreaseExp,
           sourceId ?? undefined
         )
+
+        // Prepare EXP notification
+        const finalExpAmount = totalExp * valueIncreaseExp
+        notificationsToCreate.push({
+          titleKey: 'notification.reward.received.title',
+          bodyKey: 'notification.reward.received.body',
+          type: 'REWARD',
+          metadata: {
+            exp: { amount: finalExpAmount }
+          }
+        })
       }
 
       // 4. Process POKE_COINS rewards
@@ -690,6 +709,16 @@ export class RewardService {
           valueIncrease,
           sourceId ?? undefined
         )
+
+        // Prepare POKE_COINS notification
+        notificationsToCreate.push({
+          titleKey: 'notification.reward.received.title',
+          bodyKey: 'notification.reward.received.body',
+          type: 'REWARD',
+          metadata: {
+            poke_coins: { amount: finalAmount }
+          }
+        })
       }
 
       // 5. Process SPARKLES rewards
@@ -744,6 +773,16 @@ export class RewardService {
           valueIncrease,
           sourceId ?? undefined
         )
+
+        // Prepare SPARKLES notification
+        notificationsToCreate.push({
+          titleKey: 'notification.reward.received.title',
+          bodyKey: 'notification.reward.received.body',
+          type: 'REWARD',
+          metadata: {
+            sparkles: { amount: finalAmount }
+          }
+        })
       }
 
       // 6. Process POKEMON rewards (most complex)
@@ -765,6 +804,10 @@ export class RewardService {
               isMain: false
             }
           })
+
+          // Fetch pokemon details for notification
+          const pokemonDetails = await this.pokemonRepo.findById(pokemonId)
+
           results.pokemons.push({
             action: 'added',
             pokemon: newUserPokemon
@@ -778,6 +821,22 @@ export class RewardService {
               pokemonId
             }
           })
+
+          // Prepare POKEMON notification (new pokemon)
+          if (pokemonDetails) {
+            notificationsToCreate.push({
+              titleKey: 'notification.reward.received.title',
+              bodyKey: 'notification.reward.received.body',
+              type: 'REWARD',
+              metadata: {
+                pokemon: {
+                  id: pokemonDetails.id,
+                  name: pokemonDetails.nameJp,
+                  rarity: pokemonDetails.rarity
+                }
+              }
+            })
+          }
         } else {
           // User already has this pokemon -> convert to coins based on rarity
           const pokemon = await this.pokemonRepo.findById(pokemonId)
@@ -846,6 +905,21 @@ export class RewardService {
               coinValue: finalCoinValue
             }
           })
+
+          // Prepare POKEMON notification (converted to sparkles)
+          notificationsToCreate.push({
+            titleKey: 'notification.reward.received.title',
+            bodyKey: 'notification.reward.received.body',
+            type: 'REWARD',
+            metadata: {
+              pokemon: {
+                id: pokemon.id,
+                name: pokemon.nameJp,
+                rarity: pokemon.rarity,
+                converted_sparkles: { amount: finalCoinValue }
+              }
+            }
+          })
         }
       }
     } // End of while loop
@@ -872,6 +946,105 @@ export class RewardService {
             `Failed to record user reward history for user ${userId}: ${error?.message ?? error}`
           )
         }
+      }
+    }
+
+    // Add level-up notifications (one per level)
+    if (results.levelsGained > 0 && results.levelRewards.length > 0) {
+      for (const levelReward of results.levelRewards) {
+        const levelData: any = {
+          level: {
+            from: levelReward.fromLevel,
+            to: levelReward.toLevel,
+            reward: {}
+          }
+        }
+
+        // Determine reward type and structure data accordingly
+        switch (levelReward.rewardTarget) {
+          case RewardTarget.SPARKLES:
+            levelData.level.reward.sparkles = { amount: levelReward.rewardItem }
+            break
+          case RewardTarget.POKE_COINS:
+            levelData.level.reward.poke_coins = { amount: levelReward.rewardItem }
+            break
+          case RewardTarget.EXP:
+            levelData.level.reward.exp = { amount: levelReward.rewardItem }
+            break
+          case RewardTarget.POKEMON:
+            levelData.level.reward.pokemon = { id: levelReward.rewardItem }
+            break
+        }
+
+        notificationsToCreate.push({
+          titleKey: 'notification.level.up.title',
+          bodyKey: 'notification.level.up.body',
+          type: 'LEVEL',
+          metadata: levelData
+        })
+      }
+    }
+
+    // Create all notifications
+    if (notificationsToCreate.length > 0) {
+      try {
+        const notificationResults = await Promise.allSettled(
+          notificationsToCreate.map((notiData) =>
+            this.sharedNotificationService.create(
+              {
+                userId,
+                data: {
+                  userId,
+                  titleKey: notiData.titleKey,
+                  bodyKey: notiData.bodyKey,
+                  type: notiData.type,
+                  data: notiData.metadata
+                }
+              },
+              'vi'
+            )
+          )
+        )
+
+        const createdNotifications: any[] = []
+        notificationResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            createdNotifications.push(result.value.data)
+          } else {
+            this.logger.warn(
+              `Failed to create ${notificationsToCreate[index].type} notification for user ${userId}: ${result.reason?.message ?? result.reason}`
+            )
+          }
+        })
+
+        // Send socket notifications
+        if (createdNotifications.length > 0) {
+          for (const notification of createdNotifications) {
+            try {
+              await this.sharedNotificationService.sendNotiToUserBySocket({
+                userId,
+                payload: {
+                  type: notification.type === 'LEVEL' ? 'LEVEL_UP' : 'REWARDS_RECEIVED',
+                  notificationId: notification.id,
+                  userId,
+                  data: notification.data,
+                  timestamp: new Date().toISOString()
+                }
+              })
+              this.logger.log(
+                `[convertRewardsWithUser] Sent ${notification.type} notification to user ${userId}`
+              )
+            } catch (error) {
+              this.logger.warn(
+                `Failed to send socket notification to user ${userId}: ${error?.message ?? error}`
+              )
+            }
+          }
+        }
+      } catch (error) {
+        this.logger.error(
+          `Error creating notifications for user ${userId}: ${error?.message ?? error}`
+        )
       }
     }
 
