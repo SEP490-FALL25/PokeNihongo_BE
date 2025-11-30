@@ -417,6 +417,12 @@ export class UserProgressService {
                 return
             }
 
+            // Không update status nếu đã là COMPLETED
+            if (userProgress.status === ProgressStatus.COMPLETED) {
+                this.logger.log(`UserProgress for user ${userId}, lesson ${lessonId} is already COMPLETED, skipping status update`)
+                return
+            }
+
             // Xác định status
             let finalStatus = status ?? ProgressStatus.IN_PROGRESS
             if (progressPercentage === 100) {

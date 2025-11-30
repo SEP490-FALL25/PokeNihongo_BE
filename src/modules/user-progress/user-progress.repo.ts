@@ -158,6 +158,26 @@ export class UserProgressRepository {
             testId?: number | null
         }
     ): Promise<UserProgressType> {
+        // Kiểm tra status hiện tại trước khi update
+        const currentProgress = await this.prismaService.userProgress.findUnique({
+            where,
+            select: { status: true }
+        })
+
+        // Không update status nếu đã là COMPLETED
+        if (currentProgress && currentProgress.status === ProgressStatus.COMPLETED) {
+            // Nếu đã COMPLETED, chỉ update các field khác (không update status)
+            const updateData: any = { ...data }
+            delete updateData.status // Không update status
+            updateData.lastAccessedAt = new Date()
+
+            const result = await this.prismaService.userProgress.update({
+                where,
+                data: updateData
+            })
+            return this.transformUserProgress(result)
+        }
+
         const updateData: any = { ...data }
 
         // Nếu status được cập nhật thành COMPLETED, set completedAt
@@ -185,6 +205,36 @@ export class UserProgressRepository {
             testId?: number | null
         }
     ): Promise<UserProgressType> {
+        // Kiểm tra status hiện tại trước khi update
+        const currentProgress = await this.prismaService.userProgress.findUnique({
+            where: {
+                userId_lessonId: {
+                    userId,
+                    lessonId
+                }
+            },
+            select: { status: true }
+        })
+
+        // Không update status nếu đã là COMPLETED
+        if (currentProgress && (currentProgress.status === ProgressStatus.COMPLETED)) {
+            // Nếu đã COMPLETED, chỉ update các field khác (không update status)
+            const updateData: any = { ...data }
+            delete updateData.status // Không update status
+            updateData.lastAccessedAt = new Date()
+
+            const result = await this.prismaService.userProgress.update({
+                where: {
+                    userId_lessonId: {
+                        userId,
+                        lessonId
+                    }
+                },
+                data: updateData
+            })
+            return this.transformUserProgress(result)
+        }
+
         const updateData: any = { ...data }
 
         // Nếu status được cập nhật thành COMPLETED, set completedAt
