@@ -1405,16 +1405,28 @@ export class UserTestAttemptService {
 
             // 6. Lấy tất cả UserTestAnswerLog của attempt này
             const answerLogsResult = await this.userTestAnswerLogService.findByUserTestAttemptId(userTestAttemptId)
-            const userAnswers = answerLogsResult.data.results
+            let userAnswers = answerLogsResult.data.results
             this.logger.log(`Found ${userAnswers.length} user answers for attempt ${userTestAttemptId}`)
 
-            // 7. Tạo map để lấy câu trả lời nhanh
+            // Chỉ lấy 10 câu đầu tiên từ logs (những câu đã làm)
+            if (userAnswers.length > 10) {
+                userAnswers = userAnswers.slice(0, 10)
+                this.logger.log(`PLACEMENT_TEST_DONE: Limiting to first 10 questions from ${answerLogsResult.data.results.length} total logs`)
+            }
+
+            // 7. Tạo map để lấy câu trả lời nhanh (chỉ từ 10 câu đầu)
             const answerMap = new Map<number, boolean>()
             userAnswers.forEach((log: any) => {
                 answerMap.set(log.questionBankId, log.isCorrect)
             })
 
-            // 8. Nhóm questions theo levelN và tính tỷ lệ đúng
+            // 8. Lọc filteredQuestions chỉ lấy những câu có trong 10 câu đã làm
+            const answeredQuestionBankIds = new Set(userAnswers.map((log: any) => log.questionBankId))
+            const answeredQuestions = filteredQuestions.filter((tsqb: any) =>
+                answeredQuestionBankIds.has(tsqb.questionBank.id)
+            )
+
+            // 9. Nhóm questions theo levelN và tính tỷ lệ đúng (chỉ từ 10 câu đã làm)
             const questionsByLevel: Record<number, { total: number; correct: number }> = {
                 1: { total: 0, correct: 0 },
                 2: { total: 0, correct: 0 },
@@ -1423,7 +1435,7 @@ export class UserTestAttemptService {
                 5: { total: 0, correct: 0 }
             }
 
-            filteredQuestions.forEach((tsqb: any) => {
+            answeredQuestions.forEach((tsqb: any) => {
                 const levelN = tsqb.questionBank.levelN || 5 // Mặc định N5 nếu không có levelN
                 if (levelN >= 1 && levelN <= 5) {
                     questionsByLevel[levelN].total++
@@ -1434,9 +1446,9 @@ export class UserTestAttemptService {
                 }
             })
 
-            this.logger.log('Questions by level:', questionsByLevel)
+            this.logger.log('Questions by level (from answered questions):', questionsByLevel)
 
-            // 9. Đánh giá levelN với ngưỡng linh hoạt cho từng level
+            // 10. Đánh giá levelN với ngưỡng linh hoạt cho từng level
             // Định nghĩa ngưỡng ở một chỗ
             const THRESHOLDS = {
                 5: 2 / 3, // ~66.7% (N5)
@@ -1510,12 +1522,12 @@ export class UserTestAttemptService {
 
             this.logger.log(`Final evaluated levelN: N${evaluatedLevelN}`)
 
-            // 10. Tìm Level trong DB với levelNumber = evaluatedLevelN và levelType = USER
+            // 11. Tìm Level trong DB với levelNumber = evaluatedLevelN và levelType = USER
             const level = await this.levelRepo.findByLevelAndType(evaluatedLevelN, LEVEL_TYPE.USER)
             if (!level) {
                 this.logger.warn(`Level N${evaluatedLevelN} not found in database, keeping current user level`)
             } else {
-                // 11. Cập nhật levelId của User
+                // 12. Cập nhật levelId của User
                 await this.userRepo.update({
                     id: userId,
                     updatedById: userId,
@@ -1524,19 +1536,18 @@ export class UserTestAttemptService {
                 this.logger.log(`Updated user ${userId} levelId to ${level.id} (N${evaluatedLevelN})`)
             }
 
-            // 12. Update status và time của UserTestAttempt
+            // 13. Update status và time của UserTestAttempt
             await this.userTestAttemptRepository.update(
                 { id: userTestAttemptId },
                 { status: 'COMPLETED', ...(timeSeconds !== undefined ? { time: timeSeconds } : {}) }
             )
             this.logger.log(`Updated attempt ${userTestAttemptId} to COMPLETED`)
 
-            // 13. Tính tổng số câu đúng và tổng số câu hỏi
-            const totalQuestions = filteredQuestions.length
+            // 14. Tính tổng số câu đúng và tổng số câu hỏi (chỉ từ 10 câu đã làm)
+            const totalQuestions = userAnswers.length // Số câu đã làm (tối đa 10)
             let totalCorrect = 0
-            filteredQuestions.forEach((tsqb: any) => {
-                const isCorrect = answerMap.get(tsqb.questionBank.id) || false
-                if (isCorrect) {
+            userAnswers.forEach((log: any) => {
+                if (log.isCorrect) {
                     totalCorrect++
                 }
             })
@@ -1544,7 +1555,9 @@ export class UserTestAttemptService {
                 ? parseFloat(((totalCorrect / totalQuestions) * 100).toFixed(1))
                 : 0
 
-            // 14. Trả về kết quả với levelN được đánh giá
+            this.logger.log(`PLACEMENT_TEST_DONE: Total questions answered: ${totalQuestions}, Correct: ${totalCorrect}, Percentage: ${percentage}%`)
+
+            // 15. Trả về kết quả với levelN được đánh giá
             return {
                 statusCode: 200,
                 message: 'Đánh giá trình độ hoàn thành',
