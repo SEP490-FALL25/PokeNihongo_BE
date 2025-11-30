@@ -1655,6 +1655,20 @@ export class UserTestAttemptService {
                 return
             }
 
+            // Không update status nếu đã là COMPLETED
+            if (userProgress.status === ProgressStatus.COMPLETED) {
+                this.logger.log(`UserProgress for user ${userId}, lesson ${lesson.id} is already COMPLETED, skipping status update`)
+                // Chỉ update testId nếu chưa có
+                if (!userProgress.testId) {
+                    await this.userProgressRepository.update(
+                        { id: userProgress.id },
+                        { testId: testId }
+                    )
+                    this.logger.log(`Updated testId for user ${userId}, lesson ${lesson.id} to ${testId}`)
+                }
+                return
+            }
+
             // Update UserProgress với testId, status COMPLETED và progressPercentage 100%
             // Vì đã hoàn thành LESSON_REVIEW test nên coi như đã hoàn thành lesson
             await this.userProgressRepository.update(
@@ -1719,6 +1733,12 @@ export class UserTestAttemptService {
 
             if (!userProgress) {
                 this.logger.warn(`UserProgress not found for user ${userId}, lesson ${lesson.id}, skipping update`)
+                return
+            }
+
+            // Không update status nếu đã là COMPLETED
+            if (userProgress.status === ProgressStatus.COMPLETED) {
+                this.logger.log(`UserProgress for user ${userId}, lesson ${lesson.id} is already COMPLETED, skipping status update`)
                 return
             }
 
