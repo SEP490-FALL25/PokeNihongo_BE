@@ -1442,13 +1442,29 @@ export class UserTestAttemptService {
             )
             this.logger.log(`Updated attempt ${userTestAttemptId} to COMPLETED`)
 
-            // 13. Trả về kết quả với levelN được đánh giá
+            // 13. Tính tổng số câu đúng và tổng số câu hỏi
+            const totalQuestions = filteredQuestions.length
+            let totalCorrect = 0
+            filteredQuestions.forEach((tsqb: any) => {
+                const isCorrect = answerMap.get(tsqb.questionBank.id) || false
+                if (isCorrect) {
+                    totalCorrect++
+                }
+            })
+            const percentage = totalQuestions > 0
+                ? parseFloat(((totalCorrect / totalQuestions) * 100).toFixed(1))
+                : 0
+
+            // 14. Trả về kết quả với levelN được đánh giá
             return {
                 statusCode: 200,
                 message: 'Đánh giá trình độ hoàn thành',
                 data: {
                     levelN: evaluatedLevelN,
-                    levelId: level?.id || null
+                    levelId: level?.id || null,
+                    totalCorrect,
+                    totalQuestions,
+                    percentage
                 }
             }
 
