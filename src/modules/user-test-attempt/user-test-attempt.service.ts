@@ -873,18 +873,42 @@ export class UserTestAttemptService {
                 throw new Error('Test không có test set nào')
             }
 
+            // Xác định test type từ attempt (nếu có) hoặc từ test object đã query
+            // attempt.test có thể có nếu findOne include test, nếu không thì dùng test.testType
+            const testType = (attempt.test && attempt.test.testType) ? attempt.test.testType : test.testType
+
             // Load user answer logs for this attempt
             const logsRes = await this.userTestAnswerLogService.findByUserTestAttemptId(id)
-            const logs: Array<{ questionBankId: number; answerId: number; isCorrect: boolean }> = (logsRes?.data?.results || []) as any
+            let logs: Array<{ questionBankId: number; answerId: number; isCorrect: boolean }> = (logsRes?.data?.results || []) as any
+
+            // Nếu test type là PLACEMENT_TEST_DONE, chỉ lấy 10 câu đầu tiên từ logs (những câu đã làm)
+            const isPlacementTestDone = testType === 'PLACEMENT_TEST_DONE'
+            if (isPlacementTestDone) {
+                const originalLogsCount = logs.length
+                if (logs.length > 10) {
+                    logs = logs.slice(0, 10)
+                    this.logger.log(`PLACEMENT_TEST_DONE: Limiting review to first 10 questions from ${originalLogsCount} total logs`)
+                } else {
+                    this.logger.log(`PLACEMENT_TEST_DONE: Using all ${logs.length} questions from logs`)
+                }
+            }
+
             const selectedByQuestion = new Map<number, number>(
                 logs.map((l) => [Number(l.questionBankId), Number(l.answerId)])
             )
 
             // Tính tỷ lệ đúng trước khi xử lý review
+            // Nếu là PLACEMENT_TEST_DONE, chỉ tính số câu trong logs (đã giới hạn 10)
+            // Nếu không phải, tính tổng số câu trong test
             let totalQuestions = 0
-            for (const testTestSet of test.testTestSets) {
-                totalQuestions += testTestSet.testSet.testSetQuestionBanks.length
+            if (isPlacementTestDone) {
+                totalQuestions = logs.length // Số câu đã làm trong logs (tối đa 10)
+            } else {
+                for (const testTestSet of test.testTestSets) {
+                    totalQuestions += testTestSet.testSet.testSetQuestionBanks.length
+                }
             }
+
             const answeredCorrectCount = logs.filter((l: any) => l.isCorrect).length
             const correctPercentage = totalQuestions > 0 ? (answeredCorrectCount / totalQuestions) * 100 : 0
 
@@ -921,6 +945,15 @@ export class UserTestAttemptService {
             let answeredCorrect = 0
             let answeredInCorrect = 0
 
+            // Nếu là PLACEMENT_TEST_DONE, chỉ xử lý 10 câu đầu tiên
+            const allowedQuestionBankIds = isPlacementTestDone
+                ? new Set(logs.map((l: any) => Number(l.questionBankId)))
+                : null
+            // Map để lưu thứ tự của questionBankId trong logs (cho PLACEMENT_TEST_DONE)
+            const questionOrderMap = isPlacementTestDone
+                ? new Map(logs.map((l: any, index: number) => [Number(l.questionBankId), index]))
+                : null
+
             for (const testTestSet of test.testTestSets) {
                 const testSet = testTestSet.testSet
                 const testSetData: any = {
@@ -933,8 +966,16 @@ export class UserTestAttemptService {
                     testSetQuestionBanks: []
                 }
 
-                const mappedBanks = await Promise.all(
-                    testSet.testSetQuestionBanks.map(async (item: any) => {
+                // Lọc testSetQuestionBanks nếu là PLACEMENT_TEST_DONE
+                let questionBanksToProcess = testSet.testSetQuestionBanks
+                if (isPlacementTestDone && allowedQuestionBankIds) {
+                    questionBanksToProcess = testSet.testSetQuestionBanks.filter((item: any) =>
+                        allowedQuestionBankIds.has(item.questionBank?.id)
+                    )
+                }
+
+                let mappedBanks = await Promise.all(
+                    questionBanksToProcess.map(async (item: any) => {
                         const qb = item.questionBank
                         let question = ''
                         if (qb?.questionKey) {
@@ -998,13 +1039,61 @@ export class UserTestAttemptService {
                     })
                 )
 
+                // Nếu là PLACEMENT_TEST_DONE, sắp xếp lại theo thứ tự trong logs
+                if (isPlacementTestDone && questionOrderMap) {
+                    mappedBanks = mappedBanks.sort((a, b) => {
+                        const orderA = questionOrderMap.get(a.questionBank.id) ?? Infinity
+                        const orderB = questionOrderMap.get(b.questionBank.id) ?? Infinity
+                        return orderA - orderB
+                    })
+                }
+
                 testSetData.testSetQuestionBanks = mappedBanks
                 allTestSets.push(testSetData)
+            }
+
+            // Đảm bảo cho PLACEMENT_TEST_DONE: chỉ hiển thị đúng 10 câu đã làm
+            if (isPlacementTestDone) {
+                // Đếm tổng số câu hỏi trong tất cả testSets
+                let totalQuestionsInReview = 0
+                for (const testSet of allTestSets) {
+                    totalQuestionsInReview += testSet.testSetQuestionBanks.length
+                }
+
+                // Nếu vượt quá 10, chỉ lấy 10 câu đầu tiên theo thứ tự trong logs
+                if (totalQuestionsInReview > 10) {
+                    this.logger.warn(`PLACEMENT_TEST_DONE: Found ${totalQuestionsInReview} questions in review, limiting to 10`)
+
+                    // Lấy 10 questionBankId đầu tiên từ logs
+                    const first10QuestionBankIds = logs.slice(0, 10).map((l: any) => Number(l.questionBankId))
+                    const first10Set = new Set(first10QuestionBankIds)
+
+                    // Lọc lại tất cả testSets chỉ giữ 10 câu đầu tiên
+                    for (const testSet of allTestSets) {
+                        testSet.testSetQuestionBanks = testSet.testSetQuestionBanks
+                            .filter((item: any) => first10Set.has(item.questionBank.id))
+                            .sort((a: any, b: any) => {
+                                const indexA = first10QuestionBankIds.indexOf(a.questionBank.id)
+                                const indexB = first10QuestionBankIds.indexOf(b.questionBank.id)
+                                return indexA - indexB
+                            })
+                    }
+
+                    // Cập nhật lại totalQuestions và các thống kê từ 10 câu đầu tiên trong logs
+                    totalQuestions = 10
+                    answeredCorrect = logs.filter((l: any) => l.isCorrect).length
+                    answeredInCorrect = logs.filter((l: any) => !l.isCorrect).length
+
+                    this.logger.log(`PLACEMENT_TEST_DONE: Final review contains ${totalQuestions} questions (${answeredCorrect} correct, ${answeredInCorrect} incorrect)`)
+                } else {
+                    this.logger.log(`PLACEMENT_TEST_DONE: Review contains ${totalQuestionsInReview} questions (as expected)`)
+                }
             }
 
             const testRes = await this.testService.findOne(attempt.testId, normalizedLang)
 
             // Tính score: (số câu đúng / tổng số câu) * 100, max 100 điểm
+            // totalQuestions đã được tính đúng: logs.length cho PLACEMENT_TEST_DONE, hoặc tổng số câu trong test
             const score = calculateScore(answeredCorrect, totalQuestions)
 
             const data = {
@@ -1442,13 +1531,29 @@ export class UserTestAttemptService {
             )
             this.logger.log(`Updated attempt ${userTestAttemptId} to COMPLETED`)
 
-            // 13. Trả về kết quả với levelN được đánh giá
+            // 13. Tính tổng số câu đúng và tổng số câu hỏi
+            const totalQuestions = filteredQuestions.length
+            let totalCorrect = 0
+            filteredQuestions.forEach((tsqb: any) => {
+                const isCorrect = answerMap.get(tsqb.questionBank.id) || false
+                if (isCorrect) {
+                    totalCorrect++
+                }
+            })
+            const percentage = totalQuestions > 0
+                ? parseFloat(((totalCorrect / totalQuestions) * 100).toFixed(1))
+                : 0
+
+            // 14. Trả về kết quả với levelN được đánh giá
             return {
                 statusCode: 200,
                 message: 'Đánh giá trình độ hoàn thành',
                 data: {
                     levelN: evaluatedLevelN,
-                    levelId: level?.id || null
+                    levelId: level?.id || null,
+                    totalCorrect,
+                    totalQuestions,
+                    percentage
                 }
             }
 
