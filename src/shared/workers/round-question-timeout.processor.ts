@@ -455,25 +455,23 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         }
       }
 
-      // Send socket notification with answer result and next question (formatted)
-      if (finalAnswerLog) {
-        this.matchingGateway.notifyQuestionAnswered(
-          matchId,
-          currentUserId,
-          null,
-          nextQuestionForNotify
-            ? {
-                nextQuestion: {
-                  ...nextQuestionForNotify,
-                  timeLimitMs: nextQuestionForNotify.timeLimitMs,
-                  // ensure we send the computed endTime (fallback to existing DB value if available)
-                  endTimeQuestion:
-                    nextQuestionForNotify.endTimeQuestion || nextQuestion?.endTimeQuestion
-                }
+      // Send socket notification with next question (timeout scenario - no answer selected)
+      this.matchingGateway.notifyQuestionAnswered(
+        matchId,
+        currentUserId,
+        null, // No answer in timeout scenario
+        nextQuestionForNotify
+          ? {
+              nextQuestion: {
+                ...nextQuestionForNotify,
+                timeLimitMs: nextQuestionForNotify.timeLimitMs,
+                // ensure we send the computed endTime (fallback to existing DB value if available)
+                endTimeQuestion:
+                  nextQuestionForNotify.endTimeQuestion || nextQuestion?.endTimeQuestion
               }
-            : null
-        )
-      }
+            }
+          : null
+      )
 
       const isLastQuestion =
         roundQuestion.orderNumber >= matchRoundParticipant.questionsTotal

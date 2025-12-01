@@ -23,6 +23,8 @@ export class DashboardController {
     return this.dashboardService.getSubStatsRevenue(lang, monthNum, yearNum)
   }
 
+  // tra theo tung goi + danh sach nguoi dang ky
+
   @Get('subscription-stats/register-recently')
   getListUserRegister(@I18nLang() lang: string, @Query() query: PaginationQueryDTO) {
     return this.dashboardService.getListUserRegister(query, lang)
