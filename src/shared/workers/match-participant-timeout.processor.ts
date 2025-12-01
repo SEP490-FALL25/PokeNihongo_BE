@@ -73,41 +73,58 @@ export class MatchParticipantTimeoutProcessor {
         `[MatchParticipant Timeout] (jobId=${job.id}) start for participant=${matchParticipantId}, user=${userId}, match=${matchId}, delayMs=${job.opts.delay}`
       )
 
-      await this.prisma.$transaction(async (tx) => {
-        // 1. Lấy participant hiện tại
-        const participant = await tx.matchParticipant.findUnique({
-          where: { id: matchParticipantId, deletedAt: null }
-        })
+      await this.prisma.$transaction(
+        async (tx) => {
+          // 1. Lock all participants of this match to prevent race conditions
+          const lockedParticipants = await tx.$queryRaw<
+            Array<{ id: number; hasAccepted: boolean | null }>
+          >`
+          SELECT id, "hasAccepted" 
+          FROM "MatchParticipant" 
+          WHERE "matchId" = ${matchId} AND "deletedAt" IS NULL
+          FOR UPDATE
+        `
 
-        if (!participant) {
-          this.logger.warn(
-            `[MatchParticipant Timeout] Participant ${matchParticipantId} not found`
+          this.logger.debug(
+            `[MatchParticipant Timeout] (jobId=${job.id}) Locked participants: ${lockedParticipants
+              .map((p) => `id=${p.id},accepted=${p.hasAccepted}`)
+              .join(' | ')}`
           )
-          return
-        }
 
-        // 2. Nếu hasAccepted vẫn null, set thành false
-        if (participant.hasAccepted === null) {
-          await tx.matchParticipant.update({
-            where: { id: matchParticipantId },
-            data: { hasAccepted: false }
+          // 2. Find the current participant
+          const participant = lockedParticipants.find((p) => p.id === matchParticipantId)
+
+          if (!participant) {
+            this.logger.warn(
+              `[MatchParticipant Timeout] Participant ${matchParticipantId} not found`
+            )
+            return
+          }
+
+          // 3. Nếu hasAccepted vẫn null, set thành false
+          let wasUpdated = false
+          if (participant.hasAccepted === null) {
+            await tx.matchParticipant.update({
+              where: { id: matchParticipantId },
+              data: { hasAccepted: false }
+            })
+
+            this.logger.log(
+              `[MatchParticipant Timeout] Set hasAccepted = false for participant ${matchParticipantId}`
+            )
+            wasUpdated = true
+          }
+
+          // 4. Lấy lại tất cả participants sau khi update
+          let allParticipants = await tx.matchParticipant.findMany({
+            where: { matchId, deletedAt: null }
           })
 
-          this.logger.log(
-            `[MatchParticipant Timeout] Set hasAccepted = false for participant ${matchParticipantId}`
+          this.logger.debug(
+            `[MatchParticipant Timeout] (jobId=${job.id}) Snapshot participants${wasUpdated ? ' (after update)' : ''}: ${allParticipants
+              .map((p) => `id=${p.id},user=${p.userId},accepted=${p.hasAccepted}`)
+              .join(' | ')}`
           )
-        }
-
-        // 3. Lấy tất cả participants của match này
-        const allParticipants = await tx.matchParticipant.findMany({
-          where: { matchId, deletedAt: null }
-        })
-
-        this.logger.debug(
-          `[MatchParticipant Timeout] (jobId=${job.id}) Snapshot participants: ${allParticipants
-            .map((p) => `id=${p.id},user=${p.userId},accepted=${p.hasAccepted}`)
-            .join(' | ')}`
-        )
 
         // 4. Check nếu tất cả participants đều có hasAccepted !== null
         let allAnswered = allParticipants.every((p) => p.hasAccepted !== null)
@@ -138,6 +155,7 @@ export class MatchParticipantTimeoutProcessor {
               const refreshed = await tx.matchParticipant.findMany({
                 where: { matchId, deletedAt: null }
               })
+              allParticipants = refreshed // Update reference
               allAnswered = refreshed.every((p) => p.hasAccepted !== null)
 
               this.logger.debug(
