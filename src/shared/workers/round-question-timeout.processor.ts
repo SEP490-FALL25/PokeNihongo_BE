@@ -1060,10 +1060,11 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
               data: { eloGained, eloLost }
             })
 
-            // Update winner ELO
+            // Update winner ELO (cap at 3000)
+            const newWinnerElo = Math.min(3000, winnerElo + eloGained)
             await tx.user.update({
               where: { id: winnerUserId },
-              data: { eloscore: { increment: eloGained } as any }
+              data: { eloscore: newWinnerElo }
             })
 
             // Update loser ELO
@@ -1073,7 +1074,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             })
 
             this.logger.log(
-              `[RoundQuestion Timeout] ELO after: winner=${winnerElo + eloGained}, loser=${newLoserElo}`
+              `[RoundQuestion Timeout] ELO after: winner=${newWinnerElo}, loser=${newLoserElo}`
             )
           }
 
