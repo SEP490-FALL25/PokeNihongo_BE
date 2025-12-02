@@ -24,10 +24,7 @@ export class DashboardController {
   }
 
   @Get('subscription-stats/yearly-revenue')
-  getYearlyRevenue(
-    @I18nLang() lang: string,
-    @Query('year') year?: string
-  ) {
+  getYearlyRevenue(@I18nLang() lang: string, @Query('year') year?: string) {
     const yearNum = year ? parseInt(year, 10) : undefined
     return this.dashboardService.getYearlyRevenue(lang, yearNum)
   }
