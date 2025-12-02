@@ -850,10 +850,11 @@ export class RoundQuestionService {
               data: { eloGained, eloLost }
             })
 
-            // Update winner ELO
+            // Update winner ELO (cap at 3000)
+            const newWinnerElo = Math.min(3000, winnerElo + eloGained)
             await tx.user.update({
               where: { id: winnerUserId },
-              data: { eloscore: { increment: eloGained } as any }
+              data: { eloscore: newWinnerElo }
             })
 
             // Update loser ELO
@@ -863,7 +864,7 @@ export class RoundQuestionService {
             })
 
             console.log(
-              `[RoundQuestion Service] ELO after: winner=${winnerElo + eloGained}, loser=${newLoserElo}`
+              `[RoundQuestion Service] ELO after: winner=${newWinnerElo}, loser=${newLoserElo}`
             )
           }
 

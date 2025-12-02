@@ -345,7 +345,10 @@ export class DashboardRepo {
         // Tổng doanh thu tháng
         const totalRevenue = planStats.reduce((sum, p) => sum + p.revenue, 0)
         const totalPurchases = planStats.reduce((sum, p) => sum + p.purchases, 0)
-        const totalNewSubscribers = planStats.reduce((sum, p) => sum + p.newSubscribers, 0)
+        const totalNewSubscribers = planStats.reduce(
+          (sum, p) => sum + p.newSubscribers,
+          0
+        )
 
         return {
           month,
@@ -409,19 +412,31 @@ export class DashboardRepo {
             amount: revenueDiff,
             percentage: Math.round(revenuePercentage * 100) / 100,
             trend:
-              revenuePercentage > 0 ? ('up' as const) : revenuePercentage < 0 ? ('down' as const) : ('stable' as const)
+              revenuePercentage > 0
+                ? ('up' as const)
+                : revenuePercentage < 0
+                  ? ('down' as const)
+                  : ('stable' as const)
           },
           purchases: {
             amount: purchasesDiff,
             percentage: Math.round(purchasesPercentage * 100) / 100,
             trend:
-              purchasesPercentage > 0 ? ('up' as const) : purchasesPercentage < 0 ? ('down' as const) : ('stable' as const)
+              purchasesPercentage > 0
+                ? ('up' as const)
+                : purchasesPercentage < 0
+                  ? ('down' as const)
+                  : ('stable' as const)
           },
           newSubscribers: {
             amount: subscribersDiff,
             percentage: Math.round(subscribersPercentage * 100) / 100,
             trend:
-              subscribersPercentage > 0 ? ('up' as const) : subscribersPercentage < 0 ? ('down' as const) : ('stable' as const)
+              subscribersPercentage > 0
+                ? ('up' as const)
+                : subscribersPercentage < 0
+                  ? ('down' as const)
+                  : ('stable' as const)
           }
         }
       }
