@@ -250,6 +250,197 @@ export class DashboardRepo {
     }
   }
 
+  /**
+   * Lấy thống kê doanh thu 12 tháng của năm
+   * Mỗi tháng có: doanh thu các gói, số người đăng ký, tăng giảm so với tháng trước
+   */
+  async getYearlyRevenueBreakdown(lang: string = 'vi', year?: number) {
+    const targetYear = year || new Date().getFullYear()
+
+    // Lấy danh sách các gói đang active
+    const activePlans = await this.prismaService.subscriptionPlan.findMany({
+      where: {
+        isActive: true,
+        deletedAt: null
+      },
+      select: {
+        id: true,
+        subscriptionId: true,
+        price: true,
+        type: true,
+        subscription: {
+          select: {
+            id: true,
+            nameKey: true,
+            tagName: true,
+            nameTranslations: {
+              select: {
+                value: true,
+                language: {
+                  select: {
+                    code: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    // Tạo array 12 tháng
+    const monthlyData = await Promise.all(
+      Array.from({ length: 12 }, async (_, index) => {
+        const month = index + 1
+        const startDate = new Date(targetYear, month - 1, 1)
+        const endDate = new Date(targetYear, month, 1)
+
+        // Tính doanh thu và số lượt mua cho từng gói trong tháng
+        const planStats = await Promise.all(
+          activePlans.map(async (plan) => {
+            const invoiceData = await this.prismaService.invoice.aggregate({
+              where: {
+                subscriptionPlanId: plan.id,
+                status: InvoiceStatus.PAID,
+                deletedAt: null,
+                createdAt: {
+                  gte: startDate,
+                  lt: endDate
+                }
+              },
+              _sum: {
+                totalAmount: true
+              },
+              _count: true
+            })
+
+            // Đếm số người đăng ký mới trong tháng (theo startDate của UserSubscription)
+            const newSubscribers = await this.prismaService.userSubscription.count({
+              where: {
+                subscriptionPlanId: plan.id,
+                deletedAt: null,
+                startDate: {
+                  gte: startDate,
+                  lt: endDate
+                }
+              }
+            })
+
+            // Tìm translation theo lang code
+            const nameTranslation =
+              plan.subscription.nameTranslations.find((t) => t.language.code === lang)
+                ?.value || plan.subscription.nameKey
+
+            return {
+              planId: plan.id,
+              nameTranslation,
+              tagName: plan.subscription.tagName,
+              revenue: invoiceData._sum?.totalAmount || 0,
+              purchases: invoiceData._count,
+              newSubscribers
+            }
+          })
+        )
+
+        // Tổng doanh thu tháng
+        const totalRevenue = planStats.reduce((sum, p) => sum + p.revenue, 0)
+        const totalPurchases = planStats.reduce((sum, p) => sum + p.purchases, 0)
+        const totalNewSubscribers = planStats.reduce((sum, p) => sum + p.newSubscribers, 0)
+
+        return {
+          month,
+          year: targetYear,
+          totalRevenue,
+          totalPurchases,
+          totalNewSubscribers,
+          plans: planStats
+        }
+      })
+    )
+
+    // Tính tăng giảm so với tháng trước cho mỗi tháng
+    const monthlyDataWithGrowth = monthlyData.map((currentMonth, index) => {
+      if (index === 0) {
+        // Tháng 1 không có tháng trước để so sánh
+        return {
+          ...currentMonth,
+          growth: {
+            revenue: { amount: 0, percentage: 0, trend: 'stable' as const },
+            purchases: { amount: 0, percentage: 0, trend: 'stable' as const },
+            newSubscribers: { amount: 0, percentage: 0, trend: 'stable' as const }
+          }
+        }
+      }
+
+      const previousMonth = monthlyData[index - 1]
+
+      // Tính tăng giảm doanh thu
+      const revenueDiff = currentMonth.totalRevenue - previousMonth.totalRevenue
+      const revenuePercentage =
+        previousMonth.totalRevenue > 0
+          ? (revenueDiff / previousMonth.totalRevenue) * 100
+          : currentMonth.totalRevenue > 0
+            ? 100
+            : 0
+
+      // Tính tăng giảm số lượt mua
+      const purchasesDiff = currentMonth.totalPurchases - previousMonth.totalPurchases
+      const purchasesPercentage =
+        previousMonth.totalPurchases > 0
+          ? (purchasesDiff / previousMonth.totalPurchases) * 100
+          : currentMonth.totalPurchases > 0
+            ? 100
+            : 0
+
+      // Tính tăng giảm số người đăng ký mới
+      const subscribersDiff =
+        currentMonth.totalNewSubscribers - previousMonth.totalNewSubscribers
+      const subscribersPercentage =
+        previousMonth.totalNewSubscribers > 0
+          ? (subscribersDiff / previousMonth.totalNewSubscribers) * 100
+          : currentMonth.totalNewSubscribers > 0
+            ? 100
+            : 0
+
+      return {
+        ...currentMonth,
+        growth: {
+          revenue: {
+            amount: revenueDiff,
+            percentage: Math.round(revenuePercentage * 100) / 100,
+            trend:
+              revenuePercentage > 0 ? ('up' as const) : revenuePercentage < 0 ? ('down' as const) : ('stable' as const)
+          },
+          purchases: {
+            amount: purchasesDiff,
+            percentage: Math.round(purchasesPercentage * 100) / 100,
+            trend:
+              purchasesPercentage > 0 ? ('up' as const) : purchasesPercentage < 0 ? ('down' as const) : ('stable' as const)
+          },
+          newSubscribers: {
+            amount: subscribersDiff,
+            percentage: Math.round(subscribersPercentage * 100) / 100,
+            trend:
+              subscribersPercentage > 0 ? ('up' as const) : subscribersPercentage < 0 ? ('down' as const) : ('stable' as const)
+          }
+        }
+      }
+    })
+
+    // Tổng hợp cả năm
+    const yearTotal = {
+      revenue: monthlyData.reduce((sum, m) => sum + m.totalRevenue, 0),
+      purchases: monthlyData.reduce((sum, m) => sum + m.totalPurchases, 0),
+      newSubscribers: monthlyData.reduce((sum, m) => sum + m.totalNewSubscribers, 0)
+    }
+
+    return {
+      year: targetYear,
+      yearTotal,
+      months: monthlyDataWithGrowth
+    }
+  }
+
   // Lấy danh sách user đăng ký gần đây
 
   async getUsersSubWithSubPlan(pagination: PaginationQueryType, langId?: number) {
