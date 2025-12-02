@@ -107,6 +107,13 @@ export class DashboardService {
     return this.dashboardRepo.getRevenueStats(month, year)
   }
 
+  /**
+   * Thống kê doanh thu 12 tháng của năm
+   */
+  async getYearlyRevenue(lang: string = 'vi', year?: number) {
+    return this.dashboardRepo.getYearlyRevenueBreakdown(lang, year)
+  }
+
   async getListUserRegister(query: PaginationQueryType, lang: string = 'vi') {
     const langId = await this.langRepo.getIdByCode(lang)
     if (!langId) {
