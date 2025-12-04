@@ -62,14 +62,12 @@ export class NotificationController {
   @Put('read/:notificationId')
   @ZodSerializerDto(UpdateNotificationResDTO)
   updateRead(
-    @Body() body: UpdateNotificationBodyDTO,
     @Param() params: GetNotificationParamsDTO,
     @ActiveUser('userId') userId: number,
     @I18nLang() lang: string
   ) {
     return this.notificationService.updateRead(
       {
-        data: body,
         id: params.notificationId,
         userId
       },
