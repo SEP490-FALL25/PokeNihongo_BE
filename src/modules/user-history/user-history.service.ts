@@ -685,13 +685,21 @@ export class UserHistoryService {
             // Lọc bỏ attempts không có exerciseId
             const validAttempts = exerciseAttempts.filter(attempt => attempt.exerciseId)
 
+            // Chỉ tính các lần làm đã kết thúc (không tính NOT_STARTED, IN_PROGRESS)
+            const finishedAttempts = validAttempts.filter(attempt =>
+                attempt.status === ExerciseAttemptStatus.COMPLETED ||
+                attempt.status === ExerciseAttemptStatus.FAILED ||
+                attempt.status === ExerciseAttemptStatus.ABANDONED ||
+                attempt.status === ExerciseAttemptStatus.SKIPPED
+            )
+
             // Tính tổng thời gian của tất cả attempts (giây)
-            const allTime = validAttempts.reduce((sum, attempt) => {
+            const allTime = finishedAttempts.reduce((sum, attempt) => {
                 return sum + (attempt.time || 0)
             }, 0)
 
-            const total = validAttempts.length
-            const paginatedAttempts = validAttempts.slice(skip, skip + pageSize)
+            const total = finishedAttempts.length
+            const paginatedAttempts = finishedAttempts.slice(skip, skip + pageSize)
 
             const results = await Promise.all(
                 paginatedAttempts.map(async (attempt: any) => {
@@ -750,17 +758,30 @@ export class UserHistoryService {
                 normalizedLang
             )
 
+            const completedAttempts = finishedAttempts.filter(
+                attempt => attempt.status === ExerciseAttemptStatus.COMPLETED
+            ).length
+            const failedAttempts = finishedAttempts.filter(
+                attempt => attempt.status === ExerciseAttemptStatus.FAILED
+            ).length
+            const skippedAttempts = finishedAttempts.filter(
+                attempt => attempt.status === ExerciseAttemptStatus.SKIPPED
+            ).length
+            const abandonedAttempts = finishedAttempts.filter(
+                attempt => attempt.status === ExerciseAttemptStatus.ABANDONED
+            ).length
+
             return {
                 statusCode: 200,
                 message: message || 'Lấy danh sách bài exercise gần đây thành công',
                 data: {
                     results,
                     allTime,
-                    allAttempts: validAttempts.length,
-                    completedAttempts: validAttempts.filter(attempt => attempt.status === 'COMPLETED').length,
-                    failedAttempts: validAttempts.filter(attempt => attempt.status === 'FAILED').length,
-                    skippedAttempts: validAttempts.filter(attempt => attempt.status === 'SKIPPED').length,
-                    abandonedAttempts: validAttempts.filter(attempt => attempt.status === 'ABANDONED').length,
+                    allAttempts: finishedAttempts.length,
+                    completedAttempts,
+                    failedAttempts,
+                    skippedAttempts,
+                    abandonedAttempts,
                     pagination: {
                         current: currentPage,
                         pageSize,
