@@ -47,7 +47,9 @@ export class SrsReviewRepository {
         }
         const where = {
             userId,
-            nextReviewDate: { gte: start, lte: end }
+            nextReviewDate: { gte: start, lte: end },
+            // Chỉ lấy các SRS chưa được đánh dấu đã đọc
+            isRead: false
         }
         const skip = options?.skip ?? 0
         const take = options?.take
