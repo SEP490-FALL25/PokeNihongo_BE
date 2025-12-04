@@ -1,6 +1,6 @@
 import { FeatureKey } from '@/common/constants/subscription.constant'
 import { I18nService } from '@/i18n/i18n.service'
-import { RewardMessage } from '@/i18n/message-keys'
+import { NotificationMessage, RewardMessage } from '@/i18n/message-keys'
 import {
   InvalidForeignKeyConstraintException,
   LanguageNotExistToTranslateException,
@@ -75,6 +75,44 @@ export class RewardService {
       ACHIEVEMENT_REWARD: 'EVENT_REWARD'
     }
     return mapping[sourceType] || 'ADMIN_ADJUST'
+  }
+
+  /**
+   * Map UserRewardSourceType to NotificationType
+   */
+  private mapToNotificationType(
+    sourceType: UserRewardSourceType
+  ):
+    | 'REWARD'
+    | 'LESSON'
+    | 'EXERCISE'
+    | 'ACHIEVEMENT'
+    | 'SEASON'
+    | 'LEVEL'
+    | 'SYSTEM'
+    | 'OTHER' {
+    const mapping: Record<
+      UserRewardSourceType,
+      | 'REWARD'
+      | 'LESSON'
+      | 'EXERCISE'
+      | 'ACHIEVEMENT'
+      | 'SEASON'
+      | 'LEVEL'
+      | 'SYSTEM'
+      | 'OTHER'
+    > = {
+      LESSON: 'LESSON',
+      EXERCISE: 'EXERCISE',
+      DAILY_REQUEST: 'REWARD',
+      ATTENDANCE: 'REWARD',
+      SEASON_REWARD: 'SEASON',
+      ACHIEVEMENT_REWARD: 'ACHIEVEMENT',
+      ADMIN_ADJUST: 'REWARD',
+      REWARD_SERVICE: 'REWARD',
+      OTHER: 'OTHER'
+    }
+    return mapping[sourceType] || 'REWARD'
   }
 
   private pushHistoryEntry(
@@ -508,10 +546,19 @@ export class RewardService {
     }
 
     const historyEntries: CreateUserRewardHistoryBodyType[] = []
+    const notificationType = this.mapToNotificationType(sourceType)
     const notificationsToCreate: Array<{
       titleKey: string
       bodyKey: string
-      type: 'REWARD' | 'LEVEL'
+      type:
+        | 'REWARD'
+        | 'LESSON'
+        | 'EXERCISE'
+        | 'ACHIEVEMENT'
+        | 'SEASON'
+        | 'LEVEL'
+        | 'SYSTEM'
+        | 'OTHER'
       metadata: any
     }> = []
 
@@ -649,9 +696,9 @@ export class RewardService {
         // Prepare EXP notification
         const finalExpAmount = totalExp * valueIncreaseExp
         notificationsToCreate.push({
-          titleKey: 'notification.reward.received.title',
-          bodyKey: 'notification.reward.received.body',
-          type: 'REWARD',
+          titleKey: NotificationMessage.NOTI_REWARD,
+          bodyKey: NotificationMessage.YOU_HAVE_NEW_REWARD,
+          type: notificationType,
           metadata: {
             exp: { amount: finalExpAmount }
           }
@@ -712,9 +759,9 @@ export class RewardService {
 
         // Prepare POKE_COINS notification
         notificationsToCreate.push({
-          titleKey: 'notification.reward.received.title',
-          bodyKey: 'notification.reward.received.body',
-          type: 'REWARD',
+          titleKey: NotificationMessage.NOTI_REWARD,
+          bodyKey: NotificationMessage.YOU_HAVE_NEW_REWARD,
+          type: notificationType,
           metadata: {
             poke_coins: { amount: finalAmount }
           }
@@ -776,9 +823,9 @@ export class RewardService {
 
         // Prepare SPARKLES notification
         notificationsToCreate.push({
-          titleKey: 'notification.reward.received.title',
-          bodyKey: 'notification.reward.received.body',
-          type: 'REWARD',
+          titleKey: NotificationMessage.NOTI_REWARD,
+          bodyKey: NotificationMessage.YOU_HAVE_NEW_REWARD,
+          type: notificationType,
           metadata: {
             sparkles: { amount: finalAmount }
           }
@@ -825,9 +872,9 @@ export class RewardService {
           // Prepare POKEMON notification (new pokemon)
           if (pokemonDetails) {
             notificationsToCreate.push({
-              titleKey: 'notification.reward.received.title',
-              bodyKey: 'notification.reward.received.body',
-              type: 'REWARD',
+              titleKey: NotificationMessage.NOTI_REWARD,
+              bodyKey: NotificationMessage.YOU_HAVE_NEW_REWARD,
+              type: notificationType,
               metadata: {
                 pokemon: {
                   id: pokemonDetails.id,
@@ -908,9 +955,9 @@ export class RewardService {
 
           // Prepare POKEMON notification (converted to sparkles)
           notificationsToCreate.push({
-            titleKey: 'notification.reward.received.title',
-            bodyKey: 'notification.reward.received.body',
-            type: 'REWARD',
+            titleKey: NotificationMessage.NOTI_REWARD,
+            bodyKey: NotificationMessage.YOU_HAVE_NEW_REWARD,
+            type: notificationType,
             metadata: {
               pokemon: {
                 id: pokemon.id,
@@ -977,8 +1024,8 @@ export class RewardService {
         }
 
         notificationsToCreate.push({
-          titleKey: 'notification.level.up.title',
-          bodyKey: 'notification.level.up.body',
+          titleKey: NotificationMessage.NOTI_LEVEL_UP,
+          bodyKey: NotificationMessage.YOU_HAVE_LEVELED_UP,
           type: 'LEVEL',
           metadata: levelData
         })

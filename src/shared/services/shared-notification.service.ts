@@ -114,11 +114,9 @@ export class SharedNotificationService {
   async updateRead(
     {
       id,
-      data,
       userId
     }: {
       id: number
-      data: UpdateNotificationBodyType
       userId?: number
     },
     lang: string = 'vi'
@@ -126,7 +124,9 @@ export class SharedNotificationService {
     try {
       const notification = await this.notificationRepo.update({
         id,
-        data: data
+        data: {
+          isRead: true
+        }
       })
       return {
         statusCode: 200,
