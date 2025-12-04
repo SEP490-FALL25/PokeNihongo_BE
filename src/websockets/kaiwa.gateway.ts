@@ -1697,33 +1697,24 @@ export class KaiwaGateway implements OnGatewayDisconnect {
         // Nếu FE gửi conversationId cũ, thử load lịch sử
         const incomingConvId = data?.conversationId?.trim()
 
-        // Ưu tiên sử dụng:
-        // 1. conversationId FE gửi lên (join lại room cũ)
-        // 2. conversationId đã được tạo sẵn trong client.data (ví dụ: khi user đã nói trước rồi mới join room)
-        // 3. Nếu cả 2 đều không có → tạo cuộc hội thoại mới
+        // Đảm bảo conversationId luôn được set trước khi tiếp tục
         if (incomingConvId) {
-            // Case 1: FE chủ động gửi conversationId
+            // Set conversationId ngay lập tức (dùng incomingConvId)
             client.data.conversationId = incomingConvId
-            client.data.conversationHistory = client.data.conversationHistory || []
+            client.data.conversationHistory = [] // Tạm thời để trống, sẽ load sau
 
             // Load lịch sử và generate title nếu cần (async, không block)
             this.loadConversationHistoryAndGenerateTitle(incomingConvId, userId, client, language)
-        } else if (client.data.conversationId) {
-            // Case 2: Đã có conversationId được tạo trước đó (ví dụ khi xử lý audio chunk đầu tiên)
-            this.logger.log(
-                `[Kaiwa] Reusing existing conversationId for user ${userId}: ${client.data.conversationId} (JOIN_KAIWA_ROOM called after conversation started)`
-            )
-            client.data.conversationHistory = client.data.conversationHistory || []
         } else {
-            // Case 3: Hoàn toàn mới → tạo conversationId mới
+            // Không gửi conversationId → tạo cuộc hội thoại mới (force tạo mới, không dùng conversationId cũ)
             client.data.conversationId = `conv_${userId}_${Date.now()}`
             client.data.conversationHistory = []
             this.logger.log(`[Kaiwa] User ${userId} creating new conversation: ${client.data.conversationId}`)
         }
 
-        // Đến đây chắc chắn đã có conversationId
+        // Đảm bảo conversationId đã được set
         if (!client.data.conversationId) {
-            this.logger.error(`[Kaiwa] conversationId is still undefined for user ${userId}, creating new one (fallback)`)
+            this.logger.error(`[Kaiwa] conversationId is still undefined for user ${userId}, creating new one`)
             client.data.conversationId = `conv_${userId}_${Date.now()}`
             client.data.conversationHistory = []
         }
