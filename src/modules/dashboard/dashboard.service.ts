@@ -121,4 +121,39 @@ export class DashboardService {
     }
     return this.dashboardRepo.getUsersSubWithSubPlan(query, langId)
   }
+
+  /**
+   * Tổng số người dùng (role = learner)
+   */
+  async getTotalUsers() {
+    return this.dashboardRepo.getTotalUsers()
+  }
+
+  /**
+   * Số lượng người dùng mới theo period (day/week/month)
+   */
+  async getNewUsers(period: string = 'month') {
+    return this.dashboardRepo.getNewUsers(period)
+  }
+
+  /**
+   * Người dùng hoạt động theo period (day/week/month) - dựa vào lastActive
+   */
+  async getActiveUsers(period: string = 'month') {
+    return this.dashboardRepo.getActiveUsers(period)
+  }
+
+  /**
+   * Kích hoạt account: pending_test, pending_choose_level_jlpt, pending_choose_pokemon
+   */
+  async getAccountActivation() {
+    return this.dashboardRepo.getAccountActivation()
+  }
+
+  /**
+   * Phân bổ trình độ JLPT: N3, N4, N5 với total và percent
+   */
+  async getJLPTDistribution() {
+    return this.dashboardRepo.getJLPTDistribution()
+  }
 }

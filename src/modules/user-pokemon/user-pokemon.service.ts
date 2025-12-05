@@ -155,11 +155,17 @@ export class UserPokemonService {
     hasPokemon: string | undefined = undefined
   ) {
     console.log('ser - hasPokemon: ', hasPokemon)
+    console.log('currentP: ', query.currentPage)
+    console.log('pageS: ', query.pageSize)
+
     const filterHasPoke =
       hasPokemon === 'true' ? true : hasPokemon === 'false' ? false : undefined
 
     // 1. Lấy danh sách tất cả pokemon
-    const pokemonData = await this.pokemonRepo.getPokemonListWithPokemonUser(query)
+    const pokemonData = await this.pokemonRepo.getPokemonListWithPokemonUser(
+      query,
+      query.pageSize
+    )
     const pokemonIdToRarity = new Map<number, string>()
     ;(pokemonData.results || []).forEach((p: any) => {
       pokemonIdToRarity.set(p.id, p.rarity)
