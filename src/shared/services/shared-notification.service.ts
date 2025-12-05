@@ -4,7 +4,8 @@ import { LanguagesRepository } from '@/modules/languages/languages.repo'
 import { NotificationNotFoundException } from '@/modules/notification/dto/notification.error'
 import {
   CreateNotificationBodyType,
-  UpdateNotificationBodyType
+  UpdateNotificationBodyType,
+  UpdateNotificationReadListBodyType
 } from '@/modules/notification/entities/notification.entity'
 import { UserGateway } from '@/websockets/user.gateway'
 import { Injectable } from '@nestjs/common'
@@ -131,6 +132,46 @@ export class SharedNotificationService {
       return {
         statusCode: 200,
         data: notification,
+        message: this.i18nService.translate(NotificationMessage.UPDATE_SUCCESS, lang)
+      }
+    } catch (error) {
+      if (isNotFoundPrismaError(error)) {
+        throw new NotificationNotFoundException()
+      }
+
+      if (isForeignKeyConstraintPrismaError(error)) {
+        throw new NotFoundRecordException()
+      }
+      throw error
+    }
+  }
+
+  async updateReads(
+    {
+      body,
+      userId
+    }: {
+      body: UpdateNotificationReadListBodyType
+      userId?: number
+    },
+    lang: string = 'vi'
+  ) {
+    try {
+      const result = await Promise.all(
+        body.notificationIds.map(async (notificationId) => {
+          return this.notificationRepo.update({
+            id: notificationId,
+            data: {
+              isRead: true
+            },
+            updatedById: userId
+          })
+        })
+      )
+
+      return {
+        statusCode: 200,
+        data: result,
         message: this.i18nService.translate(NotificationMessage.UPDATE_SUCCESS, lang)
       }
     } catch (error) {
