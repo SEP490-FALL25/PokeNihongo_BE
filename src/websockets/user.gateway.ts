@@ -1,5 +1,6 @@
 import { I18nService } from '@/i18n/i18n.service'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
+import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable, Logger } from '@nestjs/common'
 import {
   ConnectedSocket,
@@ -8,7 +9,6 @@ import {
   WebSocketServer
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
-import { PrismaService } from '@/shared/services/prisma.service'
 import { MATCHING_EVENTS, SOCKET_ROOM } from '../common/constants/socket.constant'
 import { SocketServerService } from './socket-server.service'
 
@@ -47,6 +47,39 @@ export class UserGateway {
   ) {}
 
   /**
+   * Mark device as active when user connects
+   */
+  async handleConnection(@ConnectedSocket() client: Socket): Promise<void> {
+    const userId = client.data?.userId
+    const deviceId = client.data?.deviceId
+
+    if (!userId) return
+
+    try {
+      if (deviceId) {
+        await this.prisma.device.updateMany({
+          where: { id: deviceId, userId },
+          data: { isActive: true, lastActive: new Date() }
+        })
+      } else {
+        // Fallback: mark all devices of user as active
+        await this.prisma.device.updateMany({
+          where: { userId },
+          data: { isActive: true, lastActive: new Date() }
+        })
+      }
+
+      this.logger.debug(
+        `[UserGateway] handleConnection -> user=${userId} device=${deviceId ?? 'unknown'} marked active`
+      )
+    } catch (err) {
+      this.logger.warn(
+        `[UserGateway] handleConnection update failed for user=${userId}, device=${deviceId}: ${err?.message}`
+      )
+    }
+  }
+
+  /**
    * Mark device lastActive when user disconnects (app quit / network drop)
    */
   async handleDisconnect(@ConnectedSocket() client: Socket): Promise<void> {
@@ -59,13 +92,13 @@ export class UserGateway {
       if (deviceId) {
         await this.prisma.device.updateMany({
           where: { id: deviceId, userId, isActive: true },
-          data: { isActive: false, lastActive: new Date() }
+          data: { lastActive: new Date() }
         })
       } else {
         // Fallback: mark all active devices of user as inactive
         await this.prisma.device.updateMany({
           where: { userId, isActive: true },
-          data: { isActive: false, lastActive: new Date() }
+          data: { lastActive: new Date() }
         })
       }
 
