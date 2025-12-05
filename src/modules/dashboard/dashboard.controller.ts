@@ -63,17 +63,38 @@ export class DashboardController {
   getJLPTDistribution() {
     return this.dashboardService.getJLPTDistribution()
   }
-  // //! ----------------------------------------------------------------------------
-
-  //*Tiến độ Bài học Trung bình------------ ----------------------------------------------
-  // //! ----------------------------------------------------------------------------
 
   //*Tương tác và Game hóa------------ ----------------------------------------------
-  // //! ----------------------------------------------------------------------------
+  @Get('engagement/streak-retention')
+  getStreakRetention() {
+    return this.dashboardService.getStreakRetention()
+  }
 
-  //*Sức khỏe Hệ thống------------ ----------------------------------------------
+  @Get('engagement/starter-pokemon-distribution')
+  getStarterPokemonDistribution() {
+    return this.dashboardService.getStarterPokemonDistribution()
+  }
+
+  @Get('engagement/battle-activity')
+  getBattleActivity(@I18nLang() lang: string) {
+    return this.dashboardService.getBattleActivity(lang)
+  }
+
+  @Get('engagement/sparkles-accumulation')
+  getSparklesAccumulation() {
+    return this.dashboardService.getSparklesAccumulation()
+  }
+
+  @Get('engagement/popular-content')
+  getPopularContent(@I18nLang() lang: string) {
+    return this.dashboardService.getPopularContent(lang)
+  }
   // //! ----------------------------------------------------------------------------
 
   //*Hiệu suất Nội dung------------ ----------------------------------------------
+  @Get('content-performance/completion-rate')
+  getLessonCompletionRate(@I18nLang() lang: string) {
+    return this.dashboardService.getLessonCompletionRate(lang)
+  }
   // //! ----------------------------------------------------------------------------
 }
