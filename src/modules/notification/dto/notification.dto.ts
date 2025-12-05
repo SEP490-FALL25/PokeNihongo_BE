@@ -6,6 +6,8 @@ import {
   GetNotificationParamsSchema,
   GetRewardByLeaderboardParamsSchema,
   UpdateNotificationBodySchema,
+  UpdateNotificationReadListBodySchema,
+  UpdateNotificationReadListResSchema,
   UpdateNotificationResSchema
 } from '../entities/notification.entity'
 
@@ -18,6 +20,10 @@ export class UpdateNotificationBodyDTO extends createZodDto(
   UpdateNotificationBodySchema
 ) {}
 
+export class UpdateNotificationReadListResDTO extends createZodDto(
+  UpdateNotificationReadListResSchema
+) {}
+
 export class GetNotificationParamsDTO extends createZodDto(GetNotificationParamsSchema) {}
 
 export class GetRewardByLeaderboardParamsDTO extends createZodDto(
@@ -27,6 +33,10 @@ export class GetRewardByLeaderboardParamsDTO extends createZodDto(
 // Response DTOs
 export class CreateNotificationResDTO extends createZodDto(CreateNotificationResSchema) {}
 export class UpdateNotificationResDTO extends createZodDto(UpdateNotificationResSchema) {}
+
+export class UpdateNotificationReadListBodyDTO extends createZodDto(
+  UpdateNotificationReadListBodySchema
+) {}
 export class GetNotificationDetailResDTO extends createZodDto(
   GetNotificationDetailResSchema
 ) {}

@@ -11,6 +11,8 @@ import {
   GetNotificationDetailResDTO,
   GetNotificationParamsDTO,
   UpdateNotificationBodyDTO,
+  UpdateNotificationReadListBodyDTO,
+  UpdateNotificationReadListResDTO,
   UpdateNotificationResDTO
 } from './dto/notification.dto'
 
@@ -54,6 +56,22 @@ export class NotificationController {
       {
         userId,
         data: body
+      },
+      lang
+    )
+  }
+
+  @Put('read/list')
+  @ZodSerializerDto(UpdateNotificationReadListResDTO)
+  updateReadList(
+    @Body() body: UpdateNotificationReadListBodyDTO,
+    @ActiveUser('userId') userId: number,
+    @I18nLang() lang: string
+  ) {
+    return this.notificationService.updateReads(
+      {
+        body: body,
+        userId
       },
       lang
     )
