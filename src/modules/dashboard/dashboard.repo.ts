@@ -644,8 +644,9 @@ export class DashboardRepo {
   }
 
   /**
-   * Kích hoạt account: pending_test, pending_choose_level_jlpt, pending_choose_pokemon
-   * - pending_test: User có status = INACTIVE (chưa hoàn thành test)
+   * Kích hoạt account: pending_test, test_again, pending_choose_level_jlpt, pending_choose_pokemon
+   * - pending_test: Count distinct users with any PLACEMENT_TEST_DONE status != COMPLETED
+   * - test_again: Count distinct users with PLACEMENT_TEST_DONE status = COMPLETED
    * - pending_choose_level_jlpt: User có levelJLPT = null
    * - pending_choose_pokemon: User chưa có UserPokemon nào
    */
@@ -658,43 +659,55 @@ export class DashboardRepo {
       }
     })
 
-    const [pendingTest, testAgain, pendingChooseLevelJLPT, pendingChoosePokemon] =
-      await Promise.all([
-        // Count users with PLACEMENT_TEST status != COMPLETED in UserTestAttempt
-        this.prismaService.userTestAttempt.count({
-          where: {
-            status: { not: 'COMPLETED' },
-            test: {
-              testType: 'PLACEMENT_TEST_DONE'
-            }
-          }
-        }),
-        // Count users with PLACEMENT_TEST status = COMPLETED in UserTestAttempt
-        this.prismaService.userTestAttempt.count({
-          where: {
-            status: 'COMPLETED',
-            test: {
-              testType: 'PLACEMENT_TEST_DONE'
-            }
-          }
-        }),
-        // Count users with levelJLPT = null
-        this.prismaService.user.count({
-          where: {
-            deletedAt: null,
-            role: { name: RoleName.Learner },
-            levelJLPT: null
-          }
-        }),
-        // Count users without any UserPokemon
-        this.prismaService.user.count({
-          where: {
-            deletedAt: null,
-            role: { name: RoleName.Learner },
-            levelId: null
-          }
-        })
-      ])
+    // Get distinct users with PLACEMENT_TEST status != COMPLETED
+    const pendingTestUsers = await this.prismaService.userTestAttempt.findMany({
+      where: {
+        status: { not: 'COMPLETED' },
+        test: {
+          testType: 'PLACEMENT_TEST_DONE'
+        }
+      },
+      select: {
+        userId: true
+      },
+      distinct: ['userId']
+    })
+
+    // Get distinct users with PLACEMENT_TEST status = COMPLETED
+    const testAgainUsers = await this.prismaService.userTestAttempt.findMany({
+      where: {
+        status: 'COMPLETED',
+        test: {
+          testType: 'PLACEMENT_TEST_DONE'
+        }
+      },
+      select: {
+        userId: true
+      },
+      distinct: ['userId']
+    })
+
+    const [pendingChooseLevelJLPT, pendingChoosePokemon] = await Promise.all([
+      // Count users with levelJLPT = null
+      this.prismaService.user.count({
+        where: {
+          deletedAt: null,
+          role: { name: RoleName.Learner },
+          levelJLPT: null
+        }
+      }),
+      // Count users without any UserPokemon
+      this.prismaService.user.count({
+        where: {
+          deletedAt: null,
+          role: { name: RoleName.Learner },
+          levelId: null
+        }
+      })
+    ])
+
+    const pendingTest = pendingTestUsers.length
+    const testAgain = testAgainUsers.length
 
     // Calculate percentages (avoid division by zero)
     const calculatePercent = (count: number, total: number): number => {
