@@ -28,6 +28,7 @@ import { getRoomTitlePrompt, getRoomTitleLabels, getDefaultGenerationConfig, bui
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
 
+
 /**
  * KaiwaGateway - WebSocket Gateway for real-time audio conversation
  * Handles audio input -> Speech-to-Text -> Gemini AI -> Text-to-Speech -> Audio output

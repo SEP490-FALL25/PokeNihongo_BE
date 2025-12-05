@@ -68,6 +68,18 @@ export const GetNotificationParamsSchema = z.object({
   notificationId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
 
+export const UpdateNotificationReadListBodySchema = z
+  .object({
+    notificationIds: z.array(checkIdSchema(ENTITY_MESSAGE.INVALID_ID)).min(1)
+  })
+  .strict()
+
+export const UpdateNotificationReadListResSchema = z.object({
+  statusCode: z.number(),
+  data: z.array(NotificationSchema),
+  message: z.string()
+})
+
 export const GetRewardByLeaderboardParamsSchema = z.object({
   leaderboardSeasonId: checkIdSchema(ENTITY_MESSAGE.INVALID_ID)
 })
@@ -87,6 +99,9 @@ export const GetNotificationDetailResSchema = z.object({
 export type NotificationType = z.infer<typeof NotificationSchema>
 export type CreateNotificationBodyType = z.infer<typeof CreateNotificationBodySchema>
 export type UpdateNotificationBodyType = z.infer<typeof UpdateNotificationBodySchema>
+export type UpdateNotificationReadListBodyType = z.infer<
+  typeof UpdateNotificationReadListBodySchema
+>
 export type GetNotificationParamsType = z.infer<typeof GetNotificationParamsSchema>
 
 // Field for query

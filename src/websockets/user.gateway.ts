@@ -8,6 +8,7 @@ import {
   WebSocketServer
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
+import { PrismaService } from '@/shared/services/prisma.service'
 import { MATCHING_EVENTS, SOCKET_ROOM } from '../common/constants/socket.constant'
 import { SocketServerService } from './socket-server.service'
 
@@ -39,10 +40,44 @@ export class UserGateway {
   constructor(
     private readonly sharedUserRepo: SharedUserRepository,
     private readonly i18nService: I18nService,
-    private readonly socketServerService: SocketServerService
+    private readonly socketServerService: SocketServerService,
+    private readonly prisma: PrismaService
 
     // private readonly matchRoundService: MatchRoundService
   ) {}
+
+  /**
+   * Mark device lastActive when user disconnects (app quit / network drop)
+   */
+  async handleDisconnect(@ConnectedSocket() client: Socket): Promise<void> {
+    const userId = client.data?.userId
+    const deviceId = client.data?.deviceId
+
+    if (!userId) return
+
+    try {
+      if (deviceId) {
+        await this.prisma.device.updateMany({
+          where: { id: deviceId, userId, isActive: true },
+          data: { isActive: false, lastActive: new Date() }
+        })
+      } else {
+        // Fallback: mark all active devices of user as inactive
+        await this.prisma.device.updateMany({
+          where: { userId, isActive: true },
+          data: { isActive: false, lastActive: new Date() }
+        })
+      }
+
+      this.logger.debug(
+        `[UserGateway] handleDisconnect -> user=${userId} device=${deviceId ?? 'unknown'} marked inactive`
+      )
+    } catch (err) {
+      this.logger.warn(
+        `[UserGateway] handleDisconnect update failed for user=${userId}, device=${deviceId}: ${err?.message}`
+      )
+    }
+  }
 
   /**
    * Handle user joining matching room
