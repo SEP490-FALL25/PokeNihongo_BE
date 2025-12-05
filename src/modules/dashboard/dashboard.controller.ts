@@ -33,4 +33,47 @@ export class DashboardController {
   getListUserRegister(@I18nLang() lang: string, @Query() query: PaginationQueryDTO) {
     return this.dashboardService.getListUserRegister(query, lang)
   }
+
+  //*Thống kê tăng trưởng người dùng------------ ----------------------------------------------
+  @Get('user-growth/total-users')
+  getTotalUsers() {
+    return this.dashboardService.getTotalUsers()
+  }
+
+  @Get('user-growth/new-users')
+  getNewUsers(
+    @Query('period') period?: string // 'day', 'week', 'month'
+  ) {
+    return this.dashboardService.getNewUsers(period || 'month')
+  }
+
+  @Get('user-growth/active-users')
+  getActiveUsers(
+    @Query('period') period?: string // 'day', 'week', 'month'
+  ) {
+    return this.dashboardService.getActiveUsers(period || 'month')
+  }
+
+  @Get('user-growth/account-activation')
+  getAccountActivation() {
+    return this.dashboardService.getAccountActivation()
+  }
+
+  @Get('user-growth/jlpt-distribution')
+  getJLPTDistribution() {
+    return this.dashboardService.getJLPTDistribution()
+  }
+  // //! ----------------------------------------------------------------------------
+
+  //*Tiến độ Bài học Trung bình------------ ----------------------------------------------
+  // //! ----------------------------------------------------------------------------
+
+  //*Tương tác và Game hóa------------ ----------------------------------------------
+  // //! ----------------------------------------------------------------------------
+
+  //*Sức khỏe Hệ thống------------ ----------------------------------------------
+  // //! ----------------------------------------------------------------------------
+
+  //*Hiệu suất Nội dung------------ ----------------------------------------------
+  // //! ----------------------------------------------------------------------------
 }

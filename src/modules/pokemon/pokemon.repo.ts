@@ -278,8 +278,11 @@ export class PokemonRepo {
     }
   }
 
-  async getPokemonListWithPokemonUser(pagination: PaginationQueryType) {
-    pagination.pageSize = 1000 // Override pageSize to 1000 to get all Pokemons
+  async getPokemonListWithPokemonUser(
+    pagination: PaginationQueryType,
+    pageSizeOverride?: number
+  ) {
+    pagination.pageSize = pageSizeOverride ?? 1000 // Override pageSize to 1000 to get all Pokemons
 
     const { where, orderBy } = parseQs(
       pagination.qs,

@@ -1,3 +1,4 @@
+import { RoleName } from '@/common/constants/role.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
@@ -540,6 +541,233 @@ export class DashboardRepo {
         totalPage: Math.ceil(totalItems / pagination.pageSize),
         totalItem: totalItems
       }
+    }
+  }
+
+  /**
+   * Tổng số người dùng có role = learner
+   */
+  async getTotalUsers() {
+    const total = await this.prismaService.user.count({
+      where: {
+        deletedAt: null,
+        role: {
+          name: RoleName.Learner
+        }
+      }
+    })
+
+    return { total }
+  }
+
+  /**
+   * Số lượng người dùng mới theo period (day/week/month)
+   */
+  async getNewUsers(period: string = 'month') {
+    const now = new Date()
+    let startDate: Date
+
+    switch (period) {
+      case 'day':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        break
+      case 'week':
+        const weekStart = new Date(now)
+        weekStart.setDate(now.getDate() - now.getDay())
+        weekStart.setHours(0, 0, 0, 0)
+        startDate = weekStart
+        break
+      case 'month':
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        break
+    }
+
+    const count = await this.prismaService.user.count({
+      where: {
+        deletedAt: null,
+        role: {
+          name: RoleName.Learner
+        },
+        createdAt: {
+          gte: startDate,
+          lte: now
+        }
+      }
+    })
+
+    return { count, period }
+  }
+
+  /**
+   * Người dùng hoạt động theo period - dựa vào Device.lastActive
+   */
+  async getActiveUsers(period: string = 'month') {
+    const now = new Date()
+    let startDate: Date
+
+    switch (period) {
+      case 'day':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        break
+      case 'week':
+        const weekStart = new Date(now)
+        weekStart.setDate(now.getDate() - now.getDay())
+        weekStart.setHours(0, 0, 0, 0)
+        startDate = weekStart
+        break
+      case 'month':
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        break
+    }
+
+    // Count distinct users with devices that have lastActive in the period
+    const activeUsers = await this.prismaService.user.count({
+      where: {
+        deletedAt: null,
+        role: {
+          name: RoleName.Learner
+        },
+        devices: {
+          some: {
+            lastActive: {
+              gte: startDate,
+              lte: now
+            }
+          }
+        }
+      }
+    })
+
+    return { activeUsers, period }
+  }
+
+  /**
+   * Kích hoạt account: pending_test, pending_choose_level_jlpt, pending_choose_pokemon
+   * - pending_test: User có status = INACTIVE (chưa hoàn thành test)
+   * - pending_choose_level_jlpt: User có levelJLPT = null
+   * - pending_choose_pokemon: User chưa có UserPokemon nào
+   */
+  async getAccountActivation() {
+    // Get total learner users
+    const totalUsers = await this.prismaService.user.count({
+      where: {
+        deletedAt: null,
+        role: { name: RoleName.Learner }
+      }
+    })
+
+    const [pendingTest, testAgain, pendingChooseLevelJLPT, pendingChoosePokemon] =
+      await Promise.all([
+        // Count users with PLACEMENT_TEST status != COMPLETED in UserTestAttempt
+        this.prismaService.userTestAttempt.count({
+          where: {
+            status: { not: 'COMPLETED' },
+            test: {
+              testType: 'PLACEMENT_TEST_DONE'
+            }
+          }
+        }),
+        // Count users with PLACEMENT_TEST status = COMPLETED in UserTestAttempt
+        this.prismaService.userTestAttempt.count({
+          where: {
+            status: 'COMPLETED',
+            test: {
+              testType: 'PLACEMENT_TEST_DONE'
+            }
+          }
+        }),
+        // Count users with levelJLPT = null
+        this.prismaService.user.count({
+          where: {
+            deletedAt: null,
+            role: { name: RoleName.Learner },
+            levelJLPT: null
+          }
+        }),
+        // Count users without any UserPokemon
+        this.prismaService.user.count({
+          where: {
+            deletedAt: null,
+            role: { name: RoleName.Learner },
+            levelId: null
+          }
+        })
+      ])
+
+    // Calculate percentages (avoid division by zero)
+    const calculatePercent = (count: number, total: number): number => {
+      return total > 0 ? Math.round((count / total) * 100 * 100) / 100 : 0
+    }
+
+    return {
+      summary: {
+        total: totalUsers
+      },
+      pending_test: {
+        count: pendingTest,
+        percent: calculatePercent(pendingTest, totalUsers)
+      },
+      test_again: {
+        count: testAgain,
+        percent: calculatePercent(testAgain, totalUsers)
+      },
+      pending_choose_level_jlpt: {
+        count: pendingChooseLevelJLPT,
+        percent: calculatePercent(pendingChooseLevelJLPT, totalUsers)
+      },
+      pending_choose_pokemon: {
+        count: pendingChoosePokemon,
+        percent: calculatePercent(pendingChoosePokemon, totalUsers)
+      }
+    }
+  }
+
+  /**
+   * Phân bổ trình độ JLPT: N3, N4, N5
+   */
+  async getJLPTDistribution() {
+    const distribution = await this.prismaService.user.groupBy({
+      by: ['levelJLPT'],
+      where: {
+        deletedAt: null,
+        role: { name: RoleName.Learner },
+        levelJLPT: {
+          in: [3, 4, 5]
+        }
+      },
+      _count: true
+    })
+
+    const total = await this.prismaService.user.count({
+      where: {
+        deletedAt: null,
+        role: { name: RoleName.Learner },
+        levelJLPT: {
+          in: [3, 4, 5]
+        }
+      }
+    })
+
+    const result = {
+      N3: { total: 0, percent: 0 },
+      N4: { total: 0, percent: 0 },
+      N5: { total: 0, percent: 0 }
+    }
+
+    for (const item of distribution) {
+      const levelKey = `N${item.levelJLPT}`
+      if (result[levelKey]) {
+        result[levelKey].total = item._count
+        result[levelKey].percent =
+          total > 0 ? ((item._count / total) * 100).toFixed(2) : 0
+      }
+    }
+
+    return {
+      summary: result,
+      totalUsers: total
     }
   }
 }
