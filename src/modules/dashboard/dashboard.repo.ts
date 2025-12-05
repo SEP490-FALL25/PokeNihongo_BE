@@ -644,8 +644,9 @@ export class DashboardRepo {
   }
 
   /**
-   * Kích hoạt account: pending_test, pending_choose_level_jlpt, pending_choose_pokemon
-   * - pending_test: User có status = INACTIVE (chưa hoàn thành test)
+   * Kích hoạt account: pending_test, test_again, pending_choose_level_jlpt, pending_choose_pokemon
+   * - pending_test: Count distinct users with any PLACEMENT_TEST_DONE status != COMPLETED
+   * - test_again: Count distinct users with PLACEMENT_TEST_DONE status = COMPLETED
    * - pending_choose_level_jlpt: User có levelJLPT = null
    * - pending_choose_pokemon: User chưa có UserPokemon nào
    */
@@ -658,43 +659,55 @@ export class DashboardRepo {
       }
     })
 
-    const [pendingTest, testAgain, pendingChooseLevelJLPT, pendingChoosePokemon] =
-      await Promise.all([
-        // Count users with PLACEMENT_TEST status != COMPLETED in UserTestAttempt
-        this.prismaService.userTestAttempt.count({
-          where: {
-            status: { not: 'COMPLETED' },
-            test: {
-              testType: 'PLACEMENT_TEST_DONE'
-            }
-          }
-        }),
-        // Count users with PLACEMENT_TEST status = COMPLETED in UserTestAttempt
-        this.prismaService.userTestAttempt.count({
-          where: {
-            status: 'COMPLETED',
-            test: {
-              testType: 'PLACEMENT_TEST_DONE'
-            }
-          }
-        }),
-        // Count users with levelJLPT = null
-        this.prismaService.user.count({
-          where: {
-            deletedAt: null,
-            role: { name: RoleName.Learner },
-            levelJLPT: null
-          }
-        }),
-        // Count users without any UserPokemon
-        this.prismaService.user.count({
-          where: {
-            deletedAt: null,
-            role: { name: RoleName.Learner },
-            levelId: null
-          }
-        })
-      ])
+    // Get distinct users with PLACEMENT_TEST status != COMPLETED
+    const pendingTestUsers = await this.prismaService.userTestAttempt.findMany({
+      where: {
+        status: { not: 'COMPLETED' },
+        test: {
+          testType: 'PLACEMENT_TEST_DONE'
+        }
+      },
+      select: {
+        userId: true
+      },
+      distinct: ['userId']
+    })
+
+    // Get distinct users with PLACEMENT_TEST status = COMPLETED
+    const testAgainUsers = await this.prismaService.userTestAttempt.findMany({
+      where: {
+        status: 'COMPLETED',
+        test: {
+          testType: 'PLACEMENT_TEST_DONE'
+        }
+      },
+      select: {
+        userId: true
+      },
+      distinct: ['userId']
+    })
+
+    const [pendingChooseLevelJLPT, pendingChoosePokemon] = await Promise.all([
+      // Count users with levelJLPT = null
+      this.prismaService.user.count({
+        where: {
+          deletedAt: null,
+          role: { name: RoleName.Learner },
+          levelJLPT: null
+        }
+      }),
+      // Count users without any UserPokemon
+      this.prismaService.user.count({
+        where: {
+          deletedAt: null,
+          role: { name: RoleName.Learner },
+          levelId: null
+        }
+      })
+    ])
+
+    const pendingTest = pendingTestUsers.length
+    const testAgain = testAgainUsers.length
 
     // Calculate percentages (avoid division by zero)
     const calculatePercent = (count: number, total: number): number => {
@@ -768,6 +781,547 @@ export class DashboardRepo {
     return {
       summary: result,
       totalUsers: total
+    }
+  }
+
+  /**
+   * Tỷ lệ Duy trì Streak - xem qua attendance
+   * Daily streak (liên tiếp hàng ngày), Weekly, Monthly
+   */
+  async getStreakRetention() {
+    const now = new Date()
+
+    // Count users with daily attendance in last 7 days
+    const dailyStreak = await this.prismaService.attendance.groupBy({
+      by: ['userId'],
+      where: {
+        deletedAt: null,
+        createdAt: {
+          gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        },
+        user: {
+          role: { name: RoleName.Learner },
+          deletedAt: null
+        }
+      },
+      _count: {
+        id: true
+      },
+      having: {
+        id: {
+          _count: {
+            gte: 5 // At least 5 attendances in 7 days
+          }
+        }
+      }
+    })
+
+    // Count users with streak in current month
+    const monthlyStreak = await this.prismaService.attendance.groupBy({
+      by: ['userId'],
+      where: {
+        deletedAt: null,
+        createdAt: {
+          gte: new Date(now.getFullYear(), now.getMonth(), 1),
+          lte: now
+        },
+        user: {
+          role: { name: RoleName.Learner },
+          deletedAt: null
+        }
+      },
+      _count: {
+        id: true
+      },
+      having: {
+        id: {
+          _count: {
+            gte: 10 // At least 10 attendances in current month
+          }
+        }
+      }
+    })
+
+    const totalUsers = await this.prismaService.user.count({
+      where: {
+        deletedAt: null,
+        role: { name: RoleName.Learner }
+      }
+    })
+
+    const calculatePercent = (count: number, total: number): number => {
+      return total > 0 ? Math.round((count / total) * 100 * 100) / 100 : 0
+    }
+
+    return {
+      daily_streak: {
+        count: dailyStreak.length,
+        percent: calculatePercent(dailyStreak.length, totalUsers)
+      },
+      monthly_streak: {
+        count: monthlyStreak.length,
+        percent: calculatePercent(monthlyStreak.length, totalUsers)
+      },
+      totalUsers
+    }
+  }
+
+  /**
+   * Phân phối Pokémon Khởi đầu - tỉ lệ user chọn các pokemon khởi đầu
+   */
+  async getStarterPokemonDistribution() {
+    // Get starter pokemons (isStarted = true)
+    const starterDistribution = await this.prismaService.userPokemon.groupBy({
+      by: ['pokemonId'],
+      where: {
+        deletedAt: null,
+        pokemon: {
+          isStarted: true
+        }
+      },
+      _count: true
+    })
+
+    // Get details of each starter pokemon
+    const starterDetails = await this.prismaService.pokemon.findMany({
+      where: {
+        isStarted: true
+      },
+      select: {
+        id: true,
+        nameJp: true,
+        imageUrl: true
+      }
+    })
+
+    const totalStarters = await this.prismaService.userPokemon.count({
+      where: {
+        deletedAt: null,
+        pokemon: {
+          isStarted: true
+        }
+      }
+    })
+
+    // Map with details
+    const result = starterDetails.map((starter) => {
+      const count =
+        starterDistribution.find((d) => d.pokemonId === starter.id)?._count || 0
+      const percent =
+        totalStarters > 0 ? Math.round((count / totalStarters) * 100 * 100) / 100 : 0
+
+      return {
+        pokemonId: starter.id,
+        nameJp: starter.nameJp,
+        imageUrl: starter.imageUrl,
+        count,
+        percent
+      }
+    })
+
+    return {
+      starters: result,
+      totalCount: totalStarters
+    }
+  }
+
+  /**
+   * Hoạt động Battle - trả ra các mùa (EXPIRED, ACTIVE)
+   * ACTIVE: dùng eloscore của user hiện tại
+   * EXPIRED: dùng userSeasonHistory
+   */
+  async getBattleActivity(lang: string = 'vi') {
+    // Get all seasons (both ACTIVE and EXPIRED)
+    const seasons = await this.prismaService.leaderboardSeason.findMany({
+      where: {
+        deletedAt: null
+      },
+      include: {
+        nameTranslations: {
+          select: {
+            value: true,
+            language: {
+              select: {
+                code: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        startDate: 'desc'
+      }
+    })
+
+    const seasonData = await Promise.all(
+      seasons.map(async (season) => {
+        // Get nameTranslation
+        const nameTranslation =
+          season.nameTranslations.find((t) => t.language.code === lang)?.value ||
+          season.nameKey
+
+        // Get unique user IDs in this season's matches via participants
+        const participants = await this.prismaService.matchParticipant.findMany({
+          where: {
+            match: {
+              leaderboardSeasonId: season.id
+            }
+          },
+          select: {
+            userId: true
+          },
+          distinct: ['userId']
+        })
+
+        const userIdsInMatches = new Set(participants.map((p) => p.userId))
+        const totalUsersJoined = userIdsInMatches.size
+
+        // Total learner users
+        const totalUsers = await this.prismaService.user.count({
+          where: {
+            deletedAt: null,
+            role: { name: RoleName.Learner }
+          }
+        })
+
+        const totalUsersNotJoined = totalUsers - totalUsersJoined
+
+        // Get JLPT distribution for users in this season
+        let levelDistribution: any = {}
+
+        if (season.status === 'ACTIVE') {
+          // For ACTIVE seasons: use current user eloscore
+          const userElos = await this.prismaService.user.findMany({
+            where: {
+              id: { in: Array.from(userIdsInMatches) },
+              deletedAt: null
+            },
+            select: {
+              id: true,
+              eloscore: true
+            }
+          })
+
+          // Map eloscore to JLPT level (N5 < N4 < N3)
+          const eloToLevel = (elo: number) => {
+            if (elo >= 2000) return 'N3'
+            if (elo >= 1000) return 'N4'
+            return 'N5'
+          }
+
+          levelDistribution = {
+            N3: { total: 0, percent: 0 },
+            N4: { total: 0, percent: 0 },
+            N5: { total: 0, percent: 0 }
+          }
+
+          userElos.forEach((user) => {
+            const level = eloToLevel(user.eloscore || 0)
+            levelDistribution[level].total += 1
+          })
+
+          // Calculate percentages
+          Object.keys(levelDistribution).forEach((level) => {
+            levelDistribution[level].percent =
+              totalUsersJoined > 0
+                ? Math.round(
+                    (levelDistribution[level].total / totalUsersJoined) * 100 * 100
+                  ) / 100
+                : 0
+          })
+        } else {
+          // For EXPIRED seasons: use userSeasonHistory
+          const historyByLevel = await this.prismaService.userSeasonHistory.groupBy({
+            by: ['finalRank'],
+            where: {
+              seasonId: season.id,
+              deletedAt: null
+            },
+            _count: true
+          })
+
+          levelDistribution = {
+            N3: { total: 0, percent: 0 },
+            N4: { total: 0, percent: 0 },
+            N5: { total: 0, percent: 0 }
+          }
+
+          historyByLevel.forEach((item) => {
+            const level = item.finalRank || 'N5'
+            if (levelDistribution[level]) {
+              levelDistribution[level].total = item._count
+            }
+          })
+
+          // Calculate percentages
+          Object.keys(levelDistribution).forEach((level) => {
+            levelDistribution[level].percent =
+              totalUsersJoined > 0
+                ? Math.round(
+                    (levelDistribution[level].total / totalUsersJoined) * 100 * 100
+                  ) / 100
+                : 0
+          })
+        }
+
+        return {
+          seasonId: season.id,
+          nameKey: season.nameKey,
+          nameTranslation,
+          status: season.status,
+          startDate: season.startDate,
+          endDate: season.endDate,
+          totalUsersJoined,
+          totalUsersNotJoined,
+          totalUsersInSystem: totalUsers,
+          levelDistribution
+        }
+      })
+    )
+
+    return {
+      seasons: seasonData
+    }
+  }
+
+  /**
+   * Mức độ tích lũy sparkles của user
+   */
+  async getSparklesAccumulation() {
+    // Get users with their sparkles balance
+    const users = await this.prismaService.user.findMany({
+      where: {
+        deletedAt: null,
+        role: { name: RoleName.Learner }
+      },
+      select: {
+        id: true,
+        Wallet: {
+          where: {
+            type: 'SPARKLES'
+          },
+          select: {
+            balance: true
+          }
+        }
+      }
+    })
+
+    // Define sparkles ranges
+    const ranges = [
+      { min: 0, max: 100, label: '0-100' },
+      { min: 101, max: 500, label: '101-500' },
+      { min: 501, max: 1000, label: '501-1000' },
+      { min: 1001, max: 5000, label: '1001-5000' },
+      { min: 5001, max: Infinity, label: '5000+' }
+    ]
+
+    const distribution: any = {}
+    ranges.forEach((range) => {
+      distribution[range.label] = { count: 0, percent: 0 }
+    })
+
+    // Categorize users by sparkles
+    users.forEach((user) => {
+      const sparklesBalance = user.Wallet[0]?.balance || 0
+      const range = ranges.find(
+        (r) => sparklesBalance >= r.min && sparklesBalance <= r.max
+      )
+      if (range) {
+        distribution[range.label].count += 1
+      }
+    })
+
+    const totalUsers = users.length
+
+    // Calculate percentages
+    Object.keys(distribution).forEach((label) => {
+      distribution[label].percent =
+        totalUsers > 0
+          ? Math.round((distribution[label].count / totalUsers) * 100 * 100) / 100
+          : 0
+    })
+
+    return {
+      distribution,
+      totalUsers,
+      averageSparkles: Math.round(
+        users.reduce((sum, u) => sum + (u.Wallet[0]?.balance || 0), 0) / totalUsers
+      )
+    }
+  }
+
+  /**
+   * Nội dung Phổ biến nhất - phần học nào được học nhiều nhất
+   */
+  async getPopularContent(lang: string = 'vi') {
+    // Get all lessons
+    const lessons = await this.prismaService.lesson.findMany({
+      where: {}
+    })
+
+    // Get language ID for the requested language
+    const language = await this.prismaService.languages.findFirst({
+      where: {
+        code: lang
+      },
+      select: {
+        id: true
+      }
+    })
+
+    const languageId = language?.id || 1 // Default to first language if not found
+
+    // Get user progress counts for each lesson
+    const lessonStats = await Promise.all(
+      lessons.map(async (lesson) => {
+        const completedCount = await this.prismaService.userProgress.count({
+          where: {
+            lessonId: lesson.id,
+            status: 'COMPLETED'
+          }
+        })
+
+        // Get translated title from Translation table using titleKey
+        const translation = await this.prismaService.translation.findFirst({
+          where: {
+            key: lesson.titleKey,
+            languageId: languageId
+          },
+          select: {
+            value: true
+          }
+        })
+
+        const titleTranslation = translation?.value || lesson.titleJp || lesson.titleKey
+
+        return {
+          lessonId: lesson.id,
+          titleKey: lesson.titleKey,
+          titleJp: lesson.titleJp,
+          titleTranslation,
+          completedCount
+        }
+      })
+    )
+
+    // Sort by most completed
+    const sorted = lessonStats
+      .sort((a, b) => b.completedCount - a.completedCount)
+      .slice(0, 20) // Top 20
+
+    const totalLessons = lessons.length
+    const totalCompletions = lessonStats.reduce((sum, l) => sum + l.completedCount, 0)
+
+    return {
+      topContent: sorted,
+      stats: {
+        totalLessons,
+        totalCompletions,
+        averageCompletionPerLesson: Math.round(totalCompletions / totalLessons || 0)
+      }
+    }
+  }
+
+  /**
+   * Tỷ lệ Hoàn thành Bài học (Completion Rate)
+   */
+  async getLessonCompletionRate(lang: string = 'vi') {
+    // Get all lessons
+    const lessons = await this.prismaService.lesson.findMany({
+      where: {}
+    })
+
+    // Get language ID for the requested language
+    const language = await this.prismaService.languages.findFirst({
+      where: {
+        code: lang
+      },
+      select: {
+        id: true
+      }
+    })
+
+    const languageId = language?.id || 1
+
+    // Calculate completion rate for each lesson
+    const lessonCompletionData = await Promise.all(
+      lessons.map(async (lesson) => {
+        // Count users who started this lesson
+        const totalAttempts = await this.prismaService.userProgress.count({
+          where: {
+            lessonId: lesson.id
+          }
+        })
+
+        // Count users who completed this lesson
+        const completedCount = await this.prismaService.userProgress.count({
+          where: {
+            lessonId: lesson.id,
+            status: 'COMPLETED'
+          }
+        })
+
+        // Get translated title
+        const translation = await this.prismaService.translation.findFirst({
+          where: {
+            key: lesson.titleKey,
+            languageId: languageId
+          },
+          select: {
+            value: true
+          }
+        })
+
+        const titleTranslation = translation?.value || lesson.titleJp || lesson.titleKey
+        const completionRate =
+          totalAttempts > 0 ? (completedCount / totalAttempts) * 100 : 0
+
+        return {
+          lessonId: lesson.id,
+          titleKey: lesson.titleKey,
+          titleJp: lesson.titleJp,
+          titleTranslation,
+          totalAttempts,
+          completedCount,
+          completionRate: Math.round(completionRate * 100) / 100 // Round to 2 decimals
+        }
+      })
+    )
+
+    // Sort by highest completion rate
+    const sorted = lessonCompletionData.sort(
+      (a, b) => b.completionRate - a.completionRate
+    )
+
+    // Calculate overall statistics
+    const totalAttempts = lessonCompletionData.reduce(
+      (sum, l) => sum + l.totalAttempts,
+      0
+    )
+    const totalCompleted = lessonCompletionData.reduce(
+      (sum, l) => sum + l.completedCount,
+      0
+    )
+    const overallCompletionRate =
+      totalAttempts > 0
+        ? Math.round((totalCompleted / totalAttempts) * 100 * 100) / 100
+        : 0
+
+    return {
+      lessonCompletionRates: sorted,
+      stats: {
+        totalLessons: lessons.length,
+        totalAttempts,
+        totalCompleted,
+        overallCompletionRate,
+        averageCompletionRatePerLesson:
+          Math.round(
+            (lessonCompletionData.reduce((sum, l) => sum + l.completionRate, 0) /
+              lessons.length) *
+              100
+          ) / 100
+      }
     }
   }
 }

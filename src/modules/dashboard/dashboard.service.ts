@@ -156,4 +156,46 @@ export class DashboardService {
   async getJLPTDistribution() {
     return this.dashboardRepo.getJLPTDistribution()
   }
+
+  /**
+   * Tỷ lệ Duy trì Streak - xem qua attendance
+   */
+  async getStreakRetention() {
+    return this.dashboardRepo.getStreakRetention()
+  }
+
+  /**
+   * Phân phối Pokémon Khởi đầu
+   */
+  async getStarterPokemonDistribution() {
+    return this.dashboardRepo.getStarterPokemonDistribution()
+  }
+
+  /**
+   * Hoạt động Battle - trả ra các mùa với thống kê user theo JLPT
+   */
+  async getBattleActivity(lang: string = 'vi') {
+    return this.dashboardRepo.getBattleActivity(lang)
+  }
+
+  /**
+   * Mức độ tích lũy sparkles của user
+   */
+  async getSparklesAccumulation() {
+    return this.dashboardRepo.getSparklesAccumulation()
+  }
+
+  /**
+   * Nội dung Phổ biến nhất - phần học nào được học nhiều nhất
+   */
+  async getPopularContent(lang: string = 'vi') {
+    return this.dashboardRepo.getPopularContent(lang)
+  }
+
+  /**
+   * Tỷ lệ Hoàn thành Bài học (Completion Rate)
+   */
+  async getLessonCompletionRate(lang: string = 'vi') {
+    return this.dashboardRepo.getLessonCompletionRate(lang)
+  }
 }
