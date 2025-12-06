@@ -642,11 +642,70 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         `[RoundQuestion Timeout] Both participants completed for round ${matchRoundId}, comparing results...`
       )
 
-      // Compare results: higher points wins, if equal then lower totalTimeMs wins
+      // ✅ NEW LOGIC: Check for tie scenarios
       const [p1, p2] = allParticipants
-      let winnerId: number
 
-      if ((p1.points || 0) > (p2.points || 0)) {
+      // Fetch answer counts for both participants
+      const p1AnswerCount = await this.prismaService.roundQuestionsAnswerLog.count({
+        where: {
+          roundQuestion: {
+            matchRoundParticipantId: p1.id
+          },
+          answerId: { not: null } // Count only answered questions
+        }
+      })
+
+      const p2AnswerCount = await this.prismaService.roundQuestionsAnswerLog.count({
+        where: {
+          roundQuestion: {
+            matchRoundParticipantId: p2.id
+          },
+          answerId: { not: null }
+        }
+      })
+
+      this.logger.log(
+        `[RoundQuestion Timeout] Round results: p1={points:${p1.points}, answers:${p1AnswerCount}}, p2={points:${p2.points}, answers:${p2AnswerCount}}`
+      )
+
+      let winnerId: number | null = null
+
+      // ✅ TIE CASE 1: Both have 0 points and neither answered any question
+      if (
+        (p1.points || 0) === 0 &&
+        (p2.points || 0) === 0 &&
+        p1AnswerCount === 0 &&
+        p2AnswerCount === 0
+      ) {
+        this.logger.log(
+          `[RoundQuestion Timeout] TIE: Both participants have 0 points and no answers`
+        )
+        winnerId = null
+      }
+      // ✅ TIE CASE 2: Both have 0 points, but one answered and one didn't
+      else if (
+        (p1.points || 0) === 0 &&
+        (p2.points || 0) === 0 &&
+        p1AnswerCount === 0 &&
+        p2AnswerCount > 0
+      ) {
+        winnerId = p2.matchParticipantId
+        this.logger.log(
+          `[RoundQuestion Timeout] Participant ${p2.matchParticipantId} wins: answered ${p2AnswerCount} questions vs ${p1AnswerCount}`
+        )
+      } else if (
+        (p1.points || 0) === 0 &&
+        (p2.points || 0) === 0 &&
+        p1AnswerCount > 0 &&
+        p2AnswerCount === 0
+      ) {
+        winnerId = p1.matchParticipantId
+        this.logger.log(
+          `[RoundQuestion Timeout] Participant ${p1.matchParticipantId} wins: answered ${p1AnswerCount} questions vs ${p2AnswerCount}`
+        )
+      }
+      // ✅ Normal comparison: higher points wins
+      else if ((p1.points || 0) > (p2.points || 0)) {
         winnerId = p1.matchParticipantId
         this.logger.log(
           `[RoundQuestion Timeout] Participant ${p1.matchParticipantId} wins with ${p1.points} points vs ${p2.points}`
@@ -676,7 +735,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         where: { id: matchRoundId },
         data: {
           status: 'COMPLETED',
-          roundWinnerId: winnerId
+          roundWinnerId: winnerId // ✅ Can be null for tie
         },
         include: {
           participants: {
@@ -725,7 +784,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
       })
 
       this.logger.log(
-        `[RoundQuestion Timeout] Round ${matchRoundId} completed, winner: ${winnerId}`
+        `[RoundQuestion Timeout] Round ${matchRoundId} completed${winnerId === null ? ' (TIE)' : ''}, winner: ${winnerId}`
       )
 
       // Send socket notification to both users
@@ -892,12 +951,17 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         return
       }
 
-      // Count round wins per participant
+      // ✅ NEW LOGIC: Count round wins and ties
       const roundWinCounts = new Map<number, number>()
+      let tieCount = 0
+
       for (const round of allRounds) {
         if (round.roundWinnerId) {
           const currentCount = roundWinCounts.get(round.roundWinnerId) || 0
           roundWinCounts.set(round.roundWinnerId, currentCount + 1)
+        } else {
+          // ✅ Round is a tie (roundWinnerId is null)
+          tieCount++
         }
       }
 
@@ -912,8 +976,14 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         }
       }
 
-      // If tied (shouldn't happen with 3 rounds), use total points as tiebreaker
-      if (maxWins === 0 || !matchWinnerId) {
+      // ✅ MATCH TIE: No one won 2 rounds (all 3 are ties OR 1-1-tie, etc.)
+      if (maxWins === 0 && tieCount > 0) {
+        this.logger.log(
+          `[RoundQuestion Timeout] MATCH TIE: All 3 rounds resulted in ties (no clear winner)`
+        )
+        matchWinnerId = null
+      } else if (maxWins === 0 || !matchWinnerId) {
+        // ✅ Fallback: Use total points as tiebreaker
         this.logger.warn(
           `[RoundQuestion Timeout] No clear winner found by round wins, using total points tiebreaker`
         )
@@ -937,17 +1007,31 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             matchWinnerId = participantId
           }
         }
+
+        // ✅ If still no winner (all totals are 0), it's a tie
+        if (maxPoints === 0 && matchWinnerId) {
+          this.logger.log(
+            `[RoundQuestion Timeout] MATCH TIE: Both players have 0 total points`
+          )
+          matchWinnerId = null
+        }
       }
 
-      // Get winner's userId for final data
-      const winnerParticipant = await this.prismaService.matchParticipant.findUnique({
-        where: { id: matchWinnerId! },
-        include: { user: true }
-      })
-
-      this.logger.log(
-        `[RoundQuestion Timeout] Match winner determined: participantId=${matchWinnerId}, userId=${winnerParticipant?.userId}, maxWins=${maxWins}`
-      )
+      // ✅ Handle tie case: no winner
+      let winnerParticipant: any = null
+      if (matchWinnerId) {
+        winnerParticipant = await this.prismaService.matchParticipant.findUnique({
+          where: { id: matchWinnerId },
+          include: { user: true }
+        })
+        this.logger.log(
+          `[RoundQuestion Timeout] Match winner determined: participantId=${matchWinnerId}, userId=${winnerParticipant?.userId}, maxWins=${maxWins}`
+        )
+      } else {
+        this.logger.log(
+          `[RoundQuestion Timeout] Match is a TIE: no winner, maxWins=${maxWins}`
+        )
+      }
 
       // Wrap entire flow in atomic transaction to prevent race conditions
       const result = await this.prismaService.$transaction(
@@ -1076,6 +1160,88 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             this.logger.log(
               `[RoundQuestion Timeout] ELO after: winner=${newWinnerElo}, loser=${newLoserElo}`
             )
+          } else {
+            // ✅ MATCH TIE: Check if both players didn't answer any questions
+            const user1 = participants[0]
+            const user2 = participants[1]
+
+            if (user1 && user2) {
+              // Count total answers across all 3 rounds for each user
+              const user1AnswerCount = await tx.roundQuestionsAnswerLog.count({
+                where: {
+                  roundQuestion: {
+                    matchRoundParticipant: {
+                      matchRound: {
+                        matchId
+                      },
+                      matchParticipant: {
+                        userId: user1.userId
+                      }
+                    }
+                  },
+                  answerId: { not: null }
+                }
+              })
+
+              const user2AnswerCount = await tx.roundQuestionsAnswerLog.count({
+                where: {
+                  roundQuestion: {
+                    matchRoundParticipant: {
+                      matchRound: {
+                        matchId
+                      },
+                      matchParticipant: {
+                        userId: user2.userId
+                      }
+                    }
+                  },
+                  answerId: { not: null }
+                }
+              })
+
+              // ✅ If BOTH didn't answer any questions -> Both lose ELO
+              if (user1AnswerCount === 0 && user2AnswerCount === 0) {
+                const user1Elo = user1.user?.eloscore || 0
+                const user2Elo = user2.user?.eloscore || 0
+
+                // Calculate ELO loss for both (use average ELO as opponent)
+                const avgElo = (user1Elo + user2Elo) / 2
+                const user1EloLoss = calculateEloLoss(user1Elo, avgElo)
+                const user2EloLoss = calculateEloLoss(user2Elo, avgElo)
+
+                this.logger.log(
+                  `[RoundQuestion Timeout] Match TIE (no answers): Both lose ELO - user1Loss=${user1EloLoss}, user2Loss=${user2EloLoss}`
+                )
+
+                // Update both users' ELO (deduct)
+                await tx.user.update({
+                  where: { id: user1.userId },
+                  data: { eloscore: Math.max(0, user1Elo - user1EloLoss) }
+                })
+
+                await tx.user.update({
+                  where: { id: user2.userId },
+                  data: { eloscore: Math.max(0, user2Elo - user2EloLoss) }
+                })
+
+                // Store the loss amount (both lose, so eloLost represents the penalty)
+                eloLost = Math.round((user1EloLoss + user2EloLoss) / 2) // Average loss
+
+                await tx.match.update({
+                  where: { id: matchId },
+                  data: { eloGained: 0, eloLost }
+                })
+
+                this.logger.log(
+                  `[RoundQuestion Timeout] ELO after penalty: user1=${Math.max(0, user1Elo - user1EloLoss)}, user2=${Math.max(0, user2Elo - user2EloLoss)}`
+                )
+              } else {
+                // Normal tie with answers -> No ELO changes
+                this.logger.log(
+                  `[RoundQuestion Timeout] Match TIE (with answers): No ELO changes, eloGained=${eloGained}, eloLost=${eloLost}`
+                )
+              }
+            }
           }
 
           return { completedMatch, eloGained, eloLost }
