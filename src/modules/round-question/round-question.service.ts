@@ -562,16 +562,93 @@ export class RoundQuestionService {
       return
     }
 
-    // determine winner similar to processor
+    // ✅ NEW LOGIC: Check for tie scenarios
     const [p1, p2] = allParticipants
-    let winnerId: number
-    if ((p1.points || 0) > (p2.points || 0)) winnerId = p1.matchParticipantId
-    else if ((p1.points || 0) < (p2.points || 0)) winnerId = p2.matchParticipantId
-    else
-      winnerId =
-        (p1.totalTimeMs || 0) < (p2.totalTimeMs || 0)
-          ? p1.matchParticipantId
-          : p2.matchParticipantId
+
+    // Fetch answer counts for both participants
+    const p1AnswerCount = await this.prismaService.roundQuestionsAnswerLog.count({
+      where: {
+        roundQuestion: {
+          matchRoundParticipantId: p1.id
+        },
+        answerId: { not: null } // Count only answered questions
+      }
+    })
+
+    const p2AnswerCount = await this.prismaService.roundQuestionsAnswerLog.count({
+      where: {
+        roundQuestion: {
+          matchRoundParticipantId: p2.id
+        },
+        answerId: { not: null }
+      }
+    })
+
+    console.log(
+      `[RoundQuestion Service] Round results: p1={points:${p1.points}, answers:${p1AnswerCount}}, p2={points:${p2.points}, answers:${p2AnswerCount}}`
+    )
+
+    let winnerId: number | null = null
+
+    // ✅ TIE CASE 1: Both have 0 points and neither answered any question
+    if (
+      (p1.points || 0) === 0 &&
+      (p2.points || 0) === 0 &&
+      p1AnswerCount === 0 &&
+      p2AnswerCount === 0
+    ) {
+      console.log(
+        `[RoundQuestion Service] TIE: Both participants have 0 points and no answers`
+      )
+      winnerId = null
+    }
+    // ✅ TIE CASE 2: Both have 0 points, but one answered and one didn't
+    else if (
+      (p1.points || 0) === 0 &&
+      (p2.points || 0) === 0 &&
+      p1AnswerCount === 0 &&
+      p2AnswerCount > 0
+    ) {
+      winnerId = p2.matchParticipantId
+      console.log(
+        `[RoundQuestion Service] Participant ${p2.matchParticipantId} wins: answered ${p2AnswerCount} questions vs ${p1AnswerCount}`
+      )
+    } else if (
+      (p1.points || 0) === 0 &&
+      (p2.points || 0) === 0 &&
+      p1AnswerCount > 0 &&
+      p2AnswerCount === 0
+    ) {
+      winnerId = p1.matchParticipantId
+      console.log(
+        `[RoundQuestion Service] Participant ${p1.matchParticipantId} wins: answered ${p1AnswerCount} questions vs ${p2AnswerCount}`
+      )
+    }
+    // ✅ Normal comparison: higher points wins
+    else if ((p1.points || 0) > (p2.points || 0)) {
+      winnerId = p1.matchParticipantId
+      console.log(
+        `[RoundQuestion Service] Participant ${p1.matchParticipantId} wins with ${p1.points} points vs ${p2.points}`
+      )
+    } else if ((p1.points || 0) < (p2.points || 0)) {
+      winnerId = p2.matchParticipantId
+      console.log(
+        `[RoundQuestion Service] Participant ${p2.matchParticipantId} wins with ${p2.points} points vs ${p1.points}`
+      )
+    } else {
+      // Equal points, compare time
+      if ((p1.totalTimeMs || 0) < (p2.totalTimeMs || 0)) {
+        winnerId = p1.matchParticipantId
+        console.log(
+          `[RoundQuestion Service] Participant ${p1.matchParticipantId} wins by faster time: ${p1.totalTimeMs}ms vs ${p2.totalTimeMs}ms`
+        )
+      } else {
+        winnerId = p2.matchParticipantId
+        console.log(
+          `[RoundQuestion Service] Participant ${p2.matchParticipantId} wins by faster time: ${p2.totalTimeMs}ms vs ${p1.totalTimeMs}ms`
+        )
+      }
+    }
 
     const updatedRound = await this.prismaService.matchRound.update({
       where: { id: matchRoundId },
@@ -704,12 +781,23 @@ export class RoundQuestionService {
     }
 
     const roundWinCounts = new Map<number, number>()
-    for (const round of allRounds)
-      if (round.roundWinnerId)
+    let tieCount = 0
+
+    for (const round of allRounds) {
+      if (round.roundWinnerId) {
         roundWinCounts.set(
           round.roundWinnerId,
           (roundWinCounts.get(round.roundWinnerId) || 0) + 1
         )
+      } else {
+        // ✅ Round is a tie (roundWinnerId is null)
+        tieCount++
+      }
+    }
+
+    console.log(
+      `[RoundQuestion Service] Round win counts: ${JSON.stringify(Object.fromEntries(roundWinCounts))}, ties=${tieCount}`
+    )
 
     let matchWinnerId: number | null = null
     let maxWins = 0
@@ -719,7 +807,14 @@ export class RoundQuestionService {
         matchWinnerId = participantId
       }
 
-    if (maxWins === 0 || !matchWinnerId) {
+    // ✅ MATCH TIE: No one won 2 rounds (all 3 are ties OR 1-1-tie OR 0-0-tie, etc.)
+    if (maxWins === 0 && tieCount > 0) {
+      console.log(
+        `[RoundQuestion Service] MATCH TIE: All 3 rounds resulted in ties (no clear winner)`
+      )
+      matchWinnerId = null
+    } else if (maxWins === 0 || !matchWinnerId) {
+      // ✅ Fallback: Use total points as tiebreaker (if somehow no wins recorded)
       const participantTotals = new Map<number, number>()
       for (const round of allRounds)
         for (const participant of round.participants)
@@ -734,16 +829,27 @@ export class RoundQuestionService {
           maxPoints = totalPoints
           matchWinnerId = participantId
         }
+
+      // ✅ If still no winner (all totals are 0), it's a tie
+      if (maxPoints === 0 && matchWinnerId) {
+        console.log(`[RoundQuestion Service] MATCH TIE: Both players have 0 total points`)
+        matchWinnerId = null
+      }
     }
 
-    const winnerParticipant = await this.prismaService.matchParticipant.findUnique({
-      where: { id: matchWinnerId! },
-      include: { user: true }
-    })
-
-    console.log(
-      `[RoundQuestion Service] Match winner determined: participantId=${matchWinnerId}, userId=${winnerParticipant?.userId}, maxWins=${maxWins}`
-    )
+    // ✅ Handle tie case: no winner
+    let winnerParticipant: any = null
+    if (matchWinnerId) {
+      winnerParticipant = await this.prismaService.matchParticipant.findUnique({
+        where: { id: matchWinnerId },
+        include: { user: true }
+      })
+      console.log(
+        `[RoundQuestion Service] Match winner determined: participantId=${matchWinnerId}, userId=${winnerParticipant?.userId}, maxWins=${maxWins}`
+      )
+    } else {
+      console.log(`[RoundQuestion Service] Match is a TIE: no winner, maxWins=${maxWins}`)
+    }
 
     // Wrap entire flow in atomic transaction to prevent race conditions
     try {
@@ -824,6 +930,7 @@ export class RoundQuestionService {
           let eloGained = 0
           let eloLost = 0
 
+          // ✅ Only update ELO if there's a clear winner (not a tie)
           if (winnerUserId && loserUserId) {
             const winnerUser = participants.find((p) => p.userId === winnerUserId)?.user
             const loserUser = participants.find((p) => p.userId === loserUserId)?.user
@@ -866,6 +973,88 @@ export class RoundQuestionService {
             console.log(
               `[RoundQuestion Service] ELO after: winner=${newWinnerElo}, loser=${newLoserElo}`
             )
+          } else {
+            // ✅ MATCH TIE: Check if both players didn't answer any questions
+            const user1 = participants[0]
+            const user2 = participants[1]
+
+            if (user1 && user2) {
+              // Count total answers across all 3 rounds for each user
+              const user1AnswerCount = await tx.roundQuestionsAnswerLog.count({
+                where: {
+                  roundQuestion: {
+                    matchRoundParticipant: {
+                      matchRound: {
+                        matchId
+                      },
+                      matchParticipant: {
+                        userId: user1.userId
+                      }
+                    }
+                  },
+                  answerId: { not: null }
+                }
+              })
+
+              const user2AnswerCount = await tx.roundQuestionsAnswerLog.count({
+                where: {
+                  roundQuestion: {
+                    matchRoundParticipant: {
+                      matchRound: {
+                        matchId
+                      },
+                      matchParticipant: {
+                        userId: user2.userId
+                      }
+                    }
+                  },
+                  answerId: { not: null }
+                }
+              })
+
+              // ✅ If BOTH didn't answer any questions -> Both lose ELO
+              if (user1AnswerCount === 0 && user2AnswerCount === 0) {
+                const user1Elo = user1.user?.eloscore || 0
+                const user2Elo = user2.user?.eloscore || 0
+
+                // Calculate ELO loss for both (use average ELO as opponent)
+                const avgElo = (user1Elo + user2Elo) / 2
+                const user1EloLoss = calculateEloLoss(user1Elo, avgElo)
+                const user2EloLoss = calculateEloLoss(user2Elo, avgElo)
+
+                console.log(
+                  `[RoundQuestion Service] Match TIE (no answers): Both lose ELO - user1Loss=${user1EloLoss}, user2Loss=${user2EloLoss}`
+                )
+
+                // Update both users' ELO (deduct)
+                await tx.user.update({
+                  where: { id: user1.userId },
+                  data: { eloscore: Math.max(0, user1Elo - user1EloLoss) }
+                })
+
+                await tx.user.update({
+                  where: { id: user2.userId },
+                  data: { eloscore: Math.max(0, user2Elo - user2EloLoss) }
+                })
+
+                // Store the loss amount (both lose, so eloLost represents the penalty)
+                eloLost = Math.round((user1EloLoss + user2EloLoss) / 2) // Average loss
+
+                await tx.match.update({
+                  where: { id: matchId },
+                  data: { eloGained: 0, eloLost }
+                })
+
+                console.log(
+                  `[RoundQuestion Service] ELO after penalty: user1=${Math.max(0, user1Elo - user1EloLoss)}, user2=${Math.max(0, user2Elo - user2EloLoss)}`
+                )
+              } else {
+                // Normal tie with answers -> No ELO changes
+                console.log(
+                  `[RoundQuestion Service] Match TIE (with answers): No ELO changes, eloGained=${eloGained}, eloLost=${eloLost}`
+                )
+              }
+            }
           }
 
           return { completedMatch, eloGained, eloLost }
