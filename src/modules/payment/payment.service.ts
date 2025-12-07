@@ -349,6 +349,13 @@ export class PaymentService {
           failureReason: this.i18nService.translate(PaymentMessage.PAY_CANCELLED, lang),
           gatewayResponse: cancelData as any
         })
+        // dong thoi cập nhật invoice hủy luôn
+        await this.invoiceRepo.update({
+          id: payment.invoiceId,
+          data: {
+            status: InvoiceStatus.CANCELLED
+          }
+        })
       }
 
       return {
