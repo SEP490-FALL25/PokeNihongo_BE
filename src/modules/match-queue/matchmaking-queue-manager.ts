@@ -19,13 +19,13 @@ export interface QueueEntry {
 export class MatchmakingQueueManager {
   private queue: Map<number, QueueEntry> = new Map()
 
-  private readonly INITIAL_RANGE_PERCENT = 0.1 // 10% ban đầu
-  private readonly RANGE_INCREASE_PERCENT = 0.1 // Tăng 10% mỗi 5s
+  private readonly INITIAL_RANGE_PERCENT = 0.2 // 10% ban đầu
+  private readonly RANGE_INCREASE_PERCENT = 0.2 // Tăng 10% mỗi 5s
   private readonly RANGE_UPDATE_INTERVAL = 5000 // 5 giây
   private readonly MAX_ELO = 3000
   private readonly MIN_ELO = 0
   private readonly TIMEOUT_AFTER_MAX_RANGE = 50000 // 10 giây sau khi đạt max
-  private readonly BASE_RANGE_INCREASE = 65
+  private readonly BASE_RANGE_INCREASE = 85
 
   /**
    * Thêm user vào queue
