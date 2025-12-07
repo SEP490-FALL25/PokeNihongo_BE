@@ -657,11 +657,19 @@ export class UserService {
         eloGain = -(match as any).eloLost // Negative because they lost ELO
       }
 
+      // ✅ Calculate match duration (in milliseconds)
+      const timeMatch =
+        match.updatedAt && match.createdAt
+          ? new Date(match.updatedAt).getTime() - new Date(match.createdAt).getTime()
+          : 0
+
       return {
         isWin,
         leaderboardSeasonName: currentTranslation,
         eloGain,
-        opponent
+        opponent,
+        createdAt: match.createdAt,
+        timeMatch
       }
     }
 
