@@ -350,12 +350,26 @@ export class PaymentService {
           gatewayResponse: cancelData as any
         })
         // dong thoi cập nhật invoice hủy luôn
-        await this.invoiceRepo.update({
-          id: payment.invoiceId,
-          data: {
-            status: InvoiceStatus.CANCELLED
+        const invoice = await this.invoiceRepo.findById(payment.invoiceId)
+        if (invoice) {
+          await this.invoiceRepo.update({
+            id: payment.invoiceId,
+            data: {
+              status: InvoiceStatus.CANCELLED
+            }
+          })
+          // Fetch user subscription by invoice's subscription plan and user
+          const userSubscription = await this.userSubscriptionSer.findByUserAndInvoice(
+            payment.userId,
+            invoice.id
+          )
+          if (userSubscription) {
+            await this.userSubscriptionSer.update({
+              id: userSubscription.id,
+              data: { status: 'PAYMENT_FAILED' }
+            })
           }
-        })
+        }
       }
 
       return {
