@@ -638,8 +638,25 @@ export class UserService {
       const opponent = (match as any).participants.find(
         (p: any) => p.userId !== userId
       ).user
-      const isWin = match.winnerId === userId
-      const eloGain = isWin ? (match as any).eloGained : (match as any).eloLost
+
+      // ✅ Handle tie case: winnerId = null
+      let isWin: boolean | null = null
+      let eloGain = 0
+
+      if (match.winnerId === null) {
+        // Match is a tie - both lose ELO
+        isWin = null
+        eloGain = -(match as any).eloLost // Both lose ELO (negative)
+      } else if (match.winnerId === userId) {
+        // User won
+        isWin = true
+        eloGain = (match as any).eloGained
+      } else {
+        // User lost
+        isWin = false
+        eloGain = -(match as any).eloLost // Negative because they lost ELO
+      }
+
       return {
         isWin,
         leaderboardSeasonName: currentTranslation,
