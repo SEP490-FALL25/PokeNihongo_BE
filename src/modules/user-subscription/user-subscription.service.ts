@@ -224,7 +224,7 @@ export class UserSubscriptionService {
       message: this.i18nService.translate(UserSubscriptionMessage.GET_LIST_SUCCESS, lang)
     }
   }
-  
+
   async getValueConvertByfeatureKeyAndUserId(featureKey: FeatureKeyType, userId: number) {
     const userSubs = await this.userSubscriptionRepo.findActiveByUserIdWithfeatureKey(
       userId,
@@ -344,5 +344,13 @@ export class UserSubscriptionService {
       },
       message: this.i18nService.translate(UserSubscriptionMessage.GET_LIST_SUCCESS, lang)
     }
+  }
+
+  async findByUserAndInvoice(userId: number, invoiceId: number) {
+    const userSubscription = await this.userSubscriptionRepo.findByUserAndInvoice(
+      userId,
+      invoiceId
+    )
+    return userSubscription
   }
 }

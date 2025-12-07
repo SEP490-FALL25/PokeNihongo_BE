@@ -422,4 +422,17 @@ export class UserSubscriptionRepo {
     }
     return Array.from(featureKeySet).map((key) => ({ featureKey: key }))
   }
+
+  findByUserAndInvoice(
+    userId: number,
+    invoiceId: number
+  ): Promise<UserSubscriptionType | null> {
+    return this.prismaService.userSubscription.findFirst({
+      where: {
+        userId,
+        invoiceId,
+        deletedAt: null
+      }
+    })
+  }
 }
