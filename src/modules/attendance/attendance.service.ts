@@ -347,17 +347,29 @@ export class AttendanceService {
   async findWeekAttendances(userId: number, date: Date, addDayOfWeek: boolean = false) {
     // Determine start (Mon) and end (Sun) of the week for the given date
     const startOfWeek = new Date(date)
-    startOfWeek.setDate(date.getDate() - date.getDay() + 1) // Monday
+    // getDay(): 0=Sunday, 1=Monday, ..., 6=Saturday
+    // To get Monday: subtract (getDay() + 6) % 7 days
+    const dayOfWeek = startOfWeek.getDay()
+    const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1) // Adjust for Sunday
+    startOfWeek.setDate(diff)
     startOfWeek.setHours(0, 0, 0, 0)
 
     const endOfWeek = new Date(startOfWeek)
     endOfWeek.setDate(startOfWeek.getDate() + 6) // Sunday
     endOfWeek.setHours(23, 59, 59, 999)
 
+    console.log(
+      `[findWeekAttendances] Finding attendances between ${startOfWeek.toISOString()} and ${endOfWeek.toISOString()}`
+    )
+
     let attendances = await this.attendanceRepo.findStreakWithStartEndDay(
       userId,
       startOfWeek,
       endOfWeek
+    )
+
+    console.log(
+      `[findWeekAttendances] Found ${attendances.length} attendances for user ${userId}`
     )
 
     if (addDayOfWeek) {
