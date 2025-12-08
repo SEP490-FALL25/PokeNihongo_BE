@@ -19,10 +19,16 @@ import { UserDailyRequestService } from '../user-daily-request/user-daily-reques
 
 import { AttendancesStatus } from '@/common/constants/attendance.constant'
 import { WeekDayType } from '@/common/constants/attendence-config.constant'
+import { NotificationType } from '@/common/constants/notification.constant'
 import { FeatureKey } from '@/common/constants/subscription.constant'
 import { I18nService } from '@/i18n/i18n.service'
-import { AttendanceMessage, ENTITY_MESSAGE } from '@/i18n/message-keys'
+import {
+  AttendanceMessage,
+  ENTITY_MESSAGE,
+  NotificationMessage
+} from '@/i18n/message-keys'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
+import { SharedNotificationService } from '@/shared/services/shared-notification.service'
 import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
 import { AttendenceConfigRepo } from '../attendence-config/attendence-config.repo'
 import { LanguagesRepository } from '../languages/languages.repo'
@@ -47,7 +53,8 @@ export class AttendanceService {
     private readonly userDailyRequestService: UserDailyRequestService,
     private readonly walletRepo: WalletRepo,
     private readonly walletTransactionRepo: WalletTransactionRepo,
-    private readonly userSubService: SharedUserSubscriptionService
+    private readonly userSubService: SharedUserSubscriptionService,
+    private readonly sharedNotificationService: SharedNotificationService
   ) {}
 
   async list(pagination: PaginationQueryType, lang: string = 'vi') {
@@ -216,6 +223,27 @@ export class AttendanceService {
           }
         })
       }
+
+      // Tạo notification cho attendance
+      await this.sharedNotificationService.create(
+        {
+          userId: createdById,
+          data: {
+            userId: createdById,
+            titleKey: NotificationMessage.NOTI_ATTENDANCE,
+            bodyKey: NotificationMessage.YOU_HAVE_COMPLETED_ATTENDANCE,
+            type: NotificationType.ATTENDANCE,
+            data: {
+              attendanceId: attendance.id,
+              sparkle: data.coin,
+              sparkleTotal: data.bonusCoin,
+              totalCoin: totalCoin * valueIncrease,
+              streakCount: totalStreakWithToday
+            }
+          }
+        },
+        lang
+      )
 
       return {
         statusCode: HttpStatus.CREATED,

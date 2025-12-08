@@ -806,6 +806,7 @@ export const NotificationMessage = {
   NOTI_REWARD: 'notification.NOTI_REWARD',
   NOTI_SYSTEM: 'notification.NOTI_SYSTEM',
   NOTI_OTHER: 'notification.NOTI_OTHER',
+  NOTI_ATTENDANCE: 'notification.NOTI_ATTENDANCE',
 
   //body
   YOU_HAVE_NEW_ACHIEVEMENT: 'notification.YOU_HAVE_NEW_ACHIEVEMENT',
@@ -814,7 +815,8 @@ export const NotificationMessage = {
   YOU_HAVE_NEW_DAILY_REQUEST: 'notification.YOU_HAVE_NEW_DAILY_REQUEST',
   YOU_HAVE_COMPLETED_LESSON: 'notification.YOU_HAVE_COMPLETED_LESSON',
   YOU_HAVE_COMPLETED_EXCERCISE: 'notification.YOU_HAVE_COMPLETED_EXCERCISE',
-  YOU_HAVE_NEW_REWARD: 'notification.YOU_HAVE_NEW_REWARD'
+  YOU_HAVE_NEW_REWARD: 'notification.YOU_HAVE_NEW_REWARD',
+  YOU_HAVE_COMPLETED_ATTENDANCE: 'notification.YOU_HAVE_COMPLETED_ATTENDANCE'
 } as const
 
 export const SendMailMessage = {
