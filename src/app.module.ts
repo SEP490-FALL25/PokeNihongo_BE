@@ -39,6 +39,8 @@ import { LevelModule } from './modules/level/level.module'
 import { MeaningModule } from './modules/meaning/meaning.module'
 import { PokemonModule } from './modules/pokemon/pokemon.module'
 
+import { HandleGachaBannerCronjob } from './cronjobs/handle-gacha-banner.cronjob'
+import { HandleLeaderboardSeasonCronjob } from './cronjobs/handle-leaderboard-season.cronjob'
 import { HandleMatchmakingCronjob } from './cronjobs/handle-matchmaking.cronjob'
 import { HandleShopBannerCronjob } from './cronjobs/handle-shop-banner.cronjob'
 import { HandleUserSubscriptionCronjob } from './cronjobs/handle-user-subscription.cronjob'
@@ -211,8 +213,8 @@ import { WebsocketsModule } from './websockets/websockets.module'
   providers: [
     HandleShopBannerCronjob,
     HandleUserSubscriptionCronjob, // Cronjob chạy mỗi giờ để cancel subscription hết hạn
-    // HandleGachaBannerCronjob,
-    // HandleLeaderboardSeasonCronjob,
+    HandleGachaBannerCronjob,
+    HandleLeaderboardSeasonCronjob,
     HandleMatchmakingCronjob, // Cronjob chạy mỗi 5s để xử lý matchmaking
     {
       provide: APP_PIPE,

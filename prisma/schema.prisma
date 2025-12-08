@@ -2291,6 +2291,7 @@ enum NotificationType {
   LEVEL // Lên cấp
   SYSTEM // (Khuyên dùng) Thông báo chung từ hệ thống
   OTHER
+  ATTENDANCE
 }
 
 enum PaymentMethod {
