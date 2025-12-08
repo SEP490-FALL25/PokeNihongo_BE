@@ -1,8 +1,14 @@
 import { BullAction, BullQueue } from '@/common/constants/bull-action.constant'
 import { QuestionBankRepository } from '@/modules/question-bank/question-bank.repo'
-import { addTimeUTC, calculateEloGain, calculateEloLoss, convertEloToRank } from '@/shared/helpers'
+import {
+  addTimeUTC,
+  calculateEloGain,
+  calculateEloLoss,
+  convertEloToRank
+} from '@/shared/helpers'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MatchingGateway } from '@/websockets/matching.gateway'
+import { SocketServerService } from '@/websockets/socket-server.service'
 import {
   InjectQueue,
   OnQueueActive,
@@ -26,6 +32,7 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
     private readonly prismaService: PrismaService,
     private readonly matchingGateway: MatchingGateway,
     private readonly questionBankRepo: QuestionBankRepository,
+    private readonly socketServerService: SocketServerService,
     @InjectQueue(BullQueue.ROUND_QUESTION_TIMEOUT)
     private readonly roundQuestionTimeoutQueue: Queue,
     @InjectQueue(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
@@ -383,6 +390,12 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
       const matchId = matchRoundParticipant.matchRound.match.id
       let endTimeQuestion: Date | null = null
 
+      // Get user's language preference from socket connection
+      const userLang = this.socketServerService.getLangByUserId(currentUserId)
+      this.logger.log(
+        `[RoundQuestion Timeout] 🎯 handleQuestionTimeout - userId=${currentUserId}, userLang=${userLang}, nextQuestionId=${nextQuestion?.id}, questionBankId=${nextQuestion?.questionBankId}`
+      )
+
       // Prepare formatted nextQuestion via QuestionBankService so socket uses consistent shape
       let nextQuestionForNotify: any | null = null
       if (nextQuestion) {
@@ -390,9 +403,12 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
           endTimeQuestion = addTimeUTC(new Date(), nextQuestion.timeLimitMs)
           const qbList = await this.questionBankRepo.findByIds(
             [nextQuestion.questionBankId],
-            'vi'
+            userLang
           )
           nextQuestionForNotify = qbList?.[0] || null
+          this.logger.log(
+            `[RoundQuestion Timeout] ✅ handleQuestionTimeout - userId=${currentUserId}, qbList.length=${qbList?.length}, hasQuestion=${!!nextQuestionForNotify}, lang=${userLang}`
+          )
           // Always include debuff field (null if none)
           if (nextQuestionForNotify) {
             nextQuestionForNotify.debuff = nextQuestion.debuff || null
@@ -1418,14 +1434,15 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         // Enhance match data with rank changes
         const matchWithRankChanges = {
           ...updatedMatch,
-          participants: updatedMatch?.participants.map((p) => {
-            const rankChange = result.rankChanges.get(p.userId)
-            return {
-              ...p,
-              rankChangeStatus: rankChange?.status || 'RANK_MAINTAIN',
-              rankChangeInfo: rankChange?.rankInfo || null
-            }
-          }) || []
+          participants:
+            updatedMatch?.participants.map((p) => {
+              const rankChange = result.rankChanges.get(p.userId)
+              return {
+                ...p,
+                rankChangeStatus: rankChange?.status || 'RANK_MAINTAIN',
+                rankChangeInfo: rankChange?.rankInfo || null
+              }
+            }) || []
         }
 
         this.matchingGateway.notifyMatchCompleted(

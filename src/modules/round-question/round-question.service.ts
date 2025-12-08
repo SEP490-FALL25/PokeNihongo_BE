@@ -343,7 +343,7 @@ export class RoundQuestionService {
       try {
         const qbList = await this.questionBankRepo.findByIds(
           [nextQuestion.questionBankId],
-          'vi'
+          lang
         )
         nextQuestionForNotify = qbList?.[0] || null
         // Always include debuff field (null if none)
@@ -1230,14 +1230,15 @@ export class RoundQuestionService {
         // Enhance match data with rank changes
         const matchWithRankChanges = {
           ...updatedMatch,
-          participants: updatedMatch?.participants.map((p) => {
-            const rankChange = result.rankChanges.get(p.userId)
-            return {
-              ...p,
-              rankChangeStatus: rankChange?.status || 'RANK_MAINTAIN',
-              rankChangeInfo: rankChange?.rankInfo || null
-            }
-          }) || []
+          participants:
+            updatedMatch?.participants.map((p) => {
+              const rankChange = result.rankChanges.get(p.userId)
+              return {
+                ...p,
+                rankChangeStatus: rankChange?.status || 'RANK_MAINTAIN',
+                rankChangeInfo: rankChange?.rankInfo || null
+              }
+            }) || []
         }
 
         this.matchingGateway.notifyMatchCompleted(
