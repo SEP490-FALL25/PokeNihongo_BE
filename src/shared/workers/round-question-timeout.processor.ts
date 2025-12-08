@@ -392,9 +392,6 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
 
       // Get user's language preference from socket connection
       const userLang = this.socketServerService.getLangByUserId(currentUserId)
-      this.logger.log(
-        `[RoundQuestion Timeout] 🎯 handleQuestionTimeout - userId=${currentUserId}, userLang=${userLang}, nextQuestionId=${nextQuestion?.id}, questionBankId=${nextQuestion?.questionBankId}`
-      )
 
       // Prepare formatted nextQuestion via QuestionBankService so socket uses consistent shape
       let nextQuestionForNotify: any | null = null
@@ -406,9 +403,6 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
             userLang
           )
           nextQuestionForNotify = qbList?.[0] || null
-          this.logger.log(
-            `[RoundQuestion Timeout] ✅ handleQuestionTimeout - userId=${currentUserId}, qbList.length=${qbList?.length}, hasQuestion=${!!nextQuestionForNotify}, lang=${userLang}`
-          )
           // Always include debuff field (null if none)
           if (nextQuestionForNotify) {
             nextQuestionForNotify.debuff = nextQuestion.debuff || null

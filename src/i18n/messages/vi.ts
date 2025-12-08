@@ -761,7 +761,7 @@ export const viMessages = {
     NOTI_REWARD: 'Phần thưởng',
     NOTI_SYSTEM: 'Hệ thống',
     NOTI_OTHER: 'Khác',
-
+    NOTI_ATTENDANCE: 'Điểm danh',
     //body
     YOU_HAVE_NEW_ACHIEVEMENT: 'Bạn có thành tựu mới',
     YOU_HAVE_COMPLETED_ATTENDENCED: 'Bạn đã hoàn thành điểm danh',
@@ -769,7 +769,8 @@ export const viMessages = {
     YOU_HAVE_NEW_DAILY_REQUEST: 'Bạn có yêu cầu hàng ngày mới',
     YOU_HAVE_COMPLETED_LESSON: 'Bạn đã hoàn thành bài học',
     YOU_HAVE_COMPLETED_EXCERCISE: 'Bạn đã hoàn thành bài tập',
-    YOU_HAVE_NEW_REWARD: 'Bạn có phần thưởng mới'
+    YOU_HAVE_NEW_REWARD: 'Bạn có phần thưởng mới',
+    YOU_HAVE_COMPLETED_ATTENDANCE: 'Bạn đã hoàn thành điểm danh'
   },
   send_mail: {
     REGISTER_SUBSCRIPTION_SUCCESS: 'Đăng ký gói thành công - PokeNihon Subscription'

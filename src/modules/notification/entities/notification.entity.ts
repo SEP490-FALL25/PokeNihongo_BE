@@ -23,7 +23,8 @@ export const NotificationSchema = z.object({
       NotificationType.SEASON,
       NotificationType.LEVEL,
       NotificationType.SYSTEM,
-      NotificationType.OTHER
+      NotificationType.OTHER,
+      NotificationType.ATTENDANCE
     ])
     .default(NotificationType.OTHER),
   isRead: z.boolean().default(false),

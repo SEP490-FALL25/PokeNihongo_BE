@@ -773,7 +773,7 @@ export const enMessages = {
     NOTI_REWARD: 'Reward',
     NOTI_SYSTEM: 'System',
     NOTI_OTHER: 'Other',
-
+    NOTI_ATTENDANCE: 'Attendance',
     //body
     YOU_HAVE_NEW_ACHIEVEMENT: 'You have a new achievement',
     YOU_HAVE_COMPLETED_ATTENDENCED: 'You have completed attendance',
@@ -781,7 +781,8 @@ export const enMessages = {
     YOU_HAVE_NEW_DAILY_REQUEST: 'You have a new daily request',
     YOU_HAVE_COMPLETED_LESSON: 'You have completed a lesson',
     YOU_HAVE_COMPLETED_EXCERCISE: 'You have completed an exercise',
-    YOU_HAVE_NEW_REWARD: 'You have a new reward'
+    YOU_HAVE_NEW_REWARD: 'You have a new reward',
+    YOU_HAVE_COMPLETED_ATTENDANCE: 'You have completed attendance'
   },
   send_mail: {
     REGISTER_SUBSCRIPTION_SUCCESS:

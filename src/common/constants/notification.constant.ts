@@ -6,7 +6,8 @@ export const NotificationType = {
   SEASON: 'SEASON',
   LEVEL: 'LEVEL',
   SYSTEM: 'SYSTEM',
-  OTHER: 'OTHER'
+  OTHER: 'OTHER',
+  ATTENDANCE: 'ATTENDANCE'
 } as const
 
 export type NotificationTypeType =

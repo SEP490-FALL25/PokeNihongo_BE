@@ -754,7 +754,7 @@ export const jaMessages = {
     NOTI_REWARD: '報酬',
     NOTI_SYSTEM: 'システム',
     NOTI_OTHER: 'その他',
-
+    NOTI_ATTENDANCE: '出席',
     //body
     YOU_HAVE_NEW_ACHIEVEMENT: '新しい実績があります',
     YOU_HAVE_COMPLETED_ATTENDENCED: '出席が完了しました',
@@ -762,7 +762,8 @@ export const jaMessages = {
     YOU_HAVE_NEW_DAILY_REQUEST: '新しい毎日のリクエストがあります',
     YOU_HAVE_COMPLETED_LESSON: 'レッスンが完了しました',
     YOU_HAVE_COMPLETED_EXCERCISE: 'エクササイズが完了しました',
-    YOU_HAVE_NEW_REWARD: '新しい報酬があります'
+    YOU_HAVE_NEW_REWARD: '新しい報酬があります',
+    YOU_HAVE_COMPLETED_ATTENDANCE: '出席が完了しました'
   },
   send_mail: {
     REGISTER_SUBSCRIPTION_SUCCESS: 'サブスクリプション登録の確認メールを送信しました'
