@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { Server, Socket } from 'socket.io'
 
 @Injectable()
 export class SocketServerService {
+  private readonly logger = new Logger(SocketServerService.name)
   public server: Server | null = null
   private userSocketMap = new Map<number, string>()
   /**
@@ -10,6 +11,10 @@ export class SocketServerService {
    * Đây là socketId của kết nối hiện tại.
    */
   addSocket(userId: number, socketId: string): void {
+    const prev = this.userSocketMap.get(userId)
+    this.logger.debug(
+      `[SocketServerService] addSocket userId=${userId}, socketId=${socketId}, prevSocketId=${prev}`
+    )
     this.userSocketMap.set(userId, socketId)
   }
 
@@ -19,13 +24,41 @@ export class SocketServerService {
   getSocket(userId: number): Socket | undefined {
     if (!this.server) {
       // Trường hợp server chưa được khởi tạo
+      this.logger.warn(
+        `[SocketServerService] getSocket userId=${userId} but server is null`
+      )
       return undefined
     }
     const socketId = this.userSocketMap.get(userId)
     if (socketId) {
       // Sử dụng server.sockets.sockets để tìm Socket object theo ID
-      return this.server.sockets.sockets.get(socketId)
+      let socket = this.server.sockets.sockets.get(socketId)
+
+      // Nếu không tìm thấy ở default namespace, thử duyệt các namespace khác
+      if (!socket) {
+        const nspMap: Map<string, any> = (this.server as any)._nsps
+        if (nspMap && nspMap.size > 0) {
+          for (const [nspName, nsp] of nspMap.entries()) {
+            const maybeSocket = nsp.sockets.get(socketId)
+            if (maybeSocket) {
+              socket = maybeSocket as Socket
+              this.logger.debug(
+                `[SocketServerService] getSocket found socket in namespace ${nspName} for userId=${userId}`
+              )
+              break
+            }
+          }
+        }
+      }
+
+      if (!socket) {
+        this.logger.warn(
+          `[SocketServerService] getSocket userId=${userId} mapping socketId=${socketId} but socket not found in any namespace`
+        )
+      }
+      return socket
     }
+    this.logger.warn(`[SocketServerService] getSocket userId=${userId} has no mapping`)
     return undefined
   }
 
@@ -35,14 +68,21 @@ export class SocketServerService {
    */
   getLangByUserId(userId: number): string {
     const socket = this.getSocket(userId)
-    // Giả định bạn đã lưu ngôn ngữ vào socket.data.lang trong Adapter
-    return socket?.data.lang || 'vi'
+    const lang = socket?.data.lang || 'vi'
+    this.logger.debug(
+      `[SocketServerService] getLangByUserId userId=${userId}, socketId=${socket?.id}, lang=${lang}`
+    )
+    return lang
   }
 
   /**
    * Xóa ánh xạ khi người dùng ngắt kết nối hoặc đăng xuất.
    */
   removeSocket(userId: number): void {
+    const prev = this.userSocketMap.get(userId)
+    this.logger.debug(
+      `[SocketServerService] removeSocket userId=${userId}, prevSocketId=${prev}`
+    )
     this.userSocketMap.delete(userId)
   }
 }

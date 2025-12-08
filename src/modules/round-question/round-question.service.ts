@@ -7,6 +7,7 @@ import {
   addTimeUTC,
   calculateEloGain,
   calculateEloLoss,
+  convertEloToRank,
   isForeignKeyConstraintPrismaError,
   isNotFoundPrismaError
 } from '@/shared/helpers'
@@ -342,7 +343,7 @@ export class RoundQuestionService {
       try {
         const qbList = await this.questionBankRepo.findByIds(
           [nextQuestion.questionBankId],
-          'vi'
+          lang
         )
         nextQuestionForNotify = qbList?.[0] || null
         // Always include debuff field (null if none)
@@ -930,6 +931,9 @@ export class RoundQuestionService {
           let eloGained = 0
           let eloLost = 0
 
+          // Track rank changes for each participant
+          const rankChanges = new Map<number, any>()
+
           // ✅ Only update ELO if there's a clear winner (not a tie)
           if (winnerUserId && loserUserId) {
             const winnerUser = participants.find((p) => p.userId === winnerUserId)?.user
@@ -949,7 +953,42 @@ export class RoundQuestionService {
               `[RoundQuestion Service] ELO delta: gained=${eloGained}, lost=${eloLost}`
             )
 
+            const newWinnerElo = Math.min(3000, winnerElo + eloGained)
             const newLoserElo = Math.max(0, loserElo - eloLost)
+
+            // Calculate rank changes for winner
+            const winnerOldRank = convertEloToRank(winnerElo)
+            const winnerNewRank = convertEloToRank(newWinnerElo)
+            let winnerStatus: string
+            if (winnerOldRank !== winnerNewRank) {
+              winnerStatus = 'RANK_UP'
+            } else {
+              winnerStatus = 'RANK_MAINTAIN'
+            }
+            rankChanges.set(winnerUserId, {
+              status: winnerStatus,
+              rankInfo: {
+                from: { rank: winnerOldRank, elo: winnerElo },
+                to: { rank: winnerNewRank, elo: newWinnerElo }
+              }
+            })
+
+            // Calculate rank changes for loser
+            const loserOldRank = convertEloToRank(loserElo)
+            const loserNewRank = convertEloToRank(newLoserElo)
+            let loserStatus: string
+            if (loserOldRank !== loserNewRank) {
+              loserStatus = 'RANK_DOWN'
+            } else {
+              loserStatus = 'RANK_MAINTAIN'
+            }
+            rankChanges.set(loserUserId, {
+              status: loserStatus,
+              rankInfo: {
+                from: { rank: loserOldRank, elo: loserElo },
+                to: { rank: loserNewRank, elo: newLoserElo }
+              }
+            })
 
             // Update Match with ELO deltas
             await tx.match.update({
@@ -958,7 +997,6 @@ export class RoundQuestionService {
             })
 
             // Update winner ELO (cap at 3000)
-            const newWinnerElo = Math.min(3000, winnerElo + eloGained)
             await tx.user.update({
               where: { id: winnerUserId },
               data: { eloscore: newWinnerElo }
@@ -1026,15 +1064,52 @@ export class RoundQuestionService {
                   `[RoundQuestion Service] Match TIE (no answers): Both lose ELO - user1Loss=${user1EloLoss}, user2Loss=${user2EloLoss}`
                 )
 
+                const newUser1Elo = Math.max(0, user1Elo - user1EloLoss)
+                const newUser2Elo = Math.max(0, user2Elo - user2EloLoss)
+
+                // Calculate rank changes for user1
+                const user1OldRank = convertEloToRank(user1Elo)
+                const user1NewRank = convertEloToRank(newUser1Elo)
+                let user1Status: string
+                if (user1OldRank !== user1NewRank) {
+                  user1Status = 'RANK_DOWN'
+                } else {
+                  user1Status = 'RANK_MAINTAIN'
+                }
+                rankChanges.set(user1.userId, {
+                  status: user1Status,
+                  rankInfo: {
+                    from: { rank: user1OldRank, elo: user1Elo },
+                    to: { rank: user1NewRank, elo: newUser1Elo }
+                  }
+                })
+
+                // Calculate rank changes for user2
+                const user2OldRank = convertEloToRank(user2Elo)
+                const user2NewRank = convertEloToRank(newUser2Elo)
+                let user2Status: string
+                if (user2OldRank !== user2NewRank) {
+                  user2Status = 'RANK_DOWN'
+                } else {
+                  user2Status = 'RANK_MAINTAIN'
+                }
+                rankChanges.set(user2.userId, {
+                  status: user2Status,
+                  rankInfo: {
+                    from: { rank: user2OldRank, elo: user2Elo },
+                    to: { rank: user2NewRank, elo: newUser2Elo }
+                  }
+                })
+
                 // Update both users' ELO (deduct)
                 await tx.user.update({
                   where: { id: user1.userId },
-                  data: { eloscore: Math.max(0, user1Elo - user1EloLoss) }
+                  data: { eloscore: newUser1Elo }
                 })
 
                 await tx.user.update({
                   where: { id: user2.userId },
-                  data: { eloscore: Math.max(0, user2Elo - user2EloLoss) }
+                  data: { eloscore: newUser2Elo }
                 })
 
                 // Store the loss amount (both lose, so eloLost represents the penalty)
@@ -1046,7 +1121,7 @@ export class RoundQuestionService {
                 })
 
                 console.log(
-                  `[RoundQuestion Service] ELO after penalty: user1=${Math.max(0, user1Elo - user1EloLoss)}, user2=${Math.max(0, user2Elo - user2EloLoss)}`
+                  `[RoundQuestion Service] ELO after penalty: user1=${newUser1Elo}, user2=${newUser2Elo}`
                 )
               } else {
                 // Normal tie with answers -> No ELO changes
@@ -1057,7 +1132,7 @@ export class RoundQuestionService {
             }
           }
 
-          return { completedMatch, eloGained, eloLost }
+          return { completedMatch, eloGained, eloLost, rankChanges }
         },
         { timeout: 10000 }
       ) // 10 seconds timeout for entire transaction)
@@ -1151,11 +1226,26 @@ export class RoundQuestionService {
         console.log(
           `[RoundQuestion Service] Sending match completed notification for match ${matchId}`
         )
+
+        // Enhance match data with rank changes
+        const matchWithRankChanges = {
+          ...updatedMatch,
+          participants:
+            updatedMatch?.participants.map((p) => {
+              const rankChange = result.rankChanges.get(p.userId)
+              return {
+                ...p,
+                rankChangeStatus: rankChange?.status || 'RANK_MAINTAIN',
+                rankChangeInfo: rankChange?.rankInfo || null
+              }
+            }) || []
+        }
+
         this.matchingGateway.notifyMatchCompleted(
           matchId,
           userId1,
           userId2,
-          updatedMatch || result.completedMatch
+          matchWithRankChanges || result.completedMatch
         )
       }
     } catch (e) {
