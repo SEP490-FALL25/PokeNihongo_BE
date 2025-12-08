@@ -9,6 +9,7 @@ import { QuestionBankRepository } from '@/modules/question-bank/question-bank.re
 import { addTimeUTC, convertEloToRank } from '@/shared/helpers'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MatchingGateway } from '@/websockets/matching.gateway'
+import { SocketServerService } from '@/websockets/socket-server.service'
 import {
   InjectQueue,
   OnQueueActive,
@@ -40,7 +41,8 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
     @Inject(MatchingGateway)
     private readonly matchingGateway: MatchingGateway,
     @Inject(forwardRef(() => RoundQuestionTimeoutProcessor))
-    private readonly roundQuestionProcessor: RoundQuestionTimeoutProcessor
+    private readonly roundQuestionProcessor: RoundQuestionTimeoutProcessor,
+    private readonly socketServerService: SocketServerService
   ) {}
 
   async onModuleInit() {
@@ -1074,13 +1076,20 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
 
         // Send socket to user with round data, participant info, and first question (formatted via QuestionBankService)
         const userId = participant.matchParticipant.userId
+        const userLang = this.socketServerService.getLangByUserId(userId)
+        this.logger.log(
+          `[Round Timeout] 🎯 handleStartRound - userId=${userId}, userLang=${userLang}, questionBankId=${firstQuestion.questionBankId}`
+        )
         let firstQuestionForNotify: any | null = null
         try {
           const qbList = await this.questionBankRepo.findByIds(
             [firstQuestion.questionBankId],
-            'vi'
+            userLang
           )
           firstQuestionForNotify = qbList?.[0] || null
+          this.logger.log(
+            `[Round Timeout] ✅ handleStartRound - userId=${userId}, qbList.length=${qbList?.length}, hasQuestion=${!!firstQuestionForNotify}, lang=${userLang}`
+          )
           // Always include debuff field (null if none)
           if (firstQuestionForNotify) {
             firstQuestionForNotify.debuff = firstQuestion.debuff || null

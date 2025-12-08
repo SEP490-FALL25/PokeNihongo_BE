@@ -39,6 +39,12 @@ export class WebsocketAdapter extends IoAdapter {
           this.logger.debug(
             `[WebsocketAdapter] Accept-Language header: ${acceptLanguage}`
           )
+          this.logger.debug(
+            `[WebsocketAdapter] 🔍 All handshake.auth keys: ${Object.keys(socket.handshake.auth).join(', ')}`
+          )
+          this.logger.debug(
+            `[WebsocketAdapter] 🔍 All handshake.auth values: ${JSON.stringify(socket.handshake.auth)}`
+          )
           // Handle both "Bearer token" and "token" formats
           let token: string
           if (authorization.startsWith('Bearer ')) {
@@ -64,6 +70,12 @@ export class WebsocketAdapter extends IoAdapter {
             socket.data.roleId = user.roleId
             socket.data.deviceId = user.deviceId
             socket.data.lang = acceptLanguage || 'vi'
+
+            // Log the final socket.data
+            this.logger.log(
+              `[WebsocketAdapter] ✅ Socket data set: userId=${socket.data.userId}, lang=${socket.data.lang}, socketId=${socket.id}`
+            )
+
             // Lưu mapping userId -> socketId trong SocketServerService
             this.socketServerService.addSocket(user.userId, socket.id)
             // cho vao homepage room
