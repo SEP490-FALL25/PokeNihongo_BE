@@ -64,6 +64,7 @@ export class WebsocketAdapter extends IoAdapter {
             socket.data.roleId = user.roleId
             socket.data.deviceId = user.deviceId
             socket.data.lang = acceptLanguage || 'vi'
+
             // Lưu mapping userId -> socketId trong SocketServerService
             this.socketServerService.addSocket(user.userId, socket.id)
             // cho vao homepage room
