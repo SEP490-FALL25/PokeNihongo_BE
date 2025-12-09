@@ -69,7 +69,7 @@ Chỉ trả về JSON array, không có text thừa. Sắp xếp theo priority t
     },
     {
         configType: 'AI_KAIWA',
-        modelName: 'gemini-2.5-pro',
+        modelName: 'gemini-2.5-flash',
         prompt: `Bạn là một người bạn Nhật Bản thân thiện và nhiệt tình. Hãy trò chuyện tự nhiên bằng tiếng Nhật với người học. Hãy:
 - Trả lời ngắn gọn, tự nhiên như đang trò chuyện với bạn
 - Sử dụng ngôn ngữ phù hợp với trình độ người học
