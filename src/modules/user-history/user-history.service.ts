@@ -505,16 +505,16 @@ export class UserHistoryService {
 
             // Nếu có status filter, query với filter đó
             // Nếu không có status filter, query tất cả để có thể ưu tiên COMPLETED
-            // Nhưng loại bỏ NOT_STARTED vì endpoint này chỉ lấy những bài đã từng được làm
+            // Nhưng loại bỏ NOT_STARTED/SKIPPED vì endpoint này chỉ lấy những bài đã từng được làm hợp lệ
             const exerciseAttempts = await this.userHistoryRepository.findRecentExerciseAttempts({
                 userId,
                 status: status as ExerciseAttemptStatus | undefined
             })
 
-            // Loại bỏ NOT_STARTED khi không có status filter (vì "recent exercises" chỉ nên là bài đã từng được làm)
+            // Loại bỏ NOT_STARTED và SKIPPED (vì "recent exercises" chỉ nên là bài đã từng được làm hợp lệ)
             const filteredAttempts = status
-                ? exerciseAttempts // Nếu có status filter, giữ nguyên
-                : exerciseAttempts.filter(attempt => attempt.status !== 'NOT_STARTED') // Loại bỏ NOT_STARTED
+                ? exerciseAttempts.filter(attempt => attempt.status !== 'SKIPPED')
+                : exerciseAttempts.filter(attempt => attempt.status !== 'NOT_STARTED' && attempt.status !== 'SKIPPED')
 
             // Group attempts theo exerciseId
             const attemptsByExerciseId = new Map<number, typeof exerciseAttempts>()
