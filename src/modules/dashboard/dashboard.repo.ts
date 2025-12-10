@@ -830,6 +830,9 @@ export class DashboardRepo {
 
     const sameDay = (a: Date, b: Date) => a.getTime() === b.getTime()
 
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
     const streakByUser = new Map<number, number>()
     let currentUser: number | null = null
     let currentStreak = 0
@@ -852,13 +855,13 @@ export class DashboardRepo {
       if (skipUser) continue
 
       if (!expectedDate) {
-        // Streak only counts if user checked in today
-        if (!sameDay(attendanceDate, today)) {
+        // Cho phép streak nếu attendance mới nhất là hôm nay hoặc hôm qua
+        if (!sameDay(attendanceDate, today) && !sameDay(attendanceDate, yesterday)) {
           skipUser = true
           continue
         }
         currentStreak = 1
-        expectedDate = new Date(today)
+        expectedDate = new Date(attendanceDate)
         expectedDate.setDate(expectedDate.getDate() - 1)
         continue
       }
