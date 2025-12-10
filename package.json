@@ -12,6 +12,7 @@
     "seed-kanji-vocabulary": "ts-node initialScript/seed-default-data.ts",
     "seed-gemini-configs": "ts-node initialScript/seed-gemini-configs.ts",
     "create-permissions": "ts-node initialScript/create-permissions.ts",
+    "init-user-subscriptions": "ts-node initialScript/init-user-subscriptions.ts",
     "import-pokemons": "ts-node initialScript/import-pokemons.ts",
     "test-import-pokemons": "ts-node initialScript/test-import-pokemons.ts",
     "update-pokemon-evolutions": "ts-node initialScript/update-pokemon-evolutions.ts",
