@@ -102,7 +102,7 @@ export class HandleLeaderboardSeasonCronjob {
   }
 
   // Run daily at 01:00 UTC to precreate next season if enabled
-  @Cron(CronExpression.EVERY_DAY_AT_2AM, { timeZone: 'UTC' })
+  @Cron(CronExpression.EVERY_10_SECONDS, { timeZone: 'UTC' })
   async handlePrecreateNextSeason() {
     const now = todayUTCWith0000()
     this.logger.log(`[LeaderboardSeason Precreate] Running at ${now.toISOString()}`)
@@ -110,7 +110,10 @@ export class HandleLeaderboardSeasonCronjob {
     try {
       const activeSeasons = await this.prisma.leaderboardSeason.findMany({
         where: { status: 'ACTIVE', enablePrecreate: true, deletedAt: null },
-        include: { nameTranslations: true }
+        include: {
+          nameTranslations: true,
+          seasonRankRewards: { include: { rewards: { select: { id: true } } } }
+        }
       })
 
       for (const season of activeSeasons) {
@@ -181,6 +184,14 @@ export class HandleLeaderboardSeasonCronjob {
               ...(upserts.length ? { nameTranslations: { upsert: upserts as any } } : {})
             }
           })
+
+          // Clone SeasonRankRewards from current season
+          await this.cloneSeasonRankRewards(
+            season.id,
+            created.id,
+            season.seasonRankRewards,
+            season.isRandomItemAgain
+          )
 
           // Disable precreate on current season to avoid multiple next creations
           await this.prisma.leaderboardSeason.update({
@@ -348,6 +359,70 @@ export class HandleLeaderboardSeasonCronjob {
   }
 
   /**
+   * Clone SeasonRankRewards from source season to new season
+   * - if isRandomItemAgain=false: clone same reward ids
+   * - if true: re-randomize rewards from pool (EXP, SPARKLES) keeping same structure counts
+   */
+  private async cloneSeasonRankRewards(
+    sourceSeasonId: number,
+    targetSeasonId: number,
+    seasonRankRewards: any[],
+    isRandomItemAgain: boolean
+  ) {
+    if (!seasonRankRewards || seasonRankRewards.length === 0) {
+      this.logger.log(
+        `[CloneSeasonRankRewards] Source season ${sourceSeasonId} has no rewards to clone`
+      )
+      return
+    }
+
+    // Prepare reward pool if randomization is needed
+    let rewardPool: { id: number }[] = []
+    if (isRandomItemAgain) {
+      rewardPool = await this.prisma.reward.findMany({
+        where: {
+          deletedAt: null,
+          rewardTarget: { in: [RewardTarget.EXP as any, RewardTarget.SPARKLES as any] }
+        },
+        select: { id: true }
+      })
+    }
+
+    // Clone each SeasonRankReward
+    for (const item of seasonRankRewards) {
+      let rewardIds: number[] = []
+      if (!isRandomItemAgain) {
+        // Clone same rewards
+        rewardIds = (item.rewards || []).map((r: any) => r.id)
+      } else {
+        // Random pick based on previous count; ensure at least 1 if pool not empty
+        const count = Math.max(1, (item.rewards || []).length || 1)
+        if (rewardPool.length > 0) {
+          const shuffled = [...rewardPool].sort(() => Math.random() - 0.5)
+          rewardIds = shuffled.slice(0, Math.min(count, shuffled.length)).map((r) => r.id)
+        } else {
+          rewardIds = []
+        }
+      }
+
+      await this.prisma.seasonRankReward.create({
+        data: {
+          seasonId: targetSeasonId,
+          rankName: item.rankName,
+          order: item.order,
+          ...(rewardIds.length
+            ? { rewards: { connect: rewardIds.map((rid) => ({ id: rid })) } }
+            : {})
+        }
+      })
+    }
+
+    this.logger.log(
+      `[CloneSeasonRankRewards] Cloned ${seasonRankRewards.length} SeasonRankRewards from season ${sourceSeasonId} to ${targetSeasonId}`
+    )
+  }
+
+  /**
    * Create the next season in PREVIEW based on a template (the just-finalized season).
    * - Dates: start = template.endDate, end = start + duration(template)
    * - Copy translations and config flags
@@ -444,6 +519,7 @@ export class HandleLeaderboardSeasonCronjob {
         // Decide reward ids to connect
         let rewardIds: number[] = []
         if (!template.isRandomItemAgain) {
+          // Clone same rewards
           rewardIds = (item.rewards || []).map((r) => r.id)
         } else {
           // Random pick based on previous count; ensure at least 1 if pool not empty
@@ -472,7 +548,7 @@ export class HandleLeaderboardSeasonCronjob {
       }
 
       this.logger.log(
-        `[PrecreateNext] Created next season ${created.id} from template ${template.id} (${finalNameKey})`
+        `[PrecreateNext] Created next season ${created.id} with ${template.seasonRankRewards.length} SeasonRankRewards from template ${template.id} (${finalNameKey})`
       )
     })
   }
