@@ -13,6 +13,7 @@
     "seed-gemini-configs": "ts-node initialScript/seed-gemini-configs.ts",
     "create-permissions": "ts-node initialScript/create-permissions.ts",
     "init-user-subscriptions": "ts-node initialScript/init-user-subscriptions.ts",
+    "rotate-season": "ts-node -r tsconfig-paths/register initialScript/run-manual-rotation.ts",
     "import-pokemons": "ts-node initialScript/import-pokemons.ts",
     "test-import-pokemons": "ts-node initialScript/test-import-pokemons.ts",
     "update-pokemon-evolutions": "ts-node initialScript/update-pokemon-evolutions.ts",

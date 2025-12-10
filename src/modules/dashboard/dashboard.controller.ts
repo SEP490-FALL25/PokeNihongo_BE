@@ -1,6 +1,6 @@
 import { I18nLang } from '@/i18n/decorators/i18n-lang.decorator'
 import { PaginationQueryDTO } from '@/shared/dtos/request.dto'
-import { Controller, Get, Query } from '@nestjs/common'
+import { Controller, Get, Param, Query } from '@nestjs/common'
 import { DashboardService } from './dashboard.service'
 
 @Controller('dashboard')
@@ -96,5 +96,28 @@ export class DashboardController {
   getLessonCompletionRate(@I18nLang() lang: string) {
     return this.dashboardService.getLessonCompletionRate(lang)
   }
-  // //! ----------------------------------------------------------------------------
+
+  //*Mùa giải------------ ----------------------------------------------
+  @Get('leaderboard-season/stats')
+  getLeaderboardSeasonStats(
+    @I18nLang() lang: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1
+    const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 10
+    return this.dashboardService.getLeaderboardSeasonStats(lang, pageNum, pageSizeNum)
+  }
+
+  @Get('leaderboard-season/:seasonId')
+  getLeaderboardSeasonDetail(
+    @I18nLang() lang: string,
+    @Param('seasonId') seasonId: string
+  ) {
+    const seasonIdNum = parseInt(seasonId, 10)
+
+    return this.dashboardService.getLeaderboardSeasonDetail(seasonIdNum, lang)
+  }
+
+  // //! --------------------------------------------------------------------------
 }
