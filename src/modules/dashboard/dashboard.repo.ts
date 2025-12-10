@@ -3,6 +3,7 @@ import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { Injectable } from '@nestjs/common'
 import { InvoiceStatus, PrismaClient, UserSubscriptionStatus } from '@prisma/client'
+import { todayUTCWith0000 } from 'src/shared/helpers'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { USER_SEASON_HISTORY_FIELDS } from '../user-subscription/entities/user-subscription.entity'
 
@@ -786,68 +787,97 @@ export class DashboardRepo {
 
   /**
    * Tỷ lệ Duy trì Streak - xem qua attendance
-   * Daily streak (liên tiếp hàng ngày), Weekly, Monthly
+   * Tính streak liên tiếp từ hôm nay trở về trước (dựa trên Attendance.date)
    */
   async getStreakRetention() {
-    const now = new Date()
+    const today = todayUTCWith0000()
+    const windowStart = new Date(today)
+    windowStart.setDate(windowStart.getDate() - 60) // enough lookback to cover long streaks
 
-    // Count users with daily attendance in last 7 days
-    const dailyStreak = await this.prismaService.attendance.groupBy({
-      by: ['userId'],
-      where: {
-        deletedAt: null,
-        createdAt: {
-          gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-        },
-        user: {
-          role: { name: RoleName.Learner },
-          deletedAt: null
-        }
-      },
-      _count: {
-        id: true
-      },
-      having: {
-        id: {
-          _count: {
-            gte: 5 // At least 5 attendances in 7 days
+    const [attendances, totalUsers] = await Promise.all([
+      this.prismaService.attendance.findMany({
+        where: {
+          deletedAt: null,
+          date: {
+            gte: windowStart,
+            lte: today
+          },
+          user: {
+            role: { name: RoleName.Learner },
+            deletedAt: null
           }
-        }
-      }
-    })
-
-    // Count users with streak in current month
-    const monthlyStreak = await this.prismaService.attendance.groupBy({
-      by: ['userId'],
-      where: {
-        deletedAt: null,
-        createdAt: {
-          gte: new Date(now.getFullYear(), now.getMonth(), 1),
-          lte: now
         },
-        user: {
-          role: { name: RoleName.Learner },
-          deletedAt: null
+        select: {
+          userId: true,
+          date: true
+        },
+        orderBy: [{ userId: 'asc' }, { date: 'desc' }]
+      }),
+      this.prismaService.user.count({
+        where: {
+          deletedAt: null,
+          role: { name: RoleName.Learner }
         }
-      },
-      _count: {
-        id: true
-      },
-      having: {
-        id: {
-          _count: {
-            gte: 10 // At least 10 attendances in current month
-          }
-        }
-      }
-    })
+      })
+    ])
 
-    const totalUsers = await this.prismaService.user.count({
-      where: {
-        deletedAt: null,
-        role: { name: RoleName.Learner }
+    // Normalize to midnight UTC for consistent day comparisons
+    const normalize = (value: Date) => {
+      const normalized = new Date(value)
+      normalized.setUTCHours(0, 0, 0, 0)
+      return normalized
+    }
+
+    const sameDay = (a: Date, b: Date) => a.getTime() === b.getTime()
+
+    const streakByUser = new Map<number, number>()
+    let currentUser: number | null = null
+    let currentStreak = 0
+    let expectedDate: Date | null = null
+    let skipUser = false // once a gap is found, streak from today ends
+
+    for (const attendance of attendances) {
+      const attendanceDate = normalize(attendance.date)
+
+      if (attendance.userId !== currentUser) {
+        if (currentUser !== null) {
+          streakByUser.set(currentUser, currentStreak)
+        }
+        currentUser = attendance.userId
+        currentStreak = 0
+        expectedDate = null
+        skipUser = false
       }
-    })
+
+      if (skipUser) continue
+
+      if (!expectedDate) {
+        // Streak only counts if user checked in today
+        if (!sameDay(attendanceDate, today)) {
+          skipUser = true
+          continue
+        }
+        currentStreak = 1
+        expectedDate = new Date(today)
+        expectedDate.setDate(expectedDate.getDate() - 1)
+        continue
+      }
+
+      if (sameDay(attendanceDate, expectedDate)) {
+        currentStreak++
+        expectedDate.setDate(expectedDate.getDate() - 1)
+      } else if (attendanceDate.getTime() < expectedDate.getTime()) {
+        skipUser = true
+      }
+    }
+
+    if (currentUser !== null) {
+      streakByUser.set(currentUser, currentStreak)
+    }
+
+    const streakValues = Array.from(streakByUser.values())
+    const dailyStreakCount = streakValues.filter((value) => value >= 1).length
+    const monthlyStreakCount = streakValues.filter((value) => value >= 7).length
 
     const calculatePercent = (count: number, total: number): number => {
       return total > 0 ? Math.round((count / total) * 100 * 100) / 100 : 0
@@ -855,12 +885,12 @@ export class DashboardRepo {
 
     return {
       daily_streak: {
-        count: dailyStreak.length,
-        percent: calculatePercent(dailyStreak.length, totalUsers)
+        count: dailyStreakCount,
+        percent: calculatePercent(dailyStreakCount, totalUsers)
       },
       monthly_streak: {
-        count: monthlyStreak.length,
-        percent: calculatePercent(monthlyStreak.length, totalUsers)
+        count: monthlyStreakCount,
+        percent: calculatePercent(monthlyStreakCount, totalUsers)
       },
       totalUsers
     }
@@ -890,7 +920,8 @@ export class DashboardRepo {
       select: {
         id: true,
         nameJp: true,
-        imageUrl: true
+        imageUrl: true,
+        nameTranslations: true
       }
     })
 
@@ -913,6 +944,7 @@ export class DashboardRepo {
       return {
         pokemonId: starter.id,
         nameJp: starter.nameJp,
+        nameTranslations: starter.nameTranslations,
         imageUrl: starter.imageUrl,
         count,
         percent
