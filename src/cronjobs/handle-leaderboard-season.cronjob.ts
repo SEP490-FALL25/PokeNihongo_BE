@@ -102,7 +102,7 @@ export class HandleLeaderboardSeasonCronjob {
   }
 
   // Run daily at 01:00 UTC to precreate next season if enabled
-  @Cron(CronExpression.EVERY_10_SECONDS, { timeZone: 'UTC' })
+  @Cron(CronExpression.EVERY_DAY_AT_2AM, { timeZone: 'UTC' })
   async handlePrecreateNextSeason() {
     const now = todayUTCWith0000()
     this.logger.log(`[LeaderboardSeason Precreate] Running at ${now.toISOString()}`)
