@@ -289,7 +289,9 @@ export class DashboardService {
 
       // Tổng số trận trong mùa
       const totalMatches = season.matches.length
-      const totalMatchesSuccess = season.matches.filter((m) => m.status === 'COMPLETED').length
+      const totalMatchesSuccess = season.matches.filter(
+        (m) => m.status === 'COMPLETED'
+      ).length
 
       return {
         id: season.id,
@@ -388,7 +390,9 @@ export class DashboardService {
 
     // Tổng số trận trong mùa
     const totalMatches = season.matches.length
-    const totalMatchesSuccess = season.matches.filter((m) => m.status === 'COMPLETED').length
+    const totalMatchesSuccess = season.matches.filter(
+      (m) => m.status === 'COMPLETED'
+    ).length
 
     return {
       success: true,
