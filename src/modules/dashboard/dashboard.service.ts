@@ -1,4 +1,7 @@
+import { RoleName } from '@/common/constants/role.constant'
+import { convertEloToRank } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
+import { PrismaService } from '@/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { DashboardRepo } from './dashboard.repo'
@@ -7,7 +10,8 @@ import { DashboardRepo } from './dashboard.repo'
 export class DashboardService {
   constructor(
     private dashboardRepo: DashboardRepo,
-    private readonly langRepo: LanguagesRepository
+    private readonly langRepo: LanguagesRepository,
+    private readonly prisma: PrismaService
   ) {}
 
   /**
@@ -197,5 +201,247 @@ export class DashboardService {
    */
   async getLessonCompletionRate(lang: string = 'vi') {
     return this.dashboardRepo.getLessonCompletionRate(lang)
+  }
+
+  /**
+   * Leaderboard Stats - Tổng quan (Danh sách mùa ACTIVE + EXPIRED với pagination)
+   */
+  async getLeaderboardSeasonStats(
+    lang: string = 'vi',
+    page: number = 1,
+    pageSize: number = 10
+  ) {
+    const skip = (page - 1) * pageSize
+
+    // Lấy danh sách mùa ACTIVE + EXPIRED
+    const seasons = await this.prisma.leaderboardSeason.findMany({
+      where: {
+        status: { in: ['ACTIVE', 'EXPIRED'] },
+        deletedAt: null
+      },
+      include: {
+        nameTranslations: {
+          include: { language: { select: { code: true } } }
+        },
+        userHistories: {
+          where: {
+            user: {
+              role: { name: RoleName.Learner },
+              deletedAt: null
+            }
+          },
+          select: {
+            id: true,
+            userId: true,
+            finalElo: true,
+            finalRank: true,
+            user: { select: { eloscore: true } }
+          }
+        },
+        matches: {
+          select: { id: true, status: true }
+        }
+      },
+      orderBy: { startDate: 'desc' },
+      skip,
+      take: pageSize
+    })
+
+    // Tính tổng số mùa (cho pagination)
+    const totalCount = await this.prisma.leaderboardSeason.count({
+      where: {
+        status: { in: ['ACTIVE', 'EXPIRED'] },
+        deletedAt: null
+      }
+    })
+
+    // Tính tổng user Learner trong hệ thống
+    const totalUsers = await this.prisma.user.count({
+      where: {
+        role: { name: RoleName.Learner },
+        deletedAt: null
+      }
+    })
+
+    // Format lại data cho mỗi mùa
+    const formattedSeasons = seasons.map((season) => {
+      // Format nameTranslations
+      const nameTranslations = ['en', 'ja', 'vi']
+        .map((code) => {
+          const trans = season.nameTranslations.find((t) => t.language.code === code)
+          return trans ? { key: code, value: trans.value } : null
+        })
+        .filter((t) => t !== null)
+
+      // Lấy nameTranslation theo lang của user
+      const nameTranslation =
+        season.nameTranslations.find((t) => t.language.code === lang)?.value || ''
+
+      // Số user tham gia mùa này
+      const participantCount = season.userHistories.length
+      const nonParticipantCount = totalUsers - participantCount
+
+      // Tính rank distribution
+      const rankDistribution = this.calculateRankDistribution(
+        season.userHistories,
+        season.status
+      )
+
+      // Tổng số trận trong mùa
+      const totalMatches = season.matches.length
+      const totalMatchesSuccess = season.matches.filter((m) => m.status === 'COMPLETED').length
+
+      return {
+        id: season.id,
+        nameKey: season.nameKey,
+        nameTranslation,
+        nameTranslations,
+        status: season.status,
+        startDate: season.startDate,
+        endDate: season.endDate,
+        totalParticipants: participantCount,
+        totalNonParticipants: nonParticipantCount,
+        totalMatches,
+        totalMatchesSuccess,
+        rankDistribution
+      }
+    })
+
+    return {
+      data: formattedSeasons,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        totalCount,
+        totalPages: Math.ceil(totalCount / pageSize)
+      }
+    }
+  }
+
+  /**
+   * Leaderboard Stats - Chi tiết 1 mùa
+   */
+  async getLeaderboardSeasonDetail(seasonId: number, lang: string = 'vi') {
+    const season = await this.prisma.leaderboardSeason.findUnique({
+      where: { id: seasonId, deletedAt: null },
+      include: {
+        nameTranslations: {
+          include: { language: { select: { code: true } } }
+        },
+        userHistories: {
+          where: {
+            user: {
+              role: { name: RoleName.Learner },
+              deletedAt: null
+            }
+          },
+          select: {
+            id: true,
+            userId: true,
+            finalElo: true,
+            finalRank: true,
+            user: { select: { eloscore: true } }
+          }
+        },
+        matches: {
+          select: { id: true, status: true }
+        }
+      }
+    })
+
+    if (!season) {
+      return {
+        success: false,
+        message: 'Season not found'
+      }
+    }
+
+    // Format nameTranslations
+    const nameTranslations = ['en', 'ja', 'vi']
+      .map((code) => {
+        const trans = season.nameTranslations.find((t) => t.language.code === code)
+        return trans ? { key: code, value: trans.value } : null
+      })
+      .filter((t) => t !== null)
+
+    // Lấy nameTranslation theo lang của user
+    const nameTranslation =
+      season.nameTranslations.find((t) => t.language.code === lang)?.value || ''
+
+    // Tính tổng user Learner trong hệ thống
+    const totalUsers = await this.prisma.user.count({
+      where: {
+        role: { name: RoleName.Learner },
+        deletedAt: null
+      }
+    })
+
+    // Số user tham gia mùa này
+    const participantCount = season.userHistories.length
+    const nonParticipantCount = totalUsers - participantCount
+
+    // Tính rank distribution
+    const rankDistribution = this.calculateRankDistribution(
+      season.userHistories,
+      season.status
+    )
+
+    // Tổng số trận trong mùa
+    const totalMatches = season.matches.length
+    const totalMatchesSuccess = season.matches.filter((m) => m.status === 'COMPLETED').length
+
+    return {
+      success: true,
+      data: {
+        id: season.id,
+        nameKey: season.nameKey,
+        nameTranslation,
+        nameTranslations,
+        status: season.status,
+        startDate: season.startDate,
+        endDate: season.endDate,
+        totalParticipants: participantCount,
+        totalNonParticipants: nonParticipantCount,
+        totalMatches,
+        totalMatchesSuccess,
+        rankDistribution
+      }
+    }
+  }
+
+  /**
+   * Helper: Tính rank distribution dựa trên trạng thái mùa
+   * - EXPIRED: dùng finalRank từ UserSeasonHistory
+   * - ACTIVE: dùng eloscore hiện tại và convertEloToRank
+   */
+  private calculateRankDistribution(userHistories: any[], status: string) {
+    const rankCounts = { N3: 0, N4: 0, N5: 0 }
+
+    for (const uh of userHistories) {
+      let rank: string
+
+      if (status === 'EXPIRED') {
+        // Dùng finalRank từ UserSeasonHistory
+        rank = uh.finalRank || 'N5'
+      } else {
+        // ACTIVE: dùng eloscore hiện tại
+        const currentElo = uh.user?.eloscore || 0
+        rank = convertEloToRank(currentElo)
+      }
+
+      if (rank in rankCounts) {
+        rankCounts[rank]++
+      }
+    }
+
+    const totalParticipants = userHistories.length || 1 // Tránh chia cho 0
+
+    return ['N3', 'N4', 'N5'].map((rankName) => ({
+      rankName,
+      count: rankCounts[rankName],
+      percentage: parseFloat(
+        ((rankCounts[rankName] / totalParticipants) * 100).toFixed(2)
+      )
+    }))
   }
 }
