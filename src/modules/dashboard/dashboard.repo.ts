@@ -900,6 +900,92 @@ export class DashboardRepo {
   }
 
   /**
+   * Helper: Tính streak cho tất cả Learner users (reused by getStreakRetention & leaderboard stats)
+   * Trả về Map<userId, streakCount>
+   */
+  async calculateUserStreaks(): Promise<Map<number, number>> {
+    const today = todayUTCWith0000()
+    const windowStart = new Date(today)
+    windowStart.setDate(windowStart.getDate() - 60)
+
+    const attendances = await this.prismaService.attendance.findMany({
+      where: {
+        deletedAt: null,
+        date: {
+          gte: windowStart,
+          lte: today
+        },
+        user: {
+          role: { name: RoleName.Learner },
+          deletedAt: null
+        }
+      },
+      select: {
+        userId: true,
+        date: true
+      },
+      orderBy: [{ userId: 'asc' }, { date: 'desc' }]
+    })
+
+    const normalize = (value: Date) => {
+      const normalized = new Date(value)
+      normalized.setUTCHours(0, 0, 0, 0)
+      return normalized
+    }
+
+    const sameDay = (a: Date, b: Date) => a.getTime() === b.getTime()
+
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    const streakByUser = new Map<number, number>()
+    let currentUser: number | null = null
+    let currentStreak = 0
+    let expectedDate: Date | null = null
+    let skipUser = false
+
+    for (const attendance of attendances) {
+      const attendanceDate = normalize(attendance.date)
+
+      if (attendance.userId !== currentUser) {
+        if (currentUser !== null) {
+          streakByUser.set(currentUser, currentStreak)
+        }
+        currentUser = attendance.userId
+        currentStreak = 0
+        expectedDate = null
+        skipUser = false
+      }
+
+      if (skipUser) continue
+
+      if (!expectedDate) {
+        if (!sameDay(attendanceDate, today) && !sameDay(attendanceDate, yesterday)) {
+          skipUser = true
+          continue
+        }
+        currentStreak = 1
+        expectedDate = new Date(attendanceDate)
+        expectedDate.setDate(expectedDate.getDate() - 1)
+        continue
+      }
+
+      if (sameDay(attendanceDate, expectedDate)) {
+        currentStreak++
+        expectedDate.setDate(expectedDate.getDate() - 1)
+      } else if (attendanceDate.getTime() < expectedDate.getTime()) {
+        skipUser = true
+      }
+    }
+
+    if (currentUser !== null) {
+      streakByUser.set(currentUser, currentStreak)
+    }
+
+    return streakByUser
+  }
+
+  /**
    * Phân phối Pokémon Khởi đầu - tỉ lệ user chọn các pokemon khởi đầu
    */
   async getStarterPokemonDistribution() {

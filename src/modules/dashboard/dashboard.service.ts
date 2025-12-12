@@ -239,7 +239,12 @@ export class DashboardService {
           }
         },
         matches: {
-          select: { id: true, status: true }
+          select: { id: true, status: true },
+          include: {
+            participants: {
+              select: { userId: true }
+            }
+          }
         }
       },
       orderBy: { startDate: 'desc' },
@@ -263,51 +268,73 @@ export class DashboardService {
       }
     })
 
+    // Tính streak cho tất cả learner (reuse logic từ getStreakRetention)
+    const streakByUser = await this.dashboardRepo.calculateUserStreaks()
+
     // Format lại data cho mỗi mùa
-    const formattedSeasons = seasons.map((season) => {
-      // Format nameTranslations
-      const nameTranslations = ['en', 'ja', 'vi']
-        .map((code) => {
-          const trans = season.nameTranslations.find((t) => t.language.code === code)
-          return trans ? { key: code, value: trans.value } : null
+    const formattedSeasons = await Promise.all(
+      seasons.map(async (season) => {
+        // Format nameTranslations
+        const nameTranslations = ['en', 'ja', 'vi']
+          .map((code) => {
+            const trans = season.nameTranslations.find((t) => t.language.code === code)
+            return trans ? { key: code, value: trans.value } : null
+          })
+          .filter((t) => t !== null)
+
+        // Lấy nameTranslation theo lang của user
+        const nameTranslation =
+          season.nameTranslations.find((t) => t.language.code === lang)?.value || ''
+
+        // Số user tham gia mùa này (từ UserSeasonHistory)
+        const participantCount = season.userHistories.length
+        const nonParticipantCount = totalUsers - participantCount
+
+        // Tính rank distribution
+        const rankDistribution = this.calculateRankDistribution(
+          season.userHistories,
+          season.status
+        )
+
+        // Tổng số trận COMPLETED trong mùa
+        const totalMatchesCompleted = season.matches.filter(
+          (m) => m.status === 'COMPLETED'
+        ).length
+
+        // User IDs tham gia các trận đấu trong season này
+        const userIdsInMatches = new Set<number>()
+        season.matches.forEach((match) => {
+          match.participants.forEach((p) => userIdsInMatches.add(p.userId))
         })
-        .filter((t) => t !== null)
 
-      // Lấy nameTranslation theo lang của user
-      const nameTranslation =
-        season.nameTranslations.find((t) => t.language.code === lang)?.value || ''
+        // User có UserSeasonHistory nhưng không có MatchParticipant nào
+        const participantsWithNoMatches = season.userHistories.filter(
+          (uh) => !userIdsInMatches.has(uh.userId)
+        ).length
 
-      // Số user tham gia mùa này
-      const participantCount = season.userHistories.length
-      const nonParticipantCount = totalUsers - participantCount
+        // Learner KHÔNG có UserSeasonHistory cho season này NHƯNG có streak > 0
+        const userIdsInSeason = new Set(season.userHistories.map((uh) => uh.userId))
+        const learnersNotInSeasonWithStreak = Array.from(streakByUser.entries()).filter(
+          ([userId, streak]) => !userIdsInSeason.has(userId) && streak > 0
+        ).length
 
-      // Tính rank distribution
-      const rankDistribution = this.calculateRankDistribution(
-        season.userHistories,
-        season.status
-      )
-
-      // Tổng số trận trong mùa
-      const totalMatches = season.matches.length
-      const totalMatchesSuccess = season.matches.filter(
-        (m) => m.status === 'COMPLETED'
-      ).length
-
-      return {
-        id: season.id,
-        nameKey: season.nameKey,
-        nameTranslation,
-        nameTranslations,
-        status: season.status,
-        startDate: season.startDate,
-        endDate: season.endDate,
-        totalParticipants: participantCount,
-        totalNonParticipants: nonParticipantCount,
-        totalMatches,
-        totalMatchesSuccess,
-        rankDistribution
-      }
-    })
+        return {
+          id: season.id,
+          nameKey: season.nameKey,
+          nameTranslation,
+          nameTranslations,
+          status: season.status,
+          startDate: season.startDate,
+          endDate: season.endDate,
+          totalParticipants: participantCount,
+          totalNonParticipants: nonParticipantCount,
+          totalMatchesCompleted,
+          participantsWithNoMatches,
+          learnersNotInSeasonWithStreak,
+          rankDistribution
+        }
+      })
+    )
 
     return {
       data: formattedSeasons,
@@ -346,7 +373,12 @@ export class DashboardService {
           }
         },
         matches: {
-          select: { id: true, status: true }
+          select: { id: true, status: true },
+          include: {
+            participants: {
+              select: { userId: true }
+            }
+          }
         }
       }
     })
@@ -378,7 +410,10 @@ export class DashboardService {
       }
     })
 
-    // Số user tham gia mùa này
+    // Tính streak cho tất cả learner
+    const streakByUser = await this.dashboardRepo.calculateUserStreaks()
+
+    // Số user tham gia mùa này (từ UserSeasonHistory)
     const participantCount = season.userHistories.length
     const nonParticipantCount = totalUsers - participantCount
 
@@ -388,10 +423,26 @@ export class DashboardService {
       season.status
     )
 
-    // Tổng số trận trong mùa
-    const totalMatches = season.matches.length
-    const totalMatchesSuccess = season.matches.filter(
+    // Tổng số trận COMPLETED trong mùa
+    const totalMatchesCompleted = season.matches.filter(
       (m) => m.status === 'COMPLETED'
+    ).length
+
+    // User IDs tham gia các trận đấu trong season này
+    const userIdsInMatches = new Set<number>()
+    season.matches.forEach((match) => {
+      match.participants.forEach((p) => userIdsInMatches.add(p.userId))
+    })
+
+    // User có UserSeasonHistory nhưng không có MatchParticipant nào
+    const participantsWithNoMatches = season.userHistories.filter(
+      (uh) => !userIdsInMatches.has(uh.userId)
+    ).length
+
+    // Learner KHÔNG có UserSeasonHistory cho season này NHƯNG có streak > 0
+    const userIdsInSeason = new Set(season.userHistories.map((uh) => uh.userId))
+    const learnersNotInSeasonWithStreak = Array.from(streakByUser.entries()).filter(
+      ([userId, streak]) => !userIdsInSeason.has(userId) && streak > 0
     ).length
 
     return {
@@ -406,8 +457,9 @@ export class DashboardService {
         endDate: season.endDate,
         totalParticipants: participantCount,
         totalNonParticipants: nonParticipantCount,
-        totalMatches,
-        totalMatchesSuccess,
+        totalMatchesCompleted,
+        participantsWithNoMatches,
+        learnersNotInSeasonWithStreak,
         rankDistribution
       }
     }
