@@ -56,14 +56,14 @@ export class FlashcardService {
             meanings.map(async (meaning: any) => {
                 if (meaning.meaningKey) {
                     const translated = await this.translationHelper.getTranslation(meaning.meaningKey, lang)
-                    return translated || meaning.meaningKey
+                    return translated || ''
                 }
                 return null
             })
         )
 
-        // Filter out null values and join with comma
-        return translatedMeanings.filter((m): m is string => m !== null).join(', ')
+        // Filter out null and empty values and join with comma
+        return translatedMeanings.filter((m): m is string => m !== null && m !== '').join(', ')
     }
 
     private mapDeck(deck: any, totalCards: number): FlashcardDeckSummary {
