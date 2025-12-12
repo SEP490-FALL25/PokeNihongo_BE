@@ -101,12 +101,13 @@ export class DashboardController {
   @Get('leaderboard-season/stats')
   getLeaderboardSeasonStats(
     @I18nLang() lang: string,
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string
+    @Query() query: PaginationQueryDTO
   ) {
-    const pageNum = page ? parseInt(page, 10) : 1
-    const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 10
-    return this.dashboardService.getLeaderboardSeasonStats(lang, pageNum, pageSizeNum)
+    return this.dashboardService.getLeaderboardSeasonStats(
+      lang,
+      query.currentPage,
+      query.pageSize
+    )
   }
 
   @Get('leaderboard-season/:seasonId')
@@ -117,6 +118,27 @@ export class DashboardController {
     const seasonIdNum = parseInt(seasonId, 10)
 
     return this.dashboardService.getLeaderboardSeasonDetail(seasonIdNum, lang)
+  }
+
+  // //! --------------------------------------------------------------------------
+
+  //* Gacha------------ ----------------------------------------------
+  @Get('gacha-stats/overview')
+  getGachaStatsOverview(@I18nLang() lang: string, @Query() query: PaginationQueryDTO) {
+    return this.dashboardService.getGachaStatsOverview(
+      lang,
+      query.currentPage,
+      query.pageSize
+    )
+  }
+
+  @Get('gacha-stats/:gachaBannerId')
+  getGachaStatsDetail(
+    @I18nLang() lang: string,
+    @Param('gachaBannerId') gachaBannerId: string
+  ) {
+    const bannerIdNum = parseInt(gachaBannerId, 10)
+    return this.dashboardService.getGachaStatsDetail(bannerIdNum, lang)
   }
 
   // //! --------------------------------------------------------------------------

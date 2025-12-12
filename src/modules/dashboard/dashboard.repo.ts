@@ -1445,4 +1445,277 @@ export class DashboardRepo {
       }
     }
   }
+
+  /**
+   * Gacha Stats - Tổng quan
+   * - Tổng gacha ACTIVE | EXPIRED
+   * - Tổng lượt quay (GachaPurchase)
+   * - Tỉ lệ ra các sao 1-5 (từ GachaRollHistory, gộp tất cả banner)
+   * - List các gacha với pagination
+   */
+  async getGachaStatsOverview(
+    lang: string = 'vi',
+    page: number = 1,
+    pageSize: number = 10
+  ) {
+    const skip = (page - 1) * pageSize
+
+    // Tổng số banner ACTIVE và EXPIRED
+    const [totalActive, totalExpired] = await Promise.all([
+      this.prismaService.gachaBanner.count({
+        where: { status: 'ACTIVE', deletedAt: null }
+      }),
+      this.prismaService.gachaBanner.count({
+        where: { status: 'EXPIRED', deletedAt: null }
+      })
+    ])
+
+    // Tổng lượt quay (GachaPurchase)
+    const totalPurchases = await this.prismaService.gachaPurchase.count({
+      where: { deletedAt: null }
+    })
+
+    // Tỉ lệ ra các sao 1-5 (gộp tất cả banner) từ GachaRollHistory
+    const rollsByRarity = await this.prismaService.gachaRollHistory.groupBy({
+      by: ['rarity'],
+      where: { deletedAt: null },
+      _count: true
+    })
+
+    console.log('[Gacha Overview] rollsByRarity:', rollsByRarity)
+
+    const totalRolls = rollsByRarity.reduce((sum, r) => sum + r._count, 0)
+    const starDistribution = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'].map((star) => {
+      const found = rollsByRarity.find((r) => String(r.rarity) === star)
+      const count = found?._count || 0
+      return {
+        star,
+        count,
+        percentage:
+          totalRolls > 0 ? Math.round((count / totalRolls) * 100 * 100) / 100 : 0
+      }
+    })
+
+    // List các banner (ACTIVE + EXPIRED) với pagination
+    const banners = await this.prismaService.gachaBanner.findMany({
+      where: {
+        status: { in: ['ACTIVE', 'EXPIRED'] },
+        deletedAt: null
+      },
+      include: {
+        nameTranslations: {
+          include: { language: { select: { code: true } } }
+        },
+        purchases: {
+          where: { deletedAt: null },
+          select: { id: true }
+        },
+        rollLogs: {
+          where: { deletedAt: null },
+          select: { rarity: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize
+    })
+
+    const totalBanners = await this.prismaService.gachaBanner.count({
+      where: {
+        status: { in: ['ACTIVE', 'EXPIRED'] },
+        deletedAt: null
+      }
+    })
+
+    // Format dữ liệu cho từng banner
+    const formattedBanners = banners.map((banner) => {
+      const nameTranslations = ['en', 'ja', 'vi']
+        .map((code) => {
+          const trans = banner.nameTranslations.find((t) => t.language.code === code)
+          return trans ? { key: code, value: trans.value } : null
+        })
+        .filter((t) => t !== null)
+
+      const nameTranslation =
+        banner.nameTranslations.find((t) => t.language.code === lang)?.value || ''
+
+      const totalPurchasesForBanner = banner.purchases.length
+
+      // Tỉ lệ ra các sao cho banner này
+      const bannerRollsByRarity = banner.rollLogs.reduce(
+        (acc, roll) => {
+          acc[String(roll.rarity)] = (acc[String(roll.rarity)] || 0) + 1
+          return acc
+        },
+        {} as Record<string, number>
+      )
+
+      const totalRollsForBanner = banner.rollLogs.length
+      const bannerStarDistribution = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'].map(
+        (star) => {
+          const count = bannerRollsByRarity[star] || 0
+          return {
+            star,
+            count,
+            percentage:
+              totalRollsForBanner > 0
+                ? Math.round((count / totalRollsForBanner) * 100 * 100) / 100
+                : 0
+          }
+        }
+      )
+
+      return {
+        id: banner.id,
+        nameKey: banner.nameKey,
+        nameTranslation,
+        nameTranslations,
+        status: banner.status,
+        startDate: banner.startDate,
+        endDate: banner.endDate,
+        totalPurchases: totalPurchasesForBanner,
+        totalRolls: totalRollsForBanner,
+        starDistribution: bannerStarDistribution
+      }
+    })
+
+    return {
+      summary: {
+        totalActive,
+        totalExpired,
+        totalPurchases,
+        totalRolls,
+        starDistribution
+      },
+      banners: formattedBanners,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        totalCount: totalBanners,
+        totalPages: Math.ceil(totalBanners / pageSize)
+      }
+    }
+  }
+
+  /**
+   * Gacha Stats - Chi tiết 1 banner
+   * - Info banner
+   * - Có item gì (GachaItem): tên banner, tên pokemon, sao
+   * - Tổng lượt gacha cho banner
+   * - Tỉ lệ ra các sao 1-5 cho banner
+   */
+  async getGachaStatsDetail(gachaBannerId: number, lang: string = 'vi') {
+    const banner = await this.prismaService.gachaBanner.findUnique({
+      where: { id: gachaBannerId, deletedAt: null },
+      include: {
+        nameTranslations: {
+          include: { language: { select: { code: true } } }
+        },
+        items: {
+          where: { deletedAt: null },
+          include: {
+            pokemon: {
+              select: {
+                id: true,
+                nameJp: true,
+                nameTranslations: true,
+                rarity: true
+              }
+            },
+            gachaItemRate: {
+              select: {
+                starType: true,
+                rate: true
+              }
+            }
+          }
+        },
+        purchases: {
+          where: { deletedAt: null },
+          select: { id: true }
+        },
+        rollLogs: {
+          where: { deletedAt: null },
+          select: { rarity: true }
+        }
+      }
+    })
+
+    if (!banner) {
+      return {
+        success: false,
+        message: 'Banner not found'
+      }
+    }
+
+    // Format nameTranslations
+    const nameTranslations = ['en', 'ja', 'vi']
+      .map((code) => {
+        const trans = banner.nameTranslations.find((t) => t.language.code === code)
+        return trans ? { key: code, value: trans.value } : null
+      })
+      .filter((t) => t !== null)
+
+    const nameTranslation =
+      banner.nameTranslations.find((t) => t.language.code === lang)?.value || ''
+
+    // Tổng lượt gacha cho banner
+    const totalPurchases = banner.purchases.length
+
+    // Tỉ lệ ra các sao từ GachaRollHistory
+    const rollsByRarity = banner.rollLogs.reduce(
+      (acc, roll) => {
+        acc[String(roll.rarity)] = (acc[String(roll.rarity)] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>
+    )
+
+    const totalRolls = banner.rollLogs.length
+    const starDistribution = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'].map((star) => {
+      const count = rollsByRarity[star] || 0
+      return {
+        star,
+        count,
+        percentage:
+          totalRolls > 0 ? Math.round((count / totalRolls) * 100 * 100) / 100 : 0
+      }
+    })
+
+    // Format items
+    const items = banner.items.map((item) => {
+      const nameTranslationsObj =
+        typeof item.pokemon.nameTranslations === 'string'
+          ? JSON.parse(item.pokemon.nameTranslations)
+          : item.pokemon.nameTranslations
+      const pokemonName = nameTranslationsObj[lang] || item.pokemon.nameJp || ''
+
+      return {
+        pokemonId: item.pokemon.id,
+        pokemonName,
+        rarity: item.pokemon.rarity,
+        starType: item.gachaItemRate.starType,
+        rate: item.gachaItemRate.rate
+      }
+    })
+
+    return {
+      success: true,
+      data: {
+        id: banner.id,
+        nameKey: banner.nameKey,
+        nameTranslation,
+        nameTranslations,
+        status: banner.status,
+        startDate: banner.startDate,
+        endDate: banner.endDate,
+        hardPity5Star: banner.hardPity5Star,
+        costRoll: banner.costRoll,
+        totalPurchases,
+        totalRolls,
+        starDistribution,
+        items
+      }
+    }
+  }
 }

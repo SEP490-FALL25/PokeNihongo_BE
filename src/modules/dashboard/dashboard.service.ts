@@ -239,7 +239,6 @@ export class DashboardService {
           }
         },
         matches: {
-          select: { id: true, status: true },
           include: {
             participants: {
               select: { userId: true }
@@ -373,7 +372,6 @@ export class DashboardService {
           }
         },
         matches: {
-          select: { id: true, status: true },
           include: {
             participants: {
               select: { userId: true }
@@ -499,5 +497,23 @@ export class DashboardService {
         ((rankCounts[rankName] / totalParticipants) * 100).toFixed(2)
       )
     }))
+  }
+
+  /**
+   * Gacha Stats - Tổng quan (tổng ACTIVE/EXPIRED + list banner với pagination)
+   */
+  async getGachaStatsOverview(
+    lang: string = 'vi',
+    page: number = 1,
+    pageSize: number = 10
+  ) {
+    return this.dashboardRepo.getGachaStatsOverview(lang, page, pageSize)
+  }
+
+  /**
+   * Gacha Stats - Chi tiết 1 banner
+   */
+  async getGachaStatsDetail(gachaBannerId: number, lang: string = 'vi') {
+    return this.dashboardRepo.getGachaStatsDetail(gachaBannerId, lang)
   }
 }
