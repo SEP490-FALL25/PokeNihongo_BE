@@ -24,7 +24,8 @@ export default registerAs('gemini', () => ({
     temperature: parseFloat(process.env.GEMINI_TEMPERATURE || '0.7'),
     topP: parseFloat(process.env.GEMINI_TOP_P || '0.95'),
     topK: parseInt(process.env.GEMINI_TOP_K || '40', 10),
-    maxOutputTokens: parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS || '2048', 10)
+    // Default 8192 để đảm bảo response đầy đủ cho AI_KAIWA (có thể override bằng env)
+    maxOutputTokens: parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS || '8192', 10)
   },
   safetySettings: [
     {

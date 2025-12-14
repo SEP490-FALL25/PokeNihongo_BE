@@ -23,7 +23,8 @@ export class AIConversationRoomService {
             const room = await this.aiConversationRoomRepository.upsert({
                 userId: body.userId,
                 conversationId: body.conversationId,
-                title: body.title || null
+                title: body.title || null,
+                voiceName: body.voiceName || 'ja-JP-Wavenet-A'
             })
 
             return {
