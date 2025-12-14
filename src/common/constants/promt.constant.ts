@@ -99,12 +99,13 @@ export const DEFAULT_GENERATION_CONFIG = {
     },
     /**
      * AI Kaiwa Conversation - Balanced settings for natural conversation
+     * maxOutputTokens: 8192 để đảm bảo response đầy đủ, không bị cắt
      */
     AI_KAIWA: {
         temperature: 0.7,
         topP: 0.95,
         topK: 40,
-        maxOutputTokens: 2048
+        maxOutputTokens: 8192
     },
     /**
      * Translation - Conservative settings for accurate translations

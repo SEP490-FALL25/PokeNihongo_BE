@@ -174,3 +174,107 @@ export class SpeechToTextMultipartDTO {
     })
     model?: string
 }
+
+export class VoiceModelDTO {
+    @ApiProperty({
+        example: 'ja-JP-Wavenet-A',
+        description: 'Tên voice model'
+    })
+    name: string
+
+    @ApiProperty({
+        example: 'NEUTRAL',
+        description: 'Giới tính của giọng nói (MALE, FEMALE, NEUTRAL)'
+    })
+    ssmlGender: string
+
+    @ApiProperty({
+        example: 24000,
+        description: 'Tần số lấy mẫu tự nhiên của voice (Hz)'
+    })
+    naturalSampleRateHertz: number
+}
+
+export class JapaneseVoicesResponseDTO {
+    @ApiProperty({
+        type: [VoiceModelDTO],
+        description: 'Danh sách các voice models tiếng Nhật'
+    })
+    voices: VoiceModelDTO[]
+
+    @ApiProperty({
+        example: 16,
+        description: 'Tổng số voice models'
+    })
+    total: number
+}
+
+export class JapaneseVoicesApiResponseDTO {
+    @ApiProperty({
+        example: 200,
+        description: 'Mã trạng thái HTTP'
+    })
+    statusCode: number
+
+    @ApiProperty({
+        type: JapaneseVoicesResponseDTO,
+        description: 'Dữ liệu danh sách voice models tiếng Nhật'
+    })
+    data: JapaneseVoicesResponseDTO
+
+    @ApiProperty({
+        example: 'Lấy danh sách voice models tiếng Nhật thành công',
+        description: 'Thông báo kết quả'
+    })
+    message: string
+}
+
+export class PreviewVoiceRequestDTO {
+    @ApiProperty({
+        example: 'ja-JP-Wavenet-A',
+        description: 'Tên voice model để preview',
+        required: true
+    })
+    voiceName: string
+
+    @ApiProperty({
+        example: 'こんにちは。今日はいい天気ですね。',
+        description: 'Text mẫu để phát âm (mặc định: câu mẫu tiếng Nhật)',
+        required: false
+    })
+    sampleText?: string
+}
+
+export class PreviewVoiceResponseDTO {
+    @ApiProperty({
+        example: 'data:audio/ogg;base64,T2dnUwAC...',
+        description: 'Audio base64 để phát thử'
+    })
+    audio: string
+
+    @ApiProperty({
+        example: 'ogg',
+        description: 'Định dạng audio'
+    })
+    audioFormat: string
+}
+
+export class PreviewVoiceApiResponseDTO {
+    @ApiProperty({
+        example: 200,
+        description: 'Mã trạng thái HTTP'
+    })
+    statusCode: number
+
+    @ApiProperty({
+        type: PreviewVoiceResponseDTO,
+        description: 'Dữ liệu audio preview'
+    })
+    data: PreviewVoiceResponseDTO
+
+    @ApiProperty({
+        example: 'Tạo audio preview thành công',
+        description: 'Thông báo kết quả'
+    })
+    message: string
+}

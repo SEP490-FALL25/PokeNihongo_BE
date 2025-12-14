@@ -130,6 +130,28 @@ export class TextToSpeechService {
     }
 
     /**
+     * Get Japanese voice models list (formatted)
+     */
+    async getJapaneseVoices(): Promise<Array<{ name: string; ssmlGender: string; naturalSampleRateHertz: number }>> {
+        try {
+            const voices = await this.getSupportedVoices('ja-JP')
+
+            // Format và filter chỉ lấy thông tin cần thiết
+            const formattedVoices = voices.map((voice: any) => ({
+                name: voice.name,
+                ssmlGender: voice.ssmlGender,
+                naturalSampleRateHertz: voice.naturalSampleRateHertz
+            }))
+
+            this.logger.log(`Found ${formattedVoices.length} Japanese voice models`)
+            return formattedVoices
+        } catch (error) {
+            this.logger.error('Failed to get Japanese voices:', error)
+            throw new Error(`Failed to get Japanese voices: ${error.message}`)
+        }
+    }
+
+    /**
      * Generate audio from text and upload to Cloudinary
      * @param text Text to convert to speech
      * @param folder Folder to upload audio to

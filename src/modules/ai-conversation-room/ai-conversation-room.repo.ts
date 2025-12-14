@@ -94,12 +94,14 @@ export class AIConversationRoomRepository {
         userId: number
         conversationId: string
         title?: string | null
+        voiceName?: string | null
     }): Promise<AIConversationRoomType> {
         const result = await this.prismaService.aIConversationRoom.create({
             data: {
                 userId: data.userId,
                 conversationId: data.conversationId,
-                title: data.title || null
+                title: data.title || null,
+                voiceName: data.voiceName || 'ja-JP-Wavenet-A'
             }
         })
         return this.transformAIConversationRoom(result)
@@ -109,6 +111,7 @@ export class AIConversationRoomRepository {
         userId: number
         conversationId: string
         title?: string | null
+        voiceName?: string | null
     }): Promise<AIConversationRoomType> {
         const result = await this.prismaService.aIConversationRoom.upsert({
             where: {
@@ -117,10 +120,12 @@ export class AIConversationRoomRepository {
             create: {
                 userId: data.userId,
                 conversationId: data.conversationId,
-                title: data.title || null
+                title: data.title || null,
+                voiceName: data.voiceName || 'ja-JP-Wavenet-A'
             },
             update: {
-                title: data.title || undefined
+                title: data.title || undefined,
+                voiceName: data.voiceName !== undefined ? (data.voiceName || 'ja-JP-Wavenet-A') : undefined
             }
         })
         return this.transformAIConversationRoom(result)
@@ -133,6 +138,7 @@ export class AIConversationRoomRepository {
             lastMessage?: string | null
             lastMessageAt?: Date | null
             isArchived?: boolean
+            voiceName?: string | null
         }
     ): Promise<AIConversationRoomType> {
         const whereClause: any = {}
@@ -175,6 +181,7 @@ export class AIConversationRoomRepository {
             lastMessage: room.lastMessage,
             lastMessageAt: room.lastMessageAt,
             isArchived: room.isArchived,
+            voiceName: room.voiceName,
             deletedAt: room.deletedAt,
             createdAt: room.createdAt,
             updatedAt: room.updatedAt

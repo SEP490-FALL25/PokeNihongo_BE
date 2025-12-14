@@ -481,6 +481,238 @@
       .typing-text {
         display: inline;
       }
+
+      /* Voice Selection Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+      }
+
+      .modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        transform: scale(0.9);
+        transition: transform 0.3s;
+      }
+
+      .modal-overlay.show .modal {
+        transform: scale(1);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .modal-close {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: #f0f0f0;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+
+      .modal-close:hover {
+        background: #e0e0e0;
+      }
+
+      .modal-body {
+        margin-bottom: 20px;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+      }
+
+      .form-select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        cursor: pointer;
+        transition: border-color 0.2s;
+      }
+
+      .form-select:hover {
+        border-color: #007bff;
+      }
+
+      .form-select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+      }
+
+      .form-help {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+      }
+
+      .modal-footer {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .btn-primary {
+        background: #007bff;
+        color: white;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: #0056b3;
+      }
+
+      .btn-secondary {
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      .btn-secondary:hover {
+        background: #e0e0e0;
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .loading-voices {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+        font-size: 14px;
+      }
+
+      .voice-preview-group {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+      }
+
+      .voice-preview-input {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .voice-preview-input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+      }
+
+      .btn-preview {
+        padding: 12px 20px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .btn-preview:hover:not(:disabled) {
+        background: #218838;
+      }
+
+      .btn-preview:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: #6c757d;
+      }
+
+      .btn-preview.loading {
+        position: relative;
+        color: transparent;
+      }
+
+      .btn-preview.loading::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        top: 50%;
+        left: 50%;
+        margin-left: -8px;
+        margin-top: -8px;
+        border: 2px solid #ffffff;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
 
@@ -552,6 +784,46 @@
       </div>
     </div>
 
+    <!-- Voice Selection Modal -->
+    <div class="modal-overlay" id="voiceModal">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">Chọn giọng nói AI</div>
+          <button class="modal-close" id="closeVoiceModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="voiceSelect">Giọng nói tiếng Nhật</label>
+            <select class="form-select" id="voiceSelect">
+              <option value="">Đang tải...</option>
+            </select>
+            <div class="form-help">Chọn giọng nói mà AI sẽ sử dụng để phát âm tiếng Nhật</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="sampleText">Nghe thử</label>
+            <div class="voice-preview-group">
+              <input 
+                type="text" 
+                class="voice-preview-input" 
+                id="sampleText" 
+                placeholder="Nhập text mẫu để nghe thử..."
+                value="こんにちは。今日はいい天気ですね。"
+              />
+              <button class="btn btn-preview" id="previewVoiceBtn">
+                <span>▶</span>
+                <span>Nghe thử</span>
+              </button>
+            </div>
+            <div class="form-help">Nhập text tiếng Nhật và click "Nghe thử" để nghe giọng nói mẫu</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="cancelVoiceBtn">Hủy</button>
+          <button class="btn btn-primary" id="confirmVoiceBtn" disabled>Tạo cuộc trò chuyện</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       const chatArea = document.getElementById("chatArea");
       const micContainer = document.getElementById("micContainer");
@@ -564,6 +836,13 @@
       const welcomeMessage = document.getElementById("welcomeMessage");
       const sentencePatterns = document.getElementById("sentencePatterns");
       const dialogueSequence = document.getElementById("dialogueSequence");
+      const voiceModal = document.getElementById("voiceModal");
+      const voiceSelect = document.getElementById("voiceSelect");
+      const closeVoiceModal = document.getElementById("closeVoiceModal");
+      const cancelVoiceBtn = document.getElementById("cancelVoiceBtn");
+      const confirmVoiceBtn = document.getElementById("confirmVoiceBtn");
+      const previewVoiceBtn = document.getElementById("previewVoiceBtn");
+      const sampleText = document.getElementById("sampleText");
 
       let conversationId = null;
       let mediaRecorder = null;
@@ -571,10 +850,11 @@
       let audioContext = null;
       let audioChunks = []; // Collect audio chunks while recording
       let isCreatingConversation = false; // Flag để tránh tạo nhiều lần
+      let voicesList = []; // Danh sách voices
+      let selectedVoiceName = 'ja-JP-Wavenet-A'; // Voice mặc định
 
       /** ✅ ACCESS TOKEN */
-      const accessToken =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImRldmljZUlkIjo0OCwicm9sZUlkIjoxLCJyb2xlTmFtZSI6IkFETUlOIiwidXVpZCI6ImRmOTI0NWM5LTgwZWYtNDNiNS05ZDA5LTlmNzU1MzA4YzE1ZSIsImlhdCI6MTc2MjM2MzE3MSwiZXhwIjoxNzkzODk5MTcxfQ.ztkMwsbzITPZotM6RyceHq6euz_fmWzASEKOGb2YmrQ";
+      const accessToken ="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjM0LCJkZXZpY2VJZCI6MTA5LCJyb2xlSWQiOjMsInJvbGVOYW1lIjoiTEVBUk5FUiIsInV1aWQiOiJiYmQ2NmMyMC1kYTBiLTRiZWUtYTEyOS1jNjA3NTAyODc0NWYiLCJpYXQiOjE3NjU2OTIyNzEsImV4cCI6MTc5NzIyODI3MX0.6kC54HexUd437738XNdxncRFkoiMY8ZhQgTNWJa15QE"
 
       const API_BASE_URL = "http://localhost:8080";
 
@@ -658,10 +938,83 @@
       /** ✅ JOIN ROOM */
       function joinRoom(convId) {
         conversationId = convId;
+        // Khi join room cũ, không cần chọn voice (dùng voice đã lưu trong room)
         socket.emit("join-kaiwa-room", { conversationId: convId });
         micContainer.classList.remove('hidden');
         micButton.disabled = false;
         loadRooms(); // Refresh để highlight room active
+      }
+
+      /** ✅ LOAD VOICES LIST */
+      async function loadVoices() {
+        try {
+          const response = await fetch(`${API_BASE_URL}/speech/voices/ja-JP`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (!response.ok) {
+            console.error('Failed to load voices:', response.status);
+            // Fallback to default voice
+            voicesList = [{ name: 'ja-JP-Wavenet-A', ssmlGender: 'NEUTRAL' }];
+            populateVoiceSelect();
+            return;
+          }
+          
+          const data = await response.json();
+          console.log('Voices loaded:', data);
+          
+          if (data.data && data.data.voices) {
+            voicesList = data.data.voices;
+            populateVoiceSelect();
+          }
+        } catch (error) {
+          console.error('Error loading voices:', error);
+          // Fallback to default voice
+          voicesList = [{ name: 'ja-JP-Wavenet-A', ssmlGender: 'NEUTRAL' }];
+          populateVoiceSelect();
+        }
+      }
+
+      /** ✅ POPULATE VOICE SELECT */
+      function populateVoiceSelect() {
+        voiceSelect.innerHTML = '';
+        
+        if (voicesList.length === 0) {
+          voiceSelect.innerHTML = '<option value="">Không có voice nào</option>';
+          previewVoiceBtn.disabled = true;
+          return;
+        }
+
+        voicesList.forEach(voice => {
+          const option = document.createElement('option');
+          option.value = voice.name;
+          option.textContent = `${voice.name} (${voice.ssmlGender || 'NEUTRAL'})`;
+          if (voice.name === selectedVoiceName) {
+            option.selected = true;
+          }
+          voiceSelect.appendChild(option);
+        });
+
+        confirmVoiceBtn.disabled = false;
+        previewVoiceBtn.disabled = false;
+      }
+
+      /** ✅ SHOW VOICE MODAL */
+      function showVoiceModal() {
+        voiceModal.classList.add('show');
+        // Load voices nếu chưa có
+        if (voicesList.length === 0) {
+          voiceSelect.innerHTML = '<option value="">Đang tải...</option>';
+          loadVoices();
+        }
+      }
+
+      /** ✅ HIDE VOICE MODAL */
+      function hideVoiceModal() {
+        voiceModal.classList.remove('show');
       }
 
       /** ✅ CREATE NEW CONVERSATION */
@@ -672,6 +1025,71 @@
           return;
         }
 
+        // Hiển thị modal chọn voice
+        showVoiceModal();
+      }
+
+      /** ✅ PREVIEW VOICE */
+      async function previewVoice() {
+        const voiceName = voiceSelect.value || 'ja-JP-Wavenet-A';
+        const text = sampleText.value.trim() || 'こんにちは。今日はいい天気ですね。';
+
+        if (!voiceName) {
+          alert('Vui lòng chọn voice trước');
+          return;
+        }
+
+        if (!text) {
+          alert('Vui lòng nhập text mẫu');
+          return;
+        }
+
+        // Disable button và show loading
+        previewVoiceBtn.disabled = true;
+        previewVoiceBtn.classList.add('loading');
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/speech/preview-voice`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              voiceName: voiceName,
+              sampleText: text
+            })
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Lỗi ${response.status}: ${errorText}`);
+          }
+
+          const data = await response.json();
+          console.log('Preview voice response:', data);
+
+          if (data.data && data.data.audio) {
+            // Phát audio
+            playAudioFromBase64(data.data.audio, data.data.audioFormat || 'ogg');
+          } else {
+            throw new Error('Không nhận được audio');
+          }
+        } catch (error) {
+          console.error('Error previewing voice:', error);
+          alert(`Không thể nghe thử voice: ${error.message}`);
+        } finally {
+          // Re-enable button
+          previewVoiceBtn.disabled = false;
+          previewVoiceBtn.classList.remove('loading');
+        }
+      }
+
+      /** ✅ CONFIRM CREATE CONVERSATION */
+      function confirmCreateConversation() {
+        selectedVoiceName = voiceSelect.value || 'ja-JP-Wavenet-A';
+        hideVoiceModal();
+
         isCreatingConversation = true;
         conversationId = null;
         chatArea.innerHTML = '<div class="empty-state">Đang tạo cuộc trò chuyện mới...</div>';
@@ -680,7 +1098,8 @@
         // Disable button để tránh click nhiều lần
         newConversationBtn.disabled = true;
         
-        socket.emit("join-kaiwa-room", {}); // Explicitly send empty object to ensure no conversationId
+        // Gửi voiceName khi join room
+        socket.emit("join-kaiwa-room", { voiceName: selectedVoiceName });
         micContainer.classList.remove('hidden');
         micButton.disabled = false;
       }
@@ -998,6 +1417,7 @@
       socket.on("connect", () => {
         console.log("✅ Connected to server");
         loadRooms(); // Load rooms khi connect
+        loadVoices(); // Load voices khi connect
       });
 
       socket.on("disconnect", (reason) => {
@@ -1285,6 +1705,38 @@
           createNewConversation();
           createConversationTimeout = null;
         }, 300);
+      });
+
+      // Voice modal handlers
+      closeVoiceModal.addEventListener("click", hideVoiceModal);
+      cancelVoiceBtn.addEventListener("click", hideVoiceModal);
+      confirmVoiceBtn.addEventListener("click", confirmCreateConversation);
+      previewVoiceBtn.addEventListener("click", previewVoice);
+      
+      // Preview khi Enter trong input
+      sampleText.addEventListener("keypress", (e) => {
+        if (e.key === 'Enter' && !previewVoiceBtn.disabled) {
+          previewVoice();
+        }
+      });
+
+      // Enable/disable preview button khi chọn voice
+      voiceSelect.addEventListener("change", () => {
+        previewVoiceBtn.disabled = !voiceSelect.value;
+      });
+      
+      // Close modal khi click outside
+      voiceModal.addEventListener("click", (e) => {
+        if (e.target === voiceModal) {
+          hideVoiceModal();
+        }
+      });
+
+      // Close modal với ESC key
+      document.addEventListener("keydown", (e) => {
+        if (e.key === 'Escape' && voiceModal.classList.contains('show')) {
+          hideVoiceModal();
+        }
       });
 
       /** ✅ TOGGLE SIDEBAR */

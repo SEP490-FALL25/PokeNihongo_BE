@@ -1368,7 +1368,8 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                             const createResult = await this.aiConversationRoomService.create({
                                 userId,
                                 conversationId: client.data.conversationId,
-                                title: null
+                                title: null,
+                                voiceName: client.data.voiceName || 'ja-JP-Wavenet-A'
                             })
                             room = createResult.data
                             this.logger.log(`[Kaiwa] [${requestId}] Room created successfully`)
@@ -1499,10 +1500,23 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             if (geminiResponse && geminiResponse.trim().length > 0) {
                 (async () => {
                     try {
-                        this.logger.log(`[Kaiwa] [${requestId}] Starting TTS for text: "${geminiResponse.substring(0, 50)}..." (length: ${geminiResponse.length})`)
+                        // Lấy voiceName từ room hoặc client.data hoặc dùng default
+                        let voiceName = 'ja-JP-Wavenet-A'
+                        try {
+                            const roomResult = await this.aiConversationRoomService.findByConversationId(client.data.conversationId, userId)
+                            if (roomResult?.data?.voiceName) {
+                                voiceName = roomResult.data.voiceName
+                            } else if (client.data.voiceName) {
+                                voiceName = client.data.voiceName
+                            }
+                        } catch (err) {
+                            this.logger.warn(`[Kaiwa] [${requestId}] Failed to get voiceName from room, using default: ${err.message}`)
+                        }
+
+                        this.logger.log(`[Kaiwa] [${requestId}] Starting TTS for text: "${geminiResponse.substring(0, 50)}..." (length: ${geminiResponse.length}) with voice: ${voiceName}`)
                         const result = await this.textToSpeechService.convertTextToSpeech(geminiResponse, {
                             languageCode: 'ja-JP',
-                            voiceName: 'ja-JP-Wavenet-A',
+                            voiceName: voiceName,
                             audioEncoding: 'OGG_OPUS', // Đổi từ MP3 sang OGG_OPUS
                             speakingRate: 1.0,
                             pitch: 0.0
@@ -1655,7 +1669,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
     @SubscribeMessage(KAIWA_EVENTS.JOIN_KAIWA_ROOM)
     async handleJoinSearchingRoom(
         @ConnectedSocket() client: Socket,
-        @MessageBody() data?: { conversationId?: string }
+        @MessageBody() data?: { conversationId?: string; voiceName?: string }
     ): Promise<void> {
         const userId = client.data?.userId
 
@@ -1719,6 +1733,12 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             client.data.conversationHistory = []
         }
 
+        // Lưu voiceName vào client.data nếu có
+        if (data?.voiceName) {
+            client.data.voiceName = data.voiceName
+            this.logger.log(`[Kaiwa] User ${userId} set voiceName: ${data.voiceName}`)
+        }
+
         const roomName = this.getRoomName(userId)
         client.join(roomName)
 
@@ -1730,7 +1750,8 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             .create({
                 userId,
                 conversationId,
-                title: null // Có thể tự động tạo title từ message đầu tiên sau
+                title: null, // Có thể tự động tạo title từ message đầu tiên sau
+                voiceName: data?.voiceName || 'ja-JP-Wavenet-A'
             })
             .then((result) => {
                 this.logger.log(`[Kaiwa] Created/updated room for conversationId: ${conversationId}`)
