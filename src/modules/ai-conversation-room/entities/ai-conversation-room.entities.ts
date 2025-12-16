@@ -9,6 +9,7 @@ export const AIConversationRoomSchema = z.object({
     lastMessage: z.string().nullable(),
     lastMessageAt: z.date().nullable(),
     isArchived: z.boolean(),
+    voiceName: z.string().nullable(),
     deletedAt: z.date().nullable(),
     createdAt: z.date(),
     updatedAt: z.date()
@@ -18,7 +19,8 @@ export const AIConversationRoomSchema = z.object({
 export const CreateAIConversationRoomBodySchema = z.object({
     userId: z.number(),
     conversationId: z.string(),
-    title: z.string().optional().nullable()
+    title: z.string().optional().nullable(),
+    voiceName: z.string().optional().nullable()
 }).strict()
 
 // Update AIConversationRoom schema
@@ -26,7 +28,8 @@ export const UpdateAIConversationRoomBodySchema = z.object({
     title: z.string().optional().nullable(),
     lastMessage: z.string().optional().nullable(),
     lastMessageAt: z.date().optional().nullable(),
-    isArchived: z.boolean().optional()
+    isArchived: z.boolean().optional(),
+    voiceName: z.string().optional().nullable()
 }).strict()
 
 // Query params
