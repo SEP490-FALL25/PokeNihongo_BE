@@ -730,6 +730,14 @@ export class RoundQuestionService {
     })
     if (!nextRound) return
 
+    // ✅ GUARD: Check if round already IN_PROGRESS to prevent duplicate notifications
+    if (nextRound.status === 'IN_PROGRESS') {
+      console.log(
+        `[RoundQuestion Service] Round ${nextRoundNumber} already IN_PROGRESS for match ${matchId}, skipping notifyRoundStarting`
+      )
+      return
+    }
+
     const userId1 = nextRound.participants[0]?.matchParticipant.userId
     const userId2 = nextRound.participants[1]?.matchParticipant.userId
     if (!userId1 || !userId2) return

@@ -538,6 +538,73 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
           this.logger.log(
             `Socket notification sent after all updates for match ${matchForSocket.id}`
           )
+          const matchId = matchForSocket.id
+          // If all rounds PENDING, schedule Round ONE to start after 5 seconds
+          const allRounds = await this.prismaService.matchRound.findMany({
+            where: { matchId, deletedAt: null }
+          })
+          const allPending = allRounds.every((r) => r.status === 'PENDING')
+          if (allPending) {
+            const roundOne = allRounds.find((r) => r.roundNumber === 'ONE')
+            if (roundOne) {
+              // ✅ GUARD: Check if round already IN_PROGRESS to prevent duplicate notifications
+              if (roundOne.status === 'IN_PROGRESS') {
+                this.logger.warn(
+                  `[Round Timeout] Round ONE already IN_PROGRESS for match ${matchId}, skipping notifyRoundStarting`
+                )
+                return
+              }
+
+              // Fetch participants to get userIds for socket notification
+              const roundOneParticipants =
+                await this.prismaService.matchRoundParticipant.findMany({
+                  where: { matchRoundId: roundOne.id, deletedAt: null },
+                  include: {
+                    matchParticipant: {
+                      include: {
+                        user: true
+                      }
+                    }
+                  },
+                  orderBy: { orderSelected: 'asc' }
+                })
+
+              if (roundOneParticipants.length < 2) {
+                this.logger.warn(
+                  `[Round Timeout] Not enough participants for Round ONE in match ${matchId}`
+                )
+                return
+              }
+
+              const userId1 = roundOneParticipants[0].matchParticipant.userId
+              const userId2 = roundOneParticipants[1].matchParticipant.userId
+
+              // Send socket notification: Round ONE will start in 5 seconds
+              this.matchingGateway.notifyRoundStarting(
+                matchId,
+                userId1,
+                userId2,
+                'ONE',
+                5
+              )
+
+              // Enqueue Bull job to start Round ONE after 5 seconds
+              await this.matchRoundParticipantTimeoutQueue.add(
+                BullAction.START_ROUND,
+                {
+                  matchId,
+                  matchRoundId: roundOne.id
+                },
+                {
+                  delay: 5000 // 5 seconds
+                }
+              )
+
+              this.logger.log(
+                `[Round Timeout] Scheduled Round ONE to start in 5 seconds for match ${matchId}`
+              )
+            }
+          }
         } catch (socketError) {
           this.logger.error('Error sending socket notification', socketError)
         }
@@ -897,59 +964,6 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         }
       } catch (e) {
         this.logger.warn(`[Round Timeout] Debuff application failed: ${e?.message}`)
-      }
-
-      // If all rounds PENDING, schedule Round ONE to start after 5 seconds
-      const allRounds = await this.prismaService.matchRound.findMany({
-        where: { matchId, deletedAt: null }
-      })
-      const allPending = allRounds.every((r) => r.status === 'PENDING')
-      if (allPending) {
-        const roundOne = allRounds.find((r) => r.roundNumber === 'ONE')
-        if (roundOne) {
-          // Fetch participants to get userIds for socket notification
-          const roundOneParticipants =
-            await this.prismaService.matchRoundParticipant.findMany({
-              where: { matchRoundId: roundOne.id, deletedAt: null },
-              include: {
-                matchParticipant: {
-                  include: {
-                    user: true
-                  }
-                }
-              },
-              orderBy: { orderSelected: 'asc' }
-            })
-
-          if (roundOneParticipants.length < 2) {
-            this.logger.warn(
-              `[Round Timeout] Not enough participants for Round ONE in match ${matchId}`
-            )
-            return
-          }
-
-          const userId1 = roundOneParticipants[0].matchParticipant.userId
-          const userId2 = roundOneParticipants[1].matchParticipant.userId
-
-          // Send socket notification: Round ONE will start in 5 seconds
-          this.matchingGateway.notifyRoundStarting(matchId, userId1, userId2, 'ONE', 5)
-
-          // Enqueue Bull job to start Round ONE after 5 seconds
-          await this.matchRoundParticipantTimeoutQueue.add(
-            BullAction.START_ROUND,
-            {
-              matchId,
-              matchRoundId: roundOne.id
-            },
-            {
-              delay: 5000 // 5 seconds
-            }
-          )
-
-          this.logger.log(
-            `[Round Timeout] Scheduled Round ONE to start in 5 seconds for match ${matchId}`
-          )
-        }
       }
     } catch (err) {
       this.logger.error(

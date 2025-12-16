@@ -869,6 +869,14 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         return
       }
 
+      // ✅ GUARD: Check if round already IN_PROGRESS to prevent duplicate notifications
+      if (nextRound.status === 'IN_PROGRESS') {
+        this.logger.warn(
+          `[RoundQuestion Timeout] Round ${nextRoundNumber} already IN_PROGRESS for match ${matchId}, skipping notifyRoundStarting`
+        )
+        return
+      }
+
       // Get user IDs for socket notification
       const userId1 = nextRound.participants[0]?.matchParticipant.userId
       const userId2 = nextRound.participants[1]?.matchParticipant.userId
