@@ -795,6 +795,19 @@ export class MatchRoundParticipantService {
                       })
                     }
                   }
+                  // ✅ CRITICAL FIX: Update questionsTotal to reflect additional questions added by debuff
+                  const debuffValueDebuff = debuffRow.valueDebuff || 1
+                  await this.prismaService.matchRoundParticipant.update({
+                    where: { id: debuffedParticipantId },
+                    data: {
+                      questionsTotal: {
+                        increment: debuffValueDebuff
+                      }
+                    }
+                  })
+                  this.logger.log(
+                    `[MatchRoundParticipant] Updated questionsTotal for participant ${debuffedParticipantId}: +${debuffValueDebuff} extra questions from ADD_QUESTION debuff`
+                  )
                 } else if (debuffRow.typeDebuff === 'DECREASE_POINT') {
                   const target =
                     questionsOfDebuffed[
