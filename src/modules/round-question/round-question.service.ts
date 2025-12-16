@@ -548,6 +548,14 @@ export class RoundQuestionService {
     })
     if (!matchRound) return
 
+    // ✅ GUARD: Skip if round already COMPLETED to prevent duplicate emissions
+    if (matchRound.status === 'COMPLETED') {
+      console.log(
+        `[RoundQuestion Service] Round ${matchRoundId} already COMPLETED, skipping duplicate completion`
+      )
+      return
+    }
+
     const allParticipants = matchRound.participants
     const allCompleted = allParticipants.every((p) => p.status === 'COMPLETED')
     if (!allCompleted) {
@@ -729,6 +737,14 @@ export class RoundQuestionService {
       }
     })
     if (!nextRound) return
+
+    // ✅ GUARD: Check if round already IN_PROGRESS to prevent duplicate notifications
+    if (nextRound.status === 'IN_PROGRESS') {
+      console.log(
+        `[RoundQuestion Service] Round ${nextRoundNumber} already IN_PROGRESS for match ${matchId}, skipping notifyRoundStarting`
+      )
+      return
+    }
 
     const userId1 = nextRound.participants[0]?.matchParticipant.userId
     const userId2 = nextRound.participants[1]?.matchParticipant.userId

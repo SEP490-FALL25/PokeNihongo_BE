@@ -622,6 +622,14 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         return
       }
 
+      // ✅ GUARD: Skip if round already COMPLETED to prevent duplicate emissions
+      if (matchRound.status === 'COMPLETED') {
+        this.logger.log(
+          `[RoundQuestion Timeout] Round ${matchRoundId} already COMPLETED, skipping duplicate completion`
+        )
+        return
+      }
+
       const allParticipants = matchRound.participants
 
       // Check if both participants completed
@@ -865,6 +873,14 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
       if (!nextRound) {
         this.logger.warn(
           `[RoundQuestion Timeout] Next round ${nextRoundNumber} not found for match ${matchId}`
+        )
+        return
+      }
+
+      // ✅ GUARD: Check if round already IN_PROGRESS to prevent duplicate notifications
+      if (nextRound.status === 'IN_PROGRESS') {
+        this.logger.warn(
+          `[RoundQuestion Timeout] Round ${nextRoundNumber} already IN_PROGRESS for match ${matchId}, skipping notifyRoundStarting`
         )
         return
       }

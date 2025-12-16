@@ -325,75 +325,6 @@ export class MatchRoundParticipantService {
         )
       }
 
-      // Nếu all selected -> generate questions + debuff + moveToNextRound TRƯỚC khi fetch & socket
-      if (allSelectedNow) {
-        await this.handleQuestionsAndDebuffForCompletedSelection(
-          existMatchRound,
-          freshParticipants.map((p) => p.id)
-        )
-
-        // CRITICAL: Only check allPending when BOTH users have selected
-        // This prevents premature round starting when only one user selected
-        const allRounds = await this.prismaService.matchRound.findMany({
-          where: { matchId: existMatchRound.match.id, deletedAt: null },
-          include: { participants: true }
-        })
-        const allPending = allRounds.every((r) => r.status === RoundStatus.PENDING)
-
-        this.logger.log(
-          `[MatchRoundParticipant] AllPending check (after both selected): ${allPending}, Total rounds: ${allRounds.length}`
-        )
-
-        if (allPending) {
-          const roundOne = allRounds.find((r) => r.roundNumber === MatchRoundNumber.ONE)
-          if (roundOne) {
-            // ✅ FIX BUG 1: Check if START_ROUND job already exists to prevent duplicate ROUND_STARTING
-            const existingJobs = await this.matchRoundParticipantTimeoutQueue.getJobs([
-              'waiting',
-              'delayed'
-            ])
-            const hasStartRoundJob = existingJobs.some(
-              (job) =>
-                job.name === BullAction.START_ROUND &&
-                job.data?.matchId === existMatchRound.match.id &&
-                job.data?.matchRoundId === roundOne.id
-            )
-
-            if (!hasStartRoundJob) {
-              const roundOneParticipants =
-                await this.prismaService.matchRoundParticipant.findMany({
-                  where: { matchRoundId: roundOne.id, deletedAt: null },
-                  include: { matchParticipant: { include: { user: true } } },
-                  orderBy: { orderSelected: 'asc' }
-                })
-              if (roundOneParticipants.length === 2) {
-                const userId1 = roundOneParticipants[0].matchParticipant.userId
-                const userId2 = roundOneParticipants[1].matchParticipant.userId
-                this.matchingGateway.notifyRoundStarting(
-                  existMatchRound.match.id,
-                  userId1,
-                  userId2,
-                  'ONE',
-                  5000
-                )
-                await this.matchRoundParticipantTimeoutQueue.add(
-                  BullAction.START_ROUND,
-                  { matchId: existMatchRound.match.id, matchRoundId: roundOne.id },
-                  { delay: 5000 }
-                )
-                this.logger.log(
-                  `[MatchRoundParticipant] Scheduled Round ONE to start in 5 seconds for match ${existMatchRound.match.id}`
-                )
-              }
-            } else {
-              this.logger.warn(
-                `[MatchRoundParticipant] START_ROUND job already exists for match ${existMatchRound.match.id}, round ${roundOne.id} - skipping duplicate`
-              )
-            }
-          }
-        }
-      }
-
       // Fetch data và gửi socket 1 lần duy nhất SAU khi tất cả hàm chạy xong
       const match: any = await this.prismaService.match.findUnique({
         where: { id: existMatchRound.match.id },
@@ -465,7 +396,82 @@ export class MatchRoundParticipantService {
         null,
         TIME_CHOOSE_POKEMON_MS
       )
+      // Nếu all selected -> generate questions + debuff + moveToNextRound TRƯỚC khi fetch & socket
+      if (allSelectedNow) {
+        await this.handleQuestionsAndDebuffForCompletedSelection(
+          existMatchRound,
+          freshParticipants.map((p) => p.id)
+        )
 
+        // CRITICAL: Only check allPending when BOTH users have selected
+        // This prevents premature round starting when only one user selected
+        const allRounds = await this.prismaService.matchRound.findMany({
+          where: { matchId: existMatchRound.match.id, deletedAt: null },
+          include: { participants: true }
+        })
+        const allPending = allRounds.every((r) => r.status === RoundStatus.PENDING)
+
+        this.logger.log(
+          `[MatchRoundParticipant] AllPending check (after both selected): ${allPending}, Total rounds: ${allRounds.length}`
+        )
+
+        if (allPending) {
+          const roundOne = allRounds.find((r) => r.roundNumber === MatchRoundNumber.ONE)
+          if (roundOne) {
+            // ✅ FIX BUG 1: Check if START_ROUND job already exists to prevent duplicate ROUND_STARTING
+            const existingJobs = await this.matchRoundParticipantTimeoutQueue.getJobs([
+              'waiting',
+              'delayed'
+            ])
+            const hasStartRoundJob = existingJobs.some(
+              (job) =>
+                job.name === BullAction.START_ROUND &&
+                job.data?.matchId === existMatchRound.match.id &&
+                job.data?.matchRoundId === roundOne.id
+            )
+
+            if (!hasStartRoundJob) {
+              // ✅ GUARD: Check if round already IN_PROGRESS to prevent duplicate notifications
+              if (roundOne.status === 'IN_PROGRESS') {
+                this.logger.warn(
+                  `[MatchRoundParticipant] Round ONE already IN_PROGRESS for match ${existMatchRound.match.id}, skipping notifyRoundStarting`
+                )
+                return
+              }
+
+              const roundOneParticipants =
+                await this.prismaService.matchRoundParticipant.findMany({
+                  where: { matchRoundId: roundOne.id, deletedAt: null },
+                  include: { matchParticipant: { include: { user: true } } },
+                  orderBy: { orderSelected: 'asc' }
+                })
+              if (roundOneParticipants.length === 2) {
+                const userId1 = roundOneParticipants[0].matchParticipant.userId
+                const userId2 = roundOneParticipants[1].matchParticipant.userId
+                this.matchingGateway.notifyRoundStarting(
+                  existMatchRound.match.id,
+                  userId1,
+                  userId2,
+                  'ONE',
+                  5000
+                )
+                await this.matchRoundParticipantTimeoutQueue.add(
+                  BullAction.START_ROUND,
+                  { matchId: existMatchRound.match.id, matchRoundId: roundOne.id },
+                  { delay: 5000 }
+                )
+                this.logger.log(
+                  `[MatchRoundParticipant] Scheduled Round ONE to start in 5 seconds for match ${existMatchRound.match.id}`
+                )
+              }
+            } else {
+              this.logger.warn(
+                `[MatchRoundParticipant] START_ROUND job already exists for match ${existMatchRound.match.id}, round ${roundOne.id} - skipping duplicate`
+              )
+            }
+          }
+        }
+      }
       return {
         statusCode: 200,
         data: matchRoundParticipant,
@@ -789,6 +795,19 @@ export class MatchRoundParticipantService {
                       })
                     }
                   }
+                  // ✅ CRITICAL FIX: Update questionsTotal to reflect additional questions added by debuff
+                  const debuffValueDebuff = debuffRow.valueDebuff || 1
+                  await this.prismaService.matchRoundParticipant.update({
+                    where: { id: debuffedParticipantId },
+                    data: {
+                      questionsTotal: {
+                        increment: debuffValueDebuff
+                      }
+                    }
+                  })
+                  this.logger.log(
+                    `[MatchRoundParticipant] Updated questionsTotal for participant ${debuffedParticipantId}: +${debuffValueDebuff} extra questions from ADD_QUESTION debuff`
+                  )
                 } else if (debuffRow.typeDebuff === 'DECREASE_POINT') {
                   const target =
                     questionsOfDebuffed[
@@ -854,6 +873,14 @@ export class MatchRoundParticipantService {
       if (allPending) {
         const roundOne = allRounds.find((r) => r.roundNumber === MatchRoundNumber.ONE)
         if (roundOne) {
+          // ✅ GUARD: Check if round already IN_PROGRESS to prevent duplicate notifications
+          if (roundOne.status === 'IN_PROGRESS') {
+            this.logger.warn(
+              `[MatchRoundParticipant] Round ONE already IN_PROGRESS for match ${matchId}, skipping notifyRoundStarting`
+            )
+            return
+          }
+
           // Schedule Round ONE start after 5s thay vì start ngay lập tức
           const roundOneParticipants =
             await this.prismaService.matchRoundParticipant.findMany({
@@ -867,19 +894,19 @@ export class MatchRoundParticipantService {
             const userId1 = roundOneParticipants[0].matchParticipant.userId
             const userId2 = roundOneParticipants[1].matchParticipant.userId
             // Countdown socket
-            this.matchingGateway.notifyRoundStarting(
-              matchId,
-              userId1,
-              userId2,
-              'ONE',
-              5000
-            )
+            // this.matchingGateway.notifyRoundStarting(
+            //   matchId,
+            //   userId1,
+            //   userId2,
+            //   'ONE',
+            //   5000
+            // )
             // Enqueue START_ROUND job
-            await this.matchRoundParticipantTimeoutQueue.add(
-              BullAction.START_ROUND,
-              { matchId, matchRoundId: roundOne.id },
-              { delay: 5000 }
-            )
+            // await this.matchRoundParticipantTimeoutQueue.add(
+            //   BullAction.START_ROUND,
+            //   { matchId, matchRoundId: roundOne.id },
+            //   { delay: 5000 }
+            // )
             this.logger.log(
               `[MatchRoundParticipant] Scheduled Round ONE to start in 5 seconds for match ${matchId}`
             )
