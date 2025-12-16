@@ -548,6 +548,14 @@ export class RoundQuestionService {
     })
     if (!matchRound) return
 
+    // ✅ GUARD: Skip if round already COMPLETED to prevent duplicate emissions
+    if (matchRound.status === 'COMPLETED') {
+      console.log(
+        `[RoundQuestion Service] Round ${matchRoundId} already COMPLETED, skipping duplicate completion`
+      )
+      return
+    }
+
     const allParticipants = matchRound.participants
     const allCompleted = allParticipants.every((p) => p.status === 'COMPLETED')
     if (!allCompleted) {

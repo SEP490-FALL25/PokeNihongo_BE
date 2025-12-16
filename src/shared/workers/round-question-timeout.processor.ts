@@ -622,6 +622,14 @@ export class RoundQuestionTimeoutProcessor implements OnModuleInit {
         return
       }
 
+      // ✅ GUARD: Skip if round already COMPLETED to prevent duplicate emissions
+      if (matchRound.status === 'COMPLETED') {
+        this.logger.log(
+          `[RoundQuestion Timeout] Round ${matchRoundId} already COMPLETED, skipping duplicate completion`
+        )
+        return
+      }
+
       const allParticipants = matchRound.participants
 
       // Check if both participants completed
