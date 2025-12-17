@@ -546,6 +546,20 @@ export class UserService {
         (unclaimedHistory.season as any).nameTranslations || []
       ).find((t: any) => t.languageId === langId)
 
+      // Map rewards with translations
+      const rewards = ((unclaimedHistory.seasonRankReward as any)?.rewards || []).map(
+        (reward: any) => {
+          const rewardTranslation = (reward.nameTranslations || []).find(
+            (t: any) => t.languageId === langId
+          )
+          const { nameTranslations, ...rewardData } = reward
+          return {
+            ...rewardData,
+            nameTranslation: rewardTranslation?.value ?? null
+          }
+        }
+      )
+
       return {
         message: this.i18nService.translate(UserMessage.GET_DETAIL_SUCCESS, lang),
         statusCode: HttpStatus.OK,
@@ -560,7 +574,7 @@ export class UserService {
           },
           finalRank: unclaimedHistory.finalRank,
           finalElo: unclaimedHistory.finalElo,
-          rewards: (unclaimedHistory.seasonRankReward as any)?.rewards || []
+          rewards
         }
       }
     }

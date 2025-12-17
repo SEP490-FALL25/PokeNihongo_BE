@@ -172,7 +172,11 @@ export class UserSeasonHistoryRepo {
         },
         seasonRankReward: {
           include: {
-            rewards: true
+            rewards: {
+              include: {
+                nameTranslations: true
+              }
+            }
           }
         }
       }
