@@ -25,6 +25,7 @@ import { RoundQuestionTimeoutProcessor } from './round-question-timeout.processo
 
 const TIME_CHOOSE_POKEMON_MS = 5000
 const TIME_LIMIT_ANSWER_QUESTION_MS = 5000
+const QUESTIONS_PER_ROUND = 5
 
 @Processor(BullQueue.MATCH_ROUND_PARTICIPANT_TIMEOUT)
 export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
@@ -785,7 +786,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         higherPercent = Math.min(50, Math.max(10, Math.floor(rawPercent / 10) * 10))
       }
 
-      const totalQuestions = 10
+      const totalQuestions = QUESTIONS_PER_ROUND
       const higherCount = higherRank
         ? Math.round((totalQuestions * higherPercent) / 100)
         : 0
@@ -839,6 +840,11 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
         }
       }
 
+      await this.prismaService.matchRoundParticipant.updateMany({
+        where: { id: { in: participants.map((p) => p.id) } },
+        data: { questionsTotal: combined.length }
+      })
+
       // Debuff: calculate which participant should receive debuff using Pokemon comparison
       try {
         const debuffs = await this.prismaService.debuffRound.findMany({
@@ -885,7 +891,7 @@ export class MatchRoundParticipantTimeoutProcessor implements OnModuleInit {
             if (debuffRow && debuffedParticipantId) {
               await this.prismaService.matchRoundParticipant.update({
                 where: { id: debuffedParticipantId },
-                data: { debuffId: debuffRow.id }
+                data: { debuffId: debuffRow.id, questionsTotal: QUESTIONS_PER_ROUND }
               })
             }
           } catch (assignErr) {
