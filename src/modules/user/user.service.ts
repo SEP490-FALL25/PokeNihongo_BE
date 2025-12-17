@@ -578,14 +578,13 @@ export class UserService {
           endDate: currentSeason.endDate
         }
       : null
-
     return {
       message: this.i18nService.translate(UserMessage.GET_DETAIL_SUCCESS, lang),
       statusCode: HttpStatus.OK,
       data: {
         leaderboardSeason: seasonInfo,
         rank: {
-          rankName: convertEloToRank((userInfo as any).elo || 0),
+          rankName: convertEloToRank((userInfo as any).eloscore || 0),
           eloscore: (userInfo as any).eloscore
         },
         totalMatches,
