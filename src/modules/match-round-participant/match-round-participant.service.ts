@@ -34,7 +34,7 @@ import { MatchRoundParticipantRepo } from './match-round-participant.repo'
 
 const TIME_CHOOSE_POKEMON_MS = 5000
 const TIME_LIMIT_ANSWER_QUESTION_MS = 5000
-
+const QUESTIONS_PER_ROUND = 5
 @Injectable()
 export class MatchRoundParticipantService {
   private readonly logger = new Logger(MatchRoundParticipantService.name)
@@ -660,7 +660,7 @@ export class MatchRoundParticipantService {
         higherPercent = Math.min(50, Math.max(10, Math.floor(rawPercent / 10) * 10)) // tens rounding (27 -> 20)
       }
 
-      const totalQuestions = 10
+      const totalQuestions = QUESTIONS_PER_ROUND
       const higherCount = higherRank
         ? Math.round((totalQuestions * higherPercent) / 100)
         : 0
@@ -712,6 +712,11 @@ export class MatchRoundParticipantService {
         }
       }
 
+      await this.prismaService.matchRoundParticipant.updateMany({
+        where: { id: { in: matchRoundParticipantIds } },
+        data: { questionsTotal: combined.length }
+      })
+
       // Debuff logic: xác định pokemon bị debuff -> participant chứa pokemon đó
       const selectedPokemons = await this.prismaService.matchRoundParticipant.findMany({
         where: { matchRoundId: roundId, deletedAt: null },
@@ -758,7 +763,7 @@ export class MatchRoundParticipantService {
               try {
                 await this.prismaService.matchRoundParticipant.update({
                   where: { id: debuffedParticipantId },
-                  data: { debuffId: debuffRow.id }
+                  data: { debuffId: debuffRow.id, questionsTotal: QUESTIONS_PER_ROUND }
                 })
               } catch (assignErr) {
                 this.logger.warn(
@@ -787,8 +792,8 @@ export class MatchRoundParticipantService {
                         data: {
                           matchRoundParticipantId: debuffedParticipantId,
                           questionBankId: extra.id,
-                          timeLimitMs: 30000,
-                          basePoints: 100,
+                          timeLimitMs: TIME_LIMIT_ANSWER_QUESTION_MS,
+                          basePoints: 0,
                           orderNumber: nextOrder++,
                           debuffId: debuffRow.id
                         }
