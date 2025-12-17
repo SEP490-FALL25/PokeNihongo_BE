@@ -453,7 +453,7 @@ export class MatchRoundParticipantService {
                   userId1,
                   userId2,
                   'ONE',
-                  5000
+                  5
                 )
                 await this.matchRoundParticipantTimeoutQueue.add(
                   BullAction.START_ROUND,
