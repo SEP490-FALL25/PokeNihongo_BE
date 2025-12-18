@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { TestSetRepository } from './testset.repo'
 import { CreateTestSetBodyType, UpdateTestSetBodyType, GetTestSetListQueryType, GetTestSetByIdParamsType, CreateTestSetWithMeaningsBodyType, UpdateTestSetWithMeaningsBodyType, CreateTestSetWithQuestionBodyType, UpsertTestSetWithQuestionBanksBodyType } from './entities/testset.entities'
-import { TestSetNotFoundException, TestSetPermissionDeniedException, TestSetAlreadyExistsException, TestSetCannotChangeTestTypeException } from './dto/testset.error'
+import { TestSetNotFoundException, TestSetAlreadyExistsException, TestSetCannotChangeTestTypeException } from './dto/testset.error'
 import { PrismaService } from '@/shared/services/prisma.service'
 import { MessageResDTO } from '@/shared/dtos/response.dto'
 import { TEST_SET_MESSAGE } from '@/common/constants/message'
@@ -273,11 +273,6 @@ export class TestSetService {
             throw TestSetNotFoundException
         }
 
-        // Kiểm tra quyền sở hữu
-        if (testSet.creatorId !== userId) {
-            throw TestSetPermissionDeniedException
-        }
-
         // Validation
         this.validateTestSetData(data, true)
 
@@ -417,11 +412,6 @@ export class TestSetService {
             throw TestSetNotFoundException
         }
 
-        // Kiểm tra quyền sở hữu
-        if (testSet.creatorId !== userId) {
-            throw TestSetPermissionDeniedException
-        }
-
         await this.testSetRepo.delete(id)
 
         return {
@@ -499,11 +489,6 @@ export class TestSetService {
 
         if (!testSet) {
             throw TestSetNotFoundException
-        }
-
-        // Kiểm tra quyền sở hữu
-        if (testSet.creatorId !== userId) {
-            throw TestSetPermissionDeniedException
         }
 
         // Validation
@@ -1096,7 +1081,7 @@ export class TestSetService {
                 message: isUpdate ? TEST_SET_MESSAGE.UPDATE_SUCCESS : TEST_SET_MESSAGE.CREATE_SUCCESS,
             }
         } catch (error) {
-            if (error instanceof BadRequestException || error instanceof TestSetNotFoundException || error instanceof TestSetPermissionDeniedException) {
+            if (error instanceof BadRequestException || error instanceof TestSetNotFoundException) {
                 throw error
             }
             this.logger.error(`Error ${isUpdate ? 'updating' : 'creating'} testset with questionBanks:`, error)
