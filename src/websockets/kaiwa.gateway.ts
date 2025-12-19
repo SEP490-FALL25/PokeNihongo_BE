@@ -348,6 +348,13 @@ export class KaiwaGateway implements OnGatewayDisconnect {
         requestId: string,
         client: Socket
     ): Promise<string> {
+        this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] processSpeechToText called with audioBuffer size: ${audioBuffer?.length || 0} bytes`)
+
+        if (!audioBuffer || audioBuffer.length === 0) {
+            this.logger.error(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] ERROR: audioBuffer is null or empty`)
+            throw new Error('Audio buffer is empty or null')
+        }
+
         // Emit processing status
         client.emit(KAIWA_EVENTS.PROCESSING, {
             conversationId: client.data.conversationId,
@@ -356,6 +363,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
         })
 
         // Thêm timeout để tránh đợi quá lâu (20 giây)
+        this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Calling speechToTextService.convertAudioToText with buffer size: ${audioBuffer.length} bytes`)
         const speechPromise = this.speechToTextService.convertAudioToText(audioBuffer, {
             languageCode: 'ja-JP',
             enableAutomaticPunctuation: true,
@@ -403,40 +411,60 @@ export class KaiwaGateway implements OnGatewayDisconnect {
         payload: any,
         requestId: string
     ): { audioBuffer: Buffer; audioFormat: 'LINEAR16' | 'MP4' | 'M4A' | 'OGG' | 'WEBM'; mimeType: string } {
+        this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Starting parseAudioPayload`)
         let audioBuffer: Buffer
         let audioFormat: 'LINEAR16' | 'MP4' | 'M4A' | 'OGG' | 'WEBM' = 'LINEAR16' // Default cho web browser
         let mimeType: string = 'audio/wav' // Default
 
         // Parse payload thành Buffer
         if (Buffer.isBuffer(payload)) {
+            this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Payload is Buffer, size: ${payload.length} bytes`)
             audioBuffer = payload
         } else if (payload instanceof Uint8Array) {
+            this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Payload is Uint8Array, size: ${payload.length} bytes`)
             audioBuffer = Buffer.from(payload)
+            this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Converted Uint8Array to Buffer, size: ${audioBuffer.length} bytes`)
         } else if (payload && typeof payload === 'object') {
+            this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Payload is object, checking audio field...`)
             // Nếu là object có field audio và có thể có metadata
             if (payload.audio) {
                 if (payload.audio instanceof Uint8Array) {
+                    this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] payload.audio is Uint8Array, size: ${payload.audio.length} bytes`)
                     audioBuffer = Buffer.from(payload.audio)
+                    this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Converted payload.audio (Uint8Array) to Buffer, size: ${audioBuffer.length} bytes`)
                 } else if (Buffer.isBuffer(payload.audio)) {
+                    this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] payload.audio is Buffer, size: ${payload.audio.length} bytes`)
                     audioBuffer = payload.audio
                 } else {
+                    this.logger.error(`[Kaiwa] [${requestId}] [PARSE_AUDIO] ERROR: payload.audio is ${typeof payload.audio}, not Uint8Array or Buffer`)
                     throw new Error('Invalid audio format: must be Uint8Array or Buffer')
                 }
             } else {
+                this.logger.error(`[Kaiwa] [${requestId}] [PARSE_AUDIO] ERROR: payload object does not have audio field`)
                 throw new Error('Invalid payload: object must have audio field')
             }
 
             // Detect format từ metadata (nếu có)
             if (payload.format) {
                 audioFormat = payload.format.toUpperCase() as any
+                this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Using format from metadata: ${audioFormat}`)
             }
             if (payload.mimeType) {
                 mimeType = payload.mimeType
+                this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Using mimeType from metadata: ${mimeType}`)
             }
         } else if (typeof payload === 'string') {
+            this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Payload is string (base64), length: ${payload.length} chars`)
             // Nếu là base64 string
-            audioBuffer = Buffer.from(payload, 'base64')
+            try {
+                audioBuffer = Buffer.from(payload, 'base64')
+                this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Decoded base64 to Buffer, size: ${audioBuffer.length} bytes`)
+            } catch (e) {
+                this.logger.error(`[Kaiwa] [${requestId}] [PARSE_AUDIO] ERROR: Failed to decode base64: ${e.message}`)
+                throw new Error(`Failed to decode base64 audio: ${e.message}`)
+            }
         } else {
+            this.logger.error(`[Kaiwa] [${requestId}] [PARSE_AUDIO] ERROR: Invalid payload type: ${typeof payload}`)
             throw new Error(`Invalid payload type: expected Buffer, Uint8Array, or object with audio field, got ${typeof payload}`)
         }
 
@@ -480,7 +508,16 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             }
         } else if (audioFormat === 'LINEAR16') {
             // Buffer quá ngắn, assume là raw PCM
-            this.logger.log(`[Kaiwa] [${requestId}] Buffer too short (${audioBuffer.length} bytes) for format detection, assuming LINEAR16 PCM (will convert to WAV)`)
+            this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Buffer too short (${audioBuffer.length} bytes) for format detection, assuming LINEAR16 PCM (will convert to WAV)`)
+        }
+
+        // Log kết quả cuối cùng
+        this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Parse completed - finalBufferSize: ${audioBuffer.length} bytes, format: ${audioFormat}, mimeType: ${mimeType}`)
+        if (audioBuffer.length > 0) {
+            const headerPreview = audioBuffer.slice(0, Math.min(12, audioBuffer.length))
+            this.logger.log(`[Kaiwa] [${requestId}] [PARSE_AUDIO] Final buffer header (hex): ${headerPreview.toString('hex')}`)
+        } else {
+            this.logger.error(`[Kaiwa] [${requestId}] [PARSE_AUDIO] ERROR: Final audio buffer is EMPTY (0 bytes) - NO AUDIO DATA`)
         }
 
         return { audioBuffer, audioFormat, mimeType }
@@ -985,6 +1022,59 @@ export class KaiwaGateway implements OnGatewayDisconnect {
         const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         this.logger.log(`[Kaiwa] [${requestId}] Starting audio processing`)
 
+        // Log chi tiết về payload nhận được
+        this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Payload received - type: ${typeof payload}, isNull: ${payload === null}, isUndefined: ${payload === undefined}`)
+        if (payload !== null && payload !== undefined) {
+            if (Buffer.isBuffer(payload)) {
+                this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Payload is Buffer, size: ${payload.length} bytes`)
+                if (payload.length > 0) {
+                    const headerBytes = payload.slice(0, Math.min(12, payload.length))
+                    this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Buffer header (first 12 bytes): ${headerBytes.toString('hex')}`)
+                } else {
+                    this.logger.warn(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] WARNING: Buffer is empty (0 bytes)`)
+                }
+            } else if (payload instanceof Uint8Array) {
+                this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Payload is Uint8Array, size: ${payload.length} bytes`)
+                if (payload.length > 0) {
+                    const headerBytes = Array.from(payload.slice(0, Math.min(12, payload.length))).map(b => b.toString(16).padStart(2, '0')).join('')
+                    this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Uint8Array header (first 12 bytes): ${headerBytes}`)
+                } else {
+                    this.logger.warn(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] WARNING: Uint8Array is empty (0 bytes)`)
+                }
+            } else if (typeof payload === 'object') {
+                this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Payload is object, keys: ${Object.keys(payload).join(', ')}`)
+                if (payload.audio) {
+                    if (Buffer.isBuffer(payload.audio)) {
+                        this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] payload.audio is Buffer, size: ${payload.audio.length} bytes`)
+                    } else if (payload.audio instanceof Uint8Array) {
+                        this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] payload.audio is Uint8Array, size: ${payload.audio.length} bytes`)
+                    } else {
+                        this.logger.warn(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] payload.audio is ${typeof payload.audio}, not Buffer/Uint8Array`)
+                    }
+                } else {
+                    this.logger.warn(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Payload object does not have 'audio' field`)
+                }
+                if (payload.format) {
+                    this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Payload format: ${payload.format}`)
+                }
+                if (payload.mimeType) {
+                    this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Payload mimeType: ${payload.mimeType}`)
+                }
+            } else if (typeof payload === 'string') {
+                this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Payload is string (likely base64), length: ${payload.length} chars`)
+                try {
+                    const decodedLength = Buffer.from(payload, 'base64').length
+                    this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Decoded base64 size: ${decodedLength} bytes`)
+                } catch (e) {
+                    this.logger.warn(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Failed to decode base64: ${e.message}`)
+                }
+            } else {
+                this.logger.warn(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] Payload is unknown type: ${typeof payload}`)
+            }
+        } else {
+            this.logger.error(`[Kaiwa] [${requestId}] [AUDIO_RECEIVE] ERROR: Payload is null or undefined - NO AUDIO DATA RECEIVED`)
+        }
+
         try {
             const userId = client.data?.userId
 
@@ -1020,11 +1110,30 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             // Parse audio payload và detect format
             const { audioBuffer, audioFormat, mimeType } = this.parseAudioPayload(payload, requestId)
 
-            this.logger.log(`[Kaiwa] [${requestId}] Received audio chunk: ${audioBuffer.length} bytes from user ${userId}, conversationId: ${client.data.conversationId}, detected format: ${audioFormat}, mimeType: ${mimeType}`)
+            this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_READY] Received audio chunk: ${audioBuffer.length} bytes from user ${userId}, conversationId: ${client.data.conversationId}, detected format: ${audioFormat}, mimeType: ${mimeType}`)
+
+            // Validate audio buffer trước khi xử lý
+            if (!audioBuffer || audioBuffer.length === 0) {
+                this.logger.error(`[Kaiwa] [${requestId}] [AUDIO_READY] ERROR: Audio buffer is empty or null - CANNOT PROCESS`)
+                client.data.processingAudio = false
+                client.emit(KAIWA_EVENTS.ERROR, {
+                    message: ErrorMessage.SPEECH_RECOGNITION_FAILED,
+                    suggestion: 'Không nhận được dữ liệu âm thanh. Vui lòng kiểm tra microphone và thử lại.'
+                })
+                return
+            }
+
+            // Log chi tiết về audio buffer trước khi gửi vào Speech-to-Text
+            this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_READY] Audio buffer validation: size=${audioBuffer.length} bytes, isValid=${audioBuffer.length > 0}, format=${audioFormat}, mimeType=${mimeType}`)
+            if (audioBuffer.length > 0) {
+                const sampleBytes = audioBuffer.slice(0, Math.min(16, audioBuffer.length))
+                this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_READY] Audio buffer sample (first 16 bytes): ${sampleBytes.toString('hex')}`)
+            }
 
             // Step 1: Speech-to-Text (Audio -> Text)
             let transcription: string
             try {
+                this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Starting Speech-to-Text processing with buffer size: ${audioBuffer.length} bytes`)
                 //Chuyển đổi âm thanh thành văn bản của user
                 transcription = await this.processSpeechToText(audioBuffer, requestId, client)
             } catch (speechError) {
