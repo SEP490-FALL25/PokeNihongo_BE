@@ -112,7 +112,17 @@ export class HandleUserSubscriptionCronjob {
                 id: true,
                 subscription: {
                   select: {
-                    nameKey: true
+                    nameKey: true,
+                    nameTranslations: {
+                      where: {
+                        language: {
+                          code: 'vi'
+                        }
+                      },
+                      select: {
+                        value: true
+                      }
+                    }
                   }
                 }
               }
@@ -145,7 +155,10 @@ export class HandleUserSubscriptionCronjob {
               subscription.user.email,
               subscription.user.name || 'Người dùng',
               {
-                planName: subscription.subscriptionPlan.subscription.nameKey || 'Premium',
+                planName:
+                  subscription.subscriptionPlan.subscription.nameTranslations[0]?.value ||
+                  subscription.subscriptionPlan.subscription.nameKey ||
+                  'Premium',
                 expiresAt: subscription.expiresAt!,
                 daysLeft: days
               }
