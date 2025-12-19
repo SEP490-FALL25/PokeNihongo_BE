@@ -338,6 +338,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
     /**
      * Step 1: Speech-to-Text - Convert audio thành text
      * @param audioBuffer - Audio buffer cần convert
+     * @param audioFormat - Format của audio (LINEAR16, MP4, M4A, OGG, WEBM)
      * @param requestId - Request ID cho logging
      * @param client - Socket client để emit events
      * @returns Transcription text
@@ -345,6 +346,7 @@ export class KaiwaGateway implements OnGatewayDisconnect {
      */
     private async processSpeechToText(
         audioBuffer: Buffer,
+        audioFormat: 'LINEAR16' | 'MP4' | 'M4A' | 'OGG' | 'WEBM',
         requestId: string,
         client: Socket
     ): Promise<string> {
@@ -362,13 +364,40 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             message: 'Đang chuyển đổi âm thanh thành văn bản...'
         })
 
+        // Map audioFormat sang encoding cho Google Speech-to-Text API
+        // Google Speech-to-Text chỉ hỗ trợ: LINEAR16, FLAC, MULAW, AMR, AMR_WB, OGG_OPUS, SPEEX_WITH_HEADER_BYTE
+        // Không hỗ trợ MP4/M4A trực tiếp qua content base64
+        let encoding: 'LINEAR16' | 'FLAC' | 'MULAW' | 'AMR' | 'AMR_WB' | 'OGG_OPUS' | 'SPEEX_WITH_HEADER_BYTE' = 'LINEAR16'
+
+        if (audioFormat === 'LINEAR16') {
+            encoding = 'LINEAR16'
+            this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Audio format is LINEAR16, using LINEAR16 encoding`)
+        } else if (audioFormat === 'OGG') {
+            encoding = 'OGG_OPUS'
+            this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Audio format is OGG, using OGG_OPUS encoding`)
+        } else if (audioFormat === 'MP4' || audioFormat === 'M4A') {
+            // MP4/M4A không được hỗ trợ trực tiếp - cần convert trước
+            // Tạm thời dùng FLAC encoding (nhưng cần convert MP4 sang FLAC trước)
+            // Hoặc có thể Google Speech API tự động detect nếu là MP4 container với AAC
+            // Thử dùng LINEAR16 trước, nếu lỗi thì cần convert
+            this.logger.warn(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] WARNING: Audio format is ${audioFormat}, but Google Speech-to-Text does not support MP4/M4A directly. Using LINEAR16 encoding (may fail if audio is compressed)`)
+            encoding = 'LINEAR16' // Tạm thời, cần convert MP4 sang FLAC/WAV trước
+        } else if (audioFormat === 'WEBM') {
+            // WEBM thường chứa OGG_OPUS audio
+            encoding = 'OGG_OPUS'
+            this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Audio format is WEBM, using OGG_OPUS encoding`)
+        } else {
+            this.logger.warn(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Unknown audio format: ${audioFormat}, defaulting to LINEAR16`)
+            encoding = 'LINEAR16'
+        }
+
         // Thêm timeout để tránh đợi quá lâu (20 giây)
-        this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Calling speechToTextService.convertAudioToText with buffer size: ${audioBuffer.length} bytes`)
+        this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Calling speechToTextService.convertAudioToText with buffer size: ${audioBuffer.length} bytes, encoding: ${encoding}, original format: ${audioFormat}`)
         const speechPromise = this.speechToTextService.convertAudioToText(audioBuffer, {
             languageCode: 'ja-JP',
             enableAutomaticPunctuation: true,
             sampleRateHertz: 16000,
-            encoding: 'LINEAR16' // KUMO mốt đổi thành FLAC
+            encoding: encoding
         })
 
         const timeoutPromise = new Promise<never>((_, reject) => {
@@ -1133,15 +1162,23 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             // Step 1: Speech-to-Text (Audio -> Text)
             let transcription: string
             try {
-                this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Starting Speech-to-Text processing with buffer size: ${audioBuffer.length} bytes`)
+                this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Starting Speech-to-Text processing with buffer size: ${audioBuffer.length} bytes, format: ${audioFormat}`)
                 //Chuyển đổi âm thanh thành văn bản của user
-                transcription = await this.processSpeechToText(audioBuffer, requestId, client)
+                transcription = await this.processSpeechToText(audioBuffer, audioFormat, requestId, client)
             } catch (speechError) {
                 this.logger.error(`[Kaiwa] [${requestId}] Speech-to-Text error: ${speechError.message}`, speechError.stack)
+
+                // Log chi tiết về format nếu là MP4/M4A (không được hỗ trợ trực tiếp)
+                if (audioFormat === 'MP4' || audioFormat === 'M4A') {
+                    this.logger.error(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] ERROR: MP4/M4A format is not directly supported by Google Speech-to-Text API via content base64. Audio format: ${audioFormat}, buffer size: ${audioBuffer.length} bytes. Solution: Convert MP4 to FLAC or WAV (LINEAR16) before sending.`)
+                }
+
                 client.data.processingAudio = false
                 client.emit(KAIWA_EVENTS.ERROR, {
                     message: `${ErrorMessage.SPEECH_CONVERSION_ERROR}: ${speechError.message}`,
-                    suggestion: ErrorMessage.CHECK_MICROPHONE_SUGGESTION
+                    suggestion: audioFormat === 'MP4' || audioFormat === 'M4A'
+                        ? 'Định dạng MP4/M4A không được hỗ trợ trực tiếp. Vui lòng sử dụng định dạng FLAC hoặc WAV.'
+                        : ErrorMessage.CHECK_MICROPHONE_SUGGESTION
                 })
                 return
             }
