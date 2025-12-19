@@ -376,12 +376,13 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             encoding = 'OGG_OPUS'
             this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Audio format is OGG, using OGG_OPUS encoding`)
         } else if (audioFormat === 'MP4' || audioFormat === 'M4A') {
-            // MP4/M4A không được hỗ trợ trực tiếp - cần convert trước
-            // Tạm thời dùng FLAC encoding (nhưng cần convert MP4 sang FLAC trước)
-            // Hoặc có thể Google Speech API tự động detect nếu là MP4 container với AAC
-            // Thử dùng LINEAR16 trước, nếu lỗi thì cần convert
-            this.logger.warn(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] WARNING: Audio format is ${audioFormat}, but Google Speech-to-Text does not support MP4/M4A directly. Using LINEAR16 encoding (may fail if audio is compressed)`)
-            encoding = 'LINEAR16' // Tạm thời, cần convert MP4 sang FLAC/WAV trước
+            // MP4/M4A không được hỗ trợ trực tiếp qua content base64 bởi Google Speech-to-Text API
+            // Google Speech API chỉ hỗ trợ: LINEAR16, FLAC, MULAW, AMR, AMR_WB, OGG_OPUS, SPEEX_WITH_HEADER_BYTE
+            // Giải pháp: Client cần convert MP4/M4A sang FLAC, WAV (LINEAR16), hoặc OGG_OPUS trước khi gửi
+            // Hoặc upload MP4 lên Google Cloud Storage và dùng URI (phức tạp hơn)
+            this.logger.error(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] ERROR: Audio format is ${audioFormat}, but Google Speech-to-Text API does NOT support MP4/M4A via content base64. Supported formats: LINEAR16, FLAC, OGG_OPUS. Solution: Client should convert MP4/M4A to FLAC, WAV, or OGG_OPUS before sending.`)
+            // Thử dùng LINEAR16 encoding (sẽ fail nhưng để có error message rõ ràng từ API)
+            encoding = 'LINEAR16'
         } else if (audioFormat === 'WEBM') {
             // WEBM thường chứa OGG_OPUS audio
             encoding = 'OGG_OPUS'
@@ -504,8 +505,16 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             const header4_8 = audioBuffer.length >= 8 ? audioBuffer.toString('ascii', 4, 8) : ''
             const header8_12 = audioBuffer.length >= 12 ? audioBuffer.toString('ascii', 8, 12) : ''
 
+            // Check CAFF format (Core Audio Format - iOS/macOS)
+            if (header0_4 === 'caff') {
+                // CAFF file (Core Audio Format của iOS/macOS)
+                // CAFF có thể chứa nhiều codec, nhưng thường được Google Speech API xử lý như LINEAR16
+                audioFormat = 'LINEAR16' // Xử lý như LINEAR16 (đã hoạt động trên máy ảo)
+                mimeType = 'audio/x-caf' // Core Audio Format
+                this.logger.log(`[Kaiwa] [${requestId}] Detected CAFF format from header (Core Audio Format - iOS/macOS)`)
+            }
             // Check WAV format (RIFF...WAVE)
-            if (header0_4 === 'RIFF' && header8_12 === 'WAVE') {
+            else if (header0_4 === 'RIFF' && header8_12 === 'WAVE') {
                 // WAV file (đã có header, không cần convert)
                 audioFormat = 'LINEAR16' // Vẫn dùng LINEAR16 nhưng đã là WAV format
                 mimeType = 'audio/wav'
