@@ -5,6 +5,10 @@ FROM node:20-alpine
 # Install pnpm
 RUN npm install -g pnpm
 
+# Install ffmpeg system binary for audio conversion (MP4/M4A to FLAC)
+# Note: npm package "ffmpeg" is just a wrapper, we need the actual system binary
+RUN apk add --no-cache ffmpeg
+
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 ENV PORT=8080
