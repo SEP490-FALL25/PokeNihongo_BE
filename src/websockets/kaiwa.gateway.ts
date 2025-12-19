@@ -27,6 +27,14 @@ import { GeminiConfigType } from '@prisma/client'
 import { getRoomTitlePrompt, getRoomTitleLabels, getDefaultGenerationConfig, buildSystemPromptWithLevel, DEFAULT_KAIWA_SYSTEM_PROMPT } from '@/common/constants/promt.constant'
 import { SharedUserRepository } from '@/shared/repositories/shared-user.repo'
 import { SharedUserSubscriptionService } from '@/shared/services/user-subscription.service'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import { writeFile, unlink, readFile } from 'fs/promises'
+import { randomUUID } from 'crypto'
+
+const execAsync = promisify(exec)
 
 
 /**
@@ -377,12 +385,10 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Audio format is OGG, using OGG_OPUS encoding`)
         } else if (audioFormat === 'MP4' || audioFormat === 'M4A') {
             // MP4/M4A không được hỗ trợ trực tiếp qua content base64 bởi Google Speech-to-Text API
-            // Google Speech API chỉ hỗ trợ: LINEAR16, FLAC, MULAW, AMR, AMR_WB, OGG_OPUS, SPEEX_WITH_HEADER_BYTE
-            // Giải pháp: Client cần convert MP4/M4A sang FLAC, WAV (LINEAR16), hoặc OGG_OPUS trước khi gửi
-            // Hoặc upload MP4 lên Google Cloud Storage và dùng URI (phức tạp hơn)
-            this.logger.error(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] ERROR: Audio format is ${audioFormat}, but Google Speech-to-Text API does NOT support MP4/M4A via content base64. Supported formats: LINEAR16, FLAC, OGG_OPUS. Solution: Client should convert MP4/M4A to FLAC, WAV, or OGG_OPUS before sending.`)
-            // Thử dùng LINEAR16 encoding (sẽ fail nhưng để có error message rõ ràng từ API)
-            encoding = 'LINEAR16'
+            // Cần convert sang FLAC/WAV trước khi gửi vào API
+            // Conversion sẽ được thực hiện ở đây
+            this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Audio format is ${audioFormat}, will convert to FLAC before processing`)
+            encoding = 'FLAC' // Sau khi convert sẽ dùng FLAC encoding
         } else if (audioFormat === 'WEBM') {
             // WEBM thường chứa OGG_OPUS audio
             encoding = 'OGG_OPUS'
@@ -392,9 +398,22 @@ export class KaiwaGateway implements OnGatewayDisconnect {
             encoding = 'LINEAR16'
         }
 
+        // Convert MP4/M4A sang FLAC nếu cần
+        let finalAudioBuffer = audioBuffer
+        if (audioFormat === 'MP4' || audioFormat === 'M4A') {
+            try {
+                this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Converting ${audioFormat} to FLAC format...`)
+                finalAudioBuffer = await this.convertMp4ToFlac(audioBuffer, requestId)
+                this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Conversion complete: ${audioBuffer.length} bytes → ${finalAudioBuffer.length} bytes`)
+            } catch (convertError) {
+                this.logger.error(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Failed to convert ${audioFormat} to FLAC: ${convertError.message}`)
+                throw new Error(`Không thể chuyển đổi định dạng ${audioFormat}. Vui lòng gửi audio ở định dạng FLAC, WAV, hoặc OGG_OPUS. Chi tiết: ${convertError.message}`)
+            }
+        }
+
         // Thêm timeout để tránh đợi quá lâu (20 giây)
-        this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Calling speechToTextService.convertAudioToText with buffer size: ${audioBuffer.length} bytes, encoding: ${encoding}, original format: ${audioFormat}`)
-        const speechPromise = this.speechToTextService.convertAudioToText(audioBuffer, {
+        this.logger.log(`[Kaiwa] [${requestId}] [SPEECH_TO_TEXT] Calling speechToTextService.convertAudioToText with buffer size: ${finalAudioBuffer.length} bytes, encoding: ${encoding}, original format: ${audioFormat}`)
+        const speechPromise = this.speechToTextService.convertAudioToText(finalAudioBuffer, {
             languageCode: 'ja-JP',
             enableAutomaticPunctuation: true,
             sampleRateHertz: 16000,
@@ -559,6 +578,68 @@ export class KaiwaGateway implements OnGatewayDisconnect {
         }
 
         return { audioBuffer, audioFormat, mimeType }
+    }
+
+    /**
+     * Convert MP4/M4A audio buffer sang FLAC format (sử dụng ffmpeg)
+     * @param mp4Buffer - MP4/M4A audio buffer
+     * @param requestId - Request ID cho logging
+     * @returns FLAC audio buffer
+     * @throws Error nếu conversion fails hoặc ffmpeg không có sẵn
+     */
+    private async convertMp4ToFlac(
+        mp4Buffer: Buffer,
+        requestId: string
+    ): Promise<Buffer> {
+        const tempInputPath = join(tmpdir(), `input_${randomUUID()}.mp4`)
+        const tempOutputPath = join(tmpdir(), `output_${randomUUID()}.flac`)
+
+        try {
+            this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_CONVERT] Starting MP4 to FLAC conversion, input size: ${mp4Buffer.length} bytes`)
+
+            // Write MP4 buffer to temp file
+            await writeFile(tempInputPath, mp4Buffer)
+            this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_CONVERT] Written MP4 to temp file: ${tempInputPath}`)
+
+            // Convert MP4 to FLAC using ffmpeg
+            // FLAC parameters: 16kHz sample rate, mono channel, 16-bit depth (compatible with Google Speech API)
+            const ffmpegCommand = `ffmpeg -i "${tempInputPath}" -ar 16000 -ac 1 -sample_fmt s16 -y "${tempOutputPath}"`
+
+            this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_CONVERT] Running ffmpeg command...`)
+            const { stdout, stderr } = await execAsync(ffmpegCommand, {
+                timeout: 30000, // 30 seconds timeout
+                maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+            })
+
+            if (stderr && !stderr.includes('Stream mapping')) {
+                // ffmpeg outputs info to stderr, but errors are also there
+                this.logger.warn(`[Kaiwa] [${requestId}] [AUDIO_CONVERT] ffmpeg stderr: ${stderr.substring(0, 200)}`)
+            }
+
+            // Read converted FLAC file
+            const flacBuffer = await readFile(tempOutputPath)
+            this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_CONVERT] Conversion successful, output size: ${flacBuffer.length} bytes`)
+
+            return flacBuffer
+        } catch (error) {
+            this.logger.error(`[Kaiwa] [${requestId}] [AUDIO_CONVERT] Failed to convert MP4 to FLAC: ${error.message}`, error.stack)
+
+            // Check if ffmpeg is not installed
+            if (error.message.includes('ffmpeg') || error.message.includes('ENOENT') || error.message.includes('not found')) {
+                throw new Error('ffmpeg is not installed on the server. Please install ffmpeg to support MP4/M4A audio conversion.')
+            }
+
+            throw new Error(`Failed to convert MP4 to FLAC: ${error.message}`)
+        } finally {
+            // Clean up temp files
+            try {
+                await unlink(tempInputPath).catch(() => { })
+                await unlink(tempOutputPath).catch(() => { })
+                this.logger.log(`[Kaiwa] [${requestId}] [AUDIO_CONVERT] Cleaned up temp files`)
+            } catch (cleanupError) {
+                this.logger.warn(`[Kaiwa] [${requestId}] [AUDIO_CONVERT] Failed to clean up temp files: ${cleanupError.message}`)
+            }
+        }
     }
 
     /**
