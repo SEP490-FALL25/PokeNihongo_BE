@@ -97,27 +97,36 @@ export class DashboardController {
     return this.dashboardService.getLessonCompletionRate(lang)
   }
 
+  // //! ----------------------------------------------------------------------------
+
   //*Mùa giải------------ ----------------------------------------------
+  @Get('leaderboard-season/overview')
+  getLeaderboardSeasonOverview(@I18nLang() lang: string) {
+    return this.dashboardService.getLeaderboardSeasonOverview(lang)
+  }
   @Get('leaderboard-season/stats')
   getLeaderboardSeasonStats(
     @I18nLang() lang: string,
-    @Query() query: PaginationQueryDTO
+    @Query() query: PaginationQueryDTO,
+    @Query('period') period?: string // 'day', 'week', 'month'
   ) {
     return this.dashboardService.getLeaderboardSeasonStats(
       lang,
       query.currentPage,
-      query.pageSize
+      query.pageSize,
+      period
     )
   }
 
   @Get('leaderboard-season/:seasonId')
   getLeaderboardSeasonDetail(
     @I18nLang() lang: string,
-    @Param('seasonId') seasonId: string
+    @Param('seasonId') seasonId: string,
+    @Query('period') period?: string // 'day', 'week', 'month'
   ) {
     const seasonIdNum = parseInt(seasonId, 10)
 
-    return this.dashboardService.getLeaderboardSeasonDetail(seasonIdNum, lang)
+    return this.dashboardService.getLeaderboardSeasonDetail(seasonIdNum, lang, period)
   }
 
   // //! --------------------------------------------------------------------------
