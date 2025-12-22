@@ -1,7 +1,7 @@
 import { RoleName } from '@/common/constants/role.constant'
 import { parseQs } from '@/common/utils/qs-parser'
 import { PaginationQueryType } from '@/shared/models/request.model'
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { InvoiceStatus, PrismaClient, UserSubscriptionStatus } from '@prisma/client'
 import { todayUTCWith0000 } from 'src/shared/helpers'
 import { PrismaService } from 'src/shared/services/prisma.service'
@@ -1642,10 +1642,7 @@ export class DashboardRepo {
     })
 
     if (!banner) {
-      return {
-        success: false,
-        message: 'Banner not found'
-      }
+      throw new NotFoundException()
     }
 
     // Format nameTranslations
@@ -1700,22 +1697,19 @@ export class DashboardRepo {
     })
 
     return {
-      success: true,
-      data: {
-        id: banner.id,
-        nameKey: banner.nameKey,
-        nameTranslation,
-        nameTranslations,
-        status: banner.status,
-        startDate: banner.startDate,
-        endDate: banner.endDate,
-        hardPity5Star: banner.hardPity5Star,
-        costRoll: banner.costRoll,
-        totalPurchases,
-        totalRolls,
-        starDistribution,
-        items
-      }
+      id: banner.id,
+      nameKey: banner.nameKey,
+      nameTranslation,
+      nameTranslations,
+      status: banner.status,
+      startDate: banner.startDate,
+      endDate: banner.endDate,
+      hardPity5Star: banner.hardPity5Star,
+      costRoll: banner.costRoll,
+      totalPurchases,
+      totalRolls,
+      starDistribution,
+      items
     }
   }
 }
