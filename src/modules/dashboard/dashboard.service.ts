@@ -2,7 +2,7 @@ import { RoleName } from '@/common/constants/role.constant'
 import { convertEloToRank } from '@/shared/helpers'
 import { PaginationQueryType } from '@/shared/models/request.model'
 import { PrismaService } from '@/shared/services/prisma.service'
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { LanguagesRepository } from '../languages/languages.repo'
 import { DashboardRepo } from './dashboard.repo'
 
@@ -204,12 +204,147 @@ export class DashboardService {
   }
 
   /**
+   * Leaderboard Season Overview - Tổng quan giải đấu
+   */
+  async getLeaderboardSeasonOverview(lang: string = 'vi') {
+    const totalSeasons = await this.prisma.leaderboardSeason.count({
+      where: { deletedAt: null }
+    })
+
+    const activeSeasons = await this.prisma.leaderboardSeason.count({
+      where: { status: 'ACTIVE', deletedAt: null }
+    })
+
+    const currentSeason = await this.prisma.leaderboardSeason.findFirst({
+      where: { status: 'ACTIVE', deletedAt: null },
+      include: {
+        userHistories: {
+          where: { user: { role: { name: RoleName.Learner }, deletedAt: null } },
+          select: { userId: true }
+        }
+      },
+      orderBy: { startDate: 'desc' }
+    })
+
+    const currentParticipants = currentSeason?.userHistories.length || 0
+
+    const previousSeason = await this.prisma.leaderboardSeason.findFirst({
+      where: { status: 'EXPIRED', deletedAt: null },
+      include: {
+        userHistories: {
+          where: { user: { role: { name: RoleName.Learner }, deletedAt: null } },
+          select: { userId: true }
+        }
+      },
+      orderBy: { endDate: 'desc' }
+    })
+
+    const previousParticipants = previousSeason?.userHistories.length || 0
+    let participationChangeRate = 0
+    let participationChange = 0
+
+    if (previousParticipants > 0) {
+      participationChange = currentParticipants - previousParticipants
+      participationChangeRate = (participationChange / previousParticipants) * 100
+    } else if (currentParticipants > 0) {
+      participationChangeRate = 100
+      participationChange = currentParticipants
+    }
+
+    return {
+      totalSeasons,
+      activeSeasons,
+      currentParticipants,
+      previousParticipants,
+      participationChange,
+      participationChangeRate: parseFloat(participationChangeRate.toFixed(2))
+    }
+  }
+
+  /**
+   * Helper: Generate time periods for grouping
+   */
+  private generatePeriods(
+    startDate: Date,
+    endDate: Date,
+    period: string = 'month'
+  ): Array<{ start: Date; end: Date; key: string }> {
+    const periods: Array<{ start: Date; end: Date; key: string }> = []
+    const current = new Date(startDate)
+
+    while (current <= endDate) {
+      if (period === 'day') {
+        const dayStart = new Date(current)
+        dayStart.setHours(0, 0, 0, 0)
+        const dayEnd = new Date(current)
+        dayEnd.setHours(23, 59, 59, 999)
+
+        periods.push({
+          start: dayStart,
+          end: dayEnd > endDate ? endDate : dayEnd,
+          key: dayStart.toISOString().split('T')[0]
+        })
+
+        current.setDate(current.getDate() + 1)
+      } else if (period === 'week') {
+        const weekStart = new Date(current)
+        weekStart.setHours(0, 0, 0, 0)
+        const weekEnd = new Date(current)
+        weekEnd.setDate(weekEnd.getDate() + 6)
+        weekEnd.setHours(23, 59, 59, 999)
+
+        const actualEnd = weekEnd > endDate ? endDate : weekEnd
+        periods.push({
+          start: weekStart,
+          end: actualEnd,
+          key: `${weekStart.toISOString().split('T')[0]}_to_${actualEnd.toISOString().split('T')[0]}`
+        })
+
+        current.setDate(current.getDate() + 7)
+      } else {
+        const monthStart = new Date(
+          current.getFullYear(),
+          current.getMonth(),
+          1,
+          0,
+          0,
+          0,
+          0
+        )
+        const monthEnd = new Date(
+          current.getFullYear(),
+          current.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999
+        )
+
+        const actualStart = monthStart < startDate ? startDate : monthStart
+        const actualEnd = monthEnd > endDate ? endDate : monthEnd
+
+        periods.push({
+          start: actualStart,
+          end: actualEnd,
+          key: `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`
+        })
+
+        current.setMonth(current.getMonth() + 1)
+      }
+    }
+
+    return periods
+  }
+
+  /**
    * Leaderboard Stats - Tổng quan (Danh sách mùa ACTIVE + EXPIRED với pagination)
    */
   async getLeaderboardSeasonStats(
     lang: string = 'vi',
     page: number = 1,
-    pageSize: number = 10
+    pageSize: number = 10,
+    period: string = 'month'
   ) {
     const skip = (page - 1) * pageSize
 
@@ -235,11 +370,16 @@ export class DashboardService {
             userId: true,
             finalElo: true,
             finalRank: true,
+            createdAt: true,
             user: { select: { eloscore: true } }
           }
         },
         matches: {
-          include: {
+          select: {
+            id: true,
+            status: true,
+            winnerId: true,
+            createdAt: true,
             participants: {
               select: { userId: true }
             }
@@ -285,6 +425,97 @@ export class DashboardService {
         const nameTranslation =
           season.nameTranslations.find((t) => t.language.code === lang)?.value || ''
 
+        // Determine end date based on season status
+        const seasonEnd = season.status === 'ACTIVE' ? new Date() : season.endDate
+
+        // Generate periods
+        const periods = this.generatePeriods(season.startDate, seasonEnd, period)
+
+        // Calculate stats for each period
+        const periodStats: Record<string, any> = {}
+
+        periods.forEach((p) => {
+          // Total participants up to end of this period (cumulative)
+          const participantsInPeriodCount = season.userHistories.filter(
+            (uh) => uh.createdAt <= p.end
+          ).length
+
+          // New participants who joined within this period window
+          const newParticipantsInPeriod = season.userHistories.filter(
+            (uh) => uh.createdAt >= p.start && uh.createdAt <= p.end
+          ).length
+
+          // Matches in this period
+          const matchesInPeriod = season.matches.filter(
+            (m) =>
+              m.createdAt >= p.start && m.createdAt <= p.end && m.status === 'COMPLETED'
+          )
+
+          // Active participants (unique users who played matches in the period)
+          const activeParticipantsSet = new Set<number>()
+          matchesInPeriod.forEach((match) => {
+            match.participants.forEach((pt) => activeParticipantsSet.add(pt.userId))
+          })
+          const activeParticipantsInPeriod = activeParticipantsSet.size
+
+          // Calculate win/loss/draw stats
+          const userStats = new Map<
+            number,
+            { wins: number; losses: number; draws: number }
+          >()
+          matchesInPeriod.forEach((match) => {
+            match.participants.forEach((participant) => {
+              if (!userStats.has(participant.userId)) {
+                userStats.set(participant.userId, { wins: 0, losses: 0, draws: 0 })
+              }
+              const stats = userStats.get(participant.userId)!
+              if (match.winnerId === participant.userId) {
+                stats.wins++
+              } else if (match.winnerId == null) {
+                stats.draws++
+              } else {
+                stats.losses++
+              }
+            })
+          })
+
+          let totalWins = 0
+          let totalLosses = 0
+          let totalDraws = 0
+          userStats.forEach((stats) => {
+            totalWins += stats.wins
+            totalLosses += stats.losses
+            totalDraws += stats.draws
+          })
+
+          const totalCompletedMatches = totalWins + totalLosses + totalDraws
+          const winRate =
+            totalCompletedMatches > 0
+              ? parseFloat(((totalWins / totalCompletedMatches) * 100).toFixed(2))
+              : 0
+          const lossRate =
+            totalCompletedMatches > 0
+              ? parseFloat(((totalLosses / totalCompletedMatches) * 100).toFixed(2))
+              : 0
+          const drawRate =
+            totalCompletedMatches > 0
+              ? parseFloat(((totalDraws / totalCompletedMatches) * 100).toFixed(2))
+              : 0
+
+          periodStats[p.key] = {
+            participantsInPeriod: participantsInPeriodCount,
+            newParticipantsInPeriod,
+            activeParticipantsInPeriod,
+            matchesInPeriod: matchesInPeriod.length,
+            totalWins,
+            totalLosses,
+            totalDraws,
+            winRate,
+            lossRate,
+            drawRate
+          }
+        })
+
         // Số user tham gia mùa này (từ UserSeasonHistory)
         const participantCount = season.userHistories.length
         const nonParticipantCount = totalUsers - participantCount
@@ -299,6 +530,9 @@ export class DashboardService {
         const totalMatchesCompleted = season.matches.filter(
           (m) => m.status === 'COMPLETED'
         ).length
+
+        // Tổng số trận trong mùa
+        const totalMatches = season.matches.length
 
         // User IDs tham gia các trận đấu trong season này
         const userIdsInMatches = new Set<number>()
@@ -327,10 +561,12 @@ export class DashboardService {
           endDate: season.endDate,
           totalParticipants: participantCount,
           totalNonParticipants: nonParticipantCount,
-          totalMatchesCompleted,
+          totalMatches,
+          totalMatchesSuccess: totalMatchesCompleted,
           participantsWithNoMatches,
           learnersNotInSeasonWithStreak,
-          rankDistribution
+          rankDistribution,
+          periodStats
         }
       })
     )
@@ -338,10 +574,10 @@ export class DashboardService {
     return {
       data: formattedSeasons,
       pagination: {
-        currentPage: page,
+        current: page,
         pageSize,
-        totalCount,
-        totalPages: Math.ceil(totalCount / pageSize)
+        totalItem: totalCount,
+        totalPage: Math.ceil(totalCount / pageSize)
       }
     }
   }
@@ -349,7 +585,11 @@ export class DashboardService {
   /**
    * Leaderboard Stats - Chi tiết 1 mùa
    */
-  async getLeaderboardSeasonDetail(seasonId: number, lang: string = 'vi') {
+  async getLeaderboardSeasonDetail(
+    seasonId: number,
+    lang: string = 'vi',
+    period: string = 'month'
+  ) {
     const season = await this.prisma.leaderboardSeason.findUnique({
       where: { id: seasonId, deletedAt: null },
       include: {
@@ -366,6 +606,7 @@ export class DashboardService {
           select: {
             id: true,
             userId: true,
+            createdAt: true,
             finalElo: true,
             finalRank: true,
             user: { select: { eloscore: true } }
@@ -382,10 +623,7 @@ export class DashboardService {
     })
 
     if (!season) {
-      return {
-        success: false,
-        message: 'Season not found'
-      }
+      throw new NotFoundException()
     }
 
     // Format nameTranslations
@@ -421,7 +659,8 @@ export class DashboardService {
       season.status
     )
 
-    // Tổng số trận COMPLETED trong mùa
+    // Tổng số trận và số trận COMPLETED trong mùa
+    const totalMatches = season.matches.length
     const totalMatchesCompleted = season.matches.filter(
       (m) => m.status === 'COMPLETED'
     ).length
@@ -443,23 +682,105 @@ export class DashboardService {
       ([userId, streak]) => !userIdsInSeason.has(userId) && streak > 0
     ).length
 
-    return {
-      success: true,
-      data: {
-        id: season.id,
-        nameKey: season.nameKey,
-        nameTranslation,
-        nameTranslations,
-        status: season.status,
-        startDate: season.startDate,
-        endDate: season.endDate,
-        totalParticipants: participantCount,
-        totalNonParticipants: nonParticipantCount,
-        totalMatchesCompleted,
-        participantsWithNoMatches,
-        learnersNotInSeasonWithStreak,
-        rankDistribution
+    // Tính periodStats tương tự endpoint stats
+    const seasonEnd = season.status === 'ACTIVE' ? new Date() : season.endDate
+    const periods = this.generatePeriods(season.startDate, seasonEnd, period)
+
+    const periodStats: Record<string, any> = {}
+
+    periods.forEach((p) => {
+      // Total participants up to end of this period (cumulative)
+      const participantsInPeriodCount = season.userHistories.filter(
+        (uh) => uh.createdAt <= p.end
+      ).length
+
+      // New participants who joined within this period window
+      const newParticipantsInPeriod = season.userHistories.filter(
+        (uh) => uh.createdAt >= p.start && uh.createdAt <= p.end
+      ).length
+
+      const matchesInPeriod = season.matches.filter(
+        (m) => m.createdAt >= p.start && m.createdAt <= p.end && m.status === 'COMPLETED'
+      )
+
+      // Active participants (unique users who played matches in the period)
+      const activeParticipantsSet = new Set<number>()
+      matchesInPeriod.forEach((match) => {
+        match.participants.forEach((pt) => activeParticipantsSet.add(pt.userId))
+      })
+      const activeParticipantsInPeriod = activeParticipantsSet.size
+
+      const userStats = new Map<number, { wins: number; losses: number; draws: number }>()
+
+      matchesInPeriod.forEach((match) => {
+        match.participants.forEach((participant) => {
+          if (!userStats.has(participant.userId)) {
+            userStats.set(participant.userId, { wins: 0, losses: 0, draws: 0 })
+          }
+          const stats = userStats.get(participant.userId)!
+          if (match.winnerId === participant.userId) {
+            stats.wins++
+          } else if (match.winnerId == null) {
+            stats.draws++
+          } else {
+            stats.losses++
+          }
+        })
+      })
+
+      let totalWins = 0
+      let totalLosses = 0
+      let totalDraws = 0
+      userStats.forEach((stats) => {
+        totalWins += stats.wins
+        totalLosses += stats.losses
+        totalDraws += stats.draws
+      })
+
+      const totalCompletedMatches = totalWins + totalLosses + totalDraws
+      const winRate =
+        totalCompletedMatches > 0
+          ? parseFloat(((totalWins / totalCompletedMatches) * 100).toFixed(2))
+          : 0
+      const lossRate =
+        totalCompletedMatches > 0
+          ? parseFloat(((totalLosses / totalCompletedMatches) * 100).toFixed(2))
+          : 0
+      const drawRate =
+        totalCompletedMatches > 0
+          ? parseFloat(((totalDraws / totalCompletedMatches) * 100).toFixed(2))
+          : 0
+
+      periodStats[p.key] = {
+        participantsInPeriod: participantsInPeriodCount,
+        newParticipantsInPeriod,
+        activeParticipantsInPeriod,
+        matchesInPeriod: matchesInPeriod.length,
+        totalWins,
+        totalLosses,
+        totalDraws,
+        winRate,
+        lossRate,
+        drawRate
       }
+    })
+
+    return {
+      id: season.id,
+      nameKey: season.nameKey,
+      nameTranslation,
+      nameTranslations,
+      status: season.status,
+      startDate: season.startDate,
+      endDate: season.endDate,
+      totalParticipants: participantCount,
+      totalNonParticipants: nonParticipantCount,
+      totalMatches,
+      totalMatchesSuccess: totalMatchesCompleted,
+      participantsWithNoMatches,
+      learnersNotInSeasonWithStreak,
+      rankDistribution,
+      periodStats
     }
   }
 
