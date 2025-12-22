@@ -1458,22 +1458,20 @@ export class DashboardRepo {
     page: number = 1,
     pageSize: number = 10
   ) {
-    const skip = (page - 1) * pageSize
-
-    // Tổng số banner ACTIVE và EXPIRED
-    const [totalActive, totalExpired] = await Promise.all([
+    // Đếm banner theo trạng thái
+    const [totalActive, totalExpired, totalPreview] = await Promise.all([
       this.prismaService.gachaBanner.count({
         where: { status: 'ACTIVE', deletedAt: null }
       }),
       this.prismaService.gachaBanner.count({
         where: { status: 'EXPIRED', deletedAt: null }
+      }),
+      this.prismaService.gachaBanner.count({
+        where: { status: 'PREVIEW', deletedAt: null }
       })
     ])
 
-    // Tổng lượt quay (GachaPurchase)
-    const totalPurchases = await this.prismaService.gachaPurchase.count({
-      where: { deletedAt: null }
-    })
+    const totalBanners = totalActive + totalExpired + totalPreview
 
     // Tỉ lệ ra các sao 1-5 (gộp tất cả banner) từ GachaRollHistory
     const rollsByRarity = await this.prismaService.gachaRollHistory.groupBy({
@@ -1481,8 +1479,6 @@ export class DashboardRepo {
       where: { deletedAt: null },
       _count: true
     })
-
-    console.log('[Gacha Overview] rollsByRarity:', rollsByRarity)
 
     const totalRolls = rollsByRarity.reduce((sum, r) => sum + r._count, 0)
     const starDistribution = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'].map((star) => {
@@ -1496,103 +1492,22 @@ export class DashboardRepo {
       }
     })
 
-    // List các banner (ACTIVE + EXPIRED) với pagination
-    const banners = await this.prismaService.gachaBanner.findMany({
-      where: {
-        status: { in: ['ACTIVE', 'EXPIRED'] },
-        deletedAt: null
-      },
-      include: {
-        nameTranslations: {
-          include: { language: { select: { code: true } } }
-        },
-        purchases: {
-          where: { deletedAt: null },
-          select: { id: true }
-        },
-        rollLogs: {
-          where: { deletedAt: null },
-          select: { rarity: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: pageSize
-    })
-
-    const totalBanners = await this.prismaService.gachaBanner.count({
-      where: {
-        status: { in: ['ACTIVE', 'EXPIRED'] },
-        deletedAt: null
-      }
-    })
-
-    // Format dữ liệu cho từng banner
-    const formattedBanners = banners.map((banner) => {
-      const nameTranslations = ['en', 'ja', 'vi']
-        .map((code) => {
-          const trans = banner.nameTranslations.find((t) => t.language.code === code)
-          return trans ? { key: code, value: trans.value } : null
-        })
-        .filter((t) => t !== null)
-
-      const nameTranslation =
-        banner.nameTranslations.find((t) => t.language.code === lang)?.value || ''
-
-      const totalPurchasesForBanner = banner.purchases.length
-
-      // Tỉ lệ ra các sao cho banner này
-      const bannerRollsByRarity = banner.rollLogs.reduce(
-        (acc, roll) => {
-          acc[String(roll.rarity)] = (acc[String(roll.rarity)] || 0) + 1
-          return acc
-        },
-        {} as Record<string, number>
-      )
-
-      const totalRollsForBanner = banner.rollLogs.length
-      const bannerStarDistribution = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'].map(
-        (star) => {
-          const count = bannerRollsByRarity[star] || 0
-          return {
-            star,
-            count,
-            percentage:
-              totalRollsForBanner > 0
-                ? Math.round((count / totalRollsForBanner) * 100 * 100) / 100
-                : 0
-          }
-        }
-      )
-
-      return {
-        id: banner.id,
-        nameKey: banner.nameKey,
-        nameTranslation,
-        nameTranslations,
-        status: banner.status,
-        startDate: banner.startDate,
-        endDate: banner.endDate,
-        totalPurchases: totalPurchasesForBanner,
-        totalRolls: totalRollsForBanner,
-        starDistribution: bannerStarDistribution
-      }
-    })
+    const fiveStarStats =
+      starDistribution.find((s) => s.star === 'FIVE') || ({ count: 0, percentage: 0 } as {
+        count: number
+        percentage: number
+      })
 
     return {
       summary: {
+        totalBanners,
         totalActive,
         totalExpired,
-        totalPurchases,
+        totalPreview,
         totalRolls,
+        totalFiveStar: fiveStarStats.count,
+        fiveStarRate: fiveStarStats.percentage,
         starDistribution
-      },
-      banners: formattedBanners,
-      pagination: {
-        currentPage: page,
-        pageSize,
-        totalCount: totalBanners,
-        totalPages: Math.ceil(totalBanners / pageSize)
       }
     }
   }
