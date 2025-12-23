@@ -470,6 +470,8 @@ export const Error = {
   SPEECH_RECOGNITION_SUGGESTION: 'Hãy nói rõ ràng hơn hoặc kiểm tra microphone',
   SPEECH_CONVERSION_ERROR: 'Lỗi chuyển đổi âm thanh',
   CHECK_MICROPHONE_SUGGESTION: 'Vui lòng kiểm tra microphone và thử lại',
+  NOT_JAPANESE_LANGUAGE: 'Vui lòng nói bằng tiếng Nhật',
+  NOT_JAPANESE_LANGUAGE_SUGGESTION: 'Kaiwa chỉ hỗ trợ hội thoại bằng tiếng Nhật. Vui lòng nói lại bằng tiếng Nhật.',
   AI_ERROR: 'Lỗi AI',
   CHECK_GEMINI_API_KEY_SUGGESTION: 'Vui lòng kiểm tra GEMINI_API_KEY và thử lại',
   AUDIO_RESPONSE_FAILED: 'Không thể tạo audio response',
