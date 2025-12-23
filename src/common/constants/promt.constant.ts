@@ -109,12 +109,13 @@ export const DEFAULT_GENERATION_CONFIG = {
     },
     /**
      * Translation - Conservative settings for accurate translations
+     * maxOutputTokens: 1024 để đảm bảo đủ cho các câu dài và đoạn văn bản phức tạp
      */
     TRANSLATION: {
         temperature: 0.3,
         topP: 0.95,
         topK: 40,
-        maxOutputTokens: 512
+        maxOutputTokens: 1024
     }
 } as const
 
