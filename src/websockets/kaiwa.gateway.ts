@@ -312,6 +312,48 @@ export class KaiwaGateway implements OnGatewayDisconnect {
 
 
     /**
+     * Validate xem text có chứa tiếng Nhật không
+     * Kiểm tra xem có ít nhất một ký tự tiếng Nhật (Hiragana, Katakana, Kanji)
+     * và không có quá nhiều ký tự Latin (a-z, A-Z) - cho phép một số ký tự Latin cho punctuation
+     * 
+     * @param text - Text cần validate
+     * @returns true nếu có vẻ là tiếng Nhật, false nếu không
+     */
+    private isValidJapaneseText(text: string): boolean {
+        if (!text || typeof text !== 'string' || text.trim().length === 0) {
+            return false
+        }
+
+        // Loại bỏ whitespace và punctuation thông thường để kiểm tra
+        const trimmedText = text.trim()
+
+        // Kiểm tra có chứa ký tự tiếng Nhật (Hiragana, Katakana, Kanji)
+        // Unicode ranges:
+        // - Hiragana: \u3040-\u309F
+        // - Katakana: \u30A0-\u30FF
+        // - Kanji: \u4E00-\u9FAF (CJK Unified Ideographs)
+        // - Extended Kanji: \u3400-\u4DBF, \u20000-\u2A6DF, etc.
+        const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF]/
+        const hasJapanese = japaneseRegex.test(trimmedText)
+
+        if (!hasJapanese) {
+            return false
+        }
+
+        // Kiểm tra xem có quá nhiều ký tự Latin không (không phải tiếng Nhật)
+        // Cho phép một số ký tự Latin cho punctuation và số, nhưng nếu có quá nhiều thì không phải tiếng Nhật
+        const latinChars = (trimmedText.match(/[a-zA-Z]/g) || []).length
+        const totalChars = trimmedText.replace(/\s/g, '').length
+
+        // Nếu có hơn 30% là ký tự Latin, có thể không phải tiếng Nhật
+        if (totalChars > 0 && latinChars / totalChars > 0.3) {
+            return false
+        }
+
+        return true
+    }
+
+    /**
      * Lấy user info và cache levelJLPT trong client.data
      * Nếu đã có trong client.data thì không query lại
      * 
@@ -435,6 +477,16 @@ export class KaiwaGateway implements OnGatewayDisconnect {
                 suggestion: ErrorMessage.SPEECH_RECOGNITION_SUGGESTION
             })
             throw new Error('Speech-to-Text returned empty transcript')
+        }
+
+        // Validate xem transcription có phải là tiếng Nhật không
+        if (!this.isValidJapaneseText(transcription)) {
+            this.logger.warn(`[Kaiwa] [${requestId}] Transcription is not Japanese: "${transcription}"`)
+            client.emit(KAIWA_EVENTS.ERROR, {
+                message: ErrorMessage.NOT_JAPANESE_LANGUAGE,
+                suggestion: ErrorMessage.NOT_JAPANESE_LANGUAGE_SUGGESTION
+            })
+            throw new Error('Transcription is not Japanese')
         }
 
         // Emit transcription ngay lập tức
